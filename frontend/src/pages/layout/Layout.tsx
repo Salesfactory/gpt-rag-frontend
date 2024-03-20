@@ -1,4 +1,5 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
+import salesLogo from "../../img/logo.png";
 
 import github from "../../assets/github.svg";
 
@@ -10,7 +11,7 @@ const Layout = () => {
             <header className={styles.header} role={"banner"}>
                 <div className={styles.headerContainer}>
                     <Link to="/" className={styles.headerTitleContainer}>
-                        <img height="80px" src="https://news.microsoft.com/wp-content/uploads/prod/sites/113/2017/06/Microsoft-logo_rgb_c-gray.png"></img>
+                        <img height="45px" src={salesLogo}></img>
                         <h3 className={styles.headerTitle}></h3>
                     </Link>
                     <nav>
@@ -41,7 +42,7 @@ const Layout = () => {
                         </ul>
     */}
                     </nav>
-                    <h4 className={styles.headerRightText}>Chat On Your Data</h4>
+                    <h4 className={styles.headerRightText}>Clew</h4>
                 </div>
             </header>
 
