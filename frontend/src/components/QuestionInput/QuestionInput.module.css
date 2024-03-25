@@ -5,6 +5,7 @@
     width: 100%;
     padding: 15px;
     background: white;
+    border-bottom: 5px solid #a2e700;
 }
 
 .questionInputTextArea {
