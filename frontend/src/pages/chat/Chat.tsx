@@ -15,7 +15,7 @@ import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
-import { useApp } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 
 
@@ -42,7 +42,7 @@ const Chat = () => {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
 
-    const {showHistoryPanel} = useApp()
+    const {showHistoryPanel} = useAppContext()
 
 
     const lastQuestionRef = useRef<string>("");
@@ -263,20 +263,17 @@ const Chat = () => {
             <div className={styles.container}>
                 <div className={styles.chatRoot} style={ showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
                     <div className={styles.chatContainer}>
-                        {/* <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            height: '50vh'}}>
-                                <img height="40px" src={salesLogo}></img>
-                                <h1>Clew</h1>
-                                <p>Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver actionable insights.</p>
-                        </div> */}
                         {!lastQuestionRef.current ? (
                             <div className={styles.chatEmptyState}>
-                                {/*<SparkleFilled fontSize={"120px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Chat logo" />
-                                <h1 className={styles.chatEmptyStateTitle}>Conversación con datos</h1>*/}
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'}}>
+                                            <img height="40px" src={salesLogo}></img>
+                                            <h1>Clew</h1>
+                                            <p style={{ width: "80%", textAlign: "center" }}>Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver actionable insights.</p>
+                                </div>
                             </div>
                         ) : (
                             <div className={styles.chatMessageStream}>

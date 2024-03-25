@@ -2,7 +2,7 @@ import { Text } from "@fluentui/react";
 import { HistoryFilled } from "@fluentui/react-icons";
 
 import styles from "./ChatHistoryButton.module.css";
-import { useApp } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 
 interface Props {
     className?: string;
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const ChatHistoryButton = ({ className, disabled, onClick }: Props) => {
-  const {showHistoryPanel} = useApp()
+  const {showHistoryPanel} = useAppContext()
   const buttonContent = showHistoryPanel ? "Hide chat history" : 'Show chat history'
     return (
         <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={onClick}>

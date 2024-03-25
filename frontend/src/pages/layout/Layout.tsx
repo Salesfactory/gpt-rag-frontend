@@ -5,15 +5,14 @@ import github from "../../assets/github.svg";
 
 import styles from "./Layout.module.css";
 import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistoryButton";
-import { useApp } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 
 const Layout = () => {
 
-    const {showHistoryPanel, setShowHistoryPanel} = useApp()
+    const {showHistoryPanel, setShowHistoryPanel} = useAppContext()
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel)
-        console.log(showHistoryPanel)
     }
 
     return (
@@ -52,7 +51,6 @@ const Layout = () => {
                         </ul>
     */}
                     </nav>
-                    {/* <h4 className={styles.headerRightText}>Clew</h4> */}
                     <ChatHistoryButton onClick={handleShowHistoryPanel}/>
                 </div>
             </header>
