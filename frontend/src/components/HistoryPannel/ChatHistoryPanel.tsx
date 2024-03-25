@@ -1,8 +1,14 @@
 import { AddFilled } from "@fluentui/react-icons"
 
 import styles from "./ChatHistoryPannel.module.css";
+import { useAppContext } from "../../providers/AppProviders";
 
 export const ChatHistoryPanel = () => {
+    const { showHistoryPanel, setShowHistoryPanel} = useAppContext()
+
+    const handleClosePannel = () => {
+        setShowHistoryPanel(!showHistoryPanel)
+    }
     return (
         <section className={styles.container} data-is-scrollable aria-label="chat history panel">
     <div className={styles.header}>
@@ -12,7 +18,7 @@ export const ChatHistoryPanel = () => {
                 <button className={styles.clearButton} aria-label="clear all chat history">...</button>
             </div>
             <div className={styles.closeButtonContainer}>
-                <button className={styles.closeButton} aria-label="hide button"><AddFilled /></button>
+                <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}><AddFilled /></button>
             </div>   
         </div>
     </div>
