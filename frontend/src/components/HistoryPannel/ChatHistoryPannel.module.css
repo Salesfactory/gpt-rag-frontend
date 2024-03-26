@@ -1,0 +1,55 @@
+.clearButton{
+    border: none;
+    font-size: 25px;
+    color: #5da3cc;
+    background-color: transparent;
+    cursor: pointer;
+    padding: 10.2px 7.5px;
+    margin-top: -15px;
+}
+
+.closeButton{
+    border: none;
+    font-size: 25px;
+    color: #5da3cc;
+    background-color: transparent;
+    cursor: pointer;
+    transform: rotate(45deg);
+    margin-bottom: -5px;
+    padding-top: 6px;
+}
+
+.closeButtonContainer:active{
+    background-color: rgba(214, 214, 214, 0.315);
+    border-radius: 5px;
+}
+
+.container {
+    margin-right: 10px;
+    margin-top: 5px;
+    width: 250px;
+    padding: 0 10px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+}

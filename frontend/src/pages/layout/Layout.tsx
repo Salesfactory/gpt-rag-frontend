@@ -4,8 +4,17 @@ import salesLogo from "../../img/logo.png";
 import github from "../../assets/github.svg";
 
 import styles from "./Layout.module.css";
+import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistoryButton";
+import { useAppContext } from "../../providers/AppProviders";
 
 const Layout = () => {
+
+    const {showHistoryPanel, setShowHistoryPanel} = useAppContext()
+
+    const handleShowHistoryPanel = () => {
+        setShowHistoryPanel(!showHistoryPanel)
+    }
+
     return (
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>
@@ -42,7 +51,7 @@ const Layout = () => {
                         </ul>
     */}
                     </nav>
-                    <h4 className={styles.headerRightText}>Clew</h4>
+                    <ChatHistoryButton onClick={handleShowHistoryPanel}/>
                 </div>
             </header>
 
