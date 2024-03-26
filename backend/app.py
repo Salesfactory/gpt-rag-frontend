@@ -16,6 +16,7 @@ load_dotenv()
 
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
+HISTORY_ENDPOINT = os.getenv('HISTORY_ENDPOINT')
 ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI')
 STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
@@ -94,7 +95,7 @@ def getChatHistory():
         logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
         return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
     try:
-        url = ORCHESTRATOR_URI
+        url = HISTORY_ENDPOINT
         headers = {
             'Content-Type': 'application/json',
             'x-functions-key': functionKey            
