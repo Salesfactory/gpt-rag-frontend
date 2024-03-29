@@ -34,14 +34,14 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
     return parsedResponse;
 }
 
-export async function getChatHistory(): Promise<List<ConversationHistoryItem>> {
+export async function getChatHistory(): Promise<ConversationHistoryItem[]> {
     const response = await fetch("/api/get-chat-history", {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         }
     });
-    const parsedResponse: List<ConversationHistoryItem> = await response.json();
+    const parsedResponse: ConversationHistoryItem[] = await response.json();
     if (response.status > 299 || !response.ok) {
         throw Error("Error getting chat history");
     }
