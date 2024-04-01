@@ -14,7 +14,9 @@ export default defineConfig({
             '/chatgpt': "http://localhost:8000",
             '/api/get-speech-token': "http://localhost:8000",
             '/api/get-storage-account': "http://localhost:8000",            
-            '/api/get-blob': "http://localhost:8000"
+            '/api/get-blob': "http://localhost:8000",
+            '/api/settings': "http://localhost:8000",
+            '/api/conversations': "http://localhost:8000",
         },
         host: true
     }
