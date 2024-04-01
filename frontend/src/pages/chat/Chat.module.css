@@ -12,7 +12,6 @@
     display: flex;
     flex-direction: row-reverse;
     height: 100%;
-    overflow: hidden;
 }
 
 .chatRoot {
@@ -119,32 +118,6 @@
 .commandsContainer {
     display: flex;
     align-self: flex-start;
-    height: 95%;
-    overflow-y: auto;
-}
-
-.loadingData {
-    display: flex;
-    align-self: flex-start;
-    height: 95%;
-    overflow-y: hidden;
-}
-
-.commandsContainer::-webkit-scrollbar {
-    width: 8px;
-}
-
-.commandsContainer::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.commandsContainer::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
-}
-
-.commandsContainer::-webkit-scrollbar-thumb:hover {
-    background: #555;
 }
 
 .commandButton {
