@@ -91,7 +91,7 @@ def getChatHistory():
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
-        keySecretName = 'orchestrator-host--functionKey'
+        keySecretName = 'orchestrator-host--conversations'
         functionKey = get_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
@@ -169,7 +169,7 @@ def getSettings():
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
-        keySecretName = 'orchestrator-host--functionKey'
+        keySecretName = 'orchestrator-host--settings'
         functionKey = get_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
@@ -210,7 +210,7 @@ def setSettings():
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
-        keySecretName = 'orchestrator-host--functionKey'
+        keySecretName = 'orchestrator-host--settings'
         functionKey = get_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
