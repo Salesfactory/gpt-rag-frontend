@@ -16,7 +16,6 @@ load_dotenv()
 
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
-HISTORY_ENDPOINT = os.getenv('HISTORY_ENDPOINT')
 SETTINGS_ENDPOINT = os.getenv('SETTINGS_ENDPOINT')
 ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI')
 STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
@@ -85,32 +84,7 @@ def chatgpt():
         logging.exception("[webbackend] exception in /chatgpt")
         return jsonify({"error": str(e)}), 500
     
-@app.route("/api/get-chat-history", methods=["GET"])
-def getChatHistory():
-    client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = 'orchestrator-host--functionKey'
-        functionKey = get_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
-        return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
-    try:
-        url = HISTORY_ENDPOINT
-        headers = {
-            'Content-Type': 'application/json',
-            'x-functions-key': functionKey            
-        }
-        payload = json.dumps({
-            "user_id": client_principal_id
-        })
-        response = requests.request("GET",url,headers=headers,data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")   
-        return(response.text)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /get-chat-history")
-        return jsonify({"error": str(e)}), 500
+
 # methods to provide access to speech services and blob storage account blobs
 
 @app.route("/api/get-speech-token", methods=["GET"])

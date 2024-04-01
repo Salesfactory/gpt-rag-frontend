@@ -1,5 +1,4 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
-import { getChatHistory } from "../../api"; //FUNCION DE LA API
 import salesLogo from "../../img/logo.png";
 
 import github from "../../assets/github.svg";

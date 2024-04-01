@@ -4,12 +4,6 @@ export const enum Approaches {
     ReadDecomposeAsk = "rda"
 }
 
-export type ConversationHistoryItem = {
-    id: string,
-    start_date: string,
-    content: string,
-};
-
 export type AskRequestOverrides = {
     semanticRanker?: boolean;
     semanticCaptions?: boolean;

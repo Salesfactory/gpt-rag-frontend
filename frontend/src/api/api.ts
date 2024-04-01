@@ -1,4 +1,3 @@
-import { List } from "@fluentui/react";
 import { 
     AskRequest, 
     AskResponse, 
@@ -6,8 +5,7 @@ import {
     ChatRequest, 
     ChatRequestGpt, 
     GetSettingsProps, 
-    PostSettingsProps,
-    ConversationHistoryItem
+    PostSettingsProps 
 } from "./models";
 
 const loadModule = async (modulePath : string) => {
@@ -107,35 +105,21 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
     return parsedResponse;
 }
 
-export async function getChatHistory(): Promise<ConversationHistoryItem[]> {
-    const response = await fetch("/api/get-chat-history", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
-    const parsedResponse: ConversationHistoryItem[] = await response.json();
-    if (response.status > 299 || !response.ok) {
-        throw Error("Error getting chat history");
-    }
-    return parsedResponse;
-}
-
 export function getCitationFilePath(citation: string): string {
     var storage_account = "please_check_if_storage_account_is_in_frontend_app_settings";
-
+    
     const xhr = new XMLHttpRequest();
     xhr.open("GET", "/api/get-storage-account", false);
     xhr.send();
 
     if (xhr.status > 299) {
         console.log("Please check if STORAGE_ACCOUNT is in frontend app settings");
-        return storage_account;
+        return storage_account
     } else {
         const parsedResponse = JSON.parse(xhr.responseText);
-        storage_account = parsedResponse["storageaccount"];
+        storage_account = parsedResponse['storageaccount'];
     }
-    console.log("storage account:" + storage_account);
+    console.log('storage account:' + storage_account);
 
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
