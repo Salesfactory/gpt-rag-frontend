@@ -13,7 +13,7 @@ interface Props {
 }
 
 const SettingsModal = ({ user }: Props) => {
-    const [isModalOpen, setIsModalOpen] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [temperature, setTemperature] = useState("");
     const [presencePenalty, setPresencePenalty] = useState("");
     const [frequencyPenalty, setFrequencyPenalty] = useState("");
