@@ -107,11 +107,12 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
     return parsedResponse;
 }
 
-export async function getChatHistory(): Promise<ConversationHistoryItem[]> {
+export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
     const response = await fetch("/api/get-chat-history", {
         method: "GET",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
         }
     });
     const parsedResponse: ConversationHistoryItem[] = await response.json();

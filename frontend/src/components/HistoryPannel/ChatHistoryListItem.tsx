@@ -10,7 +10,7 @@ export const ChatHistoryPanelList = () => {
   const [hoveredItemIndex, setHoveredItemIndex] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const {dataHistory, setDataHistory} = useAppContext()
+  const {dataHistory, setDataHistory, userId} = useAppContext()
 
 
   const handleMouseEnter = (index: string) => {
@@ -24,7 +24,7 @@ export const ChatHistoryPanelList = () => {
 
   const fetchData = async () => {
         try {
-            const data = await getChatHistory();
+            const data = await getChatHistory(userId);
             if(data.length > 0){
               setDataHistory(data)
               setIsLoading(false);
@@ -41,7 +41,7 @@ export const ChatHistoryPanelList = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [userId]);
 
   const months = [
     "January", "February", "March", "April",
