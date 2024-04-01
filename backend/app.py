@@ -86,6 +86,7 @@ def chatgpt():
     
 @app.route("/api/get-chat-history", methods=["GET"])
 def getChatHistory():
+    client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
@@ -100,7 +101,10 @@ def getChatHistory():
             'Content-Type': 'application/json',
             'x-functions-key': functionKey            
         }
-        response = requests.request("GET",url,headers=headers)
+        payload = json.dumps({
+            "user_id": client_principal_id
+        })
+        response = requests.request("GET",url,headers=headers,data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")   
         return(response.text)
     except Exception as e:
