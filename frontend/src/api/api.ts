@@ -1,5 +1,4 @@
 import { List } from "@fluentui/react";
-import { AskRequest, AskResponse, AskResponseGpt, ChatRequest, ChatRequestGpt, ConversationHistoryItem } from "./models";
 import { 
     AskRequest, 
     AskResponse, 
@@ -7,7 +6,8 @@ import {
     ChatRequest, 
     ChatRequestGpt, 
     GetSettingsProps, 
-    PostSettingsProps 
+    PostSettingsProps,
+    ConversationHistoryItem
 } from "./models";
 
 const loadModule = async (modulePath : string) => {
