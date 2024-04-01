@@ -10,23 +10,11 @@ import {
     ConversationHistoryItem
 } from "./models";
 
-const loadModule = async (modulePath : string) => {
-    try {
-      return (await import(/* @vite-ignore */modulePath))?.default;
-    } catch (e) {
-        console.log("Error loading " + modulePath, e);
-    }
-}
-
 export async function getSettings({ user }: GetSettingsProps): Promise<any> {
-    const settings = await loadModule("./settings.json");
-    const baseUrl = settings?.ENVIRONMENT === "development" ? settings?.LOCAL_API : "";
-
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
-    const url = baseUrl + "/api/settings";
     try {
-        const response = await fetch(url, {
+        const response = await fetch("/api/settings", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -43,14 +31,10 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
 }
 
 export async function postSettings({ user, temperature, presence_penalty, frequency_penalty } : PostSettingsProps): Promise<any> {
-    const settings = await loadModule("./settings.json");
-    const baseUrl = settings?.ENVIRONMENT === "development" ? settings?.LOCAL_API : "";
-    
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
-    const url = baseUrl + "/api/settings";
     try {
-        const response = await fetch(url, {
+        const response = await fetch("/api/settings", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -73,9 +57,7 @@ export async function postSettings({ user, temperature, presence_penalty, freque
 }
 
 export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGpt> {
-    const settings = await loadModule("./settings.json");
-    const baseUrl = settings?.ENVIRONMENT === "development" ? settings?.LOCAL_API : "";
-    const response = await fetch(baseUrl + "/chatgpt", {
+    const response = await fetch("/chatgpt", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
