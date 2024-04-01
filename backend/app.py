@@ -16,9 +16,9 @@ load_dotenv()
 
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
-HISTORY_ENDPOINT = os.getenv('HISTORY_ENDPOINT')
-SETTINGS_ENDPOINT = os.getenv('SETTINGS_ENDPOINT')
-ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI')
+ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI', default="")
+SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/settings"
+HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/conversations"
 STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
@@ -111,6 +111,7 @@ def getChatHistory():
     except Exception as e:
         logging.exception("[webbackend] exception in /get-chat-history")
         return jsonify({"error": str(e)}), 500
+
 # methods to provide access to speech services and blob storage account blobs
 
 @app.route("/api/get-speech-token", methods=["GET"])
