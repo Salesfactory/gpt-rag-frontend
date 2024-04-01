@@ -7,6 +7,8 @@ import styles from "./Layout.module.css";
 import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistoryButton";
 import { useAppContext } from "../../providers/AppProviders";
 
+import SettingsModal from "../../components/SettingsModal";
+
 const Layout = () => {
 
     const {showHistoryPanel, setShowHistoryPanel} = useAppContext()
@@ -51,7 +53,11 @@ const Layout = () => {
                         </ul>
     */}
                     </nav>
-                    <ChatHistoryButton onClick={handleShowHistoryPanel}/>
+                    <div>
+                        {/*  needs an user to be sent ↓ */}
+                        <SettingsModal user={null} />
+                        <ChatHistoryButton onClick={handleShowHistoryPanel}/>
+                    </div>
                 </div>
             </header>
 

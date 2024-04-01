@@ -1,9 +1,79 @@
-import { AskRequest, AskResponse, AskResponseGpt, ChatRequest, ChatRequestGpt } from "./models";
+import { 
+    AskRequest, 
+    AskResponse, 
+    AskResponseGpt, 
+    ChatRequest, 
+    ChatRequestGpt, 
+    GetSettingsProps, 
+    PostSettingsProps 
+} from "./models";
 
+const loadModule = async (modulePath : string) => {
+    try {
+      return (await import(/* @vite-ignore */modulePath))?.default;
+    } catch (e) {
+        console.log("Error loading " + modulePath, e);
+    }
+}
 
+export async function getSettings({ user }: GetSettingsProps): Promise<any> {
+    const settings = await loadModule("./settings.json");
+    const baseUrl = settings?.ENVIRONMENT === "development" ? settings?.LOCAL_API : "";
+
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    const url = baseUrl + "/api/settings";
+    try {
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            }
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error fetching settings", error);
+        return {};
+    }
+}
+
+export async function postSettings({ user, temperature, presence_penalty, frequency_penalty } : PostSettingsProps): Promise<any> {
+    const settings = await loadModule("./settings.json");
+    const baseUrl = settings?.ENVIRONMENT === "development" ? settings?.LOCAL_API : "";
+    
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    const url = baseUrl + "/api/settings";
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            },
+            body: JSON.stringify({
+                temperature,
+                presence_penalty,
+                frequency_penalty
+            })
+        });
+        const fetchedData = await response.json();
+        console.log("Settings posted", fetchedData);
+        return fetchedData;
+    } catch (error) {
+        console.error("Error posting settings", error);
+        return {};
+    }
+}
 
 export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGpt> {
-    const response = await fetch("/chatgpt", {
+    const settings = await loadModule("./settings.json");
+    const baseUrl = settings?.ENVIRONMENT === "development" ? settings?.LOCAL_API : "";
+    const response = await fetch(baseUrl + "/chatgpt", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

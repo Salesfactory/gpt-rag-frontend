@@ -64,3 +64,19 @@ export type ChatRequestGpt = {
     overrides?: AskRequestOverrides;
 };
 
+export type GetSettingsProps = {
+    user: {
+        id: string;
+        name: string;
+    } | null;
+}
+
+export type PostSettingsProps = {
+    user: {
+        id: string;
+        name: string;
+    } | null;
+    temperature: number;
+    presence_penalty: number;
+    frequency_penalty: number;
+}
