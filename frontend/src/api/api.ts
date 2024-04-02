@@ -25,8 +25,8 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
         const fetchedData = await response.json();
         return fetchedData;
     } catch (error) {
-        console.error("Error fetching settings", error);
-        return {};
+        console.log("Error fetching settings", error);
+        return { temperature: "0", presencePenalty: "0", frequencyPenalty: "0" };
     }
 }
 
