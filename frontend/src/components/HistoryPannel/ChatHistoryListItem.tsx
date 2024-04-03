@@ -30,10 +30,9 @@ export const ChatHistoryPanelList = () => {
             const data = await getChatHistory(userId);
             if(data.length > 0){
               const sortedData = data.sort((a, b) => {
-                // Convertir las fechas a objetos Date para compararlas
                 const dateA = new Date(a.start_date);
                 const dateB = new Date(b.start_date);
-                return dateB.getTime() - dateA.getTime(); // Orden descendente
+                return dateB.getTime() - dateA.getTime();
             });
               setDataHistory(sortedData)
               setIsLoading(false);
