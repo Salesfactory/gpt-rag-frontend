@@ -62,8 +62,25 @@
     }
 }
 
+.noneDisplay{
+    display: none;
+}
+
+.flexDescription{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
 .conversationIsLoading{
-    display: "none";
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    max-height: 1024px;
+    padding-top: 60px;
 }
 
 .chatMessageStream {
