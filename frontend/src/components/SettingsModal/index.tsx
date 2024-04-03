@@ -175,7 +175,7 @@ const SettingsModal = ({ user }: Props) => {
                                         min={0}
                                         max={1}
                                         step={0.1}
-                                        defaultValue={0}
+                                        value={parseFloat(temperature)}
                                         showValue
                                         snapToStep
                                         onChange={e => handleSetTemperature(e)}
@@ -185,7 +185,7 @@ const SettingsModal = ({ user }: Props) => {
                                     <span>Variety Boost</span>
                                     <Checkbox
                                         label=""
-                                        checked={frequencyPenalty === "1"}
+                                        checked={frequencyPenalty == "1"}
                                         onChange={handleSetFrequencyPenalty}
                                         onRenderLabel={() => onRenderLabel(frequencyPenaltyDialog, "Frequency Penalty")}
                                     />
@@ -194,7 +194,7 @@ const SettingsModal = ({ user }: Props) => {
                                     <span>Topic Explorer</span>
                                     <Checkbox
                                         label=""
-                                        checked={presencePenalty === "1"}
+                                        checked={presencePenalty == "1"}
                                         onChange={handleSetPresencePenalty}
                                         onRenderLabel={() => onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
                                     />
