@@ -7,7 +7,9 @@ import {
     ChatRequestGpt, 
     GetSettingsProps, 
     PostSettingsProps,
-    ConversationHistoryItem
+    ConversationHistoryItem,
+    ConversationChatItem,
+    ChatTurn
 } from "./models";
 
 export async function getSettings({ user }: GetSettingsProps): Promise<any> {
@@ -85,9 +87,45 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
     if (response.status > 299 || !response.ok) {
         throw Error(parsedResponse.error || "Unknown error");
     }
-
     return parsedResponse;
 }
+
+export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<ChatTurn[]> {
+    const response = await fetch(`/api/get-chat-conversation?id=${chatId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
+        }
+    });
+
+    const responseData = await response.json();
+    const history = responseData.history;
+    
+    const conversationItems: ChatTurn[] = [];
+    let currentUserMessage = '';
+    let currentBotMessage = '';
+
+    history.forEach((item: any) => {
+        if (item.role === 'user') {
+            currentUserMessage = item.content;
+        } else if (item.role === 'assistant') {
+            currentBotMessage = item.content;
+            if (currentUserMessage !== '' || currentBotMessage !== '') {
+                conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
+                currentUserMessage = '';
+                currentBotMessage = '';
+            }
+        }
+    });
+
+    if (currentUserMessage !== '' || currentBotMessage !== '') {
+        conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
+    }
+
+    return conversationItems;
+}
+
 
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
     const response = await fetch("/api/get-chat-history", {

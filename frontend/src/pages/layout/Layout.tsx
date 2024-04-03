@@ -54,10 +54,10 @@ const Layout = () => {
                         </ul>
     */}
                     </nav>
-                    <div>
+                    <div className={styles.layoutOptions}>
                         {/*  needs an user to be sent ↓ */}
-                        <SettingsModal user={null} />
                         <ChatHistoryButton onClick={handleShowHistoryPanel}/>
+                        <SettingsModal user={null} />
                     </div>
                 </div>
             </header>

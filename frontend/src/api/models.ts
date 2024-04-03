@@ -10,6 +10,11 @@ export type ConversationHistoryItem = {
     content: string,
 };
 
+export type ConversationChatItem = {
+    role: string,
+    content: string
+}
+
 export type AskRequestOverrides = {
     semanticRanker?: boolean;
     semanticCaptions?: boolean;

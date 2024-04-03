@@ -111,6 +111,37 @@ def getChatHistory():
     except Exception as e:
         logging.exception("[webbackend] exception in /get-chat-history")
         return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/get-chat-conversation", methods=["GET"])
+def getChatConversation():
+    chat_id = request.args.get('id')
+
+    if chat_id is None:
+        return jsonify({"error": "Missing chatId parameter"}), 400
+
+    client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
+    try:
+        keySecretName = 'orchestrator-host--functionKey'
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        return jsonify({"error": f"Error getting function key: {e}"}), 500
+
+    try:
+        url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
+        headers = {
+            'Content-Type': 'application/json',
+            'x-functions-key': functionKey            
+        }
+        payload = json.dumps({
+            "user_id": client_principal_id
+        })
+        response = requests.request("GET", url, headers=headers, data=payload)
+        logging.info(f"[webbackend] response: {response.text[:500]}...")   
+        
+        return response.text, response.status_code
+    except Exception as e:
+        logging.exception("[webbackend] exception in /get-chat-history")
+        return jsonify({"error": str(e)}), 500
 
 # methods to provide access to speech services and blob storage account blobs
 

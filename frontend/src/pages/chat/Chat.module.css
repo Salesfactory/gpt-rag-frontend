@@ -62,6 +62,10 @@
     }
 }
 
+.conversationIsLoading{
+    display: "none";
+}
+
 .chatMessageStream {
     flex-grow: 1;
     max-height: 1024px;
@@ -128,6 +132,10 @@
     align-self: flex-start;
     height: 95%;
     overflow-y: hidden;
+}
+
+.spinnerStyles{
+    position: absolute;
 }
 
 .commandsContainer::-webkit-scrollbar {
