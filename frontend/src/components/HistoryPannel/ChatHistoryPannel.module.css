@@ -75,6 +75,15 @@
 .conversationContainer{
     display: flex;
     border-radius: 5px;
+    margin-bottom: 4px;
+}
+
+.conversationSelected{
+    background-color: rgba(221, 221, 221, 0.349);
+    display: flex;
+    border-radius: 5px;
+    margin-bottom: 4px;
+    transition: .2s;
 }
 
 .conversationContainer:hover{

@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Checkbox, Panel, DefaultButton, TextField, SpinButton } from "@fluentui/react";
+import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
 import { SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
@@ -17,7 +17,6 @@ import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
-
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -42,8 +41,9 @@ const Chat = () => {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
 
-    const {showHistoryPanel} = useAppContext()
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
+    const { showHistoryPanel, dataConversation, setDataConversation, chatId, conversationIsLoading, setRefreshFetchHistorial, setChatId } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
@@ -61,7 +61,7 @@ const Chat = () => {
     const [userId, setUserId] = useState<string>("");
     const triggered = useRef(false);
 
-    const makeApiRequestGpt = async (question: string) => {
+    const makeApiRequestGpt = async (question: string, chatId: string | null) => {
         lastQuestionRef.current = question;
 
         error && setError(undefined);
@@ -70,11 +70,17 @@ const Chat = () => {
         setActiveAnalysisPanelTab(undefined);
 
         try {
-            const history: ChatTurn[] = answers.map(a => ({ user: a[0], bot: a[1].answer }));
+            let history: ChatTurn[] = [];
+            if (dataConversation.length > 0) {
+                history.push(...dataConversation);
+            } else {
+                history.push(...answers.map(a => ({ user: a[0], bot: a[1].answer })));
+            }
+            history.push({ user: question, bot: undefined });
             const request: ChatRequestGpt = {
-                history: [...history, { user: question, bot: undefined }],
+                history: history,
                 approach: Approaches.ReadRetrieveRead,
-                conversation_id: userId,
+                conversation_id: chatId !== null ? chatId : userId,
                 query: question,
                 overrides: {
                     promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
@@ -86,10 +92,22 @@ const Chat = () => {
                 }
             };
             const result = await chatApiGpt(request);
-            console.log(result);
-            console.log(result.answer);
+            const conditionOne = answers.map(a => ({ user: a[0] }));
+            if (conditionOne.length <= 0) {
+                setRefreshFetchHistorial(true);
+                setChatId(result.conversation_id);
+            } else {
+                setRefreshFetchHistorial(false);
+            }
             setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);
+            const response = {
+                answer: result.answer || "",
+                conversation_id: chatId,
+                data_points: [""],
+                thoughts: null
+            } as AskResponse;
+            setDataConversation([...dataConversation, { user: question, bot: response.answer }]);
 
             // Voice Synthesis
             if (speechSynthesisEnabled) {
@@ -163,6 +181,9 @@ const Chat = () => {
 
     useEffect(() => {
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
+        if (dataConversation.length > 0) {
+            chatContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
         if (triggered.current === false) {
             triggered.current = true;
             console.log(triggered.current);
@@ -176,7 +197,7 @@ const Chat = () => {
         } else {
             setPlaceholderText("Write your question here");
         }
-    }, [isLoading]);
+    }, [isLoading, dataConversation]);
 
     const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
         setPromptTemplate(newValue || "");
@@ -202,9 +223,9 @@ const Chat = () => {
         setUseSuggestFollowupQuestions(!!checked);
     };
 
-    const onExampleClicked = (example: string) => {
-        makeApiRequestGpt(example);
-    };
+    // const onExampleClicked = (example: string) => {
+    //     makeApiRequestGpt(example);
+    // };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         const response = await getPdf(fileName);
@@ -254,47 +275,73 @@ const Chat = () => {
     return (
         <div className={styles.mainContainer}>
             <div>
-                <div className={styles.commandsContainer}>
-                    {showHistoryPanel && (
-                        <ChatHistoryPanel />
-                    )}
-                </div>
+                <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel />}</div>
             </div>
             <div className={styles.container}>
-                <div className={styles.chatRoot} style={ showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
+                <div className={styles.chatRoot} style={showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
                     <div className={styles.chatContainer}>
-                        {!lastQuestionRef.current ? (
-                            <div className={styles.chatEmptyState}>
-                                    <div style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'}}>
-                                            <img height="40px" src={salesLogo}></img>
-                                            <h1>Clew</h1>
-                                            <p style={{ width: "80%", textAlign: "center" }}>Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver actionable insights.</p>
+                        {!lastQuestionRef.current && dataConversation.length <= 0 ? (
+                            <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>
+                                {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
+
+                                <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
+                                    <img height="40px" src={salesLogo}></img>
+                                    <h1>Clew</h1>
+                                    <p style={{ width: "80%", textAlign: "center" }}>
+                                        Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
+                                        actionable insights.
+                                    </p>
                                 </div>
                             </div>
                         ) : (
-                            <div className={styles.chatMessageStream}>
-                                {answers.map((answer, index) => (
-                                    <div key={index}>
-                                        <UserChatMessage message={answer[0]} />
-                                        <div className={styles.chatMessageGpt}>
-                                            <Answer
-                                                key={index}
-                                                answer={answer[1]}
-                                                isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                onFollowupQuestionClicked={q => makeApiRequestGpt(q)}
-                                                showFollowupQuestions={false}
-                                                showSources={true}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                            <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}>
+                                {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
+                                {dataConversation.length > 0
+                                    ? dataConversation.map((item, index) => {
+                                          const response = {
+                                              answer: item.bot || "",
+                                              conversation_id: chatId,
+                                              data_points: [""],
+                                              thoughts: null
+                                          } as AskResponse;
+                                          return (
+                                              <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                  <UserChatMessage message={item.user} />
+                                                  <div className={styles.chatMessageGpt}>
+                                                      <Answer
+                                                          key={index}
+                                                          answer={response}
+                                                          isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                          onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                          onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                          onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                          onFollowupQuestionClicked={q => makeApiRequestGpt(q, null)}
+                                                          showFollowupQuestions={false}
+                                                          showSources={true}
+                                                      />
+                                                  </div>
+                                              </div>
+                                          );
+                                      })
+                                    : answers.map((answer, index) => (
+                                          <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                              <UserChatMessage message={answer[0]} />
+                                              <div className={styles.chatMessageGpt}>
+                                                  <Answer
+                                                      key={index}
+                                                      answer={answer[1]}
+                                                      isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                      onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                      onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                      onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                      onFollowupQuestionClicked={q => makeApiRequestGpt(q, null)}
+                                                      showFollowupQuestions={false}
+                                                      showSources={true}
+                                                  />
+                                              </div>
+                                          </div>
+                                      ))}
+
                                 {isLoading && (
                                     <>
                                         <UserChatMessage message={lastQuestionRef.current} />
@@ -307,7 +354,10 @@ const Chat = () => {
                                     <>
                                         <UserChatMessage message={lastQuestionRef.current} />
                                         <div className={styles.chatMessageGptMinWidth}>
-                                            <AnswerError error={error_message_text + error.toString()} onRetry={() => makeApiRequestGpt(lastQuestionRef.current)} />
+                                            <AnswerError
+                                                error={error_message_text + error.toString()}
+                                                onRetry={() => makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null)}
+                                            />
                                         </div>
                                     </>
                                 ) : null}
@@ -316,7 +366,12 @@ const Chat = () => {
                         )}
 
                         <div className={styles.chatInput}>
-                            <QuestionInput clearOnSend placeholder={placeholderText} disabled={isLoading} onSend={question => makeApiRequestGpt(question)} />
+                            <QuestionInput
+                                clearOnSend
+                                placeholder={placeholderText}
+                                disabled={isLoading}
+                                onSend={question => makeApiRequestGpt(question, chatId !== "" ? chatId : null)}
+                            />
                         </div>
                     </div>
 

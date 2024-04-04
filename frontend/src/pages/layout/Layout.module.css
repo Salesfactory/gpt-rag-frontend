@@ -76,3 +76,7 @@
 .githubLogo {
     height: 20px;
 }
+
+.layoutOptions{
+    display: flex;
+}

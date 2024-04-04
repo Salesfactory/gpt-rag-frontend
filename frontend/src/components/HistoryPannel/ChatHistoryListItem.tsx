@@ -1,16 +1,19 @@
 import styles from "./ChatHistoryPannel.module.css";
-import { getChatHistory } from "../../api";
+import { getChatHistory, getChatFromHistoryPannelById } from "../../api";
 import { useEffect, useState } from "react";
 import { useAppContext } from "../../providers/AppProviders";
 import trash from "../../assets/trash.png"
 import pencil from "../../assets/pencil.png"
+import { Spinner } from "@fluentui/react";
 
 export const ChatHistoryPanelList = () => {
 
   const [hoveredItemIndex, setHoveredItemIndex] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const {dataHistory, setDataHistory, userId} = useAppContext()
+  const [chatSelected, setChatSelected] = useState("");
+  const [conversationsIds, setConversationsIds] = useState<String[]>([]);
+  const {dataHistory, setDataHistory, userId, dataConversation, setDataConversation, setConversationIsLoading, setChatId, chatId, refreshFetchHistorial, setRefreshFetchHistorial } = useAppContext()
 
 
   const handleMouseEnter = (index: string) => {
@@ -26,8 +29,17 @@ export const ChatHistoryPanelList = () => {
         try {
             const data = await getChatHistory(userId);
             if(data.length > 0){
-              setDataHistory(data)
+              const sortedData = data.sort((a, b) => {
+                const dateA = new Date(a.start_date);
+                const dateB = new Date(b.start_date);
+                return dateB.getTime() - dateA.getTime();
+            });
+              setDataHistory(sortedData)
               setIsLoading(false);
+              const ids = sortedData.map(data => (data.id))
+              if(!ids.every(id => conversationsIds.includes(id))){
+                setConversationsIds(ids)
+              }
             }else{
               setIsLoading(false);
               setErrorMessage("There are not conversation history yet.")
@@ -39,9 +51,47 @@ export const ChatHistoryPanelList = () => {
         }
     };
 
-  useEffect(() => {
-    fetchData();
-  }, [userId]);
+  const fetchConversation = async (chatConversationId: string) => {
+        try {
+          if(!chatSelected.includes(chatConversationId)){
+            setChatSelected(chatConversationId)
+            setChatId(chatConversationId);
+            setConversationIsLoading(true)
+            const data = await getChatFromHistoryPannelById(chatConversationId, userId);
+            if(data.length > 0){
+              setDataConversation(data)
+              setConversationIsLoading(false)
+            }
+          }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setConversationIsLoading(false)
+            setErrorMessage(`Was an error fetching data: ${error}`)
+        }
+    };
+
+    const handleRefreshHistoial = async () => {
+      if(refreshFetchHistorial){
+        await fetchData()
+        setRefreshFetchHistorial(false)
+      }else{
+        return
+      }
+    }
+  
+    useEffect(() => {
+
+      if(dataHistory.length <= 0 || !conversationsIds.every(id => dataHistory.some(item => item.id === id))){
+        fetchData();
+      }else{
+        setIsLoading(false)
+      }
+
+      if(refreshFetchHistorial){
+      handleRefreshHistoial();
+      }
+
+    }, [userId, dataHistory, conversationsIds, refreshFetchHistorial]);
 
   const months = [
     "January", "February", "March", "April",
@@ -67,7 +117,7 @@ export const ChatHistoryPanelList = () => {
       <div className={styles.listContainer}>
         {isLoading && (
           <div className={styles.loaderContainer}>
-            <div className={styles.customLoader}></div>
+            <Spinner size={3} />
           </div>
         )}
         {errorMessage !== null ? (
@@ -82,19 +132,20 @@ export const ChatHistoryPanelList = () => {
                     {data.map((conversation, index) => (
                       <div
                         key={conversation.id}
-                        className={styles.conversationContainer}
+                        className={chatSelected === conversation.id || chatId === conversation.id ? styles.conversationSelected : styles.conversationContainer}
                         onMouseEnter={() => handleMouseEnter(`${monthIndex}-${index}`)}
                         onMouseLeave={handleMouseLeave}
+                        onClick={() => fetchConversation(conversation.id)}
                       >
                         <button className={styles.buttonConversation}>
                           {conversation.content}
                         </button>
-                        {hoveredItemIndex === `${monthIndex}-${index}` && (
+                        {hoveredItemIndex === `${monthIndex}-${index}` || chatSelected === conversation.id || chatId === conversation.id ? (
                           <div className={styles.actionsButtons}>
                             <img className={styles.actionButton} src={trash} alt="Destroy" />
                             <img className={styles.actionButton} src={pencil} alt="Edit" />
                           </div>
-                        )}
+                        ):(<></>)}
                       </div>
                     ))}
                   </>
