@@ -5,6 +5,8 @@ interface AppContextType {
     setShowHistoryPanel: Dispatch<SetStateAction<boolean>>;
     refreshFetchHistorial: boolean;
     setRefreshFetchHistorial: Dispatch<SetStateAction<boolean>>;
+    chatIsCleaned: boolean;
+    setChatIsCleaned: Dispatch<SetStateAction<boolean>>;
     dataHistory: ConversationHistoryItem[];
     setDataHistory: Dispatch<SetStateAction<ConversationHistoryItem[]>>;
     userId: string;
@@ -29,6 +31,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [userId, setUserId] = useState<string>("00000000-0000-0000-0000-000000000000");
     const [chatId, setChatId] = useState<string>("");
     const [conversationIsLoading, setConversationIsLoading] = useState<boolean>(false);
+    const [chatIsCleaned, setChatIsCleaned] = useState<boolean>(false);
     const [chatSelected, setChatSelected] = useState("");
 
     return (
@@ -49,7 +52,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 refreshFetchHistorial,
                 setRefreshFetchHistorial,
                 chatSelected,
-                setChatSelected
+                setChatSelected,
+                chatIsCleaned,
+                setChatIsCleaned
             }}
         >
             {children}
