@@ -162,9 +162,7 @@ const Chat = () => {
             setAnswers([]);
             setDataConversation([]);
             setChatIsCleaned(true);
-            console.log("Es true");
         } else {
-            console.log("Es false");
             return;
         }
     };
