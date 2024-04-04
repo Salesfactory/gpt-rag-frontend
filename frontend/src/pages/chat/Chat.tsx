@@ -272,6 +272,10 @@ const Chat = () => {
         setSelectedAnswer(index);
     };
 
+    const hideTab = () => {
+        setActiveAnalysisPanelTab(undefined);
+    };
+
     return (
         <div className={styles.mainContainer}>
             <div>
@@ -384,6 +388,7 @@ const Chat = () => {
                             answer={answers[selectedAnswer][1]}
                             activeTab={activeAnalysisPanelTab}
                             fileType={fileType}
+                            onHideTab={hideTab}
                         />
                     )}
 
