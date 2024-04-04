@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
-import { SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
+import { AddRegular, SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
 
@@ -43,7 +43,8 @@ const Chat = () => {
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
-    const { showHistoryPanel, dataConversation, setDataConversation, chatId, conversationIsLoading, setRefreshFetchHistorial, setChatId } = useAppContext();
+    const { showHistoryPanel, dataConversation, setDataConversation, chatId, conversationIsLoading, setRefreshFetchHistorial, setChatId, setChatSelected } =
+        useAppContext();
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
@@ -149,6 +150,22 @@ const Chat = () => {
         setActiveAnalysisPanelTab(undefined);
         setAnswers([]);
         setUserId("");
+    };
+
+    const handleNewChat = () => {
+        if (lastQuestionRef.current || dataConversation.length > 0) {
+            lastQuestionRef.current = "";
+            error && setError(undefined);
+            setActiveCitation(undefined);
+            setActiveAnalysisPanelTab(undefined);
+            setAnswers([]);
+            setDataConversation([]);
+            setChatId("");
+            setUserId("");
+            setChatSelected("");
+        } else {
+            return;
+        }
     };
 
     /**Get Pdf */
@@ -364,8 +381,13 @@ const Chat = () => {
                                 <div ref={chatMessageStreamEnd} />
                             </div>
                         )}
-
                         <div className={styles.chatInput}>
+                            <button
+                                className={lastQuestionRef.current || dataConversation.length > 0 ? styles.newChatButton : styles.newChatButtonDisabled}
+                                onClick={handleNewChat}
+                            >
+                                <AddRegular />
+                            </button>
                             <QuestionInput
                                 clearOnSend
                                 placeholder={placeholderText}
