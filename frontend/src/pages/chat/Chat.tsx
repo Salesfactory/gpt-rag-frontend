@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
-import { AddRegular, SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
+import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
 
@@ -43,8 +43,18 @@ const Chat = () => {
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
-    const { showHistoryPanel, dataConversation, setDataConversation, chatId, conversationIsLoading, setRefreshFetchHistorial, setChatId, setChatSelected } =
-        useAppContext();
+    const {
+        showHistoryPanel,
+        dataConversation,
+        setDataConversation,
+        chatId,
+        conversationIsLoading,
+        setRefreshFetchHistorial,
+        setChatId,
+        setChatSelected,
+        setChatIsCleaned,
+        chatIsCleaned
+    } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
@@ -143,17 +153,22 @@ const Chat = () => {
     };
 
     const clearChat = () => {
-        console.log("file is" + fileType);
-        lastQuestionRef.current = "";
-        error && setError(undefined);
-        setActiveCitation(undefined);
-        setActiveAnalysisPanelTab(undefined);
-        setAnswers([]);
-        setUserId("");
+        if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
+            console.log("file is" + fileType);
+            lastQuestionRef.current = "";
+            error && setError(undefined);
+            setActiveCitation(undefined);
+            setActiveAnalysisPanelTab(undefined);
+            setAnswers([]);
+            setDataConversation([]);
+            setChatIsCleaned(true);
+        } else {
+            return;
+        }
     };
 
     const handleNewChat = () => {
-        if (lastQuestionRef.current || dataConversation.length > 0) {
+        if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             lastQuestionRef.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
@@ -163,6 +178,7 @@ const Chat = () => {
             setChatId("");
             setUserId("");
             setChatSelected("");
+            setChatIsCleaned(false);
         } else {
             return;
         }
@@ -382,12 +398,24 @@ const Chat = () => {
                             </div>
                         )}
                         <div className={styles.chatInput}>
-                            <button
-                                className={lastQuestionRef.current || dataConversation.length > 0 ? styles.newChatButton : styles.newChatButtonDisabled}
-                                onClick={handleNewChat}
-                            >
-                                <AddRegular />
-                            </button>
+                            <div className={styles.buttonsActions}>
+                                <button
+                                    className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
+                                    onClick={clearChat}
+                                >
+                                    <BroomRegular />
+                                </button>
+                                <button
+                                    className={
+                                        lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned
+                                            ? styles.newChatButton
+                                            : styles.newChatButtonDisabled
+                                    }
+                                    onClick={handleNewChat}
+                                >
+                                    <AddRegular />
+                                </button>
+                            </div>
                             <QuestionInput
                                 clearOnSend
                                 placeholder={placeholderText}

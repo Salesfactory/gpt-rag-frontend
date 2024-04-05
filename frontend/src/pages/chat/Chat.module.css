@@ -129,7 +129,6 @@
     border: none;
     padding: 8px 7px 1px;
     border-radius: 5px;
-    margin-right: 10px;
     cursor: pointer;
     background: radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%);
     transition: .3s;
@@ -145,10 +144,38 @@
     border: none;
     padding: 8px 7px 1px;
     border-radius: 5px;
-    margin-right: 10px;
     transition: .3s;
 }
 
+.clearChatButtonDisabled{
+    color: #a3a3a3;
+    font-size: 24px;
+    border: none;
+    padding: 8px 7px 1px;
+    border-radius: 5px;
+    transition: .3s;
+    margin-bottom: 5px;
+}
+
+.buttonsActions{
+    margin-right: -10px;
+}
+
+.clearChatButton {
+    color: #ffffff;
+    font-size: 24px;
+    border: none;
+    padding: 8px 7px 1px;
+    border-radius: 5px;
+    cursor: pointer;
+    background: radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%);
+    transition: .3s;
+    margin-bottom: 5px;
+}
+
+.clearChatButton:hover {
+    color: #8DDDD8;
+}
 .chatAnalysisPanel {
     flex: 1;
     overflow-y: auto;
