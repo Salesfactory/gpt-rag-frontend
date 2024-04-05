@@ -154,7 +154,6 @@ const Chat = () => {
 
     const clearChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
-            console.log("file is" + fileType);
             lastQuestionRef.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
