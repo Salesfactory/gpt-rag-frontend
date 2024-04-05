@@ -112,16 +112,15 @@ def getChatHistory():
         logging.exception("[webbackend] exception in /get-chat-history")
         return jsonify({"error": str(e)}), 500
     
-@app.route("/api/get-chat-conversation", methods=["GET"])
-def getChatConversation():
-    chat_id = request.args.get('id')
+@app.route("/api/get-chat-conversation/<chat_id>", methods=["GET"])
+def getChatConversation(chat_id):
 
     if chat_id is None:
         return jsonify({"error": "Missing chatId parameter"}), 400
 
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     try:
-        keySecretName = 'orchestrator-host--functionKey'
+        keySecretName = 'orchestrator-host--conversations'
         functionKey = get_secret(keySecretName)
     except Exception as e:
         return jsonify({"error": f"Error getting function key: {e}"}), 500
