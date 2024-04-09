@@ -3,6 +3,8 @@ import { ConversationHistoryItem, ConversationChatItem, ChatTurn } from "../api"
 interface AppContextType {
     showHistoryPanel: boolean;
     setShowHistoryPanel: Dispatch<SetStateAction<boolean>>;
+    showFeedbackRatingPanel: boolean;
+    setShowFeedbackRatingPanel: Dispatch<SetStateAction<boolean>>;
     refreshFetchHistorial: boolean;
     setRefreshFetchHistorial: Dispatch<SetStateAction<boolean>>;
     chatIsCleaned: boolean;
@@ -25,6 +27,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [showHistoryPanel, setShowHistoryPanel] = useState<boolean>(true);
+    const [showFeedbackRatingPanel, setShowFeedbackRatingPanel] = useState<boolean>(false);
     const [refreshFetchHistorial, setRefreshFetchHistorial] = useState<boolean>(false);
     const [dataHistory, setDataHistory] = useState<ConversationHistoryItem[]>([]);
     const [dataConversation, setDataConversation] = useState<ChatTurn[]>([]);
@@ -39,6 +42,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             value={{
                 showHistoryPanel,
                 setShowHistoryPanel,
+                showFeedbackRatingPanel,
+                setShowFeedbackRatingPanel,
                 dataHistory,
                 setDataHistory,
                 userId,

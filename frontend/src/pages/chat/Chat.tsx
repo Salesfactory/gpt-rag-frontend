@@ -17,6 +17,7 @@ import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
+import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -45,6 +46,7 @@ const Chat = () => {
 
     const {
         showHistoryPanel,
+        showFeedbackRatingPanel,
         dataConversation,
         setDataConversation,
         chatId,
@@ -309,6 +311,9 @@ const Chat = () => {
         <div className={styles.mainContainer}>
             <div>
                 <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel />}</div>
+            </div>
+            <div>
+                <div className={styles.commandsContainer}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
             </div>
             <div className={styles.container}>
                 <div className={styles.chatRoot} style={showHistoryPanel ? { alignSelf: "flex-start" } : {}}>

@@ -56,7 +56,7 @@ export const ChatHistoryPanelList = () => {
         } catch (error) {
             console.error("Error fetching data:", error);
             setIsLoading(false);
-            setErrorMessage(`Was an error fetching data: ${error}`);
+            setErrorMessage(`No history found`);
         }
     };
 

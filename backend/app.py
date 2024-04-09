@@ -18,6 +18,7 @@ SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
 ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI', default="")
 SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/settings"
+FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/feedback"
 HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/conversations"
 STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
@@ -121,7 +122,7 @@ def getChatConversation():
 
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     try:
-        keySecretName = 'orchestrator-host--functionKey'
+        keySecretName = 'orchestrator-host--conversations'
         functionKey = get_secret(keySecretName)
     except Exception as e:
         return jsonify({"error": f"Error getting function key: {e}"}), 500
@@ -266,6 +267,56 @@ def setSettings():
     except Exception as e:
         logging.exception("[webbackend] exception in /api/settings")
         return jsonify({"error": str(e)}), 500
+    
+
+@app.route("/api/feedback", methods=["POST"])
+def setFeedback():
+    client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
+    client_principal_name = request.headers.get('X-MS-CLIENT-PRINCIPAL-NAME')
+
+    if not client_principal_id or not client_principal_name:
+        return jsonify({"error": "Missing required parameters, client_principal_id or client_principal_name"}), 400
+
+    conversation_id = request.json["conversation_id"]
+    question = request.json["question"]
+    answer = request.json["answer"]
+    category = request.json["category"]
+    feedback = request.json["feedback"]
+    rating = request.json["rating"]
+    
+    if not conversation_id or not question or not answer or not category:
+        return jsonify({"error": "Missing required parameters, temperature, presence_penalty or frequency_penalty"}), 400
+    
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = 'orchestrator-host--feedback'
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/orchestrator-host--feedback")
+        return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
+
+    try:
+        url = FEEDBACK_ENDPOINT
+        payload = json.dumps({
+            "conversation_id": conversation_id,
+            "question": question,
+            "answer": answer,
+            "category": category,
+            "feedback": feedback,
+            "rating": rating,
+        })
+        headers = {
+            'Content-Type': 'application/json',
+            'x-functions-key': functionKey            
+        }
+        response = requests.request("POST", url, headers=headers, data=payload)
+        logging.info(f"[webbackend] response: {response.text[:500]}...")   
+        return(response.text)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/feedback")
+        return jsonify({"error": str(e)}), 500
+
     
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
