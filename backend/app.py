@@ -122,7 +122,7 @@ def getChatConversation():
 
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     try:
-        keySecretName = 'orchestrator-host--conversations'
+        keySecretName = 'orchestrator-host--functionKey'
         functionKey = get_secret(keySecretName)
     except Exception as e:
         return jsonify({"error": f"Error getting function key: {e}"}), 500
