@@ -8,20 +8,27 @@ import styles from "./Layout.module.css";
 import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistoryButton";
 import { FeedbackRatingButton } from "../../components/FeedbackRating/FeedbackRatingButton";
 import { useAppContext } from "../../providers/AppProviders";
-
-import SettingsModal from "../../components/SettingsModal";
+import { SettingsButton } from "../../components/SettingsButton";
 
 const Layout = () => {
-    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel } = useAppContext();
+    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } = useAppContext();
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
         setShowFeedbackRatingPanel(false);
+        setSettingsPanel(false);
     };
 
     const handleShowFeedbackRatingPanel = () => {
         setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
+        setSettingsPanel(false);
         setShowHistoryPanel(false);
+    };
+
+    const handleShowSettings = () => {
+        setSettingsPanel(!settingsPanel);
+        setShowHistoryPanel(false);
+        setShowFeedbackRatingPanel(false);
     };
 
     return (
@@ -61,10 +68,9 @@ const Layout = () => {
     */}
                     </nav>
                     <div className={styles.layoutOptions}>
-                        {/*  needs an user to be sent ↓ */}
                         <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
                         <ChatHistoryButton onClick={handleShowHistoryPanel} />
-                        <SettingsModal user={null} />
+                        <SettingsButton onClick={handleShowSettings} />
                     </div>
                 </div>
             </header>

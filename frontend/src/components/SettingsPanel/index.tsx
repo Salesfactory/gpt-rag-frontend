@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { SettingsFilled, SaveFilled, ErrorCircleFilled } from "@fluentui/react-icons";
+import { AddFilled, SaveFilled, ErrorCircleFilled } from "@fluentui/react-icons";
 import { Checkbox } from "@fluentui/react/lib/Checkbox";
 import { TooltipHost, TooltipDelay, DirectionalHint, DefaultButton, Modal, Stack, Text, Spinner, Slider } from "@fluentui/react";
 import styles from "./SettingsModal.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
+import { useAppContext } from "../../providers/AppProviders";
 
 interface Props {
     user: {
@@ -29,8 +30,14 @@ const itemClass = mergeStyles({
     padding: "10px 0"
 });
 
-const SettingsModal = ({ user }: Props) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+export const SettingsPanel = () => {
+    const { userId, userName, setSettingsPanel } = useAppContext();
+
+    const user = {
+        id: userId,
+        name: userName
+    };
+
     const [temperature, setTemperature] = useState("0");
     const [presencePenalty, setPresencePenalty] = useState("0");
     const [frequencyPenalty, setFrequencyPenalty] = useState("0");
@@ -57,15 +64,7 @@ const SettingsModal = ({ user }: Props) => {
 
         setLoading(true);
         fetchData();
-    }, [user]);
-
-    const showModal = () => {
-        setIsModalOpen(true);
-    };
-
-    const hideModal = () => {
-        setIsModalOpen(false);
-    };
+    }, []);
 
     const handleSubmit = () => {
         if ((!temperature && temperature != "0") || (!presencePenalty && presencePenalty != "0") || (!frequencyPenalty && frequencyPenalty != "0")) {
@@ -83,8 +82,6 @@ const SettingsModal = ({ user }: Props) => {
             presence_penalty: parsedPresencePenalty,
             frequency_penalty: parsedFrequencyPenalty
         });
-
-        hideModal();
     };
 
     const validateValue = (val: any, func: any) => {
@@ -135,81 +132,81 @@ const SettingsModal = ({ user }: Props) => {
         </TooltipHost>
     );
 
+    const handleClosePanel = () => {
+        setSettingsPanel(false);
+    };
+
     return (
         <div>
-            <DefaultButton onClick={showModal} className={styles.button}>
-                <SettingsFilled />
-                <Text className={styles.buttonText}>Settings</Text>
-            </DefaultButton>
-
-            <Modal isOpen={isModalOpen} onDismiss={hideModal} isBlocking>
-                <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
-                    <Stack.Item grow className={styles["w-100"]}>
-                        <div className="header">
-                            <h2>Adjust your settings</h2>
-                            <DefaultButton onClick={hideModal} className={styles.closeButton}>
-                                &#10006;
+            <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
+                <Stack.Item grow className={styles["w-100"]}>
+                    <div className={styles.header2}>
+                        <div className={styles.title}>Configuration</div>
+                        <div className={styles.buttons}>
+                            <div></div>
+                            <div className={styles.closeButtonContainer}>
+                                <button className={styles.closeButton2} aria-label="hide button" onClick={handleClosePanel}>
+                                    <AddFilled />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {loading ? (
+                        <div>
+                            <Spinner
+                                styles={{
+                                    root: {
+                                        marginTop: "50px"
+                                    }
+                                }}
+                            />
+                            <h3 style={{ textAlign: "center" }}>Loading your settings</h3>
+                        </div>
+                    ) : (
+                        <div className={styles["w-100"]}>
+                            <div className={styles["w-100"]}>
+                                <div className={itemClass}>
+                                    <span>Creativity Scale</span>
+                                    {onRenderLabel(temperatureDialog, "Temperature")}
+                                </div>
+                                <Slider
+                                    className={styles["w-100"]}
+                                    label=""
+                                    min={0}
+                                    max={1}
+                                    step={0.1}
+                                    value={parseFloat(temperature)}
+                                    showValue
+                                    snapToStep
+                                    onChange={e => handleSetTemperature(e)}
+                                />
+                            </div>
+                            <div className={itemClass}>
+                                <span>Variety Boost</span>
+                                <Checkbox
+                                    label=""
+                                    checked={frequencyPenalty == "1"}
+                                    onChange={handleSetFrequencyPenalty}
+                                    onRenderLabel={() => onRenderLabel(frequencyPenaltyDialog, "Frequency Penalty")}
+                                />
+                            </div>
+                            <div className={itemClass}>
+                                <span>Topic Explorer</span>
+                                <Checkbox
+                                    label=""
+                                    checked={presencePenalty == "1"}
+                                    onChange={handleSetPresencePenalty}
+                                    onRenderLabel={() => onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
+                                />
+                            </div>
+                            <DefaultButton className={styles.saveButton} onClick={handleSubmit}>
+                                <SaveFilled />
+                                &#8202;&#8202;Save
                             </DefaultButton>
                         </div>
-                        {loading ? (
-                            <div>
-                                <Spinner
-                                    styles={{
-                                        root: {
-                                            marginTop: "50px"
-                                        }
-                                    }}
-                                />
-                                <h3 style={{ textAlign: "center" }}>Loading your settings</h3>
-                            </div>
-                        ) : (
-                            <div className={styles["w-100"]}>
-                                <div className={styles["w-100"]}>
-                                    <div className={itemClass}>
-                                        <span>Creativity Scale</span>
-                                        {onRenderLabel(temperatureDialog, "Temperature")}
-                                    </div>
-                                    <Slider
-                                        className={styles["w-100"]}
-                                        label=""
-                                        min={0}
-                                        max={1}
-                                        step={0.1}
-                                        value={parseFloat(temperature)}
-                                        showValue
-                                        snapToStep
-                                        onChange={e => handleSetTemperature(e)}
-                                    />
-                                </div>
-                                <div className={itemClass}>
-                                    <span>Variety Boost</span>
-                                    <Checkbox
-                                        label=""
-                                        checked={frequencyPenalty == "1"}
-                                        onChange={handleSetFrequencyPenalty}
-                                        onRenderLabel={() => onRenderLabel(frequencyPenaltyDialog, "Frequency Penalty")}
-                                    />
-                                </div>
-                                <div className={itemClass}>
-                                    <span>Topic Explorer</span>
-                                    <Checkbox
-                                        label=""
-                                        checked={presencePenalty == "1"}
-                                        onChange={handleSetPresencePenalty}
-                                        onRenderLabel={() => onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
-                                    />
-                                </div>
-                                <DefaultButton className={styles.saveButton} onClick={handleSubmit}>
-                                    <SaveFilled />
-                                    &#8202;&#8202;Save
-                                </DefaultButton>
-                            </div>
-                        )}
-                    </Stack.Item>
-                </Stack>
-            </Modal>
+                    )}
+                </Stack.Item>
+            </Stack>
         </div>
     );
 };
-
-export default SettingsModal;

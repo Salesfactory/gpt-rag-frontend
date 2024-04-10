@@ -18,6 +18,7 @@ import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
+import { SettingsPanel } from "../../components/SettingsPanel";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -55,7 +56,8 @@ const Chat = () => {
         setChatId,
         setChatSelected,
         setChatIsCleaned,
-        chatIsCleaned
+        chatIsCleaned,
+        settingsPanel,
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -156,7 +158,6 @@ const Chat = () => {
 
     const clearChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
-            console.log("file is" + fileType);
             lastQuestionRef.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
@@ -307,6 +308,10 @@ const Chat = () => {
         setSelectedAnswer(index);
     };
 
+    const hideTab = () => {
+        setActiveAnalysisPanelTab(undefined);
+    };
+
     return (
         <div className={styles.mainContainer}>
             <div>
@@ -314,6 +319,9 @@ const Chat = () => {
             </div>
             <div>
                 <div className={styles.commandsContainer}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
+            </div>
+            <div>
+                <div className={styles.commandsContainer}>{settingsPanel && <SettingsPanel />}</div>
             </div>
             <div className={styles.container}>
                 <div className={styles.chatRoot} style={showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
@@ -439,6 +447,7 @@ const Chat = () => {
                             answer={answers[selectedAnswer][1]}
                             activeTab={activeAnalysisPanelTab}
                             fileType={fileType}
+                            onHideTab={hideTab}
                         />
                     )}
 

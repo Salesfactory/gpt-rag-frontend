@@ -91,7 +91,7 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
 }
 
 export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<ChatTurn[]> {
-    const response = await fetch(`/api/get-chat-conversation?id=${chatId}`, {
+    const response = await fetch(`/api/get-chat-conversation/${chatId}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
