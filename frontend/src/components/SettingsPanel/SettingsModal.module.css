@@ -32,7 +32,7 @@
 }
 
 .answerContainer {
-    padding: 40px;
+    padding: 10px 40px 40px 40px;
     background: rgb(249, 249, 249);
     box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
     outline: transparent solid 1px;
@@ -77,7 +77,7 @@
     border: none;
 }
 
-.header {
+.header2 {
     padding: 10px;
     display: flex;
 }
@@ -98,4 +98,38 @@
 
 .w-100 {
     width: 100%;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 24px;
+}
+
+.buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeButtonContainer:active{
+    background-color: rgba(214, 214, 214, 0.315);
+    border-radius: 5px;
+}
+
+.closeButton2{
+    border: none;
+    font-size: 25px;
+    color: #5da3cc;
+    background-color: transparent;
+    cursor: pointer;
+    transform: rotate(45deg);
+    margin-top: -10px;
+    padding-left: 30px;
 }

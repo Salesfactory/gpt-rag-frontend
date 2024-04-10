@@ -7,16 +7,20 @@ import github from "../../assets/github.svg";
 import styles from "./Layout.module.css";
 import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistoryButton";
 import { useAppContext } from "../../providers/AppProviders";
-
-import SettingsModal from "../../components/SettingsModal";
+import { SettingsButton } from "../../components/SettingsButton";
 
 const Layout = () => {
-
-    const {showHistoryPanel, setShowHistoryPanel} = useAppContext()
+    const { showHistoryPanel, setShowHistoryPanel, settingsPanel, setSettingsPanel } = useAppContext();
 
     const handleShowHistoryPanel = () => {
-        setShowHistoryPanel(!showHistoryPanel)
-    }
+        setShowHistoryPanel(!showHistoryPanel);
+        setSettingsPanel(false);
+    };
+
+    const handleShowSettings = () => {
+        setSettingsPanel(!settingsPanel);
+        setShowHistoryPanel(false);
+    };
 
     return (
         <div className={styles.layout}>
@@ -56,8 +60,8 @@ const Layout = () => {
                     </nav>
                     <div className={styles.layoutOptions}>
                         {/*  needs an user to be sent ↓ */}
-                        <ChatHistoryButton onClick={handleShowHistoryPanel}/>
-                        <SettingsModal user={null} />
+                        <ChatHistoryButton onClick={handleShowHistoryPanel} />
+                        <SettingsButton onClick={handleShowSettings} />
                     </div>
                 </div>
             </header>
