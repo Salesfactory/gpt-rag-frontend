@@ -184,20 +184,15 @@ const Chat = () => {
     };
 
     /**Get Pdf */
-    const getPdf = async (pdfName: string) => {
-        /** get file type */
-        let type = getFileType(pdfName);
+    const getPdf = async () => {
+        let type = getFileType("enfocate.pdf");
         setFileType(type);
-
         try {
-            const response = await fetch("/api/get-blob", {
-                method: "POST",
+            const response = await fetch("/api/get-pdf", {
+                method: "GET",
                 headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    blob_name: pdfName
-                })
+                    "Content-Type": "application/pdf"
+                }
             });
 
             if (!response.ok) {
@@ -210,6 +205,33 @@ const Chat = () => {
             throw new Error("Error en la obtención del Archivo.");
         }
     };
+
+    // const getPdf = async (pdfName: string) => {
+    //     /** get file type */
+    //     let type = getFileType(pdfName);
+    //     setFileType(type);
+
+    //     try {
+    //         const response = await fetch("/api/get-blob", {
+    //             method: "POST",
+    //             headers: {
+    //                 "Content-Type": "application/json"
+    //             },
+    //             body: JSON.stringify({
+    //                 blob_name: pdfName
+    //             })
+    //         });
+
+    //         if (!response.ok) {
+    //             throw new Error(`Error fetching DOC: ${response.status}`);
+    //         }
+
+    //         return await response.blob();
+    //     } catch (error) {
+    //         console.error(error);
+    //         throw new Error("Error en la obtención del Archivo.");
+    //     }
+    // };
 
     useEffect(() => {
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -259,13 +281,16 @@ const Chat = () => {
     //     makeApiRequestGpt(example);
     // };
 
-    const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        const response = await getPdf(fileName);
+    const onShowCitation = async (citation: string, index: number) => {
+        const response = await getPdf();
+        console.log("Respuesta del pdf:", response);
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
+            console.log("respuesta 1");
         } else {
-            //var file = new Blob([response as BlobPart], { type: "application/pdf" });
-            var file = new Blob([response as BlobPart]);
+            console.log("respuesta 2");
+            var file = new Blob([response as BlobPart], { type: "application/pdf" });
+            // var file = new Blob([response as BlobPart]);
 
             readFile(file);
 
@@ -348,7 +373,7 @@ const Chat = () => {
                                                           key={index}
                                                           answer={response}
                                                           isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                          onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                          onCitationClicked={() => onShowCitation("enfocate.pdf", index)}
                                                           onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                           onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                           onFollowupQuestionClicked={q => makeApiRequestGpt(q, null)}
@@ -367,7 +392,7 @@ const Chat = () => {
                                                       key={index}
                                                       answer={answer[1]}
                                                       isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                      onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                      onCitationClicked={() => onShowCitation("enfocate.pdf", index)}
                                                       onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                       onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                       onFollowupQuestionClicked={q => makeApiRequestGpt(q, null)}
@@ -431,7 +456,7 @@ const Chat = () => {
                     {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}
-                            activeCitation={activeCitation}
+                            activeCitation={"enfocate.pdf"}
                             onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
                             citationHeight="810px"
                             answer={answers[selectedAnswer][1]}

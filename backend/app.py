@@ -4,7 +4,7 @@ import time
 import logging
 import requests
 import json
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, send_file
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.keyvault.secrets import SecretClient
@@ -40,6 +40,12 @@ SPEECH_SYNTHESIS_VOICE_NAME = os.getenv('SPEECH_SYNTHESIS_VOICE_NAME')
 
 app = Flask(__name__)
 CORS(app)
+
+pdf_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "./pdfs/enfocate.pdf"))
+
+@app.route("/api/get-pdf")
+def get_pdf():
+    return send_file(pdf_path)
 
 @app.route("/", defaults={"path": "index.html"})
 @app.route("/<path:path>")
