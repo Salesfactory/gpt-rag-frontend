@@ -17,6 +17,7 @@ import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
+import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
 
 const userLanguage = navigator.language;
@@ -46,6 +47,7 @@ const Chat = () => {
 
     const {
         showHistoryPanel,
+        showFeedbackRatingPanel,
         dataConversation,
         setDataConversation,
         chatId,
@@ -314,6 +316,9 @@ const Chat = () => {
         <div className={styles.mainContainer}>
             <div>
                 <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel />}</div>
+            </div>
+            <div>
+                <div className={styles.commandsContainer}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
             </div>
             <div>
                 <div className={styles.commandsContainer}>{settingsPanel && <SettingsPanel />}</div>
