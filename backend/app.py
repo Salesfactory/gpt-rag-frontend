@@ -143,6 +143,28 @@ def getChatConversation(chat_id):
         logging.exception("[webbackend] exception in /get-chat-history")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/delete-chat-conversation/<chat_id>", methods=["DELETE"])
+def deleteChatConversation(chat_id):
+    try:
+        client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
+        keySecretName = 'orchestrator-host--conversations'
+        functionKey = get_secret(keySecretName)
+
+        url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
+        headers = {
+            'Content-Type': 'application/json',
+            'x-functions-key': functionKey
+        }
+        payload = json.dumps({
+            "user_id": client_principal_id
+        })
+
+        response = requests.delete(url, headers=headers, data=payload)
+        return response.text, response.status_code
+    except Exception as e:
+        logging.exception("[webbackend] exception in /delete-chat-conversation")
+        return jsonify({"error": str(e)}), 500
+
 # methods to provide access to speech services and blob storage account blobs
 
 @app.route("/api/get-speech-token", methods=["GET"])

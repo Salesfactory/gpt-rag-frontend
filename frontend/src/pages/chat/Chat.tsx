@@ -57,7 +57,7 @@ const Chat = () => {
         setChatSelected,
         setChatIsCleaned,
         chatIsCleaned,
-        settingsPanel,
+        settingsPanel
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -315,7 +315,7 @@ const Chat = () => {
     return (
         <div className={styles.mainContainer}>
             <div>
-                <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel />}</div>
+                <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel functionDeleteChat={handleNewChat} />}</div>
             </div>
             <div>
                 <div className={styles.commandsContainer}>{showFeedbackRatingPanel && <FeedbackRating />}</div>

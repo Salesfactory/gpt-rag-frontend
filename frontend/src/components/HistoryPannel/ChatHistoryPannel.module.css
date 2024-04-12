@@ -67,9 +67,21 @@
     cursor: pointer;
 }
 
+.buttonConversationSelected{
+    border: none;
+    padding: 10px;
+    text-align: left;
+    width: 100%;
+    background-color: transparent;
+    cursor: pointer;
+    font-weight: bold;
+}
 
 .actionsButtons{
     display: flex;
+    flex-direction: row;
+    justify-self: center;
+    justify-content: center;
 }
 
 .conversationContainer{
@@ -102,6 +114,7 @@
     border: 1.5px solid rgb(231, 231, 231);
     margin-right: 5px;
     transition: .3s;
+    width: 28px;
 }
 
 .actionButton:hover{
