@@ -17,6 +17,8 @@ import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
+import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
+import { SettingsPanel } from "../../components/SettingsPanel";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -45,6 +47,7 @@ const Chat = () => {
 
     const {
         showHistoryPanel,
+        showFeedbackRatingPanel,
         dataConversation,
         setDataConversation,
         chatId,
@@ -53,7 +56,8 @@ const Chat = () => {
         setChatId,
         setChatSelected,
         setChatIsCleaned,
-        chatIsCleaned
+        chatIsCleaned,
+        settingsPanel
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -202,7 +206,7 @@ const Chat = () => {
             return await response.blob();
         } catch (error) {
             console.error(error);
-            throw new Error("Error en la obtención del Archivo.");
+            throw new Error("Error fetching DOC.");
         }
     };
 
@@ -338,6 +342,12 @@ const Chat = () => {
             <div>
                 <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel />}</div>
             </div>
+            <div>
+                <div className={styles.commandsContainer}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
+            </div>
+            <div>
+                <div className={styles.commandsContainer}>{settingsPanel && <SettingsPanel />}</div>
+            </div>
             <div className={styles.container}>
                 <div className={styles.chatRoot} style={showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
                     <div className={styles.chatContainer}>
@@ -452,7 +462,29 @@ const Chat = () => {
                             />
                         </div>
                     </div>
-
+                    {dataConversation.length > 0 &&
+                        fileType !== "" &&
+                        activeAnalysisPanelTab &&
+                        dataConversation.map(data => {
+                            const response = {
+                                answer: data.bot || "",
+                                conversation_id: chatId,
+                                data_points: [""],
+                                thoughts: null
+                            } as AskResponse;
+                            return (
+                                <AnalysisPanel
+                                    className={styles.chatAnalysisPanel}
+                                    activeCitation={activeCitation}
+                                    onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
+                                    citationHeight="810px"
+                                    answer={response}
+                                    activeTab={activeAnalysisPanelTab}
+                                    fileType={fileType}
+                                    onHideTab={hideTab}
+                                />
+                            );
+                        })}
                     {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}

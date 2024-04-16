@@ -160,3 +160,42 @@ export function getCitationFilePath(citation: string): string {
 
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
+
+export async function postFeedbackRating({ 
+    user,
+    conversation_id,
+    feedback_message,
+    question,
+    answer,
+    rating,
+    category,
+ }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    return new Promise(async (resolve, reject) => {
+        try {
+            const response = await fetch("/api/feedback", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                    "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+                },
+                body: JSON.stringify({
+                    conversation_id: conversation_id,
+                    feedback: feedback_message,
+                    question: question,
+                    answer:answer,
+                    rating: rating,
+                    category: category
+                })
+            });
+
+            const fetchedData = await response.json();
+            resolve(fetchedData);
+        } catch (error) {
+            console.error("Error posting feedback", error);
+            reject(error);
+        }
+    });
+}
