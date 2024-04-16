@@ -1,11 +1,36 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
+import { getChatHistory } from "../../api"; //FUNCION DE LA API
 import salesLogo from "../../img/logo.png";
 
 import github from "../../assets/github.svg";
 
 import styles from "./Layout.module.css";
+import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistoryButton";
+import { FeedbackRatingButton } from "../../components/FeedbackRating/FeedbackRatingButton";
+import { useAppContext } from "../../providers/AppProviders";
+import { SettingsButton } from "../../components/SettingsButton";
 
 const Layout = () => {
+    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } = useAppContext();
+
+    const handleShowHistoryPanel = () => {
+        setShowHistoryPanel(!showHistoryPanel);
+        setShowFeedbackRatingPanel(false);
+        setSettingsPanel(false);
+    };
+
+    const handleShowFeedbackRatingPanel = () => {
+        setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
+        setSettingsPanel(false);
+        setShowHistoryPanel(false);
+    };
+
+    const handleShowSettings = () => {
+        setSettingsPanel(!settingsPanel);
+        setShowHistoryPanel(false);
+        setShowFeedbackRatingPanel(false);
+    };
+
     return (
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>
@@ -42,7 +67,11 @@ const Layout = () => {
                         </ul>
     */}
                     </nav>
-                    <h4 className={styles.headerRightText}>Clew</h4>
+                    <div className={styles.layoutOptions}>
+                        <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
+                        <ChatHistoryButton onClick={handleShowHistoryPanel} />
+                        <SettingsButton onClick={handleShowSettings} />
+                    </div>
                 </div>
             </header>
 

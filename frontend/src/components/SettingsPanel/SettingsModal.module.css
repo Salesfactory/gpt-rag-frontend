@@ -1,0 +1,135 @@
+.button {
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+    gap: 6px;
+    cursor: pointer;
+    border: 1.5px solid rgb(231, 231, 231);
+    border-radius: 5px;
+    padding: 4px 12px;
+    transition: .2s;
+    background-color: white;
+    font-size: 24px;
+    width: 100%;
+    height: 35px;
+}
+
+.button:hover {
+    background-color: rgb(243, 243, 243);
+}
+
+.button:active {
+    background-color: white;
+}
+
+.buttonText {
+    font-weight: 500;
+    padding-left: 10px
+} 
+
+.disabled {
+    opacity: 0.4
+}
+
+.answerContainer {
+    padding: 10px 40px 40px 40px;
+    background: rgb(249, 249, 249);
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+    outline: transparent solid 1px;
+    width: 300px;
+}
+
+.saveButton {
+    background: rgb(0, 0, 0);
+    color: white;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 20px;
+    width: 100%;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.saveButton:hover {
+    background: rgb(0, 0, 0, 0.8);
+    color: white;
+}
+
+.closeButton {
+    background: rgb(249, 249, 249);
+    color: rgb(0, 0, 0);
+    font-size: 20px;
+    border: none;
+    cursor: pointer;
+    position: absolute;
+    top: 1rem;
+    right: 0;
+}
+
+.closeButton:hover {
+    background: rgb(249, 249, 249);
+    color: rgb(0, 0, 0, 0.8);
+}
+
+.closeButton:focus {
+    outline: none;
+    border: none;
+}
+
+.header2 {
+    padding: 10px;
+    display: flex;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 500;
+    padding-left: 10px;
+    color: red;
+}
+
+.infoIcon {
+    font-size: 50;
+    height: 50;
+    width: 50;
+    margin: '0 25px';
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 24px;
+}
+
+.buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeButtonContainer:active{
+    background-color: rgba(214, 214, 214, 0.315);
+    border-radius: 5px;
+}
+
+.closeButton2{
+    border: none;
+    font-size: 25px;
+    color: #5da3cc;
+    background-color: transparent;
+    cursor: pointer;
+    transform: rotate(45deg);
+    margin-top: -10px;
+    padding-left: 30px;
+}

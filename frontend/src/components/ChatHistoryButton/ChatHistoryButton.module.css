@@ -1,13 +1,6 @@
 .container {
     display: flex;
     align-items: center;
-    gap: 6px;
-    cursor: pointer;
-}
-
-.button {
-    display: flex;
-    align-items: center;
     margin-top: 5px;
     gap: 6px;
     cursor: pointer;
@@ -16,14 +9,27 @@
     padding: 4px 12px;
     transition: .2s;
     background-color: white;
-    font-size: 24px;
-    height: 35px;
+    width: 178px;
+    margin-right: 5px;
 }
 
-.button:hover {
+.container:hover{
     background-color: rgb(243, 243, 243);
 }
 
-.button:active {
+.container:active{
     background-color: white;
+}
+
+.button{
+    color: rgb(63, 63, 63);
+    font-size: 24px;
+}
+
+.buttonText{
+    font-weight: 500;
+}
+
+.disabled {
+    opacity: 0.4;
 }

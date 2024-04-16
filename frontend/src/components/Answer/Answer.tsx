@@ -85,7 +85,9 @@ export const Answer = ({
             {!!parsedAnswer.citations.length && showSources && (
                 <Stack.Item>
                     <Stack horizontal wrap tokens={{ childrenGap: 5 }}>
+
                         <span className={styles.citationLearnMore}>{citation_label_text}:</span>
+
                         {parsedAnswer.citations.map((x, i) => {
                             const path = getCitationFilePath(x);
                             return (
