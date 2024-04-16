@@ -287,6 +287,15 @@ const Chat = () => {
         setSelectedAnswer(index);
     };
 
+    const answerFromHistory = dataConversation.map(data => data.bot);
+
+    const responseForPreviewPanel = {
+        answer: answerFromHistory.toString(),
+        conversation_id: chatId,
+        data_points: [""],
+        thoughts: null
+    } as AskResponse;
+
     // const onShowCitation = (citation: string, index: number) => {
     //     if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
     //         setActiveAnalysisPanelTab(undefined);
@@ -299,6 +308,8 @@ const Chat = () => {
     // };
 
     const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
+        console.log(index);
+        console.log("TAB", tab);
         if (activeAnalysisPanelTab === tab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
@@ -437,29 +448,18 @@ const Chat = () => {
                             />
                         </div>
                     </div>
-                    {dataConversation.length > 0 &&
-                        fileType !== "" &&
-                        activeAnalysisPanelTab &&
-                        dataConversation.map(data => {
-                            const response = {
-                                answer: data.bot || "",
-                                conversation_id: chatId,
-                                data_points: [""],
-                                thoughts: null
-                            } as AskResponse;
-                            return (
-                                <AnalysisPanel
-                                    className={styles.chatAnalysisPanel}
-                                    activeCitation={activeCitation}
-                                    onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
-                                    citationHeight="810px"
-                                    answer={response}
-                                    activeTab={activeAnalysisPanelTab}
-                                    fileType={fileType}
-                                    onHideTab={hideTab}
-                                />
-                            );
-                        })}
+                    {dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
+                        <AnalysisPanel
+                            className={styles.chatAnalysisPanel}
+                            activeCitation={activeCitation}
+                            onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
+                            citationHeight="810px"
+                            answer={responseForPreviewPanel}
+                            activeTab={activeAnalysisPanelTab}
+                            fileType={fileType}
+                            onHideTab={hideTab}
+                        />
+                    )}
                     {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}
