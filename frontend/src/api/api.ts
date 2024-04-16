@@ -128,7 +128,7 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
 
 export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
     try {
-        const response = await fetch(`/api/delete-chat-conversation/${chatId}`, {
+        const response = await fetch(`/api/conversations/${chatId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',

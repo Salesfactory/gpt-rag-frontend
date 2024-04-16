@@ -93,7 +93,6 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
             setDeletingIsLoading(true);
             const data = await deleteChatConversation(chatConversationId, userId);
             setDeletingIsLoading(false);
-            console.log("desde eliminar", chatId);
             if (chatSelected === chatConversationId) {
                 setDataConversation([]);
             }
@@ -145,6 +144,12 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         return { month, data: monthData };
     });
 
+    const isConfirmationDelete = (conversationId: string) => confirmationDelete === conversationId;
+
+    const isChatId = (conversationId: string) => chatId === conversationId;
+
+    const isChatSelected = (conversationId: string) => chatSelected === conversationId;
+
     return (
         <div className={styles.listContainer}>
             {isLoading && (
@@ -165,7 +170,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                                         <div
                                             key={conversation.id}
                                             className={
-                                                chatSelected === conversation.id || chatId === conversation.id || confirmationDelete === conversation.id
+                                                isChatSelected(conversation.id) || isChatId(conversation.id) || isConfirmationDelete(conversation.id)
                                                     ? styles.conversationSelected
                                                     : styles.conversationContainer
                                             }
@@ -174,36 +179,36 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                                         >
                                             <button
                                                 className={
-                                                    confirmationDelete === conversation.id ? styles.buttonConversationSelected : styles.buttonConversation
+                                                    isConfirmationDelete(conversation.id) ? styles.buttonConversationSelected : styles.buttonConversation
                                                 }
                                                 onClick={() => fetchConversation(conversation.id)}
                                             >
-                                                {confirmationDelete === conversation.id ? "Do you want to delete this conversation?" : conversation.content}
+                                                {isConfirmationDelete(conversation.id) ? "Do you want to delete this conversation?" : conversation.content}
                                             </button>
                                             {hoveredItemIndex === `${monthIndex}-${index}` ||
                                             chatSelected === conversation.id ||
                                             chatId === conversation.id ||
-                                            confirmationDelete === conversation.id ? (
+                                            isConfirmationDelete(conversation.id) ? (
                                                 <div className={styles.actionsButtons}>
                                                     <img
                                                         className={styles.actionButton}
-                                                        src={confirmationDelete === conversation.id ? no : trash}
+                                                        src={isConfirmationDelete(conversation.id) ? no : trash}
                                                         alt="Destroy"
                                                         onClick={
-                                                            confirmationDelete === conversation.id
+                                                            isConfirmationDelete(conversation.id)
                                                                 ? () => setConfirmationDelete(null)
                                                                 : () => setConfirmationDelete(conversation.id)
                                                         }
                                                     />
-                                                    {deletingIsLoading && confirmationDelete === conversation.id ? (
+                                                    {deletingIsLoading && isConfirmationDelete(conversation.id) ? (
                                                         <Spinner className={styles.actionButton} size={1} />
                                                     ) : (
                                                         <img
                                                             className={styles.actionButton}
-                                                            src={confirmationDelete === conversation.id ? yes : pencil}
+                                                            src={isConfirmationDelete(conversation.id) ? yes : pencil}
                                                             alt="Edit"
                                                             onClick={
-                                                                confirmationDelete === conversation.id
+                                                                isConfirmationDelete(conversation.id)
                                                                     ? () => handleDeleteConversation(conversation.id)
                                                                     : () => setConfirmationDelete(null)
                                                             }

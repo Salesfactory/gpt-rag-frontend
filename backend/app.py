@@ -143,7 +143,7 @@ def getChatConversation(chat_id):
         logging.exception("[webbackend] exception in /get-chat-history")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/delete-chat-conversation/<chat_id>", methods=["DELETE"])
+@app.route("/api/conversations/<chat_id>", methods=["DELETE"])
 def deleteChatConversation(chat_id):
     try:
         client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
