@@ -57,7 +57,7 @@ const Chat = () => {
         setChatSelected,
         setChatIsCleaned,
         chatIsCleaned,
-        settingsPanel,
+        settingsPanel
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -437,7 +437,30 @@ const Chat = () => {
                             />
                         </div>
                     </div>
-
+                    {dataConversation.length > 0 &&
+                        fileType !== "" &&
+                        activeAnalysisPanelTab &&
+                        dataConversation.map((data, index) => {
+                            const response = {
+                                answer: data.bot || "",
+                                conversation_id: chatId,
+                                data_points: [""],
+                                thoughts: null
+                            } as AskResponse;
+                            return (
+                                <AnalysisPanel
+                                    key={index}
+                                    className={styles.chatAnalysisPanel}
+                                    activeCitation={activeCitation}
+                                    onActiveTabChanged={x => onToggleTab(x, index)}
+                                    citationHeight="810px"
+                                    answer={response}
+                                    activeTab={activeAnalysisPanelTab}
+                                    fileType={fileType}
+                                    onHideTab={hideTab}
+                                />
+                            );
+                        })}
                     {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}
