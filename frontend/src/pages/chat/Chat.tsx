@@ -440,7 +440,7 @@ const Chat = () => {
                     {dataConversation.length > 0 &&
                         fileType !== "" &&
                         activeAnalysisPanelTab &&
-                        dataConversation.map(data => {
+                        dataConversation.map((data, index) => {
                             const response = {
                                 answer: data.bot || "",
                                 conversation_id: chatId,
@@ -449,9 +449,10 @@ const Chat = () => {
                             } as AskResponse;
                             return (
                                 <AnalysisPanel
+                                    key={index}
                                     className={styles.chatAnalysisPanel}
                                     activeCitation={activeCitation}
-                                    onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
+                                    onActiveTabChanged={x => onToggleTab(x, index)}
                                     citationHeight="810px"
                                     answer={response}
                                     activeTab={activeAnalysisPanelTab}
