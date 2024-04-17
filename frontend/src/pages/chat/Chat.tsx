@@ -308,8 +308,6 @@ const Chat = () => {
     // };
 
     const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
-        console.log(index);
-        console.log("TAB", tab);
         if (activeAnalysisPanelTab === tab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
