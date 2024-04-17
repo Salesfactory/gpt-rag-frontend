@@ -68,8 +68,8 @@ export const FeedbackRating = () => {
             },
             conversation_id: chatId,
             feedback_message: feedback,
-            question: dataConversation[0].user,
-            answer: dataConversation[0].bot,
+            question: dataConversation[dataConversation.length - 1].user,
+            answer: dataConversation[dataConversation.length - 1].bot,
             rating: selectedThumb === "like" ? true : selectedThumb === "dislike" ? false : null,
             category: category
         })
