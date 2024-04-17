@@ -57,7 +57,7 @@ const Chat = () => {
         setChatSelected,
         setChatIsCleaned,
         chatIsCleaned,
-        settingsPanel
+        settingsPanel,
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
