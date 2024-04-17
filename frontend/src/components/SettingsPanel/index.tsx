@@ -182,22 +182,18 @@ export const SettingsPanel = () => {
                                 />
                             </div>
                             <div className={itemClass}>
-                                <span>Variety Boost</span>
-                                <Checkbox
-                                    label=""
-                                    checked={frequencyPenalty == "1"}
-                                    onChange={handleSetFrequencyPenalty}
-                                    onRenderLabel={() => onRenderLabel(frequencyPenaltyDialog, "Frequency Penalty")}
-                                />
+                                <div className={mergeStyles(itemClass, styles["w-100"])}>
+                                    <span>Variety Boost</span>
+                                    <Checkbox label="" checked={frequencyPenalty == "1"} onChange={handleSetFrequencyPenalty} />
+                                </div>
+                                {onRenderLabel(frequencyPenaltyDialog, "Frequency Penalty")}
                             </div>
                             <div className={itemClass}>
-                                <span>Topic Explorer</span>
-                                <Checkbox
-                                    label=""
-                                    checked={presencePenalty == "1"}
-                                    onChange={handleSetPresencePenalty}
-                                    onRenderLabel={() => onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
-                                />
+                                <div className={mergeStyles(itemClass, styles["w-100"])}>
+                                    <span>Topic Explorer</span>
+                                    <Checkbox label="" checked={presencePenalty == "1"} onChange={handleSetPresencePenalty} />
+                                </div>
+                                {onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
                             </div>
                             <DefaultButton className={styles.saveButton} onClick={handleSubmit}>
                                 <SaveFilled />
