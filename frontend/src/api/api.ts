@@ -126,6 +126,25 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
     return conversationItems;
 }
 
+export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
+    try {
+        const response = await fetch(`/api/conversations/${chatId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-MS-CLIENT-PRINCIPAL-ID': userId
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to delete conversation. Status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Error deleting conversation:', error);
+        throw new Error('Error deleting conversation');
+    }
+}
+
+
 
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
     const response = await fetch("/api/get-chat-history", {

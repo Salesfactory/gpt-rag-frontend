@@ -1,15 +1,23 @@
 import styles from "./ChatHistoryPannel.module.css";
-import { getChatHistory, getChatFromHistoryPannelById } from "../../api";
+import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } from "../../api";
 import { useEffect, useState } from "react";
 import { useAppContext } from "../../providers/AppProviders";
 import trash from "../../assets/trash.png";
 import pencil from "../../assets/pencil.png";
+import yes from "../../assets/check.png";
+import no from "../../assets/close.png";
 import { Spinner } from "@fluentui/react";
 
-export const ChatHistoryPanelList = () => {
+interface ChatHistoryPanelProps {
+    onDeleteChat: () => void;
+}
+
+export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDeleteChat }) => {
     const [hoveredItemIndex, setHoveredItemIndex] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [deletingIsLoading, setDeletingIsLoading] = useState(false);
+    const [confirmationDelete, setConfirmationDelete] = useState<string | null>(null);
     const [conversationsIds, setConversationsIds] = useState<String[]>([]);
     const {
         dataHistory,
@@ -23,7 +31,8 @@ export const ChatHistoryPanelList = () => {
         refreshFetchHistorial,
         setRefreshFetchHistorial,
         chatSelected,
-        setChatSelected
+        setChatSelected,
+        setNewChatDeleted
     } = useAppContext();
 
     const handleMouseEnter = (index: string) => {
@@ -51,7 +60,7 @@ export const ChatHistoryPanelList = () => {
                 }
             } else {
                 setIsLoading(false);
-                setErrorMessage("There are not conversation history yet.");
+                setErrorMessage("There are not conversations yet.");
             }
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -79,6 +88,26 @@ export const ChatHistoryPanelList = () => {
         }
     };
 
+    const handleDeleteConversation = async (chatConversationId: string) => {
+        try {
+            setDeletingIsLoading(true);
+            const data = await deleteChatConversation(chatConversationId, userId);
+            setDeletingIsLoading(false);
+            if (chatSelected === chatConversationId) {
+                setDataConversation([]);
+            }
+            if (chatId === chatConversationId) {
+                onDeleteChat();
+            }
+            const updatedDataHistory = dataHistory.filter(item => item.id !== chatConversationId);
+            setDataHistory(updatedDataHistory);
+        } catch (error) {
+            console.error("Error deleting conversation:", error);
+            setDeletingIsLoading(false);
+            setErrorMessage(`Was an error deleting conversation: ${error}`);
+        }
+    };
+
     const handleRefreshHistoial = async () => {
         if (refreshFetchHistorial) {
             await fetchData();
@@ -89,7 +118,7 @@ export const ChatHistoryPanelList = () => {
     };
 
     useEffect(() => {
-        if (dataHistory.length <= 0 || !conversationsIds.every(id => dataHistory.some(item => item.id === id))) {
+        if (dataHistory.length <= 0) {
             fetchData();
         } else {
             setIsLoading(false);
@@ -115,6 +144,12 @@ export const ChatHistoryPanelList = () => {
         return { month, data: monthData };
     });
 
+    const isConfirmationDelete = (conversationId: string) => confirmationDelete === conversationId;
+
+    const isChatId = (conversationId: string) => chatId === conversationId;
+
+    const isChatSelected = (conversationId: string) => chatSelected === conversationId;
+
     return (
         <div className={styles.listContainer}>
             {isLoading && (
@@ -135,19 +170,50 @@ export const ChatHistoryPanelList = () => {
                                         <div
                                             key={conversation.id}
                                             className={
-                                                chatSelected === conversation.id || chatId === conversation.id
+                                                isChatSelected(conversation.id) || isChatId(conversation.id) || isConfirmationDelete(conversation.id)
                                                     ? styles.conversationSelected
                                                     : styles.conversationContainer
                                             }
                                             onMouseEnter={() => handleMouseEnter(`${monthIndex}-${index}`)}
                                             onMouseLeave={handleMouseLeave}
-                                            onClick={() => fetchConversation(conversation.id)}
                                         >
-                                            <button className={styles.buttonConversation}>{conversation.content}</button>
-                                            {hoveredItemIndex === `${monthIndex}-${index}` || chatSelected === conversation.id || chatId === conversation.id ? (
+                                            <button
+                                                className={
+                                                    isConfirmationDelete(conversation.id) ? styles.buttonConversationSelected : styles.buttonConversation
+                                                }
+                                                onClick={() => fetchConversation(conversation.id)}
+                                            >
+                                                {isConfirmationDelete(conversation.id) ? "Do you want to delete this conversation?" : conversation.content}
+                                            </button>
+                                            {hoveredItemIndex === `${monthIndex}-${index}` ||
+                                            chatSelected === conversation.id ||
+                                            chatId === conversation.id ||
+                                            isConfirmationDelete(conversation.id) ? (
                                                 <div className={styles.actionsButtons}>
-                                                    <img className={styles.actionButton} src={trash} alt="Destroy" />
-                                                    <img className={styles.actionButton} src={pencil} alt="Edit" />
+                                                    <img
+                                                        className={styles.actionButton}
+                                                        src={isConfirmationDelete(conversation.id) ? no : trash}
+                                                        alt="Destroy"
+                                                        onClick={
+                                                            isConfirmationDelete(conversation.id)
+                                                                ? () => setConfirmationDelete(null)
+                                                                : () => setConfirmationDelete(conversation.id)
+                                                        }
+                                                    />
+                                                    {deletingIsLoading && isConfirmationDelete(conversation.id) ? (
+                                                        <Spinner className={styles.actionButton} size={1} />
+                                                    ) : (
+                                                        <img
+                                                            className={styles.actionButton}
+                                                            src={isConfirmationDelete(conversation.id) ? yes : pencil}
+                                                            alt="Edit"
+                                                            onClick={
+                                                                isConfirmationDelete(conversation.id)
+                                                                    ? () => handleDeleteConversation(conversation.id)
+                                                                    : () => setConfirmationDelete(null)
+                                                            }
+                                                        />
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <></>

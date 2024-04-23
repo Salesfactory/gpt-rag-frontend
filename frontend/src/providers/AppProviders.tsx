@@ -10,6 +10,8 @@ interface SettingsType {
 interface AppContextType {
     showHistoryPanel: boolean;
     setShowHistoryPanel: Dispatch<SetStateAction<boolean>>;
+    newChatDeleted: boolean;
+    setNewChatDeleted: Dispatch<SetStateAction<boolean>>;
     showFeedbackRatingPanel: boolean;
     setShowFeedbackRatingPanel: Dispatch<SetStateAction<boolean>>;
     refreshFetchHistorial: boolean;
@@ -49,6 +51,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [chatIsCleaned, setChatIsCleaned] = useState<boolean>(false);
     const [chatSelected, setChatSelected] = useState("");
     const [settingsPanel, setSettingsPanel] = useState(false);
+    const [newChatDeleted, setNewChatDeleted] = useState(false);
 
     return (
         <AppContext.Provider
@@ -76,7 +79,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 chatIsCleaned,
                 setChatIsCleaned,
                 settingsPanel,
-                setSettingsPanel
+                setSettingsPanel,
+                newChatDeleted,
+                setNewChatDeleted
             }}
         >
             {children}
