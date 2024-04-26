@@ -15,7 +15,7 @@ const categoryOptions = [
 ];
 
 export const FeedbackRating = () => {
-    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId, userId } = useAppContext();
+    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId, user } = useAppContext();
 
     const [category, setCategory] = useState("");
     const [feedback, setFeedback] = useState("");
@@ -63,8 +63,8 @@ export const FeedbackRating = () => {
 
         await postFeedbackRating({
             user: {
-                id: userId,
-                name: "anonymous" // set name in provider
+                id: user.id,
+                name: user.name
             },
             conversation_id: chatId,
             feedback_message: feedback,

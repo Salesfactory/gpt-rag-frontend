@@ -22,7 +22,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     const {
         dataHistory,
         setDataHistory,
-        userId,
+        user,
         dataConversation,
         setDataConversation,
         setConversationIsLoading,
@@ -45,7 +45,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     const fetchData = async () => {
         try {
-            const data = await getChatHistory(userId);
+            const data = await getChatHistory(user.id);
             if (data.length > 0) {
                 const sortedData = data.sort((a, b) => {
                     const dateA = new Date(a.start_date);
@@ -75,7 +75,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                 setChatSelected(chatConversationId);
                 setChatId(chatConversationId);
                 setConversationIsLoading(true);
-                const data = await getChatFromHistoryPannelById(chatConversationId, userId);
+                const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
                 if (data.length > 0) {
                     setDataConversation(data);
                     setConversationIsLoading(false);
@@ -91,7 +91,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     const handleDeleteConversation = async (chatConversationId: string) => {
         try {
             setDeletingIsLoading(true);
-            const data = await deleteChatConversation(chatConversationId, userId);
+            const data = await deleteChatConversation(chatConversationId, user.id);
             setDeletingIsLoading(false);
             if (chatSelected === chatConversationId) {
                 setDataConversation([]);
@@ -127,7 +127,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         if (refreshFetchHistorial) {
             handleRefreshHistoial();
         }
-    }, [userId, dataHistory, conversationsIds, refreshFetchHistorial]);
+    }, [user.id, dataHistory, conversationsIds, refreshFetchHistorial]);
 
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
