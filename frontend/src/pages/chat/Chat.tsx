@@ -4,7 +4,7 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -58,6 +58,7 @@ const Chat = () => {
         setChatIsCleaned,
         chatIsCleaned,
         settingsPanel,
+        setUser
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -73,7 +74,7 @@ const Chat = () => {
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
-    const [userId, setUserId] = useState<string>("");
+    const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
     const triggered = useRef(false);
 
     const makeApiRequestGpt = async (question: string, chatId: string | null) => {
@@ -214,6 +215,43 @@ const Chat = () => {
             throw new Error("Error fetching DOC.");
         }
     };
+
+    useEffect(() => {
+        const getUserInfoList = async () => {
+            if (window.location.hostname !== "127.0.0.1") {
+                const userInfoList = await getUserInfo();
+                if (userInfoList.length === 0) {
+                    // setShowAuthMessage(true);
+                    console.log("No user info found. Using anonymous user.", userInfoList);
+                } else {
+                    // setShowAuthMessage(false);
+                    console.log("User info found.", userInfoList);
+
+                    const keyId = "http://schemas.microsoft.com/identity/claims/objectidentifier";
+                    const keyName = "preferred_username";
+
+                    const _user = userInfoList.find(obj => {
+                        const _id = obj?.user_claims?.some(claim => claim.typ === keyId);
+                        const _name = obj?.user_claims?.some(claim => claim.typ === keyName);
+                        return _id && _name;
+                    });
+
+                    if (_user) {
+                        const id = _user?.user_claims?.find(claim => claim.typ === keyId)?.val || "";
+                        const name = _user?.user_claims?.find(claim => claim.typ === keyName)?.val || "";
+
+                        if (id && name) {
+                            return setUser({ id, name });
+                        }
+                    }
+                }
+            } else {
+                console.log("Local");
+            }
+        };
+
+        getUserInfoList();
+    }, []);
 
     useEffect(() => {
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });

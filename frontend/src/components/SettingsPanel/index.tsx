@@ -31,12 +31,7 @@ const itemClass = mergeStyles({
 });
 
 export const SettingsPanel = () => {
-    const { userId, userName, setSettingsPanel } = useAppContext();
-
-    const user = {
-        id: userId,
-        name: userName
-    };
+    const { user, setSettingsPanel } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
     const [presencePenalty, setPresencePenalty] = useState("0");
@@ -52,7 +47,12 @@ export const SettingsPanel = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            getSettings({ user })
+            getSettings({
+                user: {
+                    id: user.id,
+                    name: user.name
+                }
+            })
                 .then(data => {
                     setTemperature(data.temperature);
                     setPresencePenalty(data.presencePenalty);

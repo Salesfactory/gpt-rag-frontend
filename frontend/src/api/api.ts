@@ -9,8 +9,18 @@ import {
     PostSettingsProps,
     ConversationHistoryItem,
     ConversationChatItem,
-    ChatTurn
+    ChatTurn,
+    UserInfo
 } from "./models";
+
+export async function getUserInfo(): Promise<UserInfo[]> {
+    const response = await fetch('/.auth/me');
+    if (!response.ok) {
+        return [];
+    }
+    const payload = await response.json();
+    return payload;
+}
 
 export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
