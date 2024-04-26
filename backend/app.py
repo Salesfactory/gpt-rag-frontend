@@ -216,6 +216,9 @@ def getSettings():
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     client_principal_name = request.headers.get('X-MS-CLIENT-PRINCIPAL-NAME')
 
+    if not client_principal_id or not client_principal_name:
+        return jsonify({"error": "Missing required parameters, client_principal_id or client_principal_name"}), 400
+
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
@@ -246,6 +249,9 @@ def getSettings():
 def setSettings():
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     client_principal_name = request.headers.get('X-MS-CLIENT-PRINCIPAL-NAME')
+
+    if not client_principal_id or not client_principal_name:
+        return jsonify({"error": "Missing required parameters, client_principal_id or client_principal_name"}), 400
 
     temperature = request.json["temperature"]
     presence_penalty = request.json["presence_penalty"]
@@ -289,6 +295,9 @@ def setFeedback():
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     client_principal_name = request.headers.get('X-MS-CLIENT-PRINCIPAL-NAME')
 
+    if not client_principal_id or not client_principal_name:
+        return jsonify({"error": "Missing required parameters, client_principal_id or client_principal_name"}), 400
+
     conversation_id = request.json["conversation_id"]
     question = request.json["question"]
     answer = request.json["answer"]
@@ -317,8 +326,6 @@ def setFeedback():
             "category": category,
             "feedback": feedback,
             "rating": rating,
-            "client_principal_id": client_principal_id,
-            "client_principal_name": client_principal_name
         })
         headers = {
             'Content-Type': 'application/json',

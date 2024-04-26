@@ -13,11 +13,15 @@ import {
 } from "./models";
 
 export async function getSettings({ user }: GetSettingsProps): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
     try {
         const response = await fetch("/api/settings", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
             }
         });
         const fetchedData = await response.json();
@@ -29,11 +33,15 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
 }
 
 export async function postSettings({ user, temperature, presence_penalty, frequency_penalty } : PostSettingsProps): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
     try {
         const response = await fetch("/api/settings", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
             },
             body: JSON.stringify({
                 temperature,
@@ -181,12 +189,16 @@ export async function postFeedbackRating({
     rating,
     category,
  }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
     return new Promise(async (resolve, reject) => {
         try {
             const response = await fetch("/api/feedback", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                    "X-MS-CLIENT-PRINCIPAL-NAME": user_name
                 },
                 body: JSON.stringify({
                     conversation_id: conversation_id,
