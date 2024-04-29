@@ -490,7 +490,6 @@ const Chat = () => {
                             activeCitation={activeCitation}
                             onActiveTabChanged={x => {
                                 onToggleTab(x, selectedAnswer);
-                                console.log("Oe acá", answers[selectedAnswer][1]);
                             }}
                             citationHeight="810px"
                             answer={answers[selectedAnswer][1]}
