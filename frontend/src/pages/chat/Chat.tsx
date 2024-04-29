@@ -293,8 +293,8 @@ const Chat = () => {
             console.log("respuesta 1");
         } else {
             console.log("respuesta 2");
-            var file = new Blob([response as BlobPart], { type: "application/pdf" });
-            // var file = new Blob([response as BlobPart]);
+            // var file = new Blob([response as BlobPart], { type: "application/pdf" });
+            var file = new Blob([response as BlobPart]);
 
             readFile(file);
 
@@ -329,13 +329,22 @@ const Chat = () => {
         } else {
             setActiveAnalysisPanelTab(tab);
         }
-
+        console.log(answers[selectedAnswer][1]);
         setSelectedAnswer(index);
     };
 
     const hideTab = () => {
         setActiveAnalysisPanelTab(undefined);
     };
+
+    const dataChat = dataConversation.map(data => data.bot);
+
+    const response = {
+        answer: dataChat.toString(),
+        conversation_id: chatId,
+        data_points: [""],
+        thoughts: null
+    } as AskResponse;
 
     return (
         <div className={styles.mainContainer}>
@@ -462,41 +471,36 @@ const Chat = () => {
                             />
                         </div>
                     </div>
-                    {dataConversation.length > 0 &&
-                        fileType !== "" &&
-                        activeAnalysisPanelTab &&
-                        dataConversation.map(data => {
-                            const response = {
-                                answer: data.bot || "",
-                                conversation_id: chatId,
-                                data_points: [""],
-                                thoughts: null
-                            } as AskResponse;
-                            return (
-                                <AnalysisPanel
-                                    className={styles.chatAnalysisPanel}
-                                    activeCitation={activeCitation}
-                                    onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
-                                    citationHeight="810px"
-                                    answer={response}
-                                    activeTab={activeAnalysisPanelTab}
-                                    fileType={fileType}
-                                    onHideTab={hideTab}
-                                />
-                            );
-                        })}
-                    {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
+                    {(answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}
-                            activeCitation={"enfocate.pdf"}
-                            onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
+                            activeCitation={activeCitation}
+                            onActiveTabChanged={x => {
+                                onToggleTab(x, selectedAnswer);
+                                console.log("Oe acá", answers[selectedAnswer][1]);
+                            }}
                             citationHeight="810px"
                             answer={answers[selectedAnswer][1]}
                             activeTab={activeAnalysisPanelTab}
                             fileType={fileType}
                             onHideTab={hideTab}
                         />
-                    )}
+                    )) ||
+                        (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
+                            <AnalysisPanel
+                                className={styles.chatAnalysisPanel}
+                                activeCitation={activeCitation}
+                                onActiveTabChanged={x => {
+                                    onToggleTab(x, selectedAnswer);
+                                    console.log("Oe acá", answers[selectedAnswer][1]);
+                                }}
+                                citationHeight="810px"
+                                answer={response}
+                                activeTab={activeAnalysisPanelTab}
+                                fileType={fileType}
+                                onHideTab={hideTab}
+                            />
+                        ))}
 
                     <Panel
                         headerText="Configure answer generation"
