@@ -3,6 +3,7 @@ import { Dropdown, DropdownMenuItemType, IDropdownOption, IDropdown } from "@flu
 import { Icon } from "@fluentui/react/lib/Icon";
 import { IStackTokens, Stack } from "@fluentui/react/lib/Stack";
 import { useAppContext } from "../../providers/AppProviders";
+import { logout } from "../../api/api";
 import styles from "./Profile.module.css";
 import person from "../../assets/person.png";
 
@@ -83,7 +84,8 @@ export const ProfileButton: React.FunctionComponent = () => {
             for (var i = 0; i < Cookies.length; i++) {
                 document.cookie = Cookies[i] + "=; expires=" + new Date(0).toUTCString();
             }
-            window.location.reload();
+            // window.location.reload();
+            logout();
         } else if (selOption === "Admin") {
             // go to admin panel
             console.log("Admin Panel");
