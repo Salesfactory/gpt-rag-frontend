@@ -1,8 +1,8 @@
 import { AddFilled } from "@fluentui/react-icons";
-
 import styles from "./ChatHistoryPannel.module.css";
 import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanelList } from "./ChatHistoryListItem";
+import { ProfileButton } from "../Profile";
 
 interface ChatHistoryPanelProps {
     functionDeleteChat: () => void;
@@ -16,23 +16,28 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
     };
     return (
         <section className={styles.container} data-is-scrollable aria-label="chat history panel">
-            <div className={styles.header}>
-                <div className={styles.title}>Chat history</div>
-                <div className={styles.buttons}>
-                    <div className={styles.closeButtonContainer}>
-                        <button className={styles.clearButton} aria-label="clear all chat history">
-                            ...
-                        </button>
-                    </div>
-                    <div className={styles.closeButtonContainer}>
-                        <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
-                            <AddFilled />
-                        </button>
+            <div>
+                <div className={styles.header}>
+                    <div className={styles.title}>Chat history</div>
+                    <div className={styles.buttons}>
+                        <div className={styles.closeButtonContainer}>
+                            <button className={styles.clearButton} aria-label="clear all chat history">
+                                ...
+                            </button>
+                        </div>
+                        <div className={styles.closeButtonContainer}>
+                            <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
+                                <AddFilled />
+                            </button>
+                        </div>
                     </div>
                 </div>
+                <div className={styles.content}>
+                    <ChatHistoryPanelList onDeleteChat={functionDeleteChat} />
+                </div>
             </div>
-            <div className={styles.content}>
-                <ChatHistoryPanelList onDeleteChat={functionDeleteChat} />
+            <div className={styles.profileButtonContainer}>
+                <ProfileButton />
             </div>
         </section>
     );
