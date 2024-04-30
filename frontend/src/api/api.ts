@@ -22,12 +22,6 @@ export async function getUserInfo(): Promise<UserInfo[]> {
     return payload;
 }
 
-export async function logout(): Promise<void> {
-    await fetch('/.auth/logout', {
-        method: 'POST'
-    });
-}
-
 export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
