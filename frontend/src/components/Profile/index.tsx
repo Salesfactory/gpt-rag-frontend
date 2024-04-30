@@ -9,7 +9,7 @@ import person from "../../assets/person.png";
 const stackTokens: IStackTokens = { childrenGap: 20 };
 const iconStyles = { marginRight: "8px" };
 
-const onRenderOption = (option: IDropdownOption): JSX.Element => {
+const onRenderOption = (option: any): JSX.Element => {
     return (
         <div>
             {option.data && option.data.icon && <Icon style={iconStyles} iconName={option.data.icon} aria-hidden="true" title={option.data.icon} />}
