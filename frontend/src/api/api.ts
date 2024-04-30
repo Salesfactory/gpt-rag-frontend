@@ -1,11 +1,11 @@
 import { List } from "@fluentui/react";
-import { 
-    AskRequest, 
-    AskResponse, 
-    AskResponseGpt, 
-    ChatRequest, 
-    ChatRequestGpt, 
-    GetSettingsProps, 
+import {
+    AskRequest,
+    AskResponse,
+    AskResponseGpt,
+    ChatRequest,
+    ChatRequestGpt,
+    GetSettingsProps,
     PostSettingsProps,
     ConversationHistoryItem,
     ConversationChatItem,
@@ -14,7 +14,7 @@ import {
 } from "./models";
 
 export async function getUserInfo(): Promise<UserInfo[]> {
-    const response = await fetch('/.auth/me');
+    const response = await fetch("/.auth/me");
     if (!response.ok) {
         return [];
     }
@@ -42,7 +42,7 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     }
 }
 
-export async function postSettings({ user, temperature, presence_penalty, frequency_penalty } : PostSettingsProps): Promise<any> {
+export async function postSettings({ user, temperature, presence_penalty, frequency_penalty }: PostSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -111,25 +111,25 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
 
     const responseData = await response.json();
     const history = responseData.history;
-    
+
     const conversationItems: ChatTurn[] = [];
-    let currentUserMessage = '';
-    let currentBotMessage = '';
+    let currentUserMessage = "";
+    let currentBotMessage = "";
 
     history.forEach((item: any) => {
-        if (item.role === 'user') {
+        if (item.role === "user") {
             currentUserMessage = item.content;
-        } else if (item.role === 'assistant') {
+        } else if (item.role === "assistant") {
             currentBotMessage = item.content;
-            if (currentUserMessage !== '' || currentBotMessage !== '') {
+            if (currentUserMessage !== "" || currentBotMessage !== "") {
                 conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
-                currentUserMessage = '';
-                currentBotMessage = '';
+                currentUserMessage = "";
+                currentBotMessage = "";
             }
         }
     });
 
-    if (currentUserMessage !== '' || currentBotMessage !== '') {
+    if (currentUserMessage !== "" || currentBotMessage !== "") {
         conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
     }
 
@@ -139,22 +139,20 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
 export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
     try {
         const response = await fetch(`/api/conversations/${chatId}`, {
-            method: 'DELETE',
+            method: "DELETE",
             headers: {
-                'Content-Type': 'application/json',
-                'X-MS-CLIENT-PRINCIPAL-ID': userId
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
             }
         });
         if (!response.ok) {
             throw new Error(`Failed to delete conversation. Status: ${response.status}`);
         }
     } catch (error) {
-        console.error('Error deleting conversation:', error);
-        throw new Error('Error deleting conversation');
+        console.error("Error deleting conversation:", error);
+        throw new Error("Error deleting conversation");
     }
 }
-
-
 
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
     const response = await fetch("/api/get-chat-history", {
@@ -190,15 +188,18 @@ export function getCitationFilePath(citation: string): string {
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
 
-export async function postFeedbackRating({ 
-    user,
-    conversation_id,
-    feedback_message,
-    question,
-    answer,
-    rating,
-    category,
- }: any): Promise<any> {
+export function getFilePath(fileUrl: string) {
+    const regex = /documents\/(.*)/;
+    const match = fileUrl.match(regex);
+    let filepath = "";
+
+    if (match && match[1]) {
+        filepath = match[1];
+    }
+    return filepath;
+}
+
+export async function postFeedbackRating({ user, conversation_id, feedback_message, question, answer, rating, category }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     return new Promise(async (resolve, reject) => {
@@ -214,7 +215,7 @@ export async function postFeedbackRating({
                     conversation_id: conversation_id,
                     feedback: feedback_message,
                     question: question,
-                    answer:answer,
+                    answer: answer,
                     rating: rating,
                     category: category
                 })
