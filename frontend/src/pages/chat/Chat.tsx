@@ -484,30 +484,34 @@ const Chat = () => {
                             />
                         </div>
                     </div>
-                    {dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
+                    {(answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}
                             activeCitation={activeCitation}
-                            onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
-                            citationHeight="810px"
-                            answer={responseForPreviewPanel}
-                            activeTab={activeAnalysisPanelTab}
-                            fileType={fileType}
-                            onHideTab={hideTab}
-                        />
-                    )}
-                    {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
-                        <AnalysisPanel
-                            className={styles.chatAnalysisPanel}
-                            activeCitation={activeCitation}
-                            onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
+                            onActiveTabChanged={x => {
+                                onToggleTab(x, selectedAnswer);
+                            }}
                             citationHeight="810px"
                             answer={answers[selectedAnswer][1]}
                             activeTab={activeAnalysisPanelTab}
                             fileType={fileType}
                             onHideTab={hideTab}
                         />
-                    )}
+                    )) ||
+                        (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
+                            <AnalysisPanel
+                                className={styles.chatAnalysisPanel}
+                                activeCitation={activeCitation}
+                                onActiveTabChanged={x => {
+                                    onToggleTab(x, selectedAnswer);
+                                }}
+                                citationHeight="810px"
+                                answer={responseForPreviewPanel}
+                                activeTab={activeAnalysisPanelTab}
+                                fileType={fileType}
+                                onHideTab={hideTab}
+                            />
+                        ))}
 
                     <Panel
                         headerText="Configure answer generation"
