@@ -193,7 +193,6 @@ const Chat = () => {
         /** get file type */
         let type = getFileType(pdfName);
         setFileType(type);
-
         try {
             const response = await fetch("/api/get-blob", {
                 method: "POST",
