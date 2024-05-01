@@ -5,6 +5,7 @@ import { useAppContext } from "../../providers/AppProviders";
 import { AddFilled, SaveFilled, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
 import { ThumbLikeRegular, ThumbDislikeRegular } from "@fluentui/react-icons";
 import { postFeedbackRating } from "../../api/api";
+import { ProfileButton } from "../Profile";
 
 const categoryOptions = [
     { key: "1", text: "Incorrect data" },
@@ -96,44 +97,49 @@ export const FeedbackRating = () => {
 
     return (
         <section className={styles.container} data-is-scrollable aria-label="feedback panel">
-            <div className={styles.header}>
-                <div className={styles.title}>Feedback</div>
-                <div className={styles.buttons}>
-                    <div className={styles.closeButtonContainer}>
-                        <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
-                            <AddFilled />
-                        </button>
+            <div>
+                <div className={styles.header}>
+                    <div className={styles.title}>Feedback</div>
+                    <div className={styles.buttons}>
+                        <div className={styles.closeButtonContainer}>
+                            <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
+                                <AddFilled />
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div className={styles.content}>
+                    <div className={styles.listContainer}>
+                        {isLoading && (
+                            <div className={styles.loaderContainer}>
+                                <Spinner size={3} />
+                            </div>
+                        )}
+
+                        <Dropdown placeholder="Select Category" options={categoryOptions} onChange={handleCategoryChange} defaultValue={category} />
+                        <TextField label="Message" multiline onChange={handleFeedbackChange} value={feedback} />
+                        <div className={styles.rating}>
+                            {selectedThumb === "like" ? (
+                                <ThumbLikeFilled onClick={() => handleSelectedThumb("like")} />
+                            ) : (
+                                <ThumbLikeRegular onClick={() => handleSelectedThumb("like")} />
+                            )}
+                            {selectedThumb === "dislike" ? (
+                                <ThumbDislikeFilled onClick={() => handleSelectedThumb("dislike")} />
+                            ) : (
+                                <ThumbDislikeRegular onClick={() => handleSelectedThumb("dislike")} />
+                            )}
+                        </div>
+                        <DefaultButton className={styles.saveButton} onClick={handleSubmitFeedback}>
+                            <SaveFilled />
+                            &#8202;&#8202;Send
+                        </DefaultButton>
+                    </div>
+                    {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
                 </div>
             </div>
-            <div className={styles.content}>
-                <div className={styles.listContainer}>
-                    {isLoading && (
-                        <div className={styles.loaderContainer}>
-                            <Spinner size={3} />
-                        </div>
-                    )}
-
-                    <Dropdown placeholder="Select Category" options={categoryOptions} onChange={handleCategoryChange} defaultValue={category} />
-                    <TextField label="Message" multiline onChange={handleFeedbackChange} value={feedback} />
-                    <div className={styles.rating}>
-                        {selectedThumb === "like" ? (
-                            <ThumbLikeFilled onClick={() => handleSelectedThumb("like")} />
-                        ) : (
-                            <ThumbLikeRegular onClick={() => handleSelectedThumb("like")} />
-                        )}
-                        {selectedThumb === "dislike" ? (
-                            <ThumbDislikeFilled onClick={() => handleSelectedThumb("dislike")} />
-                        ) : (
-                            <ThumbDislikeRegular onClick={() => handleSelectedThumb("dislike")} />
-                        )}
-                    </div>
-                    <DefaultButton className={styles.saveButton} onClick={handleSubmitFeedback}>
-                        <SaveFilled />
-                        &#8202;&#8202;Send
-                    </DefaultButton>
-                </div>
-                {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
+            <div className={styles.profileButtonContainer}>
+                <ProfileButton />
             </div>
         </section>
     );

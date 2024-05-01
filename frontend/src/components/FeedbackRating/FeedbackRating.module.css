@@ -165,3 +165,11 @@
     font-style: italic;
     color: #ff3333;
 }
+
+.profileButtonContainer {
+    position: absolute;
+    bottom: 30px;
+    right: 20px;
+    width: 240px;
+    height: 80px;
+}
