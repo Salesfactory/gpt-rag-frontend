@@ -57,7 +57,7 @@
 
 .buttonConversation{
     border: none;
-    padding: 10px;
+    padding: 10px 5px;
     text-align: left;
     width: 100%;
     white-space: nowrap;
@@ -65,6 +65,8 @@
     text-overflow: ellipsis;
     background-color: transparent;
     cursor: pointer;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
 }
 
 .buttonConversationSelected{
