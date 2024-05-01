@@ -6,6 +6,7 @@ import styles from "./SettingsModal.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { useAppContext } from "../../providers/AppProviders";
+import { ProfileButton } from "../Profile";
 
 interface Props {
     user: {
@@ -203,6 +204,9 @@ export const SettingsPanel = () => {
                     )}
                 </Stack.Item>
             </Stack>
+            <div className={styles.profileButtonContainer}>
+                <ProfileButton />
+            </div>
         </div>
     );
 };
