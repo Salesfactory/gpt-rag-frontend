@@ -101,7 +101,7 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
 }
 
 export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<ChatTurn[]> {
-    const response = await fetch(`/api/get-chat-conversation/${chatId}`, {
+    const response = await fetch(`/api/chat-conversations/${chatId}/messages`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -110,24 +110,26 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
     });
 
     const responseData = await response.json();
-    const history = responseData.history;
+    const messages = responseData.messages;
 
     const conversationItems: ChatTurn[] = [];
     let currentUserMessage = "";
     let currentBotMessage = "";
 
-    history.forEach((item: any) => {
-        if (item.role === "user") {
-            currentUserMessage = item.content;
-        } else if (item.role === "assistant") {
-            currentBotMessage = item.content;
-            if (currentUserMessage !== "" || currentBotMessage !== "") {
-                conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
-                currentUserMessage = "";
-                currentBotMessage = "";
+    if (messages) {
+        messages.forEach((item: any) => {
+            if (item.role === "user") {
+                currentUserMessage = item.content;
+            } else if (item.role === "assistant") {
+                currentBotMessage = item.content;
+                if (currentUserMessage !== "" || currentBotMessage !== "") {
+                    conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
+                    currentUserMessage = "";
+                    currentBotMessage = "";
+                }
             }
-        }
-    });
+        });
+    }
 
     if (currentUserMessage !== "" || currentBotMessage !== "") {
         conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
@@ -136,9 +138,10 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
     return conversationItems;
 }
 
+
 export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
     try {
-        const response = await fetch(`/api/conversations/${chatId}`, {
+        const response = await fetch(`/api/chat-conversations/${chatId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
@@ -155,7 +158,7 @@ export async function deleteChatConversation(chatId: string, userId: string): Pr
 }
 
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
-    const response = await fetch("/api/get-chat-history", {
+    const response = await fetch("/api/chat-conversations", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
