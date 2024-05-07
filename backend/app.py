@@ -86,7 +86,7 @@ def chatgpt():
         logging.exception("[webbackend] exception in /chatgpt")
         return jsonify({"error": str(e)}), 500
     
-@app.route("/api/get-chat-history", methods=["GET"])
+@app.route("/api/chat-history", methods=["GET"])
 def getChatHistory():
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     try:
@@ -110,10 +110,10 @@ def getChatHistory():
         logging.info(f"[webbackend] response: {response.text[:500]}...")   
         return(response.text)
     except Exception as e:
-        logging.exception("[webbackend] exception in /get-chat-history")
+        logging.exception("[webbackend] exception in /chat-history")
         return jsonify({"error": str(e)}), 500
     
-@app.route("/api/get-chat-conversation/<chat_id>", methods=["GET"])
+@app.route("/api/chat-conversation/<chat_id>", methods=["GET"])
 def getChatConversation(chat_id):
 
     if chat_id is None:
@@ -143,7 +143,7 @@ def getChatConversation(chat_id):
         logging.exception("[webbackend] exception in /get-chat-history")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/conversations/<chat_id>", methods=["DELETE"])
+@app.route("/api/chat-conversations/<chat_id>", methods=["DELETE"])
 def deleteChatConversation(chat_id):
     try:
         client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
