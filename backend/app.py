@@ -110,7 +110,7 @@ def getChatHistory():
         logging.info(f"[webbackend] response: {response.text[:500]}...")   
         return(response.text)
     except Exception as e:
-        logging.exception("[webbackend] exception in /chat-conversations")
+        logging.exception("[webbackend] exception in /chat-history")
         return jsonify({"error": str(e)}), 500
     
 @app.route("/api/chat-conversation/<chat_id>", methods=["GET"])
