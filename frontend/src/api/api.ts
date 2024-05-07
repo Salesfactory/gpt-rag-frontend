@@ -101,7 +101,7 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
 }
 
 export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<ChatTurn[]> {
-    const response = await fetch(`/api/chat-conversations/${chatId}/messages`, {
+    const response = await fetch(`/api/chat-conversation/${chatId}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -158,7 +158,7 @@ export async function deleteChatConversation(chatId: string, userId: string): Pr
 }
 
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
-    const response = await fetch("/api/chat-conversations", {
+    const response = await fetch("/api/chat-history", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",

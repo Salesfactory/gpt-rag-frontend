@@ -86,7 +86,7 @@ def chatgpt():
         logging.exception("[webbackend] exception in /chatgpt")
         return jsonify({"error": str(e)}), 500
     
-@app.route("/api/chat-conversations", methods=["GET"])
+@app.route("/api/chat-history", methods=["GET"])
 def getChatHistory():
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
     try:
@@ -113,7 +113,7 @@ def getChatHistory():
         logging.exception("[webbackend] exception in /chat-conversations")
         return jsonify({"error": str(e)}), 500
     
-@app.route("/api/chat-conversations/<chat_id>/messages", methods=["GET"])
+@app.route("/api/chat-conversation/<chat_id>", methods=["GET"])
 def getChatConversation(chat_id):
 
     if chat_id is None:
