@@ -270,6 +270,18 @@ const Chat = () => {
         } else {
             setPlaceholderText("Write your question here");
         }
+
+        // fill answers with data from dataConversation
+        setAnswers(
+            dataConversation.map(data => [
+                data.user,
+                {
+                    answer: data.bot || "",
+                    data_points: [],
+                    thoughts: null
+                }
+            ])
+        );
     }, [isLoading, dataConversation]);
 
     const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -483,7 +495,7 @@ const Chat = () => {
                             />
                         </div>
                     </div>
-                    {(answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
+                    {(answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && answers[selectedAnswer] && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}
                             activeCitation={activeCitation}
@@ -491,7 +503,7 @@ const Chat = () => {
                                 onToggleTab(x, selectedAnswer);
                             }}
                             citationHeight="810px"
-                            answer={answers[selectedAnswer][1]}
+                            answer={answers[selectedAnswer]?.[1]}
                             activeTab={activeAnalysisPanelTab}
                             fileType={fileType}
                             onHideTab={hideTab}
