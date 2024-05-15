@@ -1,0 +1,85 @@
+.container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.button {
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+    gap: 6px;
+    cursor: pointer;
+    border: 1.5px solid rgb(231, 231, 231);
+    border-radius: 5px;
+    padding: 4px 12px;
+    transition: .2s;
+    background-color: white;
+    font-size: 24px;
+    height: 100%;
+    width: 100%;
+}
+
+.button:hover {
+    background-color: rgb(243, 243, 243);
+}
+
+.button:active {
+    background-color: white;
+}
+
+.dropdown {
+    height: 100%;
+    width: 100%;
+}
+
+.stackDropdown {
+    height: 100%;
+    width: 100%;
+}
+
+.contactIcon {
+    font-size: 35px;
+}
+
+.contactImage {
+    height: 60px;
+    width: 60px;
+    border-radius: 50%;
+}
+
+.dropdownPlaceholder {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    justify-content: space-between;
+}
+
+.placeholderSeparator {
+    width: 10px;
+}
+
+.dropdownPlaceholderTitle{
+    display: flex;
+    flex: 1;
+    align-items: center;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.dropdownTitle {
+    height: 100%;
+}
+
+.stackDropdown div {
+    height: 100%;
+}
+
+.stackDropdown span {
+    height: 100%;
+    background-color: #f2f2f2;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+}

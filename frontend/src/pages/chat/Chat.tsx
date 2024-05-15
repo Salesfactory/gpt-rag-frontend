@@ -4,7 +4,7 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -57,7 +57,8 @@ const Chat = () => {
         setChatSelected,
         setChatIsCleaned,
         chatIsCleaned,
-        settingsPanel
+        settingsPanel,
+        setUser
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -73,7 +74,7 @@ const Chat = () => {
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
-    const [userId, setUserId] = useState<string>("");
+    const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
     const triggered = useRef(false);
 
     const makeApiRequestGpt = async (question: string, chatId: string | null) => {
@@ -210,32 +211,42 @@ const Chat = () => {
         }
     };
 
-    // const getPdf = async (pdfName: string) => {
-    //     /** get file type */
-    //     let type = getFileType(pdfName);
-    //     setFileType(type);
+    useEffect(() => {
+        const getUserInfoList = async () => {
+            if (window.location.hostname !== "127.0.0.1") {
+                const userInfoList = await getUserInfo();
+                if (userInfoList.length === 0) {
+                    // setShowAuthMessage(true);
+                    console.log("No user info found. Using anonymous user.", userInfoList);
+                } else {
+                    // setShowAuthMessage(false);
+                    console.log("User info found.", userInfoList);
 
-    //     try {
-    //         const response = await fetch("/api/get-blob", {
-    //             method: "POST",
-    //             headers: {
-    //                 "Content-Type": "application/json"
-    //             },
-    //             body: JSON.stringify({
-    //                 blob_name: pdfName
-    //             })
-    //         });
+                    const keyId = "http://schemas.microsoft.com/identity/claims/objectidentifier";
+                    const keyName = "preferred_username";
 
-    //         if (!response.ok) {
-    //             throw new Error(`Error fetching DOC: ${response.status}`);
-    //         }
+                    const _user = userInfoList.find(obj => {
+                        const _id = obj?.user_claims?.some(claim => claim.typ === keyId);
+                        const _name = obj?.user_claims?.some(claim => claim.typ === keyName);
+                        return _id && _name;
+                    });
 
-    //         return await response.blob();
-    //     } catch (error) {
-    //         console.error(error);
-    //         throw new Error("Error en la obtención del Archivo.");
-    //     }
-    // };
+                    if (_user) {
+                        const id = _user?.user_claims?.find(claim => claim.typ === keyId)?.val || "";
+                        const name = _user?.user_claims?.find(claim => claim.typ === keyName)?.val || "";
+
+                        if (id && name) {
+                            return setUser({ id, name });
+                        }
+                    }
+                }
+            } else {
+                console.log("Local");
+            }
+        };
+
+        getUserInfoList();
+    }, []);
 
     useEffect(() => {
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -312,6 +323,15 @@ const Chat = () => {
         setSelectedAnswer(index);
     };
 
+    const answerFromHistory = dataConversation.map(data => data.bot);
+
+    const responseForPreviewPanel = {
+        answer: answerFromHistory.toString(),
+        conversation_id: chatId,
+        data_points: [""],
+        thoughts: null
+    } as AskResponse;
+
     // const onShowCitation = (citation: string, index: number) => {
     //     if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
     //         setActiveAnalysisPanelTab(undefined);
@@ -349,7 +369,7 @@ const Chat = () => {
     return (
         <div className={styles.mainContainer}>
             <div>
-                <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel />}</div>
+                <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel functionDeleteChat={handleNewChat} />}</div>
             </div>
             <div>
                 <div className={styles.commandsContainer}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
@@ -376,6 +396,7 @@ const Chat = () => {
                         ) : (
                             <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}>
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
+                               
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
                                           const response = {
@@ -477,7 +498,13 @@ const Chat = () => {
                             activeCitation={activeCitation}
                             onActiveTabChanged={x => {
                                 onToggleTab(x, selectedAnswer);
-                                console.log("Oe acá", answers[selectedAnswer][1]);
+                                console.log("Oe acá desde answers", answers[selectedAnswer][1].answer);
+                                console.log("lo que hay en dataChat:", dataChat);
+                                if (dataChat.includes(answers[selectedAnswer][1].answer)) {
+                                    console.log("Sí está");
+                                } else {
+                                    console.log("No está");
+                                }
                             }}
                             citationHeight="810px"
                             answer={answers[selectedAnswer][1]}
@@ -492,7 +519,14 @@ const Chat = () => {
                                 activeCitation={activeCitation}
                                 onActiveTabChanged={x => {
                                     onToggleTab(x, selectedAnswer);
-                                    console.log("Oe acá", answers[selectedAnswer][1]);
+                                    // console.log("Oe acá desde histoy", answers[selectedAnswer][1].answer);
+                                    console.log("Respuesta", response);
+                                    console.log("lo que hay en dataChat:", dataChat);
+                                    if (dataChat.includes(answers[selectedAnswer][1].answer)) {
+                                        console.log("Sí está");
+                                    } else {
+                                        console.log("No está");
+                                    }
                                 }}
                                 citationHeight="810px"
                                 answer={response}

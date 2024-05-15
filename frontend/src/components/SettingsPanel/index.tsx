@@ -6,6 +6,7 @@ import styles from "./SettingsModal.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { useAppContext } from "../../providers/AppProviders";
+import { ProfileButton } from "../Profile";
 
 interface Props {
     user: {
@@ -31,12 +32,7 @@ const itemClass = mergeStyles({
 });
 
 export const SettingsPanel = () => {
-    const { userId, userName, setSettingsPanel } = useAppContext();
-
-    const user = {
-        id: userId,
-        name: userName
-    };
+    const { user, setSettingsPanel } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
     const [presencePenalty, setPresencePenalty] = useState("0");
@@ -52,7 +48,12 @@ export const SettingsPanel = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            getSettings({ user })
+            getSettings({
+                user: {
+                    id: user.id,
+                    name: user.name
+                }
+            })
                 .then(data => {
                     setTemperature(data.temperature);
                     setPresencePenalty(data.presencePenalty);
@@ -182,22 +183,18 @@ export const SettingsPanel = () => {
                                 />
                             </div>
                             <div className={itemClass}>
-                                <span>Variety Boost</span>
-                                <Checkbox
-                                    label=""
-                                    checked={frequencyPenalty == "1"}
-                                    onChange={handleSetFrequencyPenalty}
-                                    onRenderLabel={() => onRenderLabel(frequencyPenaltyDialog, "Frequency Penalty")}
-                                />
+                                <div className={mergeStyles(itemClass, styles["w-100"])}>
+                                    <span>Variety Boost</span>
+                                    <Checkbox label="" checked={frequencyPenalty == "1"} onChange={handleSetFrequencyPenalty} />
+                                </div>
+                                {onRenderLabel(frequencyPenaltyDialog, "Frequency Penalty")}
                             </div>
                             <div className={itemClass}>
-                                <span>Topic Explorer</span>
-                                <Checkbox
-                                    label=""
-                                    checked={presencePenalty == "1"}
-                                    onChange={handleSetPresencePenalty}
-                                    onRenderLabel={() => onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
-                                />
+                                <div className={mergeStyles(itemClass, styles["w-100"])}>
+                                    <span>Topic Explorer</span>
+                                    <Checkbox label="" checked={presencePenalty == "1"} onChange={handleSetPresencePenalty} />
+                                </div>
+                                {onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
                             </div>
                             <DefaultButton className={styles.saveButton} onClick={handleSubmit}>
                                 <SaveFilled />
@@ -207,6 +204,9 @@ export const SettingsPanel = () => {
                     )}
                 </Stack.Item>
             </Stack>
+            <div className={styles.profileButtonContainer}>
+                <ProfileButton />
+            </div>
         </div>
     );
 };

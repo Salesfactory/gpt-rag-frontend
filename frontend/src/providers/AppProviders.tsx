@@ -7,9 +7,16 @@ interface SettingsType {
     frequencyPenalty: string;
 }
 
+interface UserInfo {
+    id: string;
+    name: string;
+}
+
 interface AppContextType {
     showHistoryPanel: boolean;
     setShowHistoryPanel: Dispatch<SetStateAction<boolean>>;
+    newChatDeleted: boolean;
+    setNewChatDeleted: Dispatch<SetStateAction<boolean>>;
     showFeedbackRatingPanel: boolean;
     setShowFeedbackRatingPanel: Dispatch<SetStateAction<boolean>>;
     refreshFetchHistorial: boolean;
@@ -18,10 +25,8 @@ interface AppContextType {
     setChatIsCleaned: Dispatch<SetStateAction<boolean>>;
     dataHistory: ConversationHistoryItem[];
     setDataHistory: Dispatch<SetStateAction<ConversationHistoryItem[]>>;
-    userId: string;
-    setUserId: Dispatch<SetStateAction<string>>;
-    userName: string;
-    setUserName: Dispatch<SetStateAction<string>>;
+    user: UserInfo;
+    setUser: Dispatch<SetStateAction<UserInfo>>;
     chatSelected: string;
     setChatSelected: Dispatch<SetStateAction<string>>;
     chatId: string;
@@ -42,13 +47,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [refreshFetchHistorial, setRefreshFetchHistorial] = useState<boolean>(false);
     const [dataHistory, setDataHistory] = useState<ConversationHistoryItem[]>([]);
     const [dataConversation, setDataConversation] = useState<ChatTurn[]>([]);
-    const [userId, setUserId] = useState<string>("00000000-0000-0000-0000-000000000000");
-    const [userName, setUserName] = useState<string>("anonymous");
+    const [user, setUser] = useState({
+        id: "00000000-0000-0000-0000-000000000000",
+        name: "anonymous"
+    });
     const [chatId, setChatId] = useState<string>("");
     const [conversationIsLoading, setConversationIsLoading] = useState<boolean>(false);
     const [chatIsCleaned, setChatIsCleaned] = useState<boolean>(false);
     const [chatSelected, setChatSelected] = useState("");
     const [settingsPanel, setSettingsPanel] = useState(false);
+    const [newChatDeleted, setNewChatDeleted] = useState(false);
 
     return (
         <AppContext.Provider
@@ -59,10 +67,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 setShowFeedbackRatingPanel,
                 dataHistory,
                 setDataHistory,
-                userId,
-                setUserId,
-                userName,
-                setUserName,
+                user,
+                setUser,
                 dataConversation,
                 setDataConversation,
                 chatId,
@@ -76,7 +82,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 chatIsCleaned,
                 setChatIsCleaned,
                 settingsPanel,
-                setSettingsPanel
+                setSettingsPanel,
+                newChatDeleted,
+                setNewChatDeleted
             }}
         >
             {children}

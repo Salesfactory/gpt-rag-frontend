@@ -57,7 +57,7 @@
 
 .buttonConversation{
     border: none;
-    padding: 10px;
+    padding: 10px 5px;
     text-align: left;
     width: 100%;
     white-space: nowrap;
@@ -65,11 +65,25 @@
     text-overflow: ellipsis;
     background-color: transparent;
     cursor: pointer;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 15px;
 }
 
+.buttonConversationSelected{
+    border: none;
+    padding: 10px;
+    text-align: left;
+    width: 100%;
+    background-color: transparent;
+    cursor: pointer;
+    font-weight: bold;
+}
 
 .actionsButtons{
     display: flex;
+    flex-direction: row;
+    justify-self: center;
+    justify-content: center;
 }
 
 .conversationContainer{
@@ -102,6 +116,7 @@
     border: 1.5px solid rgb(231, 231, 231);
     margin-right: 5px;
     transition: .3s;
+    width: 28px;
 }
 
 .actionButton:hover{
@@ -130,4 +145,16 @@
     to {
         transform: rotate(1turn)
     }
+}
+
+.profileButtonContainer {
+    position: absolute;
+    bottom: 30px;
+    right: 20px;
+    width: 240px;
+    height: 80px;
+}
+
+.listContainer {
+    margin-bottom: 80px;
 }
