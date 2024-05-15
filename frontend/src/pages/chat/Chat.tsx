@@ -396,7 +396,7 @@ const Chat = () => {
                         ) : (
                             <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}>
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
-                               
+
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
                                           const response = {
