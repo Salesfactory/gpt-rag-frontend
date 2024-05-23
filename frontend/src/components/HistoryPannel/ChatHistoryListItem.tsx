@@ -108,7 +108,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         } catch (error) {
             console.error("Error deleting conversation:", error);
             setDeletingIsLoading(false);
-            setErrorMessage(`We run into an error deleting the conversation, please contact the system administrator.`);
+            setErrorMessage(`We ran into an error deleting the conversation, please contact the system administrator.`);
             toast("Conversation could not be deleted", { type: "error" });
         }
     };
