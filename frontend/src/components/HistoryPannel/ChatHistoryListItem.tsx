@@ -7,6 +7,8 @@ import pencil from "../../assets/pencil.png";
 import yes from "../../assets/check.png";
 import no from "../../assets/close.png";
 import { Spinner } from "@fluentui/react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface ChatHistoryPanelProps {
     onDeleteChat: () => void;
@@ -101,10 +103,13 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
             }
             const updatedDataHistory = dataHistory.filter(item => item.id !== chatConversationId);
             setDataHistory(updatedDataHistory);
+
+            toast("Conversation deleted successfully", { type: "success" });
         } catch (error) {
             console.error("Error deleting conversation:", error);
             setDeletingIsLoading(false);
-            setErrorMessage(`Was an error deleting conversation: ${error}`);
+            setErrorMessage(`We run into an error deleting the conversation, please contact the system administrator.`);
+            toast("Conversation could not be deleted", { type: "error" });
         }
     };
 
@@ -152,6 +157,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     return (
         <div className={styles.listContainer}>
+            <ToastContainer />
             {isLoading && (
                 <div className={styles.loaderContainer}>
                     <Spinner size={3} />
