@@ -313,6 +313,9 @@ const Chat = () => {
     // };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
+        if(!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")){
+            return window.open(citation, '_blank');
+        }
         const response = await getPdf(fileName);
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
