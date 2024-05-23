@@ -192,6 +192,9 @@ export function getCitationFilePath(citation: string): string {
 }
 
 export function getFilePath(fileUrl: string) {
+    if(!fileUrl.endsWith(".pdf") || !fileUrl.endsWith(".docx") || fileUrl.endsWith(".doc")) {
+        return fileUrl;
+    }
     const regex = /documents\/(.*)/;
     const match = fileUrl.match(regex);
     let filepath = "";
