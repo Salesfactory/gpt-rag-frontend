@@ -255,14 +255,9 @@ def setSettings():
 
     try:
         temperature = float(request.json["temperature"])
-        # presence_penalty = request.json["presence_penalty"]
-        # frequency_penalty = request.json["frequency_penalty"]
     except:
         temperature = 0
 
-    # if not temperature or not presence_penalty or not frequency_penalty:
-    #     return jsonify({"error": "Missing required parameters, temperature, presence_penalty or frequency_penalty"}), 400
-    
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
@@ -278,8 +273,6 @@ def setSettings():
             "client_principal_id": client_principal_id,
             "client_principal_name": client_principal_name,
             "temperature": temperature,
-            # "presence_penalty": presence_penalty,
-            # "frequency_penalty": frequency_penalty
         })
         headers = {
             'Content-Type': 'application/json',

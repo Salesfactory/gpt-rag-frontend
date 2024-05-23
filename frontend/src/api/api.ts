@@ -55,8 +55,6 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
             },
             body: JSON.stringify({
                 temperature,
-                // presence_penalty,
-                // frequency_penalty
             })
         });
         const fetchedData = await response.json();
