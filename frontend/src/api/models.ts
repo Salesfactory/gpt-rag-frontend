@@ -97,6 +97,6 @@ export type PostSettingsProps = {
         name: string;
     } | null;
     temperature: number;
-    presence_penalty: number;
-    frequency_penalty: number;
+    // presence_penalty: number;
+    // frequency_penalty: number;
 }

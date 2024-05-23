@@ -253,12 +253,15 @@ def setSettings():
     if not client_principal_id or not client_principal_name:
         return jsonify({"error": "Missing required parameters, client_principal_id or client_principal_name"}), 400
 
-    temperature = request.json["temperature"]
-    presence_penalty = request.json["presence_penalty"]
-    frequency_penalty = request.json["frequency_penalty"]
-    
-    if not temperature or not presence_penalty or not frequency_penalty:
-        return jsonify({"error": "Missing required parameters, temperature, presence_penalty or frequency_penalty"}), 400
+    try:
+        temperature = float(request.json["temperature"])
+        # presence_penalty = request.json["presence_penalty"]
+        # frequency_penalty = request.json["frequency_penalty"]
+    except:
+        temperature = 0
+
+    # if not temperature or not presence_penalty or not frequency_penalty:
+    #     return jsonify({"error": "Missing required parameters, temperature, presence_penalty or frequency_penalty"}), 400
     
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
@@ -275,8 +278,8 @@ def setSettings():
             "client_principal_id": client_principal_id,
             "client_principal_name": client_principal_name,
             "temperature": temperature,
-            "presence_penalty": presence_penalty,
-            "frequency_penalty": frequency_penalty
+            # "presence_penalty": presence_penalty,
+            # "frequency_penalty": frequency_penalty
         })
         headers = {
             'Content-Type': 'application/json',
@@ -306,7 +309,7 @@ def setFeedback():
     rating = request.json["rating"]
     
     if not conversation_id or not question or not answer or not category:
-        return jsonify({"error": "Missing required parameters, temperature, presence_penalty or frequency_penalty"}), 400
+        return jsonify({"error": "Missing required parameters conversation_id, question, answer or category"}), 400
     
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function

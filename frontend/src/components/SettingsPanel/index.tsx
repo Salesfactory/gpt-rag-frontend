@@ -35,16 +35,16 @@ export const SettingsPanel = () => {
     const { user, setSettingsPanel } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
-    const [presencePenalty, setPresencePenalty] = useState("0");
-    const [frequencyPenalty, setFrequencyPenalty] = useState("0");
+    // const [presencePenalty, setPresencePenalty] = useState("0");
+    // const [frequencyPenalty, setFrequencyPenalty] = useState("0");
     const [loading, setLoading] = useState(true);
 
     const temperatureDialog =
         "It adjusts the balance between creativity and predictability in responses. Lower settings yield straightforward answers, while higher settings introduce originality and diversity, perfect for creative tasks and factual inquiries.";
-    const frequencyPenaltyDialog =
-        "Streamlines dialogue by minimizing repetition. Increase to boost variety and prevent redundancy; decrease to ensure key terms recur, enhancing focus on specific concepts. Use it to decrease excessive repetition.";
-    const presencePenaltyDialog =
-        "Promotes the introduction of new topics and ideas. Increase to discover varied concepts; decrease to maintain focus on current discussions. Ideal for brainstorming and exploration.";
+    // const frequencyPenaltyDialog =
+    //     "Streamlines dialogue by minimizing repetition. Increase to boost variety and prevent redundancy; decrease to ensure key terms recur, enhancing focus on specific concepts. Use it to decrease excessive repetition.";
+    // const presencePenaltyDialog =
+    //     "Promotes the introduction of new topics and ideas. Increase to discover varied concepts; decrease to maintain focus on current discussions. Ideal for brainstorming and exploration.";
 
     useEffect(() => {
         const fetchData = async () => {
@@ -56,8 +56,8 @@ export const SettingsPanel = () => {
             })
                 .then(data => {
                     setTemperature(data.temperature);
-                    setPresencePenalty(data.presencePenalty);
-                    setFrequencyPenalty(data.frequencyPenalty);
+                    // setPresencePenalty(data.presencePenalty);
+                    // setFrequencyPenalty(data.frequencyPenalty);
                     setLoading(false);
                 })
                 .catch(error => setLoading(false));
@@ -68,20 +68,27 @@ export const SettingsPanel = () => {
     }, []);
 
     const handleSubmit = () => {
-        if ((!temperature && temperature != "0") || (!presencePenalty && presencePenalty != "0") || (!frequencyPenalty && frequencyPenalty != "0")) {
-            console.error("Invalid settings are not submitted.");
+        // check if temperature is set and is a number
+        const parsedTemperature = parseFloat(temperature);
+
+        if (parsedTemperature < 0 || parsedTemperature > 1) {
+            console.error("Invalid, settings are not submitted.");
             return;
         }
 
-        const parsedTemperature = parseFloat(temperature);
-        const parsedPresencePenalty = parseFloat(presencePenalty);
-        const parsedFrequencyPenalty = parseFloat(frequencyPenalty);
+        // if ((!temperature && temperature != "0") || (!presencePenalty && presencePenalty != "0") || (!frequencyPenalty && frequencyPenalty != "0")) {
+        //     console.error("Invalid settings are not submitted.");
+        //     return;
+        // }
+
+        // const parsedPresencePenalty = parseFloat(presencePenalty);
+        // const parsedFrequencyPenalty = parseFloat(frequencyPenalty);
 
         postSettings({
             user,
-            temperature: parsedTemperature,
-            presence_penalty: parsedPresencePenalty,
-            frequency_penalty: parsedFrequencyPenalty
+            temperature: parsedTemperature
+            // presence_penalty: parsedPresencePenalty,
+            // frequency_penalty: parsedFrequencyPenalty
         });
     };
 
@@ -105,15 +112,15 @@ export const SettingsPanel = () => {
         }
     };
 
-    const handleSetPresencePenalty = useCallback((ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean): void => {
-        const presencePenalty = !!checked ? "1" : "0";
-        setPresencePenalty(presencePenalty);
-    }, []);
+    // const handleSetPresencePenalty = useCallback((ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean): void => {
+    //     const presencePenalty = !!checked ? "1" : "0";
+    //     setPresencePenalty(presencePenalty);
+    // }, []);
 
-    const handleSetFrequencyPenalty = useCallback((ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean): void => {
-        const frequencyPenalty = !!checked ? "1" : "0";
-        setFrequencyPenalty(frequencyPenalty);
-    }, []);
+    // const handleSetFrequencyPenalty = useCallback((ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean): void => {
+    //     const frequencyPenalty = !!checked ? "1" : "0";
+    //     setFrequencyPenalty(frequencyPenalty);
+    // }, []);
 
     const onRenderLabel = (dialog: string, title: string) => (
         <TooltipHost
@@ -182,7 +189,7 @@ export const SettingsPanel = () => {
                                     onChange={e => handleSetTemperature(e)}
                                 />
                             </div>
-                            <div className={itemClass}>
+                            {/* <div className={itemClass}>
                                 <div className={mergeStyles(itemClass, styles["w-100"])}>
                                     <span>Variety Boost</span>
                                     <Checkbox label="" checked={frequencyPenalty == "1"} onChange={handleSetFrequencyPenalty} />
@@ -195,7 +202,7 @@ export const SettingsPanel = () => {
                                     <Checkbox label="" checked={presencePenalty == "1"} onChange={handleSetPresencePenalty} />
                                 </div>
                                 {onRenderLabel(presencePenaltyDialog, "Presence Penalty")}
-                            </div>
+                            </div> */}
                             <DefaultButton className={styles.saveButton} onClick={handleSubmit}>
                                 <SaveFilled />
                                 &#8202;&#8202;Save
