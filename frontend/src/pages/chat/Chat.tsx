@@ -90,7 +90,7 @@ const Chat = () => {
             if (dataConversation.length > 0) {
                 history.push(...dataConversation);
             } else {
-                history.push(...answers.map(a => ({ user: a[0], bot: a[1].answer })));
+                history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
             }
             history.push({ user: question, bot: undefined });
             const request: ChatRequestGpt = {
@@ -121,9 +121,9 @@ const Chat = () => {
                 answer: result.answer || "",
                 conversation_id: chatId,
                 data_points: [""],
-                thoughts: null
+                thoughts: result.thoughts || []
             } as AskResponse;
-            setDataConversation([...dataConversation, { user: question, bot: response.answer }]);
+            setDataConversation([...dataConversation, { user: question, bot: { message: response.answer, thoughts: response.thoughts } }]);
 
             // Voice Synthesis
             if (speechSynthesisEnabled) {
@@ -276,9 +276,9 @@ const Chat = () => {
             dataConversation.map(data => [
                 data.user,
                 {
-                    answer: data.bot || "",
+                    answer: data?.bot?.message || "",
                     data_points: [],
-                    thoughts: null
+                    thoughts: data?.bot?.thoughts || []
                 }
             ])
         );
@@ -313,8 +313,8 @@ const Chat = () => {
     // };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        if(!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")){
-            return window.open(citation, '_blank');
+        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
+            return window.open(citation, "_blank");
         }
         const response = await getPdf(fileName);
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
@@ -339,13 +339,14 @@ const Chat = () => {
         setSelectedAnswer(index);
     };
 
-    const answerFromHistory = dataConversation.map(data => data.bot);
+    const answerFromHistory = dataConversation.map(data => data.bot?.message);
+    const thoughtsFromHistory = dataConversation.map(data => data.bot?.thoughts);
 
     const responseForPreviewPanel = {
         answer: answerFromHistory.toString(),
         conversation_id: chatId,
         data_points: [""],
-        thoughts: null
+        thoughts: thoughtsFromHistory.toString()
     } as AskResponse;
 
     // const onShowCitation = (citation: string, index: number) => {
@@ -406,10 +407,10 @@ const Chat = () => {
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
                                           const response = {
-                                              answer: item.bot || "",
+                                              answer: item.bot?.message || "",
                                               conversation_id: chatId,
                                               data_points: [""],
-                                              thoughts: null
+                                              thoughts: item.bot?.thoughts || []
                                           } as AskResponse;
                                           return (
                                               <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
@@ -498,7 +499,7 @@ const Chat = () => {
                             />
                         </div>
                     </div>
-                    {(answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && answers[selectedAnswer] && (
+                    {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer] && (
                         <AnalysisPanel
                             className={styles.chatAnalysisPanel}
                             activeCitation={activeCitation}

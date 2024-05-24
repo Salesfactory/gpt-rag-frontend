@@ -67,7 +67,10 @@ export type AskResponseGpt= {
 
 export type ChatTurn = {
     user: string;
-    bot?: string;
+    bot?: {
+        message: string;
+        thoughts: any;
+    } | null;
 };
 
 export type ChatRequest = {
