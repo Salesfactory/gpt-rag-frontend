@@ -7,6 +7,7 @@ import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { useAppContext } from "../../providers/AppProviders";
 import { ProfileButton } from "../Profile";
+import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 
 interface Props {
     user: {
@@ -31,11 +32,50 @@ const itemClass = mergeStyles({
     padding: "10px 0"
 });
 
+const ConfirmationDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boolean; onDismiss: () => void; onConfirm: () => void }) => {
+    return (
+        <Dialog
+            hidden={!isOpen}
+            onDismiss={onDismiss}
+            dialogContentProps={{
+                type: 0,
+                title: "Confirmation",
+                subText: "Are you sure you want to save the changes?"
+            }}
+            modalProps={{
+                isBlocking: true,
+                styles: { main: { maxWidth: 450 } }
+            }}
+        >
+            <DialogContent>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        gap: "10px"
+                    }}
+                >
+                    <DefaultButton onClick={onDismiss} text="Cancel" />
+                    <PrimaryButton
+                        onClick={() => {
+                            onConfirm();
+                            onDismiss();
+                        }}
+                        text="Save"
+                    />
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 export const SettingsPanel = () => {
     const { user, setSettingsPanel } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
     const [loading, setLoading] = useState(true);
+
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const temperatureDialog =
         "It adjusts the balance between creativity and predictability in responses. Lower settings yield straightforward answers, while higher settings introduce originality and diversity, perfect for creative tasks and factual inquiries.";
@@ -51,6 +91,7 @@ export const SettingsPanel = () => {
                 .then(data => {
                     setTemperature(data.temperature);
                     setLoading(false);
+                    setIsDialogOpen(false);
                 })
                 .catch(error => setLoading(false));
         };
@@ -117,6 +158,15 @@ export const SettingsPanel = () => {
 
     return (
         <div>
+            <ConfirmationDialog
+                isOpen={isDialogOpen}
+                onDismiss={() => {
+                    setIsDialogOpen(false);
+                }}
+                onConfirm={() => {
+                    handleSubmit();
+                }}
+            />
             <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
                 <Stack.Item grow className={styles["w-100"]}>
                     <div className={styles.header2}>
@@ -160,7 +210,7 @@ export const SettingsPanel = () => {
                                     onChange={e => handleSetTemperature(e)}
                                 />
                             </div>
-                            <DefaultButton className={styles.saveButton} onClick={handleSubmit}>
+                            <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)}>
                                 <SaveFilled />
                                 &#8202;&#8202;Save
                             </DefaultButton>
