@@ -113,6 +113,7 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
     const conversationItems: ChatTurn[] = [];
     let currentUserMessage = "";
     let currentBotMessage = "";
+    let currentBotThoughts: string[] = [];
 
     if (messages) {
         messages.forEach((item: any) => {
@@ -120,17 +121,19 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
                 currentUserMessage = item.content;
             } else if (item.role === "assistant") {
                 currentBotMessage = item.content;
+                currentBotThoughts = item.thoughts;
                 if (currentUserMessage !== "" || currentBotMessage !== "") {
-                    conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
+                    conversationItems.push({ user: currentUserMessage, bot: { message: currentBotMessage, thoughts: currentBotThoughts } });
                     currentUserMessage = "";
                     currentBotMessage = "";
+                    currentBotThoughts = [];
                 }
             }
         });
     }
 
     if (currentUserMessage !== "" || currentBotMessage !== "") {
-        conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
+        conversationItems.push({ user: currentUserMessage, bot: { message: currentBotMessage, thoughts: currentBotThoughts } });
     }
 
     return conversationItems;
