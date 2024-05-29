@@ -58,7 +58,6 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
             })
         });
         const fetchedData = await response.json();
-        console.log("Settings posted", fetchedData);
         return fetchedData;
     } catch (error) {
         console.error("Error posting settings", error);
