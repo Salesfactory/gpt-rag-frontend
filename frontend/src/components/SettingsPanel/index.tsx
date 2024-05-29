@@ -32,7 +32,7 @@ const itemClass = mergeStyles({
     padding: "10px 0"
 });
 
-const ConfirmationDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boolean; onDismiss: () => void; onConfirm: () => void }) => {
+const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading: boolean; isOpen: boolean; onDismiss: () => void; onConfirm: () => void }) => {
     return (
         <Dialog
             hidden={!isOpen}
@@ -47,24 +47,35 @@ const ConfirmationDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boolean;
                 styles: { main: { maxWidth: 450 } }
             }}
         >
-            <DialogContent>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        gap: "10px"
-                    }}
-                >
-                    <DefaultButton onClick={onDismiss} text="Cancel" />
-                    <PrimaryButton
-                        onClick={() => {
-                            onConfirm();
-                            onDismiss();
+            {loading ? (
+                <div>
+                    <Spinner
+                        styles={{
+                            root: {
+                                marginTop: "50px"
+                            }
                         }}
-                        text="Save"
                     />
                 </div>
-            </DialogContent>
+            ) : (
+                <DialogContent>
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            gap: "10px"
+                        }}
+                    >
+                        <DefaultButton onClick={onDismiss} text="Cancel" />
+                        <PrimaryButton
+                            onClick={() => {
+                                onConfirm();
+                            }}
+                            text="Save"
+                        />
+                    </div>
+                </DialogContent>
+            )}
         </Dialog>
     );
 };
@@ -74,6 +85,7 @@ export const SettingsPanel = () => {
 
     const [temperature, setTemperature] = useState("0");
     const [loading, setLoading] = useState(true);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -91,11 +103,9 @@ export const SettingsPanel = () => {
                 .then(data => {
                     setTemperature(data.temperature);
                     setLoading(false);
-                    setIsDialogOpen(false);
                 })
                 .catch(error => setLoading(false));
         };
-
         setLoading(true);
         fetchData();
     }, []);
@@ -111,6 +121,9 @@ export const SettingsPanel = () => {
         postSettings({
             user,
             temperature: parsedTemperature
+        }).then(() => {
+            setIsDialogOpen(false);
+            setIsLoadingSettings(false);
         });
     };
 
@@ -159,11 +172,13 @@ export const SettingsPanel = () => {
     return (
         <div>
             <ConfirmationDialog
+                loading={isLoadingSettings}
                 isOpen={isDialogOpen}
                 onDismiss={() => {
                     setIsDialogOpen(false);
                 }}
                 onConfirm={() => {
+                    setIsLoadingSettings(true);
                     handleSubmit();
                 }}
             />
