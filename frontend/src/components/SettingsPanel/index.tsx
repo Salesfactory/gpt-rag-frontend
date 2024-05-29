@@ -108,7 +108,7 @@ export const SettingsPanel = () => {
         };
         setLoading(true);
         fetchData();
-    }, [user.id]);
+    }, []);
 
     const handleSubmit = () => {
         const parsedTemperature = parseFloat(temperature);
