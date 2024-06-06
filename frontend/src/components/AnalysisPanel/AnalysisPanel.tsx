@@ -65,7 +65,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     headerText="Citation"
                     headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
                 >
-                    <Suspense fallback={<p>Cargando...</p>}>
+                    <Suspense fallback={<p>Loading...</p>}>
                         <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
                     </Suspense>
                 </PivotItem>
