@@ -226,8 +226,8 @@ const Chat = () => {
                     // setShowAuthMessage(false);
                     console.log("User info found.", userInfoList);
 
-                    const keyId = "http://schemas.microsoft.com/identity/claims/objectidentifier";
-                    const keyName = "preferred_username";
+                    const keyId = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
+                    const keyName = "name";
 
                     const _user = userInfoList.find(obj => {
                         const _id = obj?.user_claims?.some(claim => claim.typ === keyId);
