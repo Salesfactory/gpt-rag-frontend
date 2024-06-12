@@ -47,7 +47,7 @@ const placeholderPrepare = (placeholder: string) => {
     // remove email domain
     const email = placeholder.split("@")[0];
     // remove special characters
-    return email.replace(/[^a-zA-Z0-9]/g, "");
+    return email.replace(/[^a-zA-Z0-9\s]/g, "");
 };
 
 export const ProfileButton: React.FunctionComponent = () => {
@@ -77,7 +77,7 @@ export const ProfileButton: React.FunctionComponent = () => {
         setSelectedOption(selOption);
 
         if (selOption === "Logout") {
-            window.location.href = "/.auth/logout";
+            window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
         } else if (selOption === "Admin") {
             // go to admin panel
             console.log("Admin Panel");
