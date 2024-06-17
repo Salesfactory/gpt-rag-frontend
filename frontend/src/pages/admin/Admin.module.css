@@ -10,3 +10,11 @@
     height: '24px';
     width: '24px';
 }
+
+.row{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    justify-items:center
+}
