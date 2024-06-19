@@ -39,7 +39,35 @@ interface AppContextType {
     setSettingsPanel: Dispatch<SetStateAction<boolean>>;
 }
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType>({
+    showHistoryPanel: true,
+    setShowHistoryPanel: () => {},
+    showFeedbackRatingPanel: false,
+    setShowFeedbackRatingPanel: () => {},
+    dataHistory: [],
+    setDataHistory: () => {},
+    user: {
+        id: "00000000-0000-0000-0000-000000000000",
+        name: "anonymous"
+    },
+    setUser: () => {},
+    dataConversation: [],
+    setDataConversation: () => {},
+    chatId: "",
+    setChatId: () => {},
+    conversationIsLoading: false,
+    setConversationIsLoading: () => {},
+    refreshFetchHistorial: false,
+    setRefreshFetchHistorial: () => {},
+    chatSelected: "",
+    setChatSelected: () => {},
+    chatIsCleaned: false,
+    setChatIsCleaned: () => {},
+    settingsPanel: false,
+    setSettingsPanel: () => {},
+    newChatDeleted: false,
+    setNewChatDeleted: () => {}
+});
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [showHistoryPanel, setShowHistoryPanel] = useState<boolean>(true);
@@ -58,6 +86,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [settingsPanel, setSettingsPanel] = useState(false);
     const [newChatDeleted, setNewChatDeleted] = useState(false);
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "f" && event.ctrlKey) {
+            console.log("Ctrl + F pressed");
+            setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
+            setSettingsPanel(false);
+            setShowHistoryPanel(false);
+        } else if (event.key === "h" && event.ctrlKey) {
+            console.log("Ctrl + H pressed");
+            setShowHistoryPanel(!showHistoryPanel);
+            setShowFeedbackRatingPanel(false);
+            setSettingsPanel(false);
+        } else if (event.key === "," && event.ctrlKey) {
+            console.log("Ctrl + , pressed");
+            setSettingsPanel(!settingsPanel);
+            setShowHistoryPanel(false);
+            setShowFeedbackRatingPanel(false);
+        }
+    };
+    
+
+    window.addEventListener("keydown", handleKeyDown);
+    //If I add this on a useEffect it doesn't work, I don't know why
+    //maybe because it's a global event listener and is called multiple times
+
     return (
         <AppContext.Provider
             value={{
@@ -65,6 +117,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 setShowHistoryPanel,
                 showFeedbackRatingPanel,
                 setShowFeedbackRatingPanel,
+                setSettingsPanel,
+                settingsPanel,
                 dataHistory,
                 setDataHistory,
                 user,
@@ -81,8 +135,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 setChatSelected,
                 chatIsCleaned,
                 setChatIsCleaned,
-                settingsPanel,
-                setSettingsPanel,
                 newChatDeleted,
                 setNewChatDeleted
             }}
@@ -90,12 +142,4 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             {children}
         </AppContext.Provider>
     );
-};
-
-export const useAppContext = (): AppContextType => {
-    const context = useContext(AppContext);
-    if (!context) {
-        throw new Error("useAppContext must be used inside AppProvider");
-    }
-    return context;
 };

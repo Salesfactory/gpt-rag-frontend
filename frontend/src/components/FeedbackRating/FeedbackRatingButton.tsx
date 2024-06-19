@@ -2,7 +2,8 @@ import { Text } from "@fluentui/react";
 import { ChatBubblesQuestionFilled } from "@fluentui/react-icons";
 
 import styles from "./FeedbackRatingButton.module.css";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
+import { useContext } from "react";
 
 interface Props {
     className?: string;
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export const FeedbackRatingButton = ({ className, disabled, onClick }: Props) => {
-    const { showFeedbackRatingPanel } = useAppContext();
+    const { showFeedbackRatingPanel } = useContext(AppContext);
     const buttonContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     return (
         <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={onClick}>
