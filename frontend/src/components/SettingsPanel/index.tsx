@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { AddFilled, SaveFilled, ErrorCircleFilled } from "@fluentui/react-icons";
 import { Checkbox } from "@fluentui/react/lib/Checkbox";
 import { TooltipHost, TooltipDelay, DirectionalHint, DefaultButton, Modal, Stack, Text, Spinner, Slider } from "@fluentui/react";
 import styles from "./SettingsModal.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 import { ProfileButton } from "../Profile";
 import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 
@@ -81,7 +81,7 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
 };
 
 export const SettingsPanel = () => {
-    const { user, setSettingsPanel } = useAppContext();
+    const { user, setSettingsPanel, settingsPanel } = useContext(AppContext);
 
     const [temperature, setTemperature] = useState("0");
     const [loading, setLoading] = useState(true);

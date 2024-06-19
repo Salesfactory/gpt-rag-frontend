@@ -1,7 +1,7 @@
 import styles from "./ChatHistoryPannel.module.css";
 import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } from "../../api";
-import { useEffect, useState } from "react";
-import { useAppContext } from "../../providers/AppProviders";
+import { useContext, useEffect, useState } from "react";
+import { AppContext } from "../../providers/AppProviders";
 import trash from "../../assets/trash.png";
 import pencil from "../../assets/pencil.png";
 import yes from "../../assets/check.png";
@@ -35,7 +35,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         chatSelected,
         setChatSelected,
         setNewChatDeleted
-    } = useAppContext();
+    } = useContext(AppContext);
 
     const handleMouseEnter = (index: string) => {
         setHoveredItemIndex(index);

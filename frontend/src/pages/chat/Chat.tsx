@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useContext } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
 import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
@@ -15,7 +15,7 @@ import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
@@ -59,7 +59,7 @@ const Chat = () => {
         chatIsCleaned,
         settingsPanel,
         setUser
-    } = useAppContext();
+    } = useContext(AppContext);
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
@@ -308,10 +308,6 @@ const Chat = () => {
         setUseSuggestFollowupQuestions(!!checked);
     };
 
-    // const onExampleClicked = (example: string) => {
-    //     makeApiRequestGpt(example);
-    // };
-
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
             return window.open(citation, "_blank");
@@ -349,17 +345,6 @@ const Chat = () => {
         thoughts: thoughtsFromHistory.toString()
     } as AskResponse;
 
-    // const onShowCitation = (citation: string, index: number) => {
-    //     if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
-    //         setActiveAnalysisPanelTab(undefined);
-    //     } else {
-    //         setActiveCitation(citation);
-    //         setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
-    //     }
-
-    //     setSelectedAnswer(index);
-    // };
-
     const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
         if (activeAnalysisPanelTab === tab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
@@ -373,6 +358,18 @@ const Chat = () => {
     const hideTab = () => {
         setActiveAnalysisPanelTab(undefined);
     };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "n" && event.ctrlKey) {
+            clearChat();
+        } else if (event.key === "r" && event.ctrlKey) {
+            handleNewChat();
+        }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    //If I add this on a useEffect it doesn't work, I don't know why
+    //maybe because it's a global event listener and is called multiple times
 
     return (
         <div className={styles.mainContainer}>
