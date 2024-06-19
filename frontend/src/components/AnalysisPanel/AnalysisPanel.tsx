@@ -74,6 +74,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     headerButtonProps={closeButtonStyle}
                     onRenderItemLink={() => (
                         <div
+                            tabIndex={0}
                             onClick={onHideTab}
                             style={{
                                 borderColor: "transparent",
@@ -81,7 +82,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                 backgroundColor: "transparent"
                             }}
                         >
-                            <DismissCircleFilled
+                            <DismissCircleFilled                               
                                 className={mergeStyles({
                                     fontSize: 35,
                                     padding: 0,

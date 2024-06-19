@@ -88,17 +88,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === "f" && event.ctrlKey) {
-            console.log("Ctrl + F pressed");
             setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
             setSettingsPanel(false);
             setShowHistoryPanel(false);
         } else if (event.key === "h" && event.ctrlKey) {
-            console.log("Ctrl + H pressed");
             setShowHistoryPanel(!showHistoryPanel);
             setShowFeedbackRatingPanel(false);
             setSettingsPanel(false);
         } else if (event.key === "," && event.ctrlKey) {
-            console.log("Ctrl + , pressed");
             setSettingsPanel(!settingsPanel);
             setShowHistoryPanel(false);
             setShowFeedbackRatingPanel(false);
