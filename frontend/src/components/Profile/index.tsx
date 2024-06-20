@@ -79,8 +79,7 @@ export const ProfileButton: React.FunctionComponent = () => {
         if (selOption === "Logout") {
             window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
         } else if (selOption === "Admin") {
-            // go to admin panel
-            console.log("Admin Panel");
+            window.location.href = "#/admin";
         }
     };
 
