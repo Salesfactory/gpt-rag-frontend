@@ -88,6 +88,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const handleKeyDown = (event: KeyboardEvent) => {
         event.preventDefault()
+        console.log("LAST");
         if (event.key === "f" && event.ctrlKey) {
             setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
             setSettingsPanel(false);
