@@ -99,7 +99,7 @@ export const FeedbackRating = () => {
         <section className={styles.container} data-is-scrollable aria-label="feedback panel">
             <div>
                 <div className={styles.header}>
-                    <div className={styles.title}>Feedback2</div>
+                    <div className={styles.title}>Feedback</div>
                     <div className={styles.buttons}>
                         <div className={styles.closeButtonContainer}>
                             <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
