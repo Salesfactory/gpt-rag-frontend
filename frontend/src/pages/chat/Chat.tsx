@@ -360,10 +360,11 @@ const Chat = () => {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-        event.preventDefault();
         if (event.key === "n" && event.ctrlKey) {
+            event.preventDefault();
             clearChat();
         } else if (event.key === "r" && event.ctrlKey) {
+            event.preventDefault();
             handleNewChat();
         }
     };

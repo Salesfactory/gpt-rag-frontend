@@ -87,24 +87,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [newChatDeleted, setNewChatDeleted] = useState(false);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-        event.preventDefault()
         if (event.key === "f" && event.ctrlKey) {
+            event.preventDefault();
             setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
             setSettingsPanel(false);
             setShowHistoryPanel(false);
         } else if (event.key === "h" && event.ctrlKey) {
+            event.preventDefault()
             setShowHistoryPanel(!showHistoryPanel);
             setShowFeedbackRatingPanel(false);
             setSettingsPanel(false);
         } else if (event.key === "," && event.ctrlKey) {
+            event.preventDefault()
             setSettingsPanel(!settingsPanel);
             setShowHistoryPanel(false);
             setShowFeedbackRatingPanel(false);
         }
         else if(event.key === "Q" && event.ctrlKey && event.shiftKey){
+            event.preventDefault()
             window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
         }
         else if(event.key === "A" && event.ctrlKey && event.shiftKey){
+            event.preventDefault()
             window.location.href = "#/admin";
         }
     };
