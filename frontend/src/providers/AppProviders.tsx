@@ -87,27 +87,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [newChatDeleted, setNewChatDeleted] = useState(false);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "f" && event.ctrlKey) {
+        if (event.key === "?" && event.ctrlKey && event.shiftKey) {
             event.preventDefault();
             setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
             setSettingsPanel(false);
             setShowHistoryPanel(false);
-        } else if (event.key === "h" && event.ctrlKey) {
+        } else if (event.key === ";" && event.ctrlKey && event.shiftKey) {
             event.preventDefault()
             setShowHistoryPanel(!showHistoryPanel);
             setShowFeedbackRatingPanel(false);
             setSettingsPanel(false);
-        } else if (event.key === "," && event.ctrlKey) {
+        } else if (event.key === ":" && event.ctrlKey && event.shiftKey) {
             event.preventDefault()
             setSettingsPanel(!settingsPanel);
             setShowHistoryPanel(false);
             setShowFeedbackRatingPanel(false);
         }
-        else if(event.key === "Q" && event.ctrlKey && event.shiftKey){
+        else if(event.key === ")" && event.ctrlKey && event.shiftKey){
             event.preventDefault()
             window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
         }
-        else if(event.key === "A" && event.ctrlKey && event.shiftKey){
+        else if(event.key === "(" && event.ctrlKey && event.shiftKey){
             event.preventDefault()
             window.location.href = "#/admin";
         }
