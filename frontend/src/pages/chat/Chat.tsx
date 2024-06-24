@@ -4,7 +4,7 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getUsers } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -228,6 +228,7 @@ const Chat = () => {
 
                     const keyId = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
                     const keyName = "name";
+                    const keyEmail = "emails";
 
                     const _user = userInfoList.find(obj => {
                         const _id = obj?.user_claims?.some(claim => claim.typ === keyId);
@@ -240,7 +241,20 @@ const Chat = () => {
                         const name = _user?.user_claims?.find(claim => claim.typ === keyName)?.val || "";
 
                         if (id && name) {
-                            return setUser({ id, name });
+                            setUser({ id, name, role: undefined });
+                        }
+
+                        // register user if doesn't exist
+                        const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
+                        
+                        // const response = await getUsers({ user: { id, name, email } });  // to get all users
+
+                        // verifies if user exists and assigns the role
+                        const result = await checkUser({ user: { id, name, email } });
+                        const role = result["role"] || undefined;
+                        
+                        if (result && role) {
+                            setUser({ id, name, role });
                         }
                     }
                 }

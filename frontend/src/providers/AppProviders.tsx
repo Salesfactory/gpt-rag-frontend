@@ -10,6 +10,7 @@ interface SettingsType {
 interface UserInfo {
     id: string;
     name: string;
+    role: string | undefined;
 }
 
 interface AppContextType {
@@ -48,7 +49,8 @@ export const AppContext = createContext<AppContextType>({
     setDataHistory: () => {},
     user: {
         id: "00000000-0000-0000-0000-000000000000",
-        name: "anonymous"
+        name: "anonymous",
+        role: undefined,
     },
     setUser: () => {},
     dataConversation: [],
@@ -75,9 +77,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [refreshFetchHistorial, setRefreshFetchHistorial] = useState<boolean>(false);
     const [dataHistory, setDataHistory] = useState<ConversationHistoryItem[]>([]);
     const [dataConversation, setDataConversation] = useState<ChatTurn[]>([]);
-    const [user, setUser] = useState({
+    const [user, setUser] = useState<UserInfo>({
         id: "00000000-0000-0000-0000-000000000000",
-        name: "anonymous"
+        name: "anonymous",
+        role: undefined
     });
     const [chatId, setChatId] = useState<string>("");
     const [conversationIsLoading, setConversationIsLoading] = useState<boolean>(false);
