@@ -393,7 +393,7 @@ const Chat = () => {
 
                                 <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                     <img height="40px" src={salesLogo}></img>
-                                    <h1>Clew</h1>
+                                    <h1>FreddAid</h1>
                                     <p style={{ width: "80%", textAlign: "center" }}>
                                         Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
                                         actionable insights.
