@@ -13,6 +13,59 @@ import {
     UserInfo
 } from "./models";
 
+
+export async function getUsers({ user }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    try{
+        const response = await fetch("/api/getusers", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            }
+        });
+    
+        const parsedResponse = await response.json();
+        if (response.status > 299 || !response.ok) {
+            throw Error("Unknown error in getUsers");
+        }
+        return parsedResponse;
+    }
+    catch(error){
+        console.log("Error fetching users", error);
+        return { data: null };
+    }
+};
+
+
+export async function checkUser({ user }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    if (user.email) {
+        const response = await fetch("/api/checkuser", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            },
+            body: JSON.stringify({
+                email: user.email
+            })
+        });
+    
+        const parsedResponse = await response.json();
+        if (response.status > 299 || !response.ok) {
+            throw Error("Unknown error in checkUser");
+        }
+        return parsedResponse;
+    }
+
+    return { data: null };
+};
+
 export async function getUserInfo(): Promise<UserInfo[]> {
     const response = await fetch("/.auth/me");
     if (!response.ok) {

@@ -37,8 +37,8 @@ const Layout = () => {
         <div className={styles.layout}>
             <header className={styles.header} role={"banner"}>
                 <div className={styles.headerContainer}>
-                    <Link to="/" className={styles.headerTitleContainer}>
-                        <img height="45px" src={salesLogo}></img>
+                    <Link to="/" className={styles.headerTitleContainer} aria-label="Go to Home Page">
+                        <img height="45px" src={salesLogo} alt="Sales Factory logo"></img>
                         <h3 className={styles.headerTitle}></h3>
                     </Link>
                     <nav></nav>

@@ -20,6 +20,7 @@ ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI', default="")
 SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/settings"
 FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/feedback"
 HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/conversations"
+CHECK_USER_ENDPOINT = ORCHESTRATOR_URI + "/checkUser"
 STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
@@ -316,6 +317,8 @@ def setFeedback():
     try:
         url = FEEDBACK_ENDPOINT
         payload = json.dumps({
+            "client_principal_id": client_principal_id,
+            "client_principal_name": client_principal_name,
             "conversation_id": conversation_id,
             "question": question,
             "answer": answer,
@@ -332,6 +335,76 @@ def setFeedback():
         return(response.text)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/feedback")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/getusers", methods=["GET"])
+def getUsers():
+    client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
+    client_principal_name = request.headers.get('X-MS-CLIENT-PRINCIPAL-NAME')
+
+    if not client_principal_id or not client_principal_name:
+        return jsonify({"error": "Missing required parameters, client_principal_id or client_principal_name"}), 400
+    
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = 'orchestrator-host--checkuser'
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
+        return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
+
+    try:
+        url = CHECK_USER_ENDPOINT
+        headers = {
+            'Content-Type': 'application/json',
+            'x-functions-key': functionKey            
+        }
+        response = requests.request("GET", url, headers=headers)
+        logging.info(f"[webbackend] response: {response.text[:500]}...")   
+        return(response.text)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/checkUser")
+        return jsonify({"error": str(e)}), 500
+    
+
+@app.route("/api/checkuser", methods=["POST"])
+def checkUser():
+    client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
+    client_principal_name = request.headers.get('X-MS-CLIENT-PRINCIPAL-NAME')
+
+    if not client_principal_id or not client_principal_name:
+        return jsonify({"error": "Missing required parameters, client_principal_id or client_principal_name"}), 400
+    
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = 'orchestrator-host--checkuser'
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
+        return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
+
+    try:
+        email = request.json["email"]
+        url = CHECK_USER_ENDPOINT
+        payload = json.dumps({
+            "client_principal_id": client_principal_id,
+            "client_principal_name": client_principal_name,
+            "id": client_principal_id,
+            "name": client_principal_name,
+            "email": email,
+        })
+        headers = {
+            'Content-Type': 'application/json',
+            'x-functions-key': functionKey            
+        }
+        response = requests.request("POST", url, headers=headers, data=payload)
+        logging.info(f"[webbackend] response: {response.text[:500]}...")   
+        return(response.text)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
 
     

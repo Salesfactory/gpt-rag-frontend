@@ -4,7 +4,7 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getUsers } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -228,6 +228,7 @@ const Chat = () => {
 
                     const keyId = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
                     const keyName = "name";
+                    const keyEmail = "emails";
 
                     const _user = userInfoList.find(obj => {
                         const _id = obj?.user_claims?.some(claim => claim.typ === keyId);
@@ -240,7 +241,20 @@ const Chat = () => {
                         const name = _user?.user_claims?.find(claim => claim.typ === keyName)?.val || "";
 
                         if (id && name) {
-                            return setUser({ id, name });
+                            setUser({ id, name, role: undefined });
+                        }
+
+                        // register user if doesn't exist
+                        const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
+                        
+                        // const response = await getUsers({ user: { id, name, email } });  // to get all users
+
+                        // verifies if user exists and assigns the role
+                        const result = await checkUser({ user: { id, name, email } });
+                        const role = result["role"] || undefined;
+                        
+                        if (result && role) {
+                            setUser({ id, name, role });
                         }
                     }
                 }
@@ -392,8 +406,10 @@ const Chat = () => {
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
 
                                 <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                    <img height="40px" src={salesLogo}></img>
-                                    <h1>FreddAid</h1>
+
+                                    <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
+                                   <h1>FreddAid</h1>
+
                                     <p style={{ width: "80%", textAlign: "center" }}>
                                         Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
                                         actionable insights.
@@ -401,7 +417,7 @@ const Chat = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}>
+                            <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading} aria-label="Chat messages" tabIndex={0}>
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
@@ -476,6 +492,7 @@ const Chat = () => {
                                 <button
                                     className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
                                     onClick={clearChat}
+                                    aria-label="Clear chat"
                                 >
                                     <BroomRegular />
                                 </button>
@@ -486,6 +503,7 @@ const Chat = () => {
                                             : styles.newChatButtonDisabled
                                     }
                                     onClick={handleNewChat}
+                                    aria-label="Start a new chat"
                                 >
                                     <AddRegular />
                                 </button>

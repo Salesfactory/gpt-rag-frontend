@@ -93,15 +93,29 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
             <div className={styles.questionInputButtonsContainer}>
                 <div
                     className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
-                    aria-label="Boton hacer preguntas"
+                    aria-label="Ask a question button"
                     onClick={sendQuestion}
+                    onKeyDown={(ev) => {
+                        if (ev.key === "Enter") {
+                            ev.preventDefault();
+                            sendQuestion();
+                        }
+                    }}
+                    tabIndex={0}
                 >
                     <Send28Filled primaryFill="rgba(115, 118, 225, 1)" />
                 </div>
                 <div
-                    className={`${styles.questionInputSendButton}}`}
-                    aria-label="Boton hablar"
+                    className={`${styles.questionInputSendButton}`}
+                    aria-label="Button to talk"
                     onClick={sttFromMic}
+                    onKeyDown={(ev) => {
+                        if (ev.key === "Enter") {
+                            ev.preventDefault();
+                            sttFromMic();
+                        }
+                    }}
+                    tabIndex={0}
                 >
                     <SlideMicrophone32Filled primaryFill="rgba(115, 118, 225, 1)" />
                 </div>

@@ -119,16 +119,22 @@ export const FeedbackRating = () => {
                         <Dropdown placeholder="Select Category" options={categoryOptions} onChange={handleCategoryChange} defaultValue={category} />
                         <TextField label="Message" multiline onChange={handleFeedbackChange} value={feedback} />
                         <div className={styles.rating}>
-                            {selectedThumb === "like" ? (
-                                <ThumbLikeFilled onClick={() => handleSelectedThumb("like")} />
-                            ) : (
-                                <ThumbLikeRegular onClick={() => handleSelectedThumb("like")} />
-                            )}
-                            {selectedThumb === "dislike" ? (
-                                <ThumbDislikeFilled onClick={() => handleSelectedThumb("dislike")} />
-                            ) : (
-                                <ThumbDislikeRegular onClick={() => handleSelectedThumb("dislike")} />
-                            )}
+                            <button
+                                className={styles.thumbButton}
+                                aria-label="like"
+                                aria-pressed={selectedThumb === "like"}
+                                onClick={() => handleSelectedThumb("like")}
+                            >
+                                {selectedThumb === "like" ? <ThumbLikeFilled /> : <ThumbLikeRegular />}
+                            </button>
+                            <button
+                                className={styles.thumbButton}
+                                aria-label="dislike"
+                                aria-pressed={selectedThumb === "dislike"}
+                                onClick={() => handleSelectedThumb("dislike")}
+                            >
+                                {selectedThumb === "dislike" ? <ThumbDislikeFilled /> : <ThumbDislikeRegular />}
+                            </button>
                         </div>
                         <DefaultButton className={styles.saveButton} onClick={handleSubmitFeedback}>
                             <SaveFilled />
