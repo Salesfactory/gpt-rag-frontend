@@ -288,3 +288,23 @@ export async function postFeedbackRating({ user, conversation_id, feedback_messa
         }
     });
 }
+
+export async function inviteUser ({ username, email }: any): Promise<any> {
+    try {
+        const response = await fetch("/api/inviteUser", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username,
+                email
+            })
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error inviting user", error);
+        return {};
+    }
+}
