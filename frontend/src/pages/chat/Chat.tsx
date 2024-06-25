@@ -406,7 +406,7 @@ const Chat = () => {
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
 
                                 <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                    <img height="40px" src={salesLogo}></img>
+                                    <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
                                     <h1>Clew</h1>
                                     <p style={{ width: "80%", textAlign: "center" }}>
                                         Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
@@ -415,7 +415,7 @@ const Chat = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}>
+                            <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading} aria-label="Chat messages" tabIndex={0}>
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
@@ -490,6 +490,7 @@ const Chat = () => {
                                 <button
                                     className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
                                     onClick={clearChat}
+                                    aria-label="Clear chat"
                                 >
                                     <BroomRegular />
                                 </button>
@@ -500,6 +501,7 @@ const Chat = () => {
                                             : styles.newChatButtonDisabled
                                     }
                                     onClick={handleNewChat}
+                                    aria-label="Start a new chat"
                                 >
                                     <AddRegular />
                                 </button>

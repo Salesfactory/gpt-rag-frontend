@@ -173,3 +173,23 @@
     width: 240px;
     height: 80px;
 }
+.thumbButton {
+    width: 60px; 
+    height: 60px; 
+    cursor: pointer;
+    margin: 0 10px; 
+    outline: none; 
+    border: none; 
+    background: none; 
+    padding: 0; 
+}
+.thumbButton svg {
+    width: 40px; 
+    height: 40px;
+}
+.thumbButton:focus:not(:focus-visible) {
+    outline: none;
+}
+.thumbButton:focus-visible {
+    outline: 2px solid #000000;
+}
