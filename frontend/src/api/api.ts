@@ -305,6 +305,6 @@ export async function inviteUser ({ username, email }: any): Promise<any> {
         return fetchedData;
     } catch (error) {
         console.error("Error inviting user", error);
-        return {};
+        return {error : error};
     }
 }

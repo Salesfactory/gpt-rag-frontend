@@ -6,8 +6,9 @@ import { DetailsList, DetailsListLayoutMode, Selection, IColumn } from "@fluentu
 import { MarqueeSelection } from "@fluentui/react/lib/MarqueeSelection";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { AppContext } from "../../providers/AppProviders";
+import DOMPurify from "dompurify";
 
-import { checkUser, getUsers } from "../../api";
+import { checkUser, getUsers, inviteUser } from "../../api";
 
 import styles from "./Admin.module.css";
 
@@ -153,9 +154,12 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
 
     const [errorMessage, setErrorMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     const isValidated = () => {
-        if (!username || !email) {
+        const sanitizedUsername = DOMPurify.sanitize(username);
+        const sanitizedEmail = DOMPurify.sanitize(email);
+        if (!sanitizedUsername || !sanitizedEmail) {
             setErrorMessage("Please fill in all fields");
             return false;
         } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -168,9 +172,15 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
     const handleSubmit = () => {
         if (!isValidated()) return;
         setLoading(true);
-        alert("form submitted!");
-        setLoading(false);
-        onDismiss();
+        inviteUser({ username, email, role }).then(res => {
+            if (res.error) {
+                setErrorMessage(res.error);
+            } else {
+                setErrorMessage("");
+                setLoading(false);
+                setSuccess(true);
+            }
+        });
     };
 
     const onUserNameChange = (_ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -204,6 +214,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
         setErrorMessage("");
         setLoading(false);
         setIsOpen(false);
+        setSuccess(false);
     };
 
     const onConfirm = () => {
@@ -228,7 +239,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
                 styles: { main: { maxWidth: 450 } }
             }}
         >
-            {loading ? (
+            {loading && (
                 <Spinner
                     styles={{
                         root: {
@@ -236,7 +247,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
                         }
                     }}
                 />
-            ) : (
+            )}
+            {!success && !loading && (
                 <DialogContent>
                     <div
                         style={{
@@ -294,6 +306,25 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
                             }}
                             text="Send invitation"
                         />
+                    </div>
+                </DialogContent>
+            )}
+            {success && (
+                <DialogContent>
+                    <div>
+                        <h3>Invitation sent</h3>
+                        <p>
+                            An invitation has been sent to <strong>{email}</strong>. They will receive an email with a link to create an account.
+                        </p>
+                    </div>
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "end",
+                            gap: "10px"
+                        }}
+                    >
+                        <PrimaryButton onClick={onDismiss} text="Close" />
                     </div>
                 </DialogContent>
             )}
