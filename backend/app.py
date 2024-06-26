@@ -524,11 +524,23 @@ def sendEmail():
             }
             .cta-button {
             background-color: #337ab7;
-            color: #fff;
+            color: #fff !important;
             padding: 10px 20px;
             border-radius: 5px;
             text-align: center;
             display: inline-block;
+            }
+            .cta-button:hover {
+            background-color: #23527c;
+            }
+            .cta-button a {
+            color: #fff !important;
+            }
+            .cta-button a:visited {
+            color: #fff !important;
+            }
+            .ii a[href] {
+            color: #fff !important;
             }
             .footer {
             text-align: center;
@@ -546,7 +558,7 @@ def sendEmail():
             <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
             <p>Unlock FreddAid's full potential and start enjoying unparalleled insights, real-time data, and a high-speed advantage in all your marketing efforts.</p>
             <p>If you need any assistance, our support team is here to help you every step of the way.</p>
-            <h2>Welcome to the future of marketing. Welcome to FreddAid.</h2>
+            <p>Welcome to the future of marketing. Welcome to FreddAid.</p>
             <p class="footer">Best regards,<br>Juan Hernandez<br>Chief Technology Officer<br>Sales Factory AI<br>juan.hernandez@salesfactory.com</p>
         </div>
         </body>

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Outlet, NavLink, Link } from "react-router-dom";
+import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
 import { getChatHistory } from "../../api"; //FUNCION DE LA API
 import salesLogo from "../../img/logo.png";
 
@@ -14,6 +14,8 @@ import { SettingsButton } from "../../components/SettingsButton";
 const Layout = () => {
     const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } =
         useContext(AppContext);
+
+    const { pathname } = useLocation();
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
@@ -43,9 +45,13 @@ const Layout = () => {
                     </Link>
                     <nav></nav>
                     <div className={styles.layoutOptions}>
-                        <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
-                        <ChatHistoryButton onClick={handleShowHistoryPanel} />
-                        <SettingsButton onClick={handleShowSettings} />
+                        {pathname === "/" && (
+                            <>
+                                <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
+                                <ChatHistoryButton onClick={handleShowHistoryPanel} />
+                                <SettingsButton onClick={handleShowSettings} />
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
