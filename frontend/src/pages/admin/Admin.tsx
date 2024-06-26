@@ -147,7 +147,7 @@ const actions: React.FC = () => {
     );
 };
 
-export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>> }) => {
+export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; users: never[] }) => {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
@@ -156,9 +156,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    const isValidated = () => {
-        const sanitizedUsername = DOMPurify.sanitize(username);
-        const sanitizedEmail = DOMPurify.sanitize(email);
+    const isValidated = (sanitizedUsername: string, sanitizedEmail: string) => {
         if (!sanitizedUsername || !sanitizedEmail) {
             setErrorMessage("Please fill in all fields");
             return false;
@@ -169,8 +167,15 @@ export const CreateUserForm = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOp
         return true;
     };
 
+    const alreadyExists = (sanitizedEmail: string) => {
+        return users.some((user: any) => user.data.email === sanitizedEmail);
+    };
+
     const handleSubmit = () => {
-        if (!isValidated()) return;
+        const sanitizedUsername = DOMPurify.sanitize(username);
+        const sanitizedEmail = DOMPurify.sanitize(email);
+        if (!isValidated(sanitizedUsername, sanitizedEmail)) return;
+        if (alreadyExists(sanitizedEmail)) return setErrorMessage("User with this email already exists");
         setLoading(true);
         inviteUser({ username, email, role }).then(res => {
             if (res.error) {
@@ -364,7 +369,7 @@ const Admin = () => {
                     }}
                 />
             </div>
-            <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} />
+            <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />
             <div>
                 {loading ? (
                     <Spinner
