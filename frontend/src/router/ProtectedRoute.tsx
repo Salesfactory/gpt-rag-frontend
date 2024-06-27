@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   if (!user.role  || !allowedRoles.includes(user.role)) {
     return <Navigate to="/access-denied" />;
   }
-  return children;
+  return (<>{children}</>);
 };
 
 export default ProtectedRoute;
