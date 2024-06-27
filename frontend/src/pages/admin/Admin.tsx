@@ -2,6 +2,7 @@ import React, { useEffect, useState, ReactNode, useContext } from "react";
 import { PrimaryButton, IconButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar } from "@fluentui/react";
 import { Announced } from "@fluentui/react/lib/Announced";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
+import { AddFilled } from "@fluentui/react-icons";
 import { DetailsList, DetailsListLayoutMode, Selection, IColumn } from "@fluentui/react/lib/DetailsList";
 import { MarqueeSelection } from "@fluentui/react/lib/MarqueeSelection";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
@@ -362,6 +363,19 @@ const Admin = () => {
             {user.role !== "admin" && <h1>Access denied</h1>}
             {user.role === "admin" && (
                 <>
+                    <div className={styles.buttons}>
+                        <div className={styles.closeButtonContainer}>
+                            <button
+                                className={styles.closeButton}
+                                aria-label="hide button"
+                                onClick={() => {
+                                    window.location.href = "/";
+                                }}
+                            >
+                                <AddFilled />
+                            </button>
+                        </div>
+                    </div>
                     <div id="options-row" className={styles.row}>
                         <h1>Roles and access</h1>
                         <PrimaryButton
