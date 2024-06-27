@@ -273,7 +273,6 @@ const Chat = () => {
         }
         if (triggered.current === false) {
             triggered.current = true;
-            console.log(triggered.current);
         }
         const language = navigator.language;
         if (language.startsWith("pt")) {

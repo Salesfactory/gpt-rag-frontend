@@ -359,30 +359,35 @@ const Admin = () => {
 
     return (
         <div className={styles.page_container}>
-            <div id="options-row" className={styles.row}>
-                <h1>Roles and access</h1>
-                <PrimaryButton
-                    className={styles.option}
-                    text="Create user"
-                    onClick={() => {
-                        setIsOpen(true);
-                    }}
-                />
-            </div>
-            <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />
-            <div>
-                {loading ? (
-                    <Spinner
-                        styles={{
-                            root: {
-                                marginTop: "50px"
-                            }
-                        }}
-                    />
-                ) : (
-                    <UserList users={users} />
-                )}
-            </div>
+            {user.role !== "admin" && <h1>Access denied</h1>}
+            {user.role === "admin" && (
+                <>
+                    <div id="options-row" className={styles.row}>
+                        <h1>Roles and access</h1>
+                        <PrimaryButton
+                            className={styles.option}
+                            text="Create user"
+                            onClick={() => {
+                                setIsOpen(true);
+                            }}
+                        />
+                    </div>
+                    <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />
+                    <div>
+                        {loading ? (
+                            <Spinner
+                                styles={{
+                                    root: {
+                                        marginTop: "50px"
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <UserList users={users} />
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 };
