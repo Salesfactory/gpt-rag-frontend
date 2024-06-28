@@ -54,6 +54,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                     const dateB = new Date(b.start_date);
                     return dateB.getTime() - dateA.getTime();
                 });
+                sortedData.splice(100);
                 setDataHistory(sortedData);
                 setIsLoading(false);
                 const ids = sortedData.map(data => data.id);
@@ -134,26 +135,34 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         }
     }, [user.id, dataHistory, conversationsIds, refreshFetchHistorial]);
 
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Set to the start of the week (Sunday)
+
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
     const sortedDataByDate = dataHistory.sort((a, b) => Number(new Date(a.start_date)) - Number(new Date(b.start_date)));
 
+    const uniqueItems = new Set();
+
     const sortedDataListByDate = [
-        { label: "Today", date: today },
-        { label: "Yesterday", date: yesterday },
-        ...months.map(month => ({ label: month, monthIndex: months.indexOf(month) }))
-    ].map(({ label, date, monthIndex }: any) => {
+        { label: "Today", filter: (itemDate: any) => itemDate.toDateString() === today.toDateString() },
+        { label: "Yesterday", filter: (itemDate: any) => itemDate.toDateString() === yesterday.toDateString() },
+        { label: "This Week", filter: (itemDate: any) => itemDate >= startOfWeek && itemDate <= today },
+        { label: "This Month", filter: (itemDate: any) => itemDate >= startOfMonth && itemDate <= today },
+        { label: "Previous Months", filter: (itemDate: any) => itemDate < startOfMonth }
+    ].map(({ label, filter }) => {
         const filteredData = sortedDataByDate.filter(item => {
             const itemDate = new Date(item.start_date);
-            if (date) {
-                return itemDate.toDateString() === date.toDateString();
-            } else {
-                return itemDate.getMonth() === monthIndex;
+            if (!uniqueItems.has(item)) {
+                const matches = filter(itemDate);
+                if (matches) uniqueItems.add(item);
+                return matches;
             }
+            return false;
         });
         return { label, data: filteredData };
     });
