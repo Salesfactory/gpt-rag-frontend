@@ -136,17 +136,26 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    const sortedDataByMonth = dataHistory.sort((a, b) => {
-        const monthA = new Date(a.start_date).getMonth();
-        const monthB = new Date(b.start_date).getMonth();
-        return monthA - monthB;
-    });
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-    const sortedDataListByMonth = months.map(month => {
-        const monthData = sortedDataByMonth.filter(item => {
-            return new Date(item.start_date).getMonth() === months.indexOf(month);
+    const sortedDataByDate = dataHistory.sort((a, b) => Number(new Date(a.start_date)) - Number(new Date(b.start_date)));
+
+    const sortedDataListByDate = [
+        { label: "Today", date: today },
+        { label: "Yesterday", date: yesterday },
+        ...months.map(month => ({ label: month, monthIndex: months.indexOf(month) }))
+    ].map(({ label, date, monthIndex }: any) => {
+        const filteredData = sortedDataByDate.filter(item => {
+            const itemDate = new Date(item.start_date);
+            if (date) {
+                return itemDate.toDateString() === date.toDateString();
+            } else {
+                return itemDate.getMonth() === monthIndex;
+            }
         });
-        return { month, data: monthData };
+        return { label, data: filteredData };
     });
 
     const isConfirmationDelete = (conversationId: string) => confirmationDelete === conversationId;
@@ -167,11 +176,11 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                 <p style={{ textAlign: "center", fontWeight: 400, fontStyle: "italic" }}>{errorMessage}</p>
             ) : (
                 <>
-                    {sortedDataListByMonth.map(({ month, data }, monthIndex) => (
+                    {sortedDataListByDate.map(({ label, data }, monthIndex) => (
                         <div key={monthIndex}>
                             {data.length > 0 && (
                                 <>
-                                    <h3>{month}</h3>
+                                    <h3>{label}</h3>
                                     {data.map((conversation, index) => (
                                         <div
                                             key={conversation.id}
