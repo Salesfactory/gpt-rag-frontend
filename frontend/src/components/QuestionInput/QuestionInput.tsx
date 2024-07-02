@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Stack, TextField } from "@fluentui/react";
-import { getTokenOrRefresh } from './token_util';
-import { Send28Filled, BookOpenMicrophone28Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
-import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from 'microsoft-cognitiveservices-speech-sdk';
+import { Stack, TextField, IconButton } from "@fluentui/react";
+import { getTokenOrRefresh } from "./token_util";
+import { Send28Filled, Attach32Filled, BookOpenMicrophone28Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
+import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
 
 import styles from "./QuestionInput.module.css";
 interface Props {
@@ -31,18 +31,18 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         const tokenObj = await getTokenOrRefresh();
         const speechConfig = SpeechConfig.fromAuthorizationToken(tokenObj.authToken, tokenObj.region);
         speechConfig.speechRecognitionLanguage = tokenObj.speechRecognitionLanguage;
-        
+
         const audioConfig = AudioConfig.fromDefaultMicrophoneInput();
         const recognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
         const userLanguage = navigator.language;
-        let reiniciar_text = '';
-        if (userLanguage.startsWith('pt')) {
-          reiniciar_text = 'Pode falar usando seu microfone...';
-        } else if (userLanguage.startsWith('es')) {
-          reiniciar_text = 'Puedes hablar usando su micrófono...';
+        let reiniciar_text = "";
+        if (userLanguage.startsWith("pt")) {
+            reiniciar_text = "Pode falar usando seu microfone...";
+        } else if (userLanguage.startsWith("es")) {
+            reiniciar_text = "Puedes hablar usando su micrófono...";
         } else {
-          reiniciar_text = 'You can talk using your microphone...';
+            reiniciar_text = "You can talk using your microphone...";
         }
 
         setQuestion(reiniciar_text);
@@ -54,7 +54,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                 //setQuestion(displayText);
                 //onSend(question);
             } else {
-                displayText = 'ERROR: Voice recognition was canceled or the voice cannot be recognized. Make sure your microphone is working properly.';
+                displayText = "ERROR: Voice recognition was canceled or the voice cannot be recognized. Make sure your microphone is working properly.";
                 //setQuestion(displayText);
             }
             setQuestion(displayText);
@@ -80,6 +80,9 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>
+            <div className={styles.attachmentContainer}>
+                <IconButton style={{ color: "black" }} iconProps={{ iconName: "Attach" }} title="Attach a file" ariaLabel="Attach a file" onClick={() => {}} />
+            </div>
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
@@ -95,7 +98,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                     className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
                     aria-label="Ask a question button"
                     onClick={sendQuestion}
-                    onKeyDown={(ev) => {
+                    onKeyDown={ev => {
                         if (ev.key === "Enter") {
                             ev.preventDefault();
                             sendQuestion();
@@ -109,7 +112,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                     className={`${styles.questionInputSendButton}`}
                     aria-label="Button to talk"
                     onClick={sttFromMic}
-                    onKeyDown={(ev) => {
+                    onKeyDown={ev => {
                         if (ev.key === "Enter") {
                             ev.preventDefault();
                             sttFromMic();
