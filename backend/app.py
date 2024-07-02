@@ -240,7 +240,7 @@ def getBlob():
             f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", client_credential
         )
         blob_client = blob_service_client.get_blob_client(
-            container="documents", blob=blob_name[1:]
+            container="documents", blob=blob_name
         )
         blob_data = blob_client.download_blob()
         blob_text = blob_data.readall()
