@@ -136,8 +136,6 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     }, [user.id, dataHistory, conversationsIds, refreshFetchHistorial]);
 
     const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
 
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay()); // Set to the start of the week (Sunday)
@@ -150,7 +148,6 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     const sortedDataListByDate = [
         { label: "Today", filter: (itemDate: any) => itemDate.toDateString() === today.toDateString() },
-        { label: "Yesterday", filter: (itemDate: any) => itemDate.toDateString() === yesterday.toDateString() },
         { label: "This Week", filter: (itemDate: any) => itemDate >= startOfWeek && itemDate <= today },
         { label: "This Month", filter: (itemDate: any) => itemDate >= startOfMonth && itemDate <= today },
         { label: "Previous Months", filter: (itemDate: any) => itemDate < startOfMonth }
