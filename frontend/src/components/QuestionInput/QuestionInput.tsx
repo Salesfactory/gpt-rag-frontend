@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Stack, TextField, IconButton } from "@fluentui/react";
+import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
 import { Send28Filled, Attach32Filled, BookOpenMicrophone28Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
@@ -11,6 +11,135 @@ interface Props {
     placeholder?: string;
     clearOnSend?: boolean;
 }
+
+import { useFilePicker } from "use-file-picker";
+
+export const FileAttachmentInput = () => {
+    const [files, setFiles] = useState<File[]>([]);
+    const { openFilePicker, filesContent, loading, errors } = useFilePicker({
+        readAs: "DataURL",
+        accept: ["xls", "xlsx", "csv"],
+        multiple: false,
+        onFilesSelected: ({ plainFiles, filesContent, errors }) => {
+            // this callback is always called, even if there are errors
+            console.log("onFilesSelected", plainFiles, filesContent, errors);
+        },
+        onFilesRejected: ({ errors }) => {
+            // this callback is called when there were validation errors
+            console.log("onFilesRejected", errors);
+        },
+        onFilesSuccessfullySelected: ({ plainFiles, filesContent }) => {
+            // this callback is called when the files are successfully selected
+            console.log("onFilesSuccessfullySelected", plainFiles, filesContent);
+            setFiles(plainFiles);
+        }
+    });
+
+    if (loading) {
+        return (
+            <div
+                id="file-display-row"
+                style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    position: "fixed",
+                    bottom: 100,
+                    color: "red"
+                }}
+            >
+                <Spinner
+                    styles={{
+                        root: {
+                            marginTop: "50px"
+                        }
+                    }}
+                />
+            </div>
+        );
+    }
+
+    if (errors.length) {
+        return (
+            <div
+                id="file-display-row"
+                style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    position: "fixed",
+                    bottom: 150,
+                    color: "red"
+                }}
+            >
+                <div>Error with the file picker</div>
+            </div>
+        );
+    }
+
+    return (
+        <>
+            <div
+                id="file-display-row"
+                style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    position: "fixed",
+                    bottom: 200,
+                }}
+            >
+                {files.map((file, index) => (
+                    <div
+                        id="file-display-item"
+                        key={index}
+                        style={{
+                            position: "absolute",
+                            width: "1000px",
+                            maxWidth: "700px",
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "5px 10px",
+                            border: "1px solid #ccc",
+                            borderRadius: "5px",
+                            cursor: "pointer",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                        }}
+                    >
+                        <button
+                            style={{
+                                backgroundColor: "transparent",
+                                border: "none",
+                                cursor: "pointer",
+                                padding: "0",
+                                margin: "0",
+                                fontSize: "20px",
+                                color: "black"
+                            }}
+                            aria-label="Close"
+                            onClick={() => {
+                                setFiles([])
+                            }}
+                        >
+                            &times;
+                        </button>
+                        <IconButton
+                            style={{ color: "black" }}
+                            iconProps={{ iconName: "ExcelDocument" }}
+                            title="Attach a file"
+                            ariaLabel="Attach a file"
+                            onClick={() => {}}
+                        />
+                        <div>{file.name}</div>
+                    </div>
+                ))}
+            </div>
+            <br />
+            <div className={`${styles.questionInputSendButton}`} aria-label="Button to attach file" onClick={openFilePicker} tabIndex={0}>
+                <Attach32Filled primaryFill="rgba(115, 118, 225, 1)" />
+            </div>
+        </>
+    );
+};
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
     const [question, setQuestion] = useState<string>("");
@@ -80,9 +209,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>
-            <div className={styles.attachmentContainer}>
-                <IconButton style={{ color: "black" }} iconProps={{ iconName: "Attach" }} title="Attach a file" ariaLabel="Attach a file" onClick={() => {}} />
-            </div>
+            <FileAttachmentInput />
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
