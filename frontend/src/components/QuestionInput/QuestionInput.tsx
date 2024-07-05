@@ -134,7 +134,7 @@ export const FileAttachmentInput = () => {
                 ))}
             </div>
             <br />
-            <div className={`${styles.questionInputSendButton}`} aria-label="Button to attach file" onClick={openFilePicker} tabIndex={0}>
+            <div className={`${styles.attachmentButton}`} aria-label="Button to attach file" onClick={openFilePicker} tabIndex={0}>
                 <Attach32Filled primaryFill="rgba(115, 118, 225, 1)" />
             </div>
         </>
