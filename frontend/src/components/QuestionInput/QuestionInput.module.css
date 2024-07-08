@@ -34,3 +34,8 @@
 .questionInputSendButtonDisabled {
     opacity: 0.4;
 }
+
+.attachmentButton {
+    transform: rotate(-45deg);
+    cursor: pointer;
+}
