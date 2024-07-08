@@ -229,6 +229,15 @@ def getStorageAccount():
         logging.exception("[webbackend] exception in /api/get-storage-account")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/stripe", methods=["GET"])
+def getStripe():
+    try:
+        keySecretName = "stripeKey"
+        functionKey = get_secret(keySecretName)
+        return functionKey
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/stripe")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
