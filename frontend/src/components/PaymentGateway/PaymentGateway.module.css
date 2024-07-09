@@ -83,3 +83,17 @@
 .planButton:focus {
   background-color: #3f51b5;
 }
+
+.spinnerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.loadingText {
+  margin-top: 10px; 
+  font-size: 1.5em; 
+  color: #000000; 
+}

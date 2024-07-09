@@ -1,7 +1,7 @@
 import styles from "./ButtonPaymentGateway.module.css";
 import { Text } from "@fluentui/react";
-import { AppContext } from "../../providers/AppProviders";
-import { useContext } from "react";
+import { GuestFilled  } from "@fluentui/react-icons";
+
 
 
 export const ButtonPaymentGateway = () => {
@@ -12,7 +12,8 @@ export const ButtonPaymentGateway = () => {
     
     return (
         <button className={styles.container}  onClick={handleRedirect}>
-            <Text className={styles.buttonText}>Payment</Text>
+             <GuestFilled   className={styles.button}/>
+            <Text className={styles.buttonText}>Subscription</Text>
         </button>
     );
 };

@@ -308,3 +308,18 @@ export async function inviteUser ({ username, email }: any): Promise<any> {
         return {error : error};
     }
 }
+export async function getApiKeyPayment(): Promise<string> {
+    const response = await fetch("/api/stripe", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        }
+    });
+    
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting Api key payment");
+    }
+    
+    const apiKey = await response.text();
+    return apiKey;
+}
