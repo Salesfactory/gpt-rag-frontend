@@ -152,6 +152,10 @@ const Chat = () => {
             }
         } catch (e) {
             setError(e);
+            console.log(e)
+            console.log(typeof e)
+            console.log(Object.keys(e as object))
+            console.log((e as Error).toString())
         } finally {
             setIsLoading(false);
         }

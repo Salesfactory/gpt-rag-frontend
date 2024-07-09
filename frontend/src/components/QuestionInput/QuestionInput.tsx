@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
-import { Send28Filled, Attach32Filled, BookOpenMicrophone28Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
+import { Send32Filled, Attach32Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
 
 import styles from "./QuestionInput.module.css";
@@ -102,7 +102,9 @@ export const FileAttachmentInput = () => {
                             borderRadius: "5px",
                             cursor: "pointer",
                             overflow: "hidden",
-                            textOverflow: "ellipsis"
+                            textOverflow: "ellipsis",
+                            backgroundColor: "white",
+                            zIndex: 5,
                         }}
                     >
                         <button
@@ -117,7 +119,7 @@ export const FileAttachmentInput = () => {
                             }}
                             aria-label="Close"
                             onClick={() => {
-                                setFiles([])
+                                setFiles([]);
                             }}
                         >
                             &times;
@@ -233,7 +235,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                     }}
                     tabIndex={0}
                 >
-                    <Send28Filled primaryFill="rgba(115, 118, 225, 1)" />
+                    <Send32Filled primaryFill="rgba(115, 118, 225, 1)" />
                 </div>
                 <div
                     className={`${styles.questionInputSendButton}`}

@@ -22,11 +22,6 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
                     <div className={styles.title}>Chat history</div>
                     <div className={styles.buttons}>
                         <div className={styles.closeButtonContainer}>
-                            <button className={styles.clearButton} aria-label="clear all chat history">
-                                ...
-                            </button>
-                        </div>
-                        <div className={styles.closeButtonContainer}>
                             <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
                                 <AddFilled />
                             </button>
