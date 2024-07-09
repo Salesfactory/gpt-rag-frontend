@@ -7,8 +7,8 @@ import pencil from "../../assets/pencil.png";
 import yes from "../../assets/check.png";
 import no from "../../assets/close.png";
 import { Spinner } from "@fluentui/react";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface ChatHistoryPanelProps {
     onDeleteChat: () => void;
@@ -224,16 +224,19 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                                                     {deletingIsLoading && isConfirmationDelete(conversation.id) ? (
                                                         <Spinner className={styles.actionButton} size={1} />
                                                     ) : (
-                                                        <img
-                                                            className={styles.actionButton}
-                                                            src={isConfirmationDelete(conversation.id) ? yes : pencil}
-                                                            alt="Edit"
-                                                            onClick={
-                                                                isConfirmationDelete(conversation.id)
-                                                                    ? () => handleDeleteConversation(conversation.id)
-                                                                    : () => setConfirmationDelete(null)
-                                                            }
-                                                        />
+                                                        <>
+                                                        {isConfirmationDelete(conversation.id) &&
+                                                            <img
+                                                                className={styles.actionButton}
+                                                                src={yes}
+                                                                alt="Edit"
+                                                                onClick={
+                                                                    isConfirmationDelete(conversation.id)
+                                                                        ? () => handleDeleteConversation(conversation.id)
+                                                                        : () => setConfirmationDelete(null)
+                                                                }
+                                                            />}
+                                                        </>
                                                     )}
                                                 </div>
                                             ) : (
