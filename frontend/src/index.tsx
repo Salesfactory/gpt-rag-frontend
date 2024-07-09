@@ -12,6 +12,7 @@ import AccessDenied from "./pages/AccesDenied";
 import Chat from "./pages/chat/Chat";
 import Admin from "./pages/admin/Admin";
 import { AppProvider } from "./providers/AppProviders";
+import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 
 initializeIcons();
 
@@ -37,6 +38,13 @@ export default function App() {
                     </Route>
                     <Route path="/access-denied" element={<Layout />}>
                         <Route index element={<AccessDenied />} />
+                        <Route path="*" element={<NoPage />} />
+                    </Route>
+                    <Route path="/payment" element={<Layout />}>
+                    <Route
+                        index
+                        element={<PaymentGateway />}
+                        />
                         <Route path="*" element={<NoPage />} />
                     </Route>
                 </Routes>

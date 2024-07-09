@@ -243,14 +243,14 @@ const Chat = () => {
                     if (_user) {
                         const id = _user?.user_claims?.find(claim => claim.typ === keyId)?.val || "";
                         const name = _user?.user_claims?.find(claim => claim.typ === keyName)?.val || "";
+                        const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
 
                         if (id && name) {
-                            setUser({ id, name, role: undefined });
+                            setUser({ id, name, email, role: undefined });
                         }
 
                         // register user if doesn't exist
-                        const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
-                        
+                    
                         // const response = await getUsers({ user: { id, name, email } });  // to get all users
 
                         // verifies if user exists and assigns the role
@@ -258,7 +258,7 @@ const Chat = () => {
                         const role = result["role"] || undefined;
                         
                         if (result && role) {
-                            setUser({ id, name, role });
+                            setUser({ id, name, email, role });
                         }
                     }
                 }

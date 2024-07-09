@@ -10,6 +10,7 @@ interface SettingsType {
 interface UserInfo {
     id: string;
     name: string;
+    email: string | null;
     role: string | undefined;
 }
 
@@ -50,6 +51,7 @@ export const AppContext = createContext<AppContextType>({
     user: {
         id: "00000000-0000-0000-0000-000000000000",
         name: "anonymous",
+        email: "anonymous@gmail.com",
         role: undefined,
     },
     setUser: () => {},
@@ -80,6 +82,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [user, setUser] = useState<UserInfo>({
         id: "00000000-0000-0000-0000-000000000000",
         name: "anonymous",
+        email: "anonymous@gmail.com",
         role: undefined
     });
     const [chatId, setChatId] = useState<string>("");

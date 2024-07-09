@@ -10,6 +10,7 @@ import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistor
 import { FeedbackRatingButton } from "../../components/FeedbackRating/FeedbackRatingButton";
 import { AppContext } from "../../providers/AppProviders";
 import { SettingsButton } from "../../components/SettingsButton";
+import { ButtonPaymentGateway } from "../../components/PaymentGateway/ButtonPaymentGateway";
 
 const Layout = () => {
     const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } =
@@ -47,6 +48,7 @@ const Layout = () => {
                     <div className={styles.layoutOptions}>
                         {pathname === "/" && (
                             <>
+                                <ButtonPaymentGateway />
                                 <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
                                 <ChatHistoryButton onClick={handleShowHistoryPanel} />
                                 <SettingsButton onClick={handleShowSettings} />
