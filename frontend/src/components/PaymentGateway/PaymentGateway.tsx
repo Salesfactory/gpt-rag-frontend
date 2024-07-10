@@ -27,7 +27,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             },
             {
                 id: 'price_1PYvHVEpF6ccgZLwn6uq6d4J',
-                name: 'Plus Plan',
+                name: 'Enterprise Plan',
                 description: 'Access to all features including premium support.',
                 price: '30.00',
                 interval: 'month'
