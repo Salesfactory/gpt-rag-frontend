@@ -152,10 +152,10 @@ const Chat = () => {
             }
         } catch (e) {
             setError(e);
-            console.log(e)
-            console.log(typeof e)
-            console.log(Object.keys(e as object))
-            console.log((e as Error).toString())
+            console.log(e);
+            console.log(typeof e);
+            console.log(Object.keys(e as object));
+            console.log((e as Error).toString());
         } finally {
             setIsLoading(false);
         }
@@ -250,13 +250,13 @@ const Chat = () => {
                         }
 
                         // register user if doesn't exist
-                    
+
                         // const response = await getUsers({ user: { id, name, email } });  // to get all users
 
                         // verifies if user exists and assigns the role
                         const result = await checkUser({ user: { id, name, email } });
                         const role = result["role"] || undefined;
-                        
+
                         if (result && role) {
                             setUser({ id, name, email, role });
                         }
@@ -363,12 +363,17 @@ const Chat = () => {
     } as AskResponse;
 
     const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
+        if (index !== selectedAnswer) {
+            setActiveCitation(undefined);
+            setActiveAnalysisPanelTab(undefined);
+        }
         if (activeAnalysisPanelTab === tab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
+            setSelectedAnswer(-1);
+            setActiveCitation(undefined);
         } else {
             setActiveAnalysisPanelTab(tab);
         }
-
         setSelectedAnswer(index);
     };
 
@@ -385,7 +390,7 @@ const Chat = () => {
             handleNewChat();
         }
     };
-    
+
     window.addEventListener("keydown", handleKeyDown);
     //If I add this on a useEffect it doesn't work, I don't know why
     //maybe because it's a global event listener and is called multiple times
@@ -409,9 +414,8 @@ const Chat = () => {
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
 
                                 <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-
                                     <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
-                                   <h1>FreddAid</h1>
+                                    <h1>FreddAid</h1>
 
                                     <p style={{ width: "80%", textAlign: "center" }}>
                                         Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
@@ -420,7 +424,11 @@ const Chat = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading} aria-label="Chat messages" tabIndex={0}>
+                            <div
+                                className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
+                                aria-label="Chat messages"
+                                tabIndex={0}
+                            >
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
