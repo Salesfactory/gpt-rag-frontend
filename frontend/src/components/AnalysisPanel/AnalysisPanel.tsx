@@ -62,7 +62,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
 
                 <PivotItem
                     itemKey={AnalysisPanelTabs.CitationTab}
-                    headerText="Citation"
+                    headerText="Source"
                     headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
                 >
                     <Suspense fallback={<p>Loading...</p>}>
