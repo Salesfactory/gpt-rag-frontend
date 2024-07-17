@@ -57,6 +57,7 @@ SPEECH_RECOGNITION_LANGUAGE = os.getenv("SPEECH_RECOGNITION_LANGUAGE")
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
 app = Flask(__name__)
 CORS(app)
@@ -264,7 +265,7 @@ def uploadBlob():
         blob_service_client = BlobServiceClient.from_connection_string(
             AZURE_STORAGE_CONNECTION_STRING
         )
-        blob_client = blob_service_client.get_blob_client(container="files", blob=filename)
+        blob_client = blob_service_client.get_blob_client(container=AZURE_CSV_STORAGE_NAME, blob=filename)
         blob_client.upload_blob(data=file, blob_type="BlockBlob")
         
         return jsonify({"blob_url": blob_client.url}), 200
