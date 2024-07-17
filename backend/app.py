@@ -12,6 +12,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
+import uuid
 
 import smtplib
 from email.mime.text import MIMEText
@@ -55,6 +56,7 @@ SPEECH_KEY = get_secret("speechKey")
 SPEECH_RECOGNITION_LANGUAGE = os.getenv("SPEECH_RECOGNITION_LANGUAGE")
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
+AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 app = Flask(__name__)
 CORS(app)
@@ -229,6 +231,7 @@ def getStorageAccount():
         logging.exception("[webbackend] exception in /api/get-storage-account")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/stripe", methods=["GET"])
 def getStripe():
     try:
@@ -238,6 +241,37 @@ def getStripe():
     except Exception as e:
         logging.exception("[webbackend] exception in /api/stripe")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/upload-blob", methods=["POST"])
+def uploadBlob():
+    if 'file' not in request.files:
+        print('No file sent')
+        return jsonify({"error": "No file sent"}), 400
+    
+    valid_file_extensions = [".csv", ".xlsx", ".xls"]
+
+    file = request.files['file']
+
+    extension = os.path.splitext(file.filename)[1]
+
+    if extension not in valid_file_extensions:
+        return jsonify({"error": "Invalid file type"}), 400
+
+    filename = str(uuid.uuid4()) + extension
+
+    try:
+        blob_service_client = BlobServiceClient.from_connection_string(
+            AZURE_STORAGE_CONNECTION_STRING
+        )
+        blob_client = blob_service_client.get_blob_client(container="files", blob=filename)
+        blob_client.upload_blob(data=file, blob_type="BlockBlob")
+        
+        return jsonify({"blob_url": blob_client.url}), 200
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/upload-blob")
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
@@ -656,4 +690,4 @@ def checkUser():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000, debug=True)
