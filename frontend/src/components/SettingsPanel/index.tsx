@@ -171,7 +171,7 @@ export const SettingsPanel = () => {
     };
 
     return (
-        <div>
+        <div aria-labelledby="settings-panel-title">
             <ConfirmationDialog
                 loading={isLoadingSettings}
                 isOpen={isDialogOpen}
@@ -224,9 +224,10 @@ export const SettingsPanel = () => {
                                     showValue
                                     snapToStep
                                     onChange={e => handleSetTemperature(e)}
+                                    aria-labelledby="temperature-slider"
                                 />
                             </div>
-                            <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)}>
+                            <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
                                 <SaveFilled />
                                 &#8202;&#8202;Save
                             </DefaultButton>

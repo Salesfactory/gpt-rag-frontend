@@ -441,7 +441,7 @@ const Chat = () => {
                                           return (
                                               <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
                                                   <UserChatMessage message={item.user} />
-                                                  <div className={styles.chatMessageGpt}>
+                                                  <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
                                                       <Answer
                                                           key={index}
                                                           answer={response}
@@ -460,7 +460,7 @@ const Chat = () => {
                                     : answers.map((answer, index) => (
                                           <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
                                               <UserChatMessage message={answer[0]} />
-                                              <div className={styles.chatMessageGpt}>
+                                              <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
                                                   <Answer
                                                       key={index}
                                                       answer={answer[1]}
@@ -487,7 +487,7 @@ const Chat = () => {
                                 {error ? (
                                     <>
                                         <UserChatMessage message={lastQuestionRef.current} />
-                                        <div className={styles.chatMessageGptMinWidth}>
+                                        <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
                                             <AnswerError
                                                 error={error_message_text + error.toString()}
                                                 onRetry={() => makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null)}
@@ -572,6 +572,7 @@ const Chat = () => {
                             multiline
                             autoAdjustHeight
                             onChange={onPromptTemplateChange}
+                            aria-label="Override prompt template"
                         />
 
                         <SpinButton
@@ -581,13 +582,15 @@ const Chat = () => {
                             max={50}
                             defaultValue={retrieveCount.toString()}
                             onChange={onRetrieveCountChange}
+                            aria-label="Number of documents to retrieve"
                         />
-                        <TextField className={styles.chatSettingsSeparator} label="Exclude category" onChange={onExcludeCategoryChanged} />
+                        <TextField className={styles.chatSettingsSeparator} label="Exclude category" onChange={onExcludeCategoryChanged} aria-label="Exclude category"/>
                         <Checkbox
                             className={styles.chatSettingsSeparator}
                             checked={useSemanticRanker}
                             label="Use semantic ranker for retrieval"
                             onChange={onUseSemanticRankerChange}
+                            aria-label="Use semantic ranker for retrieval"
                         />
                         <Checkbox
                             className={styles.chatSettingsSeparator}
@@ -595,12 +598,14 @@ const Chat = () => {
                             label="Use query-contextual summaries instead of whole documents"
                             onChange={onUseSemanticCaptionsChange}
                             disabled={!useSemanticRanker}
+                             aria-label="Use query-contextual summaries"
                         />
                         <Checkbox
                             className={styles.chatSettingsSeparator}
                             checked={useSuggestFollowupQuestions}
                             label="Suggest follow-up questions"
                             onChange={onUseSuggestFollowupQuestionsChange}
+                            aria-label="Suggest follow-up questions"
                         />
                     </Panel>
                 </div>
