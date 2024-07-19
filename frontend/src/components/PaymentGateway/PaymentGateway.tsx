@@ -47,7 +47,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
     };
 
     return (
-        <div className={styles.subscriptionPlan}>
+        <div className={styles.subscriptionPlan} aria-labelledby="subscription-plans-title">
             <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
             <div className={styles.planContainer}>
                 {plans.map(plan => (
@@ -56,7 +56,14 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                         <p className={styles.planPrice}>${plan.price} per {plan.interval}</p>
                         <p className={styles.planDescription}>{plan.description}</p>
                         {plan.id !== 'free_plan' && (
-                            <button className={styles.planButton} onClick={() => handleCheckout(plan.id)}>Subscribe</button>
+                            <button 
+                                className={styles.planButton} 
+                                onClick={() => handleCheckout(plan.id)}  
+                                role="button" 
+                                aria-label={`Subscribe to ${plan.name}`} 
+                            >
+                                Subscribe
+                            </button>
                         )}
                     </div>
                 ))}
@@ -81,7 +88,7 @@ export const PaymentGateway: React.FC = () => {
 
     if (!stripePromise) {
         return (
-          <div className={styles.spinnerContainer}>
+          <div className={styles.spinnerContainer} role="alert">
                 <Spinner size={3} />
                 <div className={styles.loadingText}>Loading...</div>
           </div>
