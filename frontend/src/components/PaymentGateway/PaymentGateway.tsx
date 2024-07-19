@@ -3,8 +3,6 @@ import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import styles from "./PaymentGateway.module.css";
 import { getApiKeyPayment } from "../../api";
-import { AppContext } from "../../providers/AppProviders";
-import { useContext } from "react";
 import { Spinner } from "@fluentui/react";
 
 const fetchApiKey = async () => {
@@ -14,7 +12,6 @@ const fetchApiKey = async () => {
 
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
     const [plans, setPlans] = useState<any[]>([]);
-    const {user} = useContext(AppContext);
 
     useEffect(() => {
         setPlans([
@@ -40,7 +37,6 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
         const { error } = await stripe!.redirectToCheckout({
             lineItems: [{ price: priceId, quantity: 1 }],
             mode: 'subscription',
-            customerEmail: user.email!,
             successUrl: window.location.origin + '/',
             cancelUrl: window.location.origin + '/',
         });
