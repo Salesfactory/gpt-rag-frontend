@@ -382,10 +382,14 @@ const Chat = () => {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "O" && event.ctrlKey && event.shiftKey) {
+
+        const isCtrlOrCmd = event.ctrlKey || event.metaKey; 
+        const isAlt = event.altKey;
+
+        if (event.code === 'KeyO' && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             clearChat();
-        } else if (event.key === "Y" && event.ctrlKey && event.shiftKey) {
+        } else if (event.code === 'KeyY' && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             handleNewChat();
         }

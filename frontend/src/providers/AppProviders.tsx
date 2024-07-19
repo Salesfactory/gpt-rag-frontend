@@ -93,27 +93,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [newChatDeleted, setNewChatDeleted] = useState(false);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "?" && event.ctrlKey && event.shiftKey) {
+
+        const isCtrlOrCmd = event.ctrlKey || event.metaKey; 
+        const isAlt = event.altKey;
+
+        if (event.code === 'Slash' && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
             setSettingsPanel(false);
             setShowHistoryPanel(false);
-        } else if (event.key === ";" && event.ctrlKey && event.shiftKey) {
+        } else if (event.code === 'Period' && isCtrlOrCmd && isAlt) {
             event.preventDefault()
             setShowHistoryPanel(!showHistoryPanel);
             setShowFeedbackRatingPanel(false);
             setSettingsPanel(false);
-        } else if (event.key === ":" && event.ctrlKey && event.shiftKey) {
+        } else if (event.code === 'Comma' && isCtrlOrCmd && isAlt) {
             event.preventDefault()
             setSettingsPanel(!settingsPanel);
             setShowHistoryPanel(false);
             setShowFeedbackRatingPanel(false);
         }
-        else if(event.key === ")" && event.ctrlKey && event.shiftKey){
+        else if(event.code === 'Digit0' && isCtrlOrCmd && isAlt){
             event.preventDefault()
             window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
         }
-        else if(event.key === "(" && event.ctrlKey && event.shiftKey){
+        else if(event.code === 'Digit9' && isCtrlOrCmd && isAlt){
             event.preventDefault()
             window.location.href = "#/admin";
         }
