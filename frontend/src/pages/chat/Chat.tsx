@@ -62,6 +62,7 @@ const Chat = () => {
     } = useContext(AppContext);
 
     const lastQuestionRef = useRef<string>("");
+    const lastFileBlobUrl = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [fileType, setFileType] = useState<string>("");
 
@@ -77,8 +78,9 @@ const Chat = () => {
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
     const triggered = useRef(false);
 
-    const makeApiRequestGpt = async (question: string, chatId: string | null) => {
+    const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
         lastQuestionRef.current = question;
+        lastFileBlobUrl.current = fileBlobUrl || "";
 
         error && setError(undefined);
         setIsLoading(true);
@@ -98,6 +100,7 @@ const Chat = () => {
                 approach: Approaches.ReadRetrieveRead,
                 conversation_id: chatId !== null ? chatId : userId,
                 query: question,
+                file_blob_url: fileBlobUrl || "",
                 overrides: {
                     promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
@@ -164,6 +167,7 @@ const Chat = () => {
     const clearChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
             lastQuestionRef.current = "";
+            lastFileBlobUrl.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
@@ -178,6 +182,7 @@ const Chat = () => {
     const handleNewChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             lastQuestionRef.current = "";
+            lastFileBlobUrl.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
@@ -453,7 +458,7 @@ const Chat = () => {
                                                           onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                           onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                           onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                          onFollowupQuestionClicked={q => makeApiRequestGpt(q, null)}
+                                                          onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
                                                           showFollowupQuestions={false}
                                                           showSources={true}
                                                       />
@@ -472,7 +477,7 @@ const Chat = () => {
                                                       onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                       onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                       onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                      onFollowupQuestionClicked={q => makeApiRequestGpt(q, null)}
+                                                      onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
                                                       showFollowupQuestions={false}
                                                       showSources={true}
                                                   />
@@ -494,7 +499,7 @@ const Chat = () => {
                                         <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
                                             <AnswerError
                                                 error={error_message_text + error.toString()}
-                                                onRetry={() => makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null)}
+                                                onRetry={() => makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)}
                                             />
                                         </div>
                                     </>
@@ -527,7 +532,7 @@ const Chat = () => {
                                 clearOnSend
                                 placeholder={placeholderText}
                                 disabled={isLoading}
-                                onSend={question => makeApiRequestGpt(question, chatId !== "" ? chatId : null)}
+                                onSend={(question, fileBlobUrl) => makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null)}
                             />
                         </div>
                     </div>

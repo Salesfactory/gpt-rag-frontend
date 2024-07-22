@@ -13,11 +13,10 @@ import {
     UserInfo
 } from "./models";
 
-
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
-    try{
+    try {
         const response = await fetch("/api/getusers", {
             method: "GET",
             headers: {
@@ -26,19 +25,17 @@ export async function getUsers({ user }: any): Promise<any> {
                 "X-MS-CLIENT-PRINCIPAL-NAME": user_name
             }
         });
-    
+
         const parsedResponse = await response.json();
         if (response.status > 299 || !response.ok) {
             throw Error("Unknown error in getUsers");
         }
         return parsedResponse;
-    }
-    catch(error){
+    } catch (error) {
         console.log("Error fetching users", error);
         return { data: null };
     }
-};
-
+}
 
 export async function checkUser({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -55,7 +52,7 @@ export async function checkUser({ user }: any): Promise<any> {
                 email: user.email
             })
         });
-    
+
         const parsedResponse = await response.json();
         if (response.status > 299 || !response.ok) {
             throw Error("Unknown error in checkUser");
@@ -64,7 +61,7 @@ export async function checkUser({ user }: any): Promise<any> {
     }
 
     return { data: null };
-};
+}
 
 export async function getUserInfo(): Promise<UserInfo[]> {
     const response = await fetch("/.auth/me");
@@ -107,7 +104,7 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
                 "X-MS-CLIENT-PRINCIPAL-NAME": user_name
             },
             body: JSON.stringify({
-                temperature,
+                temperature
             })
         });
         const fetchedData = await response.json();
@@ -129,6 +126,7 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
             approach: options.approach,
             conversation_id: options.conversation_id,
             query: options.query,
+            url: options.file_blob_url,
             overrides: {
                 semantic_ranker: options.overrides?.semanticRanker,
                 semantic_captions: options.overrides?.semanticCaptions,
@@ -191,7 +189,6 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
     return conversationItems;
 }
 
-
 export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
     try {
         const response = await fetch(`/api/chat-conversations/${chatId}`, {
@@ -245,7 +242,7 @@ export function getCitationFilePath(citation: string): string {
 }
 
 export function getFilePath(fileUrl: string) {
-    if(!fileUrl.endsWith(".pdf") || !fileUrl.endsWith(".docx") || fileUrl.endsWith(".doc")) {
+    if (!fileUrl.endsWith(".pdf") || !fileUrl.endsWith(".docx") || fileUrl.endsWith(".doc")) {
         return fileUrl;
     }
     const regex = /documents\/(.*)/;
@@ -289,7 +286,7 @@ export async function postFeedbackRating({ user, conversation_id, feedback_messa
     });
 }
 
-export async function inviteUser ({ username, email }: any): Promise<any> {
+export async function inviteUser({ username, email }: any): Promise<any> {
     try {
         const response = await fetch("/api/inviteUser", {
             method: "POST",
@@ -305,21 +302,42 @@ export async function inviteUser ({ username, email }: any): Promise<any> {
         return fetchedData;
     } catch (error) {
         console.error("Error inviting user", error);
-        return {error : error};
+        return { error: error };
     }
 }
 export async function getApiKeyPayment(): Promise<string> {
     const response = await fetch("/api/stripe", {
         method: "GET",
         headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
         }
     });
-    
+
     if (response.status > 299 || !response.ok) {
         throw Error("Error getting Api key payment");
     }
-    
+
     const apiKey = await response.text();
     return apiKey;
+}
+
+export async function uploadFile(file: any) {
+    const formdata = new FormData();
+    formdata.append("file", file);
+    try {
+        const response = await fetch("/api/upload-blob", {
+            method: "POST",
+            body: formdata,
+            redirect: "follow"
+        });
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        const result = await response.json();
+        console.log("File uploaded successfully:", result);
+        return result;
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        throw error;
+    }
 }

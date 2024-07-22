@@ -4,9 +4,11 @@ import { getTokenOrRefresh } from "./token_util";
 import { Send32Filled, Attach32Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
 
+import { uploadFile } from "../../api";
+
 import styles from "./QuestionInput.module.css";
 interface Props {
-    onSend: (question: string) => void;
+    onSend: (question: string, fileBlobUrl: string | null) => void;
     disabled: boolean;
     placeholder?: string;
     clearOnSend?: boolean;
@@ -14,23 +16,37 @@ interface Props {
 
 import { useFilePicker } from "use-file-picker";
 
-export const FileAttachmentInput = () => {
+export const FileAttachmentInput = ({setFileBlobUrl}: {setFileBlobUrl: (url: string) => void}) => {
     const [files, setFiles] = useState<File[]>([]);
+    const [loadingFiles, setLoadingFiles] = useState(false);
+    const [error, setError] = useState<string>("");
+
     const { openFilePicker, filesContent, loading, errors } = useFilePicker({
         readAs: "DataURL",
         accept: ["xls", "xlsx", "csv"],
         multiple: false,
-        onFilesSelected: ({ plainFiles, filesContent, errors }) => {
+        onFilesSelected: async ({ plainFiles, filesContent, errors }) => {
             // this callback is always called, even if there are errors
-            console.log("onFilesSelected", plainFiles, filesContent, errors);
+            setLoadingFiles(true);
+            var response;
+            try{
+                response = await uploadFile(plainFiles[0]);
+                setLoadingFiles(false);
+                setError("");
+                setFileBlobUrl(response.data.blob_url);
+            } catch (error) {
+                setLoadingFiles(false);
+                setError("Error uploading file");
+                return;
+            }
         },
         onFilesRejected: ({ errors }) => {
             // this callback is called when there were validation errors
-            console.log("onFilesRejected", errors);
+            setError("Error with the file picker");
+            setLoadingFiles(false);
         },
-        onFilesSuccessfullySelected: ({ plainFiles, filesContent }) => {
+        onFilesSuccessfullySelected: async ({ plainFiles, filesContent }) => {
             // this callback is called when the files are successfully selected
-            console.log("onFilesSuccessfullySelected", plainFiles, filesContent);
             setFiles(plainFiles);
         }
     });
@@ -83,7 +99,7 @@ export const FileAttachmentInput = () => {
                     display: "flex",
                     flexDirection: "row",
                     position: "fixed",
-                    bottom: 200,
+                    bottom: 200
                 }}
             >
                 {files.map((file, index) => (
@@ -104,7 +120,7 @@ export const FileAttachmentInput = () => {
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             backgroundColor: "white",
-                            zIndex: 5,
+                            zIndex: 5
                         }}
                     >
                         <button
@@ -120,6 +136,8 @@ export const FileAttachmentInput = () => {
                             aria-label="Close"
                             onClick={() => {
                                 setFiles([]);
+                                setError("");
+                                setFileBlobUrl("");
                             }}
                         >
                             &times;
@@ -129,11 +147,23 @@ export const FileAttachmentInput = () => {
                             iconProps={{ iconName: "ExcelDocument" }}
                             title="Attach a file"
                             ariaLabel="Attach a file"
-                            onClick={() => {}}
                         />
                         <div>{file.name}</div>
                     </div>
                 ))}
+                {error && <div>{error}</div>}
+                {loadingFiles && !error && (
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                        }}
+                    >
+                        Loading file...
+                        <Spinner />
+                    </div>
+                )}
             </div>
             <br />
             <div className={`${styles.attachmentButton}`} aria-label="Button to attach file" onClick={openFilePicker} tabIndex={0}>
@@ -145,13 +175,14 @@ export const FileAttachmentInput = () => {
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
     const [question, setQuestion] = useState<string>("");
+    const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
         if (disabled || !question.trim()) {
             return;
         }
 
-        onSend(question);
+        onSend(question, fileBlobUrl);
 
         if (clearOnSend) {
             setQuestion("");
@@ -211,7 +242,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>
-            <FileAttachmentInput />
+            <FileAttachmentInput setFileBlobUrl={setFileBlobUrl} />
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
