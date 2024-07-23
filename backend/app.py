@@ -73,10 +73,12 @@ def static_file(path):
 def chatgpt():
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
+    file_blob_url = requests.json["url"]
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     logging.info("[webbackend] conversation_id: " + conversation_id)
     logging.info("[webbackend] question: " + question)
+    logging.info("[webbackend] file_blob_url: " + file_blob_url)
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
 
@@ -104,6 +106,7 @@ def chatgpt():
             {
                 "conversation_id": conversation_id,
                 "question": question,
+                "url": file_blob_url,
                 "client_principal_id": client_principal_id,
                 "client_principal_name": client_principal_name,
             }

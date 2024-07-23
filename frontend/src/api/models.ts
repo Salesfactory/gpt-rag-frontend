@@ -84,6 +84,7 @@ export type ChatRequestGpt = {
     approach: Approaches;
     conversation_id: string;
     query: string;
+    file_blob_url: string;
     overrides?: AskRequestOverrides;
 };
 
