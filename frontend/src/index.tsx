@@ -13,6 +13,7 @@ import Chat from "./pages/chat/Chat";
 import Admin from "./pages/admin/Admin";
 import { AppProvider } from "./providers/AppProviders";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
+import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 
 initializeIcons();
 
@@ -44,6 +45,13 @@ export default function App() {
                     <Route
                         index
                         element={<PaymentGateway />}
+                        />
+                        <Route path="*" element={<NoPage />} />
+                    </Route>
+                    <Route path="/success-payment" element={<Layout />}>
+                    <Route
+                        index
+                        element={<SuccessPayment />}
                         />
                         <Route path="*" element={<NoPage />} />
                     </Route>

@@ -37,7 +37,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
         const { error } = await stripe!.redirectToCheckout({
             lineItems: [{ price: priceId, quantity: 1 }],
             mode: 'subscription',
-            successUrl: window.location.origin + '/',
+            successUrl: window.location.origin + '/success-payment',
             cancelUrl: window.location.origin + '/',
         });
 
