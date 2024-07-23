@@ -78,7 +78,7 @@ def chatgpt():
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     logging.info("[webbackend] conversation_id: " + conversation_id)
     logging.info("[webbackend] question: " + question)
-    logging.info("[webbackend] file_blob_url: " + file_blob_url)
+    logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
 
