@@ -62,7 +62,7 @@ const Chat = () => {
     } = useContext(AppContext);
 
     const lastQuestionRef = useRef<string>("");
-    const lastFileBlobUrl = useRef<string>("");
+    const lastFileBlobUrl = useRef<string | null>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [fileType, setFileType] = useState<string>("");
 
@@ -80,7 +80,7 @@ const Chat = () => {
 
     const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
         lastQuestionRef.current = question;
-        lastFileBlobUrl.current = fileBlobUrl || "";
+        lastFileBlobUrl.current = fileBlobUrl;
 
         error && setError(undefined);
         setIsLoading(true);
