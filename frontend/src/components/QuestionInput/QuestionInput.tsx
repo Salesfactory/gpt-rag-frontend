@@ -28,12 +28,11 @@ export const FileAttachmentInput = ({setFileBlobUrl}: {setFileBlobUrl: (url: str
         onFilesSelected: async ({ plainFiles, filesContent, errors }) => {
             // this callback is always called, even if there are errors
             setLoadingFiles(true);
-            var response;
             try{
-                response = await uploadFile(plainFiles[0]);
+                const data = await uploadFile(plainFiles[0]);
                 setLoadingFiles(false);
                 setError("");
-                setFileBlobUrl(response.data.blob_url);
+                setFileBlobUrl(data.blob_url);
             } catch (error) {
                 setLoadingFiles(false);
                 setError("Error uploading file");
