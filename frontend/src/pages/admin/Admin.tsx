@@ -1,11 +1,9 @@
-import React, { useEffect, useState, ReactNode, useContext } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { PrimaryButton, IconButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar } from "@fluentui/react";
-import { Announced } from "@fluentui/react/lib/Announced";
+
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { AddFilled } from "@fluentui/react-icons";
-import { DetailsList, DetailsListLayoutMode, Selection, IColumn } from "@fluentui/react/lib/DetailsList";
-import { MarqueeSelection } from "@fluentui/react/lib/MarqueeSelection";
-import { mergeStyles } from "@fluentui/react/lib/Styling";
+
 import { AppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
@@ -13,141 +11,7 @@ import { checkUser, getUsers, inviteUser } from "../../api";
 
 import styles from "./Admin.module.css";
 
-const exampleChildClass = mergeStyles({
-    display: "block",
-    marginBottom: "10px"
-});
-
-const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: "300px" } };
-
-export interface IUserListItem {
-    key: number;
-    name: string;
-    email: string;
-    role: string;
-    actions: ReactNode;
-}
-
-export interface IUserListState {
-    items: IUserListItem[];
-    selectionDetails: string;
-}
-
-export class UserList extends React.Component<
-    {
-        users: any[];
-    },
-    IUserListState
-> {
-    private _selection: Selection;
-    private _allItems: IUserListItem[];
-    private _columns: IColumn[];
-
-    constructor(props: { users: any[] }) {
-        super(props);
-
-        this._selection = new Selection({
-            onSelectionChanged: () => this.setState({ selectionDetails: this._getSelectionDetails() })
-        });
-
-        // Populate with items for demos.
-        this._allItems = props.users.map((user, index) => {
-            return {
-                key: user.id,
-                name: user.data.name,
-                email: user.data.email,
-                role: user.data.role,
-                value: index,
-                actions: actions({})
-            };
-        });
-
-        this._columns = [
-            { key: "column1", name: "Name", fieldName: "name", minWidth: 100, maxWidth: 200, isResizable: true },
-            { key: "column2", name: "Email", fieldName: "email", minWidth: 200, maxWidth: 300, isResizable: true },
-            { key: "column3", name: "Role", fieldName: "role", minWidth: 100, maxWidth: 100, isResizable: false },
-            { key: "column4", name: "Actions", fieldName: "actions", minWidth: 200, maxWidth: 300, isResizable: true }
-        ];
-
-        this.state = {
-            items: this._allItems,
-            selectionDetails: this._getSelectionDetails()
-        };
-    }
-
-    public render(): JSX.Element {
-        const { items, selectionDetails } = this.state;
-        return (
-            <div>
-                <div className={exampleChildClass}>{selectionDetails}</div>
-                <Announced message={selectionDetails} />
-                <TextField className={exampleChildClass} label="Filter by name:" onChange={this._onFilter} styles={textFieldStyles} />
-                <Announced message={`Number of items after filter applied: ${items.length}.`} />
-                <MarqueeSelection selection={this._selection}>
-                    <DetailsList
-                        items={items}
-                        columns={this._columns}
-                        setKey="set"
-                        layoutMode={DetailsListLayoutMode.justified}
-                        selection={this._selection}
-                        ariaLabelForSelectionColumn="Toggle selection"
-                        ariaLabelForSelectAllCheckbox="Toggle selection for all items"
-                        checkButtonAriaLabel="select row"
-                        onItemInvoked={this._onItemInvoked}
-                    />
-                </MarqueeSelection>
-                {this._allItems.length === 0 && (
-                    <div>
-                        <h3>No users found</h3>
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    private _getSelectionDetails(): string {
-        const selectionCount = this._selection.getSelectedCount();
-
-        switch (selectionCount) {
-            case 0:
-                return "No items selected";
-            case 1:
-                return "1 item selected: " + (this._selection.getSelection()[0] as IUserListItem).name;
-            default:
-                return `${selectionCount} items selected`;
-        }
-    }
-
-    private _onFilter = (ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, text: string | undefined): void => {
-        this.setState({
-            items: text ? this._allItems.filter(i => i.name.toLowerCase().indexOf(text.toLowerCase()) > -1) : this._allItems
-        });
-    };
-
-    private _onItemInvoked = (item: IUserListItem): void => {
-        alert(`Item invoked: ${item.name}`);
-    };
-}
-
-const actions: React.FC = () => {
-    const iconStyle = {
-        icon: { color: "black" },
-        root: {
-            selectors: {
-                ":hover .ms-Button-icon": {
-                    color: "rgb(0, 120, 212);"
-                }
-            }
-        }
-    };
-    return (
-        <div>
-            <IconButton styles={iconStyle} iconProps={{ iconName: "Chart" }} title="Show user expending" ariaLabel="Show user expending" onClick={() => {}} />
-            <IconButton styles={iconStyle} iconProps={{ iconName: "Delete" }} title="Delete user" ariaLabel="Delete user" onClick={() => {}} />
-        </div>
-    );
-};
-
+const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: "900px" } };
 export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; users: never[] }) => {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
@@ -306,6 +170,25 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                     >
                         <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
                         <PrimaryButton
+                        styles={{
+                            root: {
+                                backgroundColor: "#9FC51D",
+                                borderColor: "#9FC51D",
+                                color: "white",
+                                borderRadius: "5px"
+                            },
+                            rootHovered: {
+                                backgroundColor: "#ACC41D",
+                                borderColor: "#ACC41D",
+                                color: "white"
+                            },
+                            rootPressed: {
+                                backgroundColor: "#9FC51D",
+                                borderColor: "#9FC51D",
+                                color: "white"
+                            }
+
+                        }}
                             style={{ marginTop: "20px" }}
                             onClick={() => {
                                 onConfirm();
@@ -340,6 +223,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
 
 const Admin = () => {
     const { user } = useContext(AppContext);
+    const [search, setSearch] = useState("");
+    const [filteredUsers, setFilteredUsers] = useState([]);
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -352,11 +237,22 @@ const Admin = () => {
             if (!Array.isArray(usersList)) {
                 usersList = [];
             }
-            setUsers(usersList);
+            //setUsers(usersList);
             setLoading(false);
         };
         getUserList();
     }, []);
+
+    useEffect(() => {
+        if (!search) {
+            setFilteredUsers(users);
+        } else {
+            const filtered = users.filter((user: any) => {
+                return user.name.toLowerCase().includes(search.toLowerCase()) || user.email.toLowerCase().includes(search.toLowerCase());
+            });
+            setFilteredUsers(filtered);
+        }
+    }, [search]);
 
     return (
         <div className={styles.page_container}>
@@ -378,28 +274,152 @@ const Admin = () => {
                     </div>
                     <div id="options-row" className={styles.row}>
                         <h1>Roles and access</h1>
+                    </div>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center"
+                        }}
+                    >
                         <PrimaryButton
+                            style={{
+                                flex: 0.2
+                            }}
                             className={styles.option}
+                            styles={{
+                                root: {
+                                    backgroundColor: "#9FC51D",
+                                    borderColor: "#9FC51D",
+                                    color: "white",
+                                    borderRadius: "5px"
+                                },
+                                rootHovered: {
+                                    backgroundColor: "#ACC41D",
+                                    borderColor: "#ACC41D",
+                                    color: "white"
+                                },
+                                rootPressed: {
+                                    backgroundColor: "#9FC51D",
+                                    borderColor: "#9FC51D",
+                                    color: "white"
+                                }
+                            }}
                             text="Create user"
                             onClick={() => {
                                 setIsOpen(true);
                             }}
                         />
+                        <TextField
+                            placeholder="Search..."
+                            style={{
+                                width: "300px"
+                            }}
+                            styles={textFieldStyles}
+                            onChange={(_ev, newValue) => {
+                                setSearch(newValue || "");
+                            }}
+                        />
                     </div>
+
                     <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />
-                    <div>
-                        {loading ? (
-                            <Spinner
-                                styles={{
-                                    root: {
-                                        marginTop: "50px"
-                                    }
+                    {loading ? (
+                        <Spinner
+                            styles={{
+                                root: {
+                                    marginTop: "50px"
+                                }
+                            }}
+                        />
+                    ) : (
+                        <table
+                            style={{
+                                textAlign: "center",
+                                marginTop: "20px",
+                                backgroundColor: "white",
+                                borderCollapse: "collapse"
+                            }}
+                        >
+                            <thead
+                                style={{
+                                    backgroundColor: "#9FC51D",
+                                    color: "white"
                                 }}
-                            />
-                        ) : (
-                            <UserList users={users} />
-                        )}
-                    </div>
+                            >
+                                <tr>
+                                    <th
+                                        style={{
+                                            padding: "10px"
+                                        }}
+                                    >
+                                        Name
+                                    </th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredUsers.map((user: any, index) => {
+                                    return (
+                                        <tr key={index}>
+                                            <td>{user.name}</td>
+                                            <td>{user.email}</td>
+                                            <td>
+                                                <div
+                                                    style={{
+                                                        width: "100%",
+                                                        justifyContent: "center",
+                                                        justifyItems: "center",
+                                                        display: "flex"
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            width: "100px",
+                                                            backgroundColor: user.role === "admin" ? "#d7e9f4" : "#d7e5be",
+                                                            padding: "5px",
+                                                            color: user.role === "admin" ? "#064789" : "#1b4332",
+                                                            borderRadius: "15px"
+                                                        }}
+                                                    >
+                                                        {user.role}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {
+                                                    <div>
+                                                        <IconButton
+                                                            style={{
+                                                                backgroundColor: "white",
+                                                                color: "black"
+                                                            }}
+                                                            iconProps={{ iconName: "Edit" }}
+                                                            title="Edit user"
+                                                            ariaLabel="Edit user"
+                                                            onClick={() => {}}
+                                                        />
+                                                        <IconButton
+                                                            style={{
+                                                                backgroundColor: "white",
+                                                                color: "black"
+                                                            }}
+                                                            iconProps={{ iconName: "Delete", color: "black" }}
+                                                            title="Delete user"
+                                                            ariaLabel="Delete user"
+                                                            onClick={() => {}}
+                                                        />
+                                                    </div>
+                                                }
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </>
             )}
         </div>
