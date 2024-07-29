@@ -160,7 +160,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                 return matches;
             }
             return false;
-        });
+        }).reverse();
         return { label, data: filteredData };
     });
 
