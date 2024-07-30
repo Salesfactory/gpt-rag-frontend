@@ -237,7 +237,7 @@ const Admin = () => {
             if (!Array.isArray(usersList)) {
                 usersList = [];
             }
-            //setUsers(usersList);
+            setUsers(usersList);
             setLoading(false);
         };
         getUserList();
