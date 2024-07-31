@@ -170,25 +170,24 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                     >
                         <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
                         <PrimaryButton
-                        styles={{
-                            root: {
-                                backgroundColor: "#9FC51D",
-                                borderColor: "#9FC51D",
-                                color: "white",
-                                borderRadius: "5px"
-                            },
-                            rootHovered: {
-                                backgroundColor: "#ACC41D",
-                                borderColor: "#ACC41D",
-                                color: "white"
-                            },
-                            rootPressed: {
-                                backgroundColor: "#9FC51D",
-                                borderColor: "#9FC51D",
-                                color: "white"
-                            }
-
-                        }}
+                            styles={{
+                                root: {
+                                    backgroundColor: "#9FC51D",
+                                    borderColor: "#9FC51D",
+                                    color: "white",
+                                    borderRadius: "5px"
+                                },
+                                rootHovered: {
+                                    backgroundColor: "#ACC41D",
+                                    borderColor: "#ACC41D",
+                                    color: "white"
+                                },
+                                rootPressed: {
+                                    backgroundColor: "#9FC51D",
+                                    borderColor: "#9FC51D",
+                                    color: "white"
+                                }
+                            }}
                             style={{ marginTop: "20px" }}
                             onClick={() => {
                                 onConfirm();
@@ -238,6 +237,7 @@ const Admin = () => {
                 usersList = [];
             }
             setUsers(usersList);
+            setFilteredUsers(usersList);
             setLoading(false);
         };
         getUserList();
@@ -248,7 +248,7 @@ const Admin = () => {
             setFilteredUsers(users);
         } else {
             const filtered = users.filter((user: any) => {
-                return user.name.toLowerCase().includes(search.toLowerCase()) || user.email.toLowerCase().includes(search.toLowerCase());
+                return user.data.name.toLowerCase().includes(search.toLowerCase()) || user.data.email.toLowerCase().includes(search.toLowerCase());
             });
             setFilteredUsers(filtered);
         }
@@ -363,9 +363,27 @@ const Admin = () => {
                             <tbody>
                                 {filteredUsers.map((user: any, index) => {
                                     return (
-                                        <tr key={index}>
-                                            <td>{user.name}</td>
-                                            <td>{user.email}</td>
+                                        <tr
+                                            key={user.id}
+                                            style={{
+                                                backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
+                                            }}
+                                        >
+                                            <td
+                                                style={{
+                                                    padding: "10px",
+                                                    textAlign: "justify"
+                                                }}
+                                            >
+                                                {user.data.name}
+                                            </td>
+                                            <td
+                                                style={{
+                                                    textAlign: "justify"
+                                                }}
+                                            >
+                                                {user.data.email}
+                                            </td>
                                             <td>
                                                 <div
                                                     style={{
@@ -378,13 +396,13 @@ const Admin = () => {
                                                     <div
                                                         style={{
                                                             width: "100px",
-                                                            backgroundColor: user.role === "admin" ? "#d7e9f4" : "#d7e5be",
+                                                            backgroundColor: user.data.role === "admin" ? "#d7e9f4" : "#d7e5be",
                                                             padding: "5px",
-                                                            color: user.role === "admin" ? "#064789" : "#1b4332",
+                                                            color: user.data.role === "admin" ? "#064789" : "#1b4332",
                                                             borderRadius: "15px"
                                                         }}
                                                     >
-                                                        {user.role}
+                                                        {user.data.role}
                                                     </div>
                                                 </div>
                                             </td>
@@ -393,7 +411,6 @@ const Admin = () => {
                                                     <div>
                                                         <IconButton
                                                             style={{
-                                                                backgroundColor: "white",
                                                                 color: "black"
                                                             }}
                                                             iconProps={{ iconName: "Edit" }}
@@ -403,7 +420,6 @@ const Admin = () => {
                                                         />
                                                         <IconButton
                                                             style={{
-                                                                backgroundColor: "white",
                                                                 color: "black"
                                                             }}
                                                             iconProps={{ iconName: "Delete", color: "black" }}
