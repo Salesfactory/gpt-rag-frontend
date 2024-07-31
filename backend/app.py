@@ -249,13 +249,13 @@ def getStripe():
 
 @app.route("/api/upload-blob", methods=["POST"])
 def uploadBlob():
-    if 'file' not in request.files:
-        print('No file sent')
+    if "file" not in request.files:
+        print("No file sent")
         return jsonify({"error": "No file sent"}), 400
-    
+
     valid_file_extensions = [".csv", ".xlsx", ".xls"]
 
-    file = request.files['file']
+    file = request.files["file"]
 
     extension = os.path.splitext(file.filename)[1]
 
@@ -268,9 +268,11 @@ def uploadBlob():
         blob_service_client = BlobServiceClient.from_connection_string(
             AZURE_STORAGE_CONNECTION_STRING
         )
-        blob_client = blob_service_client.get_blob_client(container=AZURE_CSV_STORAGE_NAME, blob=filename)
+        blob_client = blob_service_client.get_blob_client(
+            container=AZURE_CSV_STORAGE_NAME, blob=filename
+        )
         blob_client.upload_blob(data=file, blob_type="BlockBlob")
-        
+
         return jsonify({"blob_url": blob_client.url}), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/upload-blob")
@@ -692,6 +694,49 @@ def checkUser():
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/getUser", methods=["GET"])
+def getUser():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+
+    if not client_principal_id or not client_principal_name:
+        return (
+            jsonify(
+                {
+                    "error": "Missing required parameters, client_principal_id or client_principal_name"
+                }
+            ),
+            400,
+        )
+
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = "orchestrator-host--checkuser"
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
+        return (
+            jsonify(
+                {
+                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+                }
+            ),
+            500,
+        )
+
+    try:
+        url = CHECK_USER_ENDPOINT
+        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
+        response = requests.request(
+            "GET", url, headers=headers, params={"id": client_principal_id}
+        )
+        logging.info(f"[webbackend] response: {response.text[:500]}...")
+        return response.text
+    except Exception as e:
+        logging.exception("[webbackend] exception in /getUser")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
