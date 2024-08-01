@@ -64,7 +64,7 @@ export function parseAnswerToHtml(
                                 key={`citation-${citation.index}`}
                                 className="supContainer"
                                 title={citation.part}
-                                onClick={() => onCitationClicked(citation.path, citation.part)}
+                                onClick={() => onCitationClicked(citation.part, citation.path)}
                                 tabIndex={0}
                             >
                                 <sup>{citation.index}</sup>
