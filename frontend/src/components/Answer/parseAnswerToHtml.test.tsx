@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
-import { render, fireEvent } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { parseAnswerToHtml } from "./AnswerParser"; // Adjust path as needed
 import { getCitationFilePath } from "../../api"; // Adjust path as needed
