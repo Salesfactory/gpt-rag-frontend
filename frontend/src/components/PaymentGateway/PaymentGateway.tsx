@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { loadStripe, Stripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
+import React, { useState, useEffect, useContext } from "react";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import styles from "./PaymentGateway.module.css";
-import { getApiKeyPayment } from "../../api";
+import { getApiKeyPayment, createCheckoutSession } from "../../api";
+import { AppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 
 const fetchApiKey = async () => {
@@ -11,39 +12,38 @@ const fetchApiKey = async () => {
 };
 
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
+    const { user } = useContext(AppContext);
+
     const [plans, setPlans] = useState<any[]>([]);
 
     useEffect(() => {
         setPlans([
             {
-                id: 'free_plan',
-                name: 'Current Plan',
-                description: 'Access to basic features for free.',
-                price: '0.00',
-                interval: 'month'
+                id: "free_plan",
+                name: "Current Plan",
+                description: "Access to basic features for free.",
+                price: "0.00",
+                interval: "month"
             },
             {
-                id: 'price_1PYvHVEpF6ccgZLwn6uq6d4J',
-                name: 'Enterprise Plan',
-                description: 'Access to all features including premium support.',
-                price: '30.00',
-                interval: 'month'
+                id: "price_1PYvHVEpF6ccgZLwn6uq6d4J",
+                name: "Enterprise Plan",
+                description: "Access to all features including premium support.",
+                price: "30.00",
+                interval: "month"
             }
         ]);
     }, []);
 
     const handleCheckout = async (priceId: string) => {
-        const stripe = await stripePromise;
-        const { error } = await stripe!.redirectToCheckout({
-            lineItems: [{ price: priceId, quantity: 1 }],
-            mode: 'subscription',
-            successUrl: window.location.origin + '/success-payment',
-            cancelUrl: window.location.origin + '/',
+        const { url } = await createCheckoutSession({
+            userId: user.id,
+            priceId,
+            successUrl: window.location.origin + "#/success-payment",
+            cancelUrl: window.location.origin + "/"
         });
-
-        if (error) {
-            console.error('Error redirecting to checkout:', error);
-        }
+        console.log(url);
+        window.location.href = url
     };
 
     return (
@@ -53,14 +53,16 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                 {plans.map(plan => (
                     <div key={plan.id} className={styles.plan}>
                         <h2 className={styles.planName}>{plan.name}</h2>
-                        <p className={styles.planPrice}>${plan.price} per {plan.interval}</p>
+                        <p className={styles.planPrice}>
+                            ${plan.price} per {plan.interval}
+                        </p>
                         <p className={styles.planDescription}>{plan.description}</p>
-                        {plan.id !== 'free_plan' && (
-                            <button 
-                                className={styles.planButton} 
-                                onClick={() => handleCheckout(plan.id)}  
-                                role="button" 
-                                aria-label={`Subscribe to ${plan.name}`} 
+                        {plan.id !== "free_plan" && (
+                            <button
+                                className={styles.planButton}
+                                onClick={() => handleCheckout(plan.id)}
+                                role="button"
+                                aria-label={`Subscribe to ${plan.name}`}
                             >
                                 Subscribe
                             </button>
@@ -88,11 +90,11 @@ export const PaymentGateway: React.FC = () => {
 
     if (!stripePromise) {
         return (
-          <div className={styles.spinnerContainer} role="alert">
+            <div className={styles.spinnerContainer} role="alert">
                 <Spinner size={3} />
                 <div className={styles.loadingText}>Loading...</div>
-          </div>
-      );
+            </div>
+        );
     }
 
     return (

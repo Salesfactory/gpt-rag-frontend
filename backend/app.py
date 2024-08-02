@@ -5,7 +5,8 @@ import time
 import logging
 import requests
 import json
-from flask import Flask, request, jsonify, Response
+import stripe
+from flask import Flask, request, jsonify, Response, redirect
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.keyvault.secrets import SecretClient
@@ -34,6 +35,9 @@ EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PORT = os.getenv("EMAIL_PORT")
+
+# stripe
+stripe.api_key = os.getenv("STRIPE_API_KEY")
 
 INVITATION_LINK = os.getenv("INVITATION_LINK")
 
@@ -236,6 +240,29 @@ def getStorageAccount():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/create-checkout-session", methods=["POST"])
+def create_checkout_session():
+    price = request.json["priceId"]
+    userId = request.json["userId"]
+    success_url = request.json["successUrl"]
+    cancel_url = request.json["cancelUrl"]
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            line_items=[
+                {"price": price, "quantity": 1},
+            ],
+            mode="subscription",
+            client_reference_id=userId,
+            metadata={"userId": userId},
+            success_url=success_url,
+            cancel_url=cancel_url,
+            automatic_tax={"enabled": True},
+        )
+    except Exception as e:
+        return str(e)
+    
+    return jsonify({"url": checkout_session.url})
+
 @app.route("/api/stripe", methods=["GET"])
 def getStripe():
     try:
@@ -245,6 +272,73 @@ def getStripe():
     except Exception as e:
         logging.exception("[webbackend] exception in /api/stripe")
         return jsonify({"error": str(e)}), 500
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    stripe.api_key = os.getenv("STRIPE_API_KEY")
+    endpoint_secret = os.getenv('STRIPE_SIGNING_SECRET')
+
+    event = None
+    payload = request.data
+
+    try:
+        event = json.loads(payload)
+    except json.decoder.JSONDecodeError as e:
+        print("⚠️  Webhook error while parsing basic request." + str(e))
+        return jsonify(success=False)
+    if endpoint_secret:
+        # Only verify the event if there is an endpoint secret defined
+        # Otherwise use the basic event deserialized with json
+        sig_header = request.headers["STRIPE_SIGNATURE"]
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+        except stripe.error.SignatureVerificationError as e:
+            print("⚠️  Webhook signature verification failed. " + str(e))
+            return jsonify(success=False)
+
+    # Handle the event
+    print("🔔  Webhook received!", event["type"])
+    if event["type"] == "checkout.session.completed":
+        userId = event["data"]["object"]["client_reference_id"]
+        sessionId = event["data"]["object"]["id"]
+        subscriptionId = event["data"]["object"]["subscription"]
+        paymentStatus = event["data"]["object"]["payment_status"]
+        try:
+            # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+            # It is set during the infrastructure deployment.
+            keySecretName = "orchestrator-host--checkuser"
+            functionKey = get_secret(keySecretName)
+        except Exception as e:
+            logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
+            return (
+                jsonify(
+                    {
+                        "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+                    }
+                ),
+                500,
+            )
+        try:
+            url = CHECK_USER_ENDPOINT
+            payload = json.dumps(
+                {
+                    "id": userId,
+                    "sessionId": sessionId,
+                    "subscriptionId": subscriptionId,
+                    "paymentStatus": paymentStatus,
+                }
+            )
+            headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
+            response = requests.request("PATCH", url, headers=headers, data=payload)
+            logging.info(f"[webbackend] RESPONSE: {response.text[:500]}...")
+        except Exception as e:
+            logging.exception("[webbackend] exception in /api/checkUser")
+            return jsonify({"error": str(e)}), 500
+    else:
+        # Unexpected event type
+        print("Unexpected event type")
+
+    return jsonify(success=True)
 
 
 @app.route("/api/upload-blob", methods=["POST"])

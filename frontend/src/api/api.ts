@@ -341,3 +341,25 @@ export async function uploadFile(file: any) {
         throw error;
     }
 }
+
+export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl }: any) {
+    const response = await fetch("/create-checkout-session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            
+        },
+        body: JSON.stringify({
+            userId,
+            priceId,
+            successUrl,
+            cancelUrl
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session");
+    }
+
+    const session = await response.json();
+    return session;
+}
