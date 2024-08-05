@@ -12,6 +12,8 @@ interface UserInfo {
     name: string;
     email: string | null;
     role: string | undefined;
+    subscriptionStatus: string;
+    subscriptionId?: string;
 }
 
 interface AppContextType {
@@ -53,6 +55,8 @@ export const AppContext = createContext<AppContextType>({
         name: "anonymous",
         email: "anonymous@gmail.com",
         role: undefined,
+        subscriptionStatus: "inactive",
+        subscriptionId: undefined
     },
     setUser: () => {},
     dataConversation: [],
@@ -83,7 +87,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         id: "00000000-0000-0000-0000-000000000000",
         name: "anonymous",
         email: "anonymous@gmail.com",
-        role: undefined
+        role: undefined,
+        subscriptionStatus: "inactive",
+        subscriptionId: undefined
     });
     const [chatId, setChatId] = useState<string>("");
     const [conversationIsLoading, setConversationIsLoading] = useState<boolean>(false);
