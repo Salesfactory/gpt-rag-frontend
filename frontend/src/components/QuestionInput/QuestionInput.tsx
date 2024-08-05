@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
+import { AppContext } from "../../providers/AppProviders";
 import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
 import { Send32Filled, Attach32Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
@@ -16,7 +17,7 @@ interface Props {
 
 import { useFilePicker } from "use-file-picker";
 
-export const FileAttachmentInput = ({setFileBlobUrl}: {setFileBlobUrl: (url: string) => void}) => {
+export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: string) => void }) => {
     const [files, setFiles] = useState<File[]>([]);
     const [loadingFiles, setLoadingFiles] = useState(false);
     const [error, setError] = useState<string>("");
@@ -28,7 +29,7 @@ export const FileAttachmentInput = ({setFileBlobUrl}: {setFileBlobUrl: (url: str
         onFilesSelected: async ({ plainFiles, filesContent, errors }) => {
             // this callback is always called, even if there are errors
             setLoadingFiles(true);
-            try{
+            try {
                 const data = await uploadFile(plainFiles[0]);
                 setLoadingFiles(false);
                 setError("");
@@ -141,12 +142,7 @@ export const FileAttachmentInput = ({setFileBlobUrl}: {setFileBlobUrl: (url: str
                         >
                             &times;
                         </button>
-                        <IconButton
-                            style={{ color: "black" }}
-                            iconProps={{ iconName: "ExcelDocument" }}
-                            title="Attach a file"
-                            ariaLabel="Attach a file"
-                        />
+                        <IconButton style={{ color: "black" }} iconProps={{ iconName: "ExcelDocument" }} title="Attach a file" ariaLabel="Attach a file" />
                         <div>{file.name}</div>
                     </div>
                 ))}
@@ -156,7 +152,7 @@ export const FileAttachmentInput = ({setFileBlobUrl}: {setFileBlobUrl: (url: str
                         style={{
                             display: "flex",
                             flexDirection: "row",
-                            alignItems: "center",
+                            alignItems: "center"
                         }}
                     >
                         Loading file...
@@ -173,11 +169,13 @@ export const FileAttachmentInput = ({setFileBlobUrl}: {setFileBlobUrl: (url: str
 };
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
+    const { user } = useContext(AppContext);
+
     const [question, setQuestion] = useState<string>("");
     const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
-        if (disabled || !question.trim()) {
+        if (disabled || !question.trim() || user.subscriptionStatus === "inactive") {
             return;
         }
 
@@ -237,7 +235,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         }
     };
 
-    const sendQuestionDisabled = disabled || !question.trim();
+    const sendQuestionDisabled = disabled || !question.trim() || user.subscriptionStatus === "inactive";
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>

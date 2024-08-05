@@ -15,12 +15,13 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
     const { user } = useContext(AppContext);
 
     const [plans, setPlans] = useState<any[]>([]);
+    const [currentPlan, setCurrentPlan] = useState(user.subscriptionId ? 1 : 0);
 
     useEffect(() => {
         setPlans([
             {
                 id: "free_plan",
-                name: "Current Plan",
+                name: "Free Plan",
                 description: "Access to basic features for free.",
                 price: "0.00",
                 interval: "month"
@@ -43,31 +44,38 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             cancelUrl: window.location.origin + "/"
         });
         console.log(url);
-        window.location.href = url
+        window.location.href = url;
     };
 
     return (
         <div className={styles.subscriptionPlan} aria-labelledby="subscription-plans-title">
             <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
             <div className={styles.planContainer}>
-                {plans.map(plan => (
-                    <div key={plan.id} className={styles.plan}>
-                        <h2 className={styles.planName}>{plan.name}</h2>
-                        <p className={styles.planPrice}>
-                            ${plan.price} per {plan.interval}
-                        </p>
-                        <p className={styles.planDescription}>{plan.description}</p>
-                        {plan.id !== "free_plan" && (
-                            <button
+                {plans.map((plan, index) => (
+                    <>
+                        <div key={plan.id} className={styles.plan}>
+                            {currentPlan === index && <div className={styles.currentIndicator}>Current Plan</div>}
+                            <h2 className={styles.planName}>{plan.name}</h2>
+                            <p className={styles.planPrice}>
+                                ${plan.price} per {plan.interval}
+                            </p>
+                            <p className={styles.planDescription}>{plan.description}</p>
+                            {plan.id !== "free_plan" && (
+                                <button
                                 className={styles.planButton}
-                                onClick={() => handleCheckout(plan.id)}
-                                role="button"
-                                aria-label={`Subscribe to ${plan.name}`}
-                            >
-                                Subscribe
-                            </button>
-                        )}
-                    </div>
+                                    onClick={() => handleCheckout(plan.id)}
+                                    role="button"
+                                    aria-label={`Subscribe to ${plan.name}`}
+                                >
+                                    {user.subscriptionId && user.subscriptionStatus === "inactive"
+                                        ? "Reactivate subscription"
+                                        : user.subscriptionStatus === "active"
+                                        ? "Edit payment information"
+                                        : "Subscribe"}
+                                </button>
+                            )}
+                        </div>
+                    </>
                 ))}
             </div>
         </div>

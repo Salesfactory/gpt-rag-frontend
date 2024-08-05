@@ -251,7 +251,7 @@ const Chat = () => {
                         const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
 
                         if (id && name) {
-                            setUser({ id, name, email, role: undefined });
+                            setUser({ id, name, email, role: undefined, subscriptionStatus: "inactive" });
                         }
 
                         // register user if doesn't exist
@@ -261,9 +261,10 @@ const Chat = () => {
                         // verifies if user exists and assigns the role
                         const result = await checkUser({ user: { id, name, email } });
                         const role = result["role"] || undefined;
+                        const subscriptionStatus = result["subscriptionStatus"] || undefined;
 
                         if (result && role) {
-                            setUser({ id, name, email, role });
+                            setUser({ id, name, email, role, subscriptionStatus });
                         }
                     }
                 }
@@ -387,14 +388,13 @@ const Chat = () => {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-
-        const isCtrlOrCmd = event.ctrlKey || event.metaKey; 
+        const isCtrlOrCmd = event.ctrlKey || event.metaKey;
         const isAlt = event.altKey;
 
-        if (event.code === 'KeyO' && isCtrlOrCmd && isAlt) {
+        if (event.code === "KeyO" && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             clearChat();
-        } else if (event.code === 'KeyY' && isCtrlOrCmd && isAlt) {
+        } else if (event.code === "KeyY" && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             handleNewChat();
         }
@@ -499,7 +499,9 @@ const Chat = () => {
                                         <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
                                             <AnswerError
                                                 error={error_message_text + error.toString()}
-                                                onRetry={() => makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)}
+                                                onRetry={() =>
+                                                    makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)
+                                                }
                                             />
                                         </div>
                                     </>
@@ -593,7 +595,12 @@ const Chat = () => {
                             onChange={onRetrieveCountChange}
                             aria-label="Number of documents to retrieve"
                         />
-                        <TextField className={styles.chatSettingsSeparator} label="Exclude category" onChange={onExcludeCategoryChanged} aria-label="Exclude category"/>
+                        <TextField
+                            className={styles.chatSettingsSeparator}
+                            label="Exclude category"
+                            onChange={onExcludeCategoryChanged}
+                            aria-label="Exclude category"
+                        />
                         <Checkbox
                             className={styles.chatSettingsSeparator}
                             checked={useSemanticRanker}
@@ -607,7 +614,7 @@ const Chat = () => {
                             label="Use query-contextual summaries instead of whole documents"
                             onChange={onUseSemanticCaptionsChange}
                             disabled={!useSemanticRanker}
-                             aria-label="Use query-contextual summaries"
+                            aria-label="Use query-contextual summaries"
                         />
                         <Checkbox
                             className={styles.chatSettingsSeparator}
