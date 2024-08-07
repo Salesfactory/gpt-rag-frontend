@@ -169,13 +169,13 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
 };
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
-    const { user } = useContext(AppContext);
+    const { user, organization } = useContext(AppContext);
 
     const [question, setQuestion] = useState<string>("");
     const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
-        if (disabled || !question.trim() || user.subscriptionStatus === "inactive") {
+        if (disabled || !question.trim() || organization.subscriptionStatus === "inactive" || !organization.subscriptionId) {
             return;
         }
 
@@ -235,7 +235,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         }
     };
 
-    const sendQuestionDisabled = disabled || !question.trim() || user.subscriptionStatus === "inactive";
+    const sendQuestionDisabled = disabled || !question.trim() || organization.subscriptionStatus === "inactive" || !organization.subscriptionId;
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>

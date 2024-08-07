@@ -12,8 +12,16 @@ interface UserInfo {
     name: string;
     email: string | null;
     role: string | undefined;
-    subscriptionStatus: string;
-    subscriptionId?: string;
+    organizationId?: string;
+}
+
+interface OrganizationInfo {
+    id: string;
+    name: string;
+    owner: string;
+    subscriptionId: string | undefined;
+    subscriptionStatus: string | undefined;
+    subscriptionExpirationDate: number | undefined;
 }
 
 interface AppContextType {
@@ -31,6 +39,8 @@ interface AppContextType {
     setDataHistory: Dispatch<SetStateAction<ConversationHistoryItem[]>>;
     user: UserInfo;
     setUser: Dispatch<SetStateAction<UserInfo>>;
+    organization: OrganizationInfo;
+    setOrganization: Dispatch<SetStateAction<OrganizationInfo>>;
     chatSelected: string;
     setChatSelected: Dispatch<SetStateAction<string>>;
     chatId: string;
@@ -55,10 +65,18 @@ export const AppContext = createContext<AppContextType>({
         name: "anonymous",
         email: "anonymous@gmail.com",
         role: undefined,
-        subscriptionStatus: "inactive",
-        subscriptionId: undefined
+        organizationId: undefined
     },
     setUser: () => {},
+    organization: {
+        id: "00000000-0000-0000-0000-000000000000",
+        name: "no-organization",
+        owner: "no-owner",
+        subscriptionId: undefined,
+        subscriptionStatus: undefined,
+        subscriptionExpirationDate: undefined
+    },
+    setOrganization: () => {},
     dataConversation: [],
     setDataConversation: () => {},
     chatId: "",
@@ -88,8 +106,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         name: "anonymous",
         email: "anonymous@gmail.com",
         role: undefined,
-        subscriptionStatus: "inactive",
-        subscriptionId: undefined
+        organizationId: undefined
+    });
+    const [organization, setOrganization] = useState<OrganizationInfo>({
+        id: "00000000-0000-0000-0000-000000000000",
+        name: "no-organization",
+        owner: "no-owner",
+        subscriptionId: undefined,
+        subscriptionStatus: undefined,
+        subscriptionExpirationDate: undefined
     });
     const [chatId, setChatId] = useState<string>("");
     const [conversationIsLoading, setConversationIsLoading] = useState<boolean>(false);
@@ -99,36 +124,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [newChatDeleted, setNewChatDeleted] = useState(false);
 
     const handleKeyDown = (event: KeyboardEvent) => {
-
-        const isCtrlOrCmd = event.ctrlKey || event.metaKey; 
+        const isCtrlOrCmd = event.ctrlKey || event.metaKey;
         const isAlt = event.altKey;
 
-        if (event.code === 'Slash' && isCtrlOrCmd && isAlt) {
+        if (event.code === "Slash" && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
             setSettingsPanel(false);
             setShowHistoryPanel(false);
-        } else if (event.code === 'Period' && isCtrlOrCmd && isAlt) {
-            event.preventDefault()
+        } else if (event.code === "Period" && isCtrlOrCmd && isAlt) {
+            event.preventDefault();
             setShowHistoryPanel(!showHistoryPanel);
             setShowFeedbackRatingPanel(false);
             setSettingsPanel(false);
-        } else if (event.code === 'Comma' && isCtrlOrCmd && isAlt) {
-            event.preventDefault()
+        } else if (event.code === "Comma" && isCtrlOrCmd && isAlt) {
+            event.preventDefault();
             setSettingsPanel(!settingsPanel);
             setShowHistoryPanel(false);
             setShowFeedbackRatingPanel(false);
-        }
-        else if(event.code === 'Digit0' && isCtrlOrCmd && isAlt){
-            event.preventDefault()
+        } else if (event.code === "Digit0" && isCtrlOrCmd && isAlt) {
+            event.preventDefault();
             window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
-        }
-        else if(event.code === 'Digit9' && isCtrlOrCmd && isAlt){
-            event.preventDefault()
+        } else if (event.code === "Digit9" && isCtrlOrCmd && isAlt) {
+            event.preventDefault();
             window.location.href = "#/admin";
         }
     };
-    
 
     window.addEventListener("keydown", handleKeyDown);
     //If I add this on a useEffect it doesn't work, I don't know why
@@ -147,6 +168,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 setDataHistory,
                 user,
                 setUser,
+                organization,
+                setOrganization,
                 dataConversation,
                 setDataConversation,
                 chatId,
