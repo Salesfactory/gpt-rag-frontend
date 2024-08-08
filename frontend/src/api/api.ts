@@ -342,18 +342,18 @@ export async function uploadFile(file: any) {
     }
 }
 
-export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl }: any) {
+export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl, organizationId }: any) {
     const response = await fetch("/create-checkout-session", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            
         },
         body: JSON.stringify({
             userId,
             priceId,
             successUrl,
-            cancelUrl
+            cancelUrl,
+            organizationId
         })
     });
     if (response.status > 299 || !response.ok) {
@@ -362,4 +362,22 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
 
     const session = await response.json();
     return session;
+}
+
+export async function getOrganizationSubscription({userId, organizationId} : any) {
+    const response = await fetch("/api/get-organization-subscription?organizationId=" + organizationId, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting organization subscription");
+    }
+
+    const subscription = await response.json();
+    return subscription;
+
 }

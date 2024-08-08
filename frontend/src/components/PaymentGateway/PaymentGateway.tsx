@@ -12,10 +12,10 @@ const fetchApiKey = async () => {
 };
 
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
-    const { user } = useContext(AppContext);
+    const { user, organization } = useContext(AppContext);
 
     const [plans, setPlans] = useState<any[]>([]);
-    const [currentPlan, setCurrentPlan] = useState(user.subscriptionId ? 1 : 0);
+    const [currentPlan, setCurrentPlan] = useState(organization.subscriptionId ? 1 : 0);
 
     useEffect(() => {
         setPlans([
@@ -41,7 +41,9 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             userId: user.id,
             priceId,
             successUrl: window.location.origin + "#/success-payment",
-            cancelUrl: window.location.origin + "/"
+            cancelUrl: window.location.origin + "/",
+            organizationId: user.organizationId || ""
+
         });
         console.log(url);
         window.location.href = url;
@@ -67,9 +69,9 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                                     role="button"
                                     aria-label={`Subscribe to ${plan.name}`}
                                 >
-                                    {user.subscriptionId && user.subscriptionStatus === "inactive"
+                                    {organization.subscriptionId && organization.subscriptionStatus === "inactive"
                                         ? "Reactivate subscription"
-                                        : user.subscriptionStatus === "active"
+                                        : organization.subscriptionStatus === "active"
                                         ? "Edit payment information"
                                         : "Subscribe"}
                                 </button>

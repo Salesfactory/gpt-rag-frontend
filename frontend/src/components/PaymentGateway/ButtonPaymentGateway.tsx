@@ -6,7 +6,7 @@ import { GuestFilled } from "@fluentui/react-icons";
 import { AppContext } from "../../providers/AppProviders";
 
 export const ButtonPaymentGateway = () => {
-    const { user } = useContext(AppContext);
+    const { user, organization } = useContext(AppContext);
 
     const handleRedirect = () => {
         window.location.href = "#/payment";
@@ -14,7 +14,7 @@ export const ButtonPaymentGateway = () => {
 
     return (
         <>
-            {user.subscriptionStatus === "inactive" && (
+            {(organization.owner === user.id || !organization.subscriptionId) && (
                 <button className={styles.container} onClick={handleRedirect}>
                     <GuestFilled className={styles.button} />
                     <Text className={styles.buttonText}>Subscription</Text>

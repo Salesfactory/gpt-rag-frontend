@@ -4,7 +4,18 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getUsers } from "../../api";
+import {
+    chatApiGpt,
+    Approaches,
+    AskResponse,
+    ChatRequest,
+    ChatRequestGpt,
+    ChatTurn,
+    getUserInfo,
+    checkUser,
+    getUsers,
+    getOrganizationSubscription
+} from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -58,7 +69,8 @@ const Chat = () => {
         setChatIsCleaned,
         chatIsCleaned,
         settingsPanel,
-        setUser
+        setUser,
+        setOrganization
     } = useContext(AppContext);
 
     const lastQuestionRef = useRef<string>("");
@@ -251,7 +263,7 @@ const Chat = () => {
                         const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
 
                         if (id && name) {
-                            setUser({ id, name, email, role: undefined, subscriptionStatus: "inactive" });
+                            setUser({ id, name, email, role: undefined, organizationId: undefined });
                         }
 
                         // register user if doesn't exist
@@ -261,10 +273,20 @@ const Chat = () => {
                         // verifies if user exists and assigns the role
                         const result = await checkUser({ user: { id, name, email } });
                         const role = result["role"] || undefined;
-                        const subscriptionStatus = result["subscriptionStatus"] || undefined;
+                        const organizationId = result["organizationId"] || undefined;
 
-                        if (result && role) {
-                            setUser({ id, name, email, role, subscriptionStatus });
+                        const organization = await getOrganizationSubscription(organizationId);
+
+                        if (result && role && organization) {
+                            setUser({ id, name, email, role, organizationId });
+                            setOrganization({
+                                id: organization.id,
+                                name: organization.name,
+                                owner: organization.owner,
+                                subscriptionId: organization.subscriptionId,
+                                subscriptionStatus: organization.subscriptionStatus,
+                                subscriptionExpirationDate: organization.subscriptionExpirationDate
+                            });
                         }
                     }
                 }
