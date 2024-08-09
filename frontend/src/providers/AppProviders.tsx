@@ -127,7 +127,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const isCtrlOrCmd = event.ctrlKey || event.metaKey;
         const isAlt = event.altKey;
 
-        if (event.code === "Slash" && isCtrlOrCmd && isAlt) {
+        if (event.code === "Digit8" && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
             setSettingsPanel(false);
@@ -148,6 +148,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } else if (event.code === "Digit9" && isCtrlOrCmd && isAlt) {
             event.preventDefault();
             window.location.href = "#/admin";
+        } else if (event.code === "Digit7" && isCtrlOrCmd && isAlt) {
+            event.preventDefault();
+            window.location.href = "#/payment";
         }
     };
 
