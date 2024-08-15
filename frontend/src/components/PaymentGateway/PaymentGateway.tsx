@@ -20,13 +20,6 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
     useEffect(() => {
         setPlans([
             {
-                id: "free_plan",
-                name: "Free Plan",
-                description: "Access to basic features for free.",
-                price: "0.00",
-                interval: "month"
-            },
-            {
                 id: "price_1PYvHVEpF6ccgZLwn6uq6d4J",
                 name: "Enterprise Plan",
                 description: "Access to all features including premium support.",
@@ -43,7 +36,6 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             successUrl: window.location.origin + "#/success-payment",
             cancelUrl: window.location.origin + "/",
             organizationId: user.organizationId || ""
-
         });
         console.log(url);
         window.location.href = url;
@@ -64,7 +56,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                             <p className={styles.planDescription}>{plan.description}</p>
                             {plan.id !== "free_plan" && (
                                 <button
-                                className={styles.planButton}
+                                    className={styles.planButton}
                                     onClick={() => handleCheckout(plan.id)}
                                     role="button"
                                     aria-label={`Subscribe to ${plan.name}`}

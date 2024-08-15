@@ -9,12 +9,14 @@ export const ButtonPaymentGateway = () => {
     const { user, organization } = useContext(AppContext);
 
     const handleRedirect = () => {
-        window.location.href = "#/payment";
+        if (organization.subscriptionId) {
+            window.location.href = "https://dashboard.stripe.com/dashboard";
+        } else window.location.href = "#/payment";
     };
 
     return (
         <>
-            {(organization.owner === user.id || !organization.subscriptionId) && (
+            {user.role === "admin" && (
                 <button className={styles.container} onClick={handleRedirect}>
                     <GuestFilled className={styles.button} />
                     <Text className={styles.buttonText}>Subscription</Text>
