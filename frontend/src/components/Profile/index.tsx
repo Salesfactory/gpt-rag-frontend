@@ -98,6 +98,16 @@ export const ProfileButton: React.FunctionComponent = () => {
                 // style={selectedOption ? { display: "none" } : {}}
                 selectedKeys={selectedOption ? [selectedOption] : []}
             />
+            <div style={{
+                position: "absolute",
+                top: "40%",
+                left: "30%",
+                fontSize: "10px",
+                width: "150px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+            }}
+            >{user?.organizationId || "No organization"}</div>
         </Stack>
     );
 };

@@ -275,10 +275,12 @@ const Chat = () => {
                         const role = result["role"] || undefined;
                         const organizationId = result["organizationId"] || undefined;
 
-                        const organization = await getOrganizationSubscription(organizationId);
+                        const organization = await getOrganizationSubscription({ userId: id, organizationId: organizationId });
 
-                        if (result && role && organization) {
+                        if (result && role) {
                             setUser({ id, name, email, role, organizationId });
+                        }
+                        if (organization) {
                             setOrganization({
                                 id: organization.id,
                                 name: organization.name,
