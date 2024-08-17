@@ -43,6 +43,8 @@ if (userLanguage.startsWith("pt")) {
 
 const Chat = () => {
     // speech synthesis is disabled by default
+
+    const { user, organization } = useContext(AppContext);
     const speechSynthesisEnabled = false;
 
     const [placeholderText, setPlaceholderText] = useState("");
@@ -79,6 +81,7 @@ const Chat = () => {
     const [fileType, setFileType] = useState<string>("");
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isLoadingUserInfo, setIsLoadingUserInfo] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
 
     const [activeCitation, setActiveCitation] = useState<string>();
@@ -239,6 +242,7 @@ const Chat = () => {
     useEffect(() => {
         const getUserInfoList = async () => {
             if (window.location.hostname !== "127.0.0.1") {
+                setIsLoadingUserInfo(true);
                 const userInfoList = await getUserInfo();
                 if (userInfoList.length === 0) {
                     // setShowAuthMessage(true);
@@ -290,6 +294,7 @@ const Chat = () => {
                                 subscriptionExpirationDate: organization.subscriptionExpirationDate
                             });
                         }
+                        setIsLoadingUserInfo(false);
                     }
                 }
             } else {
@@ -427,6 +432,41 @@ const Chat = () => {
     window.addEventListener("keydown", handleKeyDown);
     //If I add this on a useEffect it doesn't work, I don't know why
     //maybe because it's a global event listener and is called multiple times
+
+    if (isLoadingUserInfo) {
+        return (
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%"
+                }}
+            >
+                <Spinner size={3} className={styles.spinnerStyles} />
+            </div>
+        );
+    }
+
+    if (!user.organizationId) {
+        if (window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost") {
+            return (
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: "100%"
+                    }}
+                >
+                    <h2>We are sorry, but your user is not assigned to any active subscription.</h2>
+                    <p>Contact the administrator of the organization to which you belong.</p>
+                </div>
+            );
+        }
+    }
 
     return (
         <div className={styles.mainContainer}>
