@@ -286,7 +286,7 @@ export async function postFeedbackRating({ user, conversation_id, feedback_messa
     });
 }
 
-export async function inviteUser({ username, email }: any): Promise<any> {
+export async function inviteUser({ username, email, organizationId }: any): Promise<any> {
     try {
         const response = await fetch("/api/inviteUser", {
             method: "POST",
@@ -295,7 +295,8 @@ export async function inviteUser({ username, email }: any): Promise<any> {
             },
             body: JSON.stringify({
                 username,
-                email
+                email,
+                organizationId
             })
         });
         const fetchedData = await response.json();
