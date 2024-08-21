@@ -11,12 +11,14 @@ import { FeedbackRatingButton } from "../../components/FeedbackRating/FeedbackRa
 import { AppContext } from "../../providers/AppProviders";
 import { SettingsButton } from "../../components/SettingsButton";
 import { ButtonPaymentGateway } from "../../components/PaymentGateway/ButtonPaymentGateway";
+import { SideMenu } from "../../components/SideMenu/SideMenu";
 
 const Layout = () => {
     const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } =
         useContext(AppContext);
 
     const { pathname } = useLocation();
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
@@ -37,28 +39,33 @@ const Layout = () => {
     };
 
     return (
-        <div className={styles.layout}>
-            <header className={styles.header} role={"banner"}>
-                <div className={styles.headerContainer}>
-                    <Link to="/" className={styles.headerTitleContainer} aria-label="Go to Home Page">
-                        <img height="45px" src={salesLogo} alt="Sales Factory logo"></img>
-                        <h3 className={styles.headerTitle}></h3>
-                    </Link>
-                    <nav></nav>
-                    <div className={styles.layoutOptions}>
-                        {pathname === "/" && (
-                            <>
-                                <ButtonPaymentGateway />
-                                <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
-                                <ChatHistoryButton onClick={handleShowHistoryPanel} />
-                                <SettingsButton onClick={handleShowSettings} />
-                            </>
-                        )}
+        <div className={`${styles.layout} ${isCollapsed ? styles.collapsedContent : ""}`}>
+            <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
+                <SideMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+            </aside>
+            <main className={styles.content}>
+                <header className={styles.header} role={"banner"}>
+                    <div className={styles.headerContainer}>
+                        <Link to="/" className={styles.headerTitleContainer} aria-label="Go to Home Page">
+                            <img height="45px" src={salesLogo} alt="Sales Factory logo"></img>
+                            <h3 className={styles.headerTitle}></h3>
+                        </Link>
+                        <nav></nav>
+                        <div className={styles.layoutOptions}>
+                            {pathname === "/" && (
+                                <>
+                                    <ButtonPaymentGateway />
+                                    <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
+                                    <ChatHistoryButton onClick={handleShowHistoryPanel} />
+                                    <SettingsButton onClick={handleShowSettings} />
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            <Outlet />
+                <Outlet />
+            </main>
         </div>
     );
 };
