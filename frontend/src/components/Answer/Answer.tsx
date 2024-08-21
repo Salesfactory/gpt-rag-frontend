@@ -3,6 +3,7 @@ import { Stack, IconButton } from "@fluentui/react";
 import DOMPurify from "dompurify";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm'
+import rehypeRaw from "rehype-raw";
 
 import styles from "./Answer.module.css";
 
@@ -73,10 +74,9 @@ export const Answer = ({
             </Stack.Item>
 
             <Stack.Item grow>
-                <div className={styles.answerText}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {sanitizedAnswerHtml}
-                    </ReactMarkdown></div>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                    {sanitizedAnswerHtml}
+                </ReactMarkdown>
             </Stack.Item>
 
             {!!parsedAnswer.citations.length && showSources && (
@@ -86,13 +86,33 @@ export const Answer = ({
                         {parsedAnswer.citations.map((url, i) => {
                             const path = getFilePath(url);
                             return (
-                                <a onKeyDown={(event)=>{
-                                    if (event.key === "Enter") {
-                                        onCitationClicked(url, path);
-                                    }
-                                }} tabIndex={0} key={i} className={styles.citation} title={path} onClick={() => onCitationClicked(url, path)}>
-                                    {`${++i}. ${truncateString(path, 15)}`}
-                                </a>
+                                <>
+                                    <div style={{
+                                        fontWeight: "500",
+                                        lineHeight: "24px",
+                                        textAlign: "center",
+                                        borderRadius: "4px",
+                                        padding: "0px",
+                                        color: "#123bb6",
+                                        textDecoration: "none"
+                                    }}>
+                                    {`[${++i}]`}
+                                    </div>
+                                    <a
+                                        onKeyDown={event => {
+                                            if (event.key === "Enter") {
+                                                onCitationClicked(url, path);
+                                            }
+                                        }}
+                                        tabIndex={0}
+                                        key={i}
+                                        className={styles.citation}
+                                        title={path}
+                                        onClick={() => onCitationClicked(url, path)}
+                                    >
+                                        {`${truncateString(path, 15)}`}
+                                    </a>
+                                </>
                             );
                         })}
                     </Stack>

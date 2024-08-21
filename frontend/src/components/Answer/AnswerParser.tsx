@@ -37,6 +37,11 @@ export function parseAnswerToHtml(
             if (index % 2 === 0) {
                 return part;
             } else {
+                var reg = /^\d+$/;
+                if (reg.test(part)) {
+                    return `[${part}]`;
+                }
+
                 // Check if the part string contains multiple citations
                 const citationParts = part.split(/,\s*/);
 
@@ -75,6 +80,24 @@ export function parseAnswerToHtml(
             }
         });
         answerHtml = fragments.join("");
+
+        for (let i = 0; i < citations.length; i++) {
+            const citation = citations[i];
+            answerHtml = answerHtml.replace(new RegExp(`\\[${i + 1}\\]`, "g"), renderToStaticMarkup(
+                <>
+                    <a
+                        key={`citation-${i+1}`}
+                        className="supContainer"
+                        title={citation}
+                        onClick={() => onCitationClicked(citation, citation)}
+                        tabIndex={0}
+                    >
+                        <sup>{i+1}</sup>
+                    </a>
+                </>
+            ));
+        }
+        answerHtml = answerHtml.split("Sources:")[0];
     } else {
         answerHtml = removeCitations(parsedAnswer);
     }
