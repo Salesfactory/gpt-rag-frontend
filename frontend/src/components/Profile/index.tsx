@@ -36,9 +36,13 @@ const onRenderCaretDown = (): JSX.Element => {
 const onRenderPlaceholder = (props: any): JSX.Element => {
     return (
         <div className={styles.dropdownPlaceholder}>
-            <img className={styles.contactImage} src={person} />
-            <div className={styles.placeholderSeparator}>&nbsp; &nbsp;</div>
-            <span className={styles.dropdownPlaceholderTitle}>{props.placeholder}</span>
+            <div className={styles.dropdownContent}>
+                <span className={styles.dropdownPlaceholderTitle}>{props.placeholder}</span>
+                <span className={styles.dropdownPlaceholderSubtitle}>{props.organizationId}</span>
+            </div>
+            <div className={styles.imgContainer}>
+                <img className={styles.contactImage} src={person} />
+            </div>
         </div>
     );
 };
@@ -54,12 +58,11 @@ export const ProfileButton: React.FunctionComponent = () => {
     const { user } = useContext(AppContext);
 
     const placeholder = placeholderPrepare(user.name);
-
+    const organizationId = user?.organizationId || "No organization";
     const headerTitle = user.name;
 
     const options: IDropdownOption[] = [
         { key: "Header", text: headerTitle || "Options", itemType: DropdownMenuItemType.Header },
-        { key: "Admin", text: "Admin Panel", data: { icon: "SecurityGroup" } },
         { key: "Logout", text: "Logout", data: { icon: "SkypeArrow" } }
     ];
 
@@ -78,8 +81,6 @@ export const ProfileButton: React.FunctionComponent = () => {
 
         if (selOption === "Logout") {
             window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
-        } else if (selOption === "Admin") {
-            window.location.href = "#/admin";
         }
     };
 
@@ -88,7 +89,7 @@ export const ProfileButton: React.FunctionComponent = () => {
             <Dropdown
                 componentRef={dropdownRef}
                 placeholder={placeholder}
-                onRenderPlaceholder={onRenderPlaceholder}
+                onRenderPlaceholder={props => onRenderPlaceholder({ ...props, organizationId })}
                 // onRenderTitle={onRenderTitle}
                 onRenderOption={onRenderOption}
                 onRenderCaretDown={onRenderCaretDown}
@@ -98,16 +99,6 @@ export const ProfileButton: React.FunctionComponent = () => {
                 // style={selectedOption ? { display: "none" } : {}}
                 selectedKeys={selectedOption ? [selectedOption] : []}
             />
-            <div style={{
-                position: "absolute",
-                top: "40%",
-                left: "30%",
-                fontSize: "10px",
-                width: "150px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-            }}
-            >{user?.organizationId || "No organization"}</div>
         </Stack>
     );
 };

@@ -5,7 +5,6 @@ import { AppContext } from "../../providers/AppProviders";
 import { AddFilled, SaveFilled, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
 import { ThumbLikeRegular, ThumbDislikeRegular } from "@fluentui/react-icons";
 import { postFeedbackRating } from "../../api/api";
-import { ProfileButton } from "../Profile";
 
 const categoryOptions = [
     { key: "1", text: "Incorrect data" },
@@ -143,9 +142,6 @@ export const FeedbackRating = () => {
                     </div>
                     {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
                 </div>
-            </div>
-            <div className={styles.profileButtonContainer}>
-                <ProfileButton />
             </div>
         </section>
     );

@@ -147,14 +147,6 @@
     }
 }
 
-.profileButtonContainer {
-    position: absolute;
-    bottom: 30px;
-    right: 20px;
-    width: 240px;
-    height: 80px;
-}
-
 .listContainer {
     margin-bottom: 80px;
 }

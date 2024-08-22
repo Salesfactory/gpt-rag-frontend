@@ -6,7 +6,6 @@ import styles from "./SettingsModal.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { AppContext } from "../../providers/AppProviders";
-import { ProfileButton } from "../Profile";
 import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 
 interface Props {
@@ -121,7 +120,7 @@ export const SettingsPanel = () => {
         postSettings({
             user,
             temperature: parsedTemperature
-        }).then((data) => {
+        }).then(data => {
             setTemperature(data.temperature);
             setIsDialogOpen(false);
             setIsLoadingSettings(false);
@@ -235,9 +234,6 @@ export const SettingsPanel = () => {
                     )}
                 </Stack.Item>
             </Stack>
-            <div className={styles.profileButtonContainer}>
-                <ProfileButton />
-            </div>
         </div>
     );
 };
