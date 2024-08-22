@@ -1,12 +1,36 @@
 .layout {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: 100vh;
+    overflow: hidden;
+    transition: grid-template-columns 0.3s ease;
+}
+
+.sidebar {
+    overflow-y: auto;
+    transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 80px;
+}
+
+.collapsedContent {
+    grid-template-columns: 80px 1fr;
+}
+
+.content {
+    overflow-y: auto;
+    padding: 20px;
 }
 
 .header {
     background-color: #f1f1f1;
     color: #f2f2f2;
+    grid-column: span 2;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .headerContainer {
