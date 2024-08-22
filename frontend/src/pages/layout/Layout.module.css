@@ -101,6 +101,18 @@
     height: 20px;
 }
 
-.layoutOptions{
+.layoutOptions {
     display: flex;
+    align-items: center;
+}
+
+.profileButtonContainer {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-left: 2px solid #b5b3b3;
+    height: 50px;
+    width: 240px;
+    background-color: transparent;
+    margin-left: 10px;
 }

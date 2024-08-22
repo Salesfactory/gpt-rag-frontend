@@ -3,7 +3,6 @@ import { AddFilled } from "@fluentui/react-icons";
 import styles from "./ChatHistoryPannel.module.css";
 import { AppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanelList } from "./ChatHistoryListItem";
-import { ProfileButton } from "../Profile";
 
 interface ChatHistoryPanelProps {
     functionDeleteChat: () => void;
@@ -31,9 +30,6 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
                 <div className={styles.content}>
                     <ChatHistoryPanelList onDeleteChat={functionDeleteChat} />
                 </div>
-            </div>
-            <div className={styles.profileButtonContainer}>
-                <ProfileButton />
             </div>
         </section>
     );

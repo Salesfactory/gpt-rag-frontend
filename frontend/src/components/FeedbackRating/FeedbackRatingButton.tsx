@@ -1,5 +1,5 @@
 import { Text } from "@fluentui/react";
-import { ChatBubblesQuestionFilled } from "@fluentui/react-icons";
+import { ChatBubblesQuestionRegular } from "@fluentui/react-icons";
 
 import styles from "./FeedbackRatingButton.module.css";
 import { AppContext } from "../../providers/AppProviders";
@@ -16,7 +16,7 @@ export const FeedbackRatingButton = ({ className, disabled, onClick }: Props) =>
     const buttonContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     return (
         <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={onClick}>
-            <ChatBubblesQuestionFilled className={styles.button} />
+            <ChatBubblesQuestionRegular className={styles.button} />
             <Text className={styles.buttonText}>{buttonContent}</Text>
         </button>
     );

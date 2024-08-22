@@ -12,6 +12,7 @@ import { AppContext } from "../../providers/AppProviders";
 import { SettingsButton } from "../../components/SettingsButton";
 import { ButtonPaymentGateway } from "../../components/PaymentGateway/ButtonPaymentGateway";
 import { SideMenu } from "../../components/SideMenu/SideMenu";
+import { ProfileButton } from "../../components/Profile";
 
 const Layout = () => {
     const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } =
@@ -46,20 +47,18 @@ const Layout = () => {
             <main className={styles.content}>
                 <header className={styles.header} role={"banner"}>
                     <div className={styles.headerContainer}>
-                        <Link to="/" className={styles.headerTitleContainer} aria-label="Go to Home Page">
-                            <img height="45px" src={salesLogo} alt="Sales Factory logo"></img>
-                            <h3 className={styles.headerTitle}></h3>
-                        </Link>
                         <nav></nav>
                         <div className={styles.layoutOptions}>
                             {pathname === "/" && (
                                 <>
-                                    <ButtonPaymentGateway />
                                     <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
                                     <ChatHistoryButton onClick={handleShowHistoryPanel} />
                                     <SettingsButton onClick={handleShowSettings} />
                                 </>
                             )}
+                            <div className={styles.profileButtonContainer}>
+                                <ProfileButton />
+                            </div>
                         </div>
                     </div>
                 </header>

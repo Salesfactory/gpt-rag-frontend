@@ -133,11 +133,3 @@
     margin-top: -10px;
     padding-left: 30px;
 }
-
-.profileButtonContainer {
-    position: absolute;
-    bottom: 30px;
-    right: 20px;
-    width: 240px;
-    height: 80px;
-}
