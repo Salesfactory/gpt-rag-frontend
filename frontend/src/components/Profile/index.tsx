@@ -38,10 +38,10 @@ const onRenderPlaceholder = (props: any): JSX.Element => {
         <div className={styles.dropdownPlaceholder}>
             <div className={styles.dropdownContent}>
                 <span className={styles.dropdownPlaceholderTitle}>{props.placeholder}</span>
-                <span className={styles.dropdownPlaceholderSubtitle}>{props.organizationId}</span>
+                <span className={styles.dropdownPlaceholderSubtitle}>{props.email}</span>
             </div>
             <div className={styles.imgContainer}>
-                <img className={styles.contactImage} src={person} />
+                <img className={styles.contactImage} src={person} alt="Profile" />
             </div>
         </div>
     );
@@ -57,8 +57,9 @@ const placeholderPrepare = (placeholder: string) => {
 export const ProfileButton: React.FunctionComponent = () => {
     const { user } = useContext(AppContext);
 
+    console.log(user);
     const placeholder = placeholderPrepare(user.name);
-    const organizationId = user?.organizationId || "No organization";
+    const email = user?.email || " ";
     const headerTitle = user.name;
 
     const options: IDropdownOption[] = [
@@ -89,7 +90,7 @@ export const ProfileButton: React.FunctionComponent = () => {
             <Dropdown
                 componentRef={dropdownRef}
                 placeholder={placeholder}
-                onRenderPlaceholder={props => onRenderPlaceholder({ ...props, organizationId })}
+                onRenderPlaceholder={props => onRenderPlaceholder({ ...props, email })}
                 // onRenderTitle={onRenderTitle}
                 onRenderOption={onRenderOption}
                 onRenderCaretDown={onRenderCaretDown}
