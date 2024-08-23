@@ -28,7 +28,8 @@ const itemClass = mergeStyles({
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "10px 0"
+    padding: "10px 0",
+    width: "85%"
 });
 
 const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading: boolean; isOpen: boolean; onDismiss: () => void; onConfirm: () => void }) => {
@@ -207,7 +208,7 @@ export const SettingsPanel = () => {
                             <h3 style={{ textAlign: "center" }}>Loading your settings</h3>
                         </div>
                     ) : (
-                        <div className={styles["w-100"]}>
+                        <div className={styles.content}>
                             <div className={styles["w-100"]}>
                                 <div className={itemClass}>
                                     <span>Creativity Scale</span>
@@ -225,11 +226,11 @@ export const SettingsPanel = () => {
                                     onChange={e => handleSetTemperature(e)}
                                     aria-labelledby="temperature-slider"
                                 />
+                                <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
+                                    <SaveFilled className={styles.saveIcon} />
+                                    &#8202;&#8202;Save
+                                </DefaultButton>
                             </div>
-                            <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
-                                <SaveFilled />
-                                &#8202;&#8202;Save
-                            </DefaultButton>
                         </div>
                     )}
                 </Stack.Item>

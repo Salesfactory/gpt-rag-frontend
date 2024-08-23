@@ -16,7 +16,7 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
     };
     return (
         <section className={styles.container} data-is-scrollable aria-label="chat history panel">
-            <div>
+            <div className={styles.card}>
                 <div className={styles.header}>
                     <div className={styles.title}>Chat history</div>
                     <div className={styles.buttons}>
