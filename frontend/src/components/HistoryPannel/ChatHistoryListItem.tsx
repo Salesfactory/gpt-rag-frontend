@@ -2,14 +2,10 @@ import styles from "./ChatHistoryPannel.module.css";
 import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } from "../../api";
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../../providers/AppProviders";
-import trash from "../../assets/trash.png";
-import pencil from "../../assets/pencil.png";
-import yes from "../../assets/check.png";
-import no from "../../assets/close.png";
 import { Spinner } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { DeleteRegular, CheckmarkRegular, DismissRegular } from "@fluentui/react-icons";
+import { DeleteRegular, CheckmarkRegular, DismissRegular, ChevronDownRegular, ChevronUpRegular } from "@fluentui/react-icons";
 
 interface ChatHistoryPanelProps {
     onDeleteChat: () => void;
@@ -22,6 +18,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     const [deletingIsLoading, setDeletingIsLoading] = useState(false);
     const [confirmationDelete, setConfirmationDelete] = useState<string | null>(null);
     const [conversationsIds, setConversationsIds] = useState<String[]>([]);
+    const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
     const {
         dataHistory,
         setDataHistory,
@@ -173,6 +170,18 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     const isChatSelected = (conversationId: string) => chatSelected === conversationId;
 
+    const toggleSection = (sectionIndex: number) => {
+        setExpandedSections(prevExpandedSections => {
+            const newExpandedSections = new Set(prevExpandedSections);
+            if (newExpandedSections.has(sectionIndex)) {
+                newExpandedSections.delete(sectionIndex);
+            } else {
+                newExpandedSections.add(sectionIndex);
+            }
+            return newExpandedSections;
+        });
+    };
+
     return (
         <div className={styles.listContainer}>
             <ToastContainer />
@@ -189,60 +198,65 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                         <div key={monthIndex}>
                             {data.length > 0 && (
                                 <>
-                                    <div className={styles.timeContainer}>
+                                    <div className={styles.timeContainer} onClick={() => toggleSection(monthIndex)} style={{ cursor: "ponter" }}>
                                         <div className={styles.subtitle}>{label}</div>
+                                        <div>{expandedSections.has(monthIndex) ? <ChevronUpRegular /> : <ChevronDownRegular />}</div>
                                     </div>
-                                    {data.map((conversation, index) => (
-                                        <div
-                                            key={conversation.id}
-                                            className={
-                                                isChatSelected(conversation.id) || isChatId(conversation.id) || isConfirmationDelete(conversation.id)
-                                                    ? styles.conversationSelected
-                                                    : styles.conversationContainer
-                                            }
-                                            onMouseEnter={() => handleMouseEnter(`${monthIndex}-${index}`)}
-                                            onMouseLeave={handleMouseLeave}
-                                        >
-                                            <button
+                                    {expandedSections.has(monthIndex) &&
+                                        data.map((conversation, index) => (
+                                            <div
+                                                key={conversation.id}
                                                 className={
-                                                    isConfirmationDelete(conversation.id) ? styles.buttonConversationSelected : styles.buttonConversation
+                                                    isChatSelected(conversation.id) || isChatId(conversation.id) || isConfirmationDelete(conversation.id)
+                                                        ? styles.conversationSelected
+                                                        : styles.conversationContainer
                                                 }
-                                                onClick={() => fetchConversation(conversation.id)}
+                                                onMouseEnter={() => handleMouseEnter(`${monthIndex}-${index}`)}
+                                                onMouseLeave={handleMouseLeave}
                                             >
-                                                {isConfirmationDelete(conversation.id) ? "Do you want to delete this conversation?" : conversation.content}
-                                            </button>
-                                            {hoveredItemIndex === `${monthIndex}-${index}` ||
-                                            chatSelected === conversation.id ||
-                                            chatId === conversation.id ||
-                                            isConfirmationDelete(conversation.id) ? (
-                                                <div className={styles.actionsButtons}>
-                                                    {isConfirmationDelete(conversation.id) ? (
-                                                        <DismissRegular
-                                                            className={styles.actionButton}
-                                                            onClick={() => setConfirmationDelete(null)}
-                                                            style={{ color: "red" }}
-                                                        />
-                                                    ) : (
-                                                        <DeleteRegular className={styles.actionButton} onClick={() => setConfirmationDelete(conversation.id)} />
-                                                    )}
-
-                                                    {deletingIsLoading && isConfirmationDelete(conversation.id) ? (
-                                                        <Spinner className={styles.actionButton} size={1} />
-                                                    ) : (
-                                                        isConfirmationDelete(conversation.id) && (
-                                                            <CheckmarkRegular
+                                                <button
+                                                    className={
+                                                        isConfirmationDelete(conversation.id) ? styles.buttonConversationSelected : styles.buttonConversation
+                                                    }
+                                                    onClick={() => fetchConversation(conversation.id)}
+                                                >
+                                                    {isConfirmationDelete(conversation.id) ? "Do you want to delete this conversation?" : conversation.content}
+                                                </button>
+                                                {hoveredItemIndex === `${monthIndex}-${index}` ||
+                                                chatSelected === conversation.id ||
+                                                chatId === conversation.id ||
+                                                isConfirmationDelete(conversation.id) ? (
+                                                    <div className={styles.actionsButtons}>
+                                                        {isConfirmationDelete(conversation.id) ? (
+                                                            <DismissRegular
                                                                 className={styles.actionButton}
-                                                                onClick={() => handleDeleteConversation(conversation.id)}
-                                                                style={{ color: "green" }}
+                                                                onClick={() => setConfirmationDelete(null)}
+                                                                style={{ color: "red" }}
                                                             />
-                                                        )
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <></>
-                                            )}
-                                        </div>
-                                    ))}
+                                                        ) : (
+                                                            <DeleteRegular
+                                                                className={styles.actionButton}
+                                                                onClick={() => setConfirmationDelete(conversation.id)}
+                                                            />
+                                                        )}
+
+                                                        {deletingIsLoading && isConfirmationDelete(conversation.id) ? (
+                                                            <Spinner className={styles.actionButton} size={1} />
+                                                        ) : (
+                                                            isConfirmationDelete(conversation.id) && (
+                                                                <CheckmarkRegular
+                                                                    className={styles.actionButton}
+                                                                    onClick={() => handleDeleteConversation(conversation.id)}
+                                                                    style={{ color: "green" }}
+                                                                />
+                                                            )
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <></>
+                                                )}
+                                            </div>
+                                        ))}
                                 </>
                             )}
                         </div>
