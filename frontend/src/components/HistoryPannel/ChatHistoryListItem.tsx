@@ -9,6 +9,7 @@ import no from "../../assets/close.png";
 import { Spinner } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { DeleteRegular, CheckmarkRegular, DismissRegular } from "@fluentui/react-icons";
 
 interface ChatHistoryPanelProps {
     onDeleteChat: () => void;
@@ -152,15 +153,17 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         { label: "This Month", filter: (itemDate: any) => itemDate >= startOfMonth && itemDate <= today },
         { label: "Previous Months", filter: (itemDate: any) => itemDate < startOfMonth }
     ].map(({ label, filter }) => {
-        const filteredData = sortedDataByDate.filter(item => {
-            const itemDate = new Date(item.start_date);
-            if (!uniqueItems.has(item)) {
-                const matches = filter(itemDate);
-                if (matches) uniqueItems.add(item);
-                return matches;
-            }
-            return false;
-        }).reverse();
+        const filteredData = sortedDataByDate
+            .filter(item => {
+                const itemDate = new Date(item.start_date);
+                if (!uniqueItems.has(item)) {
+                    const matches = filter(itemDate);
+                    if (matches) uniqueItems.add(item);
+                    return matches;
+                }
+                return false;
+            })
+            .reverse();
         return { label, data: filteredData };
     });
 
@@ -186,7 +189,9 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                         <div key={monthIndex}>
                             {data.length > 0 && (
                                 <>
-                                    <h3>{label}</h3>
+                                    <div className={styles.timeContainer}>
+                                        <div className={styles.subtitle}>{label}</div>
+                                    </div>
                                     {data.map((conversation, index) => (
                                         <div
                                             key={conversation.id}
@@ -211,32 +216,26 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                                             chatId === conversation.id ||
                                             isConfirmationDelete(conversation.id) ? (
                                                 <div className={styles.actionsButtons}>
-                                                    <img
-                                                        className={styles.actionButton}
-                                                        src={isConfirmationDelete(conversation.id) ? no : trash}
-                                                        alt="Destroy"
-                                                        onClick={
-                                                            isConfirmationDelete(conversation.id)
-                                                                ? () => setConfirmationDelete(null)
-                                                                : () => setConfirmationDelete(conversation.id)
-                                                        }
-                                                    />
+                                                    {isConfirmationDelete(conversation.id) ? (
+                                                        <DismissRegular
+                                                            className={styles.actionButton}
+                                                            onClick={() => setConfirmationDelete(null)}
+                                                            style={{ color: "red" }}
+                                                        />
+                                                    ) : (
+                                                        <DeleteRegular className={styles.actionButton} onClick={() => setConfirmationDelete(conversation.id)} />
+                                                    )}
+
                                                     {deletingIsLoading && isConfirmationDelete(conversation.id) ? (
                                                         <Spinner className={styles.actionButton} size={1} />
                                                     ) : (
-                                                        <>
-                                                        {isConfirmationDelete(conversation.id) &&
-                                                            <img
+                                                        isConfirmationDelete(conversation.id) && (
+                                                            <CheckmarkRegular
                                                                 className={styles.actionButton}
-                                                                src={yes}
-                                                                alt="Edit"
-                                                                onClick={
-                                                                    isConfirmationDelete(conversation.id)
-                                                                        ? () => handleDeleteConversation(conversation.id)
-                                                                        : () => setConfirmationDelete(null)
-                                                                }
-                                                            />}
-                                                        </>
+                                                                onClick={() => handleDeleteConversation(conversation.id)}
+                                                                style={{ color: "green" }}
+                                                            />
+                                                        )
                                                     )}
                                                 </div>
                                             ) : (
