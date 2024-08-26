@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Dropdown, TextField, Button, Spinner, DefaultButton } from "@fluentui/react";
 import styles from "./FeedbackRating.module.css";
 import { AppContext } from "../../providers/AppProviders";
-import { AddFilled, SaveFilled, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
+import { AddFilled, SendRegular, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
 import { ThumbLikeRegular, ThumbDislikeRegular } from "@fluentui/react-icons";
 import { postFeedbackRating } from "../../api/api";
 
@@ -96,7 +96,7 @@ export const FeedbackRating = () => {
 
     return (
         <section className={styles.container} data-is-scrollable aria-label="feedback panel">
-            <div>
+            <div className={styles.cardFeedback}>
                 <div className={styles.header}>
                     <div className={styles.title}>Feedback</div>
                     <div className={styles.buttons}>
@@ -116,7 +116,7 @@ export const FeedbackRating = () => {
                         )}
 
                         <Dropdown placeholder="Select Category" options={categoryOptions} onChange={handleCategoryChange} defaultValue={category} />
-                        <TextField label="Message" multiline onChange={handleFeedbackChange} value={feedback} />
+                        <TextField label="Message" multiline onChange={handleFeedbackChange} value={feedback} className={styles.message} />
                         <div className={styles.rating}>
                             <button
                                 className={styles.thumbButton}
@@ -136,8 +136,8 @@ export const FeedbackRating = () => {
                             </button>
                         </div>
                         <DefaultButton className={styles.saveButton} onClick={handleSubmitFeedback}>
-                            <SaveFilled />
                             &#8202;&#8202;Send
+                            <SendRegular className={styles.sendIcon} />
                         </DefaultButton>
                     </div>
                     {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
