@@ -306,12 +306,13 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
         return { error: error };
     }
 }
-export async function createInvitation({organizationId, invitedUserEmail} : any): Promise<any> {
+export async function createInvitation({organizationId, invitedUserEmail, userId} : any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
             },
             body: JSON.stringify({
                 organizationId,
