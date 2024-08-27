@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { AppContext } from "../../providers/AppProviders";
 import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
-import { Send32Filled, Attach32Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
+import { Send24Filled, Mic24Regular, AttachRegular } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
 
 import { uploadFile } from "../../api";
@@ -162,7 +162,7 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
             </div>
             <br />
             <div className={`${styles.attachmentButton}`} aria-label="Button to attach file" onClick={openFilePicker} tabIndex={0}>
-                <Attach32Filled primaryFill="rgba(115, 118, 225, 1)" />
+                <AttachRegular />
             </div>
         </>
     );
@@ -239,7 +239,6 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>
-            <FileAttachmentInput setFileBlobUrl={setFileBlobUrl} />
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
@@ -251,20 +250,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                 onKeyDown={onEnterPress}
             />
             <div className={styles.questionInputButtonsContainer}>
-                <div
-                    className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
-                    aria-label="Ask a question button"
-                    onClick={sendQuestion}
-                    onKeyDown={ev => {
-                        if (ev.key === "Enter") {
-                            ev.preventDefault();
-                            sendQuestion();
-                        }
-                    }}
-                    tabIndex={0}
-                >
-                    <Send32Filled primaryFill="rgba(115, 118, 225, 1)" />
-                </div>
+                <FileAttachmentInput setFileBlobUrl={setFileBlobUrl} />
                 <div
                     className={`${styles.questionInputSendButton}`}
                     aria-label="Button to talk"
@@ -277,7 +263,21 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                     }}
                     tabIndex={0}
                 >
-                    <SlideMicrophone32Filled primaryFill="rgba(115, 118, 225, 1)" />
+                    <Mic24Regular primaryFill="#9F9C9C" />
+                </div>
+                <div
+                    className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
+                    aria-label="Ask a question button"
+                    onClick={sendQuestion}
+                    onKeyDown={ev => {
+                        if (ev.key === "Enter") {
+                            ev.preventDefault();
+                            sendQuestion();
+                        }
+                    }}
+                    tabIndex={0}
+                >
+                    <Send24Filled />
                 </div>
             </div>
         </Stack>
