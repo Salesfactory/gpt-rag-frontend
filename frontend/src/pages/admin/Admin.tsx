@@ -7,7 +7,7 @@ import { AddFilled } from "@fluentui/react-icons";
 import { AppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
-import { checkUser, getUsers, inviteUser, deleteUser } from "../../api";
+import { checkUser, getUsers, inviteUser, createInvitation, deleteUser } from "../../api";
 
 import styles from "./Admin.module.css";
 
@@ -45,13 +45,19 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
         setLoading(true);
 
         const organizationId = user.organizationId;
-        inviteUser({ username, email, role, organizationId }).then(res => {
+        inviteUser({ username: sanitizedUsername, email: sanitizedEmail, role, organizationId }).then(res => {
             if (res.error) {
                 setErrorMessage(res.error);
             } else {
-                setErrorMessage("");
-                setLoading(false);
-                setSuccess(true);
+                createInvitation({ organizationId, invitedUserEmail: sanitizedEmail, userId: user.id }).then(res => {
+                    if (res.error) {
+                        setErrorMessage(res.error);
+                    } else {
+                        setErrorMessage("");
+                        setLoading(false);
+                        setSuccess(true);
+                    }
+                });
             }
         });
     };
