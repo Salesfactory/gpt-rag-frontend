@@ -76,9 +76,40 @@
     flex-direction: column;
     max-width: 100%;
     padding: 0px 8px;
+    max-height: 650px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
 }
 
-.buttonConversation{
+.content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.scrollIndicator {
+    position: sticky;
+    bottom: 10px;
+    text-align: center;
+    font-size: 24px;
+    color: #aaa;
+    pointer-events: none;
+}
+
+.buttonConversation {
     border: none;
     padding: 10px 5px;
     text-align: left;
