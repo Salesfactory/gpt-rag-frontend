@@ -306,6 +306,26 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
         return { error: error };
     }
 }
+export async function createInvitation({organizationId, invitedUserEmail, userId} : any): Promise<any> {
+    try {
+        const response = await fetch("/api/createInvitation", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
+            },
+            body: JSON.stringify({
+                organizationId,
+                invitedUserEmail
+            })
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error creating invitation", error);
+        return { error: error };
+    }
+}
 export async function getApiKeyPayment(): Promise<string> {
     const response = await fetch("/api/stripe", {
         method: "GET",
