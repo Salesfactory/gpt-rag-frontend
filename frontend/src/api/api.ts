@@ -16,8 +16,9 @@ import {
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
+    const user_organizationId = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
     try {
-        const response = await fetch("/api/getusers", {
+        const response = await fetch("/api/getusers?organizationId=" + user_organizationId, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
