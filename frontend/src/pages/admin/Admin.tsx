@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useContext } from "react";
 import { PrimaryButton, IconButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar } from "@fluentui/react";
-
+import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { AddFilled } from "@fluentui/react-icons";
 
 import { AppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
-import { checkUser, getUsers, inviteUser } from "../../api";
+import { checkUser, getUsers, inviteUser, deleteUser } from "../../api";
 
 import styles from "./Admin.module.css";
 
@@ -223,15 +223,91 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     );
 };
 
+export const DeleteUserDialog = ({
+    isOpen,
+    onDismiss,
+    onConfirm
+}: {
+    isOpen: boolean;
+    onDismiss: any;
+    onConfirm: any;
+}) => {
+    return (
+        <Dialog
+            minWidth={800}
+            closeButtonAriaLabel="Close"
+            isClickableOutsideFocusTrap={true}
+            hidden={!isOpen}
+            onDismiss={onDismiss}
+            dialogContentProps={{
+                type: 0,
+                title: "Delete user",
+                subText: "Are you sure you want to delete this user from your organization?"
+            }}
+            modalProps={{
+                isBlocking: true,
+                onDismiss: onDismiss,
+                styles: { main: { maxWidth: 450 } }
+            }}
+        >
+            <DialogContent>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "end",
+                        gap: "10px"
+                    }}
+                >
+                    <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
+                    <PrimaryButton
+                        styles={{
+                            root: {
+                                backgroundColor: "#9FC51D",
+                                borderColor: "#9FC51D",
+                                color: "white",
+                                borderRadius: "5px"
+                            },
+                            rootHovered: {
+                                backgroundColor: "#ACC41D",
+                                borderColor: "#ACC41D",
+                                color: "white"
+                            },
+                            rootPressed: {
+                                backgroundColor: "#9FC51D",
+                                borderColor: "#9FC51D",
+                                color: "white"
+                            }
+                        }}
+                        style={{ marginTop: "20px" }}
+                        onClick={()  => {
+                            onConfirm()
+                        }}
+                        text="Delete user"
+                    />
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 const Admin = () => {
     const { user } = useContext(AppContext);
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState([]);
+    const [selectedUser, setSelectedUser] = useState({
+        id: "",
+        data: {
+            name: "",
+            email: "",
+            role: ""
+        }
+    });
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [isOpen, setIsOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const getUserList = async () => {
@@ -257,8 +333,25 @@ const Admin = () => {
         }
     }, [search]);
 
+    const deleteUserFromOrganization = (id: string) => {
+        deleteUser({ user, userId: id }).then(res => {
+            if (res.error) {
+                console.log("error", res.error);
+                toast("There was an error deleting the user", { type: "error" });
+                setIsDeleting(false);
+            } else {
+                const updatedUsers = users.filter((user: any) => user.id !== id);
+                setUsers(updatedUsers);
+                setFilteredUsers(updatedUsers);
+                setIsDeleting(false);
+                toast("User deleted successfully", { type: "success" });
+            }
+        });
+    };
+
     return (
         <div className={styles.page_container}>
+            <ToastContainer />
             {user.role !== "admin" && <h1>Access denied</h1>}
             {user.role === "admin" && (
                 <>
@@ -327,6 +420,15 @@ const Admin = () => {
                     </div>
 
                     <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />
+                    <DeleteUserDialog
+                        isOpen={isDeleting}
+                        onDismiss={() => {
+                            setIsDeleting(false);
+                        }}
+                        onConfirm={() => {
+                            deleteUserFromOrganization(selectedUser?.id);
+                        }}
+                    />
                     {loading ? (
                         <Spinner
                             styles={{
@@ -366,74 +468,79 @@ const Admin = () => {
                             <tbody>
                                 {filteredUsers.map((user: any, index) => {
                                     return (
-                                        <tr
-                                            key={user.id}
-                                            style={{
-                                                backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
-                                            }}
-                                        >
-                                            <td
+                                        <>
+                                            <tr
+                                                key={user.id}
                                                 style={{
-                                                    padding: "10px",
-                                                    textAlign: "justify"
+                                                    backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
                                                 }}
                                             >
-                                                {user.data.name}
-                                            </td>
-                                            <td
-                                                style={{
-                                                    textAlign: "justify"
-                                                }}
-                                            >
-                                                {user.data.email}
-                                            </td>
-                                            <td>
-                                                <div
+                                                <td
                                                     style={{
-                                                        width: "100%",
-                                                        justifyContent: "center",
-                                                        justifyItems: "center",
-                                                        display: "flex"
+                                                        padding: "10px",
+                                                        textAlign: "justify"
                                                     }}
                                                 >
+                                                    {user.data.name}
+                                                </td>
+                                                <td
+                                                    style={{
+                                                        textAlign: "justify"
+                                                    }}
+                                                >
+                                                    {user.data.email}
+                                                </td>
+                                                <td>
                                                     <div
                                                         style={{
-                                                            width: "100px",
-                                                            backgroundColor: user.data.role === "admin" ? "#d7e9f4" : "#d7e5be",
-                                                            padding: "5px",
-                                                            color: user.data.role === "admin" ? "#064789" : "#1b4332",
-                                                            borderRadius: "15px"
+                                                            width: "100%",
+                                                            justifyContent: "center",
+                                                            justifyItems: "center",
+                                                            display: "flex"
                                                         }}
                                                     >
-                                                        {user.data.role}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {
-                                                    <div>
-                                                        <IconButton
+                                                        <div
                                                             style={{
-                                                                color: "black"
+                                                                width: "100px",
+                                                                backgroundColor: user.data.role === "admin" ? "#d7e9f4" : "#d7e5be",
+                                                                padding: "5px",
+                                                                color: user.data.role === "admin" ? "#064789" : "#1b4332",
+                                                                borderRadius: "15px"
                                                             }}
-                                                            iconProps={{ iconName: "Edit" }}
-                                                            title="Edit user"
-                                                            ariaLabel="Edit user"
-                                                            onClick={() => {}}
-                                                        />
-                                                        <IconButton
-                                                            style={{
-                                                                color: "black"
-                                                            }}
-                                                            iconProps={{ iconName: "Delete", color: "black" }}
-                                                            title="Delete user"
-                                                            ariaLabel="Delete user"
-                                                            onClick={() => {}}
-                                                        />
+                                                        >
+                                                            {user.data.role}
+                                                        </div>
                                                     </div>
-                                                }
-                                            </td>
-                                        </tr>
+                                                </td>
+                                                <td>
+                                                    {
+                                                        <div>
+                                                            <IconButton
+                                                                style={{
+                                                                    color: "black"
+                                                                }}
+                                                                iconProps={{ iconName: "Edit" }}
+                                                                title="Edit user"
+                                                                ariaLabel="Edit user"
+                                                                onClick={() => {}}
+                                                            />
+                                                            <IconButton
+                                                                style={{
+                                                                    color: "black"
+                                                                }}
+                                                                iconProps={{ iconName: "Delete", color: "black" }}
+                                                                title="Delete user"
+                                                                ariaLabel="Delete user"
+                                                                onClick={() => {
+                                                                    setSelectedUser(user);
+                                                                    setIsDeleting(true);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        </>
                                     );
                                 })}
                             </tbody>

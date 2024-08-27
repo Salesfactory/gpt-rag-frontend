@@ -255,8 +255,7 @@ def create_checkout_session():
             ],
             mode="subscription",
             client_reference_id=userId,
-            metadata={"userId": userId,
-                      "organizationId": organizationId},
+            metadata={"userId": userId, "organizationId": organizationId},
             success_url=success_url,
             cancel_url=cancel_url,
             automatic_tax={"enabled": True},
@@ -274,6 +273,7 @@ def create_checkout_session():
 
     return jsonify({"url": checkout_session.url})
 
+
 @app.route("/api/stripe", methods=["GET"])
 def getStripe():
     try:
@@ -283,6 +283,7 @@ def getStripe():
     except Exception as e:
         logging.exception("[webbackend] exception in /api/stripe")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -323,7 +324,9 @@ def webhook():
             keySecretName = "orchestrator-host--subscriptions"
             functionKey = get_secret(keySecretName)
         except Exception as e:
-            logging.exception("[webbackend] exception in /api/orchestrator-host--subscriptions")
+            logging.exception(
+                "[webbackend] exception in /api/orchestrator-host--subscriptions"
+            )
             return (
                 jsonify(
                     {
@@ -342,10 +345,13 @@ def webhook():
                     "subscriptionId": subscriptionId,
                     "paymentStatus": paymentStatus,
                     "organizationName": organizationName,
-                    "expirationDate": expirationDate
+                    "expirationDate": expirationDate,
                 }
             )
-            headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
+            headers = {
+                "Content-Type": "application/json",
+                "x-functions-key": functionKey,
+            }
             response = requests.request("POST", url, headers=headers, data=payload)
             logging.info(f"[webbackend] RESPONSE: {response.text[:500]}...")
         except Exception as e:
@@ -356,6 +362,7 @@ def webhook():
         print("Unexpected event type")
 
     return jsonify(success=True)
+
 
 @app.route("/api/upload-blob", methods=["POST"])
 def uploadBlob():
@@ -388,6 +395,7 @@ def uploadBlob():
         logging.exception("[webbackend] exception in /api/upload-blob")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
     logging.exception("------------------ENTRA ------------")
@@ -407,6 +415,7 @@ def getBlob():
         logging.exception("[webbackend] exception in /api/get-blob")
         logging.exception(blob_name)
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/settings", methods=["GET"])
 def getSettings():
@@ -627,6 +636,42 @@ def getUsers():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/deleteuser", methods=["DELETE"])
+def deleteUser():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+    if not client_principal_id:
+        return (
+            jsonify({"error": "Missing required parameters, client_principal_id"}),
+            400,
+        )
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = "orchestrator-host--checkuser"
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
+        return (
+            jsonify(
+                {
+                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+                }
+            ),
+            500,
+        )
+    try:
+        userId = request.args.get("userId")
+        url = CHECK_USER_ENDPOINT
+        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
+        response = requests.request("DELETE", url, headers=headers,params={"id": userId})
+        logging.info(f"[webbackend] response: {response.text[:500]}...")
+        return response.text
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/checkUser")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/inviteUser", methods=["POST"])
 def sendEmail():
     if (
@@ -808,18 +853,16 @@ def getOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id"
-                }
-            ),
+            jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
     try:
         keySecretName = "orchestrator-host--subscriptions"
         functionKey = get_secret(keySecretName)
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--subscriptions")
+        logging.exception(
+            "[webbackend] exception in /api/orchestrator-host--subscriptions"
+        )
         return (
             jsonify(
                 {
@@ -832,13 +875,16 @@ def getOrganization():
         organizationId = request.args.get("organizationId")
         url = SUBSCRIPTION_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers, params={"organizationId": organizationId})
+        response = requests.request(
+            "GET", url, headers=headers, params={"organizationId": organizationId}
+        )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
-                                                
+
+
 @app.route("/api/getUser", methods=["GET"])
 def getUser():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")

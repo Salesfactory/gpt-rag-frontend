@@ -37,6 +37,23 @@ export async function getUsers({ user }: any): Promise<any> {
     }
 }
 
+export async function deleteUser({ user, userId }: any): Promise<any> {
+    try {
+        const response = await fetch(`/api/deleteuser?userId=${userId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user.id,
+            }
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error deleting user", error);
+        return { error: error };
+    }
+}
+
 export async function checkUser({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
