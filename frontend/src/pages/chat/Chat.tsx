@@ -13,7 +13,6 @@ import {
     ChatTurn,
     getUserInfo,
     checkUser,
-    getUsers,
     getOrganizationSubscription
 } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";

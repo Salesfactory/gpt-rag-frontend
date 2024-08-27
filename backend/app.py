@@ -627,9 +627,10 @@ def getUsers():
         )
 
     try:
+        organizationId = request.args.get("organizationId")
         url = CHECK_USER_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers)
+        response = requests.request("GET", url, headers=headers, params={"organizationId": organizationId})
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
     except Exception as e:
