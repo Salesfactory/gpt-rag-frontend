@@ -470,13 +470,15 @@ const Chat = () => {
     return (
         <div className={styles.mainContainer}>
             <div>
-                <div className={styles.commandsContainer}>{showHistoryPanel && <ChatHistoryPanel functionDeleteChat={handleNewChat} />}</div>
+                <div className={showHistoryPanel ? styles.commandsContainer : styles.hidden}>
+                    {showHistoryPanel && <ChatHistoryPanel functionDeleteChat={handleNewChat} />}
+                </div>
             </div>
             <div>
-                <div className={styles.commandsContainer}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
+                <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
             </div>
             <div>
-                <div className={styles.commandsContainer}>{settingsPanel && <SettingsPanel />}</div>
+                <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>{settingsPanel && <SettingsPanel />}</div>
             </div>
             <div className={styles.container}>
                 <div className={styles.chatRoot} style={showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
@@ -575,13 +577,6 @@ const Chat = () => {
                         <div className={styles.chatInput}>
                             <div className={styles.buttonsActions}>
                                 <button
-                                    className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
-                                    onClick={clearChat}
-                                    aria-label="Clear chat"
-                                >
-                                    <BroomRegular />
-                                </button>
-                                <button
                                     className={
                                         lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned
                                             ? styles.newChatButton
@@ -589,8 +584,17 @@ const Chat = () => {
                                     }
                                     onClick={handleNewChat}
                                     aria-label="Start a new chat"
+                                    type="button"
                                 >
                                     <AddRegular />
+                                </button>
+                                <button
+                                    className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
+                                    onClick={clearChat}
+                                    aria-label="Clear chat"
+                                    type="button"
+                                >
+                                    <BroomRegular />
                                 </button>
                             </div>
                             <QuestionInput
