@@ -12,6 +12,40 @@ export function removeCitations(text: string): string {
     return newText;
 }
 
+export function extractMarkdownLinks(text: string) {
+    const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+    const links = [];
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+        const description = match[1];
+        const url = match[2];
+        links.push({ description, url });
+    }
+
+    return links;
+}
+
+export function replaceMarkdownLinks(text: string) {
+    const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+
+    const result = text.replace(pattern, (_, description, url) => {
+        return "[" + url + "]";
+    });
+
+    return result;
+}
+
+function replaceWrongFormattedNumbers(text: string) {
+    const pattern = /\[\^(\d+)\^\]/g;
+
+    const result = text.replace(pattern, (_, number) => {
+        return `[${number}]`;
+    });
+
+    return result;
+}
+
 export function parseAnswerToHtml(
     answer: string,
     showSources: boolean,
@@ -20,6 +54,11 @@ export function parseAnswerToHtml(
     const citations: string[] = [];
     const followupQuestions: string[] = [];
     var answerHtml: string = "";
+
+    // check for any markdown links in the answer and replace them with the link text
+    answer = replaceMarkdownLinks(answer);
+    // Extract any wrong formatted numbers that might be in the answer
+    answer = replaceWrongFormattedNumbers(answer);
 
     // Extract any follow-up questions that might be in the answer
     let parsedAnswer = answer.replace(/<<([^>>]+)>>/g, (match, content) => {
