@@ -1,24 +1,32 @@
-.page_container{
+.page_container {
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 20px;
+    padding: 100px 100px 100px 150px;
 }
 
-.separator{
-    font-size: '24px';
-    height: '24px';
-    width: '24px';
+.separator {
+    font-size: "24px";
+    height: "24px";
+    width: "24px";
 }
 
-.row{
+.row {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    justify-items:center
+    justify-items: center;
+    border-bottom: 2px solid #d9d9d9;
+    margin-bottom: 10px;
 }
-.closeButton{
+
+.title {
+    margin-bottom: 10px;
+    margin-left: 20px;
+}
+
+.closeButton {
     position: fixed;
     top: 0;
     right: 0px;
@@ -32,7 +40,7 @@
     padding-top: 6px;
 }
 
-.closeButtonContainer:active{
+.closeButtonContainer:active {
     background-color: rgba(214, 214, 214, 0.315);
     border-radius: 5px;
 }
@@ -49,4 +57,50 @@
 .questionInputTextArea {
     width: 100%;
     line-height: 40px;
+}
+
+.table {
+    text-align: left;
+    background-color: white;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.tableContainer {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #d9d9d9;
+    margin-top: 35px;
+}
+
+.table thead {
+    background-color: #9fc51d;
+    color: white;
+}
+
+.button {
+    background: none;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 5px 2px 5px;
+    cursor: pointer;
+    font-size: 20px;
+    margin-top: 5px;
+}
+
+.button:hover {
+    background-color: #e3e3e3;
+}
+
+.addIcon {
+    font-size: 15px;
+    margin-right: 5px;
+}
+
+.searchIcon {
+    font-size: 18px;
+    margin-right: 5px;
+    transform: scaleX(-1);
 }
