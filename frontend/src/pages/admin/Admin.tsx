@@ -49,7 +49,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             if (res.error) {
                 setErrorMessage(res.error);
             } else {
-                createInvitation({ organizationId, invitedUserEmail: sanitizedEmail, userId: user.id }).then(res => {
+                createInvitation({ organizationId, invitedUserEmail: sanitizedEmail, userId: user.id, role: role }).then(res => {
                     if (res.error) {
                         setErrorMessage(res.error);
                     } else {

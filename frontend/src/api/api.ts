@@ -324,7 +324,7 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
         return { error: error };
     }
 }
-export async function createInvitation({organizationId, invitedUserEmail, userId} : any): Promise<any> {
+export async function createInvitation({organizationId, invitedUserEmail, userId, role} : any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
             method: "POST",
@@ -334,7 +334,8 @@ export async function createInvitation({organizationId, invitedUserEmail, userId
             },
             body: JSON.stringify({
                 organizationId,
-                invitedUserEmail
+                invitedUserEmail,
+                role
             })
         });
         const fetchedData = await response.json();

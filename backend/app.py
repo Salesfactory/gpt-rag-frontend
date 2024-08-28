@@ -824,9 +824,10 @@ def createInvitation():
     try:
         organizationId = request.json["organizationId"]
         invitedUserEmail = request.json["invitedUserEmail"]
+        role = request.json["role"]
         url = INVITATIONS_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps({"invited_user_email": invitedUserEmail, "organization_id": organizationId})
+        payload = json.dumps({"invited_user_email": invitedUserEmail, "organization_id": organizationId, "role": role})
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
