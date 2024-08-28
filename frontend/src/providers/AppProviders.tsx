@@ -155,7 +155,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const [loading, setLoading] = useState(true);
 
-    if (!user.organizationId) { //CAMBIAR ESTO CON EL ORG ID
+    if (!user.organizationId) {
         const getUserInfoList = async () => {
             if (window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost") {
                 const userInfoList = await getUserInfo();
