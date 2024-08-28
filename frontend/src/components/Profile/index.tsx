@@ -56,8 +56,7 @@ const placeholderPrepare = (placeholder: string) => {
 
 export const ProfileButton: React.FunctionComponent = () => {
     const { user } = useContext(AppContext);
-
-    console.log(user);
+    
     const placeholder = placeholderPrepare(user.name);
     const email = user?.email || " ";
     const headerTitle = user.name;
