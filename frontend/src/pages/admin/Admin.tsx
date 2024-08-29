@@ -317,7 +317,7 @@ const Admin = () => {
 
     useEffect(() => {
         const getUserList = async () => {
-            let usersList = await getUsers({});
+            let usersList = await getUsers({user: {id: user.id, name: user.name,  organizationId: user.organizationId}});
             if (!Array.isArray(usersList)) {
                 usersList = [];
             }
