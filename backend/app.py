@@ -266,7 +266,7 @@ def create_checkout_session():
                     "label": {"type": "custom", "custom": "Organization Name"},
                     "type": "text",
                     "text": {"minimum_length": 5, "maximum_length": 100},
-                },
+                } if organizationId == "" else {}
             ],
         )
     except Exception as e:
@@ -630,7 +630,9 @@ def getUsers():
         organizationId = request.args.get("organizationId")
         url = CHECK_USER_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers, params={"organizationId": organizationId})
+        response = requests.request(
+            "GET", url, headers=headers, params={"organizationId": organizationId}
+        )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
     except Exception as e:
@@ -666,7 +668,9 @@ def deleteUser():
         userId = request.args.get("userId")
         url = CHECK_USER_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("DELETE", url, headers=headers,params={"id": userId})
+        response = requests.request(
+            "DELETE", url, headers=headers, params={"id": userId}
+        )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
     except Exception as e:
@@ -827,7 +831,13 @@ def createInvitation():
         role = request.json["role"]
         url = INVITATIONS_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps({"invited_user_email": invitedUserEmail, "organization_id": organizationId, "role": role})
+        payload = json.dumps(
+            {
+                "invited_user_email": invitedUserEmail,
+                "organization_id": organizationId,
+                "role": role,
+            }
+        )
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
@@ -924,6 +934,54 @@ def getOrganization():
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/create-organization", methods=["POST"])
+def createOrganization():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+    if not client_principal_id:
+        return (
+            jsonify(
+                {
+                    "error": "Missing required parameters, client_principal_id or client_principal_name"
+                }
+            ),
+            400,
+        )
+
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = "orchestrator-host--subscriptions"
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        logging.exception(
+            "[webbackend] exception in /api/orchestrator-host--subscriptions"
+        )
+        return (
+            jsonify(
+                {
+                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+                }
+            ),
+            500,
+        )
+    try:
+        organizationName = request.json["organizationName"]
+        payload = json.dumps(
+            {
+                "id": client_principal_id,
+                "organizationName": organizationName,
+            }
+        )
+        url = SUBSCRIPTION_ENDPOINT
+        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
+        response = requests.request("POST", url, headers=headers, data=payload)
+        logging.info(f"[webbackend] response: {response.text[:500]}...")
+        return response.text
+    except Exception as e:
+        logging.exception("[webbackend] exception in /post-organization")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/getUser", methods=["GET"])
 def getUser():

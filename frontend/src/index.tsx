@@ -21,19 +21,19 @@ import { AppContext } from "./providers/AppProviders";
 initializeIcons();
 
 export default function App() {
-    const { user } = useContext(AppContext);
+    const { organization } = useContext(AppContext);
 
     return (
         <HashRouter>
             <Routes>
-                {!user.organizationId && (
+                {!organization.subscriptionId &&(
                     <>
                         <Route path="/" element={<Onboarding />} />
                         <Route path="/payment" element={<PaymentGateway />} />
                         <Route path="*" element={<NoPage />} />
                     </>
                 )}
-                {user.organizationId && (
+                {organization.subscriptionId && (
                     <>
                         <Route path="/" element={<Layout />}>
                             <Route index element={<Chat />} />
