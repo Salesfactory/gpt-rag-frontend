@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Onboarding.module.css";
-import { ChevronRightRegular, ChevronLeftRegular, ContactCardRibbon48Regular, Globe48Regular } from "@fluentui/react-icons";
+import { ChevronRightRegular, ChevronLeftRegular, ContactCardRibbon48Regular, MoneySettingsRegular } from "@fluentui/react-icons";
 
 const Onboarding: React.FC = () => {
     const [organization, setOrganization] = useState("");
@@ -24,6 +24,10 @@ const Onboarding: React.FC = () => {
         }
     };
 
+    const handleSubscriptionRedirect = () => {
+        window.location.href = "#/payment";
+    };
+
     return (
         <div className={styles.container}>
             <div className={`${styles.card} ${styles.carousel}`}>
@@ -38,21 +42,23 @@ const Onboarding: React.FC = () => {
                 )}
                 {step === 1 && (
                     <div className={styles.containerStep}>
-                        <div className={styles.organization}>
-                            <ContactCardRibbon48Regular />
-                            <h3>Before we begin, let's create an organization for your new account.</h3>
-                            <input type="text" value={""} onChange={() => {}} placeholder="Organization Name" />
-                        </div>
+                        <ContactCardRibbon48Regular />
+                        <h3>Before we begin, let's create an organization for your new account.</h3>
+                        <input type="text" value={organization} onChange={handleOrganizationChange} placeholder="Organization Name" className={styles.input} />
                     </div>
                 )}
                 {step === 2 && (
                     <div className={styles.containerStep}>
+                        <MoneySettingsRegular className={styles.iconMoney} />
                         <h1>Get a subscription</h1>
+                        <button className={styles.button} style={{ width: "auto", padding: "10px 15px" }} onClick={handleSubscriptionRedirect}>
+                            Subscribe Now!
+                        </button>
                     </div>
                 )}
                 <div className={step > 0 ? styles.buttonContainer : `${styles.buttonContainer} ${styles.singleButtonContainer}`}>
                     {step > 0 && (
-                        <button className={styles.button} type="button" onClick={handlePreviousClick}>
+                        <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick}>
                             <ChevronLeftRegular className={styles.icon} /> Previous
                         </button>
                     )}
