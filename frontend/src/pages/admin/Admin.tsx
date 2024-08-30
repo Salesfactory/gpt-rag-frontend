@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useContext } from "react";
-import { PrimaryButton, IconButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar } from "@fluentui/react";
+import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
-import { AddFilled } from "@fluentui/react-icons";
+import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/react-icons";
 
 import { AppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
@@ -115,7 +115,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             modalProps={{
                 isBlocking: true,
                 onDismiss: onDismiss,
-                styles: { main: { maxWidth: 450 } }
+                styles: { main: { maxWidth: 450, borderRadius: "6px" } }
             }}
         >
             {loading && (
@@ -133,7 +133,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                         style={{
                             display: "flex",
                             justifyContent: "center",
-                            gap: "10px"
+                            gap: "10px",
+                            marginBottom: "10px"
                         }}
                     >
                         <div
@@ -149,6 +150,16 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                 value={username}
                                 onChange={onUserNameChange}
                                 onKeyDown={onEnterPress}
+                                styles={{
+                                    fieldGroup: {
+                                        borderRadius: "6px"
+                                    },
+                                    field: {
+                                        "::placeholder": {
+                                            color: "#979797"
+                                        }
+                                    }
+                                }}
                             />
                         </div>
                         <div
@@ -164,11 +175,27 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                 value={email}
                                 onChange={onEmailChange}
                                 onKeyDown={onEnterPress}
+                                styles={{
+                                    fieldGroup: {
+                                        borderRadius: "6px"
+                                    },
+                                    field: {
+                                        "::placeholder": {
+                                            color: "#979797"
+                                        }
+                                    }
+                                }}
                             />
                         </div>
                     </div>
                     <Label>User role</Label>
-                    <Dropdown placeholder="Select Role" options={roleOptions} onChange={handleRoleChange} defaultValue={role} />
+                    <Dropdown
+                        placeholder="Select Role"
+                        options={roleOptions}
+                        onChange={handleRoleChange}
+                        defaultValue={role}
+                        styles={{ title: { borderRadius: "6px", color: "#979797" } }}
+                    />
                     {errorMessage && <MessageBar messageBarType={2}>{errorMessage}</MessageBar>}
                     <div
                         style={{
@@ -177,14 +204,14 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             gap: "10px"
                         }}
                     >
-                        <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
+                        <DefaultButton style={{ marginTop: "20px", borderRadius: "6px" }} onClick={onDismiss} text="Cancel" />
                         <PrimaryButton
                             styles={{
                                 root: {
                                     backgroundColor: "#9FC51D",
                                     borderColor: "#9FC51D",
                                     color: "white",
-                                    borderRadius: "5px"
+                                    borderRadius: "6px"
                                 },
                                 rootHovered: {
                                     backgroundColor: "#ACC41D",
@@ -229,15 +256,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     );
 };
 
-export const DeleteUserDialog = ({
-    isOpen,
-    onDismiss,
-    onConfirm
-}: {
-    isOpen: boolean;
-    onDismiss: any;
-    onConfirm: any;
-}) => {
+export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boolean; onDismiss: any; onConfirm: any }) => {
     return (
         <Dialog
             minWidth={800}
@@ -285,8 +304,8 @@ export const DeleteUserDialog = ({
                             }
                         }}
                         style={{ marginTop: "20px" }}
-                        onClick={()  => {
-                            onConfirm()
+                        onClick={() => {
+                            onConfirm();
                         }}
                         text="Delete user"
                     />
@@ -361,21 +380,8 @@ const Admin = () => {
             {user.role !== "admin" && <h1>Access denied</h1>}
             {user.role === "admin" && (
                 <>
-                    <div className={styles.buttons}>
-                        <div className={styles.closeButtonContainer}>
-                            <button
-                                className={styles.closeButton}
-                                aria-label="hide button"
-                                onClick={() => {
-                                    window.location.href = "/";
-                                }}
-                            >
-                                <AddFilled />
-                            </button>
-                        </div>
-                    </div>
                     <div id="options-row" className={styles.row}>
-                        <h1>Roles and access</h1>
+                        <h1 className={styles.title}>Roles and access</h1>
                     </div>
                     <div
                         style={{
@@ -386,16 +392,13 @@ const Admin = () => {
                         }}
                     >
                         <PrimaryButton
-                            style={{
-                                flex: 0.2
-                            }}
                             className={styles.option}
                             styles={{
                                 root: {
                                     backgroundColor: "#9FC51D",
                                     borderColor: "#9FC51D",
                                     color: "white",
-                                    borderRadius: "5px"
+                                    borderRadius: "6px"
                                 },
                                 rootHovered: {
                                     backgroundColor: "#ACC41D",
@@ -408,19 +411,41 @@ const Admin = () => {
                                     color: "white"
                                 }
                             }}
-                            text="Create user"
                             onClick={() => {
                                 setIsOpen(true);
                             }}
-                        />
+                        >
+                            <AddFilled className={styles.addIcon} />
+                            Create user
+                        </PrimaryButton>
                         <TextField
                             placeholder="Search..."
                             style={{
-                                width: "300px"
+                                width: "268px",
+                                borderRadius: "6px",
+                                border: "1px solid #9F9C9C",
+                                padding: "0px 15px"
                             }}
-                            styles={textFieldStyles}
+                            styles={{
+                                fieldGroup: {
+                                    border: "none",
+                                    borderRadius: "6px"
+                                },
+                                root: {
+                                    border: "none"
+                                },
+                                field: {
+                                    "::placeholder": {
+                                        color: "#979797"
+                                    }
+                                }
+                            }}
                             onChange={(_ev, newValue) => {
                                 setSearch(newValue || "");
+                            }}
+                            iconProps={{
+                                iconName: "Search",
+                                children: <SearchRegular className={styles.searchIcon} />
                             }}
                         />
                     </div>
@@ -444,37 +469,25 @@ const Admin = () => {
                             }}
                         />
                     ) : (
-                        <table
-                            style={{
-                                textAlign: "center",
-                                marginTop: "20px",
-                                backgroundColor: "white",
-                                borderCollapse: "collapse"
-                            }}
-                        >
-                            <thead
-                                style={{
-                                    backgroundColor: "#9FC51D",
-                                    color: "white"
-                                }}
-                            >
-                                <tr>
-                                    <th
-                                        style={{
-                                            padding: "10px"
-                                        }}
-                                    >
-                                        Name
-                                    </th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredUsers.map((user: any, index) => {
-                                    return (
-                                        <>
+                        <div className={styles.tableContainer}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th
+                                            style={{
+                                                padding: "10px"
+                                            }}
+                                        >
+                                            Name
+                                        </th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredUsers.map((user: any, index) => {
+                                        return (
                                             <tr
                                                 key={user.id}
                                                 style={{
@@ -500,9 +513,11 @@ const Admin = () => {
                                                     <div
                                                         style={{
                                                             width: "100%",
-                                                            justifyContent: "center",
+                                                            justifyContent: "flex-start",
                                                             justifyItems: "center",
-                                                            display: "flex"
+                                                            textAlign: "center",
+                                                            display: "flex",
+                                                            textTransform: "capitalize"
                                                         }}
                                                     >
                                                         <div
@@ -521,36 +536,21 @@ const Admin = () => {
                                                 <td>
                                                     {
                                                         <div>
-                                                            <IconButton
-                                                                style={{
-                                                                    color: "black"
-                                                                }}
-                                                                iconProps={{ iconName: "Edit" }}
-                                                                title="Edit user"
-                                                                ariaLabel="Edit user"
-                                                                onClick={() => {}}
-                                                            />
-                                                            <IconButton
-                                                                style={{
-                                                                    color: "black"
-                                                                }}
-                                                                iconProps={{ iconName: "Delete", color: "black" }}
-                                                                title="Delete user"
-                                                                ariaLabel="Delete user"
-                                                                onClick={() => {
-                                                                    setSelectedUser(user);
-                                                                    setIsDeleting(true);
-                                                                }}
-                                                            />
+                                                            <button className={styles.button} title="Edit user" aria-label="Edit user" onClick={() => {}}>
+                                                                <EditRegular />
+                                                            </button>
+                                                            <button className={styles.button} title="Delete user" aria-label="Delete user" onClick={() => {}}>
+                                                                <DeleteRegular />
+                                                            </button>
                                                         </div>
                                                     }
                                                 </td>
                                             </tr>
-                                        </>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </>
             )}
