@@ -365,25 +365,6 @@ const Chat = () => {
     //If I add this on a useEffect it doesn't work, I don't know why
     //maybe because it's a global event listener and is called multiple times
 
-    if (organization.subscriptionStatus === "inactive"){
-        if (window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost") {
-            return (
-                <div
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        height: "100%"
-                    }}
-                >
-                    <h2>We are sorry, but your user is not assigned to any active subscription.</h2>
-                    <p>Contact the administrator of the organization to which you belong.</p>
-                </div>
-            );
-        }
-    }
-
     return (
         <div className={styles.mainContainer}>
             <div>

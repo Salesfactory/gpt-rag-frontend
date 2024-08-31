@@ -216,6 +216,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 } else {
                     console.log("Local");
                     setUser({ ...user, organizationId: "test-organization" });
+                    setOrganization({ ...organization, subscriptionId: "test-subscriptionId" });
                     setLoading(false);
                 }
             };

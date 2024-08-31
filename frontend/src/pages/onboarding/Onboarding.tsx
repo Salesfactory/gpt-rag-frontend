@@ -1,20 +1,40 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Onboarding.module.css";
 import { ChevronRightRegular, ChevronLeftRegular, ContactCardRibbon48Regular, MoneySettingsRegular } from "@fluentui/react-icons";
+import { Spinner } from "@fluentui/react";
+
+import { createOrganization, getOrganizationSubscription } from "../../api";
+import { AppContext } from "../../providers/AppProviders";
 
 const Onboarding: React.FC = () => {
-    const [organization, setOrganization] = useState("");
+    const { user, setUser, organization, setOrganization } = useContext(AppContext);
+
+    const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(0);
+    const [isLoadingStep, setIsLoadingStep] = useState(false);
     const maxSteps = 2;
 
     const handleOrganizationChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setOrganization(event.target.value);
+        setOrganizationName(event.target.value);
     };
 
-    const handleNextClick = () => {
+    const handleCreateOrganization = async () => {
+        const newOrganization = await createOrganization({ userId: user.id, organizationName: organizationName });
+        if (newOrganization.id) {
+            setOrganization(newOrganization);
+            setUser({ ...user, organizationId: newOrganization.id });
+        }
+    };
+
+    const handleNextClick = async () => {
         if (step < maxSteps) {
+            setIsLoadingStep(true);
+            if (step === 1) {
+                await handleCreateOrganization();
+            }
             setStep(prevStep => prevStep + 1);
+            setIsLoadingStep(false);
         }
     };
 
@@ -43,8 +63,14 @@ const Onboarding: React.FC = () => {
                 {step === 1 && (
                     <div className={styles.containerStep}>
                         <ContactCardRibbon48Regular />
-                        <h3>Before we begin, let's create an organization for your new account.</h3>
-                        <input type="text" value={organization} onChange={handleOrganizationChange} placeholder="Organization Name" className={styles.input} />
+                        <h3>Before we begin, let's create an organizationName for your new account.</h3>
+                        <input
+                            type="text"
+                            value={organizationName}
+                            onChange={handleOrganizationChange}
+                            placeholder="Organization Name"
+                            className={styles.input}
+                        />
                     </div>
                 )}
                 {step === 2 && (
@@ -54,6 +80,11 @@ const Onboarding: React.FC = () => {
                         <button className={styles.button} style={{ width: "auto", padding: "10px 15px" }} onClick={handleSubscriptionRedirect}>
                             Subscribe Now!
                         </button>
+                    </div>
+                )}
+                {isLoadingStep && (
+                    <div className={styles.loaderContainer}>
+                        <Spinner size={3} />
                     </div>
                 )}
                 <div className={step > 0 ? styles.buttonContainer : `${styles.buttonContainer} ${styles.singleButtonContainer}`}>

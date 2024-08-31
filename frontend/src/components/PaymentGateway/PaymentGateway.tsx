@@ -37,7 +37,6 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             cancelUrl: window.location.origin + "/",
             organizationId: user.organizationId || ""
         });
-        console.log(url);
         window.location.href = url;
     };
 

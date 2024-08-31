@@ -421,3 +421,23 @@ export async function getOrganizationSubscription({userId, organizationId} : any
     return subscription;
 
 }
+
+export const createOrganization = async ({ userId, organizationName }: any) => {
+    const response = await fetch("/api/create-organization", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
+        body: JSON.stringify({
+            organizationName
+        })
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating organization");
+    }
+
+    const organization = await response.json();
+    return organization;
+};
