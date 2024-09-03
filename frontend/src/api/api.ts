@@ -441,3 +441,28 @@ export const createOrganization = async ({ userId, organizationName }: any) => {
     const organization = await response.json();
     return organization;
 };
+
+export async function getInvitations({ user }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_username = user ? user.username : "anonymous";
+    const user_organizationId = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/getinvitations?organizationId=" + user_organizationId, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_username
+            }
+        });
+
+        const parsedResponse = await response.json();
+        if (response.status > 299 || !response.ok) {
+            throw Error("Unknown error in getUsers");
+        }
+        return parsedResponse;
+    } catch (error) {
+        console.log("Error fetching users", error);
+        return { data: null };
+    }
+}

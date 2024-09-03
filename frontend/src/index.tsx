@@ -12,6 +12,7 @@ import AccessDenied from "./pages/AccesDenied";
 import Chat from "./pages/chat/Chat";
 import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
+import Invitations from "./pages/invitations/Invitations";
 import { AppProvider } from "./providers/AppProviders";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -60,6 +61,17 @@ export default function App() {
                         </Route>
                         <Route path="/success-payment" element={<Layout />}>
                             <Route index element={<SuccessPayment />} />
+                            <Route path="*" element={<NoPage />} />
+                        </Route>
+                        <Route path="/invitations" element={<Layout />}>
+                            <Route
+                                index
+                                element={
+                                    <ProtectedRoute allowedRoles={["admin"]}>
+                                        <Invitations />
+                                    </ProtectedRoute>
+                                }
+                            />
                             <Route path="*" element={<NoPage />} />
                         </Route>
                     </>

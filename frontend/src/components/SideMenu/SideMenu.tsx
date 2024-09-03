@@ -4,7 +4,14 @@ import isotipo from "../../img/isotipo.png";
 import styles from "./SideMenu.module.css";
 import { Link } from "react-router-dom";
 import { AppContext } from "../../providers/AppProviders";
-import { ChatRegular, PeopleRegular, MoneySettingsRegular, ChevronDoubleLeftFilled, ChevronDoubleRightFilled } from "@fluentui/react-icons";
+import {
+    ChatRegular,
+    PeopleRegular,
+    MoneySettingsRegular,
+    ChevronDoubleLeftFilled,
+    ChevronDoubleRightFilled,
+    CheckboxPersonRegular
+} from "@fluentui/react-icons";
 
 interface SideMenuProps {
     isCollapsed: boolean;
@@ -61,6 +68,18 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
                             >
                                 <MoneySettingsRegular className={styles.icon} />
                                 {!isCollapsed && "Subscription"}
+                            </a>
+                        </li>
+                    )}
+                    {user.role === "admin" && (
+                        <li>
+                            <a
+                                href="#/invitations"
+                                className={`${styles.link} ${activeOption === "Invitations" ? styles.active : ""}`}
+                                onClick={() => setActiveOption("Invitations")}
+                            >
+                                <CheckboxPersonRegular className={styles.icon} />
+                                {!isCollapsed && "Invitations"}
                             </a>
                         </li>
                     )}
