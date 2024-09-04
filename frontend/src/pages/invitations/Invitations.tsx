@@ -11,11 +11,9 @@ import styles from "./Invitations.module.css";
 
 interface User {
     id: number;
-    data: {
-        username: string;
-        email: string;
-        role: string;
-    };
+    invited_user_email: string;
+    role: string;
+    active: boolean;
 }
 
 const Invitations = () => {
@@ -43,7 +41,7 @@ const Invitations = () => {
             setFilteredUsers(users);
         } else {
             const filtered = users.filter((user: any) => {
-                return user.data.username.toLowerCase().includes(search.toLowerCase()) || user.data.email.toLowerCase().includes(search.toLowerCase());
+                return user.invited_user_email.toLowerCase().includes(search.toLowerCase());
             });
             setFilteredUsers(filtered);
         }
@@ -102,9 +100,9 @@ const Invitations = () => {
                             <table className={styles.table}>
                                 <thead>
                                     <tr>
-                                        <th>Username</th>
                                         <th>Email</th>
                                         <th>Role</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -116,18 +114,30 @@ const Invitations = () => {
                                                     backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
                                                 }}
                                             >
-                                                <td className={styles.textJustify}>{user.data.username}</td>
-                                                <td className={styles.textJustify}>{user.data.email}</td>
+                                                <td className={styles.textJustify}>{user.invited_user_email}</td>
                                                 <td>
                                                     <div className={styles.roleContainer}>
                                                         <div
                                                             style={{
-                                                                backgroundColor: user.data.role === "admin" ? "#d7e9f4" : "#d7e5be",
-                                                                color: user.data.role === "admin" ? "#064789" : "#1b4332"
+                                                                backgroundColor: user.role === "admin" ? "#d7e9f4" : "#d7e5be",
+                                                                color: user.role === "admin" ? "#064789" : "#1b4332"
                                                             }}
                                                             className={styles.pillRole}
                                                         >
-                                                            {user.data.role}
+                                                            {user.role}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className={styles.roleContainer}>
+                                                        <div
+                                                            style={{
+                                                                backgroundColor: user.active ? "#d7e9f4" : "#e0e0e0",
+                                                                color: user.active ? "#064789" : "#ffffff"
+                                                            }}
+                                                            className={styles.pillRole}
+                                                        >
+                                                            {user.active ? "Active" : "Inactive"}
                                                         </div>
                                                     </div>
                                                 </td>

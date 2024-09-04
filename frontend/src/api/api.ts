@@ -447,7 +447,7 @@ export async function getInvitations({ user }: any): Promise<any> {
     const user_username = user ? user.username : "anonymous";
     const user_organizationId = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
     try {
-        const response = await fetch("/api/getinvitations?organizationId=" + user_organizationId, {
+        const response = await fetch("/api/getInvitations?organizationId=" + user_organizationId, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
