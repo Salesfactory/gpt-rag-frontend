@@ -13,6 +13,7 @@ import Chat from "./pages/chat/Chat";
 import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
+import Organization from "./pages/organization/Organization";
 import { AppProvider } from "./providers/AppProviders";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -69,6 +70,17 @@ export default function App() {
                                 element={
                                     <ProtectedRoute allowedRoles={["admin"]}>
                                         <Invitations />
+                                    </ProtectedRoute>
+                                }
+                            />
+                            <Route path="*" element={<NoPage />} />
+                        </Route>
+                        <Route path="/organization" element={<Layout />}>
+                            <Route
+                                index
+                                element={
+                                    <ProtectedRoute allowedRoles={["admin"]}>
+                                        <Organization />
                                     </ProtectedRoute>
                                 }
                             />

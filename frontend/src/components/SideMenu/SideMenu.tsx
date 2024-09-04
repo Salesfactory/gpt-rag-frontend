@@ -10,7 +10,8 @@ import {
     MoneySettingsRegular,
     ChevronDoubleLeftFilled,
     ChevronDoubleRightFilled,
-    CheckboxPersonRegular
+    CheckboxPersonRegular,
+    ContactCardRibbonRegular
 } from "@fluentui/react-icons";
 
 interface SideMenuProps {
@@ -80,6 +81,18 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
                             >
                                 <CheckboxPersonRegular className={styles.icon} />
                                 {!isCollapsed && "Invitations"}
+                            </a>
+                        </li>
+                    )}
+                    {user.role === "admin" && (
+                        <li>
+                            <a
+                                href="#/organization"
+                                className={`${styles.link} ${activeOption === "Organization" ? styles.active : ""}`}
+                                onClick={() => setActiveOption("Organization")}
+                            >
+                                <ContactCardRibbonRegular className={styles.icon} />
+                                {!isCollapsed && "Organization"}
                             </a>
                         </li>
                     )}
