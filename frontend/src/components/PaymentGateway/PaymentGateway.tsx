@@ -5,6 +5,7 @@ import styles from "./PaymentGateway.module.css";
 import { getApiKeyPayment, createCheckoutSession } from "../../api";
 import { AppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
+import { ChartPerson48Regular } from "@fluentui/react-icons";
 
 const fetchApiKey = async () => {
     const apiKey = await getApiKeyPayment();
@@ -42,12 +43,15 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
 
     return (
         <div className={styles.subscriptionPlan} aria-labelledby="subscription-plans-title">
-            <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
+            <div id="options-row" className={styles.row}>
+                <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
+            </div>
             <div className={styles.planContainer}>
                 {plans.map((plan, index) => (
                     <>
                         <div key={plan.id} className={styles.plan}>
                             {currentPlan === index && <div className={styles.currentIndicator}>Current Plan</div>}
+                            <ChartPerson48Regular className={styles.planIcon} />
                             <h2 className={styles.planName}>{plan.name}</h2>
                             <p className={styles.planPrice}>
                                 ${plan.price} per {plan.interval}

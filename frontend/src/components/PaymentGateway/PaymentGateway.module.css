@@ -1,39 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
 .subscriptionPlan {
-  font-family: 'Poppins', sans-serif;
-  text-align: center;
-  margin-top: 40px;
-  padding: 20px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 100px 100px 100px 150px;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    justify-items: center;
+    border-bottom: 2px solid #d9d9d9;
+    margin-bottom: 10px;
 }
 
 .subscriptionPlanTitle {
-  color: #333;
-  margin-bottom: 40px;
-  font-size: 2.5em;
-  font-weight: 600;
+    margin-bottom: 10px;
+    margin-left: 20px;
 }
 
 .planContainer {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  flex-wrap: wrap; 
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
 }
 
 .plan {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 20px;
-  margin: 10px;
-  width: 300px;
-  height: 400px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  background: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
+    border: 2px solid #a2e700;
+    border-radius: 8px;
+    padding: 20px;
+    width: 300px;
+    height: 400px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    align-items: center;
 }
 
 .planName {
@@ -64,35 +74,29 @@
   flex-grow: 1;
 }
 
-.currentIndicator{
-  color: #6772e5;
-  font-family: 'Poppins', sans-serif;
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  top: 0px;
-  left: 0px;
+.currentIndicator {
+    color: #9fc51d;
+    font-family: "Poppins", sans-serif;
 }
 
 .planButton {
-  background-color: #6772e5;
-  color: white;
-  border: none;
-  padding: 12px 25px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s;
-  font-family: 'Poppins', sans-serif;
-  outline: none;
+    background-color: #9fc51d;
+    color: white;
+    border: 1px solid #9fc51d;
+    padding: 12px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s;
+    font-family: "Poppins", sans-serif;
 }
 
 .planButton:hover {
-  background-color: #5469d4;
+    background-color: #acc41d;
 }
 
 .planButton:focus {
-  background-color: #3f51b5;
+    background-color: #9fc51d;
 }
 
 .spinnerContainer {
@@ -104,7 +108,11 @@
 }
 
 .loadingText {
-  margin-top: 10px; 
-  font-size: 1.5em; 
-  color: #000000; 
+    margin-top: 10px;
+    font-size: 1.5em;
+    color: #000000;
+}
+
+.planIcon {
+    margin: 10px 0;
 }
