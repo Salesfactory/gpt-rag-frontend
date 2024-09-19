@@ -60,27 +60,15 @@ export function parseAnswerToHtml(
     // Extract any wrong formatted numbers that might be in the answer
     answer = replaceWrongFormattedNumbers(answer);
 
-    // Extract any follow-up questions that might be in the answer
-    let parsedAnswer = answer.replace(/<<([^>>]+)>>/g, (match, content) => {
-        followupQuestions.push(content);
-        return "";
-    });
-
     // trim any whitespace from the end of the answer after removing follow-up questions
-    parsedAnswer.trim();
+    answer.trim();
     if (showSources) {
-        parsedAnswer;
-        const parts = parsedAnswer.split(/\[([^\]]+)\]/g);
+        const parts = answer.split(/\[\[([^\]]+)\]\]\(([^)]+)\)/gm);
 
-        const fragments: string[] = parts.map((part, index) => {
-            if (index % 2 === 0) {
+        const fragments = parts.map((part, index) => {
+            if (index % 3 === 0) {
                 return part;
-            } else {
-                var reg = /^\d+$/;
-                if (reg.test(part)) {
-                    return `[${part}]`;
-                }
-
+            } else if (index % 3 == 2){
                 // Check if the part string contains multiple citations
                 const citationParts = part.split(/,\s*/);
 
@@ -138,7 +126,7 @@ export function parseAnswerToHtml(
         }
         answerHtml = answerHtml.split("Sources:")[0];
     } else {
-        answerHtml = removeCitations(parsedAnswer);
+        answerHtml = removeCitations(answer);
     }
 
     return {
