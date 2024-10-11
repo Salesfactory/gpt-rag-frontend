@@ -16,7 +16,6 @@ const fetchApiKey = async () => {
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
     const { user, organization } = useContext(AppContext);
 
-    const [plans, setPlans] = useState<any[]>([]);
     const [currentPlan, setCurrentPlan] = useState(organization.subscriptionId ? 1 : 0);
     const [prices, setPrices] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
