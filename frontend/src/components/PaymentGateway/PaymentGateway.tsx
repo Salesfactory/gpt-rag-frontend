@@ -21,11 +21,12 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
     const [prices, setPrices] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     
+
     useEffect(() => {
         // Fetch product prices when the component mounts
         async function fetchPrices() {
             try {
-                const data = await getProductPrices({ user, product_id:"prod_R05WPWPAgXt6Kj" });
+                const data = await getProductPrices({user});
                 setPrices(data.prices);
             } catch (err) {
                 console.error("Failed to fetch product prices:", err);

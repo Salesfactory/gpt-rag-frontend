@@ -404,11 +404,11 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     return session;
 }
 
-export async function getProductPrices({ user, product_id }: { user: any, product_id: string }): Promise<any> {
+export async function getProductPrices({ user}: { user: any}): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
-        const response = await fetch(`/api/products/${product_id}/prices`, {
+        const response = await fetch(`/api/prices`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
