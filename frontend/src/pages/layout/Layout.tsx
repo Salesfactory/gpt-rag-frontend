@@ -1,4 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
+import { AuthenticatedTemplate, UnauthenticatedTemplate, useMsal } from "@azure/msal-react";
+
 import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
 import { getChatHistory } from "../../api"; //FUNCION DE LA API
 import salesLogo from "../../img/logo.png";
@@ -40,32 +42,39 @@ const Layout = () => {
     };
 
     return (
-        <div className={`${styles.layout} ${isCollapsed ? styles.collapsedContent : ""}`}>
-            <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
-                <SideMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-            </aside>
-            <main className={styles.content}>
-                <header className={styles.header} role={"banner"}>
-                    <div className={styles.headerContainer}>
-                        <nav></nav>
-                        <div className={styles.layoutOptions}>
-                            {pathname === "/" && (
-                                <>
-                                    <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
-                                    <ChatHistoryButton onClick={handleShowHistoryPanel} />
-                                    <SettingsButton onClick={handleShowSettings} />
-                                </>
-                            )}
-                            <div className={styles.profileButtonContainer}>
-                                <ProfileButton />
+        <>
+            <AuthenticatedTemplate>
+                <div className={`${styles.layout} ${isCollapsed ? styles.collapsedContent : ""}`}>
+                    <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
+                        <SideMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+                    </aside>
+                    <main className={styles.content}>
+                        <header className={styles.header} role={"banner"}>
+                            <div className={styles.headerContainer}>
+                                <nav></nav>
+                                <div className={styles.layoutOptions}>
+                                    {pathname === "/" && (
+                                        <>
+                                            <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
+                                            <ChatHistoryButton onClick={handleShowHistoryPanel} />
+                                            <SettingsButton onClick={handleShowSettings} />
+                                        </>
+                                    )}
+                                    <div className={styles.profileButtonContainer}>
+                                        <ProfileButton />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                </header>
+                        </header>
 
-                <Outlet />
-            </main>
-        </div>
+                        <Outlet />
+                    </main>
+                </div>
+            </AuthenticatedTemplate>
+            <UnauthenticatedTemplate>
+                <center>Please sign-in to see your profile information.</center>
+            </UnauthenticatedTemplate>
+        </>
     );
 };
 

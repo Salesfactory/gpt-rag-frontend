@@ -261,12 +261,16 @@ def create_checkout_session():
             cancel_url=cancel_url,
             automatic_tax={"enabled": True},
             custom_fields=[
-                {
-                    "key": "organization_name",
-                    "label": {"type": "custom", "custom": "Organization Name"},
-                    "type": "text",
-                    "text": {"minimum_length": 5, "maximum_length": 100},
-                } if organizationId == "" else {}
+                (
+                    {
+                        "key": "organization_name",
+                        "label": {"type": "custom", "custom": "Organization Name"},
+                        "type": "text",
+                        "text": {"minimum_length": 5, "maximum_length": 100},
+                    }
+                    if organizationId == ""
+                    else {}
+                )
             ],
         )
     except Exception as e:
@@ -801,6 +805,7 @@ def sendEmail():
         logging.error("Something went wrong...", e)
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/getInvitations", methods=["GET"])
 def getInvitations():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -828,12 +833,15 @@ def getInvitations():
         organizationId = request.args.get("organizationId")
         url = INVITATIONS_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers,params={"organizationId": organizationId})
+        response = requests.request(
+            "GET", url, headers=headers, params={"organizationId": organizationId}
+        )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/createInvitation", methods=["POST"])
 def createInvitation():
@@ -989,7 +997,7 @@ def createOrganization():
         functionKey = get_secret(keySecretName)
     except Exception as e:
         logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
+            f"[webbackend] exception in /api/orchestrator-host--subscriptions {e}"
         )
         return (
             jsonify(
@@ -1015,6 +1023,7 @@ def createOrganization():
     except Exception as e:
         logging.exception("[webbackend] exception in /post-organization")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/getUser", methods=["GET"])
 def getUser():
