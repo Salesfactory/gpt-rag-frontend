@@ -9,6 +9,7 @@ import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
 import Organization from "./pages/organization/Organization";
+import Login from "./pages/Login/Login";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 
@@ -119,66 +120,34 @@ function Pages() {
 
     return (
         <Routes>
-            {!organization?.subscriptionId && (
-                <>
-                    <Route path="/" element={<Onboarding />} />
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Access Denied Route */}
+            <Route path="/access-denied" element={<AccessDenied />} />
+
+            {/* Protected Routes for Authenticated Users (Regular and Admin) */}
+            <Route element={<ProtectedRoute allowedRoles={["user", "admin"]} />}>
+                <Route element={<Layout />}>
+                    {/* Regular User and Admin Routes */}
+                    <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/payment" element={<PaymentGateway />} />
-                    <Route path="*" element={<NoPage />} />
-                </>
-            )}
-            {organization?.subscriptionId && (
-                <>
-                    <Route path="/" element={<Layout />}>
-                        <Route index element={<Chat />} />
-                        <Route path="*" element={<NoPage />} />
-                    </Route>
-                    <Route path="/admin" element={<Layout />}>
-                        <Route
-                            index
-                            element={
-                                <ProtectedRoute allowedRoles={["admin"]}>
-                                    <Admin />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route path="*" element={<NoPage />} />
-                    </Route>
-                    <Route path="/access-denied" element={<Layout />}>
-                        <Route index element={<AccessDenied />} />
-                        <Route path="*" element={<NoPage />} />
-                    </Route>
-                    <Route path="/payment" element={<Layout />}>
-                        <Route index element={<PaymentGateway />} />
-                        <Route path="*" element={<NoPage />} />
-                    </Route>
-                    <Route path="/success-payment" element={<Layout />}>
-                        <Route index element={<SuccessPayment />} />
-                        <Route path="*" element={<NoPage />} />
-                    </Route>
-                    <Route path="/invitations" element={<Layout />}>
-                        <Route
-                            index
-                            element={
-                                <ProtectedRoute allowedRoles={["admin"]}>
-                                    <Invitations />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route path="*" element={<NoPage />} />
-                    </Route>
-                    <Route path="/organization" element={<Layout />}>
-                        <Route
-                            index
-                            element={
-                                <ProtectedRoute allowedRoles={["admin"]}>
-                                    <Organization />
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route path="*" element={<NoPage />} />
-                    </Route>
-                </>
-            )}
+                    <Route path="/" element={<Chat />} />
+                    <Route path="/success-payment" element={<SuccessPayment />} />
+                </Route>
+            </Route>
+
+            {/* Protected Routes for Admin Only */}
+            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+                <Route element={<Layout />}>
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/invitations" element={<Invitations />} />
+                    <Route path="/organization" element={<Organization />} />
+                </Route>
+            </Route>
+
+            {/* Catch-All Route for Undefined Paths */}
+            <Route path="*" element={<NoPage />} />
         </Routes>
     );
 }
