@@ -6,6 +6,7 @@ import { getApiKeyPayment, createCheckoutSession } from "../../api";
 import { AppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
+import { MsalProvider, useMsal } from "@azure/msal-react";
 
 const fetchApiKey = async () => {
     const apiKey = await getApiKeyPayment();
@@ -14,10 +15,12 @@ const fetchApiKey = async () => {
 
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
     const { user, organization } = useContext(AppContext);
-
+    const {instance, accounts} = useMsal();
     const [plans, setPlans] = useState<any[]>([]);
     const [currentPlan, setCurrentPlan] = useState(organization.subscriptionId ? 1 : 0);
-
+    const activeAccount = instance.getActiveAccount();
+    const localAccountId = activeAccount?.localAccountId ?? '';
+    user.id = localAccountId
     useEffect(() => {
         setPlans([
             {

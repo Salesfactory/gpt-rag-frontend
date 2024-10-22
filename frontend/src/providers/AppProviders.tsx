@@ -183,7 +183,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                             const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
 
                             if (id && name) {
-                                setUser({ id, name, email, role: undefined, organizationId: undefined });
+                                setUser({ id, name, email, role: "admin", organizationId: undefined });
                             }
 
                             // register user if doesn't exist

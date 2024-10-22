@@ -2,7 +2,7 @@ import { useContext } from "react";
 import styles from "./ButtonPaymentGateway.module.css";
 import { Text } from "@fluentui/react";
 import { GuestFilled } from "@fluentui/react-icons";
-
+import { MsalProvider, useMsal } from "@azure/msal-react";
 import { AppContext } from "../../providers/AppProviders";
 
 export const ButtonPaymentGateway = () => {

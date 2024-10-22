@@ -3,13 +3,16 @@ import salesLogo from "../../img/logo.png";
 import styles from "./Onboarding.module.css";
 import { ChevronRightRegular, ChevronLeftRegular, ContactCardRibbon48Regular, MoneySettingsRegular } from "@fluentui/react-icons";
 import { Spinner } from "@fluentui/react";
-
+import { MsalProvider, useMsal } from "@azure/msal-react";
 import { createOrganization, getOrganizationSubscription } from "../../api";
 import { AppContext } from "../../providers/AppProviders";
 
 const Onboarding: React.FC = () => {
     const { user, setUser, organization, setOrganization } = useContext(AppContext);
-
+    const {instance, accounts} = useMsal();
+    const activeAccount = instance.getActiveAccount();
+    const test = activeAccount?.localAccountId ?? "";
+    
     const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(0);
     const [isLoadingStep, setIsLoadingStep] = useState(false);
@@ -20,7 +23,8 @@ const Onboarding: React.FC = () => {
     };
 
     const handleCreateOrganization = async () => {
-        const newOrganization = await createOrganization({ userId: user.id, organizationName: organizationName });
+        
+        const newOrganization = await createOrganization({ userId: test, organizationName: organizationName });
         if (newOrganization.id) {
             setOrganization(newOrganization);
             setUser({ ...user, organizationId: newOrganization.id });

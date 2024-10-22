@@ -5,6 +5,7 @@ import { AppContext } from "../../providers/AppProviders";
 import { AddFilled, SendRegular, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
 import { ThumbLikeRegular, ThumbDislikeRegular } from "@fluentui/react-icons";
 import { postFeedbackRating } from "../../api/api";
+import { MsalProvider, useMsal } from "@azure/msal-react";
 
 const categoryOptions = [
     { key: "1", text: "Incorrect data" },
@@ -15,13 +16,15 @@ const categoryOptions = [
 ];
 
 export const FeedbackRating = () => {
-    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId, user } = useContext(AppContext);
-
+    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId} = useContext(AppContext);
+    const {instance, accounts} = useMsal();
     const [category, setCategory] = useState("");
     const [feedback, setFeedback] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [selectedThumb, setSelectedThumb] = useState<string | null>("");
     const [errorMessage, setErrorMessage] = useState<string | null>("");
+    const activeAccount = instance.getActiveAccount();
+
 
     const handleCategoryChange = (event: any, selectedOption: any) => {
         setErrorMessage("");
@@ -63,8 +66,8 @@ export const FeedbackRating = () => {
 
         await postFeedbackRating({
             user: {
-                id: user.id,
-                name: user.name
+                id: activeAccount?.localAccountId,
+                name: activeAccount?.name
             },
             conversation_id: chatId,
             feedback_message: feedback,

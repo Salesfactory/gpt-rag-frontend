@@ -3,7 +3,7 @@ import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, Default
 import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/react-icons";
-
+import { MsalProvider, useMsal } from "@azure/msal-react";
 import { AppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
@@ -16,6 +16,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
+    const {instance, accounts} = useMsal();
+    const activeAccount = instance.getActiveAccount();
     const { user } = useContext(AppContext);
 
     const [errorMessage, setErrorMessage] = useState("");
@@ -49,7 +51,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             if (res.error) {
                 setErrorMessage(res.error);
             } else {
-                createInvitation({ organizationId, invitedUserEmail: sanitizedEmail, userId: user.id, role: role }).then(res => {
+                createInvitation({ organizationId, invitedUserEmail: sanitizedEmail, userId: activeAccount?.localAccountId, role: role }).then(res => {
                     if (res.error) {
                         setErrorMessage(res.error);
                     } else {
@@ -330,13 +332,15 @@ const Admin = () => {
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-
+    const {instance, accounts} = useMsal();
+    const activeAccount = instance.getActiveAccount();
+    const localAccountId = activeAccount?.localAccountId;
     const [isOpen, setIsOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const getUserList = async () => {
-            let usersList = await getUsers({user: {id: user.id, name: user.name,  organizationId: user.organizationId}});
+            let usersList = await getUsers({user: {id: localAccountId, name: activeAccount?.name,  organizationId: user.organizationId}});
             if (!Array.isArray(usersList)) {
                 usersList = [];
             }
@@ -359,13 +363,13 @@ const Admin = () => {
     }, [search]);
 
     const deleteUserFromOrganization = (id: string) => {
-        deleteUser({ user, userId: id }).then(res => {
+        deleteUser({ localAccountId, userId: localAccountId }).then(res => {
             if (res.error) {
                 console.log("error", res.error);
                 toast("There was an error deleting the user", { type: "error" });
                 setIsDeleting(false);
             } else {
-                const updatedUsers = users.filter((user: any) => user.id !== id);
+                const updatedUsers = users.filter((user: any) => localAccountId !== id);
                 setUsers(updatedUsers);
                 setFilteredUsers(updatedUsers);
                 setIsDeleting(false);
