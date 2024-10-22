@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, Dispatch, SetSta
 import { ConversationHistoryItem, ConversationChatItem, ChatTurn } from "../api";
 import { Spinner } from "@fluentui/react";
 import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, getUserInfo, checkUser, getOrganizationSubscription } from "../api";
+import { useMsal } from "@azure/msal-react";
 interface UserInfo {
     id: string;
     name: string;
@@ -117,7 +118,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [chatSelected, setChatSelected] = useState("");
     const [settingsPanel, setSettingsPanel] = useState(false);
     const [newChatDeleted, setNewChatDeleted] = useState(false);
+    const { instance } = useMsal();
+    const activeAccount = instance.getActiveAccount();
 
+    
     const handleKeyDown = (event: KeyboardEvent) => {
         const isCtrlOrCmd = event.ctrlKey || event.metaKey;
         const isAlt = event.altKey;
@@ -158,29 +162,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useEffect(() => {
         if (!user.organizationId) {
             const getUserInfoList = async () => {
-                if (window.location.hostname !== "127.0.0.1" && window.location.hostname !== "localhost") {
-                    const userInfoList = await getUserInfo();
-                    if (userInfoList.length === 0) {
+                    if (!activeAccount) {
                         // setShowAuthMessage(true);
-                        console.log("No user info found. Using anonymous user.", userInfoList);
+                        setLoading(false);
+                        console.log("No user info found. Using anonymous user.");
                     } else {
                         // setShowAuthMessage(false);
-                        console.log("User info found.", userInfoList);
+                        console.log("Active Account found.", activeAccount);
 
-                        const keyId = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier";
-                        const keyName = "name";
-                        const keyEmail = "emails";
-
-                        const _user = userInfoList.find(obj => {
-                            const _id = obj?.user_claims?.some(claim => claim.typ === keyId);
-                            const _name = obj?.user_claims?.some(claim => claim.typ === keyName);
-                            return _id && _name;
-                        });
-
-                        if (_user) {
-                            const id = _user?.user_claims?.find(claim => claim.typ === keyId)?.val || "";
-                            const name = _user?.user_claims?.find(claim => claim.typ === keyName)?.val || "";
-                            const email = _user?.user_claims?.find(claim => claim.typ === keyEmail)?.val || null;
+                        
+                            const id = activeAccount.localAccountId;
+                            const name = activeAccount.name 
+                            const email = activeAccount.idTokenClaims?.emails?activeAccount.idTokenClaims.emails[0]:""
 
                             if (id && name) {
                                 setUser({ id, name, email, role: undefined, organizationId: undefined });
@@ -191,14 +184,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                             // const response = await getUsers({ user: { id, name, email } });  // to get all users
 
                             // verifies if user exists and assigns the role
+                            
                             const result = await checkUser({ user: { id, name, email } });
                             const role = result["role"] || undefined;
                             const organizationId = result["organizationId"] || undefined;
 
                             const organization = await getOrganizationSubscription({ userId: id, organizationId: organizationId });
-
                             if (result && role) {
-                                setUser({ id, name, email, role, organizationId });
+                                setUser({ id, name:(name?name:""), email, role, organizationId });
                             }
                             if (organization) {
                                 setOrganization({
@@ -211,14 +204,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                                 });
                             }
                             setLoading(false);
-                        }
+                        
                     }
-                } else {
-                    console.log("Local");
-                    setUser({ ...user, organizationId: "test-organization" });
-                    setOrganization({ ...organization, subscriptionId: "test-subscriptionId" });
-                    setLoading(false);
-                }
+                
             };
             getUserInfoList();
         }

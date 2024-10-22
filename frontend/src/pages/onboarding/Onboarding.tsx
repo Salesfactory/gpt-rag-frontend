@@ -14,7 +14,6 @@ const Onboarding: React.FC = () => {
     const [step, setStep] = useState(0);
     const [isLoadingStep, setIsLoadingStep] = useState(false);
     const maxSteps = 2;
-
     const handleOrganizationChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setOrganizationName(event.target.value);
     };

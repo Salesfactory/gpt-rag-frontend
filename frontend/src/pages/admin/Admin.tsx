@@ -17,7 +17,6 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
     const { user } = useContext(AppContext);
-
     const [errorMessage, setErrorMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -43,7 +42,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
         if (!isValidated(sanitizedUsername, sanitizedEmail)) return;
         if (alreadyExists(sanitizedEmail)) return setErrorMessage("User with this email already exists");
         setLoading(true);
-
+        
         const organizationId = user.organizationId;
         inviteUser({ username: sanitizedUsername, email: sanitizedEmail, role, organizationId }).then(res => {
             if (res.error) {

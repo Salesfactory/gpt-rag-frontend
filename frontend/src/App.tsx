@@ -12,7 +12,7 @@ import Organization from "./pages/organization/Organization";
 import Login from "./pages/Login/Login";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
-
+import { AppProvider } from "./providers/AppProviders";
 import { AppContext } from "./providers/AppProviders";
 import { MsalProvider, useMsal } from "@azure/msal-react";
 import {
@@ -72,7 +72,6 @@ function ClientSideNavigation({ pca, children }: ClientSideNavigationProps) {
 function Pages() {
     const { instance } = useMsal();
     const [status, setStatus] = useState<string | null>(null);
-    const { organization } = useContext(AppContext) as { organization: Organization };
 
     useEffect(() => {
         const callbackId = instance.addEventCallback((event: EventMessage) => {
@@ -119,36 +118,38 @@ function Pages() {
     }, [instance]);
 
     return (
-        <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
+        <AppProvider>
+            <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/payment" element={<PaymentGateway />} />
 
-            {/* Access Denied Route */}
-            <Route path="/access-denied" element={<AccessDenied />} />
+                {/* Access Denied Route */}
+                <Route path="/access-denied" element={<AccessDenied />} />
 
-            {/* Protected Routes for Authenticated Users (Regular and Admin) */}
-            <Route element={<ProtectedRoute allowedRoles={["user", "admin"]} />}>
-                <Route element={<Layout />}>
-                    {/* Regular User and Admin Routes */}
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="/payment" element={<PaymentGateway />} />
-                    <Route path="/" element={<Chat />} />
-                    <Route path="/success-payment" element={<SuccessPayment />} />
+                {/* Protected Routes for Authenticated Users (Regular and Admin) */}
+                <Route element={<ProtectedRoute allowedRoles={["user", "admin"]} />}>
+                    <Route element={<Layout />}>
+                        {/* Regular User and Admin Routes */}
+                        <Route path="/" element={<Chat />} />
+                        <Route path="/success-payment" element={<SuccessPayment />} />
+                    </Route>
                 </Route>
-            </Route>
 
-            {/* Protected Routes for Admin Only */}
-            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-                <Route element={<Layout />}>
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/invitations" element={<Invitations />} />
-                    <Route path="/organization" element={<Organization />} />
+                {/* Protected Routes for Admin Only */}
+                <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+                    <Route element={<Layout />}>
+                        <Route path="/admin" element={<Admin />} />
+                        <Route path="/invitations" element={<Invitations />} />
+                        <Route path="/organization" element={<Organization />} />
+                    </Route>
                 </Route>
-            </Route>
 
-            {/* Catch-All Route for Undefined Paths */}
-            <Route path="*" element={<NoPage />} />
-        </Routes>
+                {/* Catch-All Route for Undefined Paths */}
+                <Route path="*" element={<NoPage />} />
+            </Routes>
+        </AppProvider>
     );
 }
 

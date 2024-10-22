@@ -22,20 +22,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     const { instance } = useMsal();
     const activeAccount = instance.getActiveAccount();
     const { user } = useContext(AppContext);
-
+    const hasActiveAccount =(): boolean => {
+        if(!activeAccount){
+            return false
+        }
+        return true
+    } 
     // Function to check if the user has at least one of the allowed roles
     const hasRequiredRole = (): boolean => {
-        if (!activeAccount) return false;
-
         const roles = [user.role];
         //const roles = activeAccount.idTokenClaims?.roles as string[] | undefined;
         if (!roles) return false;
         return allowedRoles.some(role => roles.includes(role));
     };
-
+    
     return (
         <MsalAuthenticationTemplate interactionType={InteractionType.Redirect} authenticationRequest={loginRequest} loadingComponent={LoadingSpinner}>
-            {hasRequiredRole() ? <Outlet /> : <Navigate to="/access-denied" replace />}
+            {hasActiveAccount() && hasRequiredRole() ? <Outlet /> : hasActiveAccount()===false ? <Navigate to="/login" replace /> : user.role?<Navigate to="/access-denied" replace /> : <Navigate to="/onboarding" replace />}
         </MsalAuthenticationTemplate>
     );
 };
