@@ -5,8 +5,6 @@ import { AppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { MsalProvider, useMsal } from "@azure/msal-react";
-
 import { DeleteRegular, CheckmarkRegular, DismissRegular, ChevronDownRegular, ChevronUpRegular } from "@fluentui/react-icons";
 
 interface ChatHistoryPanelProps {
@@ -17,18 +15,14 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     const [hoveredItemIndex, setHoveredItemIndex] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const {instance, accounts} = useMsal();
     const [deletingIsLoading, setDeletingIsLoading] = useState(false);
     const [confirmationDelete, setConfirmationDelete] = useState<string | null>(null);
     const [conversationsIds, setConversationsIds] = useState<String[]>([]);
     const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
-    const activeAccount = instance.getActiveAccount();
-    const localAccountId = activeAccount?.localAccountId ?? "";
-
     const {
         dataHistory,
-        user,
         setDataHistory,
+        user,
         dataConversation,
         setDataConversation,
         setConversationIsLoading,
@@ -51,8 +45,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     const fetchData = async () => {
         try {
-            
-            const data = await getChatHistory(localAccountId);
+            const data = await getChatHistory(user.id);
             if (data.length > 0) {
                 const sortedData = data.sort((a, b) => {
                     const dateA = new Date(a.start_date);
@@ -83,7 +76,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                 setChatSelected(chatConversationId);
                 setChatId(chatConversationId);
                 setConversationIsLoading(true);
-                const data = await getChatFromHistoryPannelById(chatConversationId, localAccountId);
+                const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
                 if (data.length > 0) {
                     setDataConversation(data);
                     setConversationIsLoading(false);
@@ -99,7 +92,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     const handleDeleteConversation = async (chatConversationId: string) => {
         try {
             setDeletingIsLoading(true);
-            const data = await deleteChatConversation(chatConversationId, localAccountId);
+            const data = await deleteChatConversation(chatConversationId, user.id);
             setDeletingIsLoading(false);
             if (chatSelected === chatConversationId) {
                 setDataConversation([]);
@@ -138,7 +131,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         if (refreshFetchHistorial) {
             handleRefreshHistoial();
         }
-    }, [localAccountId, dataHistory, conversationsIds, refreshFetchHistorial]);
+    }, [user.id, dataHistory, conversationsIds, refreshFetchHistorial]);
 
     const today = new Date();
 

@@ -7,7 +7,6 @@ import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { AppContext } from "../../providers/AppProviders";
 import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
-import { MsalProvider, useMsal } from "@azure/msal-react";
 
 interface Props {
     user: {
@@ -82,17 +81,13 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
 };
 
 export const SettingsPanel = () => {
-    const { setSettingsPanel, settingsPanel } = useContext(AppContext);
+    const { user, setSettingsPanel, settingsPanel } = useContext(AppContext);
+
     const [temperature, setTemperature] = useState("0");
     const [loading, setLoading] = useState(true);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const {instance, accounts} = useMsal();
-    const activeAccount = instance.getActiveAccount();
 
-    //USE ONLY WHEN TYPESCRIPT REQUIERED STRING
-    const localAccountId = activeAccount?.localAccountId ?? '';
-    const localAccountName = activeAccount?.name ?? '';
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const temperatureDialog =
         "It adjusts the balance between creativity and predictability in responses. Lower settings yield straightforward answers, while higher settings introduce originality and diversity, perfect for creative tasks and factual inquiries.";
@@ -101,8 +96,8 @@ export const SettingsPanel = () => {
         const fetchData = async () => {
             getSettings({
                 user: {
-                    id: localAccountId,
-                    name: localAccountName
+                    id: user.id,
+                    name: user.name
                 }
             })
                 .then(data => {
@@ -124,10 +119,7 @@ export const SettingsPanel = () => {
         }
 
         postSettings({
-            user: {
-                id: localAccountId,
-                name: localAccountName
-            },
+            user,
             temperature: parsedTemperature
         }).then(data => {
             setTemperature(data.temperature);

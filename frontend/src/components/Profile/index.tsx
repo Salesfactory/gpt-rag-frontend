@@ -5,7 +5,6 @@ import { IStackTokens, Stack } from "@fluentui/react/lib/Stack";
 import { AppContext } from "../../providers/AppProviders";
 import styles from "./Profile.module.css";
 import person from "../../assets/person.png";
-import { MsalProvider, useMsal } from "@azure/msal-react";
 
 const stackTokens: IStackTokens = { childrenGap: 20 };
 const iconStyles = { marginRight: "8px" };
@@ -56,14 +55,11 @@ const placeholderPrepare = (placeholder: string) => {
 };
 
 export const ProfileButton: React.FunctionComponent = () => {
-
-    const {instance, accounts} = useMsal();
-    const activeAccount = instance.getActiveAccount();
-    //no toma algo que no se sea string asi que se sugirio esto temporal
-    const localAccountname = activeAccount?.name ?? ''
-    const placeholder = placeholderPrepare(localAccountname);
-    const email = activeAccount?.idTokenClaims?.emails || " ";
-    const headerTitle = localAccountname;
+    const { user } = useContext(AppContext);
+    
+    const placeholder = placeholderPrepare(user.name);
+    const email = user?.email || " ";
+    const headerTitle = user.name;
 
     const options: IDropdownOption[] = [
         { key: "Header", text: headerTitle || "Options", itemType: DropdownMenuItemType.Header },

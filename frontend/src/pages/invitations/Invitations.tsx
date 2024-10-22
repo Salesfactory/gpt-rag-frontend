@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { Spinner } from "@fluentui/react";
 import { TextField } from "@fluentui/react/lib/TextField";
 import { SearchRegular } from "@fluentui/react-icons";
-import { MsalProvider, useMsal } from "@azure/msal-react";
+
 import { AppContext } from "../../providers/AppProviders";
 
 import { getInvitations } from "../../api";
@@ -17,8 +17,6 @@ interface User {
 }
 
 const Invitations = () => {
-    const {instance, accounts} = useMsal();
-    const activeAccount = instance.getActiveAccount();
     const { user } = useContext(AppContext);
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -27,7 +25,7 @@ const Invitations = () => {
 
     useEffect(() => {
         const getUserList = async () => {
-            let invitationsList = await getInvitations({ user: { id: activeAccount?.localAccountId, username: activeAccount?.username, organizationId: user.organizationId } });
+            let invitationsList = await getInvitations({ user: { id: user.id, username: user.name, organizationId: user.organizationId } });
             if (!Array.isArray(invitationsList)) {
                 invitationsList = [];
             }
