@@ -5,10 +5,10 @@ import { ChevronRightRegular, ChevronLeftRegular, ContactCardRibbon48Regular, Mo
 import { Spinner } from "@fluentui/react";
 
 import { createOrganization, getOrganizationSubscription } from "../../api";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 
 const Onboarding: React.FC = () => {
-    const { user, setUser, organization, setOrganization } = useContext(AppContext);
+    const { user, setUser, organization, setOrganization } = useAppContext();
 
     const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(0);
@@ -19,18 +19,27 @@ const Onboarding: React.FC = () => {
     };
 
     const handleCreateOrganization = async () => {
+        if (!user) {
+            return null;
+        }
         const newOrganization = await createOrganization({ userId: user.id, organizationName: organizationName });
         if (newOrganization.id) {
             setOrganization(newOrganization);
             setUser({ ...user, organizationId: newOrganization.id });
+            return newOrganization;
         }
     };
 
     const handleNextClick = async () => {
         if (step < maxSteps) {
             setIsLoadingStep(true);
+            let organization = null;
             if (step === 1) {
-                await handleCreateOrganization();
+                organization = await handleCreateOrganization();
+            }
+            if (!organization) {
+                setIsLoadingStep(false);
+                return;
             }
             setStep(prevStep => prevStep + 1);
             setIsLoadingStep(false);

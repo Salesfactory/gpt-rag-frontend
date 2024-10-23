@@ -4,7 +4,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/react-icons";
 
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
 import { checkUser, getUsers, inviteUser, createInvitation, deleteUser } from "../../api";
@@ -16,7 +16,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
-    const { user } = useContext(AppContext);
+    const { user } = useAppContext();
     const [errorMessage, setErrorMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -36,29 +36,63 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
         return users.some((user: any) => user.data.email === sanitizedEmail);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        // Sanitize inputs
         const sanitizedUsername = DOMPurify.sanitize(username);
         const sanitizedEmail = DOMPurify.sanitize(email);
+
+        // Validate inputs
         if (!isValidated(sanitizedUsername, sanitizedEmail)) return;
-        if (alreadyExists(sanitizedEmail)) return setErrorMessage("User with this email already exists");
+
+        // Check if user already exists
+        if (alreadyExists(sanitizedEmail)) {
+            setErrorMessage("User with this email already exists");
+            return;
+        }
+
+        // Check if `user` is not null
+        if (!user) {
+            // Handle unauthenticated user
+            setErrorMessage("You must be logged in to invite a user.");
+            return;
+        }
+
         setLoading(true);
-        
-        const organizationId = user.organizationId;
-        inviteUser({ username: sanitizedUsername, email: sanitizedEmail, role, organizationId }).then(res => {
-            if (res.error) {
-                setErrorMessage(res.error);
-            } else {
-                createInvitation({ organizationId, invitedUserEmail: sanitizedEmail, userId: user.id, role: role }).then(res => {
-                    if (res.error) {
-                        setErrorMessage(res.error);
-                    } else {
-                        setErrorMessage("");
-                        setLoading(false);
-                        setSuccess(true);
-                    }
-                });
+
+        try {
+            const organizationId = user.organizationId;
+            const inviteResponse = await inviteUser({
+                username: sanitizedUsername,
+                email: sanitizedEmail,
+                role,
+                organizationId
+            });
+
+            if (inviteResponse.error) {
+                setErrorMessage(inviteResponse.error);
+                setLoading(false);
+                return;
             }
-        });
+
+            const invitationResponse = await createInvitation({
+                organizationId,
+                invitedUserEmail: sanitizedEmail,
+                userId: user.id,
+                role
+            });
+
+            if (invitationResponse.error) {
+                setErrorMessage(invitationResponse.error);
+            } else {
+                setErrorMessage("");
+                setSuccess(true);
+            }
+        } catch (error) {
+            console.error("Error during invitation process:", error);
+            setErrorMessage("An unexpected error occurred. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const onUserNameChange = (_ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -315,7 +349,7 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boo
 };
 
 const Admin = () => {
-    const { user } = useContext(AppContext);
+    const { user } = useAppContext();
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState({
@@ -333,18 +367,52 @@ const Admin = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    if (!user) {
+        return <div>Please log in to view the user list.</div>;
+    }
+
+    if (loading) {
+        return <div>Loading users...</div>;
+    }
+
     useEffect(() => {
         const getUserList = async () => {
-            let usersList = await getUsers({user: {id: user.id, name: user.name,  organizationId: user.organizationId}});
-            if (!Array.isArray(usersList)) {
-                usersList = [];
+            if (!user) {
+                // User is not logged in
+                setUsers([]);
+                setFilteredUsers([]);
+                setLoading(false);
+                return;
             }
-            setUsers(usersList);
-            setFilteredUsers(usersList);
-            setLoading(false);
+
+            setLoading(true);
+
+            try {
+                let usersList = await getUsers({
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        organizationId: user.organizationId
+                    }
+                });
+
+                if (!Array.isArray(usersList)) {
+                    usersList = [];
+                }
+
+                setUsers(usersList);
+                setFilteredUsers(usersList);
+            } catch (error) {
+                console.error("Error fetching user list:", error);
+                setUsers([]);
+                setFilteredUsers([]);
+            } finally {
+                setLoading(false);
+            }
         };
+
         getUserList();
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (!search) {

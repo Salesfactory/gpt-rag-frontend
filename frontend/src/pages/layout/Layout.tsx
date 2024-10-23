@@ -10,15 +10,14 @@ import github from "../../assets/github.svg";
 import styles from "./Layout.module.css";
 import { ChatHistoryButton } from "../../components/ChatHistoryButton/ChatHistoryButton";
 import { FeedbackRatingButton } from "../../components/FeedbackRating/FeedbackRatingButton";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { SettingsButton } from "../../components/SettingsButton";
 import { ButtonPaymentGateway } from "../../components/PaymentGateway/ButtonPaymentGateway";
 import { SideMenu } from "../../components/SideMenu/SideMenu";
 import { ProfileButton } from "../../components/Profile";
 
 const Layout = () => {
-    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } =
-        useContext(AppContext);
+    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } = useAppContext();
 
     const { pathname } = useLocation();
     const [isCollapsed, setIsCollapsed] = useState(false);

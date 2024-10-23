@@ -1,7 +1,7 @@
 import styles from "./ChatHistoryPannel.module.css";
 import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } from "../../api";
 import { useContext, useEffect, useState } from "react";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -33,7 +33,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         chatSelected,
         setChatSelected,
         setNewChatDeleted
-    } = useContext(AppContext);
+    } = useAppContext();
 
     const handleMouseEnter = (index: string) => {
         setHoveredItemIndex(index);
@@ -44,29 +44,34 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     };
 
     const fetchData = async () => {
-        try {
-            const data = await getChatHistory(user.id);
-            if (data.length > 0) {
-                const sortedData = data.sort((a, b) => {
-                    const dateA = new Date(a.start_date);
-                    const dateB = new Date(b.start_date);
-                    return dateB.getTime() - dateA.getTime();
-                });
-                sortedData.splice(100);
-                setDataHistory(sortedData);
-                setIsLoading(false);
-                const ids = sortedData.map(data => data.id);
-                if (!ids.every(id => conversationsIds.includes(id))) {
-                    setConversationsIds(ids);
-                }
-            } else {
-                setIsLoading(false);
-                setErrorMessage("There are not conversations yet.");
-            }
-        } catch (error) {
-            console.error("Error fetching data:", error);
+        if (!user?.id) {
             setIsLoading(false);
-            setErrorMessage(`No history found`);
+            setErrorMessage("Not Valid User Id");
+        } else {
+            try {
+                const data = await getChatHistory(user?.id);
+                if (data.length > 0) {
+                    const sortedData = data.sort((a, b) => {
+                        const dateA = new Date(a.start_date);
+                        const dateB = new Date(b.start_date);
+                        return dateB.getTime() - dateA.getTime();
+                    });
+                    sortedData.splice(100);
+                    setDataHistory(sortedData);
+                    setIsLoading(false);
+                    const ids = sortedData.map(data => data.id);
+                    if (!ids.every(id => conversationsIds.includes(id))) {
+                        setConversationsIds(ids);
+                    }
+                } else {
+                    setIsLoading(false);
+                    setErrorMessage("There are not conversations yet.");
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setIsLoading(false);
+                setErrorMessage(`No history found`);
+            }
         }
     };
 
@@ -76,7 +81,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                 setChatSelected(chatConversationId);
                 setChatId(chatConversationId);
                 setConversationIsLoading(true);
-                const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
+                const data = await getChatFromHistoryPannelById(chatConversationId, user?.id);
                 if (data.length > 0) {
                     setDataConversation(data);
                     setConversationIsLoading(false);
@@ -92,7 +97,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     const handleDeleteConversation = async (chatConversationId: string) => {
         try {
             setDeletingIsLoading(true);
-            const data = await deleteChatConversation(chatConversationId, user.id);
+            const data = await deleteChatConversation(chatConversationId, user?.id);
             setDeletingIsLoading(false);
             if (chatSelected === chatConversationId) {
                 setDataConversation([]);
@@ -131,7 +136,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         if (refreshFetchHistorial) {
             handleRefreshHistoial();
         }
-    }, [user.id, dataHistory, conversationsIds, refreshFetchHistorial]);
+    }, [user?.id, dataHistory, conversationsIds, refreshFetchHistorial]);
 
     const today = new Date();
 

@@ -1,5 +1,5 @@
 import React, { useContext, ReactNode } from "react";
-import { AppContext } from "../providers/AppProviders";
+import { useAppContext } from "../providers/AppProviders";
 import { Navigate } from "react-router-dom";
 
 interface ProtectedRouteProps {
@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-    const { user } = useContext(AppContext);
+    const { user } = useAppContext();
     if (!user.role || !allowedRoles.includes(user.role)) {
         return <Navigate to="/access-denied" />;
     }

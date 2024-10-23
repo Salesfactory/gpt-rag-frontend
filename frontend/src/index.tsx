@@ -7,7 +7,6 @@ import App from "./App"; // Ensure correct casing
 
 import "./index.css";
 
-
 import { PublicClientApplication, EventType, AccountInfo } from "@azure/msal-browser";
 import { msalConfig } from "./authConfig"; // Adjusted import for default export
 
@@ -49,7 +48,7 @@ msalInstance.initialize().then(() => {
         root.render(
             <React.StrictMode>
                 <HashRouter>
-                        <App pca={msalInstance} />
+                    <App pca={msalInstance} />
                 </HashRouter>
             </React.StrictMode>
         );

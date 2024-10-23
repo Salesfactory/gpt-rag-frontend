@@ -3,10 +3,10 @@ import styles from "./ButtonPaymentGateway.module.css";
 import { Text } from "@fluentui/react";
 import { GuestFilled } from "@fluentui/react-icons";
 
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 
 export const ButtonPaymentGateway = () => {
-    const { user, organization } = useContext(AppContext);
+    const { user, organization } = useAppContext();
 
     const handleRedirect = () => {
         if (organization.subscriptionId) {

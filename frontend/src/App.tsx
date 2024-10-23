@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import ProtectedRoute from "./router/ProtectedRoute";
 import Layout from "./pages/layout/Layout";
@@ -12,8 +12,6 @@ import Organization from "./pages/organization/Organization";
 import Login from "./pages/Login/Login";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
-import { AppProvider } from "./providers/AppProviders";
-import { AppContext } from "./providers/AppProviders";
 import { MsalProvider, useMsal } from "@azure/msal-react";
 import {
     EventType,
@@ -26,6 +24,7 @@ import {
     SsoSilentRequest
 } from "@azure/msal-browser";
 import { b2cPolicies } from "./authConfig";
+import { AppProvider } from "./providers/AppProviders";
 
 interface AppProps {
     pca: PublicClientApplication;

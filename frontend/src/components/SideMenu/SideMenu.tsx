@@ -3,7 +3,7 @@ import salesLogo from "../../img/logo.png";
 import isotipo from "../../img/isotipo.png";
 import styles from "./SideMenu.module.css";
 import { Link } from "react-router-dom";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import {
     ChatRegular,
     PeopleRegular,
@@ -21,7 +21,7 @@ interface SideMenuProps {
 
 export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [activeOption, setActiveOption] = useState<string>("Chat");
-    const { user, organization } = useContext(AppContext);
+    const { user, organization } = useAppContext();
 
     const handleSubscriptionRedirect = (e: React.MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();

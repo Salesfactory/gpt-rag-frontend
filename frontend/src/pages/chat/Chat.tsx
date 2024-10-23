@@ -4,17 +4,7 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import {
-    chatApiGpt,
-    Approaches,
-    AskResponse,
-    ChatRequest,
-    ChatRequestGpt,
-    ChatTurn,
-    getUserInfo,
-    checkUser,
-    getOrganizationSubscription
-} from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getOrganizationSubscription } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -25,7 +15,7 @@ import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
@@ -43,7 +33,7 @@ if (userLanguage.startsWith("pt")) {
 const Chat = () => {
     // speech synthesis is disabled by default
 
-    const { organization } = useContext(AppContext);
+    const { organization } = useAppContext();
     const speechSynthesisEnabled = false;
 
     const [placeholderText, setPlaceholderText] = useState("");
@@ -72,7 +62,7 @@ const Chat = () => {
         settingsPanel,
         setUser,
         setOrganization
-    } = useContext(AppContext);
+    } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
     const lastFileBlobUrl = useRef<string | null>("");

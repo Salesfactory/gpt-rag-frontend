@@ -3,7 +3,7 @@ import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import styles from "./PaymentGateway.module.css";
 import { getApiKeyPayment, createCheckoutSession } from "../../api";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 
@@ -13,10 +13,10 @@ const fetchApiKey = async () => {
 };
 
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
-    const { user, organization } = useContext(AppContext);
+    const { user, organization } = useAppContext();
 
     const [plans, setPlans] = useState<any[]>([]);
-    const [currentPlan, setCurrentPlan] = useState(organization.subscriptionId ? 1 : 0);
+    const currentPlan = organization?.subscriptionId ? 1 : 0;
 
     useEffect(() => {
         setPlans([
@@ -31,6 +31,14 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
     }, []);
 
     const handleCheckout = async (priceId: string) => {
+        if (!user) {
+            // Handle the case when user is null
+            // You might redirect to a login page or show an error message
+            console.error("User is not authenticated.");
+            // Optionally, you can redirect the user or display a notification
+            return;
+        }
+
         const { url } = await createCheckoutSession({
             userId: user.id,
             priceId,
@@ -64,9 +72,9 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                                     role="button"
                                     aria-label={`Subscribe to ${plan.name}`}
                                 >
-                                    {organization.subscriptionId && organization.subscriptionStatus === "inactive"
+                                    {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
                                         ? "Reactivate subscription"
-                                        : organization.subscriptionStatus === "active"
+                                        : organization?.subscriptionStatus === "active"
                                         ? "Edit payment information"
                                         : "Subscribe"}
                                 </button>
