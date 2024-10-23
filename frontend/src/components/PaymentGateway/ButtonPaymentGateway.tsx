@@ -1,4 +1,3 @@
-import { useContext } from "react";
 import styles from "./ButtonPaymentGateway.module.css";
 import { Text } from "@fluentui/react";
 import { GuestFilled } from "@fluentui/react-icons";
@@ -9,19 +8,22 @@ export const ButtonPaymentGateway = () => {
     const { user, organization } = useAppContext();
 
     const handleRedirect = () => {
-        if (organization.subscriptionId) {
+        if (organization && organization.subscriptionId) {
             window.location.href = "https://dashboard.stripe.com/dashboard";
-        } else window.location.href = "#/payment";
+        } else {
+            window.location.href = "#/payment";
+        }
     };
 
+    if (!user) {
+        // User is not logged in; handle accordingly
+        return null; // or display a message, e.g., <p>Please log in to manage subscriptions.</p>
+    }
+
     return (
-        <>
-            {user.role === "admin" && (
-                <button className={styles.container} onClick={handleRedirect}>
-                    <GuestFilled className={styles.button} />
-                    <Text className={styles.buttonText}>Subscription</Text>
-                </button>
-            )}
-        </>
+        <button className={styles.container} onClick={handleRedirect}>
+            <GuestFilled className={styles.button} />
+            <Text className={styles.buttonText}>Subscription</Text>
+        </button>
     );
 };

@@ -3,7 +3,6 @@
 import React, { useEffect } from "react";
 import { useMsal } from "@azure/msal-react";
 import { loginRequest } from "../../authConfig";
-import { InteractionType } from "@azure/msal-browser";
 
 const Login: React.FC = () => {
     const { instance } = useMsal();

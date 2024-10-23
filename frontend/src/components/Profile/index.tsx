@@ -57,9 +57,10 @@ const placeholderPrepare = (placeholder: string) => {
 export const ProfileButton: React.FunctionComponent = () => {
     const { user } = useAppContext();
 
-    const placeholder = placeholderPrepare(user.name);
+    const userName = user?.name || ""; // Default to empty string if user or user.name is null
+    const placeholder = placeholderPrepare(userName);
     const email = user?.email || " ";
-    const headerTitle = user.name;
+    const headerTitle = userName;
 
     const options: IDropdownOption[] = [
         { key: "Header", text: headerTitle || "Options", itemType: DropdownMenuItemType.Header },

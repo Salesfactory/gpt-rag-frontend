@@ -23,6 +23,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     const activeAccount = instance.getActiveAccount();
     const { user } = useAppContext();
     const hasActiveAccount = (): boolean => {
+        console.log(activeAccount);
         if (!activeAccount) {
             return false;
         }
@@ -30,7 +31,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     };
     // Function to check if the user has at least one of the allowed roles
     const hasRequiredRole = (): boolean => {
-        const roles = [user.role];
+        const roles = [user?.role];
         //const roles = activeAccount.idTokenClaims?.roles as string[] | undefined;
         if (!roles) return false;
         return allowedRoles.some(role => roles.includes(role));
@@ -42,7 +43,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
                 <Outlet />
             ) : hasActiveAccount() === false ? (
                 <Navigate to="/login" replace />
-            ) : user.role ? (
+            ) : user?.role ? (
                 <Navigate to="/access-denied" replace />
             ) : (
                 <Navigate to="/onboarding" replace />

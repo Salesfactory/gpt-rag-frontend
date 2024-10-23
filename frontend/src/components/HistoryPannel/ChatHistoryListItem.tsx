@@ -28,8 +28,8 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         setConversationIsLoading,
         setChatId,
         chatId,
-        refreshFetchHistorial,
-        setRefreshFetchHistorial,
+        refreshFetchHistory,
+        setRefreshFetchHistory,
         chatSelected,
         setChatSelected,
         setNewChatDeleted
@@ -76,51 +76,78 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     };
 
     const fetchConversation = async (chatConversationId: string) => {
-        try {
-            if (!chatSelected.includes(chatConversationId)) {
-                setChatSelected(chatConversationId);
-                setChatId(chatConversationId);
-                setConversationIsLoading(true);
-                const data = await getChatFromHistoryPannelById(chatConversationId, user?.id);
+        if (!user) {
+            // Handle the case when user is null
+            setErrorMessage("You must be logged in to view conversations.");
+            return;
+        }
+
+        if (!chatSelected.includes(chatConversationId)) {
+            setChatSelected(chatConversationId);
+            setChatId(chatConversationId);
+            setConversationIsLoading(true);
+
+            try {
+                const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
+
                 if (data.length > 0) {
                     setDataConversation(data);
-                    setConversationIsLoading(false);
+                } else {
+                    setDataConversation([]);
+                    setErrorMessage("No conversation data found.");
                 }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setErrorMessage(`An error occurred while fetching data: ${error}`);
+            } finally {
+                setConversationIsLoading(false);
             }
-        } catch (error) {
-            console.error("Error fetching data:", error);
-            setConversationIsLoading(false);
-            setErrorMessage(`Was an error fetching data: ${error}`);
         }
     };
 
     const handleDeleteConversation = async (chatConversationId: string) => {
+        if (!user) {
+            // Handle the case where user is null
+            setErrorMessage("You must be logged in to delete a conversation.");
+            toast("Please log in to delete conversations.", { type: "warning" });
+            return;
+        }
+
+        if (!user.id) {
+            setErrorMessage("User ID is missing. Please log in again.");
+            toast("User information is incomplete.", { type: "warning" });
+            return;
+        }
+
+        setDeletingIsLoading(true);
+
         try {
-            setDeletingIsLoading(true);
-            const data = await deleteChatConversation(chatConversationId, user?.id);
-            setDeletingIsLoading(false);
+            await deleteChatConversation(chatConversationId, user.id);
+
             if (chatSelected === chatConversationId) {
                 setDataConversation([]);
             }
             if (chatId === chatConversationId) {
                 onDeleteChat();
             }
+
             const updatedDataHistory = dataHistory.filter(item => item.id !== chatConversationId);
             setDataHistory(updatedDataHistory);
 
             toast("Conversation deleted successfully", { type: "success" });
         } catch (error) {
             console.error("Error deleting conversation:", error);
-            setDeletingIsLoading(false);
-            setErrorMessage(`We ran into an error deleting the conversation, please contact the system administrator.`);
+            setErrorMessage("We ran into an error deleting the conversation. Please try again later.");
             toast("Conversation could not be deleted", { type: "error" });
+        } finally {
+            setDeletingIsLoading(false);
         }
     };
 
     const handleRefreshHistoial = async () => {
-        if (refreshFetchHistorial) {
+        if (refreshFetchHistory) {
             await fetchData();
-            setRefreshFetchHistorial(false);
+            setRefreshFetchHistory(false);
         } else {
             return;
         }
@@ -133,10 +160,10 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
             setIsLoading(false);
         }
 
-        if (refreshFetchHistorial) {
+        if (refreshFetchHistory) {
             handleRefreshHistoial();
         }
-    }, [user?.id, dataHistory, conversationsIds, refreshFetchHistorial]);
+    }, [user?.id, dataHistory, conversationsIds, refreshFetchHistory]);
 
     const today = new Date();
 

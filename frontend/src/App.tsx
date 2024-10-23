@@ -69,7 +69,7 @@ function ClientSideNavigation({ pca, children }: ClientSideNavigationProps) {
 }
 
 function Pages() {
-    const { instance } = useMsal();
+    const { instance, accounts, inProgress } = useMsal();
     const [status, setStatus] = useState<string | null>(null);
 
     useEffect(() => {
@@ -115,9 +115,17 @@ function Pages() {
             }
         };
     }, [instance]);
+    const activeAccount = instance.getActiveAccount();
+
+    console.log(accounts);
+    console.log(inProgress);
+
+    if (inProgress !== "none") {
+        return <div>loading</div>;
+    }
 
     return (
-        <AppProvider>
+        <AppProvider activeAccount={activeAccount}>
             <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<Login />} />

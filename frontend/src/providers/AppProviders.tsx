@@ -66,15 +66,13 @@ interface AppContextType {
     setConversationIsLoading: Dispatch<SetStateAction<boolean>>;
     newChatDeleted: boolean;
     setNewChatDeleted: Dispatch<SetStateAction<boolean>>;
-    refreshFetchHistorial: any;
-    setRefreshFetchHistorial: any;
 }
 
 // Create the context with a default value
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Create the provider component
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> = ({ children, activeAccount }) => {
     // State variables
     const [showHistoryPanel, setShowHistoryPanel] = useState<boolean>(true);
     const [showFeedbackRatingPanel, setShowFeedbackRatingPanel] = useState<boolean>(false);
@@ -92,8 +90,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [loading, setLoading] = useState<boolean>(true);
 
     // MSAL instance and active account
-    const { instance } = useMsal();
-    const activeAccount = instance.getActiveAccount();
 
     // Handle keyboard shortcuts
     const handleKeyDown = useCallback(
@@ -143,6 +139,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Add event listener for keyboard shortcuts
     useEffect(() => {
+        console.log("############### Add event listener for keyboard shortcuts ##############");
+
         window.addEventListener("keydown", handleKeyDown);
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
@@ -153,13 +151,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useEffect(() => {
         let isMounted = true;
 
+        console.log("************* Fetch user and organization info *************");
+        console.log("************* activeAccount *************", activeAccount);
         const fetchUserInfo = async () => {
             try {
                 if (activeAccount) {
                     const id = activeAccount.localAccountId;
                     const name = activeAccount.name || "User";
                     const email = activeAccount.idTokenClaims?.emails?.[0] || activeAccount.username || null;
-
                     // Check if user exists and get role and organizationId
                     const result = await checkUser({ user: { id, name, email } });
                     const role = result.role;

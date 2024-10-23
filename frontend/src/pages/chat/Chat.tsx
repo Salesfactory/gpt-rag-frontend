@@ -54,7 +54,7 @@ const Chat = () => {
         setDataConversation,
         chatId,
         conversationIsLoading,
-        setRefreshFetchHistorial,
+        setRefreshFetchHistory,
         setChatId,
         setChatSelected,
         setChatIsCleaned,
@@ -116,10 +116,10 @@ const Chat = () => {
             const result = await chatApiGpt(request);
             const conditionOne = answers.map(a => ({ user: a[0] }));
             if (conditionOne.length <= 0) {
-                setRefreshFetchHistorial(true);
+                setRefreshFetchHistory(true);
                 setChatId(result.conversation_id);
             } else {
-                setRefreshFetchHistorial(false);
+                setRefreshFetchHistory(false);
             }
             setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);

@@ -1,4 +1,5 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
 import salesLogo from "../../img/logo.png";
 import styles from "./Onboarding.module.css";
 import { ChevronRightRegular, ChevronLeftRegular, ContactCardRibbon48Regular, MoneySettingsRegular } from "@fluentui/react-icons";
@@ -9,7 +10,8 @@ import { useAppContext } from "../../providers/AppProviders";
 
 const Onboarding: React.FC = () => {
     const { user, setUser, organization, setOrganization } = useAppContext();
-
+    console.log(user);
+    console.log(organization);
     const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(0);
     const [isLoadingStep, setIsLoadingStep] = useState(false);
@@ -19,6 +21,7 @@ const Onboarding: React.FC = () => {
     };
 
     const handleCreateOrganization = async () => {
+        console.log(user);
         if (!user) {
             return null;
         }
@@ -31,16 +34,16 @@ const Onboarding: React.FC = () => {
     };
 
     const handleNextClick = async () => {
+        console.log("step < maxSteps", step < maxSteps);
         if (step < maxSteps) {
             setIsLoadingStep(true);
             let organization = null;
+            console.log("step", step);
             if (step === 1) {
                 organization = await handleCreateOrganization();
+                console.log(organization);
             }
-            if (!organization) {
-                setIsLoadingStep(false);
-                return;
-            }
+
             setStep(prevStep => prevStep + 1);
             setIsLoadingStep(false);
         }
@@ -56,6 +59,9 @@ const Onboarding: React.FC = () => {
         window.location.href = "#/payment";
     };
 
+    if (user?.organizationId && organization?.subscriptionId) {
+        return <Navigate to="/" replace />;
+    }
     return (
         <div className={styles.container}>
             <div className={`${styles.card} ${styles.carousel}`}>

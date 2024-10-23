@@ -28,7 +28,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
 
         setActiveOption("Subscription");
 
-        if (organization.subscriptionId) {
+        if (organization?.subscriptionId) {
             window.location.href = "https://dashboard.stripe.com/dashboard";
         } else {
             window.location.href = "#/payment";
@@ -60,7 +60,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
                             {!isCollapsed && "Roles and access"}
                         </a>
                     </li>
-                    {user.role === "admin" && (
+                    {user?.role === "admin" && (
                         <li>
                             <a
                                 href="#"
@@ -72,7 +72,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
                             </a>
                         </li>
                     )}
-                    {user.role === "admin" && (
+                    {user?.role === "admin" && (
                         <li>
                             <a
                                 href="#/invitations"
@@ -84,7 +84,7 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
                             </a>
                         </li>
                     )}
-                    {user.role === "admin" && (
+                    {user?.role === "admin" && (
                         <li>
                             <a
                                 href="#/organization"
