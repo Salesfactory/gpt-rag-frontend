@@ -21,7 +21,8 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     const { instance } = useMsal();
     const activeAccount = instance.getActiveAccount();
-    const { user } = useAppContext();
+    const { user, organization } = useAppContext();
+    const subscriptionId = organization?.subscriptionId
     const hasActiveAccount = (): boolean => {
         console.log(activeAccount);
         if (!activeAccount) {
@@ -37,16 +38,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
         return allowedRoles.some(role => roles.includes(role));
     };
 
+    const hasRequiredSubscriptionID = (): boolean => {
+        if(!subscriptionId) return false;
+        return true;
+    }
+
     return (
-        <MsalAuthenticationTemplate interactionType={InteractionType.Redirect} authenticationRequest={loginRequest} loadingComponent={LoadingSpinner}>
-            {hasActiveAccount() && hasRequiredRole() ? (
+        <MsalAuthenticationTemplate interactionType={InteractionType.Redirect} authenticationRequest={loginRequest} loadingComponent={LoadingSpinner}>           
+            { hasActiveAccount() && hasRequiredSubscriptionID() && hasRequiredRole() ? (
                 <Outlet />
             ) : hasActiveAccount() === false ? (
                 <Navigate to="/login" replace />
-            ) : user?.role ? (
-                <Navigate to="/access-denied" replace />
-            ) : (
+            ) : hasActiveAccount() === true && hasRequiredSubscriptionID() === false ? (  
                 <Navigate to="/onboarding" replace />
+            ) : (
+                <Navigate to="/access-denied" replace />
             )}
         </MsalAuthenticationTemplate>
     );
