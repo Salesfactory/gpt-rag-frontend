@@ -2,10 +2,11 @@ import React, { useState, useEffect, useContext } from "react";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import styles from "./PaymentGateway.module.css";
-import { getApiKeyPayment, createCheckoutSession } from "../../api";
-import { useAppContext } from "../../providers/AppProviders";
+import { getApiKeyPayment, createCheckoutSession, getProductPrices} from "../../api";
+import { AppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
+
 
 const fetchApiKey = async () => {
     const apiKey = await getApiKeyPayment();
@@ -15,20 +16,28 @@ const fetchApiKey = async () => {
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
     const { user, organization } = useAppContext();
 
-    const [plans, setPlans] = useState<any[]>([]);
-    const currentPlan = organization?.subscriptionId ? 1 : 0;
+    const [currentPlan, setCurrentPlan] = useState(organization.subscriptionId ? 1 : 0);
+    const [prices, setPrices] = useState<any[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        setPlans([
-            {
-                id: "price_1PYvHVEpF6ccgZLwn6uq6d4J",
-                name: "Enterprise Plan",
-                description: "Access to all features including premium support.",
-                price: "30.00",
-                interval: "month"
+        // Fetch product prices when the component mounts
+        async function fetchPrices() {
+            try {
+                const data = await getProductPrices({user});
+                setPrices(data.prices);
+            } catch (err) {
+                console.error("Failed to fetch product prices:", err);
+                setError("Unable to fetch product prices. Please try again later.");
             }
-        ]);
-    }, []);
+        }
+
+        fetchPrices();
+    }, [user]);
+
+    if (error) {
+        return <div>{error}</div>;
+    }
 
     const handleCheckout = async (priceId: string) => {
         if (!user) {
@@ -55,22 +64,22 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                 <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
             </div>
             <div className={styles.planContainer}>
-                {plans.map((plan, index) => (
+                {prices.map((price, index) => (
                     <>
-                        <div key={plan.id} className={styles.plan}>
-                            {currentPlan === index && <div className={styles.currentIndicator}>Current Plan</div>}
+                        <div key={price.id} className={styles.plan}>
+                            {currentPlan === index && <div className={styles.currentIndicator}>Current Subscription</div>}
                             <ChartPerson48Regular className={styles.planIcon} />
-                            <h2 className={styles.planName}>{plan.name}</h2>
+                            <h2 className={styles.planName}>{price.nickname}</h2>
                             <p className={styles.planPrice}>
-                                ${plan.price} per {plan.interval}
+                                ${(price.unit_amount/100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
                             </p>
-                            <p className={styles.planDescription}>{plan.description}</p>
-                            {plan.id !== "free_plan" && (
+                            <p className={styles.planDescription}>{price.description}</p>
+                            {price.id !== "free_plan" && (
                                 <button
                                     className={styles.planButton}
-                                    onClick={() => handleCheckout(plan.id)}
+                                    onClick={() => handleCheckout(price.id)}
                                     role="button"
-                                    aria-label={`Subscribe to ${plan.name}`}
+                                    aria-label={`Subscribe to ${price.nickname}`}
                                 >
                                     {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
                                         ? "Reactivate subscription"

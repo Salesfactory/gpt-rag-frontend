@@ -32,6 +32,8 @@ SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/subscriptions"
 INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
 
+PRODUCT_ID_DEFAULT = os.getenv("STRIPE_PRODUCT_ID")
+
 # email
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
@@ -67,7 +69,6 @@ AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
 app = Flask(__name__)
 CORS(app)
-
 
 @app.route("/", defaults={"path": "index.html"})
 @app.route("/<path:path>")
@@ -1068,6 +1069,39 @@ def getUser():
         logging.exception("[webbackend] exception in /getUser")
         return jsonify({"error": str(e)}), 500
 
+
+def get_product_prices(product_id):
+
+    if not product_id:
+        raise ValueError("Product ID is required to fetch prices")
+    
+    try:
+        # Fetch all prices associated with a product
+        prices = stripe.Price.list(
+            product=product_id,
+            active=True  # Optionally filter only active prices
+        )
+        return prices.data
+    except Exception as e:
+        logging.error(f"Error fetching prices: {e}")
+        raise
+
+@app.route("/api/prices", methods=["GET"])
+def get_product_prices_endpoint():
+    product_id = request.args.get('product_id', PRODUCT_ID_DEFAULT)
+
+    if not product_id:
+        return jsonify({"error": "Missing product_id parameter"}), 400
+    
+
+    try:
+        prices = get_product_prices(product_id)
+        return jsonify({"prices": prices}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        logging.error(f"Failed to retrieve prices: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

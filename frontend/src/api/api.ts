@@ -407,7 +407,27 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     return session;
 }
 
-export async function getOrganizationSubscription({ userId, organizationId }: any) {
+export async function getProductPrices({ user}: { user: any}): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    try {
+        const response = await fetch(`/api/prices`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            }
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.log("Error fetching product prices", error);
+        return { prices: [] };
+    }
+}
+
+export async function getOrganizationSubscription({userId, organizationId} : any) {
     const response = await fetch("/api/get-organization-subscription?organizationId=" + organizationId, {
         method: "GET",
         headers: {
