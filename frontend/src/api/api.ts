@@ -56,7 +56,6 @@ export async function deleteUser({ user, userId }: any): Promise<any> {
 }
 
 export async function checkUser({ user }: any): Promise<any> {
-    console.log(user);
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     if (user.email) {
@@ -71,9 +70,6 @@ export async function checkUser({ user }: any): Promise<any> {
                 email: user.email
             })
         });
-
-        console.log(response);
-
         const parsedResponse = await response.json();
         if (response.status > 299 || !response.ok) {
             throw Error("Unknown error in checkUser");

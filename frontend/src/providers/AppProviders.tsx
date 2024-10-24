@@ -139,8 +139,6 @@ export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> 
 
     // Add event listener for keyboard shortcuts
     useEffect(() => {
-        console.log("############### Add event listener for keyboard shortcuts ##############");
-
         window.addEventListener("keydown", handleKeyDown);
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
@@ -150,9 +148,6 @@ export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> 
     // Fetch user and organization info
     useEffect(() => {
         let isMounted = true;
-
-        console.log("************* Fetch user and organization info *************");
-        console.log("************* activeAccount *************", activeAccount);
         const fetchUserInfo = async () => {
             try {
                 if (activeAccount) {

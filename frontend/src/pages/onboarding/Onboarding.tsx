@@ -10,8 +10,6 @@ import { useAppContext } from "../../providers/AppProviders";
 
 const Onboarding: React.FC = () => {
     const { user, setUser, organization, setOrganization } = useAppContext();
-    console.log(user);
-    console.log(organization);
     const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(0);
     const [isLoadingStep, setIsLoadingStep] = useState(false);
@@ -21,7 +19,6 @@ const Onboarding: React.FC = () => {
     };
 
     const handleCreateOrganization = async () => {
-        console.log(user);
         if (!user) {
             return null;
         }
@@ -34,14 +31,11 @@ const Onboarding: React.FC = () => {
     };
 
     const handleNextClick = async () => {
-        console.log("step < maxSteps", step < maxSteps);
         if (step < maxSteps) {
             setIsLoadingStep(true);
             let organization = null;
-            console.log("step", step);
             if (step === 1) {
                 organization = await handleCreateOrganization();
-                console.log(organization);
             }
 
             setStep(prevStep => prevStep + 1);

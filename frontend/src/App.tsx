@@ -116,10 +116,6 @@ function Pages() {
         };
     }, [instance]);
     const activeAccount = instance.getActiveAccount();
-
-    console.log(accounts);
-    console.log(inProgress);
-
     if (inProgress !== "none") {
         return <div>loading</div>;
     }

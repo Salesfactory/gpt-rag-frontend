@@ -24,7 +24,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     const { user, organization } = useAppContext();
     const subscriptionId = organization?.subscriptionId
     const hasActiveAccount = (): boolean => {
-        console.log(activeAccount);
         if (!activeAccount) {
             return false;
         }

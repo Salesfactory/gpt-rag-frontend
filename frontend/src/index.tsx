@@ -35,7 +35,6 @@ msalInstance.initialize().then(() => {
         ) {
             const account = (event.payload as { account: AccountInfo }).account;
             msalInstance.setActiveAccount(account);
-            console.log("log in success");
         }
     });
 

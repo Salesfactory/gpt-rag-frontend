@@ -371,10 +371,6 @@ const Admin = () => {
         return <div>Please log in to view the user list.</div>;
     }
 
-    //Here is the problem with Roles and Access
-    //if (loading) {
-    //    return <div>Loading users...</div>;
-    //}
 
     useEffect(() => {
         const getUserList = async () => {
@@ -461,6 +457,7 @@ const Admin = () => {
                     >
                         <PrimaryButton
                             className={styles.option}
+                            disabled={loading}
                             styles={{
                                 root: {
                                     backgroundColor: "#9FC51D",
@@ -517,8 +514,8 @@ const Admin = () => {
                             }}
                         />
                     </div>
-
-                    <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />
+                    
+                    {loading?null:<CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />}
                     <DeleteUserDialog
                         isOpen={isDeleting}
                         onDismiss={() => {
