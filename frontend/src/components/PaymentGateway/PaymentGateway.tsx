@@ -2,11 +2,10 @@ import React, { useState, useEffect, useContext } from "react";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import styles from "./PaymentGateway.module.css";
-import { getApiKeyPayment, createCheckoutSession, getProductPrices} from "../../api";
-import { AppContext } from "../../providers/AppProviders";
+import { getApiKeyPayment, createCheckoutSession, getProductPrices } from "../../api";
+import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
-
 
 const fetchApiKey = async () => {
     const apiKey = await getApiKeyPayment();
@@ -16,7 +15,6 @@ const fetchApiKey = async () => {
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
     const { user, organization } = useAppContext();
 
-    const [currentPlan, setCurrentPlan] = useState(organization.subscriptionId ? 1 : 0);
     const [prices, setPrices] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +22,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
         // Fetch product prices when the component mounts
         async function fetchPrices() {
             try {
-                const data = await getProductPrices({user});
+                const data = await getProductPrices({ user });
                 setPrices(data.prices);
             } catch (err) {
                 console.error("Failed to fetch product prices:", err);
@@ -67,11 +65,10 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                 {prices.map((price, index) => (
                     <>
                         <div key={price.id} className={styles.plan}>
-                            {currentPlan === index && <div className={styles.currentIndicator}>Current Subscription</div>}
                             <ChartPerson48Regular className={styles.planIcon} />
                             <h2 className={styles.planName}>{price.nickname}</h2>
                             <p className={styles.planPrice}>
-                                ${(price.unit_amount/100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
+                                ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
                             </p>
                             <p className={styles.planDescription}>{price.description}</p>
                             {price.id !== "free_plan" && (
