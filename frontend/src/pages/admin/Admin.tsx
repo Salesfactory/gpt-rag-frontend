@@ -371,9 +371,10 @@ const Admin = () => {
         return <div>Please log in to view the user list.</div>;
     }
 
-    if (loading) {
-        return <div>Loading users...</div>;
-    }
+    //Here is the problem with Roles and Access
+    //if (loading) {
+    //    return <div>Loading users...</div>;
+    //}
 
     useEffect(() => {
         const getUserList = async () => {
