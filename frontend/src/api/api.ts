@@ -44,7 +44,7 @@ export async function deleteUser({ user, userId }: any): Promise<any> {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user.id
+                "X-MS-CLIENT-PRINCIPAL-ID": user.id,
             }
         });
         const fetchedData = await response.json();
@@ -70,6 +70,7 @@ export async function checkUser({ user }: any): Promise<any> {
                 email: user.email
             })
         });
+
         const parsedResponse = await response.json();
         if (response.status > 299 || !response.ok) {
             throw Error("Unknown error in checkUser");
@@ -323,7 +324,7 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
         return { error: error };
     }
 }
-export async function createInvitation({ organizationId, invitedUserEmail, userId, role }: any): Promise<any> {
+export async function createInvitation({organizationId, invitedUserEmail, userId, role} : any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
             method: "POST",
@@ -385,7 +386,7 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     const response = await fetch("/create-checkout-session", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         },
         body: JSON.stringify({
             userId,
@@ -428,8 +429,8 @@ export async function getOrganizationSubscription({userId, organizationId} : any
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            "X-MS-CLIENT-PRINCIPAL-ID": userId
-        }
+            "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
     });
 
     if (response.status > 299 || !response.ok) {
@@ -438,6 +439,7 @@ export async function getOrganizationSubscription({userId, organizationId} : any
 
     const subscription = await response.json();
     return subscription;
+
 }
 
 export const createOrganization = async ({ userId, organizationName }: any) => {
@@ -445,7 +447,7 @@ export const createOrganization = async ({ userId, organizationName }: any) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "X-MS-CLIENT-PRINCIPAL-ID": userId
+            "X-MS-CLIENT-PRINCIPAL-ID": userId,
         },
         body: JSON.stringify({
             organizationName

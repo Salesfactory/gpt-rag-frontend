@@ -5,7 +5,7 @@ import { TooltipHost, TooltipDelay, DirectionalHint, DefaultButton, Modal, Stack
 import styles from "./SettingsModal.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 
 interface Props {
@@ -81,7 +81,7 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
 };
 
 export const SettingsPanel = () => {
-    const { user, setSettingsPanel, settingsPanel } = useAppContext();
+    const { user, setSettingsPanel, settingsPanel } = useContext(AppContext);
 
     const [temperature, setTemperature] = useState("0");
     const [loading, setLoading] = useState(true);
@@ -94,31 +94,21 @@ export const SettingsPanel = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!user) {
-                // User is not logged in; handle accordingly
-                setLoading(false);
-                return;
-            }
-
-            setLoading(true);
-
-            try {
-                const data = await getSettings({
-                    user: {
-                        id: user.id,
-                        name: user.name
-                    }
-                });
-                setTemperature(data.temperature);
-            } catch (error) {
-                console.error("Error fetching settings:", error);
-            } finally {
-                setLoading(false);
-            }
+            getSettings({
+                user: {
+                    id: user.id,
+                    name: user.name
+                }
+            })
+                .then(data => {
+                    setTemperature(data.temperature);
+                    setLoading(false);
+                })
+                .catch(error => setLoading(false));
         };
-
+        setLoading(true);
         fetchData();
-    }, [user]);
+    }, []);
 
     const handleSubmit = () => {
         const parsedTemperature = parseFloat(temperature);
@@ -179,12 +169,6 @@ export const SettingsPanel = () => {
     const handleClosePanel = () => {
         setSettingsPanel(false);
     };
-
-    if (!user) {
-        setLoading(false);
-        // Display a message or render a different component
-        return <div>Please log in to view your settings.</div>;
-    }
 
     return (
         <div aria-labelledby="settings-panel-title">
