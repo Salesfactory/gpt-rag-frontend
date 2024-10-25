@@ -1,60 +1,18 @@
-// src/ProtectedRoute.jsx
-import React, { useContext } from "react";
-import { Outlet, Navigate } from "react-router-dom";
-import { MsalAuthenticationTemplate, useMsal } from "@azure/msal-react";
-import { useAppContext } from "../providers/AppProviders";
+import React, { useContext, ReactNode } from 'react';
+import { AppContext } from "../providers/AppProviders";
+import { Navigate } from 'react-router-dom';
 
-import { InteractionType } from "@azure/msal-browser";
-import { loginRequest } from "../authConfig";
-import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Optional: Create a loading spinner component
-
-/**
- * ProtectedRoute component ensures that only authenticated users with allowed roles can access certain routes.
- * It uses MsalAuthenticationTemplate to handle authentication automatically.
- *
- * @param {Array} allowedRoles - Array of roles that are permitted to access the route.
- */
 interface ProtectedRouteProps {
-    allowedRoles: string[];
+  children: ReactNode;
+  allowedRoles: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-    const { instance } = useMsal();
-    const activeAccount = instance.getActiveAccount();
-    const { user, organization } = useAppContext();
-    const subscriptionId = organization?.subscriptionId
-    const hasActiveAccount = (): boolean => {
-        if (!activeAccount) {
-            return false;
-        }
-        return true;
-    };
-    // Function to check if the user has at least one of the allowed roles
-    const hasRequiredRole = (): boolean => {
-        const roles = [user?.role];
-        //const roles = activeAccount.idTokenClaims?.roles as string[] | undefined;
-        if (!roles) return false;
-        return allowedRoles.some(role => roles.includes(role));
-    };
-
-    const hasRequiredSubscriptionID = (): boolean => {
-        if(!subscriptionId) return false;
-        return true;
-    }
-
-    return (
-        <MsalAuthenticationTemplate interactionType={InteractionType.Redirect} authenticationRequest={loginRequest} loadingComponent={LoadingSpinner}>           
-            { hasActiveAccount() && hasRequiredSubscriptionID() && hasRequiredRole() ? (
-                <Outlet />
-            ) : hasActiveAccount() === false ? (
-                <Navigate to="/login" replace />
-            ) : hasActiveAccount() === true && hasRequiredSubscriptionID() === false ? (  
-                <Navigate to="/onboarding" replace />
-            ) : (
-                <Navigate to="/access-denied" replace />
-            )}
-        </MsalAuthenticationTemplate>
-    );
+const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+  const { user } = useContext(AppContext);
+  if (!user.role  || !allowedRoles.includes(user.role)) {
+    return <Navigate to="/access-denied" />;
+  }
+  return (<>{children}</>);
 };
 
 export default ProtectedRoute;

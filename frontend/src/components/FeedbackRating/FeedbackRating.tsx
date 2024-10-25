@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Dropdown, TextField, Button, Spinner, DefaultButton } from "@fluentui/react";
 import styles from "./FeedbackRating.module.css";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 import { AddFilled, SendRegular, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
 import { ThumbLikeRegular, ThumbDislikeRegular } from "@fluentui/react-icons";
 import { postFeedbackRating } from "../../api/api";
@@ -15,7 +15,7 @@ const categoryOptions = [
 ];
 
 export const FeedbackRating = () => {
-    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId, user } = useAppContext();
+    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId, user } = useContext(AppContext);
 
     const [category, setCategory] = useState("");
     const [feedback, setFeedback] = useState("");
@@ -63,13 +63,13 @@ export const FeedbackRating = () => {
 
         await postFeedbackRating({
             user: {
-                id: user?.id,
-                name: user?.name
+                id: user.id,
+                name: user.name
             },
             conversation_id: chatId,
             feedback_message: feedback,
-            question: dataConversation[dataConversation.length - 1]?.user,
-            answer: dataConversation[dataConversation.length - 1]?.bot,
+            question: dataConversation[dataConversation.length - 1].user,
+            answer: dataConversation[dataConversation.length - 1].bot,
             rating: selectedThumb === "like" ? true : selectedThumb === "dislike" ? false : null,
             category: category
         })

@@ -1,43 +1,38 @@
-import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
+import React, { useContext, useState } from "react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Onboarding.module.css";
 import { ChevronRightRegular, ChevronLeftRegular, ContactCardRibbon48Regular, MoneySettingsRegular } from "@fluentui/react-icons";
 import { Spinner } from "@fluentui/react";
 
 import { createOrganization, getOrganizationSubscription } from "../../api";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 
 const Onboarding: React.FC = () => {
-    const { user, setUser, organization, setOrganization } = useAppContext();
+    const { user, setUser, organization, setOrganization } = useContext(AppContext);
+
     const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(0);
     const [isLoadingStep, setIsLoadingStep] = useState(false);
     const maxSteps = 2;
+
     const handleOrganizationChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setOrganizationName(event.target.value);
     };
 
     const handleCreateOrganization = async () => {
-        if (!user) {
-            return null;
-        }
         const newOrganization = await createOrganization({ userId: user.id, organizationName: organizationName });
         if (newOrganization.id) {
             setOrganization(newOrganization);
             setUser({ ...user, organizationId: newOrganization.id });
-            return newOrganization;
         }
     };
 
     const handleNextClick = async () => {
         if (step < maxSteps) {
             setIsLoadingStep(true);
-            let organization = null;
             if (step === 1) {
-                organization = await handleCreateOrganization();
+                await handleCreateOrganization();
             }
-
             setStep(prevStep => prevStep + 1);
             setIsLoadingStep(false);
         }
@@ -53,9 +48,6 @@ const Onboarding: React.FC = () => {
         window.location.href = "#/payment";
     };
 
-    if (user?.organizationId && organization?.subscriptionId) {
-        return <Navigate to="/" replace />;
-    }
     return (
         <div className={styles.container}>
             <div className={`${styles.card} ${styles.carousel}`}>

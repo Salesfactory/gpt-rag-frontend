@@ -2,7 +2,7 @@ import { Text } from "@fluentui/react";
 import { HistoryRegular } from "@fluentui/react-icons";
 
 import styles from "./ChatHistoryButton.module.css";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 import { useContext } from "react";
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export const ChatHistoryButton = ({ className, disabled, onClick }: Props) => {
-    const { showHistoryPanel } = useAppContext();
+    const { showHistoryPanel } = useContext(AppContext);
     const buttonContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     return (
         <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={onClick}>

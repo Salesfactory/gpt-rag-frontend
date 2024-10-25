@@ -1,7 +1,7 @@
 import styles from "./ChatHistoryPannel.module.css";
 import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } from "../../api";
 import { useContext, useEffect, useState } from "react";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -28,12 +28,12 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         setConversationIsLoading,
         setChatId,
         chatId,
-        refreshFetchHistory,
-        setRefreshFetchHistory,
+        refreshFetchHistorial,
+        setRefreshFetchHistorial,
         chatSelected,
         setChatSelected,
         setNewChatDeleted
-    } = useAppContext();
+    } = useContext(AppContext);
 
     const handleMouseEnter = (index: string) => {
         setHoveredItemIndex(index);
@@ -44,110 +44,78 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
     };
 
     const fetchData = async () => {
-        if (!user?.id) {
-            setIsLoading(false);
-            setErrorMessage("Not Valid User Id");
-        } else {
-            try {
-                const data = await getChatHistory(user?.id);
-                if (data.length > 0) {
-                    const sortedData = data.sort((a, b) => {
-                        const dateA = new Date(a.start_date);
-                        const dateB = new Date(b.start_date);
-                        return dateB.getTime() - dateA.getTime();
-                    });
-                    sortedData.splice(100);
-                    setDataHistory(sortedData);
-                    setIsLoading(false);
-                    const ids = sortedData.map(data => data.id);
-                    if (!ids.every(id => conversationsIds.includes(id))) {
-                        setConversationsIds(ids);
-                    }
-                } else {
-                    setIsLoading(false);
-                    setErrorMessage("There are not conversations yet.");
-                }
-            } catch (error) {
-                console.error("Error fetching data:", error);
+        try {
+            const data = await getChatHistory(user.id);
+            if (data.length > 0) {
+                const sortedData = data.sort((a, b) => {
+                    const dateA = new Date(a.start_date);
+                    const dateB = new Date(b.start_date);
+                    return dateB.getTime() - dateA.getTime();
+                });
+                sortedData.splice(100);
+                setDataHistory(sortedData);
                 setIsLoading(false);
-                setErrorMessage(`No history found`);
+                const ids = sortedData.map(data => data.id);
+                if (!ids.every(id => conversationsIds.includes(id))) {
+                    setConversationsIds(ids);
+                }
+            } else {
+                setIsLoading(false);
+                setErrorMessage("There are not conversations yet.");
             }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setIsLoading(false);
+            setErrorMessage(`No history found`);
         }
     };
 
     const fetchConversation = async (chatConversationId: string) => {
-        if (!user) {
-            // Handle the case when user is null
-            setErrorMessage("You must be logged in to view conversations.");
-            return;
-        }
-
-        if (!chatSelected.includes(chatConversationId)) {
-            setChatSelected(chatConversationId);
-            setChatId(chatConversationId);
-            setConversationIsLoading(true);
-
-            try {
+        try {
+            if (!chatSelected.includes(chatConversationId)) {
+                setChatSelected(chatConversationId);
+                setChatId(chatConversationId);
+                setConversationIsLoading(true);
                 const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
-
                 if (data.length > 0) {
                     setDataConversation(data);
-                } else {
-                    setDataConversation([]);
-                    setErrorMessage("No conversation data found.");
+                    setConversationIsLoading(false);
                 }
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                setErrorMessage(`An error occurred while fetching data: ${error}`);
-            } finally {
-                setConversationIsLoading(false);
             }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            setConversationIsLoading(false);
+            setErrorMessage(`Was an error fetching data: ${error}`);
         }
     };
 
     const handleDeleteConversation = async (chatConversationId: string) => {
-        if (!user) {
-            // Handle the case where user is null
-            setErrorMessage("You must be logged in to delete a conversation.");
-            toast("Please log in to delete conversations.", { type: "warning" });
-            return;
-        }
-
-        if (!user.id) {
-            setErrorMessage("User ID is missing. Please log in again.");
-            toast("User information is incomplete.", { type: "warning" });
-            return;
-        }
-
-        setDeletingIsLoading(true);
-
         try {
-            await deleteChatConversation(chatConversationId, user.id);
-
+            setDeletingIsLoading(true);
+            const data = await deleteChatConversation(chatConversationId, user.id);
+            setDeletingIsLoading(false);
             if (chatSelected === chatConversationId) {
                 setDataConversation([]);
             }
             if (chatId === chatConversationId) {
                 onDeleteChat();
             }
-
             const updatedDataHistory = dataHistory.filter(item => item.id !== chatConversationId);
             setDataHistory(updatedDataHistory);
 
             toast("Conversation deleted successfully", { type: "success" });
         } catch (error) {
             console.error("Error deleting conversation:", error);
-            setErrorMessage("We ran into an error deleting the conversation. Please try again later.");
-            toast("Conversation could not be deleted", { type: "error" });
-        } finally {
             setDeletingIsLoading(false);
+            setErrorMessage(`We ran into an error deleting the conversation, please contact the system administrator.`);
+            toast("Conversation could not be deleted", { type: "error" });
         }
     };
 
     const handleRefreshHistoial = async () => {
-        if (refreshFetchHistory) {
+        if (refreshFetchHistorial) {
             await fetchData();
-            setRefreshFetchHistory(false);
+            setRefreshFetchHistorial(false);
         } else {
             return;
         }
@@ -160,10 +128,10 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
             setIsLoading(false);
         }
 
-        if (refreshFetchHistory) {
+        if (refreshFetchHistorial) {
             handleRefreshHistoial();
         }
-    }, [user?.id, dataHistory, conversationsIds, refreshFetchHistory]);
+    }, [user.id, dataHistory, conversationsIds, refreshFetchHistorial]);
 
     const today = new Date();
 

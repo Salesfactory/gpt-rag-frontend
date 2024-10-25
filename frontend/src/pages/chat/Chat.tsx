@@ -4,7 +4,17 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getOrganizationSubscription } from "../../api";
+import {
+    chatApiGpt,
+    Approaches,
+    AskResponse,
+    ChatRequest,
+    ChatRequestGpt,
+    ChatTurn,
+    getUserInfo,
+    checkUser,
+    getOrganizationSubscription
+} from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -15,7 +25,7 @@ import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
-import { useAppContext } from "../../providers/AppProviders";
+import { AppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
@@ -33,7 +43,7 @@ if (userLanguage.startsWith("pt")) {
 const Chat = () => {
     // speech synthesis is disabled by default
 
-    const { organization } = useAppContext();
+    const { organization } = useContext(AppContext);
     const speechSynthesisEnabled = false;
 
     const [placeholderText, setPlaceholderText] = useState("");
@@ -54,7 +64,7 @@ const Chat = () => {
         setDataConversation,
         chatId,
         conversationIsLoading,
-        setRefreshFetchHistory,
+        setRefreshFetchHistorial,
         setChatId,
         setChatSelected,
         setChatIsCleaned,
@@ -62,7 +72,7 @@ const Chat = () => {
         settingsPanel,
         setUser,
         setOrganization
-    } = useAppContext();
+    } = useContext(AppContext);
 
     const lastQuestionRef = useRef<string>("");
     const lastFileBlobUrl = useRef<string | null>("");
@@ -116,10 +126,10 @@ const Chat = () => {
             const result = await chatApiGpt(request);
             const conditionOne = answers.map(a => ({ user: a[0] }));
             if (conditionOne.length <= 0) {
-                setRefreshFetchHistory(true);
+                setRefreshFetchHistorial(true);
                 setChatId(result.conversation_id);
             } else {
-                setRefreshFetchHistory(false);
+                setRefreshFetchHistorial(false);
             }
             setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);
