@@ -42,6 +42,7 @@ EMAIL_PORT = os.getenv("EMAIL_PORT")
 
 # stripe
 stripe.api_key = os.getenv("STRIPE_API_KEY")
+FINANCIAL_ASSISTANT_PRICE_ID = os.getenv("STRIPE_FA_PRICE_ID")
 
 INVITATION_LINK = os.getenv("INVITATION_LINK")
 
@@ -1093,6 +1094,27 @@ def get_product_prices_endpoint():
     except Exception as e:
         logging.error(f"Failed to retrieve prices: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route("/subscription/<subscriptionId>/finantialAssistant", methods=["PUT"])
+def financial_assistant(subscriptionId):
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return (
+            jsonify(
+                {
+                    "error": "Missing required parameters, client_principal_id"
+                }
+            ),
+            400,
+        )
+    try: 
+        updated_subscription = stripe.Subscription.modify(
+            subscriptionId,
+            items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID, "quantity": 1}]
+        )
+        return updated_subscription
+    except:
+        return jsonify({"Error": "Failed to add Financial Assistant to the subscription"}), 400
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
