@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
 import { checkUser, getOrganizationSubscription } from "../api";
-import { useMsal } from "@azure/msal-react";
 
 // Define interfaces for UserInfo and OrganizationInfo
 interface UserInfo {
@@ -66,13 +65,15 @@ interface AppContextType {
     setConversationIsLoading: Dispatch<SetStateAction<boolean>>;
     newChatDeleted: boolean;
     setNewChatDeleted: Dispatch<SetStateAction<boolean>>;
+    isAuthenticated: boolean;
+    isLoading: boolean;
 }
 
 // Create the context with a default value
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Create the provider component
-export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> = ({ children, activeAccount }) => {
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     // State variables
     const [showHistoryPanel, setShowHistoryPanel] = useState<boolean>(true);
     const [showFeedbackRatingPanel, setShowFeedbackRatingPanel] = useState<boolean>(false);
@@ -87,8 +88,8 @@ export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> 
     const [newChatDeleted, setNewChatDeleted] = useState<boolean>(false);
     const [user, setUser] = useState<UserInfo | null>(null);
     const [organization, setOrganization] = useState<OrganizationInfo | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     // MSAL instance and active account
 
     // Handle keyboard shortcuts
@@ -147,64 +148,52 @@ export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> 
 
     // Fetch user and organization info
     useEffect(() => {
-        let isMounted = true;
-        const fetchUserInfo = async () => {
+        const checkAuth = async () => {
             try {
-                if (activeAccount) {
-                    const id = activeAccount.localAccountId;
-                    const name = activeAccount.name || "User";
-                    const email = activeAccount.idTokenClaims?.emails?.[0] || activeAccount.username || null;
-                    // Check if user exists and get role and organizationId
-                    const result = await checkUser({ user: { id, name, email } });
-                    const role = result.role;
-                    const organizationId = result.organizationId;
+                // Retrieve the 'invitation' parameter from the current URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const invitationToken = urlParams.get("invitation");
 
-                    // Set user state
-                    if (isMounted) {
-                        setUser({ id, name, email, role, organizationId });
-                    }
+                // Build the request URL with query parameters if 'invitationToken' exists
+                let url = "/api/auth/user";
+                if (invitationToken) {
+                    const params = new URLSearchParams({ invitation: invitationToken });
+                    url += `?${params.toString()}`;
+                }
 
-                    // Get organization info
-                    if (organizationId) {
-                        const organizationData = await getOrganizationSubscription({
-                            userId: id,
-                            organizationId
-                        });
+                // Make the GET request using Fetch API
+                const response = await fetch(url, {
+                    method: "GET",
+                    credentials: "include", // Include cookies if your API relies on them
+                    headers: {
+                        "Content-Type": "application/json"
+                        // Include authorization header if needed
+                        // 'Authorization': `Bearer ${accessToken}`,
+                    }
+                });
 
-                        if (isMounted && organizationData) {
-                            setOrganization({
-                                id: organizationData.id,
-                                name: organizationData.name,
-                                owner: organizationData.owner,
-                                subscriptionId: organizationData.subscriptionId,
-                                subscriptionStatus: organizationData.subscriptionStatus,
-                                subscriptionExpirationDate: organizationData.subscriptionExpirationDate
-                            });
-                        }
-                    }
-                } else {
-                    // No active account, leave user and organization as null
-                    if (isMounted) {
-                        setUser(null);
-                        setOrganization(null);
-                    }
+                // Check if the response is OK (status in the range 200-299)
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                // Parse the response body as JSON
+                const data = await response.json();
+
+                // Handle the authentication response
+                if (data.authenticated) {
+                    setUser(data.user);
+                    setIsAuthenticated(true);
                 }
             } catch (error) {
-                console.error("Error fetching user info:", error);
-                // Handle errors as needed
+                console.error("Auth check failed:", error);
             } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
+                setIsLoading(false);
             }
         };
 
-        fetchUserInfo();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [activeAccount]);
+        checkAuth();
+    }, []);
 
     // Memoize context value to prevent unnecessary re-renders
     const contextValue = useMemo(
@@ -234,7 +223,9 @@ export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> 
             conversationIsLoading,
             setConversationIsLoading,
             newChatDeleted,
-            setNewChatDeleted
+            setNewChatDeleted,
+            isAuthenticated,
+            isLoading
         }),
         [
             showHistoryPanel,
@@ -249,12 +240,14 @@ export const AppProvider: React.FC<{ children: ReactNode; activeAccount: any }> 
             chatId,
             dataConversation,
             conversationIsLoading,
-            newChatDeleted
+            newChatDeleted,
+            isAuthenticated,
+            isLoading
         ]
     );
 
     // Render loading spinner if data is still loading
-    if (loading) {
+    if (isLoading) {
         return (
             <div
                 style={{

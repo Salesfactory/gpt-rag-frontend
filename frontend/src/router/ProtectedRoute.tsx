@@ -1,11 +1,7 @@
 // src/ProtectedRoute.jsx
-import React, { useContext } from "react";
+import React from "react";
 import { Outlet, Navigate } from "react-router-dom";
-import { MsalAuthenticationTemplate, useMsal } from "@azure/msal-react";
 import { useAppContext } from "../providers/AppProviders";
-
-import { InteractionType } from "@azure/msal-browser";
-import { loginRequest } from "../authConfig";
 import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Optional: Create a loading spinner component
 
 /**
@@ -19,18 +15,12 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-    const { instance } = useMsal();
-    const activeAccount = instance.getActiveAccount();
-    const { user, organization } = useAppContext();
-    const subscriptionId = organization?.subscriptionId
-    const hasActiveAccount = (): boolean => {
-        if (!activeAccount) {
-            return false;
-        }
-        return true;
-    };
+    const { user, isAuthenticated } = useAppContext();
+
+    console.log(isAuthenticated);
     // Function to check if the user has at least one of the allowed roles
     const hasRequiredRole = (): boolean => {
+        console.log(user);
         const roles = [user?.role];
         //const roles = activeAccount.idTokenClaims?.roles as string[] | undefined;
         if (!roles) return false;
@@ -38,22 +28,24 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     };
 
     const hasRequiredSubscriptionID = (): boolean => {
-        if(!subscriptionId) return false;
+        if (!user?.organizationId) return false;
         return true;
-    }
+    };
+
+    console.log(hasRequiredRole());
 
     return (
-        <MsalAuthenticationTemplate interactionType={InteractionType.Redirect} authenticationRequest={loginRequest} loadingComponent={LoadingSpinner}>           
-            { hasActiveAccount() && hasRequiredSubscriptionID() && hasRequiredRole() ? (
+        <>
+            {hasRequiredSubscriptionID() && hasRequiredRole() ? (
                 <Outlet />
-            ) : hasActiveAccount() === false ? (
-                <Navigate to="/login" replace />
-            ) : hasActiveAccount() === true && hasRequiredSubscriptionID() === false ? (  
+            ) : hasRequiredRole() === false ? (
+                <Navigate to="/access-denied" replace />
+            ) : hasRequiredSubscriptionID() === false ? (
                 <Navigate to="/onboarding" replace />
             ) : (
                 <Navigate to="/access-denied" replace />
             )}
-        </MsalAuthenticationTemplate>
+        </>
     );
 };
 

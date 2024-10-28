@@ -88,6 +88,23 @@ def get_auth_config():
     )
 
 
+@app.route("/api/auth/user")
+def get_user():
+    """Return User for frontend"""
+    return jsonify(
+        {
+            "authenticated": "true",
+            "user": {
+                "id": "f048ece8-4730-40ca-b6e1-8db764717459",
+                "name": "Mauel Castro",
+                "email": "manuelcastro@hamalsolutions.com",
+                "role": "admin",
+                "organizationId": "0aad82ee-52ec-428e-b211-e9cc34b94457",
+            },
+        }
+    )
+
+
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
     conversation_id = request.json["conversation_id"]

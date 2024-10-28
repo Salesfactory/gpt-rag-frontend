@@ -42,37 +42,32 @@ const Layout = () => {
 
     return (
         <>
-            <AuthenticatedTemplate>
-                <div className={`${styles.layout} ${isCollapsed ? styles.collapsedContent : ""}`}>
-                    <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
-                        <SideMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-                    </aside>
-                    <main className={styles.content}>
-                        <header className={styles.header} role={"banner"}>
-                            <div className={styles.headerContainer}>
-                                <nav></nav>
-                                <div className={styles.layoutOptions}>
-                                    {pathname === "/" && (
-                                        <>
-                                            <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
-                                            <ChatHistoryButton onClick={handleShowHistoryPanel} />
-                                            <SettingsButton onClick={handleShowSettings} />
-                                        </>
-                                    )}
-                                    <div className={styles.profileButtonContainer}>
-                                        <ProfileButton />
-                                    </div>
+            <div className={`${styles.layout} ${isCollapsed ? styles.collapsedContent : ""}`}>
+                <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
+                    <SideMenu isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+                </aside>
+                <main className={styles.content}>
+                    <header className={styles.header} role={"banner"}>
+                        <div className={styles.headerContainer}>
+                            <nav></nav>
+                            <div className={styles.layoutOptions}>
+                                {pathname === "/" && (
+                                    <>
+                                        <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
+                                        <ChatHistoryButton onClick={handleShowHistoryPanel} />
+                                        <SettingsButton onClick={handleShowSettings} />
+                                    </>
+                                )}
+                                <div className={styles.profileButtonContainer}>
+                                    <ProfileButton />
                                 </div>
                             </div>
-                        </header>
+                        </div>
+                    </header>
 
-                        <Outlet />
-                    </main>
-                </div>
-            </AuthenticatedTemplate>
-            <UnauthenticatedTemplate>
-                <center>Please sign-in to see your profile information.</center>
-            </UnauthenticatedTemplate>
+                    <Outlet />
+                </main>
+            </div>
         </>
     );
 };

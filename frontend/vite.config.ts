@@ -34,7 +34,8 @@ export default defineConfig({
             "/api/get-organization-subscription": "http://localhost:8000",
             "/api/getUser": "http://localhost:8000",
             "/api/conversations": "http://localhost:8000",
-            "/api/chat": "http://localhost:8000"
+            "/api/chat": "http://localhost:8000",
+            "/api/auth/user": "http://localhost:8000"
         },
         host: true
     }
