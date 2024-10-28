@@ -1,12 +1,10 @@
 import os
 import re
-import mimetypes
-import time
 import logging
 import requests
 import json
 import stripe
-from flask import Flask, request, jsonify, Response, redirect
+from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.keyvault.secrets import SecretClient
@@ -70,10 +68,24 @@ AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 app = Flask(__name__)
 CORS(app)
 
+
 @app.route("/", defaults={"path": "index.html"})
 @app.route("/<path:path>")
 def static_file(path):
     return app.send_static_file(path)
+
+
+@app.route("/api/auth/config")
+def get_auth_config():
+    """Return Azure AD B2C configuration for frontend"""
+    return jsonify(
+        {
+            "clientId": os.getenv("AAD_CLIENT_ID"),
+            "authority": f"https://{os.getenv('AAD_TENANT_NAME')}.b2clogin.com/{os.getenv('AAD_TENANT_NAME')}.onmicrosoft.com/{os.getenv('AAD_POLICY_NAME')}",
+            "redirectUri": "http://localhost:8000",
+            "scopes": ["openid", "profile"],
+        }
+    )
 
 
 @app.route("/chatgpt", methods=["POST"])
@@ -1074,25 +1086,24 @@ def get_product_prices(product_id):
 
     if not product_id:
         raise ValueError("Product ID is required to fetch prices")
-    
+
     try:
         # Fetch all prices associated with a product
         prices = stripe.Price.list(
-            product=product_id,
-            active=True  # Optionally filter only active prices
+            product=product_id, active=True  # Optionally filter only active prices
         )
         return prices.data
     except Exception as e:
         logging.error(f"Error fetching prices: {e}")
         raise
 
+
 @app.route("/api/prices", methods=["GET"])
 def get_product_prices_endpoint():
-    product_id = request.args.get('product_id', PRODUCT_ID_DEFAULT)
+    product_id = request.args.get("product_id", PRODUCT_ID_DEFAULT)
 
     if not product_id:
         return jsonify({"error": "Missing product_id parameter"}), 400
-    
 
     try:
         prices = get_product_prices(product_id)
@@ -1102,6 +1113,7 @@ def get_product_prices_endpoint():
     except Exception as e:
         logging.error(f"Failed to retrieve prices: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
