@@ -1114,7 +1114,7 @@ def financial_assistant(subscriptionId):
         )
         return updated_subscription
     except:
-        return jsonify({"Error": "Failed to add Financial Assistant to the subscription"}), 400
+        return jsonify({"Error": "Failed to add Financial Assistant to the subscription"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
