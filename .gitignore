@@ -153,3 +153,5 @@ node_modules
 static/
 
 settings.json
+
+flask_session/

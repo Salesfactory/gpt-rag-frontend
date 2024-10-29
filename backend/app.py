@@ -28,6 +28,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import app_config
 import logging
+from functools import wraps
+from typing import Dict, Any, Tuple, Optional
 
 
 load_dotenv()
@@ -97,6 +99,90 @@ auth = Auth(
 )
 
 
+def handle_auth_error(func):
+    """Decorator to handle authentication errors consistently"""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.exception("[auth] Error in user authentication")
+            return (
+                jsonify(
+                    {
+                        "error": "Authentication error",
+                        "message": str(e),
+                        "status": "error",
+                    }
+                ),
+                500,
+            )
+
+    return wrapper
+
+
+class UserService:
+    """Service class to handle user-related operations"""
+
+    @staticmethod
+    def validate_user_context(
+        user_context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Validate the user context from B2C
+
+        Args:
+            user_context: The user context from B2C
+
+        Returns:
+            Tuple of (is_valid: bool, error_message: Optional[str])
+        """
+        required_fields = {
+            "sub": "User ID",
+            "name": "User Name",
+            "emails": "Email Address",
+        }
+
+        for field, display_name in required_fields.items():
+            if field not in user_context:
+                return False, f"Missing {display_name}"
+            if field == "emails" and not user_context[field]:
+                return False, "Email address list is empty"
+
+        return True, None
+
+    @staticmethod
+    def check_user_authorization(
+        client_principal_id: str, function_key: str
+    ) -> Dict[str, Any]:
+        """
+        Check user authorization with the orchestrator
+
+        Args:
+            client_principal_id: The user's principal ID
+            function_key: The function key for authentication
+
+        Returns:
+            Dict containing the authorization response
+        """
+        headers = {"Content-Type": "application/json", "x-functions-key": function_key}
+
+        with requests.Session() as session:
+            response = session.get(
+                CHECK_USER_ENDPOINT,
+                headers=headers,
+                params={"id": client_principal_id},
+                timeout=10,  # Add timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+            if not data or "data" not in data:
+                raise ValueError("Invalid response format")
+
+            return data
+
+
 @app.route("/")
 @auth.login_required
 def index(*, context):
@@ -138,27 +224,160 @@ def get_auth_config():
 
 @app.route("/api/auth/user")
 @auth.login_required
-def get_user(*, context):
+@handle_auth_error
+def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
     """
-    Return User for frontend
+    Get authenticated user information and profile from authorization service.
+
+    Args:
+        context: The authentication context from B2C containing user claims
+
+    Returns:
+        Tuple[Dict[str, Any], int]: User profile data and HTTP status code
+
+    Raises:
+        ValueError: If required secrets or user data is missing
+        RequestException: If authorization service call fails
     """
     try:
-        return jsonify(
-            {
-                "authenticated": True,
-                "user": {
-                    "id": context["user"]["sub"],
-                    "name": context["user"]["name"],
-                    "email": context["user"]["emails"][0],
-                    "role": "admin",
-                    "organizationId": "0aad82ee-52ec-428e-b211-e9cc34b94457",
-                },
-            }
+        # Validate user context
+        is_valid, error_message = UserService.validate_user_context(context["user"])
+        if not is_valid:
+            logger.error(f"[auth] Invalid user context: {error_message}")
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid user context",
+                        "message": error_message,
+                        "status": "error",
+                    }
+                ),
+                400,
+            )
+
+        # Get user ID early to include in logs
+        client_principal_id = context["user"].get("sub")
+        logger.info(f"[auth] Processing request for user {client_principal_id}")
+
+        # Get function key from Key Vault
+        key_secret_name = "orchestrator-host--checkuser"
+        function_key = get_secret(key_secret_name)
+        if not function_key:
+            raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
+
+        # Check user authorization
+        user_profile = UserService.check_user_authorization(
+            client_principal_id, function_key
         )
-    except requests.RequestException as e:
+
+        # Validate user profile response
+        if not user_profile or "data" not in user_profile:
+            logger.error(f"[auth] Invalid user profile response: {user_profile}")
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid user profile",
+                        "message": "User profile data is missing or invalid",
+                        "status": "error",
+                    }
+                ),
+                500,
+            )
+
+        # Validate required fields in user profile
+        required_profile_fields = ["role", "organizationId"]
+        for field in required_profile_fields:
+            if field not in user_profile["data"]:
+                logger.error(f"[auth] Missing required field in user profile: {field}")
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid user profile",
+                            "message": f"Missing required field: {field}",
+                            "status": "error",
+                        }
+                    ),
+                    500,
+                )
+
+        # Log successful profile retrieval
+        logger.info(
+            f"[auth] Successfully retrieved profile for user {client_principal_id} "
+            f"with role {user_profile['data']['role']}"
+        )
+
+        # Construct and return response
         return (
             jsonify(
-                {"status": "error", "message": f"Error fetching user data: {str(e)}"}
+                {
+                    "status": "success",
+                    "authenticated": True,
+                    "user": {
+                        "id": context["user"]["sub"],
+                        "name": context["user"]["name"],
+                        "email": context["user"]["emails"][0],
+                        "role": user_profile["data"]["role"],
+                        "organizationId": user_profile["data"]["organizationId"],
+                    },
+                }
+            ),
+            200,
+        )
+
+    except ValueError as e:
+        logger.error(f"[auth] Key Vault error for user {client_principal_id}: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": "Configuration error",
+                    "message": "Failed to retrieve necessary configuration",
+                    "status": "error",
+                }
+            ),
+            500,
+        )
+
+    except requests.RequestException as e:
+        logger.error(
+            f"[auth] User authorization check failed for user {client_principal_id}: {str(e)}"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "Authorization check failed",
+                    "message": "Failed to verify user authorization",
+                    "status": "error",
+                }
+            ),
+            500,
+        )
+
+    except KeyError as e:
+        logger.error(
+            f"[auth] Missing required data in response for user {client_principal_id}: {str(e)}"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "Data error",
+                    "message": "Missing required user data",
+                    "status": "error",
+                }
+            ),
+            500,
+        )
+
+    except Exception as e:
+        logger.exception(
+            f"[auth] Unexpected error in get_user for user {client_principal_id}"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "Internal server error",
+                    "message": "An unexpected error occurred",
+                    "status": "error",
+                }
             ),
             500,
         )
