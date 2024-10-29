@@ -4,7 +4,15 @@ import logging
 import requests
 import json
 import stripe
-from flask import Flask, request, jsonify, Response, send_from_directory
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    Response,
+    send_from_directory,
+    redirect,
+    url_for,
+)
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.keyvault.secrets import SecretClient
@@ -12,10 +20,15 @@ from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
+from identity.flask import Auth
+from datetime import timedelta
 
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import app_config
+import logging
+
 
 load_dotenv()
 
@@ -65,14 +78,49 @@ SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
+app.config.from_object(app_config)
 CORS(app)
 
 
-@app.route("/", defaults={"path": "index.html"})
+auth = Auth(
+    app,
+    client_id=os.getenv("AAD_CLIENT_ID"),
+    client_credential=os.getenv("AAD_CLIENT_SECRET"),
+    redirect_uri=os.getenv("AAD_REDIRECT_URI"),
+    b2c_tenant_name=os.getenv("AAD_TENANT_NAME"),
+    b2c_signup_signin_user_flow=os.getenv("AAD_POLICY_NAME"),
+    b2c_edit_profile_user_flow=os.getenv("EDITPROFILE_USER_FLOW"),
+)
+
+
+@app.route("/")
+@auth.login_required
+def index(*, context):
+    """
+    Endpoint to get the current user's data from Microsoft Graph API
+    """
+    logger.debug(f"User context: {context}")
+    return send_from_directory("static", "index.html")
+
+
+# route for other static files
 @app.route("/<path:path>")
-def static_file(path):
-    return app.send_static_file(path)
+def static_files(path):
+    # Don't require authentication for static assets
+    return send_from_directory("static", path)
+
+
+@app.route("/auth-response")
+def auth_response():
+    try:
+        return auth.complete_log_in(request.args)
+    except Exception as e:
+        logger.error(f"Authentication error: {str(e)}")
+        return redirect(url_for("index"))
 
 
 @app.route("/api/auth/config")
@@ -89,20 +137,31 @@ def get_auth_config():
 
 
 @app.route("/api/auth/user")
-def get_user():
-    """Return User for frontend"""
-    return jsonify(
-        {
-            "authenticated": "true",
-            "user": {
-                "id": "f048ece8-4730-40ca-b6e1-8db764717459",
-                "name": "Mauel Castro",
-                "email": "manuelcastro@hamalsolutions.com",
-                "role": "admin",
-                "organizationId": "0aad82ee-52ec-428e-b211-e9cc34b94457",
-            },
-        }
-    )
+@auth.login_required
+def get_user(*, context):
+    """
+    Return User for frontend
+    """
+    try:
+        return jsonify(
+            {
+                "authenticated": True,
+                "user": {
+                    "id": context["user"]["sub"],
+                    "name": context["user"]["name"],
+                    "email": context["user"]["emails"][0],
+                    "role": "admin",
+                    "organizationId": "0aad82ee-52ec-428e-b211-e9cc34b94457",
+                },
+            }
+        )
+    except requests.RequestException as e:
+        return (
+            jsonify(
+                {"status": "error", "message": f"Error fetching user data: {str(e)}"}
+            ),
+            500,
+        )
 
 
 @app.route("/chatgpt", methods=["POST"])
