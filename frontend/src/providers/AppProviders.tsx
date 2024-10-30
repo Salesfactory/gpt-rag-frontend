@@ -148,51 +148,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Fetch user and organization info
     useEffect(() => {
-        const checkAuth = async () => {
+        const fetchUserAuth = async (invitationToken?: string | null) => {
+            let url = "/api/auth/user";
+            if (invitationToken) {
+                const params = new URLSearchParams({ invitation: invitationToken });
+                url += `?${params.toString()}`;
+            }
+
+            const response = await fetch(url, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            return response.json();
+        };
+
+        const fetchOrganizationDetails = async (userId: string, organizationId: string) => {
             try {
-                // Retrieve the 'invitation' parameter from the current URL
+                const organization = await getOrganizationSubscription({
+                    userId,
+                    organizationId
+                });
+
+                if (organization) {
+                    setOrganization({
+                        id: organization.id,
+                        name: organization.name,
+                        owner: organization.owner,
+                        subscriptionId: organization.subscriptionId,
+                        subscriptionStatus: organization.subscriptionStatus,
+                        subscriptionExpirationDate: organization.subscriptionExpirationDate
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch organization details:", error);
+                throw error;
+            }
+        };
+
+        const initialize = async () => {
+            try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const invitationToken = urlParams.get("invitation");
 
-                // Build the request URL with query parameters if 'invitationToken' exists
-                let url = "/api/auth/user";
-                if (invitationToken) {
-                    const params = new URLSearchParams({ invitation: invitationToken });
-                    url += `?${params.toString()}`;
-                }
+                const authData = await fetchUserAuth(invitationToken);
 
-                // Make the GET request using Fetch API
-                const response = await fetch(url, {
-                    method: "GET",
-                    credentials: "include", // Include cookies if your API relies on them
-                    headers: {
-                        "Content-Type": "application/json"
-                        // Include authorization header if needed
-                        // 'Authorization': `Bearer ${accessToken}`,
-                    }
-                });
-
-                // Check if the response is OK (status in the range 200-299)
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                // Parse the response body as JSON
-                const data = await response.json();
-
-                // Handle the authentication response
-                if (data.authenticated) {
-                    setUser(data.user);
+                if (authData.authenticated) {
+                    setUser(authData.user);
                     setIsAuthenticated(true);
+
+                    if (authData.user.id && authData.user.organizationId) {
+                        await fetchOrganizationDetails(authData.user.id, authData.user.organizationId);
+                    }
                 }
             } catch (error) {
-                console.error("Auth check failed:", error);
+                console.error("Initialization failed:", error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        checkAuth();
+        initialize();
     }, []);
 
     // Memoize context value to prevent unnecessary re-renders
