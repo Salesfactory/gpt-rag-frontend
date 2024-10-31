@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
 import { Send24Filled, Mic24Regular, AttachRegular } from "@fluentui/react-icons";
@@ -169,13 +169,19 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
 };
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
-    const { user, organization } = useContext(AppContext);
+    const { user, organization } = useAppContext();
 
     const [question, setQuestion] = useState<string>("");
     const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
-        if (disabled || !question.trim() || organization.subscriptionStatus === "inactive" || !organization.subscriptionId) {
+        if (
+            disabled ||
+            !question.trim() ||
+            !organization || // Check if organization is null or undefined
+            organization.subscriptionStatus === "inactive" ||
+            !organization.subscriptionId
+        ) {
             return;
         }
 
@@ -235,7 +241,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         }
     };
 
-    const sendQuestionDisabled = disabled || !question.trim() || organization.subscriptionStatus === "inactive" || !organization.subscriptionId;
+    const sendQuestionDisabled =
+        disabled ||
+        !question.trim() ||
+        !organization || // Check if organization is null
+        organization.subscriptionStatus === "inactive" ||
+        !organization.subscriptionId;
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>

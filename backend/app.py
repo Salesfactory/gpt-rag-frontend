@@ -1,12 +1,18 @@
 import os
 import re
-import mimetypes
-import time
 import logging
 import requests
 import json
 import stripe
-from flask import Flask, request, jsonify, Response, redirect
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    Response,
+    send_from_directory,
+    redirect,
+    url_for,
+)
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.keyvault.secrets import SecretClient
@@ -14,10 +20,17 @@ from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
+from identity.flask import Auth
+from datetime import timedelta, datetime
 
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import app_config
+import logging
+from functools import wraps
+from typing import Dict, Any, Tuple, Optional
+from tenacity import retry, wait_fixed, stop_after_attempt
 
 load_dotenv()
 
@@ -67,13 +80,391 @@ SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
 AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
+app.config.from_object(app_config)
 CORS(app)
 
-@app.route("/", defaults={"path": "index.html"})
+
+auth = Auth(
+    app,
+    client_id=os.getenv("AAD_CLIENT_ID"),
+    client_credential=os.getenv("AAD_CLIENT_SECRET"),
+    redirect_uri=os.getenv("AAD_REDIRECT_URI"),
+    b2c_tenant_name=os.getenv("AAD_TENANT_NAME"),
+    b2c_signup_signin_user_flow=os.getenv("AAD_POLICY_NAME"),
+    b2c_edit_profile_user_flow=os.getenv("EDITPROFILE_USER_FLOW"),
+)
+
+
+def handle_auth_error(func):
+    """Decorator to handle authentication errors consistently"""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.exception("[auth] Error in user authentication")
+            return (
+                jsonify(
+                    {
+                        "error": "Authentication error",
+                        "message": str(e),
+                        "status": "error",
+                    }
+                ),
+                500,
+            )
+
+    return wrapper
+
+
+class UserService:
+    """Service class to handle user-related operations"""
+
+    @staticmethod
+    def validate_user_context(
+        user_context: Dict[str, Any]
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Validate the user context from B2C
+
+        Args:
+            user_context: The user context from B2C
+
+        Returns:
+            Tuple of (is_valid: bool, error_message: Optional[str])
+        """
+        required_fields = {
+            "sub": "User ID",
+            "name": "User Name",
+            "emails": "Email Address",
+        }
+
+        for field, display_name in required_fields.items():
+            if field not in user_context:
+                return False, f"Missing {display_name}"
+            if field == "emails" and not user_context[field]:
+                return False, "Email address list is empty"
+
+        return True, None
+
+    @staticmethod
+    @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
+    def check_user_authorization(
+        client_principal_id: str,
+        client_principal_name: str,
+        email: str,
+        function_key: str,
+        check_user_endpoint: str,
+        timeout: int = 10,
+    ) -> Dict[str, Any]:
+        """
+        Check user authorization with the orchestrator using POST request
+
+        Args:
+            client_principal_id: The user's principal ID from Azure B2C
+            client_principal_name: The user's principal name from Azure B2C
+            email: The user's email address
+            function_key: The function key for authentication
+            check_user_endpoint: The endpoint URL for checking user authorization
+            timeout: Request timeout in seconds (default: 10)
+
+        Returns:
+            Dict containing the authorization response
+
+        Raises:
+            requests.RequestException: If the request fails
+            ValueError: If the response format is invalid
+            TimeoutError: If the request times out
+        """
+        try:
+            # Prepare request payload
+            payload = {
+                "client_principal_id": client_principal_id,
+                "client_principal_name": client_principal_name,
+                "id": client_principal_id,
+                "name": client_principal_name,
+                "email": email,
+            }
+
+            # Prepare headers
+            headers = {
+                "Content-Type": "application/json",
+                "x-functions-key": function_key,
+            }
+
+            logger.info(
+                f"[auth] Checking authorization for user {client_principal_id} "
+                f"with email {email} at {datetime.utcnow().isoformat()}"
+            )
+
+            # Make the request using a session for better performance
+            with requests.Session() as session:
+                response = session.post(
+                    check_user_endpoint,
+                    headers=headers,
+                    data=json.dumps(payload),
+                    timeout=timeout,
+                )
+
+                # Log the response (truncated for security)
+                truncated_response = (
+                    response.text[:500] + "..."
+                    if len(response.text) > 500
+                    else response.text
+                )
+                logger.info(f"[auth] Authorization response: {truncated_response}")
+
+                # Raise an exception for bad status codes
+                response.raise_for_status()
+
+                # Parse response
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    logger.error(f"[auth] Failed to parse JSON response: {str(e)}")
+                    raise ValueError("Invalid JSON response") from e
+
+                # Validate response format if needed
+                if not data:
+                    raise ValueError("Empty response received")
+
+                return data
+
+        except requests.Timeout as e:
+            logger.error(
+                f"[auth] Request timed out after {timeout} seconds for "
+                f"user {client_principal_id}: {str(e)}"
+            )
+            raise TimeoutError(f"Request timed out after {timeout} seconds") from e
+
+        except requests.RequestException as e:
+            logger.error(
+                f"[auth] Request failed for user {client_principal_id}: {str(e)}"
+            )
+            raise
+
+        except Exception as e:
+            logger.error(
+                f"[auth] Unexpected error checking authorization for "
+                f"user {client_principal_id}: {str(e)}"
+            )
+            raise
+
+
+@app.route("/")
+@auth.login_required
+def index(*, context):
+    """
+    Endpoint to get the current user's data from Microsoft Graph API
+    """
+    logger.debug(f"User context: {context}")
+    return send_from_directory("static", "index.html")
+
+
+# route for other static files
 @app.route("/<path:path>")
-def static_file(path):
-    return app.send_static_file(path)
+def static_files(path):
+    # Don't require authentication for static assets
+    return send_from_directory("static", path)
+
+
+@app.route("/auth-response")
+def auth_response():
+    try:
+        return auth.complete_log_in(request.args)
+    except Exception as e:
+        logger.error(f"Authentication error: {str(e)}")
+        return redirect(url_for("index"))
+
+
+@app.route("/api/auth/config")
+def get_auth_config():
+    """Return Azure AD B2C configuration for frontend"""
+    return jsonify(
+        {
+            "clientId": os.getenv("AAD_CLIENT_ID"),
+            "authority": f"https://{os.getenv('AAD_TENANT_NAME')}.b2clogin.com/{os.getenv('AAD_TENANT_NAME')}.onmicrosoft.com/{os.getenv('AAD_POLICY_NAME')}",
+            "redirectUri": "http://localhost:8000",
+            "scopes": ["openid", "profile"],
+        }
+    )
+
+
+# Constants and Configuration
+
+
+@app.route("/api/auth/user")
+@auth.login_required
+@handle_auth_error
+def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
+    """
+    Get authenticated user information and profile from authorization service.
+
+    Args:
+        context: The authentication context from B2C containing user claims
+
+    Returns:
+        Tuple[Dict[str, Any], int]: User profile data and HTTP status code
+
+    Raises:
+        ValueError: If required secrets or user data is missing
+        RequestException: If authorization service call fails
+    """
+    try:
+        # Validate user context
+        is_valid, error_message = UserService.validate_user_context(context["user"])
+        if not is_valid:
+            logger.error(f"[auth] Invalid user context: {error_message}")
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid user context",
+                        "message": error_message,
+                        "status": "error",
+                    }
+                ),
+                400,
+            )
+
+        # Get user ID early to include in logs
+        client_principal_id = context["user"].get("sub")
+        logger.info(f"[auth] Processing request for user {client_principal_id}")
+
+        # Get function key from Key Vault
+        key_secret_name = "orchestrator-host--checkuser"
+        function_key = get_secret(key_secret_name)
+        if not function_key:
+            raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
+
+        check_user_endpoint = CHECK_USER_ENDPOINT
+        client_principal_name = context["user"]["name"]
+        email = context["user"]["emails"][0]
+        # Check user authorization
+        user_profile = UserService.check_user_authorization(
+            client_principal_id,
+            client_principal_name,
+            email,
+            function_key,
+            check_user_endpoint,
+            timeout=10,
+        )
+
+        # Validate user profile response
+        if not user_profile:
+            logger.error(f"[auth] Invalid user profile response: {user_profile}")
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid user profile",
+                        "message": "User profile data is missing or invalid",
+                        "status": "error",
+                    }
+                ),
+                500,
+            )
+
+        # Validate required fields in user profile
+        required_profile_fields = ["role", "organizationId"]
+        for field in required_profile_fields:
+            if field not in user_profile:
+                logger.error(f"[auth] Missing required field in user profile: {field}")
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid user profile",
+                            "message": f"Missing required field: {field}",
+                            "status": "error",
+                        }
+                    ),
+                    500,
+                )
+
+        # Log successful profile retrieval
+        logger.info(
+            f"[auth] Successfully retrieved profile for user {client_principal_id} "
+            f"with role {user_profile['role']}"
+        )
+
+        # Construct and return response
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "authenticated": True,
+                    "user": {
+                        "id": context["user"]["sub"],
+                        "name": context["user"]["name"],
+                        "email": context["user"]["emails"][0],
+                        "role": user_profile["role"],
+                        "organizationId": user_profile["organizationId"],
+                    },
+                }
+            ),
+            200,
+        )
+
+    except ValueError as e:
+        logger.error(f"[auth] Key Vault error for user {client_principal_id}: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": "Configuration error",
+                    "message": "Failed to retrieve necessary configuration",
+                    "status": "error",
+                }
+            ),
+            500,
+        )
+
+    except requests.RequestException as e:
+        logger.error(
+            f"[auth] User authorization check failed for user {client_principal_id}: {str(e)}"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "Authorization check failed",
+                    "message": "Failed to verify user authorization",
+                    "status": "error",
+                }
+            ),
+            500,
+        )
+
+    except KeyError as e:
+        logger.error(
+            f"[auth] Missing required data in response for user {client_principal_id}: {str(e)}"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "Data error",
+                    "message": "Missing required user data",
+                    "status": "error",
+                }
+            ),
+            500,
+        )
+
+    except Exception as e:
+        logger.exception(
+            f"[auth] Unexpected error in get_user for user {client_principal_id}"
+        )
+        return (
+            jsonify(
+                {
+                    "error": "Internal server error",
+                    "message": "An unexpected error occurred",
+                    "status": "error",
+                }
+            ),
+            500,
+        )
 
 
 @app.route("/chatgpt", methods=["POST"])
@@ -262,12 +653,16 @@ def create_checkout_session():
             cancel_url=cancel_url,
             automatic_tax={"enabled": True},
             custom_fields=[
-                {
-                    "key": "organization_name",
-                    "label": {"type": "custom", "custom": "Organization Name"},
-                    "type": "text",
-                    "text": {"minimum_length": 5, "maximum_length": 100},
-                } if organizationId == "" else {}
+                (
+                    {
+                        "key": "organization_name",
+                        "label": {"type": "custom", "custom": "Organization Name"},
+                        "type": "text",
+                        "text": {"minimum_length": 5, "maximum_length": 100},
+                    }
+                    if organizationId == ""
+                    else {}
+                )
             ],
         )
     except Exception as e:
@@ -802,6 +1197,7 @@ def sendEmail():
         logging.error("Something went wrong...", e)
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/getInvitations", methods=["GET"])
 def getInvitations():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -829,12 +1225,15 @@ def getInvitations():
         organizationId = request.args.get("organizationId")
         url = INVITATIONS_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers,params={"organizationId": organizationId})
+        response = requests.request(
+            "GET", url, headers=headers, params={"organizationId": organizationId}
+        )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/createInvitation", methods=["POST"])
 def createInvitation():
@@ -990,7 +1389,7 @@ def createOrganization():
         functionKey = get_secret(keySecretName)
     except Exception as e:
         logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
+            f"[webbackend] exception in /api/orchestrator-host--subscriptions {e}"
         )
         return (
             jsonify(
@@ -1016,6 +1415,7 @@ def createOrganization():
     except Exception as e:
         logging.exception("[webbackend] exception in /post-organization")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/getUser", methods=["GET"])
 def getUser():
@@ -1065,25 +1465,24 @@ def get_product_prices(product_id):
 
     if not product_id:
         raise ValueError("Product ID is required to fetch prices")
-    
+
     try:
         # Fetch all prices associated with a product
         prices = stripe.Price.list(
-            product=product_id,
-            active=True  # Optionally filter only active prices
+            product=product_id, active=True  # Optionally filter only active prices
         )
         return prices.data
     except Exception as e:
         logging.error(f"Error fetching prices: {e}")
         raise
 
+
 @app.route("/api/prices", methods=["GET"])
 def get_product_prices_endpoint():
-    product_id = request.args.get('product_id', PRODUCT_ID_DEFAULT)
+    product_id = request.args.get("product_id", PRODUCT_ID_DEFAULT)
 
     if not product_id:
         return jsonify({"error": "Missing product_id parameter"}), 400
-    
 
     try:
         prices = get_product_prices(product_id)
@@ -1093,6 +1492,7 @@ def get_product_prices_endpoint():
     except Exception as e:
         logging.error(f"Failed to retrieve prices: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

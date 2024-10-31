@@ -8,9 +8,9 @@ Part of [GPT-RAG](https://github.com/Azure/gpt-rag)
 
 - Zip command
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
-- Node.js 16+ [windows/mac](https://nodejs.dev/en/download/)  [linux/wsl](https://nodejs.dev/en/download/package-manager/)
+- Node.js 16+ [windows/mac](https://nodejs.dev/en/download/) [linux/wsl](https://nodejs.dev/en/download/package-manager/)
 - Install ZIP in WSL/Linux: sudo apt-get install zip
-  
+
 **1) Clone the Repository**
 
 ```
@@ -31,12 +31,12 @@ npm install
 npm run build
 ```
 
-**3) Deploy to Azure** 
+**3) Deploy to Azure**
 
 Execute the following commands in the terminal to deploy your function:
 
 2.1. Enter backend folder
- 
+
 ```
 cd ..
 cd backend
@@ -45,17 +45,19 @@ cd backend
 2.2. Remove backend_env if you have tested it locally
 
 ```
-rm -rf backend_env  
+rm -rf backend_env
 ```
 
 2.3. Zip source code
 
 Linux or Mac:
+
 ```
 zip -r ../deploy.zip *
 ```
 
 Windows:
+
 ```
 tar -a -c -f ../deploy.zip *
 ```
@@ -64,16 +66,16 @@ tar -a -c -f ../deploy.zip *
 
 ```
 cd ..
-az webapp deploy --subscription [SUBSCRIPTION_ID] --resource-group [RESOURCE_GROUP_NAME] --name [WEB_APP_NAME] --src-path deploy.zip --type zip --async true
+az webapp deploy --subscription e261fb0a-3d87-49c1-8d3c-32b2bc93b6ff --resource-group rg-develop-clew --name webgpt0-vm2b2htvuuclm --src-path deploy.zip --type zip --async true
 ```
 
-## **(Optional) Test locally** 
+## **(Optional) Test locally**
 
-1) rename ```.env.template``` to ```.env``` updating the variables accordingly.
+1. rename `.env.template` to `.env` updating the variables accordingly.
 
-2) run ```azd auth login``` or ```az login```
+2. run `azd auth login` or `az login`
 
-3) run ```./start.sh```  or  ```./startwin.sh``` for windows
+3. run `./start.sh` or `./startwin.sh` for windows
 
 ## Frontend customizations
 
@@ -83,13 +85,13 @@ Optionally you can customize some items in the frontend.
 
 Update page's title
 
-file: ```frontend/src/pages/layout/Layout.tsx```
+file: `frontend/src/pages/layout/Layout.tsx`
 
 ```
 <h4 className={styles.headerRightText}>Chat On Your Data/h4>
 ```
 
-file: ```frontend/src/pages/layout/index.html```
+file: `frontend/src/pages/layout/index.html`
 
 ```
 <title>Chat Chat On Your Data | Demo</title>
@@ -99,9 +101,10 @@ file: ```frontend/src/pages/layout/index.html```
 
 Update frontend logo
 
-file: ```frontend/src/pages/layout/Layout.tsx```
+file: `frontend/src/pages/layout/Layout.tsx`
 
 Example:
+
 ```
 <Link to="/" className={styles.headerTitleContainer}>
     <img height="80px" src="https://www.yourdomain.com/yourlogo.png"></img>
@@ -113,7 +116,7 @@ Example:
 
 You can remove citations from the answers if you do not want them. Just set showSources to {false}
 
-file: ```frontend/src/pages/chat/Chat.tsx```
+file: `frontend/src/pages/chat/Chat.tsx`
 
 ```
 <Answer
@@ -125,7 +128,7 @@ file: ```frontend/src/pages/chat/Chat.tsx```
     onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
     onFollowupQuestionClicked={q => makeApiRequestGpt(q)}
     showFollowupQuestions={false}
-    showSources={false}                                            
+    showSources={false}
 />
 ```
 
@@ -133,7 +136,7 @@ file: ```frontend/src/pages/chat/Chat.tsx```
 
 To enable speech synthesis change speechSynthesisEnabled variable to true.
 
-file: ```frontend/src/pages/chat/Chat.tsx```
+file: `frontend/src/pages/chat/Chat.tsx`
 
 ```
 const speechSynthesisEnabled = true;
@@ -141,7 +144,7 @@ const speechSynthesisEnabled = true;
 
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+This project welcomes contributions and suggestions. Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
 the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
 

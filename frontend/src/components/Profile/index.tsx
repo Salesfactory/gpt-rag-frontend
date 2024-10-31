@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Dropdown, DropdownMenuItemType, IDropdownOption, IDropdown } from "@fluentui/react/lib/Dropdown";
 import { Icon } from "@fluentui/react/lib/Icon";
 import { IStackTokens, Stack } from "@fluentui/react/lib/Stack";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import styles from "./Profile.module.css";
 import person from "../../assets/person.png";
 
@@ -55,11 +55,12 @@ const placeholderPrepare = (placeholder: string) => {
 };
 
 export const ProfileButton: React.FunctionComponent = () => {
-    const { user } = useContext(AppContext);
-    
-    const placeholder = placeholderPrepare(user.name);
+    const { user } = useAppContext();
+
+    const userName = user?.name || ""; // Default to empty string if user or user.name is null
+    const placeholder = placeholderPrepare(userName);
     const email = user?.email || " ";
-    const headerTitle = user.name;
+    const headerTitle = userName;
 
     const options: IDropdownOption[] = [
         { key: "Header", text: headerTitle || "Options", itemType: DropdownMenuItemType.Header },
