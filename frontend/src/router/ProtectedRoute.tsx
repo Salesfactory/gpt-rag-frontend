@@ -15,7 +15,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-    const { user, isAuthenticated } = useAppContext();
+    const { user, isAuthenticated, organization } = useAppContext();
 
     console.log(isAuthenticated);
     // Function to check if the user has at least one of the allowed roles
@@ -27,20 +27,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
         return allowedRoles.some(role => roles.includes(role));
     };
 
-    const hasRequiredSubscriptionID = (): boolean => {
-        if (!user?.organizationId) return false;
+    const isValidSubscriptionForOrganization = (): boolean => {
+        if (!user?.organizationId || !organization?.subscriptionId) return false;
         return true;
     };
 
-    console.log(hasRequiredRole());
-
     return (
         <>
-            {hasRequiredSubscriptionID() && hasRequiredRole() ? (
+            {isValidSubscriptionForOrganization() && hasRequiredRole() ? (
                 <Outlet />
             ) : hasRequiredRole() === false ? (
                 <Navigate to="/access-denied" replace />
-            ) : hasRequiredSubscriptionID() === false ? (
+            ) : isValidSubscriptionForOrganization() === false ? (
                 <Navigate to="/onboarding" replace />
             ) : (
                 <Navigate to="/access-denied" replace />

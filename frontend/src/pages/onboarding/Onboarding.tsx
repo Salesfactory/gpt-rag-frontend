@@ -31,6 +31,10 @@ const Onboarding: React.FC = () => {
     };
 
     const handleNextClick = async () => {
+        if (user?.organizationId) {
+            setStep(2);
+            return;
+        }
         if (step < maxSteps) {
             setIsLoadingStep(true);
             let organization = null;
