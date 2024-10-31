@@ -30,7 +30,7 @@ import app_config
 import logging
 from functools import wraps
 from typing import Dict, Any, Tuple, Optional
-
+from tenacity import retry, wait_fixed, stop_after_attempt
 
 load_dotenv()
 
@@ -153,6 +153,7 @@ class UserService:
         return True, None
 
     @staticmethod
+    @retry(wait=wait_fixed(2), stop=stop_after_attempt(3))
     def check_user_authorization(
         client_principal_id: str,
         client_principal_name: str,

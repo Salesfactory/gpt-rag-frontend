@@ -35,7 +35,8 @@ export default defineConfig({
             "/api/getUser": "http://localhost:8000",
             "/api/conversations": "http://localhost:8000",
             "/api/chat": "http://localhost:8000",
-            "/api/auth/user": "http://localhost:8000"
+            "/api/auth/user": "http://localhost:8000",
+            "/api/prices": "http://localhost:8000"
         },
         host: true
     }
