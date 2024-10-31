@@ -21,7 +21,7 @@ from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
 from identity.flask import Auth
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import smtplib
 from email.mime.text import MIMEText
@@ -154,33 +154,105 @@ class UserService:
 
     @staticmethod
     def check_user_authorization(
-        client_principal_id: str, function_key: str
+        client_principal_id: str,
+        client_principal_name: str,
+        email: str,
+        function_key: str,
+        check_user_endpoint: str,
+        timeout: int = 10,
     ) -> Dict[str, Any]:
         """
-        Check user authorization with the orchestrator
+        Check user authorization with the orchestrator using POST request
 
         Args:
-            client_principal_id: The user's principal ID
+            client_principal_id: The user's principal ID from Azure B2C
+            client_principal_name: The user's principal name from Azure B2C
+            email: The user's email address
             function_key: The function key for authentication
+            check_user_endpoint: The endpoint URL for checking user authorization
+            timeout: Request timeout in seconds (default: 10)
 
         Returns:
             Dict containing the authorization response
+
+        Raises:
+            requests.RequestException: If the request fails
+            ValueError: If the response format is invalid
+            TimeoutError: If the request times out
         """
-        headers = {"Content-Type": "application/json", "x-functions-key": function_key}
+        try:
+            # Prepare request payload
+            payload = {
+                "client_principal_id": client_principal_id,
+                "client_principal_name": client_principal_name,
+                "id": client_principal_id,
+                "name": client_principal_name,
+                "email": email,
+            }
 
-        with requests.Session() as session:
-            response = session.get(
-                CHECK_USER_ENDPOINT,
-                headers=headers,
-                params={"id": client_principal_id},
-                timeout=10,  # Add timeout
+            # Prepare headers
+            headers = {
+                "Content-Type": "application/json",
+                "x-functions-key": function_key,
+            }
+
+            logger.info(
+                f"[auth] Checking authorization for user {client_principal_id} "
+                f"with email {email} at {datetime.utcnow().isoformat()}"
             )
-            response.raise_for_status()
-            data = response.json()
-            if not data or "data" not in data:
-                raise ValueError("Invalid response format")
 
-            return data
+            # Make the request using a session for better performance
+            with requests.Session() as session:
+                response = session.post(
+                    check_user_endpoint,
+                    headers=headers,
+                    data=json.dumps(payload),
+                    timeout=timeout,
+                )
+
+                # Log the response (truncated for security)
+                truncated_response = (
+                    response.text[:500] + "..."
+                    if len(response.text) > 500
+                    else response.text
+                )
+                logger.info(f"[auth] Authorization response: {truncated_response}")
+
+                # Raise an exception for bad status codes
+                response.raise_for_status()
+
+                # Parse response
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    logger.error(f"[auth] Failed to parse JSON response: {str(e)}")
+                    raise ValueError("Invalid JSON response") from e
+
+                # Validate response format if needed
+                if not data:
+                    raise ValueError("Empty response received")
+
+                return data
+
+        except requests.Timeout as e:
+            logger.error(
+                f"[auth] Request timed out after {timeout} seconds for "
+                f"user {client_principal_id}: {str(e)}"
+            )
+            raise TimeoutError(f"Request timed out after {timeout} seconds") from e
+
+        except requests.RequestException as e:
+            logger.error(
+                f"[auth] Request failed for user {client_principal_id}: {str(e)}"
+            )
+            raise
+
+        except Exception as e:
+            logger.error(
+                f"[auth] Unexpected error checking authorization for "
+                f"user {client_principal_id}: {str(e)}"
+            )
+            raise
 
 
 @app.route("/")
@@ -220,6 +292,9 @@ def get_auth_config():
             "scopes": ["openid", "profile"],
         }
     )
+
+
+# Constants and Configuration
 
 
 @app.route("/api/auth/user")
@@ -265,13 +340,21 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         if not function_key:
             raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
 
+        check_user_endpoint = CHECK_USER_ENDPOINT
+        client_principal_name = context["user"]["name"]
+        email = context["user"]["emails"][0]
         # Check user authorization
         user_profile = UserService.check_user_authorization(
-            client_principal_id, function_key
+            client_principal_id,
+            client_principal_name,
+            email,
+            function_key,
+            check_user_endpoint,
+            timeout=10,
         )
 
         # Validate user profile response
-        if not user_profile or "data" not in user_profile:
+        if not user_profile:
             logger.error(f"[auth] Invalid user profile response: {user_profile}")
             return (
                 jsonify(
@@ -287,7 +370,7 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         # Validate required fields in user profile
         required_profile_fields = ["role", "organizationId"]
         for field in required_profile_fields:
-            if field not in user_profile["data"]:
+            if field not in user_profile:
                 logger.error(f"[auth] Missing required field in user profile: {field}")
                 return (
                     jsonify(
@@ -303,7 +386,7 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         # Log successful profile retrieval
         logger.info(
             f"[auth] Successfully retrieved profile for user {client_principal_id} "
-            f"with role {user_profile['data']['role']}"
+            f"with role {user_profile['role']}"
         )
 
         # Construct and return response
@@ -316,8 +399,8 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
                         "id": context["user"]["sub"],
                         "name": context["user"]["name"],
                         "email": context["user"]["emails"][0],
-                        "role": user_profile["data"]["role"],
-                        "organizationId": user_profile["data"]["organizationId"],
+                        "role": user_profile["role"],
+                        "organizationId": user_profile["organizationId"],
                     },
                 }
             ),
