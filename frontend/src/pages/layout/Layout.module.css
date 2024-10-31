@@ -1,19 +1,42 @@
 .layout {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    height: 100vh;
+    overflow: hidden;
+    transition: grid-template-columns 0.3s ease;
+}
+
+.sidebar {
+    overflow-y: auto;
+    transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 80px;
+}
+
+.collapsedContent {
+    grid-template-columns: 80px 1fr;
+}
+
+.content {
+    overflow-y: auto;
+    background-color: white;
 }
 
 .header {
     background-color: #f1f1f1;
     color: #f2f2f2;
+    grid-column: span 2;
+    top: 0;
+    z-index: 1000;
 }
 
 .headerContainer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 10px 12px;
+    padding: 10px 0px;
 }
 
 .headerTitleContainer {
@@ -65,7 +88,7 @@
 .headerRightText {
     font-weight: normal;
     margin-left: 40px;
-    color:  #002f87;
+    color: #002f87;
 }
 
 .microsoftLogo {
@@ -77,6 +100,18 @@
     height: 20px;
 }
 
-.layoutOptions{
+.layoutOptions {
     display: flex;
+    align-items: center;
+}
+
+.profileButtonContainer {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border-left: 2px solid #b5b3b3;
+    height: 50px;
+    width: 260px;
+    background-color: transparent;
+    margin-left: 10px;
 }

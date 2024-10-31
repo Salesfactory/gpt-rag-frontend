@@ -1,16 +1,94 @@
 import { List } from "@fluentui/react";
-import { 
-    AskRequest, 
-    AskResponse, 
-    AskResponseGpt, 
-    ChatRequest, 
-    ChatRequestGpt, 
-    GetSettingsProps, 
+import {
+    AskRequest,
+    AskResponse,
+    AskResponseGpt,
+    ChatRequest,
+    ChatRequestGpt,
+    GetSettingsProps,
     PostSettingsProps,
     ConversationHistoryItem,
     ConversationChatItem,
-    ChatTurn
+    ChatTurn,
+    UserInfo
 } from "./models";
+
+export async function getUsers({ user }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    const user_organizationId = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/getusers?organizationId=" + user_organizationId, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            }
+        });
+
+        const parsedResponse = await response.json();
+        if (response.status > 299 || !response.ok) {
+            throw Error("Unknown error in getUsers");
+        }
+        return parsedResponse;
+    } catch (error) {
+        console.log("Error fetching users", error);
+        return { data: null };
+    }
+}
+
+export async function deleteUser({ user, userId }: any): Promise<any> {
+    try {
+        const response = await fetch(`/api/deleteuser?userId=${userId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user.id,
+            }
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error deleting user", error);
+        return { error: error };
+    }
+}
+
+export async function checkUser({ user }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    if (user.email) {
+        const response = await fetch("/api/checkuser", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            },
+            body: JSON.stringify({
+                email: user.email
+            })
+        });
+
+        const parsedResponse = await response.json();
+        if (response.status > 299 || !response.ok) {
+            throw Error("Unknown error in checkUser");
+        }
+        return parsedResponse;
+    }
+
+    return { data: null };
+}
+
+export async function getUserInfo(): Promise<UserInfo[]> {
+    const response = await fetch("/.auth/me");
+    if (!response.ok) {
+        return [];
+    }
+    const payload = await response.json();
+    return payload;
+}
 
 export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -32,7 +110,7 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     }
 }
 
-export async function postSettings({ user, temperature, presence_penalty, frequency_penalty } : PostSettingsProps): Promise<any> {
+export async function postSettings({ user, temperature }: PostSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -44,13 +122,10 @@ export async function postSettings({ user, temperature, presence_penalty, freque
                 "X-MS-CLIENT-PRINCIPAL-NAME": user_name
             },
             body: JSON.stringify({
-                temperature,
-                presence_penalty,
-                frequency_penalty
+                temperature
             })
         });
         const fetchedData = await response.json();
-        console.log("Settings posted", fetchedData);
         return fetchedData;
     } catch (error) {
         console.error("Error posting settings", error);
@@ -69,6 +144,7 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
             approach: options.approach,
             conversation_id: options.conversation_id,
             query: options.query,
+            url: options.file_blob_url,
             overrides: {
                 semantic_ranker: options.overrides?.semanticRanker,
                 semantic_captions: options.overrides?.semanticCaptions,
@@ -91,7 +167,7 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
 }
 
 export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<ChatTurn[]> {
-    const response = await fetch(`/api/get-chat-conversation/${chatId}`, {
+    const response = await fetch(`/api/chat-conversation/${chatId}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -100,35 +176,57 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
     });
 
     const responseData = await response.json();
-    const history = responseData.history;
-    
+    const messages = responseData.messages;
+
     const conversationItems: ChatTurn[] = [];
-    let currentUserMessage = '';
-    let currentBotMessage = '';
+    let currentUserMessage = "";
+    let currentBotMessage = "";
+    let currentBotThoughts: string[] = [];
 
-    history.forEach((item: any) => {
-        if (item.role === 'user') {
-            currentUserMessage = item.content;
-        } else if (item.role === 'assistant') {
-            currentBotMessage = item.content;
-            if (currentUserMessage !== '' || currentBotMessage !== '') {
-                conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
-                currentUserMessage = '';
-                currentBotMessage = '';
+    if (messages) {
+        messages.forEach((item: any) => {
+            if (item.role === "user") {
+                currentUserMessage = item.content;
+            } else if (item.role === "assistant") {
+                currentBotMessage = item.content;
+                currentBotThoughts = item.thoughts;
+                if (currentUserMessage !== "" || currentBotMessage !== "") {
+                    conversationItems.push({ user: currentUserMessage, bot: { message: currentBotMessage, thoughts: currentBotThoughts } });
+                    currentUserMessage = "";
+                    currentBotMessage = "";
+                    currentBotThoughts = [];
+                }
             }
-        }
-    });
+        });
+    }
 
-    if (currentUserMessage !== '' || currentBotMessage !== '') {
-        conversationItems.push({ user: currentUserMessage, bot: currentBotMessage });
+    if (currentUserMessage !== "" || currentBotMessage !== "") {
+        conversationItems.push({ user: currentUserMessage, bot: { message: currentBotMessage, thoughts: currentBotThoughts } });
     }
 
     return conversationItems;
 }
 
+export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
+    try {
+        const response = await fetch(`/api/chat-conversations/${chatId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to delete conversation. Status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error("Error deleting conversation:", error);
+        throw new Error("Error deleting conversation");
+    }
+}
 
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
-    const response = await fetch("/api/get-chat-history", {
+    const response = await fetch("/api/chat-history", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -161,15 +259,21 @@ export function getCitationFilePath(citation: string): string {
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
 
-export async function postFeedbackRating({ 
-    user,
-    conversation_id,
-    feedback_message,
-    question,
-    answer,
-    rating,
-    category,
- }: any): Promise<any> {
+export function getFilePath(fileUrl: string) {
+    if (!fileUrl.endsWith(".pdf") || !fileUrl.endsWith(".docx") || fileUrl.endsWith(".doc")) {
+        return fileUrl;
+    }
+    const regex = /documents\/(.*)/;
+    const match = fileUrl.match(regex);
+    let filepath = "";
+
+    if (match && match[1]) {
+        filepath = match[1];
+    }
+    return filepath;
+}
+
+export async function postFeedbackRating({ user, conversation_id, feedback_message, question, answer, rating, category }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     return new Promise(async (resolve, reject) => {
@@ -185,7 +289,7 @@ export async function postFeedbackRating({
                     conversation_id: conversation_id,
                     feedback: feedback_message,
                     question: question,
-                    answer:answer,
+                    answer: answer,
                     rating: rating,
                     category: category
                 })
@@ -198,4 +302,187 @@ export async function postFeedbackRating({
             reject(error);
         }
     });
+}
+
+export async function inviteUser({ username, email, organizationId }: any): Promise<any> {
+    try {
+        const response = await fetch("/api/inviteUser", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username,
+                email,
+                organizationId
+            })
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error inviting user", error);
+        return { error: error };
+    }
+}
+export async function createInvitation({organizationId, invitedUserEmail, userId, role} : any): Promise<any> {
+    try {
+        const response = await fetch("/api/createInvitation", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
+            },
+            body: JSON.stringify({
+                organizationId,
+                invitedUserEmail,
+                role
+            })
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error creating invitation", error);
+        return { error: error };
+    }
+}
+export async function getApiKeyPayment(): Promise<string> {
+    const response = await fetch("/api/stripe", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting Api key payment");
+    }
+
+    const apiKey = await response.text();
+    return apiKey;
+}
+
+export async function uploadFile(file: any) {
+    const formdata = new FormData();
+    formdata.append("file", file);
+    try {
+        const response = await fetch("/api/upload-blob", {
+            method: "POST",
+            body: formdata,
+            redirect: "follow"
+        });
+        if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        const result = await response.json();
+        console.log("File uploaded successfully:", result);
+        return result;
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        throw error;
+    }
+}
+
+export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl, organizationId }: any) {
+    const response = await fetch("/create-checkout-session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            userId,
+            priceId,
+            successUrl,
+            cancelUrl,
+            organizationId
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session");
+    }
+
+    const session = await response.json();
+    return session;
+}
+
+export async function getProductPrices({ user}: { user: any}): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    try {
+        const response = await fetch(`/api/prices`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            }
+        });
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.log("Error fetching product prices", error);
+        return { prices: [] };
+    }
+}
+
+export async function getOrganizationSubscription({userId, organizationId} : any) {
+    const response = await fetch("/api/get-organization-subscription?organizationId=" + organizationId, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting organization subscription");
+    }
+
+    const subscription = await response.json();
+    return subscription;
+
+}
+
+export const createOrganization = async ({ userId, organizationName }: any) => {
+    const response = await fetch("/api/create-organization", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
+        body: JSON.stringify({
+            organizationName
+        })
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating organization");
+    }
+
+    const organization = await response.json();
+    return organization;
+};
+
+export async function getInvitations({ user }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_username = user ? user.username : "anonymous";
+    const user_organizationId = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/getInvitations?organizationId=" + user_organizationId, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-NAME": user_username
+            }
+        });
+
+        const parsedResponse = await response.json();
+        if (response.status > 299 || !response.ok) {
+            throw Error("Unknown error in getUsers");
+        }
+        return parsedResponse;
+    } catch (error) {
+        console.log("Error fetching users", error);
+        return { data: null };
+    }
 }

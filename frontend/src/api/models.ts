@@ -1,3 +1,12 @@
+export type UserInfo = {
+    access_token: string;
+    expires_on: string;
+    id_token: string;
+    provider_name: string;
+    user_claims: any[];
+    user_id: string;
+};
+
 export const enum Approaches {
     RetrieveThenRead = "rtr",
     ReadRetrieveRead = "rrr",
@@ -58,7 +67,10 @@ export type AskResponseGpt= {
 
 export type ChatTurn = {
     user: string;
-    bot?: string;
+    bot?: {
+        message: string;
+        thoughts: any;
+    } | null;
 };
 
 export type ChatRequest = {
@@ -72,6 +84,7 @@ export type ChatRequestGpt = {
     approach: Approaches;
     conversation_id: string;
     query: string;
+    file_blob_url: string;
     overrides?: AskRequestOverrides;
 };
 
@@ -88,6 +101,4 @@ export type PostSettingsProps = {
         name: string;
     } | null;
     temperature: number;
-    presence_penalty: number;
-    frequency_penalty: number;
 }

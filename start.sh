@@ -48,6 +48,7 @@ fi
 
 echo ""
 echo "Building frontend"
+npm run build
 echo ""
 
 # npm run build

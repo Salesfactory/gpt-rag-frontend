@@ -51,21 +51,24 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                 className={className}
                 selectedKey={activeTab}
                 onLinkClick={pivotItem => pivotItem && onActiveTabChanged(pivotItem.props.itemKey! as AnalysisPanelTabs)}
+                aria-label="Analysis Panel"
             >
                 <PivotItem
                     itemKey={AnalysisPanelTabs.ThoughtProcessTab}
                     headerText="Thought process"
                     headerButtonProps={isDisabledThoughtProcessTab ? pivotItemDisabledStyle : undefined}
+                    aria-label="Thought Process Tab"
                 >
                     <div className={styles.thoughtProcess} dangerouslySetInnerHTML={{ __html: sanitizedThoughts }}></div>
                 </PivotItem>
 
                 <PivotItem
                     itemKey={AnalysisPanelTabs.CitationTab}
-                    headerText="Citation"
+                    headerText="Source"
                     headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
+                     aria-label="Source Tab"
                 >
-                    <Suspense fallback={<p>Cargando...</p>}>
+                    <Suspense fallback={<p>Loading...</p>}>
                         <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
                     </Suspense>
                 </PivotItem>
@@ -74,14 +77,16 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     headerButtonProps={closeButtonStyle}
                     onRenderItemLink={() => (
                         <div
+                            tabIndex={0}
                             onClick={onHideTab}
                             style={{
                                 borderColor: "transparent",
                                 cursor: "pointer",
                                 backgroundColor: "transparent"
                             }}
+                            aria-label="Close Panel Button"
                         >
-                            <DismissCircleFilled
+                            <DismissCircleFilled                               
                                 className={mergeStyles({
                                     fontSize: 35,
                                     padding: 0,
@@ -90,6 +95,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                             />
                         </div>
                     )}
+                    aria-label="Close Panel Pivot Item"
                 />
             </Pivot>
         </>

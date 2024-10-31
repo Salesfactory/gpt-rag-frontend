@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+.subscriptionPlan {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 100px 100px 100px 150px;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    justify-items: center;
+    border-bottom: 2px solid #d9d9d9;
+    margin-bottom: 10px;
+}
+
+.subscriptionPlanTitle {
+    margin-bottom: 10px;
+    margin-left: 20px;
+}
+
+.planContainer {
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.plan {
+    border: 2px solid #a2e700;
+    border-radius: 8px;
+    padding: 20px;
+    width: 300px;
+    height: 400px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    align-items: center;
+}
+
+.planName {
+  margin: 0;
+  font-size: 1.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: #333;
+}
+
+.planPrice {
+  font-size: 1.5em;
+  color: #666;
+  margin: 20px 0;
+}
+
+.planInterval {
+  font-size: 1.2em;
+  color: #999;
+}
+
+.planDescription {
+  font-size: 1em;
+  color: #777;
+  margin: 10px 0 20px;
+  flex-grow: 1;
+}
+
+.currentIndicator {
+    color: #9fc51d;
+    font-family: "Poppins", sans-serif;
+}
+
+.planButton {
+    background-color: #9fc51d;
+    color: white;
+    border: 1px solid #9fc51d;
+    padding: 12px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s;
+    font-family: "Poppins", sans-serif;
+}
+
+.planButton:hover {
+    background-color: #acc41d;
+}
+
+.planButton:focus {
+    background-color: #9fc51d;
+}
+
+.spinnerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.loadingText {
+    margin-top: 10px;
+    font-size: 1.5em;
+    color: #000000;
+}
+
+.planIcon {
+    margin: 10px 0;
+}

@@ -1,21 +1,24 @@
 import { useMemo } from "react";
 import { Stack, IconButton } from "@fluentui/react";
 import DOMPurify from "dompurify";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm'
+import rehypeRaw from "rehype-raw";
 
 import styles from "./Answer.module.css";
 
-import { AskResponse, getCitationFilePath } from "../../api";
+import { AskResponse, getCitationFilePath, getFilePath } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 
 const userLanguage = navigator.language;
-let citation_label_text = '';
-if (userLanguage.startsWith('pt')) {
-  citation_label_text = 'Fontes';
-} else if (userLanguage.startsWith('es')) {
-  citation_label_text = 'Fuentes';
+let citation_label_text = "";
+if (userLanguage.startsWith("pt")) {
+    citation_label_text = "Fontes";
+} else if (userLanguage.startsWith("es")) {
+    citation_label_text = "Fuentes";
 } else {
-  citation_label_text = 'Sources';
+    citation_label_text = "Sources";
 }
 
 interface Props {
@@ -31,12 +34,12 @@ interface Props {
 
 function truncateString(str: string, maxLength: number): string {
     if (str.length <= maxLength) {
-      return str;
+        return str;
     }
     const startLength = Math.ceil((maxLength - 3) / 2);
     const endLength = Math.floor((maxLength - 3) / 2);
     return str.substring(0, startLength) + "..." + str.substring(str.length - endLength);
-  }
+}
 
 export const Answer = ({
     answer,
@@ -66,34 +69,50 @@ export const Answer = ({
                             onClick={() => onThoughtProcessClicked()}
                             disabled={!answer.thoughts}
                         />
-                        {/* <IconButton
-                            style={{ color: "black" }}
-                            iconProps={{ iconName: "ClipboardList" }}
-                            title="Show supporting content"
-                            ariaLabel="Show supporting content"
-                            onClick={() => onSupportingContentClicked()}
-                            disabled={!answer.data_points.length}
-                        /> */}
                     </div>
                 </Stack>
             </Stack.Item>
 
             <Stack.Item grow>
-                <div className={styles.answerText} dangerouslySetInnerHTML={{ __html: sanitizedAnswerHtml }}></div>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                    {sanitizedAnswerHtml}
+                </ReactMarkdown>
             </Stack.Item>
 
             {!!parsedAnswer.citations.length && showSources && (
                 <Stack.Item>
-                    <Stack horizontal wrap tokens={{ childrenGap: 5 }}>
-
+                    <Stack id="Sources" horizontal wrap tokens={{ childrenGap: 5 }}>
                         <span className={styles.citationLearnMore}>{citation_label_text}:</span>
-
-                        {parsedAnswer.citations.map((x, i) => {
-                            const path = getCitationFilePath(x);
+                        {parsedAnswer.citations.map((url, i) => {
+                            const path = getFilePath(url);
                             return (
-                                <a key={i} className={styles.citation} title={x} onClick={() => onCitationClicked(path, x)}>
-                                    {`${++i}. ${truncateString(x, 15)}`}
-                                </a>
+                                <>
+                                    <div style={{
+                                        fontWeight: "500",
+                                        lineHeight: "24px",
+                                        textAlign: "center",
+                                        borderRadius: "4px",
+                                        padding: "0px",
+                                        color: "#123bb6",
+                                        textDecoration: "none"
+                                    }}>
+                                    {`[${++i}]`}
+                                    </div>
+                                    <a
+                                        onKeyDown={event => {
+                                            if (event.key === "Enter") {
+                                                onCitationClicked(url, path);
+                                            }
+                                        }}
+                                        tabIndex={0}
+                                        key={i}
+                                        className={styles.citation}
+                                        title={path}
+                                        onClick={() => onCitationClicked(url, path)}
+                                    >
+                                        {`${truncateString(path, 15)}`}
+                                    </a>
+                                </>
                             );
                         })}
                     </Stack>

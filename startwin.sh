@@ -26,7 +26,7 @@ npm install || exit $?
 
 echo "Building frontend"
 # Uncomment the line if you want to run the build
-# npm run build || exit $?
+#npm run build || exit $?
 
 echo "Starting backend"
 cd ../backend

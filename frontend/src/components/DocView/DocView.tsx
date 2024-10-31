@@ -40,7 +40,7 @@ const DocView: React.FC<LazyDocViewerProps> = ({ base64Doc, page, fileType }) =>
                     <FileViewer file={blob} fileType={fileType} page={currentPage} />
                 </>
             ) : (
-                <div>Cargando Documento...</div>
+                <div>Loading Document...</div>
             )}
         </div>
     );

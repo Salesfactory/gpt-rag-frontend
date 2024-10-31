@@ -1,0 +1,121 @@
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #9fc51d;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+    transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+    width: 80px;
+}
+
+.logo img {
+    max-width: 50%;
+    height: auto;
+    transition: max-width 0.3s ease;
+}
+
+.sidebar.collapsed .logo img {
+    max-width: 40%;
+}
+
+.logo {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0px;
+}
+
+nav {
+    width: 100%;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 40px 0;
+    width: 100%;
+}
+
+nav ul li {
+    width: 100%;
+}
+
+nav ul li a {
+    color: #12100b;
+    font-size: 15px;
+    text-decoration: none;
+    padding: 10px 30px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    transition: padding 0.3s ease;
+}
+
+.sidebar.collapsed nav ul li a {
+    justify-content: center;
+    padding: 10px 0;
+    width: 85%;
+}
+
+nav ul li a:hover {
+    background-color: #85a717;
+}
+
+.sidebar.collapsed nav ul li a:hover {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+nav ul li a.active {
+    background-color: #f5f5f5;
+    border-left: 6px solid #0a0b0a;
+    font-weight: 700;
+    padding: 10px 25px;
+}
+
+.sidebar.collapsed nav ul li a.active {
+    border-left: 6px solid #0a0b0a;
+    padding: 10px 0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.icon {
+    color: rgb(63, 63, 63);
+    font-size: 25px;
+    margin-right: 15px;
+    transition: margin-right 0.3s ease;
+}
+
+.sidebar.collapsed .icon {
+    margin-right: 0;
+}
+
+.collapseButton {
+    color: rgb(63, 63, 63);
+    border-right: 2px solid #0a0b0a;
+    cursor: pointer;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    position: absolute;
+    bottom: 20px;
+    right: 10px;
+}
+
+.sidebar.collapsed .collapseButton {
+    position: absolute;
+    bottom: 20px;
+    left: 10px;
+    border-left: 2px solid #0a0b0a;
+    border-right: none;
+}
