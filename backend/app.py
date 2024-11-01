@@ -19,6 +19,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+import stripe.error
+
 load_dotenv()
 
 SPEECH_REGION = os.getenv("SPEECH_REGION")
@@ -1095,7 +1097,7 @@ def get_product_prices_endpoint():
         logging.error(f"Failed to retrieve prices: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/subscription/<subscriptionId>/finantialAssistant", methods=["PUT"])
+@app.route("/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
 def financial_assistant(subscriptionId):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
@@ -1105,16 +1107,22 @@ def financial_assistant(subscriptionId):
                     "error": "Missing required parameters, client_principal_id"
                 }
             ),
-            400,
+            404,
         )
-    try: 
+    try:
         updated_subscription = stripe.Subscription.modify(
             subscriptionId,
-            items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID, "quantity": 1}]
+            items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}]
         )
-        return updated_subscription
-    except:
-        return jsonify({"Error": "Failed to add Financial Assistant to the subscription"}), 500
+        return {
+            "message": "Financial Assistant added to subscription successfully.",
+            "subscription": updated_subscription
+        }
+        
+    except stripe.error.InvalidRequestError as e:
+        return jsonify({"Error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"Error": str(e)}), 400
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
