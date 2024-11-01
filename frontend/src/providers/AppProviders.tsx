@@ -120,7 +120,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         break;
                     case "Digit0":
                         event.preventDefault();
-                        window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
+                        window.location.href = "/logout";
                         break;
                     case "Digit9":
                         event.preventDefault();
