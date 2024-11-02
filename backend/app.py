@@ -1099,6 +1099,28 @@ def get_product_prices_endpoint():
 
 @app.route("/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
 def financial_assistant(subscriptionId):
+    """
+    Add Financial Assistant to an existing subscription.
+    
+    Args:
+        subscription_id (str): Unique Stripe Subscription ID
+    Returns:
+        JsonResponse: Response containing a new updated subscription with the new new Item
+        Success format: {
+            "data": {
+                "message": "Financial Assistant added to subscription successfully.",
+                 "subscription": {
+                    "application": null, ...
+                },
+                status: 200
+            }
+        }
+    
+    Raises:
+        BadRequest: If the request is invalid. HttpCode: 400
+        NotFound: If the subscription is not found. HttpCode: 404
+        Unauthorized: If client principal ID is missing. HttpCode: 401
+    """
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
@@ -1116,7 +1138,7 @@ def financial_assistant(subscriptionId):
         )
         return {
             "message": "Financial Assistant added to subscription successfully.",
-            "subscription": updated_subscription
+            "subscription": updated_subscription,
         }
         
     except stripe.error.InvalidRequestError as e:
