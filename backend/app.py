@@ -1121,6 +1121,8 @@ def financial_assistant(subscriptionId):
         NotFound: If the subscription is not found. HttpCode: 404
         Unauthorized: If client principal ID is missing. HttpCode: 401
     """
+    if not subscriptionId or not isinstance(subscriptionId, str):
+        return jsonify({"error": "Invalid Subscription ID"}), 404
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
