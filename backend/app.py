@@ -6,6 +6,7 @@ import logging
 import requests
 import json
 import stripe
+import datetime
 from flask import Flask, request, jsonify, Response, redirect
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -1138,7 +1139,12 @@ def financial_assistant(subscriptionId):
     try:
         updated_subscription = stripe.Subscription.modify(
             subscriptionId,
-            items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}]
+            items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}],
+            metadata={
+                "modified_by": client_principal_id,
+                "modification_type": "add_financial_assistant",
+                "modification_time": datetime.datetime.now().isoformat()
+            }
         )
         return {
             "message": "Financial Assistant added to subscription successfully.",
@@ -1146,7 +1152,7 @@ def financial_assistant(subscriptionId):
         }
         
     except stripe.error.InvalidRequestError as e:
-        return jsonify({"error": str(e)}), 404
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
