@@ -1123,6 +1123,8 @@ def financial_assistant(subscriptionId):
     """
     if not subscriptionId or not isinstance(subscriptionId, str):
         return jsonify({"error": "Invalid Subscription ID"}), 404
+    if not FINANCIAL_ASSISTANT_PRICE_ID:
+        return jsonify({"error": "Financial Assistant price ID not configured"}), 500
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
@@ -1144,9 +1146,9 @@ def financial_assistant(subscriptionId):
         }
         
     except stripe.error.InvalidRequestError as e:
-        return jsonify({"Error": str(e)}), 404
+        return jsonify({"error": str(e)}), 404
     except Exception as e:
-        return jsonify({"Error": str(e)}), 400
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
