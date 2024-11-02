@@ -81,7 +81,7 @@ export const ProfileButton: React.FunctionComponent = () => {
         setSelectedOption(selOption);
 
         if (selOption === "Logout") {
-            window.location.href = "/.auth/logout?post_logout_redirect_uri=/";
+            window.location.href = "/logout";
         }
     };
 

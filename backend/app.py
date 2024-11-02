@@ -12,6 +12,7 @@ from flask import (
     send_from_directory,
     redirect,
     url_for,
+    session,
 )
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -1073,6 +1074,18 @@ def deleteUser():
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/logout')
+def logout():
+    # Clear the user's session
+    session.clear()
+    # Build the Azure AD B2C logout URL
+    logout_url = (
+        f"https://{os.getenv('AAD_TENANT_NAME')}.b2clogin.com/{os.getenv('AAD_TENANT_NAME')}.onmicrosoft.com/"
+        f"{os.getenv('AAD_POLICY_NAME')}/oauth2/v2.0/logout"
+        f"?p={os.getenv('AAD_POLICY_NAME')}"
+        f"&post_logout_redirect_uri={os.getenv('AAD_REDIRECT_URI')}"
+    )
+    return redirect(logout_url)
 
 @app.route("/api/inviteUser", methods=["POST"])
 def sendEmail():
