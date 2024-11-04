@@ -15,10 +15,12 @@ from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
-
+from typing import Dict, Any, Tuple
+from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
 
 import stripe.error
 
@@ -73,6 +75,7 @@ AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
 app = Flask(__name__)
 CORS(app)
+
 
 @app.route("/", defaults={"path": "index.html"})
 @app.route("/<path:path>")
@@ -266,12 +269,16 @@ def create_checkout_session():
             cancel_url=cancel_url,
             automatic_tax={"enabled": True},
             custom_fields=[
-                {
-                    "key": "organization_name",
-                    "label": {"type": "custom", "custom": "Organization Name"},
-                    "type": "text",
-                    "text": {"minimum_length": 5, "maximum_length": 100},
-                } if organizationId == "" else {}
+                (
+                    {
+                        "key": "organization_name",
+                        "label": {"type": "custom", "custom": "Organization Name"},
+                        "type": "text",
+                        "text": {"minimum_length": 5, "maximum_length": 100},
+                    }
+                    if organizationId == ""
+                    else {}
+                )
             ],
         )
     except Exception as e:
@@ -806,6 +813,7 @@ def sendEmail():
         logging.error("Something went wrong...", e)
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/getInvitations", methods=["GET"])
 def getInvitations():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -833,12 +841,15 @@ def getInvitations():
         organizationId = request.args.get("organizationId")
         url = INVITATIONS_ENDPOINT
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers,params={"organizationId": organizationId})
+        response = requests.request(
+            "GET", url, headers=headers, params={"organizationId": organizationId}
+        )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return response.text
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/createInvitation", methods=["POST"])
 def createInvitation():
@@ -1021,6 +1032,7 @@ def createOrganization():
         logging.exception("[webbackend] exception in /post-organization")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/getUser", methods=["GET"])
 def getUser():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -1069,25 +1081,24 @@ def get_product_prices(product_id):
 
     if not product_id:
         raise ValueError("Product ID is required to fetch prices")
-    
+
     try:
         # Fetch all prices associated with a product
         prices = stripe.Price.list(
-            product=product_id,
-            active=True  # Optionally filter only active prices
+            product=product_id, active=True  # Optionally filter only active prices
         )
         return prices.data
     except Exception as e:
         logging.error(f"Error fetching prices: {e}")
         raise
 
+
 @app.route("/api/prices", methods=["GET"])
 def get_product_prices_endpoint():
-    product_id = request.args.get('product_id', PRODUCT_ID_DEFAULT)
+    product_id = request.args.get("product_id", PRODUCT_ID_DEFAULT)
 
     if not product_id:
         return jsonify({"error": "Missing product_id parameter"}), 400
-    
 
     try:
         prices = get_product_prices(product_id)
@@ -1098,11 +1109,67 @@ def get_product_prices_endpoint():
         logging.error(f"Failed to retrieve prices: {e}")
         return jsonify({"error": str(e)}), 500
 
+
+# Response Formatting: Type hint for JSON responses
+JsonResponse = Tuple[Dict[str, Any], int]
+
+
+# Response Formatting: Standardized error response creation
+def create_error_response(message: str, status_code: int) -> JsonResponse:
+    """
+    Create a standardized error response.
+    Response Formatting: Ensures consistent error response structure.
+    """
+    return jsonify({"error": {"message": message, "status": status_code}}), status_code
+
+
+# Response Formatting: Standardized success response creation
+def create_success_response(data: Dict[str, Any]) -> JsonResponse:
+    """
+    Create a standardized success response.
+    Response Formatting: Ensures consistent success response structure.
+    """
+    return jsonify({"data": data, "status": HTTPStatus.OK}), HTTPStatus.OK
+
+
+# Security: Decorator to ensure client principal ID is present
+def require_client_principal(f):
+    """
+    Decorator that validates the presence of client principal ID in request headers.
+    Security: Ensures proper authentication before processing requests.
+    """
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not client_principal_id:
+            # Logging: Warning for security-related events
+            logger.warning("Attempted access without client principal ID")
+            raise Unauthorized("Missing required client principal ID")
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+# Error Handling: Custom exception hierarchy for subscription-specific errors
+class SubscriptionError(Exception):
+    """Base exception for subscription-related errors"""
+
+    pass
+
+
+class InvalidSubscriptionError(SubscriptionError):
+    """Raised when subscription modification fails"""
+
+    pass
+
+
 @app.route("/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
+@require_client_principal  # Security: Enforce authentication
 def financial_assistant(subscriptionId):
     """
     Add Financial Assistant to an existing subscription.
-    
+
     Args:
         subscription_id (str): Unique Stripe Subscription ID
     Returns:
@@ -1116,26 +1183,20 @@ def financial_assistant(subscriptionId):
                 status: 200
             }
         }
-    
+
     Raises:
         BadRequest: If the request is invalid. HttpCode: 400
         NotFound: If the subscription is not found. HttpCode: 404
         Unauthorized: If client principal ID is missing. HttpCode: 401
     """
     if not subscriptionId or not isinstance(subscriptionId, str):
-        return jsonify({"error": "Invalid Subscription ID"}), 404
+        raise BadRequest("Invalid subscription ID")
+
+    # Logging: Info level for normal operations
+    logger.info(f"Modifying subscription {subscription_id} to add Financial Assistant")
     if not FINANCIAL_ASSISTANT_PRICE_ID:
-        return jsonify({"error": "Financial Assistant price ID not configured"}), 500
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id"
-                }
-            ),
-            401,
-        )
+        raise InvalidSubscriptionError("Financial Assistant price ID not configured")
+
     try:
         updated_subscription = stripe.Subscription.modify(
             subscriptionId,
@@ -1143,20 +1204,56 @@ def financial_assistant(subscriptionId):
             metadata={
                 "modified_by": client_principal_id,
                 "modification_type": "add_financial_assistant",
-                "modification_time": datetime.datetime.now().isoformat()
+                "modification_time": datetime.datetime.now().isoformat(),
+            },
+        )
+        # Logging: Success confirmation
+        logger.info(f"Successfully modified subscription {subscription_id}")
+
+        # Response Formatting: Clean, structured success response
+        return create_success_response(
+            {
+                "message": "Financial Assistant added to subscription successfully.",
+                "subscription": {
+                    "id": updated_subscription.id,
+                    "status": updated_subscription.status,
+                    "current_period_end": updated_subscription.current_period_end,
+                },
             }
         )
-        return jsonify({
-            "message": "Financial Assistant added to subscription successfully.",
-            "subscription": updated_subscription
-        })
-        
-    except stripe.error.InvalidRequestError as e:
-        return jsonify({"error": str(e)}), 400
+
+    # Error Handling: Specific error types with proper status codes
+    except InvalidSubscriptionError as e:
+        # Logging: Error level for operation failures
+        logger.error(f"Stripe invalid request error: {str(e)}")
+        return create_error_response(
+            f"Invalid subscription request: {str(e)}", HTTPStatus.NOT_FOUND
+        )
+
     except stripe.error.StripeError as e:
-        return jsonify({"error": str(e)}), 400
+        # Logging: Error level for API failures
+        logger.error(f"Stripe API error: {str(e)}")
+        return create_error_response(
+            "An error occurred while processing your request", HTTPStatus.BAD_REQUEST
+        )
+
+    except BadRequest as e:
+        # Logging: Warning level for invalid requests
+        logger.warning(f"Bad request: {str(e)}")
+        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+
+    except Unauthorized as e:
+        # Logging: Warning level for invalid requests
+        logger.warning(f"Missing required client principal ID: {str(e)}")
+        return create_error_response(str(e), HTTPStatus.UNAUTHORIZED)
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # Logging: Exception level for unexpected errors
+        logger.exception(f"Unexpected error: {str(e)}")
+        return create_error_response(
+            "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
