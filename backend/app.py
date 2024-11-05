@@ -1174,7 +1174,7 @@ def financial_assistant(subscriptionId):
         # Logging: Error level for operation failures
         logging.error(f"Stripe invalid request error: {str(e)}")
         return create_error_response(
-            f"Invalid subscription request: {str(e)}", HTTPStatus.NOT_FOUND
+            f"An error occurred while processing your request", HTTPStatus.NOT_FOUND
         )
     except stripe.error.InvalidRequestError as e:
                 logging.error(f"Stripe API error: {str(e)}")
