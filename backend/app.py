@@ -22,7 +22,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
-from api_utils import create_error_response, create_success_response, SubscriptionError, InvalidSubscriptionError, InvalidFinancialPriceError, require_client_principal
+from utils import create_error_response, create_success_response, SubscriptionError, InvalidSubscriptionError, InvalidFinancialPriceError, require_client_principal
 import stripe.error
 
 load_dotenv()
