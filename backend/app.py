@@ -1,3 +1,4 @@
+from functools import wraps
 import os
 import re
 import mimetypes
@@ -21,7 +22,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
-
+from api_utils import create_error_response, create_success_response, SubscriptionError, InvalidSubscriptionError, InvalidFinancialPriceError, require_client_principal
 import stripe.error
 
 load_dotenv()
@@ -1110,60 +1111,6 @@ def get_product_prices_endpoint():
         return jsonify({"error": str(e)}), 500
 
 
-# Response Formatting: Type hint for JSON responses
-JsonResponse = Tuple[Dict[str, Any], int]
-
-
-# Response Formatting: Standardized error response creation
-def create_error_response(message: str, status_code: int) -> JsonResponse:
-    """
-    Create a standardized error response.
-    Response Formatting: Ensures consistent error response structure.
-    """
-    return jsonify({"error": {"message": message, "status": status_code}}), status_code
-
-
-# Response Formatting: Standardized success response creation
-def create_success_response(data: Dict[str, Any]) -> JsonResponse:
-    """
-    Create a standardized success response.
-    Response Formatting: Ensures consistent success response structure.
-    """
-    return jsonify({"data": data, "status": HTTPStatus.OK}), HTTPStatus.OK
-
-
-# Security: Decorator to ensure client principal ID is present
-def require_client_principal(f):
-    """
-    Decorator that validates the presence of client principal ID in request headers.
-    Security: Ensures proper authentication before processing requests.
-    """
-
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-        if not client_principal_id:
-            # Logging: Warning for security-related events
-            logger.warning("Attempted access without client principal ID")
-            raise Unauthorized("Missing required client principal ID")
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
-# Error Handling: Custom exception hierarchy for subscription-specific errors
-class SubscriptionError(Exception):
-    """Base exception for subscription-related errors"""
-
-    pass
-
-
-class InvalidSubscriptionError(SubscriptionError):
-    """Raised when subscription modification fails"""
-
-    pass
-
-
 @app.route("/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
 @require_client_principal  # Security: Enforce authentication
 def financial_assistant(subscriptionId):
@@ -1193,22 +1140,22 @@ def financial_assistant(subscriptionId):
         raise BadRequest("Invalid subscription ID")
 
     # Logging: Info level for normal operations
-    logger.info(f"Modifying subscription {subscription_id} to add Financial Assistant")
+    logging.info(f"Modifying subscription {subscriptionId} to add Financial Assistant")
     if not FINANCIAL_ASSISTANT_PRICE_ID:
-        raise InvalidSubscriptionError("Financial Assistant price ID not configured")
+        raise InvalidFinancialPriceError("Financial Assistant price ID not configured")
 
     try:
         updated_subscription = stripe.Subscription.modify(
             subscriptionId,
             items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}],
             metadata={
-                "modified_by": client_principal_id,
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
                 "modification_type": "add_financial_assistant",
                 "modification_time": datetime.datetime.now().isoformat(),
             },
         )
         # Logging: Success confirmation
-        logger.info(f"Successfully modified subscription {subscription_id}")
+        logging.info(f"Successfully modified subscription {subscriptionId}")
 
         # Response Formatting: Clean, structured success response
         return create_success_response(
@@ -1223,33 +1170,32 @@ def financial_assistant(subscriptionId):
         )
 
     # Error Handling: Specific error types with proper status codes
-    except InvalidSubscriptionError as e:
+    except InvalidFinancialPriceError as e:
         # Logging: Error level for operation failures
-        logger.error(f"Stripe invalid request error: {str(e)}")
+        logging.error(f"Stripe invalid request error: {str(e)}")
         return create_error_response(
             f"Invalid subscription request: {str(e)}", HTTPStatus.NOT_FOUND
         )
-
+    except stripe.error.InvalidRequestError as e:
+                logging.error(f"Stripe API error: {str(e)}")
+                return create_error_response(
+            "Invalid Subscription ID", HTTPStatus.NOT_FOUND
+        )
     except stripe.error.StripeError as e:
         # Logging: Error level for API failures
-        logger.error(f"Stripe API error: {str(e)}")
+        logging.error(f"Stripe API error: {str(e)}")
         return create_error_response(
             "An error occurred while processing your request", HTTPStatus.BAD_REQUEST
         )
 
     except BadRequest as e:
         # Logging: Warning level for invalid requests
-        logger.warning(f"Bad request: {str(e)}")
+        logging.warning(f"Bad request: {str(e)}")
         return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
-
-    except Unauthorized as e:
-        # Logging: Warning level for invalid requests
-        logger.warning(f"Missing required client principal ID: {str(e)}")
-        return create_error_response(str(e), HTTPStatus.UNAUTHORIZED)
 
     except Exception as e:
         # Logging: Exception level for unexpected errors
-        logger.exception(f"Unexpected error: {str(e)}")
+        logging.exception(f"Unexpected error: {str(e)}")
         return create_error_response(
             "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
         )
