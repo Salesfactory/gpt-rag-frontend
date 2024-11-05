@@ -1,3 +1,4 @@
+from functools import wraps
 import os
 import re
 import logging
@@ -14,6 +15,7 @@ from flask import (
     url_for,
     session,
 )
+
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.keyvault.secrets import SecretClient
@@ -21,6 +23,7 @@ from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
+
 from identity.flask import Auth
 from datetime import timedelta, datetime
 
@@ -32,6 +35,12 @@ import logging
 from functools import wraps
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
+from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
+import smtplib
+from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
+from utils import create_error_response, create_success_response, SubscriptionError, InvalidSubscriptionError, InvalidFinancialPriceError, require_client_principal
+import stripe.error
+
 
 load_dotenv()
 
@@ -56,6 +65,7 @@ EMAIL_PORT = os.getenv("EMAIL_PORT")
 
 # stripe
 stripe.api_key = os.getenv("STRIPE_API_KEY")
+FINANCIAL_ASSISTANT_PRICE_ID = os.getenv("STRIPE_FA_PRICE_ID")
 
 INVITATION_LINK = os.getenv("INVITATION_LINK")
 
@@ -268,6 +278,7 @@ def index(*, context):
 
 
 # route for other static files
+
 @app.route("/<path:path>")
 def static_files(path):
     # Don't require authentication for static assets
@@ -1505,6 +1516,97 @@ def get_product_prices_endpoint():
     except Exception as e:
         logging.error(f"Failed to retrieve prices: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+
+@app.route("/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
+@require_client_principal  # Security: Enforce authentication
+def financial_assistant(subscriptionId):
+    """
+    Add Financial Assistant to an existing subscription.
+
+    Args:
+        subscription_id (str): Unique Stripe Subscription ID
+    Returns:
+        JsonResponse: Response containing a new updated subscription with the new new Item
+        Success format: {
+            "data": {
+                "message": "Financial Assistant added to subscription successfully.",
+                 "subscription": {
+                    "application": null, ...
+                },
+                status: 200
+            }
+        }
+
+    Raises:
+        BadRequest: If the request is invalid. HttpCode: 400
+        NotFound: If the subscription is not found. HttpCode: 404
+        Unauthorized: If client principal ID is missing. HttpCode: 401
+    """
+    if not subscriptionId or not isinstance(subscriptionId, str):
+        raise BadRequest("Invalid subscription ID")
+
+    # Logging: Info level for normal operations
+    logging.info(f"Modifying subscription {subscriptionId} to add Financial Assistant")
+    if not FINANCIAL_ASSISTANT_PRICE_ID:
+        raise InvalidFinancialPriceError("Financial Assistant price ID not configured")
+
+    try:
+        updated_subscription = stripe.Subscription.modify(
+            subscriptionId,
+            items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}],
+            metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modification_type": "add_financial_assistant",
+                "modification_time": datetime.datetime.now().isoformat(),
+            },
+        )
+        # Logging: Success confirmation
+        logging.info(f"Successfully modified subscription {subscriptionId}")
+
+        # Response Formatting: Clean, structured success response
+        return create_success_response(
+            {
+                "message": "Financial Assistant added to subscription successfully.",
+                "subscription": {
+                    "id": updated_subscription.id,
+                    "status": updated_subscription.status,
+                    "current_period_end": updated_subscription.current_period_end,
+                },
+            }
+        )
+
+    # Error Handling: Specific error types with proper status codes
+    except InvalidFinancialPriceError as e:
+        # Logging: Error level for operation failures
+        logging.error(f"Stripe invalid request error: {str(e)}")
+        return create_error_response(
+            f"An error occurred while processing your request", HTTPStatus.NOT_FOUND
+        )
+    except stripe.error.InvalidRequestError as e:
+                logging.error(f"Stripe API error: {str(e)}")
+                return create_error_response(
+            "Invalid Subscription ID", HTTPStatus.NOT_FOUND
+        )
+    except stripe.error.StripeError as e:
+        # Logging: Error level for API failures
+        logging.error(f"Stripe API error: {str(e)}")
+        return create_error_response(
+            "An error occurred while processing your request", HTTPStatus.BAD_REQUEST
+        )
+
+    except BadRequest as e:
+        # Logging: Warning level for invalid requests
+        logging.warning(f"Bad request: {str(e)}")
+        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+
+    except Exception as e:
+        # Logging: Exception level for unexpected errors
+        logging.exception(f"Unexpected error: {str(e)}")
+        return create_error_response(
+            "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
+        )
 
 
 if __name__ == "__main__":
