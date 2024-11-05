@@ -1519,7 +1519,7 @@ def get_product_prices_endpoint():
 
 
 
-@app.route("/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
+@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
 @require_client_principal  # Security: Enforce authentication
 def financial_assistant(subscriptionId):
     """

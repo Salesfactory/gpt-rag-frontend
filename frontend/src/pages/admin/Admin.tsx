@@ -7,7 +7,7 @@ import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/
 import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
-import { checkUser, getUsers, inviteUser, createInvitation, deleteUser } from "../../api";
+import { getUsers, inviteUser, createInvitation, deleteUser } from "../../api";
 
 import styles from "./Admin.module.css";
 
