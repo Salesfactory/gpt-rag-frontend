@@ -1,18 +1,50 @@
-import React, { useContext, ReactNode } from 'react';
-import { AppContext } from "../providers/AppProviders";
-import { Navigate } from 'react-router-dom';
+// src/ProtectedRoute.jsx
+import React from "react";
+import { Outlet, Navigate } from "react-router-dom";
+import { useAppContext } from "../providers/AppProviders";
+import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Optional: Create a loading spinner component
 
+/**
+ * ProtectedRoute component ensures that only authenticated users with allowed roles can access certain routes.
+ * It uses MsalAuthenticationTemplate to handle authentication automatically.
+ *
+ * @param {Array} allowedRoles - Array of roles that are permitted to access the route.
+ */
 interface ProtectedRouteProps {
-  children: ReactNode;
-  allowedRoles: string[];
+    allowedRoles: string[];
 }
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const { user } = useContext(AppContext);
-  if (!user.role  || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/access-denied" />;
-  }
-  return (<>{children}</>);
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
+    const { user, isAuthenticated, organization } = useAppContext();
+
+    console.log(isAuthenticated);
+    // Function to check if the user has at least one of the allowed roles
+    const hasRequiredRole = (): boolean => {
+        console.log(user);
+        const roles = [user?.role];
+        //const roles = activeAccount.idTokenClaims?.roles as string[] | undefined;
+        if (!roles) return false;
+        return allowedRoles.some(role => roles.includes(role));
+    };
+
+    const isValidSubscriptionForOrganization = (): boolean => {
+        if (!user?.organizationId || !organization?.subscriptionId) return false;
+        return true;
+    };
+
+    return (
+        <>
+            {isValidSubscriptionForOrganization() && hasRequiredRole() ? (
+                <Outlet />
+            ) : hasRequiredRole() === false ? (
+                <Navigate to="/access-denied" replace />
+            ) : isValidSubscriptionForOrganization() === false ? (
+                <Navigate to="/onboarding" replace />
+            ) : (
+                <Navigate to="/access-denied" replace />
+            )}
+        </>
+    );
 };
 
 export default ProtectedRoute;
