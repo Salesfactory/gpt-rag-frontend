@@ -5,19 +5,19 @@ from dotenv import load_dotenv
 # load the environment variables from the .env file
 load_dotenv()
 
-# set stripe api keys for test and live 
+# set stripe api keys for the test and live environments
 STRIPE_API_KEY = os.getenv('STRIPE_API_KEY')
 STRIPE_LIVE_API_KEY = os.getenv('STRIPE_LIVE_API_KEY')
 
 """initialize stripe to ensure successful authentication"""
-# initialize with the test api key, switching to the live key can be done later
+# initialize with the test api key, switching to the live key will be done dynamically later
 stripe.api_key = STRIPE_API_KEY
 
 # product ids from both test and live environments
 test_product_id = os.getenv('STRIPE_FINANCIAL_AGENT_TEST_ID')
 live_product_id = os.getenv('STRIPE_FINANCIAL_AGENT_LIVE_ID')
 
-# function to validate that the test and live products are accessible and match the requirements in each model
+# function to validate that the test and live products are accessible and fulfill the requirements
 def validate_products():
     try:
         """retrieve product information for the test environment"""
