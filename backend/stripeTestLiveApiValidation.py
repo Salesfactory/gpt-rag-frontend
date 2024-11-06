@@ -48,7 +48,7 @@ def validate_products():
             test_price['recurring']['interval'] == live_price['recurring']['interval']
         )
 
-        # display a message to show success or failure in the validation process
+        # display a message to notify success or failure in the product validation process
         if are_products_matching:
             print("Validation successful: Test and Live products match the requirements.")
         else:
