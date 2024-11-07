@@ -1519,7 +1519,7 @@ def get_product_prices_endpoint():
 
 
 
-@app.route("/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
+@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
 @require_client_principal  # Security: Enforce authentication
 def financial_assistant(subscriptionId):
     """
@@ -1559,7 +1559,7 @@ def financial_assistant(subscriptionId):
             metadata={
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
                 "modification_type": "add_financial_assistant",
-                "modification_time": datetime.datetime.now().isoformat(),
+                "modification_time": datetime.now().isoformat(),
             },
         )
         # Logging: Success confirmation

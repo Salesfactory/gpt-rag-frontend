@@ -323,6 +323,56 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
         return { error: error };
     }
 }
+
+interface User {
+    id: string;
+    name: string;
+    organizationId: string;
+  }
+  
+  interface SubscriptionResponse {
+    data: {
+      message: string;
+      subscription: {
+        id: string;
+        status: string;
+        current_period_end: number;
+      };
+    };
+    status: number;
+  }
+export async function upgradeSubscription({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+    const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+
+    try {
+      const response = await fetch(`/subscription/${subscriptionId}/financialAssistant`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
+        body: JSON.stringify({
+          organizationId: userOrganizationId,
+          activateFinancialAssistant: true,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Subscription upgrade failed: ${response.status} ${response.statusText}`);
+      }
+  
+      const parsedResponse: SubscriptionResponse = await response.json();
+      const { message, subscription } = parsedResponse.data;
+      
+      console.log("Subscription upgraded successfully:", message);
+      return subscription;
+    } catch (error) {
+      console.error("Error upgrading subscription:", error instanceof Error ? error.message : error);
+      throw error; 
+    }
+}
+
 export async function createInvitation({ organizationId, invitedUserEmail, userId, role }: any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
