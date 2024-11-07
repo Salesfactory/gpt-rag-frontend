@@ -30,7 +30,7 @@ def validate_products():
         live_product = stripe.Product.retrieve(live_product_id)
         
         """retrieve associated prices for both test and live products"""
-        # get the prices in live mode - no switching needed because api key is currently in live mode (see line 33)
+        # get the prices in live mode - no switching needed because api key is currently in live mode (see line 30)
         live_prices = stripe.Price.list(product = live_product_id)
         
         # switch api key to test mode and retrieve the price for test
