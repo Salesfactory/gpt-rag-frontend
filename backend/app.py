@@ -1726,15 +1726,13 @@ def get_financial_assistant_status(subscriptionId):
         Unauthorized: If client principal ID is missing. HttpCode: 401
     """
     try:
-        # Consultar la suscripción en Stripe
+        
         subscription = stripe.Subscription.retrieve(subscriptionId)
         
-        # Revisar si el Financial Assistant está activo en la suscripción
         financial_assistant_active = any(
             item.price.id == FINANCIAL_ASSISTANT_PRICE_ID for item in subscription["items"]["data"]
         )
         
-        # Responder con el estado del Financial Assistant
         return jsonify({
             "data": {
                 "financial_assistant_active": financial_assistant_active,
