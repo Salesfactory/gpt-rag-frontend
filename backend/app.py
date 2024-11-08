@@ -1518,7 +1518,7 @@ def get_product_prices_endpoint():
         return jsonify({"error": str(e)}), 500
 
 
-
+#ADD FINANCIAL ASSITANT A SUBSCRIPTION
 @app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
 @require_client_principal  # Security: Enforce authentication
 def financial_assistant(subscriptionId):
@@ -1607,6 +1607,170 @@ def financial_assistant(subscriptionId):
         return create_error_response(
             "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
         )
+
+#DELETE FINANCIAL ASSITANT A SUBSCRIPTION
+@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["DELETE"])
+@require_client_principal  # Security: Enforce authentication
+def remove_financial_assistant(subscriptionId):
+    """
+    Remove Financial Assistant from an existing subscription.
+
+    Args:
+        subscription_id (str): Unique Stripe Subscription ID
+    Returns:
+        JsonResponse: Response confirming the removal of the Financial Assistant
+        Success format: {
+            "data": {
+                "message": "Financial Assistant removed from subscription successfully.",
+                "subscription": {
+                    "id": "<subscription_id>",
+                    "status": "<status>",
+                    "current_period_end": "<current_period_end>"
+                },
+                status: 200
+            }
+        }
+
+    Raises:
+        BadRequest: If the request is invalid. HttpCode: 400
+        NotFound: If the subscription is not found. HttpCode: 404
+        Unauthorized: If client principal ID is missing. HttpCode: 401
+    """
+    if not subscriptionId or not isinstance(subscriptionId, str):
+        raise BadRequest("Invalid subscription ID")
+
+    logging.info(f"Modifying subscription {subscriptionId} to remove Financial Assistant")
+
+    try:
+        # Get the subscription to find the Financial Assistant item
+        subscription = stripe.Subscription.retrieve(subscriptionId)
+        
+        # Find the Financial Assistant item
+        assistant_item_id = None
+        for item in subscription['items']['data']:
+            if item['price']['id'] == FINANCIAL_ASSISTANT_PRICE_ID:
+                assistant_item_id = item['id']
+                break
+        
+        if not assistant_item_id:
+            raise NotFound("Financial Assistant item not found in subscription")
+
+        # Modify the subscription to remove the Financial Assistant item
+        updated_subscription = stripe.Subscription.modify(
+            subscriptionId,
+            items=[{"id": assistant_item_id, "deleted": True}],
+            metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modification_type": "remove_financial_assistant",
+                "modification_time": datetime.now().isoformat(),
+            },
+        )
+
+        logging.info(f"Successfully removed Financial Assistant from subscription {subscriptionId}")
+
+        return create_success_response(
+            {
+                "message": "Financial Assistant removed from subscription successfully.",
+                "subscription": {
+                    "id": updated_subscription.id,
+                    "status": updated_subscription.status,
+                    "current_period_end": updated_subscription.current_period_end,
+                },
+            }
+        )
+
+    except stripe.error.InvalidRequestError as e:
+        logging.error(f"Stripe API error: {str(e)}")
+        return create_error_response(
+            "Invalid Subscription ID", HTTPStatus.NOT_FOUND
+        )
+    except stripe.error.StripeError as e:
+        logging.error(f"Stripe API error: {str(e)}")
+        return create_error_response(
+            "An error occurred while processing your request", HTTPStatus.BAD_REQUEST
+        )
+    except NotFound as e:
+        logging.warning(f"Not found: {str(e)}")
+        return create_error_response(str(e), HTTPStatus.NOT_FOUND)
+    except Exception as e:
+        logging.exception(f"Unexpected error: {str(e)}")
+        return create_error_response(
+            "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+
+#CHECK STATUS SUBSCRIPTION FA (FINANCIAL ASSITANT)
+@app.route("/api/subscription/<subscriptionId>/financialAssistant/status", methods=["GET"])
+@require_client_principal  # Security: Enforce authentication
+def get_financial_assistant_status(subscriptionId):
+    """
+    Check if Financial Assistant is added to a subscription.
+
+    Args:
+        subscriptionId (str): Unique Stripe Subscription ID
+
+    Returns:
+        JsonResponse: Response indicating if Financial Assistant is active in the subscription.
+        Success format:
+        {
+            "data": {
+                "financial_assistant_active": true,
+                "subscription": {
+                    "id": "<subscriptionId>",
+                    "status": "active"
+                }
+            }
+        }
+        
+    Raises:
+        NotFound: If the subscription is not found. HttpCode: 404
+        Unauthorized: If client principal ID is missing. HttpCode: 401
+    """
+    try:
+        # Consultar la suscripción en Stripe
+        subscription = stripe.Subscription.retrieve(subscriptionId)
+        
+        # Revisar si el Financial Assistant está activo en la suscripción
+        financial_assistant_active = any(
+            item.price.id == FINANCIAL_ASSISTANT_PRICE_ID for item in subscription["items"]["data"]
+        )
+        
+        # Responder con el estado del Financial Assistant
+        return jsonify({
+            "data": {
+                "financial_assistant_active": financial_assistant_active,
+                "subscription": {
+                    "id": subscription.id,
+                    "status": subscription.status
+                }
+            }
+        }), HTTPStatus.OK
+
+    except stripe.error.InvalidRequestError:
+        logging.error(f"Invalid Subscription ID: {subscriptionId}")
+        return jsonify({
+            "error": {
+                "message": "Invalid Subscription ID",
+                "status": 404
+            }
+        }), HTTPStatus.NOT_FOUND
+
+    except stripe.error.StripeError as e:
+        logging.error(f"Stripe API error: {str(e)}")
+        return jsonify({
+            "error": {
+                "message": "An error occurred while processing your request.",
+                "status": 400
+            }
+        }), HTTPStatus.BAD_REQUEST
+
+    except Exception as e:
+        logging.exception(f"Unexpected error: {str(e)}")
+        return jsonify({
+            "error": {
+                "message": "An unexpected error occurred",
+                "status": 500
+            }
+        }), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 if __name__ == "__main__":
