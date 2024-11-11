@@ -9,6 +9,7 @@ import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
 import Organization from "./pages/organization/Organization";
+import FinancialAssistant from "./pages/financialassistant/FinancialAssistant"
 
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -38,6 +39,7 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
+                    <Route path="/financialassistant" element={<FinancialAssistant />} />
                 </Route>
             </Route>
 

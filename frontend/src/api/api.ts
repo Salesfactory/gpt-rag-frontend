@@ -341,12 +341,12 @@ interface User {
     };
     status: number;
   }
-export async function upgradeSubscription({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
+export async function upgradeSubscription({ user, subscriptionId }: { user?: User ; subscriptionId: string }): Promise<any> {
     const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
     const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
 
     try {
-      const response = await fetch(`/subscription/${subscriptionId}/financialAssistant`, {
+      const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
