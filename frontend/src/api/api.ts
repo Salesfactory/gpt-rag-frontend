@@ -341,6 +341,37 @@ interface User {
     };
     status: number;
   }
+
+  export async function statusFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+    const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+
+    try{
+        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant/status`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to check financial assistant status: ${response.status} ${response.statusText}`);
+        }
+
+        const parsedResponse = await response.json();
+        const { financial_assistant_active, subscription } = parsedResponse.data;
+
+        console.log("Financial Assistant status retrieved successfully:", financial_assistant_active);
+        
+        return financial_assistant_active;
+
+    }catch (error){
+        console.error("Error verifyng the Financial Assistant: ", error instanceof Error ? error.message : error);
+        throw error;
+    }
+
+}
 export async function upgradeSubscription({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
     const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
     const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";

@@ -15,6 +15,7 @@ import { SettingsButton } from "../../components/SettingsButton";
 import { ButtonPaymentGateway } from "../../components/PaymentGateway/ButtonPaymentGateway";
 import { SideMenu } from "../../components/SideMenu/SideMenu";
 import { ProfileButton } from "../../components/Profile";
+import FinancialAssistantToggle from "../../components/FinancialAssistantButton/FinancialAssistantButton";
 
 const Layout = () => {
     const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } = useAppContext();
@@ -40,6 +41,10 @@ const Layout = () => {
         setShowFeedbackRatingPanel(false);
     };
 
+    const handleFinancialAssistant = () => {
+        
+    };
+
     return (
         <>
             <div className={`${styles.layout} ${isCollapsed ? styles.collapsedContent : ""}`}>
@@ -53,9 +58,11 @@ const Layout = () => {
                             <div className={styles.layoutOptions}>
                                 {pathname === "/" && (
                                     <>
+                                        <FinancialAssistantToggle onClick={handleFinancialAssistant} />
                                         <FeedbackRatingButton onClick={handleShowFeedbackRatingPanel} />
                                         <ChatHistoryButton onClick={handleShowHistoryPanel} />
                                         <SettingsButton onClick={handleShowSettings} />
+                                        
                                     </>
                                 )}
                                 <div className={styles.profileButtonContainer}>

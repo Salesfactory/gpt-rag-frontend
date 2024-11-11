@@ -1773,3 +1773,102 @@ def get_financial_assistant_status(subscriptionId):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
+@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["GET"])
+@require_client_principal  # Security: Enforce authentication
+def get_financial_assistant_status(subscriptionId):
+    """
+    Get Financial Assistant status for an existing subscription.
+
+    Args:
+        subscription_id (str): Unique Stripe Subscription ID
+    Returns:
+        JsonResponse: Response containing subscription details and Financial Assistant status
+        Success format: {
+            "data": {
+                "hasFinancialAssistant": true/false,
+                "subscription": {
+                    "id": "sub_123",
+                    "status": "active",
+                    "current_period_end": "2024-12-31",
+                    "financial_assistant_details": {
+                        "price_id": "price_123",
+                        "active": true,
+                        "added_at": "2024-01-01"
+                    }
+                },
+                status: 200
+            }
+        }
+
+    Raises:
+        BadRequest: If the request is invalid. HttpCode: 400
+        NotFound: If the subscription is not found. HttpCode: 404
+        Unauthorized: If client principal ID is missing. HttpCode: 401
+    """
+    if not subscriptionId or not isinstance(subscriptionId, str):
+        raise BadRequest("Invalid subscription ID")
+
+    # Logging: Info level for normal operations
+    logging.info(f"Retrieving Financial Assistant status for subscription {subscriptionId}")
+
+    try:
+        # Retrieve the subscription with expanded items
+        subscription = stripe.Subscription.retrieve(
+            subscriptionId,
+            expand=['items']
+        )
+
+        # Check if Financial Assistant is part of the subscription
+        has_financial_assistant = False
+        financial_assistant_details = None
+
+        for item in subscription.items.data:
+            if item.price.id == FINANCIAL_ASSISTANT_PRICE_ID:
+                has_financial_assistant = True
+                financial_assistant_details = {
+                    "price_id": item.price.id,
+                    "active": item.status == 'active',
+                    "added_at": datetime.fromtimestamp(item.created).isoformat()
+                }
+                break
+
+        # Response Formatting: Clean, structured success response
+        return create_success_response({
+            "hasFinancialAssistant": has_financial_assistant,
+            "subscription": {
+                "id": subscription.id,
+                "status": subscription.status,
+                "current_period_end": datetime.fromtimestamp(
+                    subscription.current_period_end
+                ).isoformat(),
+                "financial_assistant_details": financial_assistant_details
+            }
+        })
+
+    # Error Handling: Specific error types with proper status codes
+    except stripe.error.InvalidRequestError as e:
+        # Logging: Error level for API failures
+        logging.error(f"Stripe invalid request error: {str(e)}")
+        return create_error_response(
+            "Invalid Subscription ID", HTTPStatus.NOT_FOUND
+        )
+
+    except stripe.error.StripeError as e:
+        # Logging: Error level for API failures
+        logging.error(f"Stripe API error: {str(e)}")
+        return create_error_response(
+            "An error occurred while processing your request", HTTPStatus.BAD_REQUEST
+        )
+
+    except BadRequest as e:
+        # Logging: Warning level for invalid requests
+        logging.warning(f"Bad request: {str(e)}")
+        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+
+    except Exception as e:
+        # Logging: Exception level for unexpected errors
+        logging.exception(f"Unexpected error: {str(e)}")
+        return create_error_response(
+            "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
+        )
