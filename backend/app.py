@@ -1739,21 +1739,21 @@ def get_financial_assistant_status(subscriptionId):
             None
         )
         
-        if financial_assistant_item == False:
+        if financial_assistant_item is False:
             logging.info(f"Financial Assistant not actived in subscription: {subscriptionId}")
             return jsonify({
                 "data": {
                     "financial_assistant_active": False,
-                    "message": "Financial Assistant not found in this subscription."
+                    "message": "Financial Assistant is not active in this subscription."
                 }
             }), HTTPStatus.OK
-
-        if financial_assistant_item == None:
+        
+        if financial_assistant_item is None:
             logging.info(f"Financial Assistant not found in subscription: {subscriptionId}")
             return jsonify({
                 "data": {
-                    "financial_assistant_active": None,
-                    "message": "Financial Assistant not found in this subscription."
+                    "financial_assistant_active": False,
+                    "message": "Financial Assistant not founded in this subscription."
                 }
             }), HTTPStatus.OK
 
