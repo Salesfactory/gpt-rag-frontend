@@ -1,7 +1,17 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../providers/AppProviders";
 import { upgradeSubscription, removeFinancialAssistant } from "../../api";
-import { Spinner, PrimaryButton, DefaultButton, Dialog, DialogType, DialogFooter, MessageBar, MessageBarType } from "@fluentui/react";
+import {
+    Spinner,
+    PrimaryButton,
+    DefaultButton,
+    Dialog,
+    DialogType,
+    DialogFooter,
+    MessageBar,
+    MessageBarType,
+} from "@fluentui/react";
+import styles from "./FinancialAssistant.module.css";
 
 const FinancialAssistant = () => {
     const { user, organization } = useAppContext();
@@ -10,7 +20,7 @@ const FinancialAssistant = () => {
     const [showSubscribeDialog, setShowSubscribeDialog] = useState(false);
     const [showUnsubscribeDialog, setShowUnsubscribeDialog] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     useEffect(() => {
         if (user?.role !== "admin") {
             return;
@@ -42,7 +52,7 @@ const FinancialAssistant = () => {
         try {
             setLoading(true);
             const userObj = user ? { id: user.id, name: user.name, organizationId: user.organizationId ?? "default-org-id" } : undefined;
-            await upgradeSubscription({ user: userObj ?? undefined, subscriptionId: organization?.subscriptionId ?? "default-org-id"});
+            await upgradeSubscription({ user: userObj, subscriptionId: organization?.subscriptionId ?? "default-org-id" });
             setSubscriptionStatus(true);
             setShowSubscribeDialog(false);
         } catch {
@@ -56,7 +66,7 @@ const FinancialAssistant = () => {
         try {
             setLoading(true);
             const userObj = user ? { id: user.id, name: user.name, organizationId: user.organizationId ?? "default-org-id" } : undefined;
-            await removeFinancialAssistant({ user: userObj ?? undefined, subscriptionId: organization?.subscriptionId ?? "default-org-id"});
+            await removeFinancialAssistant({ user: userObj, subscriptionId: organization?.subscriptionId ?? "default-org-id" });
             setSubscriptionStatus(false);
             setShowUnsubscribeDialog(false);
         } catch {
@@ -75,22 +85,34 @@ const FinancialAssistant = () => {
     }
 
     return (
-        <div>
-            <h1>Financial Assistant Subscription</h1>
+        <div className={styles.page_container}>
+            <h1 className={styles.title}>Financial Assistant Subscription</h1>
 
             {error && <MessageBar messageBarType={MessageBarType.error}>{error}</MessageBar>}
 
-            {subscriptionStatus ? (
-                <>
-                    <MessageBar messageBarType={MessageBarType.success}>You are subscribed to the Financial Assistant feature.</MessageBar>
-                    <PrimaryButton text="Unsubscribe from Financial Assistant" onClick={() => setShowUnsubscribeDialog(true)} />
-                </>
-            ) : (
-                <>
-                    <MessageBar messageBarType={MessageBarType.warning}>You are not subscribed to the Financial Assistant feature.</MessageBar>
-                    <PrimaryButton text="Subscribe to Financial Assistant" onClick={() => setShowSubscribeDialog(true)} />
-                </>
-            )}
+            <div className={styles.row}>
+                {subscriptionStatus ? (
+                    <>
+                        <MessageBar messageBarType={MessageBarType.success}>
+                            You are subscribed to the Financial Assistant feature.
+                        </MessageBar>
+                        <PrimaryButton
+                            text="Unsubscribe from Financial Assistant"
+                            onClick={() => setShowUnsubscribeDialog(true)}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <MessageBar messageBarType={MessageBarType.warning}>
+                            You are not subscribed to the Financial Assistant feature.
+                        </MessageBar>
+                        <PrimaryButton
+                            text="Subscribe to Financial Assistant"
+                            onClick={() => setShowSubscribeDialog(true)}
+                        />
+                    </>
+                )}
+            </div>
 
             <Dialog
                 hidden={!showSubscribeDialog}
