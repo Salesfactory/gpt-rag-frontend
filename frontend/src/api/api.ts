@@ -364,6 +364,34 @@ export async function upgradeSubscription({ user, subscriptionId }: { user?: Use
     }
 }
 
+export async function removeFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string; }): Promise<any> {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+
+    try {
+        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Subscription removal failed: ${response.status} ${response.statusText}`);
+        }
+
+        const parsedResponse: SubscriptionResponse = await response.json();
+        const { message, subscription } = parsedResponse.data;
+
+        console.log("Financial Assistant removed successfully:", message);
+        return subscription;
+    } catch (error) {
+        console.error("Error removing Financial Assistant:", error instanceof Error ? error.message : error);
+        throw error;
+    }
+}
+
+
 export async function createInvitation({ organizationId, invitedUserEmail, userId, role }: any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
