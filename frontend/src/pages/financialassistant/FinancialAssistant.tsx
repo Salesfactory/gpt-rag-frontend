@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../providers/AppProviders";
-import { upgradeSubscription, removeFinancialAssistant } from "../../api";
+import { getFinancialAssistant, upgradeSubscription, removeFinancialAssistant } from "../../api"; // Asegúrate de importar la función
 import {
     Spinner,
     PrimaryButton,
@@ -22,31 +22,37 @@ const FinancialAssistant = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user?.role !== "admin") {
-            return;
-        }
-
         const fetchStatus = async () => {
             setLoading(true);
             try {
-                const response = await fetch(`/api/subscription/${organization?.subscriptionId}/financialAssistant/status`, {
-                    headers: { "X-MS-CLIENT-PRINCIPAL-ID": user.id }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setSubscriptionStatus(data.data.financial_assistant_active);
-                } else {
-                    setError("Failed to fetch subscription status");
+                if (!user?.organizationId) {
+                    throw new Error("Organization ID is required");
                 }
-            } catch (error) {
-                setError("An error occurred while fetching subscription status");
+                const { financial_assistant_active } = await getFinancialAssistant({
+                    user: {
+                        ...user,
+                        organizationId: user.organizationId,
+                    },
+                    subscriptionId: organization?.subscriptionId ?? "default-org-id"
+                });
+                setSubscriptionStatus(financial_assistant_active);
+            } catch (error: any) {
+                console.log(error)
+                if (error.status === false) {
+                    setSubscriptionStatus(false);
+                    setError("Financial Assistant feature is not present in this subscription.");
+                } else if (error.status === null) {
+                    setError("Bad request: unable to retrieve subscription status.");
+                } else {
+                    setError("An error occurred while fetching subscription status.");
+                }
             } finally {
                 setLoading(false);
             }
         };
 
         fetchStatus();
-    }, [user]);
+    }, [user, organization]);
 
     const handleSubscribe = async () => {
         try {
