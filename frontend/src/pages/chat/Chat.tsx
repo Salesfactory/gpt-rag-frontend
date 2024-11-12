@@ -60,8 +60,7 @@ const Chat = () => {
         setChatIsCleaned,
         chatIsCleaned,
         settingsPanel,
-        setUser,
-        setOrganization
+        user
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -113,7 +112,7 @@ const Chat = () => {
                     suggestFollowupQuestions: useSuggestFollowupQuestions
                 }
             };
-            const result = await chatApiGpt(request);
+            const result = await chatApiGpt(request, user);
             const conditionOne = answers.map(a => ({ user: a[0] }));
             if (conditionOne.length <= 0) {
                 setRefreshFetchHistory(true);

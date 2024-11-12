@@ -1,17 +1,4 @@
-import { List } from "@fluentui/react";
-import {
-    AskRequest,
-    AskResponse,
-    AskResponseGpt,
-    ChatRequest,
-    ChatRequestGpt,
-    GetSettingsProps,
-    PostSettingsProps,
-    ConversationHistoryItem,
-    ConversationChatItem,
-    ChatTurn,
-    UserInfo
-} from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -132,11 +119,15 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
     }
 }
 
-export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGpt> {
+export async function chatApiGpt(options: ChatRequestGpt, user: any): Promise<AskResponseGpt> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
     const response = await fetch("/chatgpt", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+            "X-MS-CLIENT-PRINCIPAL-NAME": user_name
         },
         body: JSON.stringify({
             history: options.history,
@@ -328,16 +319,16 @@ interface User {
     id: string;
     name: string;
     organizationId: string;
-  }
-  
-  interface SubscriptionResponse {
+}
+
+interface SubscriptionResponse {
     data: {
-      message: string;
-      subscription: {
-        id: string;
-        status: string;
-        current_period_end: number;
-      };
+        message: string;
+        subscription: {
+            id: string;
+            status: string;
+            current_period_end: number;
+        };
     };
     status: number;
   }
@@ -377,30 +368,30 @@ export async function upgradeSubscription({ user, subscriptionId }: { user?: Use
     const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
 
     try {
-      const response = await fetch(`/subscription/${subscriptionId}/financialAssistant`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "X-MS-CLIENT-PRINCIPAL-ID": userId,
-        },
-        body: JSON.stringify({
-          organizationId: userOrganizationId,
-          activateFinancialAssistant: true,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Subscription upgrade failed: ${response.status} ${response.statusText}`);
-      }
-  
-      const parsedResponse: SubscriptionResponse = await response.json();
-      const { message, subscription } = parsedResponse.data;
-      
-      console.log("Subscription upgraded successfully:", message);
-      return subscription;
+        const response = await fetch(`/subscription/${subscriptionId}/financialAssistant`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
+            },
+            body: JSON.stringify({
+                organizationId: userOrganizationId,
+                activateFinancialAssistant: true
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Subscription upgrade failed: ${response.status} ${response.statusText}`);
+        }
+
+        const parsedResponse: SubscriptionResponse = await response.json();
+        const { message, subscription } = parsedResponse.data;
+
+        console.log("Subscription upgraded successfully:", message);
+        return subscription;
     } catch (error) {
-      console.error("Error upgrading subscription:", error instanceof Error ? error.message : error);
-      throw error; 
+        console.error("Error upgrading subscription:", error instanceof Error ? error.message : error);
+        throw error;
     }
 }
 
@@ -512,7 +503,7 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     return session;
 }
 
-export async function getProductPrices({ user}: { user: any}): Promise<any> {
+export async function getProductPrices({ user }: { user: any }): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -532,7 +523,7 @@ export async function getProductPrices({ user}: { user: any}): Promise<any> {
     }
 }
 
-export async function getOrganizationSubscription({userId, organizationId} : any) {
+export async function getOrganizationSubscription({ userId, organizationId }: any) {
     const response = await fetch("/api/get-organization-subscription?organizationId=" + organizationId, {
         method: "GET",
         headers: {
