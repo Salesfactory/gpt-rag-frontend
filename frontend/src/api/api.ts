@@ -360,7 +360,7 @@ interface User {
         }
 
         const parsedResponse = await response.json();
-        const { financial_assistant_active, subscription } = parsedResponse.data;
+        const { financial_assistant_active } = parsedResponse.data;
 
         console.log("Financial Assistant status retrieved successfully:", financial_assistant_active);
         

@@ -21,6 +21,10 @@
     background-color: white;
 }
 
+  
+.active {
+    background-color: #9FC51D;
+}
 .button{
     color: rgb(63, 63, 63);
     font-size: 24px;
@@ -32,4 +36,5 @@
 
 .disabled {
     opacity: 0.4;
+    background-color: #e1e1e1;
 }

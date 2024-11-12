@@ -45,22 +45,22 @@ function FinancialAssistantToggle({ className, disabled, userId, suscriptionId }
         if (savedState !== null) {
             setIsActive(JSON.parse(savedState));
         }
-        console.log("THIS IS THE CONSOLE LOG FOR THE savedState: ", savedState);
+  
     }, [userId]);
     //Don't remove. Otherwise it will take nulls 
     if (!financialAssistantStatus) return <p>Loading...</p>;
     const handleToggle = () => {
         const newState = !isActive;
         setIsActive(newState);
-        console.log("THIS IS THE CONSOLE LOG FOR THE NEWSTATE: ", newState);
+
         persistFinancialAssistantState(userId, newState);
     };
     const booltest = financialAssistantStatus
-    console.log("THIS IS THE BOOLTEST: ", booltest)
+
     if (booltest === true){
-        console.log("THIS IS FASTATUS: ", financialAssistantStatus)
+
         return (
-            <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={handleToggle}>
+            <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled} ${isActive ? styles.active : ''}`} onClick={handleToggle}>
                 <PersonVoiceRegular className={styles.button} />
                 <Text className={styles.buttonText}>{isActive ? 'Disable' : 'Enable'} Financial Assistant</Text>
             </button>
