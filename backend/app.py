@@ -1726,7 +1726,6 @@ def get_financial_assistant_status(subscriptionId):
         Unauthorized: If client principal ID is missing. HttpCode: 401
     """
     try:
-
         subscription = stripe.Subscription.retrieve(subscriptionId)
         
         financial_assistant_active = any(
