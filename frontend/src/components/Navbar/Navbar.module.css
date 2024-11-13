@@ -54,3 +54,10 @@
 .messageBody {
     /* Define styles if needed */
 }
+
+@media (max-width: 991.98px) {
+    .headerNavbar {
+        -ms-flex-wrap: nowrap !important; 
+        flex-wrap: nowrap  !important;
+    }
+}

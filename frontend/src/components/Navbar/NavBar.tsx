@@ -4,9 +4,9 @@ import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, Icon
 
 const Navbar: React.FC = () => {
     return (
-        <nav className="navbar navbar-expand-lg navbar-light">
+        <nav className={`navbar navbar-expand-lg navbar-light ${styles.headerNavbar} `}>
             {/* Sidebar Toggle (For smaller screens) */}
-            <ul className="navbar-nav">
+            <ul className="navbar-nav mr-4">
                 <li className="nav-item d-block d-xl-none">
                     <a className={`nav-link ${styles.sidebartoggler}`} id="headerCollapse" href="#">
                         <IconMenu2 className={styles.iconLarge} />
@@ -15,7 +15,7 @@ const Navbar: React.FC = () => {
             </ul>
 
             <div className="navbar-collapse justify-content-end px-0" id="navbarNav">
-                <ul className="navbar-nav flex-row align-items-center gap-3">
+                <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Feedback Panel Button */}
                     <li className="nav-item">
                         <button className="btn btn-light btn-sm d-flex align-items-center gap-1">
