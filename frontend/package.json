@@ -20,6 +20,8 @@
         "@react-spring/web": "^9.7.1",
         "@stripe/react-stripe-js": "^2.7.3",
         "@stripe/stripe-js": "^4.1.0",
+        "@tabler/icons-react": "^3.21.0",
+        "bootstrap": "^5.3.3",
         "dompurify": "^3.0.1",
         "mammoth": "^1.7.0",
         "microsoft-cognitiveservices-speech-sdk": "^1.27.0",
