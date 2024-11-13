@@ -17,18 +17,30 @@ import salesLogo from "../../img/logo.png";
 import styles from "./Sidebar.module.css";
 import SidebarItem from "./SidebarItem";
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+    isCollapsed: boolean;
+    setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
+    const handleOnClickCloseSideBar = () => {
+        setIsCollapsed(true);
+    };
     return (
-        <aside className={styles.leftSidebar}>
+        <aside className={`${isCollapsed === false ? styles.showSidebar : ""} ${styles.leftSidebar}`}>
             {/* Sidebar scroll */}
             <div>
                 <div className={`d-flex align-items-center justify-content-between ${styles.brandLogo}`}>
                     <Link to="#">
                         <img src={salesLogo} alt="Sales Factory logo" className={styles.brandLogoImg} />
                     </Link>
-                    <div className={`d-xl-none d-block ${styles.closeBtn} ${styles.sidebarToggler} ${styles.cursorPointer}`} id="sidebarCollapse">
+                    <button
+                        onClick={handleOnClickCloseSideBar}
+                        className={`d-xl-none d-block ${styles.closeBtn} ${styles.sidebarToggler} ${styles.cursorPointer}`}
+                        id="sidebarCollapse"
+                    >
                         <IconX className={styles.icon} />
-                    </div>
+                    </button>
                 </div>
 
                 {/* Sidebar navigation */}

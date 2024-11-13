@@ -202,8 +202,14 @@
   
   /* Close Button */
   .closeBtn {
-    /* Define styles if needed */
-  }
+        background: none; /* Remove background */
+        border: none; /* Replace #000 with your desired border color */
+        color: none; /* Text color matching your border color or choose another */
+        padding: 0; /* Adjust padding as needed */
+        border-radius: 0; /* Optional: for rounded corners */
+        cursor: pointer; /* Pointer cursor on hover */
+        transition: all 0.3s ease; /* Optional: smooth transition for hover effect */
+      }  
   
   /* Sidebar Toggler */
   .sidebarToggler {
@@ -238,7 +244,7 @@
       left: -260px;
     }
   
-    .showSidebar .leftSidebar {
+    .showSidebar  {
       left: 0;
       box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }

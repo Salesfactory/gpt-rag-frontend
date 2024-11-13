@@ -1,16 +1,45 @@
 import React from "react";
 import styles from "./Navbar.module.css";
 import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
+import { useAppContext } from "../../providers/AppProviders";
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+    setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
+    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } = useAppContext();
+
+    const handleShowHistoryPanel = () => {
+        setShowHistoryPanel(!showHistoryPanel);
+        setShowFeedbackRatingPanel(false);
+        setSettingsPanel(false);
+    };
+
+    const handleShowFeedbackRatingPanel = () => {
+        setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
+        setSettingsPanel(false);
+        setShowHistoryPanel(false);
+    };
+
+    const handleShowSettings = () => {
+        setSettingsPanel(!settingsPanel);
+        setShowHistoryPanel(false);
+        setShowFeedbackRatingPanel(false);
+    };
+
+    const handleOnClickShowSidebar = () => {
+        setIsCollapsed(false);
+    };
+
     return (
         <nav className={`navbar navbar-expand-lg navbar-light ${styles.headerNavbar} `}>
             {/* Sidebar Toggle (For smaller screens) */}
             <ul className="navbar-nav mr-4">
                 <li className="nav-item d-block d-xl-none">
-                    <a className={`nav-link ${styles.sidebartoggler}`} id="headerCollapse" href="#">
+                    <button onClick={handleOnClickShowSidebar} className={`nav-link ${styles.sidebartoggler}`} id="headerCollapse">
                         <IconMenu2 className={styles.iconLarge} />
-                    </a>
+                    </button>
                 </li>
             </ul>
 
