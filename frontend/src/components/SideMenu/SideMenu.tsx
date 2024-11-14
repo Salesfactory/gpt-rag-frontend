@@ -96,6 +96,18 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
                             </a>
                         </li>
                     )}
+                    {user?.role === "admin" && (
+                        <li>
+                            <a
+                                href="#/financialassistant"
+                                className={`${styles.link} ${activeOption === "Financial Assistant" ? styles.active : ""}`}
+                                onClick={() => setActiveOption("Financial Assistant")}
+                            >
+                                <ContactCardRibbonRegular className={styles.icon} />
+                                {!isCollapsed && "Financial Assistant"}
+                            </a>
+                        </li>
+                    )}
                 </ul>
             </nav>
             <div className={styles.collapseButton} onClick={() => setIsCollapsed(!isCollapsed)}>

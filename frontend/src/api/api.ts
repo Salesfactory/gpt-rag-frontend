@@ -331,33 +331,62 @@ interface SubscriptionResponse {
         };
     };
     status: number;
+  }
+
+  export async function getFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+    
+    try {
+        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            }
+        });
+        
+        if (!response.ok) {
+            const error = new Error(`Failed to check financial assistant status: ${response.status}`);
+            (error as any).status = response.status;  // Añade el código de estado al error
+            throw error;
+        }
+
+        const parsedResponse = await response.json();
+        return parsedResponse.data;
+
+    } catch (error) {
+        console.error("Error verifying the Financial Assistant: ", error instanceof Error ? error.message : error);
+        throw error;
+    }
 }
-export async function upgradeSubscription({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
+
+
+export async function upgradeSubscription({ user, subscriptionId }: { user?: User ; subscriptionId: string }): Promise<any> {
     const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
     const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
 
     try {
-        const response = await fetch(`/subscription/${subscriptionId}/financialAssistant`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId
-            },
-            body: JSON.stringify({
-                organizationId: userOrganizationId,
-                activateFinancialAssistant: true
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Subscription upgrade failed: ${response.status} ${response.statusText}`);
-        }
-
-        const parsedResponse: SubscriptionResponse = await response.json();
-        const { message, subscription } = parsedResponse.data;
-
-        console.log("Subscription upgraded successfully:", message);
-        return subscription;
+      const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
+        body: JSON.stringify({
+          organizationId: userOrganizationId,
+          activateFinancialAssistant: true,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Subscription upgrade failed: ${response.status} ${response.statusText}`);
+      }
+  
+      const parsedResponse: SubscriptionResponse = await response.json();
+      const { message, subscription } = parsedResponse.data;
+      
+      console.log("Subscription upgraded successfully:", message);
+      return subscription;
     } catch (error) {
         console.error("Error upgrading subscription:", error instanceof Error ? error.message : error);
         throw error;

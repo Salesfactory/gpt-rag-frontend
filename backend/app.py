@@ -1699,7 +1699,7 @@ def remove_financial_assistant(subscriptionId):
         )
 
 #CHECK STATUS SUBSCRIPTION FA (FINANCIAL ASSITANT)
-@app.route("/api/subscription/<subscriptionId>/financialAssistant/status", methods=["GET"])
+@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["GET"])
 @require_client_principal  # Security: Enforce authentication
 def get_financial_assistant_status(subscriptionId):
     """
@@ -1726,19 +1726,43 @@ def get_financial_assistant_status(subscriptionId):
         Unauthorized: If client principal ID is missing. HttpCode: 401
     """
     try:
-        
         subscription = stripe.Subscription.retrieve(subscriptionId)
         
         financial_assistant_active = any(
             item.price.id == FINANCIAL_ASSISTANT_PRICE_ID for item in subscription["items"]["data"]
         )
+
+        financial_assistant_item = next(
+            (item for item in subscription["items"]["data"] 
+             if item.price.id == FINANCIAL_ASSISTANT_PRICE_ID),
+            None
+        )
         
+        if financial_assistant_item is False:
+            logging.info(f"Financial Assistant not actived in subscription: {subscriptionId}")
+            return jsonify({
+                "data": {
+                    "financial_assistant_active": False,
+                    "message": "Financial Assistant is not active in this subscription."
+                }
+            }), HTTPStatus.OK
+        
+        if financial_assistant_item is None:
+            logging.info(f"Financial Assistant not found in subscription: {subscriptionId}")
+            return jsonify({
+                "data": {
+                    "financial_assistant_active": False,
+                    "message": "Financial Assistant not founded in this subscription."
+                }
+            }), HTTPStatus.OK
+
         return jsonify({
             "data": {
                 "financial_assistant_active": financial_assistant_active,
                 "subscription": {
                     "id": subscription.id,
-                    "status": subscription.status
+                    "status": subscription.status,
+                    "price_id": financial_assistant_item.price.id
                 }
             }
         }), HTTPStatus.OK
