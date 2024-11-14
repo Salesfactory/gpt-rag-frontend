@@ -3,12 +3,18 @@ import styles from "./Navbar.module.css";
 import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
 
+
 interface NavbarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
-    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel } = useAppContext();
+    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel, user } = useAppContext();
+    const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
+    const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
+    const userName = user?.name || ""; // Default to empty string if user or user.name is null
+    const email = user?.email || " ";
+
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
@@ -47,23 +53,23 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                 <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Feedback Panel Button */}
                     <li className="nav-item">
-                        <button className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                        <button onClick={handleShowFeedbackRatingPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
                             <IconMessageCircle className={styles.iconLarge} />
-                            <span className="d-none d-md-inline">Show feedback panel</span>
+                            <span className="d-none d-md-inline">{feedbackContent}</span>
                         </button>
                     </li>
 
                     {/* Hide Chat History Button */}
                     <li className="nav-item">
-                        <button className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                        <button onClick={handleShowHistoryPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
                             <IconHistory className={styles.iconLarge} />
-                            <span className="d-none d-md-inline">Hide chat history</span>
+                            <span className="d-none d-md-inline">{historyContent}</span>
                         </button>
                     </li>
 
                     {/* Settings Button */}
                     <li className="nav-item">
-                        <button className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                        <button onClick={handleShowSettings} className="btn btn-light btn-sm d-flex align-items-center gap-1">
                             <IconSettings className={styles.iconLarge} />
                             <span className="d-none d-md-inline">Settings</span>
                         </button>
@@ -71,12 +77,12 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
 
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
-                        <a className="nav-link" href="#" id="drop2" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a className="nav-link" role="button" href="#" id="drop2" data-bs-toggle="dropdown" aria-expanded="false">
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                 <IconBell className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
-                                    <p className={`${styles.userName} mb-0`}>Manuel Castro</p>
-                                    <p className={`${styles.userEmail} mb-0`}>manuelcastro@hamalsolutions.com</p>
+                                    <p className={`${styles.userName} mb-0`}>{userName}</p>
+                                    <p className={`${styles.userEmail} mb-0`}>{email}</p>
                                 </div>
                             </div>
                         </a>
