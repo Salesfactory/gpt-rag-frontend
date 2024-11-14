@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import styles from "./Navbar.module.css";
 import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
@@ -14,7 +14,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
     const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     const userName = user?.name || ""; // Default to empty string if user or user.name is null
     const email = user?.email || " ";
-
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
@@ -37,6 +37,13 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
     const handleOnClickShowSidebar = () => {
         setIsCollapsed(false);
     };
+
+    const handleOnClickProfileCard = () => {
+        setIsDropdownOpen(!isDropdownOpen);
+        setShowHistoryPanel(false);
+        setShowFeedbackRatingPanel(false);
+        setSettingsPanel(false);
+    }
 
     return (
         <nav className={`navbar navbar-expand-lg navbar-light ${styles.headerNavbar} `}>
@@ -77,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
 
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
-                        <a className="nav-link" role="button" href="#" id="drop2" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a className={`nav-link ${isDropdownOpen ? 'show' : ''}`} role="button" id="drop2" data-bs-toggle="dropdown" aria-expanded={isDropdownOpen} onClick={handleOnClickProfileCard}>
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                 <IconBell className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
@@ -86,22 +93,23 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                                 </div>
                             </div>
                         </a>
-                        <div className="dropdown-menu dropdown-menu-end dropdown-menu-animate-up" aria-labelledby="drop2">
+                        <div className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? 'show' : ''}`} aria-labelledby="drop2" 
+                        data-bs-popper={`${isDropdownOpen ? 'static' : ''}`}>
                             <div className={styles.messageBody}>
                                 <a href="#" className="d-flex align-items-center gap-2 dropdown-item">
                                     <IconUser className="fs-6" />
-                                    <p className="mb-0 fs-3">My Profile</p>
+                                    <p className="mb-0 fs-5">My Profile</p>
                                 </a>
                                 <a href="#" className="d-flex align-items-center gap-2 dropdown-item">
                                     <IconMail className="fs-6" />
-                                    <p className="mb-0 fs-3">My Account</p>
+                                    <p className="mb-0 fs-5">My Account</p>
                                 </a>
                                 <a href="#" className="d-flex align-items-center gap-2 dropdown-item">
                                     <IconListCheck className="fs-6" />
-                                    <p className="mb-0 fs-3">My Task</p>
+                                    <p className="mb-0 fs-5">My Task</p>
                                 </a>
                                 <a
-                                    href="https://bootstrapdemos./matdash-free/src/html/authentication-login.html"
+                                    href="/logout"
                                     className="btn btn-outline-primary mx-3 mt-2 d-block"
                                 >
                                     Logout
