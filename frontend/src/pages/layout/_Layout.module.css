@@ -5,9 +5,14 @@
 
 .bodyWrapper {
     position: relative;
+    height: 80vh;
   }
   
   .bodyWrapperInner {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    height: 100%;
     margin-top: 80px;
   }
   
