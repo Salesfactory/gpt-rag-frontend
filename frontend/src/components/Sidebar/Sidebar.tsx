@@ -6,12 +6,12 @@ import {
     IconMessagePlus,
     IconBell,
     IconDiscountCheck,
-    IconUsers,
     IconStar,
     IconFileInvoice,
-    IconListCheck,
+    IconChecklist,
     IconHeadset,
-    IconDots
+    IconDots,
+    IconSubtask
 } from "@tabler/icons-react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Sidebar.module.css";
@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {/* Subscription Module */}
                         <SidebarItem title="Subscription management" icon={<IconDiscountCheck className={styles.sidebarLinkIcon} />} to="/subscription.html" />
 
-                        <SidebarItem title="User management" icon={<IconUsers className={styles.sidebarLinkIcon} />} to="/manage-email-lists.html" />
+                        <SidebarItem title="User management" icon={<IconSubtask className={styles.sidebarLinkIcon} />} to="/manage-email-lists.html" />
 
                         {/* Premium Features with Submenu */}
                         <SidebarItem
@@ -94,7 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
                         <SidebarItem title="Report Management" icon={<IconFileInvoice className={styles.sidebarLinkIcon} />} to="/view-manage-reports.html" />
 
-                        <SidebarItem title="Distribution Lists" icon={<IconListCheck className={styles.sidebarLinkIcon} />} to="/details-settings.html" />
+                        <SidebarItem title="Distribution Lists" icon={<IconChecklist className={styles.sidebarLinkIcon} />} to="/details-settings.html" />
 
                         <li>
                             <span className={`${styles.sidebarDivider} ${styles.lg}`}></span>
@@ -105,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             <IconDots className={`${styles.navSmallCapIcon}`} />
                         </li>
 
-                        <SidebarItem title="Help Center" icon={<IconHeadset className={styles.sidebarLinkIcon} />} to="/help-center.html" />
+                        <SidebarItem title="Help Center" icon={<IconHeadset className={styles.sidebarLinkIcon} />} to="/financial-assitant" />
                     </ul>
                 </nav>
                 {/* End Sidebar navigation */}
