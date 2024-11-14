@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { useAppContext } from "../../providers/AppProviders";
 import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
-import { Send24Filled, Mic24Regular, AttachRegular } from "@fluentui/react-icons";
+import { Send24Filled, Mic24Regular, AttachRegular, AddRegular, BroomRegular } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
 
 import { uploadFile } from "../../api";
@@ -249,48 +249,54 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         !organization.subscriptionId;
 
     return (
-        <Stack horizontal className={styles.questionInputContainer}>
-            <TextField
-                className={styles.questionInputTextArea}
-                placeholder={placeholder}
-                multiline
-                resizable={false}
-                borderless
-                value={question}
-                onChange={onQuestionChange}
-                onKeyDown={onEnterPress}
-            />
-            <div className={styles.questionInputButtonsContainer}>
-                <FileAttachmentInput setFileBlobUrl={setFileBlobUrl} />
-                <div
-                    className={`${styles.questionInputSendButton}`}
-                    aria-label="Button to talk"
-                    onClick={sttFromMic}
-                    onKeyDown={ev => {
-                        if (ev.key === "Enter") {
-                            ev.preventDefault();
-                            sttFromMic();
-                        }
-                    }}
-                    tabIndex={0}
-                >
-                    <Mic24Regular primaryFill="#9F9C9C" />
+        <div className="container mt-3">
+            <div className="d-flex flex-column flex-md-row align-items-stretch">
+                {/* Left Buttons */}
+                <div className="d-flex mb-2 mb-md-0 me-md-2">
+                    <button className="btn btn-secondary me-2" aria-label="Start a new chat" type="button">
+                        <AddRegular />
+                    </button>
+                    <button className="btn btn-secondary" aria-label="Clear chat" type="button">
+                        <BroomRegular />
+                    </button>
                 </div>
-                <div
-                    className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
-                    aria-label="Ask a question button"
-                    onClick={sendQuestion}
-                    onKeyDown={ev => {
-                        if (ev.key === "Enter") {
-                            ev.preventDefault();
-                            sendQuestion();
-                        }
-                    }}
-                    tabIndex={0}
-                >
-                    <Send24Filled />
+
+                {/* Text Field */}
+                <div className="flex-grow-1 mb-2 mb-md-0">
+                    <TextField
+                        placeholder={placeholder}
+                        multiline
+                        resizable={false}
+                        borderless
+                        value={question}
+                        onChange={onQuestionChange}
+                        onKeyDown={onEnterPress}
+                        className="form-control"
+                    ></TextField>
+                </div>
+
+                {/* Right Buttons */}
+                <div className="d-flex mt-2 mt-md-0 ms-md-2">
+                    <button className="btn btn-secondary me-2" aria-label="Attach file" type="button">
+                        <AttachRegular />
+                    </button>
+                    <button
+                        className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
+                        aria-label="Send message"
+                        type="button"
+                        onClick={sendQuestion}
+                        onKeyDown={ev => {
+                            if (ev.key === "Enter") {
+                                ev.preventDefault();
+                                sendQuestion();
+                            }
+                        }}
+                        tabIndex={0}
+                    >
+                        <Send24Filled />
+                    </button>
                 </div>
             </div>
-        </Stack>
+        </div>
     );
 };

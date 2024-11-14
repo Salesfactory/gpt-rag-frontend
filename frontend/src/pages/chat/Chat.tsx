@@ -462,7 +462,7 @@ const Chat = () => {
                             </div>
                         )}
                         <div className={styles.chatInput}>
-                            <div className={styles.buttonsActions}>
+                            {/* <div className={styles.buttonsActions}>
                                 <button
                                     className={
                                         lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned
@@ -483,7 +483,7 @@ const Chat = () => {
                                 >
                                     <BroomRegular />
                                 </button>
-                            </div>
+                            </div> */}
                             <QuestionInput
                                 clearOnSend
                                 placeholder={placeholderText}

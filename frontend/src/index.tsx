@@ -9,6 +9,7 @@ import App from "./App";
 import { initializeIcons } from "@fluentui/react";
 
 import "./index.css";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 initializeIcons();
 

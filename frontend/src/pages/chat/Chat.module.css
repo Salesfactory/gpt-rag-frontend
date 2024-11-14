@@ -1,5 +1,7 @@
 .container {
     flex: 1;
+    display: flex;
+  flex-direction: column;
     background-color: white;
     margin: 0px 10px 0px 0px;
 }
@@ -7,7 +9,7 @@
 .mainContainer {
     display: flex;
     flex-direction: row-reverse;
-    height: 90%;
+    flex: 1;
     overflow: hidden;
 }
 

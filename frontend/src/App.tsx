@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./router/ProtectedRoute";
 import Layout from "./pages/layout/Layout";
+import LayoutNew from "./pages/layout/LayoutNew";
+
 import NoPage from "./pages/NoPage";
 import AccessDenied from "./pages/AccesDenied";
 import Chat from "./pages/chat/Chat";
@@ -19,7 +20,9 @@ export default function App() {
             {/* Public Routes */}
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/payment" element={<PaymentGateway />} />
-
+            <Route element={<LayoutNew />}>
+                <Route path="/financial-assitant" element={<Chat />} />
+            </Route>
             {/* Access Denied Route */}
             <Route path="/access-denied" element={<AccessDenied />} />
 
@@ -28,6 +31,7 @@ export default function App() {
                 <Route element={<Layout />}>
                     {/* Regular User and Admin Routes */}
                     <Route path="/" element={<Chat />} />
+
                     <Route path="/success-payment" element={<SuccessPayment />} />
                 </Route>
             </Route>

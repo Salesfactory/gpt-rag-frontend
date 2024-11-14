@@ -1,0 +1,63 @@
+/* Icon Styles */
+.iconLarge {
+    font-size: 1.9em;
+    color: #a7c444;
+}
+
+/* Profile Card Styles */
+.profileCard {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #dbe3ec8a;
+    border-radius: 8px;
+}
+
+.userDetails {
+    line-height: 1.2;
+    margin-right: 5px;
+}
+
+.userName {
+    font-size: 1em;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.userEmail {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin: 0;
+}
+
+/* Responsive User Details */
+@media (max-width: 576px) {
+    .userDetails {
+        display: none;
+    }
+}
+
+@media (min-width: 577px) {
+    .userDetails {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* Sidebartoggler */
+.sidebartoggler {
+    /* Define styles if needed */
+}
+
+/* Message Body */
+.messageBody {
+    /* Define styles if needed */
+}
+
+@media (max-width: 991.98px) {
+    .headerNavbar {
+        -ms-flex-wrap: nowrap !important; 
+        flex-wrap: nowrap  !important;
+    }
+}
