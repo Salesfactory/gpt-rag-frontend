@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styles from "./Navbar.module.css";
 import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
+import { Link } from "react-router-dom";
 
 
 interface NavbarProps {
@@ -84,7 +85,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
 
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
-                        <a className={`nav-link ${isDropdownOpen ? 'show' : ''}`} role="button" id="drop2" data-bs-toggle="dropdown" aria-expanded={isDropdownOpen} onClick={handleOnClickProfileCard}>
+                        <button className={`nav-link ${isDropdownOpen ? 'show' : ''}`} role="button" id="drop2" data-bs-toggle="dropdown" aria-expanded={isDropdownOpen} onClick={handleOnClickProfileCard}>
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                 <IconBell className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
@@ -92,28 +93,25 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                                     <p className={`${styles.userEmail} mb-0`}>{email}</p>
                                 </div>
                             </div>
-                        </a>
+                        </button>
                         <div className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? 'show' : ''}`} aria-labelledby="drop2" 
                         data-bs-popper={`${isDropdownOpen ? 'static' : ''}`}>
                             <div className={styles.messageBody}>
-                                <a href="#" className="d-flex align-items-center gap-2 dropdown-item">
+                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item" >
                                     <IconUser className="fs-6" />
                                     <p className="mb-0 fs-5">My Profile</p>
-                                </a>
-                                <a href="#" className="d-flex align-items-center gap-2 dropdown-item">
+                                </Link>
+                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
                                     <IconMail className="fs-6" />
                                     <p className="mb-0 fs-5">My Account</p>
-                                </a>
-                                <a href="#" className="d-flex align-items-center gap-2 dropdown-item">
+                                </Link>
+                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
                                     <IconListCheck className="fs-6" />
                                     <p className="mb-0 fs-5">My Task</p>
-                                </a>
-                                <a
-                                    href="/logout"
-                                    className="btn btn-outline-primary mx-3 mt-2 d-block"
-                                >
+                                </Link>
+                                <Link to={"/logout"} className="btn btn-outline-primary mx-3 mt-2 d-block">
                                     Logout
-                                </a>
+                                </Link>    
                             </div>
                         </div>
                     </li>
