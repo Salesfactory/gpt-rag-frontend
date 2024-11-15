@@ -38,7 +38,14 @@ from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
-from utils import create_error_response, create_success_response, SubscriptionError, InvalidSubscriptionError, InvalidFinancialPriceError, require_client_principal
+from utils import (
+    create_error_response,
+    create_success_response,
+    SubscriptionError,
+    InvalidSubscriptionError,
+    InvalidFinancialPriceError,
+    require_client_principal,
+)
 import stripe.error
 
 
@@ -278,6 +285,7 @@ def index(*, context):
 
 
 # route for other static files
+
 
 @app.route("/<path:path>")
 def static_files(path):
@@ -1085,7 +1093,8 @@ def deleteUser():
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/logout')
+
+@app.route("/logout")
 def logout():
     # Clear the user's session
     session.clear()
@@ -1097,6 +1106,7 @@ def logout():
         f"&post_logout_redirect_uri={os.getenv('AAD_REDIRECT_URI')}"
     )
     return redirect(logout_url)
+
 
 @app.route("/api/inviteUser", methods=["POST"])
 def sendEmail():
@@ -1518,7 +1528,7 @@ def get_product_prices_endpoint():
         return jsonify({"error": str(e)}), 500
 
 
-#ADD FINANCIAL ASSITANT A SUBSCRIPTION
+# ADD FINANCIAL ASSITANT A SUBSCRIPTION
 @app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
 @require_client_principal  # Security: Enforce authentication
 def financial_assistant(subscriptionId):
@@ -1585,10 +1595,8 @@ def financial_assistant(subscriptionId):
             f"An error occurred while processing your request", HTTPStatus.NOT_FOUND
         )
     except stripe.error.InvalidRequestError as e:
-                logging.error(f"Stripe API error: {str(e)}")
-                return create_error_response(
-            "Invalid Subscription ID", HTTPStatus.NOT_FOUND
-        )
+        logging.error(f"Stripe API error: {str(e)}")
+        return create_error_response("Invalid Subscription ID", HTTPStatus.NOT_FOUND)
     except stripe.error.StripeError as e:
         # Logging: Error level for API failures
         logging.error(f"Stripe API error: {str(e)}")
@@ -1608,7 +1616,8 @@ def financial_assistant(subscriptionId):
             "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
-#DELETE FINANCIAL ASSITANT A SUBSCRIPTION
+
+# DELETE FINANCIAL ASSITANT A SUBSCRIPTION
 @app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["DELETE"])
 @require_client_principal  # Security: Enforce authentication
 def remove_financial_assistant(subscriptionId):
@@ -1639,19 +1648,21 @@ def remove_financial_assistant(subscriptionId):
     if not subscriptionId or not isinstance(subscriptionId, str):
         raise BadRequest("Invalid subscription ID")
 
-    logging.info(f"Modifying subscription {subscriptionId} to remove Financial Assistant")
+    logging.info(
+        f"Modifying subscription {subscriptionId} to remove Financial Assistant"
+    )
 
     try:
         # Get the subscription to find the Financial Assistant item
         subscription = stripe.Subscription.retrieve(subscriptionId)
-        
+
         # Find the Financial Assistant item
         assistant_item_id = None
-        for item in subscription['items']['data']:
-            if item['price']['id'] == FINANCIAL_ASSISTANT_PRICE_ID:
-                assistant_item_id = item['id']
+        for item in subscription["items"]["data"]:
+            if item["price"]["id"] == FINANCIAL_ASSISTANT_PRICE_ID:
+                assistant_item_id = item["id"]
                 break
-        
+
         if not assistant_item_id:
             raise NotFound("Financial Assistant item not found in subscription")
 
@@ -1666,7 +1677,9 @@ def remove_financial_assistant(subscriptionId):
             },
         )
 
-        logging.info(f"Successfully removed Financial Assistant from subscription {subscriptionId}")
+        logging.info(
+            f"Successfully removed Financial Assistant from subscription {subscriptionId}"
+        )
 
         return create_success_response(
             {
@@ -1681,9 +1694,7 @@ def remove_financial_assistant(subscriptionId):
 
     except stripe.error.InvalidRequestError as e:
         logging.error(f"Stripe API error: {str(e)}")
-        return create_error_response(
-            "Invalid Subscription ID", HTTPStatus.NOT_FOUND
-        )
+        return create_error_response("Invalid Subscription ID", HTTPStatus.NOT_FOUND)
     except stripe.error.StripeError as e:
         logging.error(f"Stripe API error: {str(e)}")
         return create_error_response(
@@ -1698,7 +1709,8 @@ def remove_financial_assistant(subscriptionId):
             "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
-#CHECK STATUS SUBSCRIPTION FA (FINANCIAL ASSITANT)
+
+# CHECK STATUS SUBSCRIPTION FA (FINANCIAL ASSITANT)
 @app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["GET"])
 @require_client_principal  # Security: Enforce authentication
 def get_financial_assistant_status(subscriptionId):
@@ -1720,79 +1732,217 @@ def get_financial_assistant_status(subscriptionId):
                 }
             }
         }
-        
+
     Raises:
         NotFound: If the subscription is not found. HttpCode: 404
         Unauthorized: If client principal ID is missing. HttpCode: 401
     """
     try:
         subscription = stripe.Subscription.retrieve(subscriptionId)
-        
+
         financial_assistant_active = any(
-            item.price.id == FINANCIAL_ASSISTANT_PRICE_ID for item in subscription["items"]["data"]
+            item.price.id == FINANCIAL_ASSISTANT_PRICE_ID
+            for item in subscription["items"]["data"]
         )
 
         financial_assistant_item = next(
-            (item for item in subscription["items"]["data"] 
-             if item.price.id == FINANCIAL_ASSISTANT_PRICE_ID),
-            None
+            (
+                item
+                for item in subscription["items"]["data"]
+                if item.price.id == FINANCIAL_ASSISTANT_PRICE_ID
+            ),
+            None,
         )
-        
-        if financial_assistant_item is False:
-            logging.info(f"Financial Assistant not actived in subscription: {subscriptionId}")
-            return jsonify({
-                "data": {
-                    "financial_assistant_active": False,
-                    "message": "Financial Assistant is not active in this subscription."
-                }
-            }), HTTPStatus.OK
-        
-        if financial_assistant_item is None:
-            logging.info(f"Financial Assistant not found in subscription: {subscriptionId}")
-            return jsonify({
-                "data": {
-                    "financial_assistant_active": False,
-                    "message": "Financial Assistant not founded in this subscription."
-                }
-            }), HTTPStatus.OK
 
-        return jsonify({
-            "data": {
-                "financial_assistant_active": financial_assistant_active,
-                "subscription": {
-                    "id": subscription.id,
-                    "status": subscription.status,
-                    "price_id": financial_assistant_item.price.id
+        if financial_assistant_item is False:
+            logging.info(
+                f"Financial Assistant not actived in subscription: {subscriptionId}"
+            )
+            return (
+                jsonify(
+                    {
+                        "data": {
+                            "financial_assistant_active": False,
+                            "message": "Financial Assistant is not active in this subscription.",
+                        }
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+        if financial_assistant_item is None:
+            logging.info(
+                f"Financial Assistant not found in subscription: {subscriptionId}"
+            )
+            return (
+                jsonify(
+                    {
+                        "data": {
+                            "financial_assistant_active": False,
+                            "message": "Financial Assistant not founded in this subscription.",
+                        }
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+        return (
+            jsonify(
+                {
+                    "data": {
+                        "financial_assistant_active": financial_assistant_active,
+                        "subscription": {
+                            "id": subscription.id,
+                            "status": subscription.status,
+                            "price_id": financial_assistant_item.price.id,
+                        },
+                    }
                 }
-            }
-        }), HTTPStatus.OK
+            ),
+            HTTPStatus.OK,
+        )
 
     except stripe.error.InvalidRequestError:
         logging.error(f"Invalid Subscription ID: {subscriptionId}")
-        return jsonify({
-            "error": {
-                "message": "Invalid Subscription ID",
-                "status": 404
-            }
-        }), HTTPStatus.NOT_FOUND
+        return (
+            jsonify({"error": {"message": "Invalid Subscription ID", "status": 404}}),
+            HTTPStatus.NOT_FOUND,
+        )
 
     except stripe.error.StripeError as e:
         logging.error(f"Stripe API error: {str(e)}")
-        return jsonify({
-            "error": {
-                "message": "An error occurred while processing your request.",
-                "status": 400
-            }
-        }), HTTPStatus.BAD_REQUEST
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "message": "An error occurred while processing your request.",
+                        "status": 400,
+                    }
+                }
+            ),
+            HTTPStatus.BAD_REQUEST,
+        )
 
     except Exception as e:
         logging.exception(f"Unexpected error: {str(e)}")
-        return jsonify({
-            "error": {
-                "message": "An unexpected error occurred",
-                "status": 500
-            }
-        }), HTTPStatus.INTERNAL_SERVER_ERROR
+        return (
+            jsonify(
+                {"error": {"message": "An unexpected error occurred", "status": 500}}
+            ),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+
+@app.route("/api/subscription/<subscription_id>/tiers", methods=["GET"])
+@require_client_principal  # Security: Enforce authentication
+def get_subscription_details(subscription_id):
+    try:
+        # Retrieve the subscription from Stripe
+        subscription = stripe.Subscription.retrieve(
+            subscription_id, expand=["items.data.price.product"]
+        )
+
+        # Log subscription details
+        logging.info(f"[webbackend] Retrieved subscription: {subscription.id}")
+
+        # Determine the subscription tiers
+        subscription_tiers = determine_subscription_tiers(subscription)
+
+        # Prepare the response
+        result = {
+            "subscriptionId": subscription.id,
+            "subscriptionTiers": subscription_tiers,
+            "subscriptionData": {
+                "status": subscription.status,
+                "current_period_end": subscription.current_period_end,
+                "items": [
+                    {
+                        "product_id": item.price.product.id,
+                        "product_name": item.price.product.name,
+                        "price_id": item.price.id,
+                        "price_nickname": item.price.nickname,
+                        "unit_amount": item.price.unit_amount,
+                        "currency": item.price.currency,
+                        "quantity": item.quantity,
+                    }
+                    for item in subscription["items"]["data"]
+                ],
+            },
+        }
+
+        return jsonify(result), 200
+    except stripe.error.InvalidRequestError as e:
+        logging.exception("Invalid subscription ID provided")
+        return jsonify({"error": "Invalid subscription ID provided."}), 400
+    except stripe.error.AuthenticationError:
+        logging.exception("Authentication with Stripe's API failed")
+        return jsonify({"error": "Authentication with Stripe failed."}), 500
+    except stripe.error.APIConnectionError:
+        logging.exception("Network communication with Stripe failed")
+        return jsonify({"error": "Network communication with Stripe failed."}), 502
+    except stripe.error.StripeError as e:
+        logging.exception("Stripe error occurred")
+        return jsonify({"error": "An error occurred with Stripe."}), 500
+    except Exception as e:
+        logging.exception("Exception in /api/subscription/<subscription_id>/tiers")
+        return jsonify({"error": str(e)}), 500
+
+
+def determine_subscription_tiers(subscription):
+    """
+    Determines the subscription tiers based on the products and prices in the Stripe subscription.
+    Updated to include 'Premium' tiers.
+    """
+    tiers = []
+
+    # Flags to identify which products and prices are included
+    has_ai_assistant_basic = False
+    has_ai_assistant_custom = False
+    has_ai_assistant_premium = False
+    has_financial_assistant = False
+
+    # Iterate through subscription items
+    for item in subscription["items"]["data"]:
+        product = item["price"]["product"]
+        product_name = product.get("name", "").lower()
+        nickname = (
+            item["price"]["nickname"]
+            if item.get("price")
+            and isinstance(item["price"], dict)
+            and "nickname" in item["price"]
+            else None
+        )
+        price_nickname = nickname.lower() if nickname else ""
+        if "ai assistant" in product_name:
+            if "basic" in price_nickname:
+                has_ai_assistant_basic = True
+            elif "custom" in price_nickname:
+                has_ai_assistant_custom = True
+            elif "premium" in price_nickname:
+                has_ai_assistant_premium = True
+        elif "financial assistant" in product_name:
+            has_financial_assistant = True
+
+    # Determine tiers based on flags
+    if has_ai_assistant_basic:
+        tiers.append("Basic")
+    if has_ai_assistant_custom:
+        tiers.append("Custom")
+    if has_ai_assistant_premium:
+        tiers.append("Premium")
+    if has_financial_assistant:
+        tiers.append("Financial Assistant")
+
+    # Combine tiers into possible combinations
+    if has_financial_assistant:
+        if has_ai_assistant_basic:
+            tiers.append("Basic + Financial Assistant")
+        if has_ai_assistant_custom:
+            tiers.append("Custom + Financial Assistant")
+        if has_ai_assistant_premium:
+            tiers.append("Premium + Financial Assistant")
+
+    return tiers
 
 
 if __name__ == "__main__":
