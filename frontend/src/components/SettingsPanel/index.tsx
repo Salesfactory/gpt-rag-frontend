@@ -214,14 +214,14 @@ export const SettingsPanel = () => {
                     </div>
                     {loading ? (
                         <div>
+                            <h3 style={{ textAlign: "center", fontSize: "20px", marginTop: "20px"}}>Loading your settings</h3>
                             <Spinner
                                 styles={{
                                     root: {
-                                        marginTop: "50px"
+                                        marginBottom: "30px"
                                     }
                                 }}
                             />
-                            <h3 style={{ textAlign: "center" }}>Loading your settings</h3>
                         </div>
                     ) : (
                         <div className={styles.content}>
