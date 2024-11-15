@@ -32,6 +32,10 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setIsCollapsed(false);
     };
 
+    const handleFinancialAgent = () => {
+        //Leaving the Handler for the future funcionality
+    };
+
     return (
         <nav className={`navbar navbar-expand-lg navbar-light ${styles.headerNavbar} `}>
             {/* Sidebar Toggle (For smaller screens) */}
@@ -45,6 +49,15 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
 
             <div className="navbar-collapse justify-content-end px-0" id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-4">
+                    {/* Financial Assistant Toggle */}
+                    <li className="nav-item">
+                    <div className="d-flex flex-column align-items-start">
+                        <div className="form-check form-switch">
+                            <input className={`form-check-input ${styles.financialToggle}`} type="checkbox" onClick={handleFinancialAgent}/>
+                            <label className={`form-check-label ${styles.financialToggle}`}>Financial Assistant</label>
+                        </div>
+                    </div>
+                    </li>
                     {/* Feedback Panel Button */}
                     <li className="nav-item">
                         <button className="btn btn-light btn-sm d-flex align-items-center gap-1">
