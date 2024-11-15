@@ -24,12 +24,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to = "#", links 
     return (
         <li className={styles.navLi}>
             <Link
-                className={`${styles.sidebarLink} ${styles.navLink} ${isActive && !links ? styles.sidebarLinkActive : ""}`}
+                className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
                 to={to}
                 aria-expanded={isActive}
                 onClick={toggleSubmenu}
             >
-                {React.cloneElement(icon, { className: styles.sidebarLinkIcon })}
+                {React.cloneElement(icon, { className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon })}
                 <span className={styles.hideMenu}>{title}</span>
                 {links && (
                     <span className={`${styles.submenuArrow} ${isActive ? styles.submenuArrowActive : ""}`}>

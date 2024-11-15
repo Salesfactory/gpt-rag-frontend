@@ -11,6 +11,7 @@
     align-items: center;
     padding-top: 20px;
     transition: width 0.3s ease;
+    
 }
 
 .sidebar.collapsed {
@@ -67,7 +68,7 @@ aside nav ul li a {
 }
 
 aside nav ul li a:hover {
-    background-color: #85a717;
+    /*background-color: #85a717;*/
 }
 
 .sidebar.collapsed aside nav ul li a:hover {
