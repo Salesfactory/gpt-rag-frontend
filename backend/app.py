@@ -1833,7 +1833,7 @@ def get_financial_assistant_status(subscriptionId):
         )
 
 
-@app.route("/api/subscription/<subscription_id>/tiers", methods=["GET"])
+@app.route("/api/subscriptions/<subscription_id>/tiers", methods=["GET"])
 @require_client_principal  # Security: Enforce authentication
 def get_subscription_details(subscription_id):
     try:

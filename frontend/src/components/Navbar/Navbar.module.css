@@ -61,3 +61,12 @@
         flex-wrap: nowrap  !important;
     }
 }
+
+.appHeader{
+    position: fixed;
+    z-index: 10;
+    width: 100%;
+    background-color: var(--bs-tertiary-bg);
+    padding: 0 25px;
+    top: 0;
+}

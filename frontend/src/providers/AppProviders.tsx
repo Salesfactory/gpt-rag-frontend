@@ -1,13 +1,21 @@
+// AppProvider.tsx
+
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
 import { checkUser, getOrganizationSubscription } from "../api";
+import { toast } from "react-toastify";
 
-// Define interfaces for UserInfo and OrganizationInfo
+// Updated Role and SubscriptionTier types
+type Role = "admin" | "user";
+
+type SubscriptionTier = "Basic" | "Custom" | "Premium" | "Basic + Financial Assistant" | "Custom + Financial Assistant" | "Premium + Financial Assistant";
+
+// Updated UserInfo interface
 interface UserInfo {
     id: string;
     name: string;
     email: string | null;
-    role?: string;
+    role?: Role;
     organizationId?: string;
 }
 
@@ -18,9 +26,10 @@ interface OrganizationInfo {
     subscriptionId?: string;
     subscriptionStatus?: string;
     subscriptionExpirationDate?: number;
+    subscriptionTier?: SubscriptionTier;
 }
 
-// In types.ts
+// ConversationHistoryItem and ChatTurn remain unchanged
 export interface ConversationHistoryItem {
     id: string;
     start_date: string;
@@ -67,6 +76,8 @@ interface AppContextType {
     setNewChatDeleted: Dispatch<SetStateAction<boolean>>;
     isAuthenticated: boolean;
     isLoading: boolean;
+    subscriptionTiers: SubscriptionTier[]; // New state variable
+    setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>; // Setter for subscriptionTiers
 }
 
 // Create the context with a default value
@@ -74,7 +85,7 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Create the provider component
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // State variables
+    // Existing state variables
     const [showHistoryPanel, setShowHistoryPanel] = useState<boolean>(true);
     const [showFeedbackRatingPanel, setShowFeedbackRatingPanel] = useState<boolean>(false);
     const [settingsPanel, setSettingsPanel] = useState<boolean>(false);
@@ -90,9 +101,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [organization, setOrganization] = useState<OrganizationInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    // MSAL instance and active account
 
-    // Handle keyboard shortcuts
+    // New state variables for subscription tiers
+    const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
+
+    // Handle keyboard shortcuts (unchanged)
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
             const isCtrlOrCmd = event.ctrlKey || event.metaKey;
@@ -138,7 +151,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         [setShowFeedbackRatingPanel, setSettingsPanel, setShowHistoryPanel]
     );
 
-    // Add event listener for keyboard shortcuts
     useEffect(() => {
         window.addEventListener("keydown", handleKeyDown);
         return () => {
@@ -146,7 +158,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
     }, [handleKeyDown]);
 
-    // Fetch user and organization info
     useEffect(() => {
         const fetchUserAuth = async (invitationToken?: string | null) => {
             let url = "/api/auth/user";
@@ -183,13 +194,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         name: organization.name,
                         owner: organization.owner,
                         subscriptionId: organization.subscriptionId,
-                        subscriptionStatus: organization.subscriptionStatus,
-                        subscriptionExpirationDate: organization.subscriptionExpirationDate
+                        subscriptionTier: organization.subscriptionTier as SubscriptionTier // Type assertion
                     });
+
+                    if (organization.subscriptionId) {
+                        await fetchSubscriptionTiers(organization.subscriptionId, userId);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch organization details:", error);
+                toast.error("Failed to fetch organization details.");
                 throw error;
+            }
+        };
+
+        const fetchSubscriptionTiers = async (subscriptionId: string, userId: string) => {
+            try {
+                const response = await fetch(`/api/subscriptions/${subscriptionId}/tiers`, {
+                    method: "GET",
+                    headers: {
+                        "X-MS-CLIENT-PRINCIPAL-ID": userId || "", // Ensure user is set
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to fetch subscription tiers");
+                }
+
+                const data = await response.json();
+                setSubscriptionTiers(data.subscriptionTiers as SubscriptionTier[]);
+                // Optionally, update organization.subscriptionTier if needed
+            } catch (error: any) {
+                console.error("Failed to fetch subscription tiers:", error);
+                toast.error(error.message || "Failed to fetch subscription tiers.");
+                // Handle error appropriately, e.g., show notification
             }
         };
 
@@ -210,13 +250,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 }
             } catch (error) {
                 console.error("Initialization failed:", error);
+                toast.error("Failed to initialize user authentication.");
             } finally {
                 setIsLoading(false);
             }
         };
 
         initialize();
-    }, []);
+    }, [user?.id]);
 
     // Memoize context value to prevent unnecessary re-renders
     const contextValue = useMemo(
@@ -248,7 +289,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             newChatDeleted,
             setNewChatDeleted,
             isAuthenticated,
-            isLoading
+            isLoading,
+            subscriptionTiers, // New state variable
+            setSubscriptionTiers // Setter for subscriptionTiers
         }),
         [
             showHistoryPanel,
@@ -265,7 +308,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             conversationIsLoading,
             newChatDeleted,
             isAuthenticated,
-            isLoading
+            isLoading,
+            subscriptionTiers
         ]
     );
 

@@ -204,6 +204,7 @@
     margin: 20px 0;
     background: #00000029;
     width: 100%;
+    
   }
   
   /* Left Sidebar */
@@ -214,6 +215,8 @@
     transition: 0.2s ease-in;
     height: 100%;
     z-index: 11;
+    position: fixed;
+    top: 0;
   }
   
   /* Brand Logo */

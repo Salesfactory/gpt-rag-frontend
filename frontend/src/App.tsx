@@ -10,7 +10,7 @@ import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
 import Organization from "./pages/organization/Organization";
-import FinancialAssistant from "./pages/financialassistant/FinancialAssistant"
+import FinancialAssistant from "./pages/financialassistant/FinancialAssistant";
 
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -22,7 +22,7 @@ export default function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/payment" element={<PaymentGateway />} />
             <Route element={<LayoutNew />}>
-                <Route path="/financial-assitant" element={<Chat />} />
+                <Route path="/financial-assistant" element={<Chat />} />
             </Route>
             {/* Access Denied Route */}
             <Route path="/access-denied" element={<AccessDenied />} />
