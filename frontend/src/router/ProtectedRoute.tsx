@@ -1,4 +1,4 @@
-// src/ProtectedRoute.jsx
+// src/ProtectedRoute.tsx
 import React from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { useAppContext } from "../providers/AppProviders";
@@ -11,33 +11,49 @@ import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Opt
  * @param {Array} allowedRoles - Array of roles that are permitted to access the route.
  */
 type Role = "admin" | "user";
+type SubscriptionTier = "Basic" | "Custom" | "Premium" | "Basic + Financial Assistant" | "Custom + Financial Assistant" | "Premium + Financial Assistant";
+
 interface ProtectedRouteProps {
     allowedRoles: Role[];
+    allowedTiers: SubscriptionTier[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-    const { user, isAuthenticated, organization } = useAppContext();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTiers }) => {
+    const { user, isAuthenticated, organization, subscriptionTiers, isLoading } = useAppContext();
 
-    // Function to check if the user has at least one of the allowed roles
+    // Check if the user has the required role
     const hasRequiredRole = (): boolean => {
-        const roles = [user?.role];
-        //const roles = activeAccount.idTokenClaims?.roles as string[] | undefined;
-        if (!roles) return false;
-        return allowedRoles.some(role => roles.includes(role));
+        if (!user?.role) return false;
+        return allowedRoles.includes(user.role);
     };
 
-    const isValidSubscriptionForOrganization = (): boolean => {
-        if (!user?.organizationId || !organization?.subscriptionId) return false;
-        return true;
+    // Check if the user's subscription tier is in the allowed tiers
+    const hasRequiredTier = (): boolean => {
+        const userSubscriptionTier = organization?.subscriptionId;
+        if (!userSubscriptionTier) return false;
+        if (!subscriptionTiers || subscriptionTiers.length === 0) return false;
+        return subscriptionTiers.some(tier => allowedTiers.includes(tier));
     };
+
+    // Ensure the organization and subscription information is valid
+    const isValidSubscriptionForOrganization = (): boolean => {
+        return user?.organizationId && organization?.subscriptionId ? true : false;
+    };
+
+    // Show a loading spinner while loading data
+    if (isLoading) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <>
-            {isValidSubscriptionForOrganization() && hasRequiredRole() ? (
+            {isAuthenticated && hasRequiredRole() && hasRequiredTier() ? (
                 <Outlet />
-            ) : hasRequiredRole() === false ? (
+            ) : !hasRequiredRole() ? (
                 <Navigate to="/access-denied" replace />
-            ) : isValidSubscriptionForOrganization() === false ? (
+            ) : !hasRequiredTier() ? (
+                <Navigate to="/access-denied" replace />
+            ) : !isValidSubscriptionForOrganization() ? (
                 <Navigate to="/onboarding" replace />
             ) : (
                 <Navigate to="/access-denied" replace />
