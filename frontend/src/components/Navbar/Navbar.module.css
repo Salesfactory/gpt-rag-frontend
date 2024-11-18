@@ -31,6 +31,27 @@
     margin: 0;
 }
 
+.financialToggle{
+    font-size: 0.9rem; 
+    font-weight: 410; 
+    color: #000000;
+}
+
+.financialToggle[type="checkbox"]{
+    padding-top: 13%;
+    border-color: #85a717;
+}
+
+.financialToggle[type="checkbox"]:checked {
+    background-color: #85a717; 
+    border-color: #85a717;
+}
+
+.financialToggle[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem #aad12c;
+}
+
 /* Responsive User Details */
 @media (max-width: 576px) {
     .userDetails {
