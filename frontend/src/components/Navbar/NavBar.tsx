@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Navbar.module.css";
 import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
@@ -8,31 +8,44 @@ import { Link } from "react-router-dom";
 interface NavbarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
+function persistFinancialAssistantState(userId: string | undefined, state: boolean) {
+    localStorage.setItem(`financialAssistantActive_${userId}`, JSON.stringify(state));
+}
 
 const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
-    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel, user } = useAppContext();
+    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel, user, organization, subscriptionTiers } = useAppContext();
     const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
-    const userName = user?.name || ""; // Default to empty string if user or user.name is null
+    const userName = user?.name || "";
     const email = user?.email || " ";
+    const subscriptiontype = subscriptionTiers || " ";
+    const [isActive, setIsActive] = useState(false);
+
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    const fastatus = subscriptiontype.includes('Basic + Financial Assistant') ? true : false  || 
+    subscriptiontype.includes('Premium + Financial Assistant') || subscriptiontype.includes('Custom + Financial Assistant');
+    
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
+        setIsDropdownOpen(false)
     };
 
     const handleShowFeedbackRatingPanel = () => {
         setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
         setSettingsPanel(false);
         setShowHistoryPanel(false);
+        setIsDropdownOpen(false)
     };
 
     const handleShowSettings = () => {
         setSettingsPanel(!settingsPanel);
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
+        setIsDropdownOpen(false)
     };
 
     const handleOnClickShowSidebar = () => {
@@ -48,9 +61,23 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
     }
+
+
+    useEffect(() => {
+        const savedState = localStorage.getItem(`financialAssistantActive_${user?.id}`);
+        if (savedState !== null) {
+            setIsActive(JSON.parse(savedState));
+        }
+
+    }, [user?.id]);
+    
     
     const handleFinancialAgent = () => {
-        //Leaving the Handler for the future funcionality
+        const newState = !isActive;
+        setIsActive(newState);
+
+        persistFinancialAssistantState(user?.id, newState);
+  
     };
 
 
@@ -68,14 +95,16 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
             <div className="navbar-collapse justify-content-end px-0" id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Financial Assistant Toggle */}
-                    <li className="nav-item">
-                    <div className="d-flex flex-column align-items-start">
-                        <div className="form-check form-switch">
-                            <input className={`form-check-input ${styles.financialToggle}`} type="checkbox" onClick={handleFinancialAgent}/>
-                            <label className={`form-check-label ${styles.financialToggle}`}>Financial Assistant</label>
+                    { fastatus && (
+                        <li className="nav-item">
+                        <div className="d-flex flex-column align-items-start">
+                            <div className="form-check form-switch">
+                                <input className={`form-check-input ${styles.financialToggle}`} type="checkbox" onClick={handleFinancialAgent} checked={isActive}/>
+                                <label className={`form-check-label ${styles.financialToggle}`}>Financial Assistant</label>
+                            </div>
                         </div>
-                    </div>
-                    </li>
+                        </li>
+                    )}
                     {/* Feedback Panel Button */}
                     <li className="nav-item">
                         <button onClick={handleShowFeedbackRatingPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
