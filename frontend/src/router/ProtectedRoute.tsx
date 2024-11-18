@@ -10,17 +10,16 @@ import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Opt
  *
  * @param {Array} allowedRoles - Array of roles that are permitted to access the route.
  */
+type Role = "admin" | "user";
 interface ProtectedRouteProps {
-    allowedRoles: string[];
+    allowedRoles: Role[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     const { user, isAuthenticated, organization } = useAppContext();
 
-    console.log(isAuthenticated);
     // Function to check if the user has at least one of the allowed roles
     const hasRequiredRole = (): boolean => {
-        console.log(user);
         const roles = [user?.role];
         //const roles = activeAccount.idTokenClaims?.roles as string[] | undefined;
         if (!roles) return false;

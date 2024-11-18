@@ -1,7 +1,7 @@
 // SidebarItem.tsx
 import React from "react";
 import { Link } from "react-router-dom";
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import styles from "./Sidebar.module.css";
 
 interface SidebarItemProps {
@@ -11,7 +11,7 @@ interface SidebarItemProps {
     links?: Array<{ title: string; href: string }>;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to = "#", links }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links }) => {
     const [isActive, setIsActive] = React.useState(false);
 
     const toggleSubmenu = (e: React.MouseEvent) => {
@@ -23,33 +23,41 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to = "#", links 
 
     return (
         <li className={styles.navLi}>
-            <Link
-                className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
-                to={to}
-                aria-expanded={isActive}
-                onClick={toggleSubmenu}
-            >
-                {React.cloneElement(icon, { className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon })}
-                <span className={styles.hideMenu}>{title}</span>
-                {links && (
-                    <span className={`${styles.submenuArrow} ${isActive ? styles.submenuArrowActive : ""}`}>
-                        <IconChevronDown />
-                    </span>
-                )}
-            </Link>
-            {links && (
-                <ul
-                    className={`${styles.submenu} ${styles.navUl} ${isActive ? styles.submenuActive : ""}`}
-                    style={{ maxHeight: isActive ? `${links.length * 40}px` : "0" }}
-                >
-                    {links.map((linkItem, index) => (
-                        <li key={index} className={`${styles.submenuItem} `}>
-                            <Link className={styles.submenuLink} to={linkItem.href}>
-                                {linkItem.title}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
+            {links ? (
+                <>
+                    <div
+                        className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
+                        aria-expanded={isActive}
+                        onClick={toggleSubmenu}
+                    >
+                        {React.cloneElement(icon, {
+                            className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon
+                        })}
+                        <span className={styles.hideMenu}>{title}</span>
+                        <span className={`${styles.submenuArrow} ${isActive ? styles.submenuArrowActive : ""}`}>
+                            {isActive ? <IconChevronUp /> : <IconChevronDown />}
+                        </span>
+                    </div>
+                    <ul
+                        className={`${styles.submenu} ${styles.navUl} ${isActive ? styles.submenuActive : ""}`}
+                        style={{ maxHeight: isActive ? `${links.length * 40}px` : "0" }}
+                    >
+                        {links.map((linkItem, index) => (
+                            <li key={index} className={styles.submenuItem}>
+                                <Link className={styles.submenuLink} to={linkItem.href}>
+                                    {linkItem.title}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            ) : (
+                <Link className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`} to={to || "#"}>
+                    {React.cloneElement(icon, {
+                        className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon
+                    })}
+                    <span className={styles.hideMenu}>{title}</span>
+                </Link>
             )}
         </li>
     );

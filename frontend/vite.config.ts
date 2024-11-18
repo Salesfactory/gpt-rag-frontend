@@ -37,7 +37,11 @@ export default defineConfig({
             "/api/chat": "http://localhost:8000",
             "/api/auth/user": "http://localhost:8000",
             "/api/prices": "http://localhost:8000",
-            "/api/subscription/<subscriptionId>/financialAssistant": "http://localhost:8000"
+            "/api/subscription/<subscriptionId>/financialAssistant": "http://localhost:8000",
+            "^/api/subscriptions/.*?/tiers": {
+                target: "http://localhost:8000",
+                changeOrigin: true
+            }
         },
         host: true
     }
