@@ -289,7 +289,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     );
 };
 
-export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boolean; onDismiss: any; onConfirm: any }) => {
+export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser }: { isOpen: boolean; onDismiss: any; onConfirm: any; isDeletingUser: boolean; }) => {
     return (
         <Dialog
             minWidth={800}
@@ -307,17 +307,37 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boo
                 onDismiss: onDismiss,
                 styles: { main: { maxWidth: 450 } }
             }}
-        >
-            <DialogContent>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "end",
-                        gap: "10px"
-                    }}
-                >
+            > 
+                {isDeletingUser && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            zIndex: 9999
+                        }}
+                    >
+                        <Spinner
+                            styles={{
+                                root: {
+                                    width: "50px",
+                                    height: "50px"
+                                }
+                            }}
+                        />
+                    </div>
+                )}
+                <DialogContent>
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "end",
+                            gap: "10px"
+                        }}
+                    >
                     <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
-                    <PrimaryButton
+                        <PrimaryButton
                         styles={{
                             root: {
                                 backgroundColor: "#9FC51D",
@@ -336,14 +356,14 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boo
                                 color: "white"
                             }
                         }}
-                        style={{ marginTop: "20px" }}
+                            style={{ marginTop: "20px" }}
                         onClick={() => {
                             onConfirm();
                         }}
-                        text="Delete user"
-                    />
-                </div>
-            </DialogContent>
+                            text="Delete user"
+                        />
+                    </div>
+                </DialogContent>
         </Dialog>
     );
 };
@@ -366,7 +386,7 @@ const Admin = () => {
 
     const [isOpen, setIsOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
+    const [isDeletingUser, setIsDeletingUser] = useState(false);
     if (!user) {
         return <div>Please log in to view the user list.</div>;
     }
@@ -422,7 +442,13 @@ const Admin = () => {
         }
     }, [search]);
 
+    const handleDeleteClick = (user: any) => {
+        setSelectedUser(user); 
+        setIsDeleting(true);    
+    };
+
     const deleteUserFromOrganization = (id: string) => {
+        setIsDeletingUser(true);
         deleteUser({ user, userId: id }).then(res => {
             if (res.error) {
                 console.log("error", res.error);
@@ -435,6 +461,7 @@ const Admin = () => {
                 setIsDeleting(false);
                 toast("User deleted successfully", { type: "success" });
             }
+            setIsDeletingUser(false);
         });
     };
 
@@ -524,6 +551,7 @@ const Admin = () => {
                         onConfirm={() => {
                             deleteUserFromOrganization(selectedUser?.id);
                         }}
+                    isDeletingUser={isDeletingUser}
                     />
                     {loading ? (
                         <Spinner
@@ -604,7 +632,7 @@ const Admin = () => {
                                                             <button className={styles.button} title="Edit user" aria-label="Edit user" onClick={() => {}}>
                                                                 <EditRegular />
                                                             </button>
-                                                            <button className={styles.button} title="Delete user" aria-label="Delete user" onClick={() => {}}>
+                                                            <button className={styles.button} title="Delete user" aria-label="Delete user" onClick={() => {handleDeleteClick(user)}}>
                                                                 <DeleteRegular />
                                                             </button>
                                                         </div>
