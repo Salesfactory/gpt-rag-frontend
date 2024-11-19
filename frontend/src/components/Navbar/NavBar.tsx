@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Navbar.module.css";
 import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
@@ -7,32 +7,55 @@ import { Link } from "react-router-dom";
 interface NavbarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
+function persistFinancialAssistantState(userId: string | undefined, state: boolean) {
+    localStorage.setItem(`financialAssistantActive_${userId}`, JSON.stringify(state));
+}
 
 const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
-    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel, user } =
-        useAppContext();
+    const {
+        showHistoryPanel,
+        setShowHistoryPanel,
+        showFeedbackRatingPanel,
+        setShowFeedbackRatingPanel,
+        settingsPanel,
+        setSettingsPanel,
+        user,
+        organization,
+        subscriptionTiers,
+        isFinancialAssistantActive,
+        setIsFinancialAssistantActive
+    } = useAppContext();
     const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
-    const userName = user?.name || ""; // Default to empty string if user or user.name is null
+    const userName = user?.name || "";
     const email = user?.email || " ";
+    const subscriptiontype = subscriptionTiers || " ";
+
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
+        ? true
+        : false || subscriptiontype.includes("Premium + Financial Assistant") || subscriptiontype.includes("Custom + Financial Assistant");
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
+        setIsDropdownOpen(false);
     };
 
     const handleShowFeedbackRatingPanel = () => {
         setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
         setSettingsPanel(false);
         setShowHistoryPanel(false);
+        setIsDropdownOpen(false);
     };
 
     const handleShowSettings = () => {
         setSettingsPanel(!settingsPanel);
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
+        setIsDropdownOpen(false);
     };
 
     const handleOnClickShowSidebar = () => {
@@ -44,10 +67,13 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
+
     };
 
     const handleFinancialAgent = () => {
-        //Leaving the Handler for the future funcionality
+        const newState = !isFinancialAssistantActive;
+        setIsFinancialAssistantActive(newState);
+        persistFinancialAssistantState(user?.id, newState);
     };
 
     return (
@@ -64,14 +90,21 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
             <div className="navbar-collapse justify-content-end px-0" id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Financial Assistant Toggle */}
-                    <li className="nav-item">
-                        <div className="d-flex flex-column align-items-start">
-                            <div className="form-check form-switch">
-                                <input className={`form-check-input ${styles.financialToggle}`} type="checkbox" onClick={handleFinancialAgent} />
-                                <span className={`form-check-label ${styles.financialToggleText}`}>Financial Assistant</span>
+                    {fastatus && (
+                        <li className="nav-item">
+                            <div className="d-flex flex-column align-items-start">
+                                <div className="form-check form-switch">
+                                    <input
+                                        className={`form-check-input ${styles.financialToggle}`}
+                                        type="checkbox"
+                                        checked={isFinancialAssistantActive}
+                                        onChange={handleFinancialAgent}
+                                    />
+                                    <span className={`form-check-label ${styles.financialToggleText}`}>Financial Assistant</span>
+                                </div>
                             </div>
-                        </div>
-                    </li>
+                        </li>
+                    )}
                     {/* Feedback Panel Button */}
                     <li className="nav-item">
                         <button onClick={handleShowFeedbackRatingPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
@@ -99,7 +132,6 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
                         <button
-                            type="button"
                             className={`nav-link ${isDropdownOpen ? "show" : ""}`}
                             role="button"
                             id="drop2"
@@ -116,7 +148,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                             </div>
                         </button>
                         <div
-                            className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? "show" : ""} `}
+                            className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? "show" : ""}`}
                             aria-labelledby="drop2"
                             data-bs-popper={`${isDropdownOpen ? "static" : ""}`}
                         >
