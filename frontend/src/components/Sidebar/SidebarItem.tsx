@@ -1,4 +1,3 @@
-// SidebarItem.tsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
@@ -9,16 +8,16 @@ interface SidebarItemProps {
     icon: JSX.Element;
     to?: string;
     links?: Array<{ title: string; href: string }>;
+    isActive: boolean;  
+    onClick: () => void; 
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links }) => {
-    const [isActive, setIsActive] = React.useState(false);
-
+const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, isActive, onClick }) => {
     const toggleSubmenu = (e: React.MouseEvent) => {
         if (links) {
             e.preventDefault();
-            setIsActive(!isActive);
         }
+        onClick();
     };
 
     return (
@@ -33,7 +32,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links }) => 
                         {React.cloneElement(icon, {
                             className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon
                         })}
-                        <span className={styles.hideMenu}>{title}</span>
+                        <span className={isActive ? styles.textActive : ""}>{title}</span>
                         <span className={`${styles.submenuArrow} ${isActive ? styles.submenuArrowActive : ""}`}>
                             {isActive ? <IconChevronUp /> : <IconChevronDown />}
                         </span>
@@ -52,11 +51,15 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links }) => 
                     </ul>
                 </>
             ) : (
-                <Link className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`} to={to || "#"}>
+                <Link
+                    className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
+                    to={to || "#"}
+                    onClick={onClick}
+                >
                     {React.cloneElement(icon, {
                         className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon
                     })}
-                    <span className={styles.hideMenu}>{title}</span>
+                    <span className={isActive ? styles.textActive : ""}>{title}</span>
                 </Link>
             )}
         </li>
