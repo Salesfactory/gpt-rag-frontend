@@ -78,6 +78,8 @@ interface AppContextType {
     isLoading: boolean;
     subscriptionTiers: SubscriptionTier[]; // New state variable
     setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>; // Setter for subscriptionTiers
+    isFinancialAssistantActive: boolean;
+    setIsFinancialAssistantActive: Dispatch<SetStateAction<boolean>>;
 }
 
 // Create the context with a default value
@@ -101,6 +103,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [organization, setOrganization] = useState<OrganizationInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isFinancialAssistantActive, setIsFinancialAssistantActive] = useState(false);
 
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
@@ -248,6 +251,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         await fetchOrganizationDetails(authData.user.id, authData.user.organizationId);
                     }
                 }
+                const savedState = localStorage.getItem(`financialAssistantActive_${user?.id}`);
+                if (savedState !== null) {
+                    setIsFinancialAssistantActive(JSON.parse(savedState));
+                }
             } catch (error) {
                 console.error("Initialization failed:", error);
                 toast.error("Failed to initialize user authentication.");
@@ -291,7 +298,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isAuthenticated,
             isLoading,
             subscriptionTiers, // New state variable
-            setSubscriptionTiers // Setter for subscriptionTiers
+            setSubscriptionTiers, // Setter for subscriptionTiers
+            isFinancialAssistantActive,
+            setIsFinancialAssistantActive
         }),
         [
             showHistoryPanel,
@@ -309,7 +318,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             newChatDeleted,
             isAuthenticated,
             isLoading,
-            subscriptionTiers
+            subscriptionTiers,
+            isFinancialAssistantActive
         ]
     );
 

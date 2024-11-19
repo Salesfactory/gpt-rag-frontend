@@ -4,7 +4,6 @@ import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, Icon
 import { useAppContext } from "../../providers/AppProviders";
 import { Link } from "react-router-dom";
 
-
 interface NavbarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -13,73 +12,68 @@ function persistFinancialAssistantState(userId: string | undefined, state: boole
 }
 
 const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
-    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel, user, organization, subscriptionTiers } = useAppContext();
+    const {
+        showHistoryPanel,
+        setShowHistoryPanel,
+        showFeedbackRatingPanel,
+        setShowFeedbackRatingPanel,
+        settingsPanel,
+        setSettingsPanel,
+        user,
+        organization,
+        subscriptionTiers,
+        isFinancialAssistantActive,
+        setIsFinancialAssistantActive
+    } = useAppContext();
     const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     const userName = user?.name || "";
     const email = user?.email || " ";
     const subscriptiontype = subscriptionTiers || " ";
-    const [isActive, setIsActive] = useState(false);
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    const fastatus = subscriptiontype.includes('Basic + Financial Assistant') ? true : false  || 
-    subscriptiontype.includes('Premium + Financial Assistant') || subscriptiontype.includes('Custom + Financial Assistant');
-    
+    const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
+        ? true
+        : false || subscriptiontype.includes("Premium + Financial Assistant") || subscriptiontype.includes("Custom + Financial Assistant");
 
     const handleShowHistoryPanel = () => {
         setShowHistoryPanel(!showHistoryPanel);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
-        setIsDropdownOpen(false)
+        setIsDropdownOpen(false);
     };
 
     const handleShowFeedbackRatingPanel = () => {
         setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
         setSettingsPanel(false);
         setShowHistoryPanel(false);
-        setIsDropdownOpen(false)
+        setIsDropdownOpen(false);
     };
 
     const handleShowSettings = () => {
         setSettingsPanel(!settingsPanel);
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
-        setIsDropdownOpen(false)
+        setIsDropdownOpen(false);
     };
 
     const handleOnClickShowSidebar = () => {
         setIsCollapsed(false);
     };
 
-
- 
-
     const handleOnClickProfileCard = () => {
         setIsDropdownOpen(!isDropdownOpen);
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
-    }
-
-
-    useEffect(() => {
-        const savedState = localStorage.getItem(`financialAssistantActive_${user?.id}`);
-        if (savedState !== null) {
-            setIsActive(JSON.parse(savedState));
-        }
-
-    }, [user?.id]);
-    
-    
-    const handleFinancialAgent = () => {
-        const newState = !isActive;
-        setIsActive(newState);
-
-        persistFinancialAssistantState(user?.id, newState);
-  
     };
 
+    const handleFinancialAgent = () => {
+        const newState = !isFinancialAssistantActive;
+        setIsFinancialAssistantActive(newState);
+        persistFinancialAssistantState(user?.id, newState);
+    };
 
     return (
         <nav className={`navbar navbar-expand-lg navbar-light ${styles.headerNavbar} `}>
@@ -95,14 +89,19 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
             <div className="navbar-collapse justify-content-end px-0" id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Financial Assistant Toggle */}
-                    { fastatus && (
+                    {fastatus && (
                         <li className="nav-item">
-                        <div className="d-flex flex-column align-items-start">
-                            <div className="form-check form-switch">
-                                <input className={`form-check-input ${styles.financialToggle}`} type="checkbox" onClick={handleFinancialAgent} checked={isActive}/>
-                                <label className={`form-check-label ${styles.financialToggle}`}>Financial Assistant</label>
+                            <div className="d-flex flex-column align-items-start">
+                                <div className="form-check form-switch">
+                                    <input
+                                        className={`form-check-input ${styles.financialToggle}`}
+                                        type="checkbox"
+                                        checked={isFinancialAssistantActive}
+                                        onChange={handleFinancialAgent}
+                                    />
+                                    <label className={`form-check-label ${styles.financialToggle}`}>Financial Assistant</label>
+                                </div>
                             </div>
-                        </div>
                         </li>
                     )}
                     {/* Feedback Panel Button */}
@@ -131,7 +130,14 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
 
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
-                        <button className={`nav-link ${isDropdownOpen ? 'show' : ''}`} role="button" id="drop2" data-bs-toggle="dropdown" aria-expanded={isDropdownOpen} onClick={handleOnClickProfileCard}>
+                        <button
+                            className={`nav-link ${isDropdownOpen ? "show" : ""}`}
+                            role="button"
+                            id="drop2"
+                            data-bs-toggle="dropdown"
+                            aria-expanded={isDropdownOpen}
+                            onClick={handleOnClickProfileCard}
+                        >
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                 <IconBell className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
@@ -140,10 +146,13 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                                 </div>
                             </div>
                         </button>
-                        <div className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? 'show' : ''}`} aria-labelledby="drop2" 
-                        data-bs-popper={`${isDropdownOpen ? 'static' : ''}`}>
+                        <div
+                            className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? "show" : ""}`}
+                            aria-labelledby="drop2"
+                            data-bs-popper={`${isDropdownOpen ? "static" : ""}`}
+                        >
                             <div className={styles.messageBody}>
-                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item" >
+                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
                                     <IconUser className="fs-6" />
                                     <p className="mb-0 fs-5">My Profile</p>
                                 </Link>
@@ -157,7 +166,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                                 </Link>
                                 <Link to={"/logout"} className="btn btn-outline-primary mx-3 mt-2 d-block">
                                     Logout
-                                </Link>    
+                                </Link>
                             </div>
                         </div>
                     </li>
