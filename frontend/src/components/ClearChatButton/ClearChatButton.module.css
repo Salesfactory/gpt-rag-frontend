@@ -1,4 +1,5 @@
-.container {
+/* removing the styling for clear chat
+/*.container {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -7,4 +8,4 @@
 
 .disabled {
     opacity: 0.4;
-}
+}*/

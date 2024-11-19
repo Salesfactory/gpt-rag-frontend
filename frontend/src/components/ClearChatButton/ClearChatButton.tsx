@@ -1,4 +1,5 @@
-import { Text } from "@fluentui/react";
+// removing the clear chat button
+/*import { Text } from "@fluentui/react";
 import { Delete24Regular } from "@fluentui/react-icons";
 
 import styles from "./ClearChatButton.module.css";
@@ -26,4 +27,4 @@ export const ClearChatButton = ({ className, disabled, onClick }: Props) => {
             <Text>{reiniciar_text}</Text>
         </div>
     );
-};
+};*/
