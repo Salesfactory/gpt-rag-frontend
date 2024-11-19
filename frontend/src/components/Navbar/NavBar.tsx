@@ -4,13 +4,13 @@ import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, Icon
 import { useAppContext } from "../../providers/AppProviders";
 import { Link } from "react-router-dom";
 
-
 interface NavbarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
-    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel, user } = useAppContext();
+    const { showHistoryPanel, setShowHistoryPanel, showFeedbackRatingPanel, setShowFeedbackRatingPanel, settingsPanel, setSettingsPanel, user } =
+        useAppContext();
     const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     const userName = user?.name || ""; // Default to empty string if user or user.name is null
@@ -39,20 +39,16 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setIsCollapsed(false);
     };
 
-
- 
-
     const handleOnClickProfileCard = () => {
         setIsDropdownOpen(!isDropdownOpen);
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
-    }
-    
+    };
+
     const handleFinancialAgent = () => {
         //Leaving the Handler for the future funcionality
     };
-
 
     return (
         <nav className={`navbar navbar-expand-lg navbar-light ${styles.headerNavbar} `}>
@@ -69,12 +65,12 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                 <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Financial Assistant Toggle */}
                     <li className="nav-item">
-                    <div className="d-flex flex-column align-items-start">
-                        <div className="form-check form-switch">
-                            <input className={`form-check-input ${styles.financialToggle}`} type="checkbox" onClick={handleFinancialAgent}/>
-                            <label className={`form-check-label ${styles.financialToggle}`}>Financial Assistant</label>
+                        <div className="d-flex flex-column align-items-start">
+                            <div className="form-check form-switch">
+                                <input className={`form-check-input ${styles.financialToggle}`} type="checkbox" onClick={handleFinancialAgent} />
+                                <span className={`form-check-label ${styles.financialToggleText}`}>Financial Assistant</span>
+                            </div>
                         </div>
-                    </div>
                     </li>
                     {/* Feedback Panel Button */}
                     <li className="nav-item">
@@ -102,7 +98,15 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
 
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
-                        <button className={`nav-link ${isDropdownOpen ? 'show' : ''}`} role="button" id="drop2" data-bs-toggle="dropdown" aria-expanded={isDropdownOpen} onClick={handleOnClickProfileCard}>
+                        <button
+                            type="button"
+                            className={`nav-link ${isDropdownOpen ? "show" : ""}`}
+                            role="button"
+                            id="drop2"
+                            data-bs-toggle="dropdown"
+                            aria-expanded={isDropdownOpen}
+                            onClick={handleOnClickProfileCard}
+                        >
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                 <IconBell className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
@@ -111,10 +115,13 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                                 </div>
                             </div>
                         </button>
-                        <div className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? 'show' : ''}`} aria-labelledby="drop2" 
-                        data-bs-popper={`${isDropdownOpen ? 'static' : ''}`}>
+                        <div
+                            className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? "show" : ""} `}
+                            aria-labelledby="drop2"
+                            data-bs-popper={`${isDropdownOpen ? "static" : ""}`}
+                        >
                             <div className={styles.messageBody}>
-                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item" >
+                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
                                     <IconUser className="fs-6" />
                                     <p className="mb-0 fs-5">My Profile</p>
                                 </Link>
@@ -128,7 +135,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                                 </Link>
                                 <Link to={"/logout"} className="btn btn-outline-primary mx-3 mt-2 d-block">
                                     Logout
-                                </Link>    
+                                </Link>
                             </div>
                         </div>
                     </li>
