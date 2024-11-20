@@ -30,7 +30,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [activeItem, setActiveItem] = useState<string | null>(null);
     const handleItemClick = (itemTitle: string) => {
-        setActiveItem(itemTitle); // Cambia el estado del item activo
+        setActiveItem(itemTitle);
     };
 
     const handleOnClickCloseSideBar = () => {
