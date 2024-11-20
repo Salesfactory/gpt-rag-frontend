@@ -1,13 +1,16 @@
 // Sidebar.tsx
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     IconX,
     IconMessagePlus,
     IconBell,
-    IconDiscountCheck,
+    IconRosetteDiscountCheck,
     IconStar,
     IconFileInvoice,
+    IconAddressBook,
+    IconUserCheck,
+    IconUsers,
     IconChecklist,
     IconHeadset,
     IconDots,
@@ -25,6 +28,11 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
+    const [activeItem, setActiveItem] = useState<string | null>(null);
+    const handleItemClick = (itemTitle: string) => {
+        setActiveItem(itemTitle);
+    };
+
     const handleOnClickCloseSideBar = () => {
         setIsCollapsed(true);
     };
@@ -78,11 +86,40 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             divider: true
         },
         {
+            section: "Admin Features",
+            items: [
+                {
+                    title: "Roles and Access",
+                    icon: <IconUsers className={styles.sidebarLinkIcon} />,
+                    to: "/admin",
+                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin"]
+                },
+                {
+                    title: "Invitations",
+                    icon: <IconUserCheck className={styles.sidebarLinkIcon} />,
+                    to: "/invitations",
+                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin"]
+                },
+                {
+                    title: "Organization Management",
+                    icon: <IconAddressBook className={styles.sidebarLinkIcon} />,
+                    to: "/organization",
+                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin"]
+                }
+            ]
+        },
+        {
+            divider: true
+        },
+        {
             section: "Subscription",
             items: [
                 {
                     title: "Subscription Management",
-                    icon: <IconDiscountCheck className={styles.sidebarLinkIcon} />,
+                    icon: <IconRosetteDiscountCheck className={styles.sidebarLinkIcon} />,
                     to: "/subscription",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin"]
@@ -249,6 +286,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                                     icon={item.icon}
                                                     to={item.to}
                                                     links={item.links}
+                                                    isActive={activeItem=== item.title}
+                                                    onClick={()=>handleItemClick(item.title)}
                                                 />
                                             );
                                         })}

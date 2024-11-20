@@ -114,16 +114,17 @@
     align-items: center;
     line-height: 26px;
     position: relative;
-    padding: 9px 16px;
+    padding: 9px 9px;
     border-radius: 6px;
-    gap: 10px;
+    gap: 6px;
     text-decoration: none;
     font-weight: 500;
     margin-bottom: 4px;
+    width: 100%;
   }
   
   .sidebarLinkIcon {
-    font-size: 18px;
+    font-size: 1.5rem;
     color: var(--bs-heading-color);
     opacity: 0.8;
   }
