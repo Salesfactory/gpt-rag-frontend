@@ -1,0 +1,54 @@
+# .github/workflows/deploy.yml
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14' # Adjust the Node.js version as needed
+
+      # Build the frontend
+      - name: Build Frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
+      # Install Azure CLI
+      - name: Install Azure CLI
+        uses: azure/CLI@v1
+
+      # Log in to Azure
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Build and deploy the backend
+      - name: Build and Deploy Backend
+        run: |
+          cd backend
+          rm -rf backend_env
+          zip -r ../deploy.zip *
+          cd ..
+          az webapp deploy \
+            --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name ${{ secrets.AZURE_WEBAPP_NAME }} \
+            --src-path deploy.zip \
+            --type zip \
+            --async true
