@@ -76,9 +76,6 @@ const Invitations = () => {
         return <div>Please log in to view your invitations.</div>;
     }
 
-    if (loading) {
-        return <div>Loading invitations...</div>;
-    }
 
     return (
         <div className={styles.page_container}>

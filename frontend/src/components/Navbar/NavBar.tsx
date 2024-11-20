@@ -67,7 +67,6 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
-
     };
 
     const handleFinancialAgent = () => {

@@ -250,7 +250,7 @@
   .scrollSidebar {
     overflow-y: auto;
     padding: 0 16px 0 28px;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 128px);
     border-radius: 12px;
   }
   

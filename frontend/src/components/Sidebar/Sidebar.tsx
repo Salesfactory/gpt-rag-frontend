@@ -69,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 {
                     title: "AI Chat",
                     icon: <IconMessagePlus className={styles.sidebarLinkIcon} />,
-                    to: "/chat",
+                    to: "/",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user"]
                 },
