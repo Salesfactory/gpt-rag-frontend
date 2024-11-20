@@ -1,12 +1,7 @@
-import React, { useEffect } from "react";
+import React from "react";
 
 const Logout: React.FC = () => {
-    useEffect(() => {
-        const handleLogout = async () => {
-            window.location.href = "/logout";
-        };
-        handleLogout();
-    }, []);
+    window.location.href = "/logout";
 
     return null;
 };
