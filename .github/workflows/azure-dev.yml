@@ -33,16 +33,22 @@ jobs:
           npm install
           npm run build
 
-      - name: Build and Deploy Backend Azure CLI script
+      - name: Package Backend
+        working-directory: backend
+        run: |
+          rm -rf backend_env
+          zip -r ../deploy.zip *
+
+      - name: Deploy to Azure
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
             set -e
-            cd backend
-            rm -rf backend_env
-            zip -r ../deploy.zip *
-            cd ..
+            if [ ! -f deploy.zip ]; then
+              echo "deploy.zip not found"
+              exit 1
+            fi
             az webapp deploy \
               --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} \
               --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
