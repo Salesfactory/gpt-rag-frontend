@@ -11,37 +11,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
       - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: Install zip
-        run: sudo apt-get install -y zip
+        run: sudo apt-get update && sudo apt-get install -y zip
 
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Set up Node.js environment
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
 
-      # Build the frontend
       - name: Build Frontend
         working-directory: frontend
         run: |
           npm install
           npm run build
 
-      # Build and deploy the backend
       - name: Build and Deploy Backend Azure CLI script
         uses: azure/cli@v2
         with:
           azcliversion: latest
           inlineScript: |
+            set -e
             cd backend
             rm -rf backend_env
             zip -r ../deploy.zip *
