@@ -14,6 +14,7 @@ import UploadResources from "./pages/resources/UploadResources";
 import RequestStudies from "./pages/studies/RequestStudies";
 import ReportManagement from "./pages/reports/ReportManagement";
 import DistributionLists from "./pages/reports/DistributionLists";
+import Logout from "./pages/logout/Logout";
 
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -48,6 +49,7 @@ export default function App() {
                     <Route path="/" element={<Chat />} />
                     <Route path="/success-payment" element={<SuccessPayment />} />
                     <Route path="/help-center" element={<HelpCenter />} />
+                    <Route path="/logout" element={<Logout />} />
                 </Route>
             </Route>
 
