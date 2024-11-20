@@ -67,6 +67,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
+
     };
 
     const handleFinancialAgent = () => {
@@ -99,7 +100,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                                         checked={isFinancialAssistantActive}
                                         onChange={handleFinancialAgent}
                                     />
-                                    <label className={`form-check-label ${styles.financialToggle}`}>Financial Assistant</label>
+                                    <span className={`form-check-label ${styles.financialToggleText}`}>Financial Assistant</span>
                                 </div>
                             </div>
                         </li>
