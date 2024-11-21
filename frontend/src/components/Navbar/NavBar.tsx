@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./Navbar.module.css";
 import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface NavbarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
@@ -30,6 +30,8 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
     const userName = user?.name || "";
     const email = user?.email || " ";
     const subscriptiontype = subscriptionTiers || " ";
+    const location = useLocation().pathname;
+    const locationConfirm = location == "/" ? true : false;
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -67,7 +69,6 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
-
     };
 
     const handleFinancialAgent = () => {
@@ -77,7 +78,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
     };
 
     return (
-        <nav className={`navbar navbar-expand-lg navbar-light ${styles.headerNavbar} `}>
+        <nav className={`navbar navbar-expand-lg navbar-light ${locationConfirm ? styles.headerNavbar : styles.headerNavbarAlt} `}>
             {/* Sidebar Toggle (For smaller screens) */}
             <ul className="navbar-nav mr-4">
                 <li className="nav-item d-block d-xl-none">
@@ -86,12 +87,11 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                     </button>
                 </li>
             </ul>
-
             <div className="navbar-collapse justify-content-end px-0" id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Financial Assistant Toggle */}
                     {fastatus && (
-                        <li className="nav-item">
+                        <li className={`nav-item" ${locationConfirm ? "" : styles.hidden}`}>
                             <div className="d-flex flex-column align-items-start">
                                 <div className="form-check form-switch">
                                     <input
@@ -106,7 +106,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                         </li>
                     )}
                     {/* Feedback Panel Button */}
-                    <li className="nav-item">
+                    <li className={`nav-item" ${locationConfirm ? "" : styles.hidden}`}>
                         <button onClick={handleShowFeedbackRatingPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
                             <IconMessageCircle className={styles.iconLarge} />
                             <span className="d-none d-md-inline">{feedbackContent}</span>
@@ -114,7 +114,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                     </li>
 
                     {/* Hide Chat History Button */}
-                    <li className="nav-item">
+                    <li className={`nav-item" ${locationConfirm ? "" : styles.hidden}`}>
                         <button onClick={handleShowHistoryPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
                             <IconHistory className={styles.iconLarge} />
                             <span className="d-none d-md-inline">{historyContent}</span>
@@ -122,7 +122,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                     </li>
 
                     {/* Settings Button */}
-                    <li className="nav-item">
+                    <li className={`nav-item" ${locationConfirm ? "" : styles.hidden}`}>
                         <button onClick={handleShowSettings} className="btn btn-light btn-sm d-flex align-items-center gap-1">
                             <IconSettings className={styles.iconLarge} />
                             <span className="d-none d-md-inline">Settings</span>
