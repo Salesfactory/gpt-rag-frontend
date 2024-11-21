@@ -1,1 +1,2 @@
-export * from "./ClearChatButton";
+// removing clear chat
+/*export * from "./ClearChatButton";*/

@@ -155,3 +155,6 @@ static/
 settings.json
 
 flask_session/
+
+# ignore .DS_Store
+.DS_Store
