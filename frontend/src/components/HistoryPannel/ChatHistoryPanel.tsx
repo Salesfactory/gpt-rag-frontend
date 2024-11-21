@@ -15,8 +15,8 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
         setShowHistoryPanel(!showHistoryPanel);
     };
     return (
-        <section className={styles.container} data-is-scrollable aria-label="chat history panel">
-            <div className={styles.card}>
+        <div className={styles.cardHistoryWrapper} data-is-scrollable aria-label="chat history panel">
+            <div className={styles.cardHistory}>
                 <div className={styles.header}>
                     <div className={styles.title}>Chat history</div>
                     <div className={styles.buttons}>
@@ -31,6 +31,6 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
                     <ChatHistoryPanelList onDeleteChat={functionDeleteChat} />
                 </div>
             </div>
-        </section>
+        </div>
     );
 };

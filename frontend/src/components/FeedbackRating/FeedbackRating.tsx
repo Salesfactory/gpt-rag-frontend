@@ -94,8 +94,12 @@ export const FeedbackRating = () => {
         setSelectedThumb(thumb);
     };
 
+    if (!showFeedbackRatingPanel) {
+        return null;
+    }
+
     return (
-        <section className={styles.container} data-is-scrollable aria-label="feedback panel">
+        <div className={styles.cardFeedbackWrapper}>
             <div className={styles.cardFeedback}>
                 <div className={styles.header}>
                     <div className={styles.title}>Feedback</div>
@@ -143,7 +147,7 @@ export const FeedbackRating = () => {
                     {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
                 </div>
             </div>
-        </section>
+        </div>
     );
 };
 
