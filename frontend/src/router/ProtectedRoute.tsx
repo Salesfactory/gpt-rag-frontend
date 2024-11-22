@@ -51,10 +51,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
                 <Outlet />
             ) : !hasRequiredRole() ? (
                 <Navigate to="/access-denied" replace />
-            ) : !hasRequiredTier() ? (
-                <Navigate to="/access-denied" replace />
             ) : !isValidSubscriptionForOrganization() ? (
                 <Navigate to="/onboarding" replace />
+            ) : !hasRequiredTier() ? (
+                <Navigate to="/access-denied" replace />
             ) : (
                 <Navigate to="/access-denied" replace />
             )}
