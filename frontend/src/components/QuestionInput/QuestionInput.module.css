@@ -7,13 +7,12 @@
     background: white;
 }
 
-/* attachment container is not needed if we don't need an attachment button */
-/*.attachmentContainer {
+.attachmentContainer {
     height: "100%";
     justify-content: "center";
     align-items: center;
     display: flex;
-}*/
+}
 
 .questionInputTextArea {
     width: 100%;
@@ -37,10 +36,9 @@
     opacity: 0.4;
 }
 
-/* commenting out the css associated with the attachment button instead of permanently deleting it*/
-/*.attachmentButton {
+.attachmentButton {
     transform: rotate(-135deg) scaleX(-1) translate(-5px, 0px);
     cursor: pointer;
     font-size: 24px;
     color: #9f9c9c;
-}*/
+}
