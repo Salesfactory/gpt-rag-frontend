@@ -8,16 +8,17 @@ interface SidebarItemProps {
     icon: JSX.Element;
     to?: string;
     links?: Array<{ title: string; href: string }>;
-    isActive: boolean;  
-    onClick: () => void; 
+    onClick: () => void;
+    isActive: boolean;
+    setIsActive: any;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, isActive, onClick }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onClick, isActive, setIsActive }) => {
     const toggleSubmenu = (e: React.MouseEvent) => {
         if (links) {
             e.preventDefault();
         }
-        onClick();
+        setIsActive(isActive);
     };
 
     return (
@@ -28,6 +29,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, isAct
                         className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
                         aria-expanded={isActive}
                         onClick={toggleSubmenu}
+                        id="submenubutton"
                     >
                         {React.cloneElement(icon, {
                             className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon

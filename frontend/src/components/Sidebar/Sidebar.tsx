@@ -36,6 +36,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const handleOnClickCloseSideBar = () => {
         setIsCollapsed(true);
     };
+    const handleSetActiveItem = (title: string) => {
+        setActiveItem(prev => (prev === title ? null : title));
+    };
 
     const {
         subscriptionTiers: userSubscriptionTiers,
@@ -286,8 +289,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                                     icon={item.icon}
                                                     to={item.to}
                                                     links={item.links}
-                                                    isActive={activeItem=== item.title}
-                                                    onClick={()=>handleItemClick(item.title)}
+                                                    isActive={activeItem === item.title}
+                                                    setIsActive={() => handleSetActiveItem(item.title)}
+                                                    onClick={() => handleItemClick(item.title)}
                                                 />
                                             );
                                         })}
