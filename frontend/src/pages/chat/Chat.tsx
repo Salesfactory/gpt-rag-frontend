@@ -368,7 +368,7 @@ const Chat = () => {
                 <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>{settingsPanel && <SettingsPanel />}</div>
             </div>
             <div className={styles.container}>
-                <div className={styles.chatRoot} style={showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
+                <div className={styles.chatRoot}>
                     <div className={styles.chatContainer}>
                         {!lastQuestionRef.current && dataConversation.length <= 0 ? (
                             <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>

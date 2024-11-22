@@ -187,70 +187,80 @@ export const SettingsPanel = () => {
     }
 
     return (
-        <div aria-labelledby="settings-panel-title">
-            <ConfirmationDialog
-                loading={isLoadingSettings}
-                isOpen={isDialogOpen}
-                onDismiss={() => {
-                    setIsDialogOpen(false);
-                }}
-                onConfirm={() => {
-                    setIsLoadingSettings(true);
-                    handleSubmit();
-                }}
-            />
-            <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
-                <Stack.Item grow className={styles["w-100"]}>
-                    <div className={styles.header2}>
-                        <div className={styles.title}>Configuration</div>
-                        <div className={styles.buttons}>
-                            <div></div>
-                            <div className={styles.closeButtonContainer}>
-                                <button className={styles.closeButton2} aria-label="hide button" onClick={handleClosePanel}>
-                                    <AddFilled />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {loading ? (
-                        <div>
-                            <h3 style={{ textAlign: "center", fontSize: "20px", marginTop: "20px"}}>Loading your settings</h3>
-                            <Spinner
-                                styles={{
-                                    root: {
-                                        marginBottom: "30px"
-                                    }
-                                }}
-                            />
-                        </div>
-                    ) : (
-                        <div className={styles.content}>
-                            <div className={styles["w-100"]}>
-                                <div className={itemClass}>
-                                    <span>Creativity Scale</span>
-                                    {onRenderLabel(temperatureDialog, "Temperature")}
+        <div className={styles.overlay}>
+            
+                <ConfirmationDialog
+                    loading={isLoadingSettings}
+                    isOpen={isDialogOpen}
+                    onDismiss={() => {
+                        setIsDialogOpen(false);
+                    }}
+                    onConfirm={() => {
+                        setIsLoadingSettings(true);
+                        handleSubmit();
+                    }}
+                />
+                <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
+                    <Stack.Item grow className={styles["w-100"]}>
+                        <div className={styles.header2}>
+                            <div className={styles.title}>Configuration</div>
+                            <div className={styles.buttons}>
+                                <div></div>
+                                <div className={styles.closeButtonContainer}>
+                                    <button
+                                        className={styles.closeButton2}
+                                        aria-label="hide button"
+                                        onClick={handleClosePanel}
+                                    >
+                                        <AddFilled />
+                                    </button>
                                 </div>
-                                <Slider
-                                    className={styles["w-100"]}
-                                    label=""
-                                    min={0}
-                                    max={1}
-                                    step={0.1}
-                                    value={parseFloat(temperature)}
-                                    showValue
-                                    snapToStep
-                                    onChange={e => handleSetTemperature(e)}
-                                    aria-labelledby="temperature-slider"
-                                />
-                                <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
-                                    <SaveFilled className={styles.saveIcon} />
-                                    &#8202;&#8202;Save
-                                </DefaultButton>
                             </div>
                         </div>
-                    )}
-                </Stack.Item>
-            </Stack>
+                        {loading ? (
+                            <div>
+                                <h3 style={{ textAlign: "center", fontSize: "20px", marginTop: "20px" }}>
+                                    Loading your settings
+                                </h3>
+                                <Spinner
+                                    styles={{
+                                        root: {
+                                            marginBottom: "30px"
+                                        }
+                                    }}
+                                />
+                            </div>
+                        ) : (
+                            <div className={styles.content}>
+                                <div className={styles["w-100"]}>
+                                    <div className={styles.item}>
+                                        <span>Creativity Scale</span>
+                                    </div>
+                                    <Slider
+                                        className={styles["w-100"]}
+                                        label=""
+                                        min={0}
+                                        max={1}
+                                        step={0.1}
+                                        value={parseFloat(temperature)}
+                                        showValue
+                                        snapToStep
+                                        onChange={(e) => setTemperature(e.toString())}
+                                        aria-labelledby="temperature-slider"
+                                    />
+                                    <DefaultButton
+                                        className={styles.saveButton}
+                                        onClick={() => setIsDialogOpen(true)}
+                                        aria-label="Save settings"
+                                    >
+                                        <SaveFilled className={styles.saveIcon} />
+                                        &#8202;&#8202;Save
+                                    </DefaultButton>
+                                </div>
+                            </div>
+                        )}
+                    </Stack.Item>
+                </Stack>
         </div>
     );
 };
