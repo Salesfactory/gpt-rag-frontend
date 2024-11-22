@@ -1,2 +1,1 @@
-// removing clear chat
-/*export * from "./ClearChatButton";*/
+export * from "./ClearChatButton";

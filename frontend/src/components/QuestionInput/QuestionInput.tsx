@@ -17,8 +17,7 @@ interface Props {
 
 import { useFilePicker } from "use-file-picker";
 
-// commenting out the attachment button instead of permanently deleting it
-/*export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: string) => void }) => {
+export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: string) => void }) => {
     const [files, setFiles] = useState<File[]>([]);
     const [loadingFiles, setLoadingFiles] = useState(false);
     const [error, setError] = useState<string>("");
@@ -167,7 +166,7 @@ import { useFilePicker } from "use-file-picker";
             </div>
         </>
     );
-};*/
+};
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
     const { user, organization } = useAppContext();
