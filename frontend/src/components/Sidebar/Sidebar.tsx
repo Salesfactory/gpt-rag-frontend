@@ -95,21 +95,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     title: "Roles and Access",
                     icon: <IconUsers className={styles.sidebarLinkIcon} />,
                     to: "/admin",
-                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin"]
                 },
                 {
                     title: "Invitations",
                     icon: <IconUserCheck className={styles.sidebarLinkIcon} />,
                     to: "/invitations",
-                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin"]
                 },
                 {
                     title: "Organization Management",
                     icon: <IconAddressBook className={styles.sidebarLinkIcon} />,
                     to: "/organization",
-                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin"]
                 }
             ]
