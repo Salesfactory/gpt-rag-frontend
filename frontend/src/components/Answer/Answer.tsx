@@ -73,7 +73,7 @@ export const Answer = ({
                 </Stack>
             </Stack.Item>
 
-            <Stack.Item grow>
+            <Stack.Item grow className={styles.markdownContent}>
                 <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                     {sanitizedAnswerHtml}
                 </ReactMarkdown>
