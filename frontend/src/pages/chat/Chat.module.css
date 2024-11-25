@@ -13,6 +13,21 @@
     overflow: hidden;
 }
 
+@media (max-width: 768px) {
+    .mainContainer {
+        flex-direction: column;
+        overflow: auto;
+    }
+}
+
+
+@media (max-width: 480px) {
+    .mainContainer {
+        padding: 10px;
+    }
+}
+
+
 .chatRoot {
     flex: 1;
     display: flex;
