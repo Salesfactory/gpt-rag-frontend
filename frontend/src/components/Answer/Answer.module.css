@@ -6,6 +6,10 @@
     outline: transparent solid 1px;
 }
 
+.answerContainer .markdownContent {
+    font-size: 0.875rem;
+}
+
 .answerLogo {
     font-size: 28px;
 }
@@ -132,4 +136,10 @@ sup {
 .loadingdots::after {
     content: "";
     animation: loading 1s infinite;
+}
+
+@media (max-width: 680px) {
+    .answerContainer .markdownContent {
+        font-size: 0.75rem;
+    }
 }
