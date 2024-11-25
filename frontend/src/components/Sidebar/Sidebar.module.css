@@ -253,15 +253,27 @@
     height: calc(100vh - 128px);
     border-radius: 12px;
   }
-  
-  .simplebarTrackHorizontal {
-    visibility: hidden !important;
-  }
-  
-  /* Cursor Pointer */
-  .cursorPointer {
-    cursor: pointer;
-  }
+  .scrollSidebar::-webkit-scrollbar {
+    width: 4px; 
+    background-color: transparent;
+}
+
+.scrollSidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2); 
+    border-radius: 10px;
+}
+
+.scrollSidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.4); 
+}
+
+.simplebarTrackHorizontal {
+  visibility: hidden !important;
+}
+
+.cursorPointer {
+  cursor: pointer;
+}
   
   /* LG Class */
   .lg {

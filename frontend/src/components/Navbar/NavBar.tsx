@@ -42,6 +42,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
         setIsDropdownOpen(false);
+        setIsCollapsed(true);
     };
 
     const handleShowFeedbackRatingPanel = () => {
@@ -49,6 +50,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setSettingsPanel(false);
         setShowHistoryPanel(false);
         setIsDropdownOpen(false);
+        setIsCollapsed(true);
     };
 
     const handleShowSettings = () => {
@@ -56,10 +58,15 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setIsDropdownOpen(false);
+        setIsCollapsed(true);
     };
 
     const handleOnClickShowSidebar = () => {
         setIsCollapsed(false);
+        setShowHistoryPanel(false);
+        setShowFeedbackRatingPanel(false);
+        setIsDropdownOpen(false);
+        setSettingsPanel(false);
     };
 
     const handleOnClickProfileCard = () => {
@@ -67,6 +74,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
+        setIsCollapsed(true);
     };
 
     const handleFinancialAgent = () => {
