@@ -19,6 +19,7 @@ import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
+import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButton";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -354,6 +355,8 @@ const Chat = () => {
     //If I add this on a useEffect it doesn't work, I don't know why
     //maybe because it's a global event listener and is called multiple times
 
+    const isButtonEnabled = !!(lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned);
+
     return (
         <div className={styles.mainContainer}>
             <div>
@@ -464,18 +467,6 @@ const Chat = () => {
                         <div className={styles.chatInput}>
                             {/* <div className={styles.buttonsActions}>
                                 <button
-                                    className={
-                                        lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned
-                                            ? styles.newChatButton
-                                            : styles.newChatButtonDisabled
-                                    }
-                                    onClick={handleNewChat}
-                                    aria-label="Start a new chat"
-                                    type="button"
-                                >
-                                    <AddRegular />
-                                </button>
-                                <button
                                     className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
                                     onClick={clearChat}
                                     aria-label="Clear chat"
@@ -489,6 +480,7 @@ const Chat = () => {
                                 placeholder={placeholderText}
                                 disabled={isLoading}
                                 onSend={(question, fileBlobUrl) => makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null)}
+                                extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                             />
                         </div>
                     </div>

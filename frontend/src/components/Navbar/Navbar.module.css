@@ -104,7 +104,12 @@
     .profileCard{
         background-color:rgb(248, 249, 250);
     }
-
+    .headerNavbarAlt{
+        -ms-flex-wrap: nowrap !important; 
+        flex-wrap: nowrap  !important;
+        display: flex;
+        gap: 68%;
+    }
 }
 
 .appHeader{
