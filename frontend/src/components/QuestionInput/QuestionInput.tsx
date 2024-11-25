@@ -13,6 +13,7 @@ interface Props {
     disabled: boolean;
     placeholder?: string;
     clearOnSend?: boolean;
+    extraButtonNewChat?: React.ReactNode;
 }
 
 import { useFilePicker } from "use-file-picker";
@@ -168,7 +169,7 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
     );
 };
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat }: Props) => {
     const { user, organization } = useAppContext();
 
     const [question, setQuestion] = useState<string>("");
@@ -249,41 +250,38 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         !organization.subscriptionId;
 
     return (
-        <div className="container mt-3">
-            <div className="d-flex flex-column flex-md-row align-items-stretch">
-                {/* Left Buttons */}
-                <div className="d-flex mb-2 mb-md-0 me-md-2">
-                    <button className="btn btn-secondary me-2" aria-label="Start a new chat" type="button">
-                        <AddRegular />
-                    </button>
-                    <button className="btn btn-secondary" aria-label="Clear chat" type="button">
-                        <BroomRegular />
-                    </button>
-                </div>
-
-                {/* Text Field */}
-                <div className="flex-grow-1 mb-2 mb-md-0">
-                    <TextField
-                        placeholder={placeholder}
-                        multiline
-                        resizable={false}
-                        borderless
-                        value={question}
-                        onChange={onQuestionChange}
-                        onKeyDown={onEnterPress}
-                        className="form-control"
-                    ></TextField>
-                </div>
-
-                {/* Right Buttons */}
-                <div className="d-flex mt-2 mt-md-0 ms-md-2">
-                    <button className="btn btn-secondary me-2" aria-label="Attach file" type="button">
-                        <AttachRegular />
-                    </button>
-                    <button
+        <Stack horizontal className={styles.questionInputContainer}>
+            <TextField
+                className={styles.questionInputTextArea}
+                placeholder={placeholder}
+                multiline
+                resizable={false}
+                borderless
+                value={question}
+                onChange={onQuestionChange}
+                onKeyDown={onEnterPress}
+                autoAdjustHeight
+            />
+            <div className={styles.questionInputButtonsContainer}>
+                {extraButtonNewChat}
+                <div className={styles.leftButtons}>
+                    <div
+                        className={`${styles.questionInputSendButton}`}
+                        aria-label="Button to talk"
+                        onClick={sttFromMic}
+                        onKeyDown={ev => {
+                            if (ev.key === "Enter") {
+                                ev.preventDefault();
+                                sttFromMic();
+                            }
+                        }}
+                        tabIndex={0}
+                    >
+                        <Mic24Regular primaryFill="#9F9C9C" />
+                    </div>
+                    <div
                         className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
-                        aria-label="Send message"
-                        type="button"
+                        aria-label="Ask a question button"
                         onClick={sendQuestion}
                         onKeyDown={ev => {
                             if (ev.key === "Enter") {
@@ -294,9 +292,9 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                         tabIndex={0}
                     >
                         <Send24Filled />
-                    </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </Stack>
     );
 };
