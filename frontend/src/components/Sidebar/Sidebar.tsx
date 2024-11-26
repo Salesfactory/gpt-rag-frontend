@@ -3,7 +3,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
     IconX,
-    IconMessagePlus,
+    IconMessage,
     IconBell,
     IconRosetteDiscountCheck,
     IconStar,
@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             items: [
                 {
                     title: "AI Chat",
-                    icon: <IconMessagePlus className={styles.sidebarLinkIcon} />,
+                    icon: <IconMessage className={styles.sidebarLinkIcon} />,
                     to: "/",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user"]
