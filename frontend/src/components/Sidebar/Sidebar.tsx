@@ -45,7 +45,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         user
         // ... other context values if needed
     } = useAppContext();
-
     /**
      * Determines if the current user has access to a sidebar item or link based on roles and subscription tiers.
      * @param itemRoles - Array of roles that have access to the item/link.
@@ -55,7 +54,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const hasAccess = useCallback(
         (itemRoles: Role[], itemTiers: SubscriptionTier[]): boolean => {
             if (!user || !user.role) return false;
-
             const roleMatch = itemRoles.includes(user.role);
             const tierMatch = itemTiers.some(tier => userSubscriptionTiers.includes(tier));
 
@@ -135,6 +133,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     roles: ["admin"]
                 }
             ]
+        },
+        {
+            divider: true
         },
         {
             section: "Premium Features",
