@@ -47,7 +47,7 @@
     position: fixed;
     top: 90px;
     right: 0;
-    width: 40vh;
+    width: auto;
     height: auto;
     display: flex;
     justify-content: flex-end;

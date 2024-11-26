@@ -17,9 +17,9 @@
 .overlay {
     position: fixed;
     top: 90px;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 0;
+    width: auto;
+    height: auto;
     display: flex;
     justify-content: flex-end;
     align-items: flex-start;
