@@ -45,7 +45,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         user
         // ... other context values if needed
     } = useAppContext();
-
     /**
      * Determines if the current user has access to a sidebar item or link based on roles and subscription tiers.
      * @param itemRoles - Array of roles that have access to the item/link.
@@ -55,7 +54,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const hasAccess = useCallback(
         (itemRoles: Role[], itemTiers: SubscriptionTier[]): boolean => {
             if (!user || !user.role) return false;
-
             const roleMatch = itemRoles.includes(user.role);
             const tierMatch = itemTiers.some(tier => userSubscriptionTiers.includes(tier));
 
@@ -137,6 +135,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             ]
         },
         {
+            divider: true
+        },
+        {
             section: "Premium Features",
             items: [
                 {
@@ -200,40 +201,42 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         }
     ];
 
-    // Filtered sidebar sections based on access
     const accessibleSidebarSections = useMemo(() => {
+        let previousSectionHasItems = false;
+    
         return sidebarSections
-            .map(section => {
+            .map((section, index) => {
                 if (section.divider) {
-                    return section; // Always include dividers
+                    return previousSectionHasItems ? section : null;
                 }
-
+    
                 if (section.items) {
-                    // Filter items based on access
                     const accessibleItems = section.items
                         .map(item => {
                             if (item.links) {
-                                // Filter links based on access
-                                const accessibleLinks = item.links.filter(link => hasAccess(link.roles, link.tiers));
-
+                                const accessibleLinks = item.links.filter(link =>
+                                    hasAccess(link.roles, link.tiers)
+                                );
+    
                                 if (accessibleLinks.length > 0) {
                                     return { ...item, links: accessibleLinks };
                                 } else {
-                                    return null; // Exclude item if no accessible links
+                                    return null;
                                 }
                             } else {
-                                // No links, just check access on the item itself
                                 return hasAccess(item.roles, item.tiers) ? item : null;
                             }
                         })
                         .filter(item => item !== null) as SidebarItemType[];
-
+    
+                    previousSectionHasItems = accessibleItems.length > 0;
+    
                     if (accessibleItems.length > 0) {
                         return { ...section, items: accessibleItems };
                     }
                 }
 
-                // Exclude sections with no accessible items
+                previousSectionHasItems = false;
                 return null;
             })
             .filter(section => section !== null) as SidebarSection[];
@@ -300,9 +303,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         })}
                     </ul>
                 </nav>
-                {/* End Sidebar navigation */}
             </div>
-            {/* End Sidebar scroll */}
         </aside>
     );
 };
