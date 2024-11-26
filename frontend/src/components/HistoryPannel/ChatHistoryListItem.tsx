@@ -32,7 +32,8 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         setRefreshFetchHistory,
         chatSelected,
         setChatSelected,
-        setNewChatDeleted
+        setNewChatDeleted,
+        setShowHistoryPanel
     } = useAppContext();
 
     const handleMouseEnter = (index: string) => {
@@ -86,6 +87,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
             setChatSelected(chatConversationId);
             setChatId(chatConversationId);
             setConversationIsLoading(true);
+            setShowHistoryPanel(false);
 
             try {
                 const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
