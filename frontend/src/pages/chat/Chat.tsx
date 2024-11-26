@@ -483,6 +483,9 @@ const Chat = () => {
                                 extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                             />
                         </div>
+                        <div className={styles.chatDisclaimer}>
+                            <p>This app is in beta. Responses may not be fully accurate.</p>
+                        </div>    
                     </div>
                     {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer] && (
                         <AnalysisPanel
