@@ -121,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 {
                     title: "Subscription Management",
                     icon: <IconRosetteDiscountCheck className={styles.sidebarLinkIcon} />,
-                    to: "/subscription",
+                    to: "/subscription-management",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin"]
                 },
@@ -193,7 +193,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 {
                     title: "Help Center",
                     icon: <IconHeadset className={styles.sidebarLinkIcon} />,
-                    to: "/financial-assistant",
+                    to: "/help-center",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user"]
                 }

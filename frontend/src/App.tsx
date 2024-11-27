@@ -15,7 +15,9 @@ import RequestStudies from "./pages/studies/RequestStudies";
 import ReportManagement from "./pages/reports/ReportManagement";
 import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
-
+import Notifications from "./pages/notifications/Notifications";
+import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
+import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 
@@ -50,6 +52,7 @@ export default function App() {
                     <Route path="/success-payment" element={<SuccessPayment />} />
                     <Route path="/help-center" element={<HelpCenter />} />
                     <Route path="/logout" element={<Logout />} />
+                    <Route path="/notification-settings" element={<Notifications/>}/>
                 </Route>
             </Route>
 
@@ -74,6 +77,8 @@ export default function App() {
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
                     <Route path="/financialassistant" element={<FinancialAssistant />} />
+                    <Route path="/subscription-management" element={<SubscriptionManagement/>}/>
+                    <Route path="/manage-email-lists" element={<UserManagement/>}/>
                 </Route>
             </Route>
 
