@@ -48,6 +48,10 @@ from utils import (
 )
 import stripe.error
 
+from urllib.parse import urlencode, parse_qs, urlparse, urlunparse
+import base64
+import json
+
 
 load_dotenv()
 
@@ -105,6 +109,9 @@ app = Flask(__name__)
 app.config.from_object(app_config)
 CORS(app)
 
+app.secret_key = os.getenv(
+    "FLASK_SECRET_KEY", "your-secret-key-here"
+)  # Make sure to set this in production
 
 auth = Auth(
     app,
@@ -278,10 +285,51 @@ class UserService:
 @auth.login_required
 def index(*, context):
     """
-    Endpoint to get the current user's data from Microsoft Graph API
+    Main entry point - if there's a stored return URL, redirect to it
     """
-    logger.debug(f"User context: {context}")
+    # Check if we have a return URL in session
+    if "original_url" in session:
+        return_url = session.pop("original_url")
+        return redirect(return_url)
+
     return send_from_directory("static", "index.html")
+
+
+@app.route("/auth-response")
+def auth_response():
+    """
+    Handle the authentication response from Azure B2C
+    Preserves the original URL from the request
+    """
+    try:
+        # Store the original URL from query parameters if present
+        if request.args.get("original_url"):
+            session["original_url"] = base64.b64decode(
+                request.args.get("original_url")
+            ).decode()
+
+        # Complete the login process
+        result = auth.complete_log_in(request.args)
+
+        # Redirect to index which will handle the return URL
+        return redirect(url_for("index"))
+
+    except Exception as e:
+        app.logger.error(f"Authentication error: {str(e)}")
+        return redirect(url_for("index"))
+
+
+# Add this middleware to capture the original URL before Azure B2C redirect
+@app.before_request
+def before_request():
+    """
+    Middleware to capture the original URL before Azure B2C redirect
+    """
+    # Only store the URL if it's not an auth-related endpoint
+    if not request.path.startswith("/auth") and not request.path.startswith("/static"):
+        if request.query_string:
+            # Store the full URL in session
+            session["original_url"] = request.url
 
 
 # route for other static files
@@ -291,15 +339,6 @@ def index(*, context):
 def static_files(path):
     # Don't require authentication for static assets
     return send_from_directory("static", path)
-
-
-@app.route("/auth-response")
-def auth_response():
-    try:
-        return auth.complete_log_in(request.args)
-    except Exception as e:
-        logger.error(f"Authentication error: {str(e)}")
-        return redirect(url_for("index"))
 
 
 @app.route("/api/auth/config")
