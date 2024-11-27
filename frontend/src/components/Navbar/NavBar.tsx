@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import styles from "./Navbar.module.css";
-import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconUser, IconMail, IconListCheck } from "@tabler/icons-react";
+import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconAppsFilled} from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { Link, useLocation } from "react-router-dom";
+import { ProfilePanel } from "../ProfilePanel/Profile";
 
 interface NavbarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
@@ -142,44 +143,18 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
                         <button
-                            className={`nav-link ${isDropdownOpen ? "show" : ""}`}
-                            role="button"
-                            id="drop2"
-                            data-bs-toggle="dropdown"
-                            aria-expanded={isDropdownOpen}
+                            className="nav-link"
                             onClick={handleOnClickProfileCard}
                         >
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
-                                <IconBell className={`fs-6 ${styles.iconLarge}`} />
+                                <IconAppsFilled className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
                                     <p className={`${styles.userName} mb-0`}>{userName}</p>
                                     <p className={`${styles.userEmail} mb-0`}>{email}</p>
                                 </div>
                             </div>
                         </button>
-                        <div
-                            className={`dropdown-menu dropdown-menu-end animate-dropdown ${isDropdownOpen ? "show" : ""}`}
-                            aria-labelledby="drop2"
-                            data-bs-popper={`${isDropdownOpen ? "static" : ""}`}
-                        >
-                            <div className={styles.messageBody}>
-                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
-                                    <IconUser className="fs-6" />
-                                    <p className="mb-0 fs-5">My Profile</p>
-                                </Link>
-                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
-                                    <IconMail className="fs-6" />
-                                    <p className="mb-0 fs-5">My Account</p>
-                                </Link>
-                                <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
-                                    <IconListCheck className="fs-6" />
-                                    <p className="mb-0 fs-5">My Task</p>
-                                </Link>
-                                <Link to={"/logout"} className="btn btn-outline-primary mx-3 mt-2 d-block">
-                                    Logout
-                                </Link>
-                            </div>
-                        </div>
+                            {isDropdownOpen && <ProfilePanel />}
                     </li>
                 </ul>
             </div>
