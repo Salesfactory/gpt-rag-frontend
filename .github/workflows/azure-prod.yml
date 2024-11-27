@@ -20,7 +20,7 @@ jobs:
       - name: Azure Login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: ${{ secrets.AZURE_PROD_CREDENTIALS }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -62,3 +62,8 @@ jobs:
               --src-path deploy.zip \
               --type zip \
               --async true
+
+
+
+
+              az ad sp create-for-rbac --name "webgpt0-2wc73ir547bl4" --role contributor --scopes /subscriptions/e261fb0a-3d87-49c1-8d3c-32b2bc93b6ff/resourceGroups/rg-SalesFactoryEmpolyees/providers/Microsoft.Web/sites/webgpt0-2wc73ir547bl4 --json-auth
