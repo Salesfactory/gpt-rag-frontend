@@ -38,6 +38,11 @@ jobs:
         run: |
           rm -rf backend_env
           zip -r ../deploy.zip *
+      - name: Debug Secrets
+        run: |
+          echo "Subscription ID: ${{ secrets.AZURE_PROD_SUBSCRIPTION_ID }}"
+          echo "Resource Group: ${{ secrets.AZURE_PROD_RESOURCE_GROUP }}"
+          echo "Web App Name: ${{ secrets.AZURE_PROD_WEBAPP_NAME }}"
 
       - name: Deploy to Azure
         uses: azure/cli@v2
