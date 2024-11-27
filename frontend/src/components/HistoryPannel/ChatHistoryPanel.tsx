@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from "react";
 import { AddFilled } from "@fluentui/react-icons";
 import styles from "./ChatHistoryPannel.module.css";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanelList } from "./ChatHistoryListItem";
 
 interface ChatHistoryPanelProps {
@@ -9,14 +9,14 @@ interface ChatHistoryPanelProps {
 }
 
 export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDeleteChat }) => {
-    const { showHistoryPanel, setShowHistoryPanel } = useContext(AppContext);
+    const { showHistoryPanel, setShowHistoryPanel } = useAppContext();
 
     const handleClosePannel = () => {
         setShowHistoryPanel(!showHistoryPanel);
     };
     return (
-        <section className={styles.container} data-is-scrollable aria-label="chat history panel">
-            <div className={styles.card}>
+        <div className={styles.cardHistoryWrapper} data-is-scrollable aria-label="chat history panel">
+            <div className={styles.cardHistory}>
                 <div className={styles.header}>
                     <div className={styles.title}>Chat history</div>
                     <div className={styles.buttons}>
@@ -31,6 +31,6 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
                     <ChatHistoryPanelList onDeleteChat={functionDeleteChat} />
                 </div>
             </div>
-        </section>
+        </div>
     );
 };

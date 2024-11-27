@@ -4,10 +4,10 @@ import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/react-icons";
 
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
-import { checkUser, getUsers, inviteUser, createInvitation, deleteUser } from "../../api";
+import { getUsers, inviteUser, createInvitation, deleteUser } from "../../api";
 
 import styles from "./Admin.module.css";
 
@@ -16,8 +16,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
-    const { user } = useContext(AppContext);
-
+    const { user } = useAppContext();
     const [errorMessage, setErrorMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -37,29 +36,63 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
         return users.some((user: any) => user.data.email === sanitizedEmail);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        // Sanitize inputs
         const sanitizedUsername = DOMPurify.sanitize(username);
         const sanitizedEmail = DOMPurify.sanitize(email);
+
+        // Validate inputs
         if (!isValidated(sanitizedUsername, sanitizedEmail)) return;
-        if (alreadyExists(sanitizedEmail)) return setErrorMessage("User with this email already exists");
+
+        // Check if user already exists
+        if (alreadyExists(sanitizedEmail)) {
+            setErrorMessage("User with this email already exists");
+            return;
+        }
+
+        // Check if `user` is not null
+        if (!user) {
+            // Handle unauthenticated user
+            setErrorMessage("You must be logged in to invite a user.");
+            return;
+        }
+
         setLoading(true);
 
-        const organizationId = user.organizationId;
-        inviteUser({ username: sanitizedUsername, email: sanitizedEmail, role, organizationId }).then(res => {
-            if (res.error) {
-                setErrorMessage(res.error);
-            } else {
-                createInvitation({ organizationId, invitedUserEmail: sanitizedEmail, userId: user.id, role: role }).then(res => {
-                    if (res.error) {
-                        setErrorMessage(res.error);
-                    } else {
-                        setErrorMessage("");
-                        setLoading(false);
-                        setSuccess(true);
-                    }
-                });
+        try {
+            const organizationId = user.organizationId;
+            const inviteResponse = await inviteUser({
+                username: sanitizedUsername,
+                email: sanitizedEmail,
+                role,
+                organizationId
+            });
+
+            if (inviteResponse.error) {
+                setErrorMessage(inviteResponse.error);
+                setLoading(false);
+                return;
             }
-        });
+
+            const invitationResponse = await createInvitation({
+                organizationId,
+                invitedUserEmail: sanitizedEmail,
+                userId: user.id,
+                role
+            });
+
+            if (invitationResponse.error) {
+                setErrorMessage(invitationResponse.error);
+            } else {
+                setErrorMessage("");
+                setSuccess(true);
+            }
+        } catch (error) {
+            console.error("Error during invitation process:", error);
+            setErrorMessage("An unexpected error occurred. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const onUserNameChange = (_ev: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -256,7 +289,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     );
 };
 
-export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boolean; onDismiss: any; onConfirm: any }) => {
+export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser }: { isOpen: boolean; onDismiss: any; onConfirm: any; isDeletingUser: boolean; }) => {
     return (
         <Dialog
             minWidth={800}
@@ -274,17 +307,37 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boo
                 onDismiss: onDismiss,
                 styles: { main: { maxWidth: 450 } }
             }}
-        >
-            <DialogContent>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "end",
-                        gap: "10px"
-                    }}
-                >
+            > 
+                {isDeletingUser && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            zIndex: 9999
+                        }}
+                    >
+                        <Spinner
+                            styles={{
+                                root: {
+                                    width: "50px",
+                                    height: "50px"
+                                }
+                            }}
+                        />
+                    </div>
+                )}
+                <DialogContent>
+                    <div
+                        style={{
+                            display: "flex",
+                            justifyContent: "end",
+                            gap: "10px"
+                        }}
+                    >
                     <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
-                    <PrimaryButton
+                        <PrimaryButton
                         styles={{
                             root: {
                                 backgroundColor: "#9FC51D",
@@ -303,20 +356,20 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm }: { isOpen: boo
                                 color: "white"
                             }
                         }}
-                        style={{ marginTop: "20px" }}
+                            style={{ marginTop: "20px" }}
                         onClick={() => {
                             onConfirm();
                         }}
-                        text="Delete user"
-                    />
-                </div>
-            </DialogContent>
+                            text="Delete user"
+                        />
+                    </div>
+                </DialogContent>
         </Dialog>
     );
 };
 
 const Admin = () => {
-    const { user } = useContext(AppContext);
+    const { user } = useAppContext();
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState({
@@ -333,19 +386,50 @@ const Admin = () => {
 
     const [isOpen, setIsOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeletingUser, setIsDeletingUser] = useState(false);
+    if (!user) {
+        return <div>Please log in to view the user list.</div>;
+    }
+
 
     useEffect(() => {
         const getUserList = async () => {
-            let usersList = await getUsers({user: {id: user.id, name: user.name,  organizationId: user.organizationId}});
-            if (!Array.isArray(usersList)) {
-                usersList = [];
+            if (!user) {
+                // User is not logged in
+                setUsers([]);
+                setFilteredUsers([]);
+                setLoading(false);
+                return;
             }
-            setUsers(usersList);
-            setFilteredUsers(usersList);
-            setLoading(false);
+
+            setLoading(true);
+
+            try {
+                let usersList = await getUsers({
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        organizationId: user.organizationId
+                    }
+                });
+
+                if (!Array.isArray(usersList)) {
+                    usersList = [];
+                }
+
+                setUsers(usersList);
+                setFilteredUsers(usersList);
+            } catch (error) {
+                console.error("Error fetching user list:", error);
+                setUsers([]);
+                setFilteredUsers([]);
+            } finally {
+                setLoading(false);
+            }
         };
+
         getUserList();
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         if (!search) {
@@ -358,7 +442,13 @@ const Admin = () => {
         }
     }, [search]);
 
+    const handleDeleteClick = (user: any) => {
+        setSelectedUser(user); 
+        setIsDeleting(true);    
+    };
+
     const deleteUserFromOrganization = (id: string) => {
+        setIsDeletingUser(true);
         deleteUser({ user, userId: id }).then(res => {
             if (res.error) {
                 console.log("error", res.error);
@@ -371,6 +461,7 @@ const Admin = () => {
                 setIsDeleting(false);
                 toast("User deleted successfully", { type: "success" });
             }
+            setIsDeletingUser(false);
         });
     };
 
@@ -393,6 +484,7 @@ const Admin = () => {
                     >
                         <PrimaryButton
                             className={styles.option}
+                            disabled={loading}
                             styles={{
                                 root: {
                                     backgroundColor: "#9FC51D",
@@ -449,8 +541,8 @@ const Admin = () => {
                             }}
                         />
                     </div>
-
-                    <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />
+                    
+                    {loading?null:<CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />}
                     <DeleteUserDialog
                         isOpen={isDeleting}
                         onDismiss={() => {
@@ -459,6 +551,7 @@ const Admin = () => {
                         onConfirm={() => {
                             deleteUserFromOrganization(selectedUser?.id);
                         }}
+                    isDeletingUser={isDeletingUser}
                     />
                     {loading ? (
                         <Spinner
@@ -539,7 +632,7 @@ const Admin = () => {
                                                             <button className={styles.button} title="Edit user" aria-label="Edit user" onClick={() => {}}>
                                                                 <EditRegular />
                                                             </button>
-                                                            <button className={styles.button} title="Delete user" aria-label="Delete user" onClick={() => {}}>
+                                                            <button className={styles.button} title="Delete user" aria-label="Delete user" onClick={() => {handleDeleteClick(user)}}>
                                                                 <DeleteRegular />
                                                             </button>
                                                         </div>

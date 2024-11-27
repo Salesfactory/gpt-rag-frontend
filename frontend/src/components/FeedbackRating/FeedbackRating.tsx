@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Dropdown, TextField, Button, Spinner, DefaultButton } from "@fluentui/react";
 import styles from "./FeedbackRating.module.css";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { AddFilled, SendRegular, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
 import { ThumbLikeRegular, ThumbDislikeRegular } from "@fluentui/react-icons";
 import { postFeedbackRating } from "../../api/api";
@@ -15,7 +15,7 @@ const categoryOptions = [
 ];
 
 export const FeedbackRating = () => {
-    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId, user } = useContext(AppContext);
+    const { showFeedbackRatingPanel, setShowFeedbackRatingPanel, dataConversation, chatId, user } = useAppContext();
 
     const [category, setCategory] = useState("");
     const [feedback, setFeedback] = useState("");
@@ -63,13 +63,13 @@ export const FeedbackRating = () => {
 
         await postFeedbackRating({
             user: {
-                id: user.id,
-                name: user.name
+                id: user?.id,
+                name: user?.name
             },
             conversation_id: chatId,
             feedback_message: feedback,
-            question: dataConversation[dataConversation.length - 1].user,
-            answer: dataConversation[dataConversation.length - 1].bot,
+            question: dataConversation[dataConversation.length - 1]?.user,
+            answer: dataConversation[dataConversation.length - 1]?.bot,
             rating: selectedThumb === "like" ? true : selectedThumb === "dislike" ? false : null,
             category: category
         })
@@ -94,8 +94,12 @@ export const FeedbackRating = () => {
         setSelectedThumb(thumb);
     };
 
+    if (!showFeedbackRatingPanel) {
+        return null;
+    }
+
     return (
-        <section className={styles.container} data-is-scrollable aria-label="feedback panel">
+        <div className={styles.cardFeedbackWrapper}>
             <div className={styles.cardFeedback}>
                 <div className={styles.header}>
                     <div className={styles.title}>Feedback</div>
@@ -139,11 +143,12 @@ export const FeedbackRating = () => {
                             &#8202;&#8202;Send
                             <SendRegular className={styles.sendIcon} />
                         </DefaultButton>
+                        <span>All fields must be filled</span>
                     </div>
                     {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
                 </div>
             </div>
-        </section>
+        </div>
     );
 };
 

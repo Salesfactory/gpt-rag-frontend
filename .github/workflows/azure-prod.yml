@@ -1,0 +1,58 @@
+# .github/workflows/deploy.yml
+name: Build and Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install zip
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Package Backend
+        working-directory: backend
+        run: |
+          rm -rf backend_env
+          zip -r ../deploy.zip *
+
+      - name: Deploy to Azure
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            set -e
+            if [ ! -f deploy.zip ]; then
+              echo "deploy.zip not found"
+              exit 1
+            fi
+            az webapp deploy \
+              --subscription ${{ secrets.AZURE_PROD_SUBSCRIPTION_ID }} \
+              --resource-group ${{ secrets.AZURE_PROD_RESOURCE_GROUP }} \
+              --name ${{ secrets.AZURE_PROD_WEBAPP_NAME }} \
+              --src-path deploy.zip \
+              --type zip \
+              --async true

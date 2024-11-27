@@ -1,17 +1,4 @@
-import { List } from "@fluentui/react";
-import {
-    AskRequest,
-    AskResponse,
-    AskResponseGpt,
-    ChatRequest,
-    ChatRequestGpt,
-    GetSettingsProps,
-    PostSettingsProps,
-    ConversationHistoryItem,
-    ConversationChatItem,
-    ChatTurn,
-    UserInfo
-} from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -44,7 +31,7 @@ export async function deleteUser({ user, userId }: any): Promise<any> {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user.id,
+                "X-MS-CLIENT-PRINCIPAL-ID": user.id
             }
         });
         const fetchedData = await response.json();
@@ -70,7 +57,6 @@ export async function checkUser({ user }: any): Promise<any> {
                 email: user.email
             })
         });
-
         const parsedResponse = await response.json();
         if (response.status > 299 || !response.ok) {
             throw Error("Unknown error in checkUser");
@@ -133,11 +119,15 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
     }
 }
 
-export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGpt> {
+export async function chatApiGpt(options: ChatRequestGpt, user: any): Promise<AskResponseGpt> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
     const response = await fetch("/chatgpt", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+            "X-MS-CLIENT-PRINCIPAL-NAME": user_name
         },
         body: JSON.stringify({
             history: options.history,
@@ -324,7 +314,114 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
         return { error: error };
     }
 }
-export async function createInvitation({organizationId, invitedUserEmail, userId, role} : any): Promise<any> {
+
+interface User {
+    id: string;
+    name: string;
+    organizationId: string;
+}
+
+interface SubscriptionResponse {
+    data: {
+        message: string;
+        subscription: {
+            id: string;
+            status: string;
+            current_period_end: number;
+        };
+    };
+    status: number;
+  }
+
+  export async function getFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+    
+    try {
+        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            }
+        });
+        
+        if (!response.ok) {
+            const error = new Error(`Failed to check financial assistant status: ${response.status}`);
+            (error as any).status = response.status;  // Añade el código de estado al error
+            throw error;
+        }
+
+        const parsedResponse = await response.json();
+        return parsedResponse.data;
+
+    } catch (error) {
+        console.error("Error verifying the Financial Assistant: ", error instanceof Error ? error.message : error);
+        throw error;
+    }
+}
+
+
+export async function upgradeSubscription({ user, subscriptionId }: { user?: User ; subscriptionId: string }): Promise<any> {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+    const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+
+    try {
+      const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-MS-CLIENT-PRINCIPAL-ID": userId,
+        },
+        body: JSON.stringify({
+          organizationId: userOrganizationId,
+          activateFinancialAssistant: true,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Subscription upgrade failed: ${response.status} ${response.statusText}`);
+      }
+  
+      const parsedResponse: SubscriptionResponse = await response.json();
+      const { message, subscription } = parsedResponse.data;
+      
+      console.log("Subscription upgraded successfully:", message);
+      return subscription;
+    } catch (error) {
+        console.error("Error upgrading subscription:", error instanceof Error ? error.message : error);
+        throw error;
+    }
+}
+
+export async function removeFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string; }): Promise<any> {
+    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+
+    try {
+        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Subscription removal failed: ${response.status} ${response.statusText}`);
+        }
+
+        const parsedResponse: SubscriptionResponse = await response.json();
+        const { message, subscription } = parsedResponse.data;
+
+        console.log("Financial Assistant removed successfully:", message);
+        return subscription;
+    } catch (error) {
+        console.error("Error removing Financial Assistant:", error instanceof Error ? error.message : error);
+        throw error;
+    }
+}
+
+
+export async function createInvitation({ organizationId, invitedUserEmail, userId, role }: any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
             method: "POST",
@@ -386,7 +483,7 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     const response = await fetch("/create-checkout-session", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
         },
         body: JSON.stringify({
             userId,
@@ -404,7 +501,7 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     return session;
 }
 
-export async function getProductPrices({ user}: { user: any}): Promise<any> {
+export async function getProductPrices({ user }: { user: any }): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -424,13 +521,13 @@ export async function getProductPrices({ user}: { user: any}): Promise<any> {
     }
 }
 
-export async function getOrganizationSubscription({userId, organizationId} : any) {
+export async function getOrganizationSubscription({ userId, organizationId }: any) {
     const response = await fetch("/api/get-organization-subscription?organizationId=" + organizationId, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-            "X-MS-CLIENT-PRINCIPAL-ID": userId,
-        },
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
+        }
     });
 
     if (response.status > 299 || !response.ok) {
@@ -439,7 +536,6 @@ export async function getOrganizationSubscription({userId, organizationId} : any
 
     const subscription = await response.json();
     return subscription;
-
 }
 
 export const createOrganization = async ({ userId, organizationName }: any) => {
@@ -447,7 +543,7 @@ export const createOrganization = async ({ userId, organizationName }: any) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
         },
         body: JSON.stringify({
             organizationName

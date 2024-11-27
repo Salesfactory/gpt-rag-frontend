@@ -1,8 +1,8 @@
 import { useState, useContext } from "react";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
-import { Send24Filled, Mic24Regular, AttachRegular } from "@fluentui/react-icons";
+import { Send24Filled, Mic24Regular, AttachRegular, AddRegular, BroomRegular } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
 
 import { uploadFile } from "../../api";
@@ -13,6 +13,7 @@ interface Props {
     disabled: boolean;
     placeholder?: string;
     clearOnSend?: boolean;
+    extraButtonNewChat?: React.ReactNode;
 }
 
 import { useFilePicker } from "use-file-picker";
@@ -168,14 +169,20 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
     );
 };
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
-    const { user, organization } = useContext(AppContext);
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat }: Props) => {
+    const { user, organization } = useAppContext();
 
     const [question, setQuestion] = useState<string>("");
     const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
-        if (disabled || !question.trim() || organization.subscriptionStatus === "inactive" || !organization.subscriptionId) {
+        if (
+            disabled ||
+            !question.trim() ||
+            !organization || // Check if organization is null or undefined
+            organization.subscriptionStatus === "inactive" ||
+            !organization.subscriptionId
+        ) {
             return;
         }
 
@@ -235,7 +242,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         }
     };
 
-    const sendQuestionDisabled = disabled || !question.trim() || organization.subscriptionStatus === "inactive" || !organization.subscriptionId;
+    const sendQuestionDisabled =
+        disabled ||
+        !question.trim() ||
+        !organization || // Check if organization is null
+        organization.subscriptionStatus === "inactive" ||
+        !organization.subscriptionId;
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>
@@ -248,36 +260,41 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                 value={question}
                 onChange={onQuestionChange}
                 onKeyDown={onEnterPress}
+                autoAdjustHeight
             />
             <div className={styles.questionInputButtonsContainer}>
-                <FileAttachmentInput setFileBlobUrl={setFileBlobUrl} />
-                <div
-                    className={`${styles.questionInputSendButton}`}
-                    aria-label="Button to talk"
-                    onClick={sttFromMic}
-                    onKeyDown={ev => {
-                        if (ev.key === "Enter") {
-                            ev.preventDefault();
-                            sttFromMic();
-                        }
-                    }}
-                    tabIndex={0}
-                >
-                    <Mic24Regular primaryFill="#9F9C9C" />
-                </div>
-                <div
-                    className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
-                    aria-label="Ask a question button"
-                    onClick={sendQuestion}
-                    onKeyDown={ev => {
-                        if (ev.key === "Enter") {
-                            ev.preventDefault();
-                            sendQuestion();
-                        }
-                    }}
-                    tabIndex={0}
-                >
-                    <Send24Filled />
+                {extraButtonNewChat}
+                <div className={styles.leftButtons}>
+                    {/*
+                    <div
+                        className={`${styles.questionInputSendButton}`}
+                        aria-label="Button to talk"
+                        onClick={sttFromMic}
+                        onKeyDown={ev => {
+                            if (ev.key === "Enter") {
+                                ev.preventDefault();
+                                sttFromMic();
+                            }
+                        }}
+                        tabIndex={0}
+                    >
+                        <Mic24Regular primaryFill="#9F9C9C" />
+                    </div>
+                    */}
+                    <div
+                        className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
+                        aria-label="Ask a question button"
+                        onClick={sendQuestion}
+                        onKeyDown={ev => {
+                            if (ev.key === "Enter") {
+                                ev.preventDefault();
+                                sendQuestion();
+                            }
+                        }}
+                        tabIndex={0}
+                    >
+                        <Send24Filled />
+                    </div>
                 </div>
             </div>
         </Stack>

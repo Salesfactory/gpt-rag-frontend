@@ -4,17 +4,7 @@ import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegula
 
 import styles from "./Chat.module.css";
 
-import {
-    chatApiGpt,
-    Approaches,
-    AskResponse,
-    ChatRequest,
-    ChatRequestGpt,
-    ChatTurn,
-    getUserInfo,
-    checkUser,
-    getOrganizationSubscription
-} from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getOrganizationSubscription } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -25,10 +15,11 @@ import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
-import { AppContext } from "../../providers/AppProviders";
+import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
+import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButton";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -43,7 +34,7 @@ if (userLanguage.startsWith("pt")) {
 const Chat = () => {
     // speech synthesis is disabled by default
 
-    const { organization } = useContext(AppContext);
+    const { organization } = useAppContext();
     const speechSynthesisEnabled = false;
 
     const [placeholderText, setPlaceholderText] = useState("");
@@ -64,15 +55,14 @@ const Chat = () => {
         setDataConversation,
         chatId,
         conversationIsLoading,
-        setRefreshFetchHistorial,
+        setRefreshFetchHistory,
         setChatId,
         setChatSelected,
         setChatIsCleaned,
         chatIsCleaned,
         settingsPanel,
-        setUser,
-        setOrganization
-    } = useContext(AppContext);
+        user
+    } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
     const lastFileBlobUrl = useRef<string | null>("");
@@ -123,13 +113,13 @@ const Chat = () => {
                     suggestFollowupQuestions: useSuggestFollowupQuestions
                 }
             };
-            const result = await chatApiGpt(request);
+            const result = await chatApiGpt(request, user);
             const conditionOne = answers.map(a => ({ user: a[0] }));
             if (conditionOne.length <= 0) {
-                setRefreshFetchHistorial(true);
+                setRefreshFetchHistory(true);
                 setChatId(result.conversation_id);
             } else {
-                setRefreshFetchHistorial(false);
+                setRefreshFetchHistory(false);
             }
             setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);
@@ -365,6 +355,8 @@ const Chat = () => {
     //If I add this on a useEffect it doesn't work, I don't know why
     //maybe because it's a global event listener and is called multiple times
 
+    const isButtonEnabled = !!(lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned);
+
     return (
         <div className={styles.mainContainer}>
             <div>
@@ -379,7 +371,7 @@ const Chat = () => {
                 <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>{settingsPanel && <SettingsPanel />}</div>
             </div>
             <div className={styles.container}>
-                <div className={styles.chatRoot} style={showHistoryPanel ? { alignSelf: "flex-start" } : {}}>
+                <div className={styles.chatRoot}>
                     <div className={styles.chatContainer}>
                         {!lastQuestionRef.current && dataConversation.length <= 0 ? (
                             <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>
@@ -473,19 +465,7 @@ const Chat = () => {
                             </div>
                         )}
                         <div className={styles.chatInput}>
-                            <div className={styles.buttonsActions}>
-                                <button
-                                    className={
-                                        lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned
-                                            ? styles.newChatButton
-                                            : styles.newChatButtonDisabled
-                                    }
-                                    onClick={handleNewChat}
-                                    aria-label="Start a new chat"
-                                    type="button"
-                                >
-                                    <AddRegular />
-                                </button>
+                            {/* <div className={styles.buttonsActions}>
                                 <button
                                     className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
                                     onClick={clearChat}
@@ -494,14 +474,18 @@ const Chat = () => {
                                 >
                                     <BroomRegular />
                                 </button>
-                            </div>
+                            </div> */}
                             <QuestionInput
                                 clearOnSend
                                 placeholder={placeholderText}
                                 disabled={isLoading}
                                 onSend={(question, fileBlobUrl) => makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null)}
+                                extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                             />
                         </div>
+                        <div className={styles.chatDisclaimer}>
+                            <p>This app is in beta. Responses may not be fully accurate.</p>
+                        </div>    
                     </div>
                     {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer] && (
                         <AnalysisPanel

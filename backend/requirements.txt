@@ -8,3 +8,9 @@ azure-identity
 azure-keyvault-secrets
 azure-storage-blob==12.19.0
 stripe==10.5.0
+cachetools>=5.3.3,<5.6.0
+Flask-SQLAlchemy==2.5.1
+PyJWT==2.8.0
+python-jose==3.3.0
+ms_identity_python[flask] @ https://github.com/azure-samples/ms-identity-python/archive/refs/heads/0.9.zip
+tenacity==8.5.0
