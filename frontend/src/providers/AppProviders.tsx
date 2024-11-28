@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Spinner } from "@fluentui/react";
 import { checkUser, getOrganizationSubscription } from "../api";
 import { toast } from "react-toastify";
-import { useLocation } from "react-router-dom";
 
 // Updated Role and SubscriptionTier types
 type Role = "admin" | "user";
@@ -82,7 +81,9 @@ interface AppContextType {
     isFinancialAssistantActive: boolean;
     setIsFinancialAssistantActive: Dispatch<SetStateAction<boolean>>;
     documentName: string;
+    setDocumentName:  Dispatch<SetStateAction<string>>;
     agentType: string;
+    setAgentType: Dispatch<SetStateAction<string>>;
 }
 
 // Create the context with a default value
@@ -111,10 +112,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
 
-    // Variables for the Financial Agent URL
-    const location = useLocation();
-    const [documentName, setDocumentName] = useState<string>("defaultDocument");
-    const [agentType, setAgentType] = useState<string>("defaultAgent");
+    // Setting variables for the Financial Agent URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(searchParams.entries());
+
+    const agent = params["agent"];
+    const document = params["document"];
+
+    const [documentName, setDocumentName] = useState<string>(document || "defaultDocument");
+    const [agentType, setAgentType] = useState<string>(agent || "defaultAgent");
 
     // Handle keyboard shortcuts (unchanged)
     const handleKeyDown = useCallback(
@@ -168,16 +174,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, [handleKeyDown]);
-
-    useEffect(() => {
-        const searchParams = new URLSearchParams(location.search);
-        const documentParam = searchParams.get("document");
-        const agentParam = searchParams.get("agent");
-    
-        setDocumentName(documentParam || "defaultDocument");
-        setAgentType(agentParam || "defaultAgent");
-        
-    }, [location.search]);
 
     useEffect(() => {
         const fetchUserAuth = async (invitationToken?: string | null) => {
