@@ -176,8 +176,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
         setDocumentName(documentParam || "defaultDocument");
         setAgentType(agentParam || "defaultAgent");
-
-        console.log(documentName, agentType)
+        
     }, [location.search]);
 
     useEffect(() => {
