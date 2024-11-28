@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Spinner } from "@fluentui/react";
 import { checkUser, getOrganizationSubscription } from "../api";
 import { toast } from "react-toastify";
+import { useLocation } from "react-router-dom";
 
 // Updated Role and SubscriptionTier types
 type Role = "admin" | "user";
@@ -80,6 +81,8 @@ interface AppContextType {
     setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>; // Setter for subscriptionTiers
     isFinancialAssistantActive: boolean;
     setIsFinancialAssistantActive: Dispatch<SetStateAction<boolean>>;
+    documentName: string;
+    agentType: string;
 }
 
 // Create the context with a default value
@@ -107,6 +110,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
+
+    // Variables for the Financial Agent URL
+    const location = useLocation();
+    const [documentName, setDocumentName] = useState<string>("defaultDocument");
+    const [agentType, setAgentType] = useState<string>("defaultAgent");
 
     // Handle keyboard shortcuts (unchanged)
     const handleKeyDown = useCallback(
@@ -160,6 +168,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, [handleKeyDown]);
+
+    useEffect(() => {
+        const searchParams = new URLSearchParams(location.search);
+        const documentParam = searchParams.get("document");
+        const agentParam = searchParams.get("agent");
+    
+        setDocumentName(documentParam || "defaultDocument");
+        setAgentType(agentParam || "defaultAgent");
+
+        console.log(documentName, agentType)
+    }, [location.search]);
 
     useEffect(() => {
         const fetchUserAuth = async (invitationToken?: string | null) => {
@@ -300,7 +319,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             subscriptionTiers, // New state variable
             setSubscriptionTiers, // Setter for subscriptionTiers
             isFinancialAssistantActive,
-            setIsFinancialAssistantActive
+            setIsFinancialAssistantActive,
+            documentName,
+            setDocumentName,
+            agentType,
+            setAgentType
         }),
         [
             showHistoryPanel,
@@ -319,7 +342,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isAuthenticated,
             isLoading,
             subscriptionTiers,
-            isFinancialAssistantActive
+            isFinancialAssistantActive,
+            documentName,
+            agentType
         ]
     );
 
