@@ -9,7 +9,7 @@ import { uploadFile } from "../../api";
 
 import styles from "./QuestionInput.module.css";
 interface Props {
-    onSend: (question: string, fileBlobUrl: string | null) => void;
+    onSend: (question: string, fileBlobUrl: string | null, agent: string | null) => void;
     disabled: boolean;
     placeholder?: string;
     clearOnSend?: boolean;
@@ -171,8 +171,9 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat }: Props) => {
     const { user, organization } = useAppContext();
-
+    const [agent, setAgent] = useState<string>("");
     const [question, setQuestion] = useState<string>("");
+
     const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
@@ -186,7 +187,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
             return;
         }
 
-        onSend(question, fileBlobUrl);
+        onSend(question, fileBlobUrl, agent);
 
         if (clearOnSend) {
             setQuestion("");

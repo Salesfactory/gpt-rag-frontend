@@ -492,7 +492,8 @@ def chatgpt():
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
     file_blob_url = request.json["url"]
-    agent = request.json.get("financial","consumer")
+    agent = request.json.get("agent")
+    
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     logging.info("[webbackend] conversation_id: " + conversation_id)
@@ -501,7 +502,7 @@ def chatgpt():
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
     logging.info(f"[webappend] Agent: {agent}")
-
+    
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
@@ -521,7 +522,6 @@ def chatgpt():
         )
 
     try:
-
         if agent =="financial":
             orchestrator_url = FINANCIAL_ASSISTANT_ENDPOINT
         else:
