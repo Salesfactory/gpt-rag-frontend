@@ -1,10 +1,9 @@
 import { useRef, useState, useEffect, useContext } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
-import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getOrganizationSubscription } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -62,7 +61,8 @@ const Chat = () => {
         chatIsCleaned,
         settingsPanel,
         user,
-        isFinancialAssistantActive
+        isFinancialAssistantActive,
+        documentName
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -115,7 +115,7 @@ const Chat = () => {
                 conversation_id: chatId !== null ? chatId : userId,
                 query: question,
                 file_blob_url: fileBlobUrl || "",
-                agent: agent || "",
+                documentName,
                 overrides: {
                     promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
