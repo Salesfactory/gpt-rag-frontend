@@ -135,6 +135,7 @@ export async function chatApiGpt(options: ChatRequestGpt, user: any): Promise<As
             conversation_id: options.conversation_id,
             query: options.query,
             url: options.file_blob_url,
+            agent: options.agent,
             documentName: options.documentName,
             overrides: {
                 semantic_ranker: options.overrides?.semanticRanker,

@@ -86,6 +86,7 @@ export type ChatRequestGpt = {
     query: string;
     file_blob_url: string;
     overrides?: AskRequestOverrides;
+    agent: string;
     documentName: string;
 };
 

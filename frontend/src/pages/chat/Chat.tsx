@@ -116,6 +116,7 @@ const Chat = () => {
                 query: question,
                 file_blob_url: fileBlobUrl || "",
                 documentName,
+                agent,
                 overrides: {
                     promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
