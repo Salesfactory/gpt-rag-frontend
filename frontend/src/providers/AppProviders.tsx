@@ -116,12 +116,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const searchParams = new URLSearchParams(window.location.search);
     const params = Object.fromEntries(searchParams.entries());
 
-    const agent = params["agent"];
-    const document = params["document"];
+    const agentParam = params["agent"];
+    const documentParam = params["document"];
 
-    const [documentName, setDocumentName] = useState<string>(document || "defaultDocument");
-    const [agentType, setAgentType] = useState<string>(agent || "defaultAgent");
+    const [documentName, setDocumentName] = useState<string>(documentParam || "defaultDocument");
+    const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
 
+    if(agentType !== agentParam && agentParam !== null){
+        setAgentType(agentParam)
+    }
+    
     // Handle keyboard shortcuts (unchanged)
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
@@ -269,6 +273,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 if (savedState !== null) {
                     setIsFinancialAssistantActive(JSON.parse(savedState));
                 }
+                if(agentType == "financial"){
+                    setIsFinancialAssistantActive(true)
+                }
+
             } catch (error) {
                 console.error("Initialization failed:", error);
                 toast.error("Failed to initialize user authentication.");
