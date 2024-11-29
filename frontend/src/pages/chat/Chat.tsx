@@ -82,7 +82,8 @@ const Chat = () => {
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
     const triggered = useRef(false);
 
-    const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null, agent: string | null) => {
+    const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
+        let agent = null;
         lastQuestionRef.current = question;
         lastFileBlobUrl.current = fileBlobUrl;
 
@@ -91,15 +92,15 @@ const Chat = () => {
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
 
-        if (isFinancialAssistantActive==true){
-            agent="financial"
-        }else{
-            agent="consumer"
+        if (isFinancialAssistantActive == true) {
+            agent = "financial";
+        } else {
+            agent = "consumer";
         }
 
-        console.log("AGENT=",agent);
-        console.log("isFinancialAssistant=",isFinancialAssistantActive);
-        
+        console.log("AGENT=", agent);
+        console.log("isFinancialAssistant=", isFinancialAssistantActive);
+
         try {
             let history: ChatTurn[] = [];
             if (dataConversation.length > 0) {
@@ -424,7 +425,7 @@ const Chat = () => {
                                                           onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                           onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                           onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                          onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null, null)}
+                                                          onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
                                                           showFollowupQuestions={false}
                                                           showSources={true}
                                                       />
@@ -443,7 +444,7 @@ const Chat = () => {
                                                       onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                       onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                       onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                      onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null, null)}
+                                                      onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
                                                       showFollowupQuestions={false}
                                                       showSources={true}
                                                   />
@@ -466,7 +467,7 @@ const Chat = () => {
                                             <AnswerError
                                                 error={error_message_text + error.toString()}
                                                 onRetry={() =>
-                                                    makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current, null)
+                                                    makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)
                                                 }
                                             />
                                         </div>
@@ -487,25 +488,18 @@ const Chat = () => {
                                 </button>
                             </div> */}
                             <QuestionInput
-
                                 clearOnSend
                                 placeholder={placeholderText}
                                 disabled={isLoading}
-                                onSend={(question, fileBlobUrl, agent) => {
-                                    makeApiRequestGpt(
-                                        question, 
-                                        chatId !== "" ? chatId : null, 
-                                        fileBlobUrl || null, 
-                                        agent || null
-                                    );
+                                onSend={(question, fileBlobUrl) => {
+                                    makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
                                 }}
                                 extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                             />
-                            
                         </div>
                         <div className={styles.chatDisclaimer}>
                             <p>This app is in beta. Responses may not be fully accurate.</p>
-                        </div>    
+                        </div>
                     </div>
                     {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer] && (
                         <AnalysisPanel
