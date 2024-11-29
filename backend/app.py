@@ -61,7 +61,7 @@ CHECK_USER_ENDPOINT = ORCHESTRATOR_URI + "/checkUser"
 SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/subscriptions"
 INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
-
+FINANCIAL_ASSISTANT_ENDPOINT = ORCHESTRATOR_URI + "/financial-orc"
 PRODUCT_ID_DEFAULT = os.getenv("STRIPE_PRODUCT_ID")
 
 # email
@@ -492,6 +492,9 @@ def chatgpt():
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
     file_blob_url = request.json["url"]
+    agent = request.json["agent"]
+    documentName = request.json["documentName"]
+
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     logging.info("[webbackend] conversation_id: " + conversation_id)
@@ -499,11 +502,16 @@ def chatgpt():
     logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
+    logging.info(f"[webappend] Agent: {agent}")
 
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--functionKey"
+        if agent == "financial":
+            keySecretName = "orchestrator-host--financial"
+        else:
+            keySecretName = "orchestrator-host--functionKey"
+
         functionKey = get_secret(keySecretName)
     except Exception as e:
         logging.exception(
@@ -519,7 +527,11 @@ def chatgpt():
         )
 
     try:
-        url = ORCHESTRATOR_ENDPOINT
+        if agent == "financial":
+            orchestrator_url = FINANCIAL_ASSISTANT_ENDPOINT
+        else:
+            orchestrator_url = ORCHESTRATOR_ENDPOINT
+
         payload = json.dumps(
             {
                 "conversation_id": conversation_id,
@@ -527,11 +539,19 @@ def chatgpt():
                 "url": file_blob_url,
                 "client_principal_id": client_principal_id,
                 "client_principal_name": client_principal_name,
+                "documentName": documentName,
             }
         )
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers, data=payload)
+        response = requests.request(
+            "GET", orchestrator_url, headers=headers, data=payload
+        )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
+
+        if response.status_code != 200:
+            logging.error(f"[webbackend] Error from orchestrator: {response.text}")
+            return jsonify({"error": "Error contacting orchestrator"}), 500
+
         return response.text
     except Exception as e:
         logging.exception("[webbackend] exception in /chatgpt")

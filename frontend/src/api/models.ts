@@ -14,15 +14,15 @@ export const enum Approaches {
 }
 
 export type ConversationHistoryItem = {
-    id: string,
-    start_date: string,
-    content: string,
+    id: string;
+    start_date: string;
+    content: string;
 };
 
 export type ConversationChatItem = {
-    role: string,
-    content: string
-}
+    role: string;
+    content: string;
+};
 
 export type AskRequestOverrides = {
     semanticRanker?: boolean;
@@ -53,9 +53,9 @@ export type TransactionData = {
     cuenta_origen: string;
     monto: string;
     telefono_destino: string;
-}
+};
 
-export type AskResponseGpt= {
+export type AskResponseGpt = {
     conversation_id: string;
     answer: string;
     current_state: string;
@@ -86,6 +86,8 @@ export type ChatRequestGpt = {
     query: string;
     file_blob_url: string;
     overrides?: AskRequestOverrides;
+    agent: string;
+    documentName: string;
 };
 
 export type GetSettingsProps = {
@@ -93,7 +95,7 @@ export type GetSettingsProps = {
         id: string;
         name: string;
     } | null;
-}
+};
 
 export type PostSettingsProps = {
     user: {
@@ -101,4 +103,4 @@ export type PostSettingsProps = {
         name: string;
     } | null;
     temperature: number;
-}
+};

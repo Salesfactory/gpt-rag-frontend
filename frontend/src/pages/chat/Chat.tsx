@@ -1,10 +1,9 @@
 import { useRef, useState, useEffect, useContext } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
-import { AddRegular, BroomRegular, SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn, getUserInfo, checkUser, getOrganizationSubscription } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -61,7 +60,9 @@ const Chat = () => {
         setChatIsCleaned,
         chatIsCleaned,
         settingsPanel,
-        user
+        user,
+        isFinancialAssistantActive,
+        documentName
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -82,6 +83,7 @@ const Chat = () => {
     const triggered = useRef(false);
 
     const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
+        let agent = null;
         lastQuestionRef.current = question;
         lastFileBlobUrl.current = fileBlobUrl;
 
@@ -89,6 +91,15 @@ const Chat = () => {
         setIsLoading(true);
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
+
+        if (isFinancialAssistantActive == true) {
+            agent = "financial";
+        } else {
+            agent = "consumer";
+        }
+
+        console.log("AGENT=", agent);
+        console.log("isFinancialAssistant=", isFinancialAssistantActive);
 
         try {
             let history: ChatTurn[] = [];
@@ -104,6 +115,8 @@ const Chat = () => {
                 conversation_id: chatId !== null ? chatId : userId,
                 query: question,
                 file_blob_url: fileBlobUrl || "",
+                documentName,
+                agent,
                 overrides: {
                     promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
@@ -479,13 +492,15 @@ const Chat = () => {
                                 clearOnSend
                                 placeholder={placeholderText}
                                 disabled={isLoading}
-                                onSend={(question, fileBlobUrl) => makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null)}
+                                onSend={(question, fileBlobUrl) => {
+                                    makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                }}
                                 extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                             />
                         </div>
                         <div className={styles.chatDisclaimer}>
                             <p>This app is in beta. Responses may not be fully accurate.</p>
-                        </div>    
+                        </div>
                     </div>
                     {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer] && (
                         <AnalysisPanel
