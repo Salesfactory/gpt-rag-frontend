@@ -80,6 +80,10 @@ interface AppContextType {
     setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>; // Setter for subscriptionTiers
     isFinancialAssistantActive: boolean;
     setIsFinancialAssistantActive: Dispatch<SetStateAction<boolean>>;
+    documentName: string;
+    setDocumentName:  Dispatch<SetStateAction<string>>;
+    agentType: string;
+    setAgentType: Dispatch<SetStateAction<string>>;
 }
 
 // Create the context with a default value
@@ -108,6 +112,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
 
+    // Setting variables for the Financial Agent URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const params = Object.fromEntries(searchParams.entries());
+
+    const agentParam = params["agent"];
+    const documentParam = params["document"];
+
+    const [documentName, setDocumentName] = useState<string>(documentParam || "defaultDocument");
+    const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
+
+    if(agentType !== agentParam && agentParam !== null){
+        setAgentType(agentParam)
+    }
+    
     // Handle keyboard shortcuts (unchanged)
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
@@ -255,6 +273,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 if (savedState !== null) {
                     setIsFinancialAssistantActive(JSON.parse(savedState));
                 }
+                if(agentType == "financial"){
+                    setIsFinancialAssistantActive(true)
+                }
+
             } catch (error) {
                 console.error("Initialization failed:", error);
                 toast.error("Failed to initialize user authentication.");
@@ -300,7 +322,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             subscriptionTiers, // New state variable
             setSubscriptionTiers, // Setter for subscriptionTiers
             isFinancialAssistantActive,
-            setIsFinancialAssistantActive
+            setIsFinancialAssistantActive,
+            documentName,
+            setDocumentName,
+            agentType,
+            setAgentType
         }),
         [
             showHistoryPanel,
@@ -319,7 +345,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isAuthenticated,
             isLoading,
             subscriptionTiers,
-            isFinancialAssistantActive
+            isFinancialAssistantActive,
+            documentName,
+            agentType
         ]
     );
 
