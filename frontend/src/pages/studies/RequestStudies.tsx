@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "./RequestStudies.module.css"
+
 const RequestStudies: React.FC = () => {
     return (
         <div className={styles.page_container}>

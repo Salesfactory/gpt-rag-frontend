@@ -170,9 +170,9 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
 };
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat }: Props) => {
-    const { user, organization } = useAppContext();
-
+    const { organization } = useAppContext();
     const [question, setQuestion] = useState<string>("");
+
     const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
