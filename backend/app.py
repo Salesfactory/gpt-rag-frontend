@@ -289,9 +289,11 @@ def index(*, context):
     """
     # Check if we have a return URL in session
     if "original_url" in session:
+        
         return_url = session.pop("original_url")
-        return redirect(return_url)
-
+        if request.url != return_url:
+            return redirect(return_url)
+        
     return send_from_directory("static", "index.html")
 
 
