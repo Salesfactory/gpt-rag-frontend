@@ -211,6 +211,14 @@
     margin-top: 5px;
     color: #8d8d8d;
     font-size: 0.8em;
+    text-align: center;
+    
+}
+
+@media only screen and (max-height: 999px)  {
+    .chatDisclaimer{
+        margin-left: 30px;
+    }
 }
 
 .loadingLogo {
