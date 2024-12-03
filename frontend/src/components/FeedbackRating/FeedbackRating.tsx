@@ -143,7 +143,7 @@ export const FeedbackRating = () => {
                             &#8202;&#8202;Send
                             <SendRegular className={styles.sendIcon} />
                         </DefaultButton>
-                        <span>All fields must be filled</span>
+                        <span className={styles.disclaimer}>All fields must be filled</span>
                     </div>
                     {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
                 </div>
