@@ -256,3 +256,8 @@
 .message {
     margin-top: 10px;
 }
+
+.disclaimer{
+    color: rgb(225, 37, 37);
+    text-align: center;
+}
