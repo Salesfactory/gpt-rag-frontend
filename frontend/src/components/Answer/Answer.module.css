@@ -7,7 +7,7 @@
 }
 
 .answerContainer .markdownContent {
-    font-size: 0.875rem;
+    font-size: 1rem;
 }
 
 .answerLogo {
@@ -140,6 +140,6 @@ sup {
 
 @media (max-width: 680px) {
     .answerContainer .markdownContent {
-        font-size: 0.75rem;
+        font-size: 0.875rem;
     }
 }

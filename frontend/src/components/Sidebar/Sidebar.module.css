@@ -121,6 +121,8 @@
     font-weight: 500;
     margin-bottom: 4px;
     width: 100%;
+    cursor: pointer;
+    user-select: none;
   }
   
   .sidebarLinkIcon {
@@ -138,6 +140,8 @@
     background-color: #000000;
     color: #fff;
     box-shadow: 0px 17px 20px -8px rgba(77, 91, 236, 0.23);
+    cursor: pointer;
+    user-select: none;
   }
   
   .sidebarLinkActive:hover{
