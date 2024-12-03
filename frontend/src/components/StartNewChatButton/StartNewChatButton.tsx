@@ -1,4 +1,4 @@
-import { AddRegular } from "@fluentui/react-icons";
+import { IconMessagePlus } from "@tabler/icons-react";
 import styles from "./StartNewChatButton.module.css";
 
 const StartNewChatButton = ({ isEnabled, onClick }: { isEnabled: boolean; onClick: () => void }) => {
@@ -10,7 +10,7 @@ const StartNewChatButton = ({ isEnabled, onClick }: { isEnabled: boolean; onClic
             type="button"
             disabled={!isEnabled}
         >
-            <AddRegular />
+            <IconMessagePlus />
         </button>
     );
 };

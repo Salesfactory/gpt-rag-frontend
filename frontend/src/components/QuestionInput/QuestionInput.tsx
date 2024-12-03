@@ -170,9 +170,9 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
 };
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat }: Props) => {
-    const { user, organization } = useAppContext();
-
+    const { organization } = useAppContext();
     const [question, setQuestion] = useState<string>("");
+
     const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
 
     const sendQuestion = () => {
@@ -265,6 +265,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
             <div className={styles.questionInputButtonsContainer}>
                 {extraButtonNewChat}
                 <div className={styles.leftButtons}>
+                    {/*
                     <div
                         className={`${styles.questionInputSendButton}`}
                         aria-label="Button to talk"
@@ -279,6 +280,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
                     >
                         <Mic24Regular primaryFill="#9F9C9C" />
                     </div>
+                    */}
                     <div
                         className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
                         aria-label="Ask a question button"
