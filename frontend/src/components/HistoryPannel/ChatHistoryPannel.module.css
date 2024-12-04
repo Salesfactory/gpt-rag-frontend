@@ -174,7 +174,7 @@
     justify-content: space-between;
     align-items: center;
     border-radius: 5px;
-    background-color: #ffffff;
+    background-color: #cccccc;
     transition: 0.2s;
 }
 
@@ -188,10 +188,10 @@
     padding: 6px;
     justify-content: center;
     align-items: center;
-    background-color: #f5f5f5;
+    background-color: #cccccc;
     border-radius: 6px;
     cursor: pointer;
-    border: 1px solid #e3e3e3;
+    border: 1px solid #cccccc;
     transition: 0.3s;
     margin: auto;
     margin-right: 5px;
