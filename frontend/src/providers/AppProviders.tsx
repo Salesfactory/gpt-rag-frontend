@@ -34,6 +34,7 @@ export interface ConversationHistoryItem {
     id: string;
     start_date: string;
     content: string;
+    type: string;
     // Add other properties as needed
 }
 
