@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { AddFilled } from "@fluentui/react-icons";
 import styles from "./ChatHistoryPannel.module.css";
 import { useAppContext } from "../../providers/AppProviders";
@@ -14,8 +14,25 @@ export const ChatHistoryPanel: React.FC<ChatHistoryPanelProps> = ({ functionDele
     const handleClosePannel = () => {
         setShowHistoryPanel(!showHistoryPanel);
     };
+
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+                setShowHistoryPanel(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [setShowHistoryPanel]);
+
     return (
-        <div className={styles.cardHistoryWrapper} data-is-scrollable aria-label="chat history panel">
+        <div ref={panelRef} className={styles.cardHistoryWrapper} data-is-scrollable aria-label="chat history panel">
             <div className={styles.cardHistory}>
                 <div className={styles.header}>
                     <div className={styles.title}>Chat history</div>
