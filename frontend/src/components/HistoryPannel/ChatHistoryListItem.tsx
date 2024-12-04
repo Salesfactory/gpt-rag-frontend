@@ -33,7 +33,8 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         chatSelected,
         setChatSelected,
         setNewChatDeleted,
-        setShowHistoryPanel
+        setShowHistoryPanel,
+        isFinancialAssistantActive,
     } = useAppContext();
 
     const handleMouseEnter = (index: string) => {
@@ -174,7 +175,12 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const sortedDataByDate = dataHistory.sort((a, b) => Number(new Date(a.start_date)) - Number(new Date(b.start_date)));
+    // either default for usual conversations or financial for financial conversations
+    // != "financial" for default conversations
+    const dataDefaultOrFinancial = isFinancialAssistantActive ? 
+        dataHistory.filter(item => item.type == "financial") : 
+        dataHistory.filter(item => item.type != "financial");
+    const sortedDataByDate = dataDefaultOrFinancial.sort((a, b) => Number(new Date(a.start_date)) - Number(new Date(b.start_date)));
 
     const uniqueItems = new Set();
 
