@@ -389,16 +389,30 @@ const Chat = () => {
                         {!lastQuestionRef.current && dataConversation.length <= 0 ? (
                             <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
+                                { !isFinancialAssistantActive &&
+                                    <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
+                                        <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
+                                        <h1>FreddAid</h1>
 
-                                <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                    <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
-                                    <h1>FreddAid</h1>
+                                        <p style={{ width: "80%", textAlign: "center" }}>
+                                            Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
+                                            actionable insights.
+                                        </p>
+                                    </div>
+                                }
 
-                                    <p style={{ width: "80%", textAlign: "center" }}>
-                                        Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
-                                        actionable insights.
-                                    </p>
-                                </div>
+                                { isFinancialAssistantActive && 
+                                    <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
+                                        <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
+                                        <h1>FreddAid</h1>
+                                        <h4>Financial Assistant</h4>
+
+                                        <p style={{ width: "80%", textAlign: "center" }}>
+                                            Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
+                                            actionable insights.
+                                        </p>
+                                    </div>
+                                }
                             </div>
                         ) : (
                             <div
