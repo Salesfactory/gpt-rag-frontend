@@ -31,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [activeItem, setActiveItem] = useState<string | null>(null);
     const handleItemClick = (itemTitle: string) => {
         setActiveItem(itemTitle);
+        setIsCollapsed(true);
     };
 
     const handleOnClickCloseSideBar = () => {
