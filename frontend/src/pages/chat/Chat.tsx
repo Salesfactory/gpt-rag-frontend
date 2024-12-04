@@ -19,6 +19,7 @@ import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPane
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButton";
+import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -383,6 +384,7 @@ const Chat = () => {
             <div>
                 <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>{settingsPanel && <SettingsPanel />}</div>
             </div>
+            <FinancialPopup />
             <div className={styles.container}>
                 <div className={styles.chatRoot}>
                     <div className={styles.chatContainer}>
@@ -405,7 +407,7 @@ const Chat = () => {
                                 className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
                                 aria-label="Chat messages"
                                 tabIndex={0}
-                            >
+                            > 
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
