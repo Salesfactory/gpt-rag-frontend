@@ -17,7 +17,6 @@ export type ConversationHistoryItem = {
     id: string;
     start_date: string;
     content: string;
-    type: string;
 };
 
 export type ConversationChatItem = {
