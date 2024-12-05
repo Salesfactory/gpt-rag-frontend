@@ -289,7 +289,17 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     );
 };
 
-export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser }: { isOpen: boolean; onDismiss: any; onConfirm: any; isDeletingUser: boolean; }) => {
+export const DeleteUserDialog = ({
+    isOpen,
+    onDismiss,
+    onConfirm,
+    isDeletingUser
+}: {
+    isOpen: boolean;
+    onDismiss: any;
+    onConfirm: any;
+    isDeletingUser: boolean;
+}) => {
     return (
         <Dialog
             minWidth={800}
@@ -307,37 +317,37 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser 
                 onDismiss: onDismiss,
                 styles: { main: { maxWidth: 450 } }
             }}
-            > 
-                {isDeletingUser && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            zIndex: 9999
+        >
+            {isDeletingUser && (
+                <div
+                    style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        zIndex: 9999
+                    }}
+                >
+                    <Spinner
+                        styles={{
+                            root: {
+                                width: "50px",
+                                height: "50px"
+                            }
                         }}
-                    >
-                        <Spinner
-                            styles={{
-                                root: {
-                                    width: "50px",
-                                    height: "50px"
-                                }
-                            }}
-                        />
-                    </div>
-                )}
-                <DialogContent>
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "end",
-                            gap: "10px"
-                        }}
-                    >
+                    />
+                </div>
+            )}
+            <DialogContent>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "end",
+                        gap: "10px"
+                    }}
+                >
                     <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
-                        <PrimaryButton
+                    <PrimaryButton
                         styles={{
                             root: {
                                 backgroundColor: "#9FC51D",
@@ -356,14 +366,14 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser 
                                 color: "white"
                             }
                         }}
-                            style={{ marginTop: "20px" }}
+                        style={{ marginTop: "20px" }}
                         onClick={() => {
                             onConfirm();
                         }}
-                            text="Delete user"
-                        />
-                    </div>
-                </DialogContent>
+                        text="Delete user"
+                    />
+                </div>
+            </DialogContent>
         </Dialog>
     );
 };
@@ -390,7 +400,6 @@ const Admin = () => {
     if (!user) {
         return <div>Please log in to view the user list.</div>;
     }
-
 
     useEffect(() => {
         const getUserList = async () => {
@@ -443,8 +452,8 @@ const Admin = () => {
     }, [search]);
 
     const handleDeleteClick = (user: any) => {
-        setSelectedUser(user); 
-        setIsDeleting(true);    
+        setSelectedUser(user);
+        setIsDeleting(true);
     };
 
     const deleteUserFromOrganization = (id: string) => {
@@ -513,7 +522,7 @@ const Admin = () => {
                         <TextField
                             placeholder="Search..."
                             style={{
-                                width: "268px",
+                                width: "240px",
                                 borderRadius: "6px",
                                 border: "1px solid #9F9C9C",
                                 padding: "0px 15px"
@@ -541,8 +550,8 @@ const Admin = () => {
                             }}
                         />
                     </div>
-                    
-                    {loading?null:<CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />}
+
+                    {loading ? null : <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />}
                     <DeleteUserDialog
                         isOpen={isDeleting}
                         onDismiss={() => {
@@ -551,7 +560,7 @@ const Admin = () => {
                         onConfirm={() => {
                             deleteUserFromOrganization(selectedUser?.id);
                         }}
-                    isDeletingUser={isDeletingUser}
+                        isDeletingUser={isDeletingUser}
                     />
                     {loading ? (
                         <Spinner
@@ -632,7 +641,14 @@ const Admin = () => {
                                                             <button className={styles.button} title="Edit user" aria-label="Edit user" onClick={() => {}}>
                                                                 <EditRegular />
                                                             </button>
-                                                            <button className={styles.button} title="Delete user" aria-label="Delete user" onClick={() => {handleDeleteClick(user)}}>
+                                                            <button
+                                                                className={styles.button}
+                                                                title="Delete user"
+                                                                aria-label="Delete user"
+                                                                onClick={() => {
+                                                                    handleDeleteClick(user);
+                                                                }}
+                                                            >
                                                                 <DeleteRegular />
                                                             </button>
                                                         </div>
