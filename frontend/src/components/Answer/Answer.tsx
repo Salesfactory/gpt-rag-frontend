@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { Stack, IconButton } from "@fluentui/react";
 import DOMPurify from "dompurify";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm'
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
 import styles from "./Answer.module.css";
@@ -74,7 +74,17 @@ export const Answer = ({
             </Stack.Item>
 
             <Stack.Item grow className={styles.markdownContent}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                        a: ({ node, ...props }) => (
+                            <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: "#85a717", textDecoration: "none" }}>
+                                {props.children}
+                            </a>
+                        )
+                    }}
+                >
                     {sanitizedAnswerHtml}
                 </ReactMarkdown>
             </Stack.Item>
@@ -87,16 +97,18 @@ export const Answer = ({
                             const path = getFilePath(url);
                             return (
                                 <>
-                                    <div style={{
-                                        fontWeight: "500",
-                                        lineHeight: "24px",
-                                        textAlign: "center",
-                                        borderRadius: "4px",
-                                        padding: "0px",
-                                        color: "#123bb6",
-                                        textDecoration: "none"
-                                    }}>
-                                    {`[${++i}]`}
+                                    <div
+                                        style={{
+                                            fontWeight: "500",
+                                            lineHeight: "24px",
+                                            textAlign: "center",
+                                            borderRadius: "4px",
+                                            padding: "0px",
+                                            color: "#123bb6",
+                                            textDecoration: "none"
+                                        }}
+                                    >
+                                        {`[${++i}]`}
                                     </div>
                                     <a
                                         onKeyDown={event => {
