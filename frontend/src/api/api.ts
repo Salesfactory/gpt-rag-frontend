@@ -246,7 +246,6 @@ export function getCitationFilePath(citation: string): string {
         const parsedResponse = JSON.parse(xhr.responseText);
         storage_account = parsedResponse["storageaccount"];
     }
-    console.log("storage account:" + storage_account);
 
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }

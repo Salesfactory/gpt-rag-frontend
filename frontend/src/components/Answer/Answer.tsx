@@ -97,19 +97,7 @@ export const Answer = ({
                             const path = getFilePath(url);
                             return (
                                 <>
-                                    <div
-                                        style={{
-                                            fontWeight: "500",
-                                            lineHeight: "24px",
-                                            textAlign: "center",
-                                            borderRadius: "4px",
-                                            padding: "0px",
-                                            color: "#123bb6",
-                                            textDecoration: "none"
-                                        }}
-                                    >
-                                        {`[${++i}]`}
-                                    </div>
+                                    <div className={styles.citationContainer}>{`[${++i}]`}</div>
                                     <a
                                         onKeyDown={event => {
                                             if (event.key === "Enter") {
