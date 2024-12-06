@@ -404,12 +404,11 @@ const Chat = () => {
                                 { isFinancialAssistantActive && 
                                     <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                         <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
-                                        <h1>FreddAid</h1>
-                                        <h4>Financial Assistant</h4>
+                                        <h1>FinlAI</h1>
 
                                         <p style={{ width: "80%", textAlign: "center" }}>
-                                            Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
-                                            actionable insights.
+                                            Your financial ally, delivering real-time insights and strategic guidance to help you stay ahead of opportunities 
+                                            and threats in an ever-changing financial landscape.
                                         </p>
                                     </div>
                                 }
