@@ -119,6 +119,17 @@ sup {
     width: fit-content;
 }
 
+.citationContainer{
+    font-weight: "500px";
+    line-height: "24px";
+    text-align: "center";
+    border-radius: "4px";
+    padding: "0px";
+    color: #123bb6;
+    text-decoration: "none";
+}
+
+
 @keyframes loading {
     0% {
         content: "";
