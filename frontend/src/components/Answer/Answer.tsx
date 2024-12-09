@@ -95,21 +95,12 @@ export const Answer = ({
                         <span className={styles.citationLearnMore}>{citation_label_text}:</span>
                         {parsedAnswer.citations.map((url, i) => {
                             const path = getFilePath(url);
+                            if (!url.startsWith("https://") && !url.endsWith(".pdf") && !url.endsWith(".docx") && !url.endsWith(".doc")) {
+                                url = "https://" + url;
+                            }
                             return (
                                 <>
-                                    <div
-                                        style={{
-                                            fontWeight: "500",
-                                            lineHeight: "24px",
-                                            textAlign: "center",
-                                            borderRadius: "4px",
-                                            padding: "0px",
-                                            color: "#123bb6",
-                                            textDecoration: "none"
-                                        }}
-                                    >
-                                        {`[${++i}]`}
-                                    </div>
+                                    <div className={styles.citationContainer}>{`[${++i}]`}</div>
                                     <a
                                         onKeyDown={event => {
                                             if (event.key === "Enter") {
