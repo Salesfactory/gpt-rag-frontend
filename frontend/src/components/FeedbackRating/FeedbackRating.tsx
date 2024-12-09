@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Dropdown, TextField, Button, Spinner, DefaultButton } from "@fluentui/react";
+import { Dropdown, TextField, Button, Spinner, DefaultButton, ResponsiveMode } from "@fluentui/react";
 import styles from "./FeedbackRating.module.css";
 import { useAppContext } from "../../providers/AppProviders";
 import { AddFilled, SendRegular, ThumbLikeFilled, ThumbDislikeFilled } from "@fluentui/react-icons";
@@ -99,56 +99,56 @@ export const FeedbackRating = () => {
     }
 
     return (
-        <div className={styles.cardFeedbackWrapper}>
-            <div className={styles.cardFeedback}>
-                <div className={styles.header}>
-                    <div className={styles.title}>Feedback</div>
-                    <div className={styles.buttons}>
-                        <div className={styles.closeButtonContainer}>
-                            <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
-                                <AddFilled />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div className={styles.content}>
-                    <div className={styles.listContainer}>
-                        {isLoading && (
-                            <div className={styles.loaderContainer}>
-                                <Spinner size={3} />
+            <div className={styles.cardFeedbackWrapper}>
+                <div className={styles.cardFeedback}>
+                    <div className={styles.header}>
+                        <div className={styles.title}>Feedback</div>
+                        <div className={styles.buttons}>
+                            <div className={styles.closeButtonContainer}>
+                                <button className={styles.closeButton} aria-label="hide button" onClick={handleClosePannel}>
+                                    <AddFilled />
+                                </button>
                             </div>
-                        )}
-
-                        <Dropdown placeholder="Select Category" options={categoryOptions} onChange={handleCategoryChange} defaultValue={category} />
-                        <TextField label="Message" multiline onChange={handleFeedbackChange} value={feedback} className={styles.message} />
-                        <div className={styles.rating}>
-                            <button
-                                className={styles.thumbButton}
-                                aria-label="like"
-                                aria-pressed={selectedThumb === "like"}
-                                onClick={() => handleSelectedThumb("like")}
-                            >
-                                {selectedThumb === "like" ? <ThumbLikeFilled /> : <ThumbLikeRegular />}
-                            </button>
-                            <button
-                                className={styles.thumbButton}
-                                aria-label="dislike"
-                                aria-pressed={selectedThumb === "dislike"}
-                                onClick={() => handleSelectedThumb("dislike")}
-                            >
-                                {selectedThumb === "dislike" ? <ThumbDislikeFilled /> : <ThumbDislikeRegular />}
-                            </button>
                         </div>
-                        <DefaultButton className={styles.saveButton} onClick={handleSubmitFeedback}>
-                            &#8202;&#8202;Send
-                            <SendRegular className={styles.sendIcon} />
-                        </DefaultButton>
-                        <span className={styles.disclaimer}>All fields must be filled</span>
                     </div>
-                    {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
+                    <div className={styles.content}>
+                        <div className={styles.listContainer}>
+                            {isLoading && (
+                                <div className={styles.loaderContainer}>
+                                    <Spinner size={3} />
+                                </div>
+                            )}
+
+                            <Dropdown placeholder="Select Category" options={categoryOptions} onChange={handleCategoryChange} defaultValue={category} responsiveMode={ResponsiveMode.unknown}/>
+                            <TextField label="Message" multiline onChange={handleFeedbackChange} value={feedback} className={styles.message} />
+                            <div className={styles.rating}>
+                                <button
+                                    className={styles.thumbButton}
+                                    aria-label="like"
+                                    aria-pressed={selectedThumb === "like"}
+                                    onClick={() => handleSelectedThumb("like")}
+                                >
+                                    {selectedThumb === "like" ? <ThumbLikeFilled /> : <ThumbLikeRegular />}
+                                </button>
+                                <button
+                                    className={styles.thumbButton}
+                                    aria-label="dislike"
+                                    aria-pressed={selectedThumb === "dislike"}
+                                    onClick={() => handleSelectedThumb("dislike")}
+                                >
+                                    {selectedThumb === "dislike" ? <ThumbDislikeFilled /> : <ThumbDislikeRegular />}
+                                </button>
+                            </div>
+                            <DefaultButton className={styles.saveButton} onClick={handleSubmitFeedback}>
+                                &#8202;&#8202;Send
+                                <SendRegular className={styles.sendIcon} />
+                            </DefaultButton>
+                            <span className={styles.disclaimer}>All fields must be filled</span>
+                        </div>
+                        {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
+                    </div>
                 </div>
             </div>
-        </div>
     );
 };
 

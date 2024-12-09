@@ -47,6 +47,16 @@
     z-index: 9999;
 }
 
+@media (max-width: 900px){
+    .cardFeedbackWrapper{
+        width: 70vw;
+        height: auto;
+        top: 16%;
+        left: 15%;
+        background-color: transparent;        
+    }
+}
+
 .cardFeedback {
     background-color: #f5f5f5;
     border: 1px solid #e3e3e3;
