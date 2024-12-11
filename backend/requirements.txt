@@ -1,3 +1,5 @@
+azure-cosmos==4.5.1
+azure-identity==1.15.0
 Flask==2.2.2
 langchain==0.0.78
 flask-cors==3.0.10
