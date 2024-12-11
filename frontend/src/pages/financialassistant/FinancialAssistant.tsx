@@ -1,16 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../providers/AppProviders";
 import { getFinancialAssistant, upgradeSubscription, removeFinancialAssistant } from "../../api"; // Asegúrate de importar la función
-import {
-    Spinner,
-    PrimaryButton,
-    DefaultButton,
-    Dialog,
-    DialogType,
-    DialogFooter,
-    MessageBar,
-    MessageBarType,
-} from "@fluentui/react";
+import { Spinner, PrimaryButton, DefaultButton, Dialog, DialogType, DialogFooter, MessageBar, MessageBarType } from "@fluentui/react";
 import styles from "./FinancialAssistant.module.css";
 
 const FinancialAssistant = () => {
@@ -31,13 +22,13 @@ const FinancialAssistant = () => {
                 const { financial_assistant_active } = await getFinancialAssistant({
                     user: {
                         ...user,
-                        organizationId: user.organizationId,
+                        organizationId: user.organizationId
                     },
                     subscriptionId: organization?.subscriptionId ?? "default-org-id"
                 });
                 setSubscriptionStatus(financial_assistant_active);
             } catch (error: any) {
-                console.log(error)
+                console.log(error);
                 if (error.status === false) {
                     setSubscriptionStatus(false);
                     setError("Financial Assistant feature is not present in this subscription.");
@@ -61,6 +52,8 @@ const FinancialAssistant = () => {
             await upgradeSubscription({ user: userObj, subscriptionId: organization?.subscriptionId ?? "default-org-id" });
             setSubscriptionStatus(true);
             setShowSubscribeDialog(false);
+            //This reloads the page so the financial assistant toggle appears after click
+            window.location.reload();
         } catch {
             setError("An error occurred while subscribing to the Financial Assistant feature.");
         } finally {
@@ -75,6 +68,8 @@ const FinancialAssistant = () => {
             await removeFinancialAssistant({ user: userObj, subscriptionId: organization?.subscriptionId ?? "default-org-id" });
             setSubscriptionStatus(false);
             setShowUnsubscribeDialog(false);
+            //This reloads the page so the financial assistant toggle disappears after click
+            window.location.reload();
         } catch {
             setError("An error occurred while unsubscribing from the Financial Assistant feature.");
         } finally {
@@ -87,7 +82,11 @@ const FinancialAssistant = () => {
     }
 
     if (loading) {
-        return <Spinner label="Loading subscription details..." />;
+        return (
+            <div className={styles.spinnerContainer}>
+                <Spinner className={styles.spinner} />
+            </div>
+        );
     }
 
     return (
@@ -99,23 +98,17 @@ const FinancialAssistant = () => {
             <div className={styles.row}>
                 {subscriptionStatus ? (
                     <>
-                        <MessageBar messageBarType={MessageBarType.success}>
+                        <MessageBar messageBarType={MessageBarType.success} className={styles.messageBarText}>
                             You are subscribed to the Financial Assistant feature.
                         </MessageBar>
-                        <PrimaryButton
-                            text="Unsubscribe from Financial Assistant"
-                            onClick={() => setShowUnsubscribeDialog(true)}
-                        />
+                        <PrimaryButton text="Unsubscribe from Financial Assistant" onClick={() => setShowUnsubscribeDialog(true)} />
                     </>
                 ) : (
                     <>
-                        <MessageBar messageBarType={MessageBarType.warning}>
+                        <MessageBar messageBarType={MessageBarType.warning} className={styles.messageBarText}>
                             You are not subscribed to the Financial Assistant feature.
                         </MessageBar>
-                        <PrimaryButton
-                            text="Subscribe to Financial Assistant"
-                            onClick={() => setShowSubscribeDialog(true)}
-                        />
+                        <PrimaryButton text="Subscribe to Financial Assistant" onClick={() => setShowSubscribeDialog(true)} />
                     </>
                 )}
             </div>
