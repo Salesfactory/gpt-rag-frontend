@@ -1965,5 +1965,112 @@ def determine_subscription_tiers(subscription):
     return tiers
 
 
+################################################
+# Financial Doc Ingestion
+################################################
+
+from financial_doc_processor import *
+from utils import *
+from sec_edgar_downloader import Downloader
+from app_config import FILING_TYPES, BASE_FOLDER
+
+@app.route('/api/FinancialDocIngestion', methods=['POST'])
+def process_financial_documents():
+    try:
+        # # Check and install wkhtmltopdf if needed
+        if not check_and_install_wkhtmltopdf():
+            return jsonify({
+                "status": "error",
+                "message": "Failed to install required dependency wkhtmltopdf"
+            }), 500
+
+        # Initialize the SEC Edgar Downloader
+        dl = Downloader(
+            os.getenv("USER_AGENT_NAME", "SalesFactory"),
+            os.getenv("USER_AGENT_EMAIL", "nam.tran@salesfactory.com")
+        )
+        # Get parameters from request body
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "No data provided"
+            }), 400
+        
+        # Validate the payload
+        is_valid, error_message = validate_payload(data)
+        if not is_valid:
+            return jsonify({
+                "status": "error",
+                "message": error_message
+            }), 400
+
+        equity_ids = data.get('equity_ids', [])  # required to provide a list of equity ids
+        filing_types = data.get('filing_types', FILING_TYPES)  # use default if not provided (10-Q, 10-K, 8-K)
+
+        # Download SEC filings
+        for equity_id in equity_ids:
+            for filing_type in filing_types:
+                try:
+                    logger.info(f"Downloading {filing_type} for {equity_id}")
+                    dl.get(filing_type, equity_id, limit=1, download_details=True)
+                except Exception as e:
+                    logger.error(f"Failed to download {filing_type} for {equity_id}: {str(e)}")
+                    return jsonify({
+                        "status": "error",
+                        "message": f"Failed to download {filing_type} for {equity_id}: {str(e)}"
+                    }), 500
+
+        # Collect documents path for all downloaded files 
+        document_paths = collect_filing_documents(
+            EQUITY_IDS=equity_ids,
+            FILING_TYPES=filing_types,
+            get_downloaded_files=get_downloaded_files
+        )
+        
+        results = {}
+        # Validate collected documents paths
+        if validate_document_paths(document_paths):
+            logger.info("Document collection completed successfully")
+            
+            # Upload to blob storage
+            results = upload_to_blob(document_paths, container_client, base_folder=BASE_FOLDER)
+            
+            # Check if all uploads were successful
+            all_uploads_successful = True
+            for equity, filings in results.items():
+                for filing_type, result in filings.items():
+                    if result["status"] != "success":
+                        all_uploads_successful = False
+                        break
+            
+            # Only cleanup if all uploads were successful
+            if all_uploads_successful:
+                if cleanup_resources():
+                    logger.info("Successfully cleaned up all files in sec-edgar-filings")
+                else:
+                    logger.error("Failed to clean up files in sec-edgar-filings")
+            else:
+                logger.warning("Skipping cleanup as some uploads failed")
+                
+            return jsonify({
+                "status": "success",
+                "message": "Documents processed successfully",
+                "results": results
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Document collection validation failed"
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"API execution failed: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
