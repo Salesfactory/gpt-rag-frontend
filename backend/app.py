@@ -2071,6 +2071,113 @@ def process_financial_documents():
             "status": "error",
             "message": str(e)
         }), 500
-    
+
+# main.py
+from flask import Flask, jsonify, request
+import logging
+
+from app_config import IMAGE_PATH
+
+from financial_doc_processor import (
+    BlobStorageManager,
+    create_document_paths,
+    reset_local_dirs,
+    save_str_to_pdf,
+    extract_pdf_pages_to_images
+)
+from summarization import DocumentSummarizer
+
+@app.route('/api/SECEdgar/summarize', methods=['GET'])
+def generate_summary():
+    try:
+        data = request.get_json()
+        equity_name = data.get('equity_name')
+        financial_type = data.get('financial_type')
+
+        # Enhanced input validation
+        if not isinstance(equity_name, str) or not isinstance(financial_type, str):
+            return jsonify({
+                'error': 'Invalid input type',
+                'details': 'equity_name and financial_type must be strings'
+            }), 400
+
+        if not equity_name.strip() or not financial_type.strip():
+            return jsonify({
+                'error': 'Empty input',
+                'details': 'equity_name and financial_type cannot be empty'
+            }), 400
+
+        # Initialize components with error handling
+        try:
+            blob_manager = BlobStorageManager()
+            summarizer = DocumentSummarizer()
+        except Exception as e:
+            logging.error(f"Failed to initialize components: {e}")
+            return jsonify({
+                'error': 'Service initialization failed',
+                'details': str(e)
+            }), 500
+
+        # Reset directories
+        reset_local_dirs()
+        
+        # Download documents
+        downloaded_files = blob_manager.download_documents(equity_name=equity_name)
+        
+        if not downloaded_files:
+            return jsonify({
+                'error': f'No documents found for equity: {equity_name}'
+            }), 404
+        
+        # Process documents
+        for file_path in downloaded_files:
+            doc_id = extract_pdf_pages_to_images(file_path, IMAGE_PATH)
+            
+        # Generate summaries
+        all_summaries = summarizer.process_document_images(IMAGE_PATH)
+        final_summary = summarizer.generate_final_summary(all_summaries)
+        
+        # Save the summary locally and upload to blob
+        local_output_path = f'pdf/{financial_type}_{equity_name}_summary.pdf'
+        save_str_to_pdf(final_summary, local_output_path)
+        
+        # Upload summary to blob
+        document_paths = create_document_paths(local_output_path, equity_name, financial_type)
+
+        # upload to blob and get the blob path/remote links
+        upload_results = blob_manager.upload_to_blob(document_paths)
+
+        blob_path = upload_results[equity_name][financial_type]['blob_path']
+        blob_url = f"{blob_manager.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
+
+        # Clean up local directories
+        try:
+            reset_local_dirs()
+        except Exception as e:
+            logging.error(f"Failed to clean up directories: {e}")
+        
+        return jsonify({
+            'status': 'success',
+            'equity_name': equity_name,
+            'financial_type': financial_type,
+            'blob_path': blob_path,
+            'remote_blob_url': blob_url,
+            'summary': final_summary,
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}", exc_info=True)
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
+    finally:
+        # Ensure cleanup happens
+        try:
+            reset_local_dirs()
+        except Exception as e:
+            logging.error(f"Failed to clean up: {e}")
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
