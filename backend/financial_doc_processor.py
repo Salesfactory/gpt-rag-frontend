@@ -119,52 +119,6 @@ blob_service_client = BlobServiceClient.from_connection_string(blob_connection_s
 container_client = blob_service_client.get_container_client(blob_container_name)
 
 
-def upload_to_blob(document_paths: dict, container_client, base_folder: str = "financial") -> Dict[str, Dict[str, Dict[str, str]]]:
-    """
-    Upload files to Azure Blob Storage with organized folder structure based on filing type.
-    
-    Args:
-        document_paths (dict): Nested dictionary with equity IDs and their filing types
-        container_client: Azure blob container client
-        base_folder (str): Base folder name in blob storage
-    
-    Returns:
-        dict: Dictionary of upload results with equity IDs and filing types as keys
-    """
-    upload_results = {}
-    
-    for equity, filings in document_paths.items():
-        upload_results[equity] = {}
-        
-        for filing_type, document_path in filings.items():
-            try:
-                # Construct blob path using the filing type directly
-                blob_path = f"{base_folder}/{filing_type}/{equity}.pdf"
-                
-                # Upload file with determined path
-                with open(document_path, "rb") as data:
-                    container_client.upload_blob(
-                        name=blob_path,
-                        data=data,
-                        overwrite=True  # Overwrite if file exists
-                    )
-                
-                upload_results[equity][filing_type] = {
-                    "status": "success",
-                    "blob_path": blob_path
-                }
-                
-            except Exception as e:
-                upload_results[equity][filing_type] = {
-                    "status": "failed",
-                    "error": str(e)
-                }
-                logger.error(f"Failed to upload {equity} {filing_type}: {str(e)}")
-                raise
-    
-    return upload_results
-
-
 def validate_document_paths(document_paths: Dict[str, Dict[str, str]]) -> bool:
     """
     Validate the collected document paths.
@@ -339,25 +293,35 @@ class BlobStorageManager:
                          financial_type: str = '10-K',
                          exclude_summary: bool = True,
                          local_data_path: str = PDF_PATH) -> List[str]:
-        downloaded_files = [] # should be only 1 file, but keep it as a list for now
+        downloaded_files = []
         try:
-            os.makedirs(local_data_path, exist_ok=True) # create the folder if it doesn't exist
-            prefix = f"{self.blob_base_folder}/{financial_type}/{equity_name}"
-            filtered_blobs = list(self.container_client.list_blobs(name_starts_with=prefix))
-            if exclude_summary:
-                logger.info(f'Excluding summary documents')
-                filtered_blobs = [blob for blob in filtered_blobs if "summary" not in blob.name]
-            else:
-                logger.info(f'Downloaded documents include summary documents')
+            os.makedirs(local_data_path, exist_ok=True)
+            base_path = f"{self.blob_base_folder}/{financial_type}"
+            
+            # List all blobs in the financial type directory
+            all_blobs = list(self.container_client.list_blobs(name_starts_with=base_path))
+            
+            # Filter for exact equity name matches using regex pattern
+            import re
+            equity_pattern = re.compile(
+                f"{re.escape(base_path)}/{re.escape(equity_name)}(_summary)?\.pdf$"
+            )
+            
+            filtered_blobs = [
+                blob for blob in all_blobs 
+                if equity_pattern.match(blob.name) and
+                (not exclude_summary or "_summary" not in blob.name)
+            ]
 
+            logger.info(f"Found {len(filtered_blobs)} matching documents for {equity_name}")
+            
             for blob in filtered_blobs:
                 try:
                     logger.info(f'Downloading {blob.name}')
-                    blob_client = self.container_client.get_blob_client(blob.name) # this is the link to the remote blob
-                    file_name = f'{financial_type}_{os.path.basename(blob.name)}' # add financial type to the file name locally
+                    blob_client = self.container_client.get_blob_client(blob.name)
+                    file_name = f'{financial_type}_{os.path.basename(blob.name)}'
                     local_file_path = os.path.join(local_data_path, file_name)
-                    logger.info(f'Downloading {blob.name} to {local_file_path}')
-
+                    
                     with open(local_file_path, "wb") as file:
                         data = blob_client.download_blob()
                         file.write(data.readall())
@@ -399,7 +363,12 @@ class BlobStorageManager:
                                                           data=data, 
                                                           overwrite=True, 
                                                           content_settings=ContentSettings(content_type='application/pdf'))
-                    upload_results[equity][filing_type] = {"status": "success", "blob_path": blob_path}
+                    
+                    # get the blob url for the uploaded file
+                    blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
+                    upload_results[equity][filing_type] = {"status": "success",
+                                                           "blob_path": blob_path,
+                                                           "blob_url": blob_url}
                     logger.info(f'Document has been uploaded to {blob_path}')
                 except Exception as e:
                     upload_results[equity][filing_type] = {"status": "failed", "error": str(e)}

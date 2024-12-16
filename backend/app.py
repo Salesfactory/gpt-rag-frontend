@@ -1976,6 +1976,11 @@ from app_config import FILING_TYPES, BASE_FOLDER
 
 @app.route('/api/SECEdgar/financialdocuments', methods=['GET'])
 def process_financial_documents():
+    # payload example:
+# {
+#     "equity_ids": ["AAPL", "MSFT"],
+#     "filing_types": ["10-Q", "10-K"]
+# }
     try:
         # # Check and install wkhtmltopdf if needed
         if not check_and_install_wkhtmltopdf():
@@ -2028,14 +2033,16 @@ def process_financial_documents():
             FILING_TYPES=filing_types,
             get_downloaded_files=get_downloaded_files
         )
-        
+
+        blob_manager = BlobStorageManager() # from financial_doc_processor
+
         results = {}
         # Validate collected documents paths
         if validate_document_paths(document_paths):
             logger.info("Document collection completed successfully")
             
             # Upload to blob storage
-            results = upload_to_blob(document_paths, container_client, base_folder=BASE_FOLDER)
+            results = blob_manager.upload_to_blob(document_paths)
             
             # Check if all uploads were successful
             all_uploads_successful = True
@@ -2073,22 +2080,16 @@ def process_financial_documents():
         }), 500
 
 # main.py
-from flask import Flask, jsonify, request
-import logging
-
 from app_config import IMAGE_PATH
-
-from financial_doc_processor import (
-    BlobStorageManager,
-    create_document_paths,
-    reset_local_dirs,
-    save_str_to_pdf,
-    extract_pdf_pages_to_images
-)
 from summarization import DocumentSummarizer
 
 @app.route('/api/SECEdgar/summarize', methods=['GET'])
 def generate_summary():
+    # payload example:
+    # {
+    #     "equity_name": "MS",
+    #     "financial_type": "10-K"
+    # }
     try:
         data = request.get_json()
         equity_name = data.get('equity_name')
@@ -2148,7 +2149,7 @@ def generate_summary():
         upload_results = blob_manager.upload_to_blob(document_paths)
 
         blob_path = upload_results[equity_name][financial_type]['blob_path']
-        blob_url = f"{blob_manager.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
+        blob_url = upload_results[equity_name][financial_type]['blob_url']
 
         # Clean up local directories
         try:
