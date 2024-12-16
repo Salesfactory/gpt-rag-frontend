@@ -48,6 +48,13 @@ from utils import (
 )
 import stripe.error
 
+from shared.cosmo_db import(
+    create_report,
+    get_report,
+    update_report,
+    delete_report,
+    get_report_by_type,
+)
 
 load_dotenv()
 
@@ -632,6 +639,77 @@ def deleteChatConversation(chat_id):
     except Exception as e:
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
+
+#get report by id argument
+@app.route("/api/reports/<report_id>", methods=["GET"])
+def getReport(report_id):
+    """
+    Endpoint to get a report by ID.
+    """
+    try:
+        report = get_report(report_id)
+        return jsonify(report), 200
+    except Exception as e:
+        logging.exception(f"Error retrieving report with id {report_id}")
+        return jsonify({"error": str(e)}), 404
+
+#get report by type argument
+@app.route("/api/reports", methods=["GET"])
+def getReportsType():
+    """
+    Endpoint to obtain reports by type.
+    """
+    report_type = request.args.get("type")  # Obtener el parámetro `type` de la query string
+    if not report_type:
+        return jsonify({"error": "The 'type' query parameter is required"}), 400
+
+    try:
+        reports = get_report_by_type(report_type)
+        return jsonify(reports), 200
+    except Exception as e:
+        logging.exception(f"Error retrieving reports with type {report_type}")
+        return jsonify({"error": str(e)}), 500
+
+#create report
+@app.route("/api/reports", methods=["POST"])
+def createReport():
+    """
+    Endpoint to create a new report.
+    """
+    try:
+        data = request.get_json()
+        new_report = create_report(data)
+        return jsonify(new_report), 200
+    except Exception as e:
+        logging.exception("Error creating report")
+        return jsonify({"error": str(e)}), 500
+
+#update report
+@app.route("/api/reports/<report_id>", methods=["PUT"])
+def updateReport(report_id):
+    """
+    Endpoint to update a report by ID.
+    """
+    try:
+        updated_data = request.get_json()
+        updated_report = update_report(report_id, updated_data)
+        return jsonify(updated_report), 200
+    except Exception as e:
+        logging.exception(f"Error updating report with id {report_id}")
+        return jsonify({"error": str(e)}), 500
+
+#delete report
+@app.route("/api/reports/<report_id>", methods=["DELETE"])
+def deleteReport(report_id):
+    """
+    Endpoint to delete a report by ID.
+    """
+    try:
+        delete_report(report_id)
+        return jsonify({"message": f"Report with id {report_id} deleted successfully."}), 200
+    except Exception as e:
+        logging.exception(f"Error deleting report with id {report_id}")
+        return jsonify({"error": str(e)}), 500 
 
 
 # methods to provide access to speech services and blob storage account blobs

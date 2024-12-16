@@ -580,3 +580,19 @@ export async function getInvitations({ user }: any): Promise<any> {
         return { data: null };
     }
 }
+
+export async function getReportsByType({ type }: { type: string;}) {
+    const response = await fetch(`/api/reports?type=${encodeURIComponent(type)}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        }
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error getting reports of type ${type}`);
+    }
+
+    const reports = await response.json();
+    return reports;
+}
