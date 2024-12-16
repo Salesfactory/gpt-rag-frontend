@@ -4,11 +4,19 @@ import { Label } from "@fluentui/react";
 import { useState } from "react";
 import { DeleteRegular, EditRegular } from "@fluentui/react-icons";
 
+
+interface Report{
+    id: string;
+    reportName: string;
+    type: string;
+}
+
+
 const ReportConfiguration  = () => {
 
     const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
     const [searchItem, setSearchItem] = useState('');
-
+    const [reports, setReports] = useState('')
 
     const handleSearchButton = () => {
         setIsSearchPanelOpen(!isSearchPanelOpen)
@@ -27,7 +35,7 @@ const ReportConfiguration  = () => {
                 <div className={styles.labelContainer}>
                     <Label className={styles.text}>Search Reports by Type</Label>
                 </div>
-                    <input className={styles.inputField} value={searchItem} onChange={(event) => setSearchItem(event.target.value)}></input>
+                    <input className={styles.inputField} onChange={(event) => setSearchItem(event.target.value)}></input>
                     <button className={styles.buttonPanel} onClick={handleSearchButton}>
                         <IconFileSearch className={styles.iconColor}/>
                     </button>
