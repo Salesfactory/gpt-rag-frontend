@@ -1,0 +1,250 @@
+.page_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 100px 100px 100px 150px;
+}
+
+@media (max-width: 900px) {
+    .page_container{
+        padding: 100px 10px 100px 50px;
+    }
+}
+
+
+.row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    justify-items: center;
+    border-bottom: 2px solid #d9d9d9;
+    margin-bottom: 10px;
+}
+
+.elementrow{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    justify-items: center;
+    margin-bottom: 10px;
+    height: 40px;
+    align-items: center;
+    margin-top: 30px;
+}
+
+.title {
+    margin-bottom: 10px;
+    margin-left: 20px;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.07), 0px 2px 4px 0px rgba(0, 0, 0, 0.05);
+    padding: 20px 20px 30px 20px;
+    gap: 20px;
+    margin-top: 15px;
+    flex-grow: 2;
+}
+
+
+
+.iconColor{
+    color: #a7c444;
+}
+
+.iconLarge{
+    color: #a7c444;
+    width: 3em;
+    height: 3em;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    gap: 300px;
+    width: 100%;
+}
+
+.labelContainer{
+    display: flex;
+    justify-content: center;
+    gap: 275px;
+    width: 100%;
+}
+
+.item {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin: 0 10px;
+}
+
+.text{
+    text-align: center;
+}
+
+.textPanel{
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.info {
+    display: flex;
+    position: relative;
+    top: 30%;
+    padding: 5px 10px;
+    border: 2px solid #9fc51d;
+    border-radius: 6px;
+    background-color: #ffffff;
+    width: 30em;
+}
+
+.inputField {
+    display: flex;
+    padding: 5px 10px;
+    border: 2px solid #9fc51d;
+    border-radius: 6px;
+    height: 40px;
+    width: 25em;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+}
+
+@media (max-width: 900px) {
+    .inputField{
+        width: 15em;
+    }
+}
+
+.inputField:focus{
+    outline: none;
+    border: 2px solid #9fc51d;
+    box-shadow: 0 0 8px rgba(139, 195, 74, 0.5);
+}
+
+
+.button{
+    display: flex;
+    padding: 5px 10px;
+    border: 2px solid #9fc51d;
+    border-radius: 6px;
+    height: 80px;
+    width: 80px;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+}
+
+.button:hover{
+    box-shadow: 0 0 8px rgba(139, 195, 74, 0.5);
+}
+
+.button:active{
+    background-color: rgba(139, 195, 74, 0.5);
+}
+
+.buttonPanel{
+    display: flex;
+    padding: 5px 10px;
+    border: 2px solid #9fc51d;
+    border-radius: 6px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+}
+
+.buttonPanel:hover{
+    box-shadow: 0 0 8px rgba(139, 195, 74, 0.5);
+}
+
+.buttonPanel:active{
+    background-color: rgba(139, 195, 74, 0.5);
+}
+
+.modal{
+    position: fixed;
+    top: 50%;
+    left: 50%;          
+    transform: translate(-50%, -50%);
+    width: 40em; 
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; 
+    z-index: 1000;
+    padding: 100px; 
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 900px) {
+    .modal{
+        width: 20em;
+    }
+    .info{
+        width: 10em;
+    }
+}
+
+.closeButton {
+    border: none;
+    font-size: 20px;
+    color: #726c6c;
+    background-color: transparent;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(-10%, 10%);
+    margin-bottom: 10px;
+    padding-top: 6px;
+}
+
+.closeButtonContainer:active{
+    background-color: rgba(214, 214, 214, 0.315);
+    border-radius: 5px;
+}
+
+.changebuttons{
+    background: none;
+    justify-content: center;
+    align-items: flex-end;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 5px 2px 5px;
+    cursor: pointer;
+    font-size: 20px;
+    margin-top: 5px;
+    width: 40px;
+    height: 40px;
+    top: 52%;
+    transform: translateX(-10%);
+    margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+    .title{
+        margin-bottom: 10px;
+        margin-left: 0px;
+    }
+
+    .center {
+        margin-left: 20px;
+    }
+
+    .info{
+        overflow-x: auto;
+    }
+}

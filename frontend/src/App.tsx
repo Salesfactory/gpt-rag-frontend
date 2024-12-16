@@ -20,6 +20,7 @@ import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionM
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
+import ReportConfiguration from "./pages/ReportConfiguration/ReportConfiguration";
 
 export default function App() {
     return (
@@ -76,6 +77,7 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
+                    <Route path="/reportconfiguration" element={<ReportConfiguration />}/>
                     <Route path="/financialassistant" element={<FinancialAssistant />} />
                     <Route path="/subscription-management" element={<SubscriptionManagement/>}/>
                     <Route path="/manage-email-lists" element={<UserManagement/>}/>

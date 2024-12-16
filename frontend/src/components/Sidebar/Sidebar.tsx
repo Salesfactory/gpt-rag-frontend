@@ -14,7 +14,8 @@ import {
     IconChecklist,
     IconHeadset,
     IconDots,
-    IconSubtask
+    IconSubtask,
+    IconFileOrientation
 } from "@tabler/icons-react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Sidebar.module.css";
@@ -182,7 +183,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     to: "/details-settings",
                     tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user"]
-                }
+                },
+                {
+                    title: "Report Configuration",
+                    icon: <IconFileOrientation className={styles.sidebarLinkIcon} />,
+                    to: "/reportconfiguration",
+                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin"]
+                },
             ]
         },
         {
