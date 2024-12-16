@@ -1974,7 +1974,7 @@ from utils import *
 from sec_edgar_downloader import Downloader
 from app_config import FILING_TYPES, BASE_FOLDER
 
-@app.route('/api/FinancialDocIngestion', methods=['POST'])
+@app.route('/api/SECEdgar/financialdocuments', methods=['GET'])
 def process_financial_documents():
     try:
         # # Check and install wkhtmltopdf if needed
