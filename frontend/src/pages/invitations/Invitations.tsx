@@ -76,7 +76,6 @@ const Invitations = () => {
         return <div>Please log in to view your invitations.</div>;
     }
 
-
     return (
         <div className={styles.page_container}>
             <>
@@ -87,7 +86,7 @@ const Invitations = () => {
                     <TextField
                         placeholder="Search..."
                         style={{
-                            width: "268px",
+                            width: "240px",
                             borderRadius: "6px",
                             border: "1px solid #9F9C9C",
                             padding: "0px 15px"

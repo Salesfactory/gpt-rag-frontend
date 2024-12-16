@@ -111,6 +111,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     to: "/organization",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin"]
+                },
+                {
+                    title: "Financial Assistant",
+                    icon: <IconReportMoney className={styles.sidebarLinkIcon} />,
+                    to: "/financialassistant",
+                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin"]
                 }
             ]
         },
@@ -212,21 +219,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     const accessibleSidebarSections = useMemo(() => {
         let previousSectionHasItems = false;
-    
+
         return sidebarSections
             .map((section, index) => {
                 if (section.divider) {
                     return previousSectionHasItems ? section : null;
                 }
-    
+
                 if (section.items) {
                     const accessibleItems = section.items
                         .map(item => {
                             if (item.links) {
-                                const accessibleLinks = item.links.filter(link =>
-                                    hasAccess(link.roles, link.tiers)
-                                );
-    
+                                const accessibleLinks = item.links.filter(link => hasAccess(link.roles, link.tiers));
+
                                 if (accessibleLinks.length > 0) {
                                     return { ...item, links: accessibleLinks };
                                 } else {
@@ -237,9 +242,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             }
                         })
                         .filter(item => item !== null) as SidebarItemType[];
-    
+
                     previousSectionHasItems = accessibleItems.length > 0;
-    
+
                     if (accessibleItems.length > 0) {
                         return { ...section, items: accessibleItems };
                     }
