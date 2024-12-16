@@ -15,7 +15,8 @@ import {
     IconHeadset,
     IconDots,
     IconSubtask,
-    IconFileOrientation
+    IconFileOrientation,
+    IconReportMoney
 } from "@tabler/icons-react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Sidebar.module.css";
