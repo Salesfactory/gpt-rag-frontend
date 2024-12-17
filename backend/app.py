@@ -2083,7 +2083,7 @@ def process_financial_documents():
 from app_config import IMAGE_PATH
 from summarization import DocumentSummarizer
 
-@app.route('/api/SECEdgar/summarize', methods=['GET'])
+@app.route('/api/SECEdgar/financialdocuments/summary', methods=['POST'])
 def generate_summary():
     # payload example:
     # {
@@ -2091,27 +2091,50 @@ def generate_summary():
     #     "financial_type": "10-K"
     # }
     try:
-        data = request.get_json()
-        equity_name = data.get('equity_name')
-        financial_type = data.get('financial_type')
+        try: 
+            data = request.get_json()
+            if not data: 
+                return jsonify({
+                    'error': 'Invalid request',
+                    'details': 'Request body is requred and must be a valid JSON object'
+                }), 400
+            equity_name = data.get('equity_name')
+            financial_type = data.get('financial_type')
 
-        # Enhanced input validation
-        if not isinstance(equity_name, str) or not isinstance(financial_type, str):
+            if not all([equity_name, financial_type]):
+                return jsonify({
+                    'error': 'Missing required fields',
+                    'details': 'equity_name and financial_type are required'
+                }), 400
+            
+            if not isinstance(equity_name, str) or not isinstance(financial_type, str):
+                return jsonify({
+                    'error': 'Invalid input type',
+                    'details': 'equity_name and financial_type must be strings'
+                }), 400
+            
+            if not equity_name.strip() or not financial_type.strip():
+                return jsonify({
+                    'error': 'Empty input',
+                    'details': 'equity_name and financial_type cannot be empty'
+                }), 400
+            
+        except ValueError as e:
             return jsonify({
-                'error': 'Invalid input type',
-                'details': 'equity_name and financial_type must be strings'
-            }), 400
-
-        if not equity_name.strip() or not financial_type.strip():
-            return jsonify({
-                'error': 'Empty input',
-                'details': 'equity_name and financial_type cannot be empty'
+                'error': 'Invalid input',
+                'details': f"Failed to parse request body: {str(e)}"
             }), 400
 
         # Initialize components with error handling
         try:
             blob_manager = BlobStorageManager()
             summarizer = DocumentSummarizer()
+        except ConnectionError as e:
+            logging.error(f"Failed to connect to blob storage: {e}")
+            return jsonify({
+                'error': 'Connection error',
+                'details': 'Failed to connect to storage service'
+            }), 503
         except Exception as e:
             logging.error(f"Failed to initialize components: {e}")
             return jsonify({
@@ -2120,16 +2143,41 @@ def generate_summary():
             }), 500
 
         # Reset directories
-        reset_local_dirs()
+        try:
+            reset_local_dirs()
+        except PermissionError as e:
+            logging.error(f"Permission error while cleaning up directories: {str(e)}")
+            return jsonify({
+                'error': 'Permission error',
+                'details': 'Failed to clean up directories due to permission issues'
+            }), 500
+        except OSError as e:
+            logging.error(f"OS error while reseting directories: {str(e)}")
+            return jsonify({
+                'error': 'System error',
+                'details': 'Failed to prepare working directories'
+            }), 500
+        except Exception as e:
+            logging.error(f"Failed to clean up directories: {e}")
+            return jsonify({
+                'error': 'Cleanup failed',
+                'details': 'Failed to clean up directories to prepare for processing'
+            }), 500
         
         # Download documents
-        downloaded_files = blob_manager.download_documents(equity_name=equity_name)
-        
-        if not downloaded_files:
+        try:
+            downloaded_files = blob_manager.download_documents(equity_name=equity_name)
+            if not downloaded_files: 
+                return jsonify({
+                    'error': 'No documents found',
+                    'details': f'No documents found for equity: {equity_name}'
+                }), 404
+        except Exception as e: # some error codes for blob isn't supported in the current version
+            logging.error(f"Failed to download documents: {str(e)}")
             return jsonify({
-                'error': f'No documents found for equity: {equity_name}'
-            }), 404
-        
+                'error': 'Download error',
+                'details': 'Failed to download documents from storage service'
+            }), 503
         # Process documents
         for file_path in downloaded_files:
             doc_id = extract_pdf_pages_to_images(file_path, IMAGE_PATH)
@@ -2176,6 +2224,10 @@ def generate_summary():
         # Ensure cleanup happens
         try:
             reset_local_dirs()
+        except PermissionError as e:
+            logging.error(f"Permission error while cleaning up directories: {str(e)}")
+        except OSError as e:
+            logging.error(f"OS error while reseting directories: {str(e)}")
         except Exception as e:
             logging.error(f"Failed to clean up: {e}")
 

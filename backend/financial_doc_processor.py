@@ -282,26 +282,80 @@ def create_document_paths(output_path: str, equity_name: str, financial_type: st
         }
     }
 
+class BlobStorageError(Exception):
+    """Base exception for blob storage operations"""
+    pass
+
+class BlobConnectionError(BlobStorageError):
+    """Failed to connect to blob storage"""
+    pass
+
+class BlobAuthenticationError(BlobStorageError):
+    """Authentication failed for blob storage"""
+    pass
+
+class BlobNotFoundError(BlobStorageError):
+    """Blob not found in storage"""
+    pass
+
+class BlobUploadError(BlobStorageError):
+    """Failed to upload blob"""
+    pass
+
+class BlobDownloadError(BlobStorageError):
+    """Failed to download blob"""
+    pass
 
 class BlobStorageManager:
     def __init__(self):
-        self.blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
-        self.container_client = self.blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
-        self.blob_base_folder = 'financial'
+        try:
+            self.blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
+            self.container_client = self.blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
+            self.blob_base_folder = 'financial'
+        except ValueError as e:
+            raise BlobConnectionError(f"Invalid connection string: {str(e)}")
+        except Exception as e:
+            raise BlobConnectionError(f"Failed to initialize blob storage: {str(e)}")
 
     def download_documents(self, equity_name: str,
                          financial_type: str = '10-K',
                          exclude_summary: bool = True,
                          local_data_path: str = PDF_PATH) -> List[str]:
+        """
+        Download documents from blob storage.
+
+        Args:
+            equity_name (str): Name of the equity
+            financial_type (str): Type of financial document
+            exclude_summary (bool): Whether to exclude summary documents
+            local_data_path (str): Local path to save documents
+
+        Returns:
+            List[str]: List of downloaded file paths
+
+        Raises:
+            BlobAuthenticationError: If authentication fails
+            BlobNotFoundError: If no documents are found
+            BlobDownloadError: If download fails
+            OSError: If local file operations fail
+        """
         downloaded_files = []
         try:
-            os.makedirs(local_data_path, exist_ok=True)
+            # Create local directory
+            try:
+                os.makedirs(local_data_path, exist_ok=True)
+            except OSError as e:
+                raise OSError(f"Failed to create local directory: {str(e)}")
+
             base_path = f"{self.blob_base_folder}/{financial_type}"
             
-            # List all blobs in the financial type directory
-            all_blobs = list(self.container_client.list_blobs(name_starts_with=base_path))
-            
-            # Filter for exact equity name matches using regex pattern
+            try:
+                # List all blobs
+                all_blobs = list(self.container_client.list_blobs(name_starts_with=base_path))
+            except Exception as e:
+                raise BlobNotFoundError(f"Failed to list blobs: {str(e)}")
+
+            # Filter for exact equity name matches
             import re
             equity_pattern = re.compile(
                 f"{re.escape(base_path)}/{re.escape(equity_name)}(_summary)?\.pdf$"
@@ -312,6 +366,9 @@ class BlobStorageManager:
                 if equity_pattern.match(blob.name) and
                 (not exclude_summary or "_summary" not in blob.name)
             ]
+
+            if not filtered_blobs:
+                raise BlobNotFoundError(f"No matching documents found for {equity_name}")
 
             logger.info(f"Found {len(filtered_blobs)} matching documents for {equity_name}")
             
@@ -328,13 +385,16 @@ class BlobStorageManager:
                     
                     downloaded_files.append(local_file_path)
                     logger.info(f"Successfully downloaded: {file_name}")
-
+                except OSError as e:
+                    logger.error(f"Error downloading {blob.name}: {str(e)}")
+                    raise OSError(f"Failed to write file {local_file_path}: {str(e)}")
                 except Exception as e:
                     logger.error(f"Error downloading {blob.name}: {str(e)}")
-                    continue
+                    raise BlobDownloadError(f"Failed to download {blob.name}: {str(e)}")
 
         except Exception as e:
             logger.error(f"Error in blob storage operations: {str(e)}")
+            raise
         
         return downloaded_files
 
@@ -351,19 +411,30 @@ class BlobStorageManager:
         Returns:
             dict: Dictionary of upload results with equity IDs and filing types as keys
         """
+        if not isinstance(document_paths, dict):
+            raise ValueError("document_paths must be a dictionary")
         
         upload_results = {}
         for equity, filings in document_paths.items():
             upload_results[equity] = {}
             for filing_type, document_path in filings.items():
                 try:
-                    blob_path = f"{self.blob_base_folder}/{filing_type}/{equity}_summary.pdf" if "summary" in document_path else f"{self.blob_base_folder}/{filing_type}/{equity}.pdf"
-                    with open(document_path, "rb") as data:
-                        self.container_client.upload_blob(name=blob_path, 
-                                                          data=data, 
-                                                          overwrite=True, 
-                                                          content_settings=ContentSettings(content_type='application/pdf'))
+                    if not os.path.exists(document_path):
+                        raise FileNotFoundError(f"File not found: {document_path}")
                     
+                    blob_path = f"{self.blob_base_folder}/{filing_type}/{equity}_summary.pdf" if "summary" in document_path else f"{self.blob_base_folder}/{filing_type}/{equity}.pdf"
+                    
+                    with open(document_path, "rb") as data:
+                        try:
+                            self.container_client.upload_blob(
+                                name=blob_path, 
+                                data=data, 
+                                overwrite=True, 
+                                content_settings=ContentSettings(content_type='application/pdf')
+                            )
+                        except Exception as e:
+                            raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
+                        
                     # get the blob url for the uploaded file
                     blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
                     upload_results[equity][filing_type] = {"status": "success",
