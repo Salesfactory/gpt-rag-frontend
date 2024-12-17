@@ -649,9 +649,12 @@ def getReport(report_id):
     try:
         report = get_report(report_id)
         return jsonify(report), 200
+    except NotFound as e:
+        logging.warning(f"Report with id {report_id} not found.")
+        return jsonify({"error": f"Report with this id {report_id} not found"}), 404
     except Exception as e:
-        logging.exception(f"Error retrieving report with id {report_id}")
-        return jsonify({"error": str(e)}), 404
+        logging.exception(f"An error occurred retrieving the report with id {report_id}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 #get report by type argument
 @app.route("/api/reports", methods=["GET"])
@@ -659,16 +662,20 @@ def getReportsType():
     """
     Endpoint to obtain reports by type.
     """
-    report_type = request.args.get("type")  # Obtener el parámetro `type` de la query string
+    report_type = request.args.get("type")
     if not report_type:
         return jsonify({"error": "The 'type' query parameter is required"}), 400
 
     try:
         reports = get_report_by_type(report_type)
         return jsonify(reports), 200
+    
+    except NotFound as e:
+        logging.warning(f"Reports with type {report_type} not found.")
+        return jsonify({"error": f"Report of this type {report_type} was not found"}), 404
     except Exception as e:
         logging.exception(f"Error retrieving reports with type {report_type}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"Error retrieving reports with type"}), 500
 
 #create report
 @app.route("/api/reports", methods=["POST"])
@@ -678,11 +685,16 @@ def createReport():
     """
     try:
         data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
         new_report = create_report(data)
-        return jsonify(new_report), 200
+        return jsonify(new_report), 201
+    
     except Exception as e:
         logging.exception("Error creating report")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 #update report
 @app.route("/api/reports/<report_id>", methods=["PUT"])
@@ -692,12 +704,21 @@ def updateReport(report_id):
     """
     try:
         updated_data = request.get_json()
-        updated_report = update_report(report_id, updated_data)
-        return jsonify(updated_report), 200
-    except Exception as e:
-        logging.exception(f"Error updating report with id {report_id}")
-        return jsonify({"error": str(e)}), 500
 
+        if updated_data is None:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        
+        updated_report = update_report(report_id, updated_data)
+        return "", 204
+    
+    except NotFound as e:
+        logging.warning(f"Tried to update a report that doesn't exist: {report_id}")
+        return jsonify({"error": f"Tried to update a report with this id {report_id} that does not exist"}), 404
+
+    except Exception as e:
+        logging.exception(f"Error updating report with ID {report_id}")  # Logs the full exception
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+    
 #delete report
 @app.route("/api/reports/<report_id>", methods=["DELETE"])
 def deleteReport(report_id):
@@ -706,10 +727,17 @@ def deleteReport(report_id):
     """
     try:
         delete_report(report_id)
-        return jsonify({"message": f"Report with id {report_id} deleted successfully."}), 200
+        
+        return "",204
+    
+    except NotFound as e:
+        # If the report does not exist, return 404 Not Found
+        logging.warning(f"Report with id {report_id} not found.")
+        return jsonify({"error": f"Report with id {report_id} not found."}), 404
+    
     except Exception as e:
         logging.exception(f"Error deleting report with id {report_id}")
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 
 # methods to provide access to speech services and blob storage account blobs
