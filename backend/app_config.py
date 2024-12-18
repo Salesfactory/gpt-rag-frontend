@@ -32,5 +32,8 @@ FILING_TYPES = ["10-Q", "10-K", "8-K", "DEF 14A"]
 BLOB_CONTAINER_NAME = "documents"
 BASE_FOLDER = "financial"
 
+# Paths in financial summarization
+IMAGE_PATH = 'images'
+PDF_PATH = './pdf'
 
 
