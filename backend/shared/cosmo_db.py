@@ -38,9 +38,9 @@ def create_report(data):
     """
     try:
         container = get_cosmos_container_report()
-        container.upsert_item(data)
         data["id"] = str(uuid.uuid4())
         data["generatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        container.upsert_item(data)
         logging.info(f"Document created: {data}")
         return data
     except Exception as e:
@@ -175,4 +175,32 @@ def delete_report(report_id):
     
     except Exception as e:
         logging.error(f"Error deleting report with id {report_id}: {e}")
+        raise
+
+
+def get_all_reports():
+    """
+    Retrieves all reports from the Cosmos DB container.
+
+    Returns:
+        list: A list of all report documents in the database.
+
+    Raises:
+        Exception: For any unexpected errors that occur during retrieval.
+    """
+    container = get_cosmos_container_report()
+    
+    try:
+        # Query to retrieve all items in the container
+        query = "SELECT * FROM c"
+        reports = list(container.query_items(query=query, enable_cross_partition_query=True))
+        logging.info(f"Successfully retrieved {len(reports)} reports.")
+        return reports
+
+    except CosmosResourceNotFoundError:
+        logging.warning("No reports found in the Cosmos DB container.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving all reports: {e}")
         raise

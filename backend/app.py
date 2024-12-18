@@ -50,6 +50,7 @@ import stripe.error
 
 from shared.cosmo_db import(
     create_report,
+    get_all_reports,
     get_report,
     update_report,
     delete_report,
@@ -639,6 +640,24 @@ def deleteChatConversation(chat_id):
     except Exception as e:
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
+
+
+# Get all reports
+@app.route("/api/reports/all", methods=["GET"])
+def getAllReports():
+    """
+    Endpoint to get all reports.
+    """
+    try:
+        reports = get_all_reports()
+        return jsonify(reports), 200
+    except NotFound:
+        logging.warning("No reports found in the database.")
+        return jsonify({"error": "No reports found"}), 404
+    except Exception as e:
+        logging.exception("An error occurred while retrieving all reports.")
+        return jsonify({"error": "Internal Server Error"}), 500
+
 
 #get report by id argument
 @app.route("/api/reports/<report_id>", methods=["GET"])
