@@ -48,6 +48,13 @@ from utils import (
 )
 import stripe.error
 
+from shared.cosmo_db import(
+    create_report,
+    get_report,
+    update_report,
+    delete_report,
+    get_report_by_type,
+)
 
 load_dotenv()
 
@@ -632,6 +639,105 @@ def deleteChatConversation(chat_id):
     except Exception as e:
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
+
+#get report by id argument
+@app.route("/api/reports/<report_id>", methods=["GET"])
+def getReport(report_id):
+    """
+    Endpoint to get a report by ID.
+    """
+    try:
+        report = get_report(report_id)
+        return jsonify(report), 200
+    except NotFound as e:
+        logging.warning(f"Report with id {report_id} not found.")
+        return jsonify({"error": f"Report with this id {report_id} not found"}), 404
+    except Exception as e:
+        logging.exception(f"An error occurred retrieving the report with id {report_id}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+#get report by type argument
+@app.route("/api/reports", methods=["GET"])
+def getReportsType():
+    """
+    Endpoint to obtain reports by type.
+    """
+    report_type = request.args.get("type")
+    if not report_type:
+        return jsonify({"error": "The 'type' query parameter is required"}), 400
+
+    try:
+        reports = get_report_by_type(report_type)
+        return jsonify(reports), 200
+    
+    except NotFound as e:
+        logging.warning(f"Reports with type {report_type} not found.")
+        return jsonify({"error": f"Report of this type {report_type} was not found"}), 404
+    except Exception as e:
+        logging.exception(f"Error retrieving reports with type {report_type}")
+        return jsonify({"Error retrieving reports with type"}), 500
+
+#create report
+@app.route("/api/reports", methods=["POST"])
+def createReport():
+    """
+    Endpoint to create a new report.
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        new_report = create_report(data)
+        return jsonify(new_report), 201
+    
+    except Exception as e:
+        logging.exception("Error creating report")
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+
+#update report
+@app.route("/api/reports/<report_id>", methods=["PUT"])
+def updateReport(report_id):
+    """
+    Endpoint to update a report by ID.
+    """
+    try:
+        updated_data = request.get_json()
+
+        if updated_data is None:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        
+        updated_report = update_report(report_id, updated_data)
+        return "", 204
+    
+    except NotFound as e:
+        logging.warning(f"Tried to update a report that doesn't exist: {report_id}")
+        return jsonify({"error": f"Tried to update a report with this id {report_id} that does not exist"}), 404
+
+    except Exception as e:
+        logging.exception(f"Error updating report with ID {report_id}")  # Logs the full exception
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+    
+#delete report
+@app.route("/api/reports/<report_id>", methods=["DELETE"])
+def deleteReport(report_id):
+    """
+    Endpoint to delete a report by ID.
+    """
+    try:
+        delete_report(report_id)
+        
+        return "",204
+    
+    except NotFound as e:
+        # If the report does not exist, return 404 Not Found
+        logging.warning(f"Report with id {report_id} not found.")
+        return jsonify({"error": f"Report with id {report_id} not found."}), 404
+    
+    except Exception as e:
+        logging.exception(f"Error deleting report with id {report_id}")
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 
 # methods to provide access to speech services and blob storage account blobs
