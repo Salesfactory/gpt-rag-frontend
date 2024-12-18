@@ -4,3 +4,77 @@
     width: 100%;
     padding: 100px 100px 100px 150px;
 }
+
+.table {
+    text-align: left;
+    background-color: white;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.tableContainer{
+    border-radius: 10px;
+    overflow: hidden;
+    overflow-x: auto;
+    width: 100%;
+    border: 1px solid #d9d9d9;
+    margin-top: 35px;
+}
+
+.userBackground{
+    background-color: #f8f8f8;
+}
+
+.userBackgroundAlt{
+    background-color: white;
+}
+
+.nameElement{
+    padding: 10px;
+    text-align: justify;
+}
+
+.text{
+    text-align: justify;
+}
+
+.roleContainer{
+    width: 100%;
+    justify-content: flex-start;
+    justify-items: center;
+    text-align: center;
+    display: flex;
+    text-transform: capitalize;
+}
+
+.roleAdmin{
+    width: 100px;
+    background-color: #d7e9f4;
+    padding: 5px;
+    color: #064789;
+    border-radius: 15px;
+}
+
+.roleUser{
+    width: 100px;
+    background-color: #d7e5be;
+    padding: 5px;
+    color: #1b4332;
+    border-radius: 15px;
+}
+
+.checkbox{
+    width: 15px;
+    height: 15px;
+    border: 2px solid #9fc51d;
+    background-color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.checkbox:checked{
+    background-color: #a7c444;
+}
