@@ -19,3 +19,6 @@ tenacity==8.5.0
 azure-functions
 sec-edgar-downloader==5.0.2
 pdfkit==1.0.0
+pydantic<=2.10.3
+tavily-python==0.5.0
+openai==1.57.4
