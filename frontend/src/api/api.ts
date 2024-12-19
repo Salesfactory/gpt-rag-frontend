@@ -581,6 +581,23 @@ export async function getInvitations({ user }: any): Promise<any> {
     }
 }
 
+export async function createReportCuration(reportData: object) {
+    const response = await fetch(`/api/reports`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reportData),
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating a new report");
+    }
+
+    const newReport = await response.json();
+    return newReport;
+}
+
 export async function getReportsByType({ type }: { type: string;}) {
     const response = await fetch(`/api/reports?type=${encodeURIComponent(type)}`, {
         method: "GET",
