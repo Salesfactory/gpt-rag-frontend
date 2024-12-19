@@ -155,3 +155,8 @@ static/
 settings.json
 
 flask_session/
+
+# locking some dependencies
+pyproject.toml
+poetry.lock
+
