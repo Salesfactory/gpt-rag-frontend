@@ -719,16 +719,16 @@ def updateReport(report_id):
         logging.exception(f"Error updating report with ID {report_id}")  # Logs the full exception
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
     
-#delete report
-@app.route("/api/reports/<report_id>", methods=["DELETE"])
-def deleteReport(report_id):
+#delete Curation Reports
+@app.route("/api/reports/curation/<report_id>", methods=["DELETE"])
+def deleteCurationReport(report_id):
     """
     Endpoint to delete a report by ID.
     """
     try:
         delete_report(report_id)
         
-        return "",204
+        return jsonify({"message": "The report has been successfully removed."}), 200
     
     except NotFound as e:
         # If the report does not exist, return 404 Not Found

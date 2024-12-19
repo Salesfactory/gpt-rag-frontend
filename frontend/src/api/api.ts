@@ -596,3 +596,23 @@ export async function getReportsByType({ type }: { type: string;}) {
     const reports = await response.json();
     return reports;
 }
+
+//Delete Type: "curation" Report
+export async function deleteReportCuration(reportId: string) {
+    const response = await fetch(`/api/reports/curation/${encodeURIComponent(reportId)}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status === 404) {
+        throw Error(`Report with ID ${reportId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error deleting report with ID ${reportId}`);
+    }
+
+    return true;
+}
