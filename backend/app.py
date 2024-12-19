@@ -640,7 +640,7 @@ def deleteChatConversation(chat_id):
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
 
-#get report by id argument
+#get report by id argument from Container Reports
 @app.route("/api/reports/<report_id>", methods=["GET"])
 def getReport(report_id):
     """
@@ -656,7 +656,7 @@ def getReport(report_id):
         logging.exception(f"An error occurred retrieving the report with id {report_id}")
         return jsonify({"error": "Internal Server Error"}), 500
 
-#get report by type argument
+#get report by type argument from Container Reports
 @app.route("/api/reports", methods=["GET"])
 def getReportsType():
     """
@@ -677,7 +677,7 @@ def getReportsType():
         logging.exception(f"Error retrieving reports with type {report_type}")
         return jsonify({"Error retrieving reports with type"}), 500
 
-#create report
+#create report from Container Reports
 @app.route("/api/reports", methods=["POST"])
 def createReport():
     """
@@ -688,15 +688,60 @@ def createReport():
 
         if not data:
             return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        
+        # Validate the 'name' field
+        if "name" not in data:
+            return jsonify({"error": "Field 'name' is required"}), 400
+        
+        # Validate the 'type' field
+        if "type" not in data:
+            return jsonify({"error": "Field 'type' is required"}), 400
 
+        if data["type"] not in ["curation", "companySummarization"]:
+            return jsonify({"error": "Invalid 'type'. Must be 'curation' or 'companySummarization'"}), 400
+
+        # Validate fields according to type
+        if data["type"] == "companySummarization":
+            required_fields = ["reportTemplate", "companyTickers"]
+            missing_fields = [field for field in required_fields if field not in data]
+
+            if missing_fields:
+                return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+            # Validate 'reportTemplate'
+            valid_templates = ["10-K", "10-Q", "8-K", "DEF 14A"]
+            if data["reportTemplate"] not in valid_templates:
+                return jsonify({"error": f"'reportTemplate' must be one of: {', '.join(valid_templates)}"}), 400
+
+        elif data["type"] == "curation":
+            required_fields = ["category"]
+            missing_fields = [field for field in required_fields if field not in data]
+
+            if missing_fields:
+                return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+            # Validate 'category'
+            valid_categories = ["Ecommerce", "Weekly Economic", "Monthly Economic"]
+            if data["category"] not in valid_categories:
+                return jsonify({"error": f"'category' must be one of: {', '.join(valid_categories)}"}), 400
+
+        # Validar the 'status' field
+        if "status" not in data:
+            return jsonify({"error": "Field 'status' is required"}), 400
+
+        valid_statuses = ["active", "archived"]
+        if data["status"] not in valid_statuses:
+            return jsonify({"error": f"'status' must be one of: {', '.join(valid_statuses)}"}), 400
+
+        # Delegate report creation
         new_report = create_report(data)
         return jsonify(new_report), 201
-    
+
     except Exception as e:
         logging.exception("Error creating report")
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
-#update report
+#update report from Container Reports
 @app.route("/api/reports/<report_id>", methods=["PUT"])
 def updateReport(report_id):
     """
@@ -719,7 +764,7 @@ def updateReport(report_id):
         logging.exception(f"Error updating report with ID {report_id}")  # Logs the full exception
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
     
-#delete report
+#delete report from Container Reports
 @app.route("/api/reports/<report_id>", methods=["DELETE"])
 def deleteReport(report_id):
     """

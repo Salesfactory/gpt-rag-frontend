@@ -38,9 +38,10 @@ def create_report(data):
     """
     try:
         container = get_cosmos_container_report()
-        container.upsert_item(data)
         data["id"] = str(uuid.uuid4())
-        data["generatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data["createAt"] = datetime.utcnow().isoformat() + "Z"
+        data["updatedAt"] = datetime.utcnow().isoformat() + "Z"
+        container.upsert_item(data)
         logging.info(f"Document created: {data}")
         return data
     except Exception as e:
