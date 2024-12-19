@@ -677,7 +677,7 @@ def getReportsType():
         logging.exception(f"Error retrieving reports with type {report_type}")
         return jsonify({"Error retrieving reports with type"}), 500
 
-#create report from Container Reports
+#create Reports curation and companySummarization container Reports
 @app.route("/api/reports", methods=["POST"])
 def createReport():
     """
@@ -741,7 +741,7 @@ def createReport():
         logging.exception("Error creating report")
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
-#update report from Container Reports
+#update Reports curation and companySummarization container Reports
 @app.route("/api/reports/<report_id>", methods=["PUT"])
 def updateReport(report_id):
     """
