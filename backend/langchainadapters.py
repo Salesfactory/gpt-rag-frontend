@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional
-from langchain_core.callbacks import BaseCallbackHandler
-from langchain_core.outputs import LLMResult
-from langchain_core.agents import AgentAction, AgentFinish
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.schema import AgentAction, AgentFinish, LLMResult
 
 def ch(text: str) -> str:
     s = text if isinstance(text, str) else str(text)
