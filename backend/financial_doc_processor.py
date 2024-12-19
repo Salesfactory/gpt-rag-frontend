@@ -318,7 +318,7 @@ class BlobStorageManager:
             raise BlobConnectionError(f"Failed to initialize blob storage: {str(e)}")
 
     def download_documents(self, equity_name: str,
-                         financial_type: str = '10-K',
+                         financial_type: str,
                          exclude_summary: bool = True,
                          local_data_path: str = PDF_PATH) -> List[str]:
         """

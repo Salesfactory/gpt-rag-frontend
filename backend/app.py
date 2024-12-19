@@ -2348,19 +2348,10 @@ def generate_summary():
             }), 500
         
         # Download documents
-        try:
-            downloaded_files = blob_manager.download_documents(equity_name=equity_name)
-            if not downloaded_files: 
-                return jsonify({
-                    'error': 'No documents found',
-                    'details': f'No documents found for equity: {equity_name}'
-                }), 404
-        except Exception as e: # some error codes for blob isn't supported in the current version
-            logging.error(f"Failed to download documents: {str(e)}")
-            return jsonify({
-                'error': 'Download error',
-                'details': 'Failed to download documents from storage service'
-            }), 503
+
+        downloaded_files = blob_manager.download_documents(equity_name=equity_name, 
+                                                               financial_type=financial_type)
+
         # Process documents
         for file_path in downloaded_files:
             doc_id = extract_pdf_pages_to_images(file_path, IMAGE_PATH)
