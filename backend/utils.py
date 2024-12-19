@@ -243,10 +243,10 @@ def install_wkhtmltopdf():
     """Attempt to install wkhtmltopdf based on the operating system"""
     import subprocess
     import sys
-    import webbrowser
+    import platform
     
     if sys.platform == 'win32':
-        # For Windows, provide download link and instructions
+        # Windows installation code remains the same
         download_url = "https://wkhtmltopdf.org/downloads.html"
         logger.error(
             "Automatic installation not supported on Windows. "
@@ -260,14 +260,38 @@ def install_wkhtmltopdf():
     elif sys.platform.startswith('linux'):
         try:
             logger.info("Installing wkhtmltopdf on Linux...")
-            # Update package list
-            subprocess.run(['sudo', 'apt-get', 'update'], check=True)
-            # Install wkhtmltopdf
-            subprocess.run(['sudo', 'apt-get', 'install', '-y', 'wkhtmltopdf'], check=True)
+            
+            # Try to determine the package manager
+            if subprocess.run(['which', 'apt-get'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+                # Debian/Ubuntu
+                install_cmd = ['apt-get', 'install', '-y', 'wkhtmltopdf']
+            elif subprocess.run(['which', 'yum'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+                # CentOS/RHEL
+                install_cmd = ['yum', 'install', '-y', 'wkhtmltopdf']
+            else:
+                logger.error("Could not determine package manager. Please install wkhtmltopdf manually.")
+                return False
+
+            # Try to install without sudo first
+            try:
+                subprocess.run(install_cmd, check=True)
+            except subprocess.CalledProcessError:
+                # If that fails, try with sudo if available
+                if subprocess.run(['which', 'sudo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+                    install_cmd.insert(0, 'sudo')
+                    subprocess.run(install_cmd, check=True)
+                else:
+                    logger.error("Installation requires root privileges. Please install wkhtmltopdf manually.")
+                    return False
+
             logger.info("wkhtmltopdf installed successfully")
             return True
+            
         except subprocess.SubprocessError as e:
             logger.error(f"Failed to install wkhtmltopdf: {str(e)}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error during installation: {str(e)}")
             return False
     else:
         logger.error(f"Unsupported operating system: {sys.platform}")
