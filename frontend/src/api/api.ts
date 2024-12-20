@@ -581,16 +581,40 @@ export async function getInvitations({ user }: any): Promise<any> {
     }
 }
 
-export async function getReportsByType({ type }: { type: string;}) {
-    const response = await fetch(`/api/reports?type=${encodeURIComponent(type)}`, {
-        method: "GET",
+//create report type "curation" or "companySummarization"
+export async function createReport(reportData: object) {
+    const response = await fetch(`/api/reports`, {
+        method: "POST",
         headers: {
             "Content-Type": "application/json",
-        }
+        },
+        body: JSON.stringify(reportData),
     });
 
     if (response.status > 299 || !response.ok) {
-        throw Error(`Error getting reports of type ${type}`);
+        throw Error("Error creating a new report");
+    }
+
+    const newReport = await response.json();
+    return newReport;
+}
+
+//This function, if sent with the "type" parameter, receives a request with the required report. If nothing is sent, it will receive all the reports from the container.
+export async function getFilteredReports(type?: string) {
+    const url = type 
+        ? `/api/reports?type=${encodeURIComponent(type)}` 
+        : `/api/reports`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status > 299 || !response.ok) {
+        const errorType = type ? `type ${type}` : "all reports";
+        throw new Error(`Error getting reports for ${errorType}`);
     }
 
     const reports = await response.json();
