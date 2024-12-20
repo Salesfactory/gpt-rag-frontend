@@ -2276,7 +2276,7 @@ def web_search():
                 'error': "Invalid include_domains. Please provide a list of strings."
             }), 400
         
-        days = data.get('days', 30)
+        search_days = data.get('search_days', 30)
         
 
         # initialize searcher
@@ -2284,7 +2284,7 @@ def web_search():
         try:
             searcher = TavilySearch(max_results=max_results, 
                                     include_domains=include_domains, 
-                                    days = days)
+                                    search_days = search_days)
         except ValueError as e:
             logger.error(f"Error initializing TavilySearch: {e}")
             return jsonify({

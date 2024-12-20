@@ -58,9 +58,14 @@ class TavilySearch:
         if max_results <= 0:
             logger.warning("Max results must be greater than 0, setting to 2")
             self.max_results = 2
+        else: 
+            self.max_results = max_results
+        
         if search_days <= 0:
             logger.warning("Search days must be greater than 0, setting to 30")
             self.search_days = 30
+        else: 
+            self.search_days = search_days
     
     def search_news(self, query: str) -> str: 
         "Conduct Tavily Search for recent news"
