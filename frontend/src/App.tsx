@@ -20,6 +20,7 @@ import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionM
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
+import CurationReports from "./pages/reports/CurationReports";
 
 export default function App() {
     return (
@@ -109,6 +110,19 @@ export default function App() {
                 <Route element={<Layout />}>
                     <Route path="/view-manage-reports" element={<ReportManagement />} />
                     <Route path="/details-settings" element={<DistributionLists />} />
+                </Route>
+            </Route>
+
+            <Route
+                element={
+                    <ProtectedRoute
+                        allowedRoles={["admin"]}
+                        allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
+                    />
+                }
+            >
+                <Route element={<Layout />}>
+                    <Route path="/curation-reports" element={<CurationReports />} />
                 </Route>
             </Route>
 
