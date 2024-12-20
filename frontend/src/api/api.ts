@@ -581,6 +581,7 @@ export async function getInvitations({ user }: any): Promise<any> {
     }
 }
 
+//create report type "curation" or "companySummarization"
 export async function createReportCuration(reportData: object) {
     const response = await fetch(`/api/reports`, {
         method: "POST",
@@ -596,6 +597,28 @@ export async function createReportCuration(reportData: object) {
 
     const newReport = await response.json();
     return newReport;
+}
+
+//Get all report type "curation" and "companySummarization"
+export async function getAllReportsCuration(): Promise<any[]> {
+    try {
+        const response = await fetch("/api/reports/curation/all", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (response.status > 299 || !response.ok) {
+            throw new Error("Error fetching reports");
+        }
+
+        const reports = await response.json();
+        return reports;
+    } catch (error) {
+        console.error("Error fetching all reports:", error);
+        throw error;
+    }
 }
 
 export async function getReportsByType({ type }: { type: string;}) {

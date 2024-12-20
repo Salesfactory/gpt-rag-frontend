@@ -77,6 +77,35 @@ def get_report(report_id):
         logging.error(f"Unexpected error retrieving report with id '{report_id}'")
         raise
 
+#get all reports type "curation" and "companySummarization"
+def get_all_reports_curation():
+    """
+    Retrieves all reports from the Cosmos DB container Reports.
+
+    Returns:
+        list: A list of all report documents in the database.
+
+    Raises:
+        Exception: For any unexpected errors that occur during retrieval.
+    """
+    container = get_cosmos_container_report()
+    
+    try:
+        # Query to retrieve all items in the container
+        query = "SELECT * FROM c"
+        reports = list(container.query_items(query=query, enable_cross_partition_query=True))
+        logging.info(f"Successfully retrieved {len(reports)} reports.")
+        return reports
+
+    except CosmosResourceNotFoundError:
+        logging.warning("No reports found in the Cosmos DB container.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving all reports: {e}")
+        raise
+
+
 def get_report_by_type(report_type):
     """
     Retrieves documents from the Cosmos DB container using the `type` attribute.

@@ -54,6 +54,7 @@ from shared.cosmo_db import(
     update_report,
     delete_report,
     get_report_by_type,
+    get_all_reports_curation
 )
 
 load_dotenv()
@@ -784,6 +785,23 @@ def deleteReport(report_id):
         logging.exception(f"Error deleting report with id {report_id}")
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
+
+
+# Get report type "curation" and "companySummarization"
+@app.route("/api/reports/curation/all", methods=["GET"])
+def getAllReportsCuration():
+    """
+    Endpoint to get all reports type "curation" or "companySummarization".
+    """
+    try:
+        reports = get_all_reports_curation()
+        return jsonify(reports), 200
+    except NotFound:
+        logging.warning("No reports found in the database.")
+        return jsonify({"error": "No reports found"}), 404
+    except Exception as e:
+        logging.exception("An error occurred while retrieving all reports.")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 # methods to provide access to speech services and blob storage account blobs
 
