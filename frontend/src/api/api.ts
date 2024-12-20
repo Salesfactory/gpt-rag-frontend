@@ -597,7 +597,7 @@ export async function getReportsByType({ type }: { type: string;}) {
     return reports;
 }
 
-//Delete Type: "curation" Report
+//Delete Type: "curation" and Type:"companySummarization" Report
 export async function deleteReportCuration(reportId: string) {
     const response = await fetch(`/api/reports/curation/${encodeURIComponent(reportId)}`, {
         method: "DELETE",
