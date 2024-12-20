@@ -582,7 +582,7 @@ export async function getInvitations({ user }: any): Promise<any> {
 }
 
 //create report type "curation" or "companySummarization"
-export async function createReportCuration(reportData: object) {
+export async function createReport(reportData: object) {
     const response = await fetch(`/api/reports`, {
         method: "POST",
         headers: {
@@ -599,38 +599,22 @@ export async function createReportCuration(reportData: object) {
     return newReport;
 }
 
-//Get all report type "curation" and "companySummarization"
-export async function getAllReportsCuration(): Promise<any[]> {
-    try {
-        const response = await fetch("/api/reports/curation/all", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
+//This function, if sent with the "type" parameter, receives a request with the required report. If nothing is sent, it will receive all the reports from the container.
+export async function getFilteredReports(type?: string) {
+    const url = type 
+        ? `/api/reports?type=${encodeURIComponent(type)}` 
+        : `/api/reports`;
 
-        if (response.status > 299 || !response.ok) {
-            throw new Error("Error fetching reports");
-        }
-
-        const reports = await response.json();
-        return reports;
-    } catch (error) {
-        console.error("Error fetching all reports:", error);
-        throw error;
-    }
-}
-
-export async function getReportsByType({ type }: { type: string;}) {
-    const response = await fetch(`/api/reports?type=${encodeURIComponent(type)}`, {
+    const response = await fetch(url, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
-        }
+        },
     });
 
     if (response.status > 299 || !response.ok) {
-        throw Error(`Error getting reports of type ${type}`);
+        const errorType = type ? `type ${type}` : "all reports";
+        throw new Error(`Error getting reports for ${errorType}`);
     }
 
     const reports = await response.json();

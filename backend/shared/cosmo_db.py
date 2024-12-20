@@ -77,54 +77,28 @@ def get_report(report_id):
         logging.error(f"Unexpected error retrieving report with id '{report_id}'")
         raise
 
-#get all reports type "curation" and "companySummarization"
-def get_all_reports_curation():
+def get_filtered_reports(report_type=None):
     """
-    Retrieves all reports from the Cosmos DB container Reports.
-
-    Returns:
-        list: A list of all report documents in the database.
-
-    Raises:
-        Exception: For any unexpected errors that occur during retrieval.
-    """
-    container = get_cosmos_container_report()
-    
-    try:
-        # Query to retrieve all items in the container
-        query = "SELECT * FROM c"
-        reports = list(container.query_items(query=query, enable_cross_partition_query=True))
-        logging.info(f"Successfully retrieved {len(reports)} reports.")
-        return reports
-
-    except CosmosResourceNotFoundError:
-        logging.warning("No reports found in the Cosmos DB container.")
-        raise NotFound
-
-    except Exception as e:
-        logging.error(f"Unexpected error retrieving all reports: {e}")
-        raise
-
-
-def get_report_by_type(report_type):
-    """
-    Retrieves documents from the Cosmos DB container using the `type` attribute.
+    Retrieves documents from the Cosmos DB container using the `type` attribute or returns all reports.
 
     Parameters:
-        report_type (str): The type of reports to retrieve.
+        report_type (str, optional): The type of reports to retrieve. If None, retrieves all reports.
 
     Returns:
-        list: A list of report documents matching the specified type.
+        list: A list of report documents.
 
     Raises:
-        CosmosResourceNotFoundError: If no reports with the specified type are found.
+        CosmosResourceNotFoundError: If no reports with the specified type are found (when filtered).
         Exception: For any other unexpected error that occurs during retrieval.
     """
     container = get_cosmos_container_report()
+    if report_type:
+        query = "SELECT * FROM c WHERE c.type = @type"
+        parameters = [{"name": "@type", "value": report_type}]
+    else:
+        query = "SELECT * FROM c"
+        parameters = []
 
-    query = "SELECT * FROM c WHERE c.type = @type"
-    parameters = [{"name": "@type", "value": report_type}]
-    
     try:
         items = list(container.query_items(
             query=query,
@@ -133,7 +107,7 @@ def get_report_by_type(report_type):
         ))
 
         if not items:
-            logging.warning(f"No reports found with type '{report_type}'.")
+            logging.warning(f"No reports found.")
             raise NotFound
 
         logging.info(f"Reports successfully retrieved for type '{report_type}': {items}")

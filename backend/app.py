@@ -53,8 +53,7 @@ from shared.cosmo_db import(
     get_report,
     update_report,
     delete_report,
-    get_report_by_type,
-    get_all_reports_curation
+    get_filtered_reports
 )
 
 load_dotenv()
@@ -657,27 +656,6 @@ def getReport(report_id):
         logging.exception(f"An error occurred retrieving the report with id {report_id}")
         return jsonify({"error": "Internal Server Error"}), 500
 
-#get report by type argument from Container Reports
-@app.route("/api/reports", methods=["GET"])
-def getReportsType():
-    """
-    Endpoint to obtain reports by type.
-    """
-    report_type = request.args.get("type")
-    if not report_type:
-        return jsonify({"error": "The 'type' query parameter is required"}), 400
-
-    try:
-        reports = get_report_by_type(report_type)
-        return jsonify(reports), 200
-    
-    except NotFound as e:
-        logging.warning(f"Reports with type {report_type} not found.")
-        return jsonify({"error": f"Report of this type {report_type} was not found"}), 404
-    except Exception as e:
-        logging.exception(f"Error retrieving reports with type {report_type}")
-        return jsonify({"Error retrieving reports with type"}), 500
-
 #create Reports curation and companySummarization container Reports
 @app.route("/api/reports", methods=["POST"])
 def createReport():
@@ -787,20 +765,28 @@ def deleteReport(report_id):
 
 
 
-# Get report type "curation" and "companySummarization"
-@app.route("/api/reports/curation/all", methods=["GET"])
-def getAllReportsCuration():
+
+@app.route("/api/reports", methods=["GET"])
+def getFilteredType():
     """
-    Endpoint to get all reports type "curation" or "companySummarization".
+    Endpoint to obtain reports by type or retrieve all reports if no type is specified.
     """
+    report_type = request.args.get("type")
+
     try:
-        reports = get_all_reports_curation()
+        if report_type:
+            reports = get_filtered_reports(report_type)
+        else:
+            reports = get_filtered_reports()
+
         return jsonify(reports), 200
-    except NotFound:
-        logging.warning("No reports found in the database.")
-        return jsonify({"error": "No reports found"}), 404
+
+    except NotFound as e:
+        logging.warning(f"No reports found for type '{report_type}'.")
+        return jsonify({"error": f"No reports found for type '{report_type}'."}), 404
+
     except Exception as e:
-        logging.exception("An error occurred while retrieving all reports.")
+        logging.exception(f"Error retrieving reports.")
         return jsonify({"error": "Internal Server Error"}), 500
 
 # methods to provide access to speech services and blob storage account blobs
