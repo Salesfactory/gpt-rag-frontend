@@ -2198,13 +2198,14 @@ def web_search():
         "query": "search query", //required
         "mode": "news" or "general", default is "news" //required
         "max_results": optional int, default = 2 //optional
-        "include_domains": optional list of strings, default = None //optional
+        "include_domains": optional list of strings, default = None //
+        "days": optional int, default = 30 //
     }
     """
     try:
         data = request.get_json()
         
-        # validate reuqired fields:
+        # validate required fields:
         if not data or 'query' not in data:
             logger.error("Missing required field: 'query'")
             return jsonify({
@@ -2225,12 +2226,16 @@ def web_search():
             return jsonify({
                 'error': "Invalid include_domains. Please provide a list of strings."
             }), 400
+        
+        days = data.get('days', 30)
+        
 
         # initialize searcher
         logger.info("Initializing TavilySearch")
         try:
             searcher = TavilySearch(max_results=max_results, 
-                                    include_domains=include_domains)
+                                    include_domains=include_domains, 
+                                    days = days)
         except ValueError as e:
             logger.error(f"Error initializing TavilySearch: {e}")
             return jsonify({

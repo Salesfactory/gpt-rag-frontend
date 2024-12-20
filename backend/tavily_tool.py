@@ -31,6 +31,7 @@ class TavilySearch:
     def __init__(self, 
                  api_key: str = os.environ.get("TAVILY_API_KEY"),
                  max_results: int = 2,
+                 search_days: int = 30,
                  include_domains: list[str] = None):
         "Initialize Tavily client"
         if not api_key:
@@ -43,8 +44,23 @@ class TavilySearch:
             logger.error(f"Error initializing Tavily client: {str(e)}")
             raise ValueError("Failed to initialize Tavily client")
         
-        self.max_results = max_results
+        # Validate include_domains
+        if include_domains is not None:
+            if not isinstance(include_domains, list):
+                logger.error("include_domains must be a list of strings")
+                raise ValueError("include_domains must be a list of strings")
+            if not all(isinstance(domain, str) for domain in include_domains):
+                logger.error("All domains in include_domains must be strings")
+                raise ValueError("All domains in include_domains must be strings")
         self.include_domains = include_domains
+
+        # max results and search days have to be greater than 0
+        if max_results <= 0:
+            logger.warning("Max results must be greater than 0, setting to 2")
+            self.max_results = 2
+        if search_days <= 0:
+            logger.warning("Search days must be greater than 0, setting to 30")
+            self.search_days = 30
     
     def search_news(self, query: str) -> str: 
         "Conduct Tavily Search for recent news"
@@ -58,7 +74,7 @@ class TavilySearch:
                 search_depth = "advanced",
                 max_results = self.max_results,
                 topic = "news",
-                days = 30,
+                days = self.search_days,
                 include_domains = self.include_domains
             )
             logger.info("News search completed successfully")
@@ -79,7 +95,6 @@ class TavilySearch:
                 search_depth = "advanced",
                 max_results = self.max_results,
                 topic = "general",
-                days = 30,
                 include_domains = self.include_domains
             )
             logger.info("General search completed successfully")
@@ -132,10 +147,3 @@ class TavilySearch:
         except Exception as e:
             logger.error(f"Error formatting search results: {str(e)}")
             return {"error": f"Error formatting search results: {str(e)}"}
-
-if __name__ == "__main__":
-    tavily_search = TavilySearch(max_results=3, include_domains=["techcrunch.com", "bloomberg.com", "reuters.com"])
-    news_query = "Google AI chatbot"
-    news_results = tavily_search.search_general(news_query)
-    print(tavily_search.format_result(news_results))
-
