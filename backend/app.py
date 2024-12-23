@@ -2459,6 +2459,99 @@ def generate_summary():
         except Exception as e:
             logging.error(f"Failed to clean up: {e}")
 
+from datetime import datetime
+from pathlib import Path
+
+from curation_report_generator import graph
+from financial_doc_processor import markdown_to_html, BlobStorageManager
+from financial_agent_utils.curation_report_utils import (
+    REPORT_TOPIC_PROMPT_DICT, 
+    InvalidReportTypeError, 
+    ReportGenerationError, 
+    StorageError
+)
+from financial_agent_utils.curation_report_config import (
+    WEEKLY_CURATION_REPORT, 
+    ALLOWED_CURATION_REPORTS, 
+    NUM_OF_QUERIES
+)
+
+from prompts.curation_reports.ecommerce import report_structure as ecommerce_report_structure
+from prompts.curation_reports.monthly_economics import report_structure as monthly_economics_report_structure
+from prompts.curation_reports.weekly_economics import report_structure as weekly_economics_report_structure
+
+report_structure_dict = {
+    "Ecommerce": ecommerce_report_structure,
+    "Monthly_Economics": monthly_economics_report_structure,
+    "Weekly_Economics": weekly_economics_report_structure
+}
+
+@app.route('/api/reports/generate/curation', methods=['POST'])
+def generate_report():
+    try:
+        data = request.get_json()
+        user_report_type_rqst = data['report_type']  # Will raise KeyError if missing
+        
+        # Validate report type
+        if user_report_type_rqst not in ALLOWED_CURATION_REPORTS:
+            raise InvalidReportTypeError(f"Invalid report type. Please choose from: {ALLOWED_CURATION_REPORTS}")
+
+        # Get report configuration
+        report_type = REPORT_TOPIC_PROMPT_DICT[user_report_type_rqst]
+        search_days = 7 if user_report_type_rqst in WEEKLY_CURATION_REPORT else 30
+        
+        # Generate report
+        logger.info(f"Generating report for {user_report_type_rqst}")
+        report = graph.invoke({
+            "topic": report_type, 
+            "report_structure": report_structure_dict[user_report_type_rqst], 
+            "number_of_queries": NUM_OF_QUERIES, 
+            "search_mode": "news", 
+            "search_days": search_days
+        })
+
+        # Generate file path
+        current_date = datetime.now()
+        file_path = Path(f"Reports/Curation_Reports/{user_report_type_rqst}/{current_date.strftime('%B_%Y')}.html")
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Convert and save report
+        logger.info("Converting markdown to html")
+        markdown_to_html(report['final_report'], str(file_path))
+
+        # Upload to blob storage
+        logger.info("Uploading to blob storage")
+        blob_storage_manager = BlobStorageManager()
+        upload_result = blob_storage_manager.upload_to_blob(
+            file_path=str(file_path),
+            blob_folder=f"Reports/Curation_Reports/{user_report_type_rqst}"
+        )
+
+        # Cleanup files
+        logger.info("Cleaning up local files")
+        file_path.unlink(missing_ok=True)  # Delete file
+        try:
+            file_path.parent.rmdir()  # Try to remove directory if empty
+        except OSError:
+            pass  # Directory not empty or already removed, that's okay
+
+        return jsonify({
+            'status': 'success',
+            'message': f'Report generated for {user_report_type_rqst}',
+            'report_url': upload_result['blob_url']
+        })
+
+    except KeyError:
+        logger.error("Missing report_type in request")
+        return jsonify({'error': 'report_type is required'}), 400
+    
+    except InvalidReportTypeError as e:
+        logger.error(f"Invalid report type: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+    
+    except Exception as e:
+        logger.error(f"Unexpected error during report generation: {str(e)}", exc_info=True)
+        return jsonify({'error': 'An unexpected error occurred while generating the report'}), 500
 
 
 if __name__ == "__main__":
