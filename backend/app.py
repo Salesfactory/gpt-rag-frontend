@@ -44,6 +44,9 @@ from utils import (
     SubscriptionError,
     InvalidSubscriptionError,
     InvalidFinancialPriceError,
+    InvalidParameterError,
+    MissingJSONPayloadError,
+    MissingRequiredFieldError,
     require_client_principal,
 )
 import stripe.error
@@ -764,8 +767,6 @@ def deleteReport(report_id):
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 
-
-
 @app.route("/api/reports", methods=["GET"])
 def getFilteredType():
     """
@@ -788,6 +789,32 @@ def getFilteredType():
     except Exception as e:
         logging.exception(f"Error retrieving reports.")
         return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route("/api/reports/summarization/templates", methods=["POST"])
+def addSummarizationReport():
+    """
+    Endpoint to add a new summarization report template.
+    """
+    try: 
+        data = request.get_json()
+        if not data:
+            raise MissingJSONPayloadError('Missing JSON payload')
+        if not "name" in data:
+            raise MissingRequiredFieldError('name')
+        if not "description" in data:
+            raise MissingRequiredFieldError('description')
+        valid_names=["10-K", "10-Q", "8-K", "DEF 14A"]
+        if not data["name"] in valid_names:
+            raise InvalidParameterError('name', f"Must be one of: {', '.join(valid_names)}")
+        new_template = {'name': data['name'], 'description': data['description'], 'status': 'active'}
+        return jsonify(new_template), 201
+    except MissingJSONPayloadError as e:
+        return create_error_response("Invalid or Missing JSON payload", HTTPStatus.BAD_REQUEST)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+    except InvalidParameterError as e:
+        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+
 
 # methods to provide access to speech services and blob storage account blobs
 
