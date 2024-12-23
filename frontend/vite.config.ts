@@ -41,7 +41,13 @@ export default defineConfig({
             "^/api/subscriptions/.*?/tiers": {
                 target: "http://localhost:8000",
                 changeOrigin: true
-            }
+            },
+            "^/api/subscription/.*?/financialAssistant": {
+                target: "http://localhost:8000/",
+                changeOrigin: true
+            },
+            "/api/reports":"http://localhost:8000/",
+            "/api/reports/<report_id>":"http://localhost:8000/"
         },
         host: true
     }

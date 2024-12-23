@@ -22,6 +22,8 @@ import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 import CurationReports from "./pages/reports/CurationReports";
 import CurationCreation from "./pages/reports/ReportCreation/CurationCreation";
+import SummarizationReports from "./pages/reports/SummarizationReports";
+import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 
 export default function App() {
     return (
@@ -125,6 +127,8 @@ export default function App() {
                 <Route element={<Layout />}>
                     <Route path="/curation-reports" element={<CurationReports />} />
                     <Route path="/create-curation-report" element={<CurationCreation />}/>
+                    <Route path="/summarization-reports" element={<SummarizationReports />}/>
+                    <Route path="/create-summarization-report" element={<SummarizationCreation/>}/>
                 </Route>
             </Route>
 
