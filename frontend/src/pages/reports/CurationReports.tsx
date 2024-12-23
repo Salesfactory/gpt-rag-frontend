@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import styles from "./CurationReports.module.css"
 import { Dropdown, Label, ResponsiveMode, Spinner } from "@fluentui/react";
-import { IconFilePlus, IconX } from "@tabler/icons-react";
-import { createReport, getFilteredReports } from "../../api";
+import { IconFilePlus, IconTrash, IconX } from "@tabler/icons-react";
+import { createReport, deleteReport, getFilteredReports } from "../../api";
 
 const CurationReports  = () => {
 
@@ -12,14 +12,17 @@ const CurationReports  = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isConfirm, setIsConfirm] = useState(false);
     const [inputReportName, setinputReportName] = useState('')
-    const typeOptions = [
+    const curationReportOptions = [
         { key: "1", text: "Ecommerce" },
         { key: "2", text: "Weekly Economic" },
         { key: "3", text: "Monthly Economic" },
     ];
-    const [typeSelection, setTypeSelection] = useState('')
+    const [categorySelection, setCategorySelection] = useState('')
     const [errorMessage, setErrorMessage] = useState<string | null>("");
     const [isPopupActive, setIsPopupActive] = useState(false)
+    const [isDeleteActive, setIsDeleteActive] = useState(false)
+    const [deletedReportID, setdeletedReportID] = useState('');
+    const [deletedReportName, setdeletedReportName] = useState('');
 
     useEffect(() => {
         const getReportList = async () => {
@@ -49,7 +52,7 @@ const CurationReports  = () => {
 
     const handleCreateButton = () => {
         setIsCreateModalOpen(!isCreateModalOpen);
-        setTypeSelection('')
+        setCategorySelection('')
         setinputReportName('')
         setErrorMessage(null)
     }
@@ -60,7 +63,7 @@ const CurationReports  = () => {
             setErrorMessage('Please type the Name of the Report')
             return;
         }
-        if(typeSelection == ('')){
+        if(categorySelection == ('')){
             setErrorMessage('Please select the Report Category')
             return;
         }
@@ -71,13 +74,13 @@ const CurationReports  = () => {
     const handleCancelButton = () => {
         setIsConfirm(false)
         setIsCreateModalOpen(false)
-        setTypeSelection('')
+        setCategorySelection('')
         setinputReportName('')
         setErrorMessage(null)
     }
 
     const handleTypeDropdownChange = (event: any, selectedOption: any) => {
-        setTypeSelection(selectedOption.text)
+        setCategorySelection(selectedOption.text)
     }
 
     const handleInputName = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +96,7 @@ const CurationReports  = () => {
             await createReport({ 
                 type: "curation",
                 name: inputReportName,
-                category: typeSelection,
+                category: categorySelection,
                 status: "archived"
             });
             setDataLoad(!dataLoad)
@@ -104,12 +107,35 @@ const CurationReports  = () => {
             }, 3000);
 
         } catch (error){
-            console.error("Error trying to create the report:", error);
+            console.error("Error trying to create the report: ", error);
         }finally{
             setLoading(false);
         }
+    }
 
+    const handleDeleteButton = (reportID: string, reportName: string) => {
+        setIsDeleteActive(!isDeleteActive);
+        setdeletedReportID(reportID)
+        setdeletedReportName(reportName)
+    }
 
+    const handleConfirmDelete = async () => {
+        setIsDeleteActive(!isDeleteActive)
+
+        try{
+            await deleteReport(deletedReportID)
+            setDataLoad(!dataLoad)
+        } catch (error){
+            console.error("Error trying to delete the report: ", error)
+        }finally{
+            setLoading(false)
+        }
+    }
+
+    const handleCancelDelete = () => {
+        setIsDeleteActive(!isDeleteActive)
+        setdeletedReportID('')
+        setdeletedReportName('')
     }
 
     return (
@@ -136,6 +162,7 @@ const CurationReports  = () => {
                                     <th>Category</th>
                                     <th>Created At</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>    
@@ -151,7 +178,7 @@ const CurationReports  = () => {
                                     <td>
                                         <div className={styles.tableTypeContainer}> 
                                             <div className={styles.tableText}>
-                                                {report.createAt}
+                                                {new Date(report.createAt).toLocaleDateString()}
                                             </div>
                                         </div>
                                     </td>
@@ -161,7 +188,13 @@ const CurationReports  = () => {
                                                 {report.status}
                                             </div>
                                         </div>
-                                        
+                                    </td>
+                                    <td>
+                                        <div className={styles.tableText}>
+                                            <button className={styles.button} title="Delete Report" aria-label="Delete Report" onClick={() => handleDeleteButton(report.id, report.name)}>
+                                                <IconTrash className={styles.iconColor}/>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 ))
@@ -185,7 +218,7 @@ const CurationReports  = () => {
                             <Label>Report Name</Label>
                             <input type="text" className={styles.input} onChange={handleInputName} value={inputReportName}></input>
                             <Label>Curation Report Category</Label>
-                            <Dropdown placeholder="Select a Curation Report Category" options={typeOptions} onChange={handleTypeDropdownChange} defaultValue={typeSelection} responsiveMode={ResponsiveMode.unknown}/>
+                            <Dropdown placeholder="Select a Curation Report Category" options={curationReportOptions} onChange={handleTypeDropdownChange} defaultValue={categorySelection} responsiveMode={ResponsiveMode.unknown}/>
                         </form>
                     </div>
                         <div>
@@ -206,7 +239,7 @@ const CurationReports  = () => {
                 <div className={styles.modal}>
                     <Label className={styles.text}>Are you sure you want to create the report {inputReportName} ?</Label>
                     <div className={styles.buttonContainer}>
-                        <button className={styles.button} title="Select Confirm" aria-label="Select Confirm" onClick={handleCreateReport}>
+                        <button className={styles.button} title="Confirm" aria-label="Confirm" onClick={handleCreateReport}>
                             Confirm
                         </button>
                         <button className={styles.button} title="Cancel" aria-label="Cancel" onClick={handleCancelButton}>
@@ -219,6 +252,19 @@ const CurationReports  = () => {
                 <div className={styles.modal}>
                     <Label className={styles.text}>The report has been added. It needs to be implemented for generation. <br /> 
                     If not implemented, it will not be generated.</Label>
+                </div>
+            )}
+            {isDeleteActive && (
+                <div className={styles.modal}>
+                    <Label className={styles.text}>Are you sure you want to delete {deletedReportName}</Label>
+                    <div className={styles.buttonContainer}>
+                        <button className={styles.button} title="Confirm" aria-label="Confirm" onClick={handleConfirmDelete}>
+                                Confirm
+                        </button>
+                        <button className={styles.button} title="Cancel" aria-label="Cancel" onClick={handleCancelDelete}>
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
