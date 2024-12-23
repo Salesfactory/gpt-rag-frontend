@@ -17,15 +17,9 @@ from langgraph.graph import START, END, StateGraph
 from langchain_core.messages import HumanMessage, SystemMessage
 from datetime import datetime
 from financial_doc_processor import BlobStorageManager
-
+from importlib import import_module
 from llm_config import LLMManager, LLMConfig
-
-from prompts.curation_reports.ecommerce import (
-    report_structure,
-    final_section_writer_instructions,
-    query_writer_instructions,
-    section_writer_instructions
-)
+from financial_agent_utils.curation_report_config import WEEKLY_CURATION_REPORT
 
 from prompts.curation_reports.general import (
     report_planner_query_writer_instructions,
@@ -60,6 +54,25 @@ web_search_tool = CustomSearchClient()
 # **kwargs: Additional parameters to pass to the search endpoint (e.g., include_domains)
 
 MAX_RESULTS = 3 # for web search query results
+REPORT_TYPES = Literal["Ecommerce", "Monthly_Economics", "Weekly_Economics"]
+
+# get the right system prompt for the report
+
+class ReportPrompts:
+    def __init__(self, report_type: str):
+        try:
+            # Dynamically import the prompt module based on report type
+            module_name = report_type.lower()
+            prompt_module = import_module(f"prompts.curation_reports.{module_name}")
+            
+            # Get all prompts from the module
+            self.report_structure = getattr(prompt_module, 'report_structure')
+            self.final_section_writer_instructions = getattr(prompt_module, 'final_section_writer_instructions')
+            self.query_writer_instructions = getattr(prompt_module, 'query_writer_instructions')
+            self.section_writer_instructions = getattr(prompt_module, 'section_writer_instructions')
+        except (ImportError, AttributeError) as e:
+            logger.error(f"Failed to load prompts for report type {report_type}: {str(e)}")
+            raise ValueError(f"Invalid report type or missing prompts: {report_type}")
 
 ####################################
 # State Definitions
@@ -94,8 +107,8 @@ class Queries(BaseModel):
 
 class ReportState(TypedDict):
     topic: str # Report topic
-    report_structure: str # Report structure
     search_mode: Literal["general", "news"] # Search topic type
+    report_type: REPORT_TYPES # Report type
     number_of_queries: int # Number web search queries to perform per section    
     sections: list[Section] # List of report sections 
     completed_sections: Annotated[list, operator.add] # Send() API key
@@ -108,6 +121,7 @@ class ReportStateOutput(TypedDict):
 
 class SectionState(TypedDict):
     search_mode: Literal["general", "news"] # Search topic type
+    report_type: REPORT_TYPES # Report type
     search_days: Optional[int] # Only applicable for news topic
     number_of_queries: int # Number web search queries to perform per section 
     section: Section # Report section   
@@ -129,14 +143,14 @@ def generate_report_plan(state: ReportState):
     
     # Inputs
     topic = state["topic"]
-    report_structure = state["report_structure"]
+    report_type = state["report_type"]
     number_of_queries = state["number_of_queries"]
     search_mode = state["search_mode"]
     search_days = state["search_days"]
 
-    # Convert JSON object to string if necessary
-    if isinstance(report_structure, dict):
-        report_structure = str(report_structure)
+    # get the right system prompt for the report
+    report_prompts = ReportPrompts(report_type)
+    report_structure = report_prompts.report_structure
 
     # Generate search query
     structured_llm = llm_writing.with_structured_output(Queries)
@@ -214,12 +228,14 @@ def generate_queries(state: SectionState):
     # Get state 
     number_of_queries = state["number_of_queries"]
     section = state["section"]
+    report_type = state["report_type"]
 
     # Generate queries 
     structured_llm = llm_writing.with_structured_output(Queries)
 
     # Format system instructions
-    system_instructions = query_writer_instructions.format(section_topic=section.description, number_of_queries=number_of_queries)
+    report_prompts = ReportPrompts(report_type)
+    system_instructions = report_prompts.query_writer_instructions.format(section_topic=section.description, number_of_queries=number_of_queries)
 
     # Generate queries  
     logger.info(f"Generating {number_of_queries} search queries for section {section.name}")
@@ -278,9 +294,11 @@ def write_section(state: SectionState):
     # Get state 
     section = state["section"]
     source_str = state["source_str"]
+    report_type = state["report_type"]
 
     # Format system instructions
-    system_instructions = section_writer_instructions.format(section_title=section.name, 
+    report_prompts = ReportPrompts(report_type)
+    system_instructions = report_prompts.section_writer_instructions.format(section_title=section.name, 
                                                              section_topic=section.description, 
                                                              context=source_str)
 
@@ -340,7 +358,8 @@ def initiate_section_writing(state: ReportState):
         Send("build_section_with_web_research", {"section": s, 
                                                  "number_of_queries": state["number_of_queries"], 
                                                  "search_mode": state["search_mode"], 
-                                                 "search_days": state["search_days"]}) 
+                                                 "search_days": state["search_days"], 
+                                                 "report_type": state["report_type"]}) 
         for s in state["sections"] 
         if s.research
     ]
@@ -353,9 +372,28 @@ def write_final_sections(state: SectionState):
     # Get state 
     section = state["section"]
     completed_report_sections = state["report_sections_from_research"]
-    
+    report_type = state["report_type"]
+
     # Format system instructions
-    system_instructions = final_section_writer_instructions.format(section_title=section.name, section_topic=section.description, context=completed_report_sections)
+    report_prompts = ReportPrompts(report_type)
+
+    current_date = datetime.now()
+    week_of_month = (current_date.day - 1) // 7 + 1
+    year = current_date.year
+    current_week_and_month_and_year = f"Current week: {week_of_month}, Current month: {current_date.strftime('%B')}, Current year: {year}"
+
+    if report_type in WEEKLY_CURATION_REPORT:
+        system_instructions = report_prompts.final_section_writer_instructions.format(section_title=section.name, 
+                                                                                      section_topic=section.description, 
+                                                                                      context=completed_report_sections, 
+                                                                                      current_week_and_month=current_week_and_month_and_year)
+    ##################################################
+    # Here we need to include include week so that it can write proper report title
+    ##################################################
+    else:
+        system_instructions = report_prompts.final_section_writer_instructions.format(section_title=section.name,
+                                                                                    section_topic=section.description, 
+                                                                                    context=completed_report_sections)
 
     # Generate section  
     logger.info(f"Generating final section content for section {state['section'].name}")
@@ -410,7 +448,9 @@ def initiate_final_section_writing(state: ReportState):
     # Kick off section writing in parallel via Send() API for any sections that do not require research (intro and conclusion)
     logger.info(f"Kicking off final section writing for non-research sections")
     return [
-        Send("write_final_sections", {"section": s, "report_sections_from_research": state["report_sections_from_research"]}) 
+        Send("write_final_sections", {"section": s, 
+                                      "report_sections_from_research": state["report_sections_from_research"], 
+                                      "report_type": state["report_type"]}) 
         for s in state["sections"] 
         if not s.research
     ]

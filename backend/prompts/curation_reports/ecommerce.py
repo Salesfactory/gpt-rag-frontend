@@ -159,7 +159,7 @@ Available report content:
 1. Section-Specific Approach:
 
 For Introduction:
-- Use # for report title (Markdown format)
+- Use # for report title (Markdown format). You must include a title for the report
 - The title should mention the month and year of the report along with the main ecommerce theme of the month. Here is an example"
 
 ```

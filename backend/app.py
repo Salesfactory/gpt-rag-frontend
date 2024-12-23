@@ -2476,35 +2476,26 @@ from financial_agent_utils.curation_report_config import (
     NUM_OF_QUERIES
 )
 
-from prompts.curation_reports.ecommerce import report_structure as ecommerce_report_structure
-from prompts.curation_reports.monthly_economics import report_structure as monthly_economics_report_structure
-from prompts.curation_reports.weekly_economics import report_structure as weekly_economics_report_structure
-
-report_structure_dict = {
-    "Ecommerce": ecommerce_report_structure,
-    "Monthly_Economics": monthly_economics_report_structure,
-    "Weekly_Economics": weekly_economics_report_structure
-}
 
 @app.route('/api/reports/generate/curation', methods=['POST'])
 def generate_report():
     try:
         data = request.get_json()
-        user_report_type_rqst = data['report_type']  # Will raise KeyError if missing
+        report_topic_rqst = data['report_topic']  # Will raise KeyError if missing
         
         # Validate report type
-        if user_report_type_rqst not in ALLOWED_CURATION_REPORTS:
+        if report_topic_rqst not in ALLOWED_CURATION_REPORTS:
             raise InvalidReportTypeError(f"Invalid report type. Please choose from: {ALLOWED_CURATION_REPORTS}")
 
         # Get report configuration
-        report_type = REPORT_TOPIC_PROMPT_DICT[user_report_type_rqst]
-        search_days = 7 if user_report_type_rqst in WEEKLY_CURATION_REPORT else 30
+        report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst]
+        search_days = 10 if report_topic_rqst in WEEKLY_CURATION_REPORT else 30
         
         # Generate report
-        logger.info(f"Generating report for {user_report_type_rqst}")
+        logger.info(f"Generating report for {report_topic_rqst}")
         report = graph.invoke({
-            "topic": report_type, 
-            "report_structure": report_structure_dict[user_report_type_rqst], 
+            "topic": report_topic_prompt, # this is the prompt to to trigger the agent
+            "report_type": report_topic_rqst, # this is user request
             "number_of_queries": NUM_OF_QUERIES, 
             "search_mode": "news", 
             "search_days": search_days
@@ -2512,7 +2503,12 @@ def generate_report():
 
         # Generate file path
         current_date = datetime.now()
-        file_path = Path(f"Reports/Curation_Reports/{user_report_type_rqst}/{current_date.strftime('%B_%Y')}.html")
+        week_of_month = (current_date.day - 1) // 7 + 1
+        if report_topic_rqst in WEEKLY_CURATION_REPORT:
+            file_path = Path(f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html")
+        else:
+            file_path = Path(f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}.html")
+
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Convert and save report
@@ -2524,29 +2520,34 @@ def generate_report():
         blob_storage_manager = BlobStorageManager()
         upload_result = blob_storage_manager.upload_to_blob(
             file_path=str(file_path),
-            blob_folder=f"Reports/Curation_Reports/{user_report_type_rqst}"
+            blob_folder=f"Reports/Curation_Reports/{report_topic_rqst}"
         )
 
         # Cleanup files
         logger.info("Cleaning up local files")
-        file_path.unlink(missing_ok=True)  # Delete file
         try:
-            file_path.parent.rmdir()  # Try to remove directory if empty
-        except OSError:
-            pass  # Directory not empty or already removed, that's okay
+            # Use shutil.rmtree to recursively remove directory and all contents
+            import shutil
+            if file_path.exists():
+                shutil.rmtree(file_path.parent, ignore_errors=True)
+            logger.info(f"Successfully removed directory: {file_path.parent}")
+        except Exception as e:
+            logger.warning(f"Error while cleaning up directory {file_path.parent}: {str(e)}")
+            # Continue execution even if cleanup fails
+            pass
 
         return jsonify({
             'status': 'success',
-            'message': f'Report generated for {user_report_type_rqst}',
+            'message': f'Report generated for {report_topic_rqst}',
             'report_url': upload_result['blob_url']
         })
 
     except KeyError:
-        logger.error("Missing report_type in request")
-        return jsonify({'error': 'report_type is required'}), 400
+        logger.error("Missing report_topic in request")
+        return jsonify({'error': 'report_topic is required'}), 400
     
     except InvalidReportTypeError as e:
-        logger.error(f"Invalid report type: {str(e)}")
+        logger.error(f"Invalid report topic: {str(e)}")
         return jsonify({'error': str(e)}), 400
     
     except Exception as e:
