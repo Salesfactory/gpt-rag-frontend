@@ -58,7 +58,9 @@ from shared.cosmo_db import(
     delete_report,
     get_filtered_reports,
     create_template,
-    delete_template
+    delete_template,
+    get_templates,
+    get_template_by_ID
 )
 
 load_dotenv()
@@ -839,14 +841,16 @@ def removeSummarizationReport(template_id):
     """
     Endpoint to remove a summarization report template by ID.
 
-    Args:
-        template_id (string): The ID of the template to be removed.
+    This endpoint expects the following URL parameter:
+    - template_id: The ID of the report template to be removed.
 
-    Raises:
-        MissingRequiredFieldError: If the template_id is not provided.
+    NotFound: If the report template with the specified ID does not exist.
+    Exception: For any other unexpected errors.
 
-    Returns:
-        dict: A success response indicating the template has been deleted, or an error response if the template is not found or an unexpected error occurs.
+    JSON response with appropriate HTTP status code:
+    - 204 No Content: If the report template is successfully deleted.
+    - 404 Not Found: If the report template with the specified ID does not exist.
+    - 500 Internal Server Error: If an unexpected error occurs.
     """
     try:
         if not template_id:
@@ -861,6 +865,23 @@ def removeSummarizationReport(template_id):
     except Exception as e:
         return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
 
+@app.route('/api/reports/summarization/templates/', methods=['GET'])
+def getSummarizationReports():
+    try:
+        result = get_templates()
+        return create_success_response(result)
+    except Exception as e:
+        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR) 
+
+@app.route('/api/reports/summarization/templates/<template_id>', methods=['GET'])
+def getSummarizationReport(template_id):
+    try:
+        result = get_template_by_ID(template_id)
+        return create_success_response(result)
+    except NotFound as e:
+        return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
+    except Exception as e:
+        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 

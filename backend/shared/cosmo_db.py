@@ -64,6 +64,7 @@ def get_report(report_id):
     """
     container = get_cosmos_container("reports")
     
+    
     try:
         report = container.read_item(item=report_id, partition_key=report_id)
         logging.info(f"Report successfully retrieved: {report}")
@@ -216,4 +217,47 @@ def delete_template(template_id):
     
     except Exception as e:
         logging.error(f"Error deleting template with id {template_id}: {e}")
+        raise
+
+def get_templates():
+    """Get all the templates in a cosmosDB container"""
+    container = get_cosmos_container("templates")
+    try:
+        items = list(container.query_items(
+            query="SELECT * FROM c",
+            enable_cross_partition_query=True
+        ))
+
+        if not items:
+            logging.warning(f"No templates found.")
+            raise NotFound
+
+        logging.info(f"Templates successfully retrieved: {items}")
+        print(items)
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No templates found.")
+        raise NotFound
+    
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving templates: {e}")
+        raise
+
+get_templates()
+
+def get_template_by_ID(template_id):
+    """Get a template by its ID"""
+    container = get_cosmos_container("templates")
+    try:
+        template = container.read_item(item=template_id, partition_key=template_id)
+        logging.info(f"Template successfully retrieved: {template}")
+        return template
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Template with id '{template_id}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving template with id '{template_id}': {e}")
         raise
