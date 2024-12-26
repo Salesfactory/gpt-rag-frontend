@@ -7,7 +7,6 @@ import uuid
 import shutil
 from pathlib import Path
 from collections import defaultdict
-import markdown2
 from typing import Dict, List
 
 import pandas as pd
@@ -24,13 +23,12 @@ from reportlab.lib.styles import getSampleStyleSheet
 from utils import convert_html_to_pdf
 from app_config import BLOB_CONTAINER_NAME, PDF_PATH
 
-# Load environment variables
-load_dotenv()
-
 
 BLOB_CONNECTION_STRING = os.getenv('BLOB_CONNECTION_STRING')
 BLOB_CONTAINER_NAME = os.getenv('BLOB_CONTAINER_NAME')
 
+# Load environment variables
+load_dotenv()
 
 # configure logging
 logging.basicConfig(
@@ -284,61 +282,6 @@ def create_document_paths(output_path: str, equity_name: str, financial_type: st
         }
     }
 
-def markdown_to_html(markdown_text: str, output_file: str):
-            """Convert markdown to HTML using markdown2"""
-            # Define CSS styles
-            css_styles = """
-            <style>
-                body {
-                    font-family: 'Times New Roman', Times, serif;
-                    line-height: 1.6;
-                    max-width: 900px;
-                    margin: 0 auto;
-                    padding: 20px;
-                    font-size: 12pt;  /* Standard size for Times New Roman */
-                }
-                h1, h2, h3 {
-                    font-family: 'Times New Roman', Times, serif;
-                    color: #333;
-                }
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    margin: 20px 0;
-                    font-family: 'Times New Roman', Times, serif;
-                }
-                th, td {
-                    border: 1px solid #ddd;
-                    padding: 8px;
-                    text-align: left;
-                }
-                th {
-                    background-color: #f5f5f5;
-                }
-            </style>
-            """
-            
-            html_content = markdown2.markdown(markdown_text, extras=["tables"])
-            
-            # Combine CSS with HTML content
-            final_html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                {css_styles}
-            </head>
-            <body>
-                {html_content}
-            </body>
-            </html>
-            """
-            
-            # Create output directory if it doesn't exist
-            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-            with open(output_file, 'w', encoding='utf-8') as f:
-                f.write(final_html)
-
 class BlobStorageError(Exception):
     """Base exception for blob storage operations"""
     pass
@@ -363,17 +306,6 @@ class BlobDownloadError(BlobStorageError):
     """Failed to download blob"""
     pass
 
-class ReportGenerationError(Exception):
-    """Base exception for report generation errors"""
-    pass
-
-class InvalidReportTypeError(ReportGenerationError):
-    """Raised when report type is invalid"""
-    pass
-
-class StorageError(ReportGenerationError):
-    """Raised when storage operations fail"""
-    pass
 class BlobStorageManager:
     def __init__(self):
         try:
@@ -467,71 +399,18 @@ class BlobStorageManager:
         return downloaded_files
 
     # make sure the document_paths is a dict with the structure of create_document_paths
-    def upload_to_blob(self, document_paths: dict = None, file_path: str = None, blob_folder: str = None) -> Dict:
+    def upload_to_blob(self, document_paths: dict) -> Dict:
         """
-        Upload files to Azure Blob Storage. Can handle either a document_paths dictionary 
-        or a single file path.
+        Upload files to Azure Blob Storage with organized folder structure based on filing type.
         
         Args:
-            document_paths (dict, optional): Nested dictionary with equity IDs and their filing types
-            file_path (str, optional): Direct path to a file to upload
-            blob_folder (str, optional): Custom folder path in blob storage (defaults to self.blob_base_folder)
+            document_paths (dict): Nested dictionary with equity IDs and their filing types
+            container_client: Azure blob container client
+            base_folder (str): Base folder name in blob storage
             
         Returns:
-            dict: Dictionary of upload results
+            dict: Dictionary of upload results with equity IDs and filing types as keys
         """
-        if not document_paths and not file_path:
-            raise ValueError("Either document_paths or file_path must be provided")
-            
-        if document_paths and file_path:
-            raise ValueError("Cannot provide both document_paths and file_path")
-
-        # Handle single file upload
-        if file_path:
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"File not found: {file_path}")
-                
-            try:
-                # Use provided blob folder or default to base folder
-                base_folder = blob_folder if blob_folder else self.blob_base_folder
-                blob_path = f"{base_folder}/{os.path.basename(file_path)}"
-                # set the content type based on the file extension
-                if blob_path.endswith('.pdf'):
-                    content_type = 'application/pdf'
-                elif blob_path.endswith('.html'):
-                    content_type = 'text/html'
-                elif blob_path.endswith('.txt'):
-                    content_type = 'text/plain'
-                else:
-                    content_type = 'application/octet-stream'
-                with open(file_path, "rb") as data:
-                    try:
-                        self.container_client.upload_blob(
-                            name=blob_path, 
-                            data=data, 
-                            overwrite=True, 
-                            content_settings=ContentSettings(content_type=content_type)
-                        )
-                    except Exception as e:
-                        raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
-                    
-                # get the blob url for the uploaded file
-                blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
-                
-                result = {
-                    "status": "success",
-                    "blob_path": blob_path,
-                    "blob_url": blob_url
-                }
-                logger.info(f'Document has been uploaded to {blob_path}')
-                return result
-                
-            except Exception as e:
-                result = {"status": "failed", "error": str(e)}
-                logger.error(f"Failed to upload file {file_path}: {str(e)}")
-                return result
-        
-        # Handle document_paths dictionary upload (original functionality)
         if not isinstance(document_paths, dict):
             raise ValueError("document_paths must be a dictionary")
         
@@ -545,34 +424,22 @@ class BlobStorageManager:
                     
                     blob_path = f"{self.blob_base_folder}/{filing_type}/{equity}_summary.pdf" if "summary" in document_path else f"{self.blob_base_folder}/{filing_type}/{equity}.pdf"
                     
-                    # set the content type based on the file extension
-                    if blob_path.endswith('.pdf'):
-                        content_type = 'application/pdf'
-                    elif blob_path.endswith('.html'):
-                        content_type = 'text/html'
-                    elif blob_path.endswith('.txt'):
-                        content_type = 'text/plain'
-                    else:
-                        content_type = 'application/octet-stream'
-                    
                     with open(document_path, "rb") as data:
                         try:
                             self.container_client.upload_blob(
                                 name=blob_path, 
                                 data=data, 
                                 overwrite=True, 
-                                content_settings=ContentSettings(content_type=content_type)
+                                content_settings=ContentSettings(content_type='application/pdf')
                             )
                         except Exception as e:
                             raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
                         
                     # get the blob url for the uploaded file
                     blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
-                    upload_results[equity][filing_type] = {
-                        "status": "success",
-                        "blob_path": blob_path,
-                        "blob_url": blob_url
-                    }
+                    upload_results[equity][filing_type] = {"status": "success",
+                                                           "blob_path": blob_path,
+                                                           "blob_url": blob_url}
                     logger.info(f'Document has been uploaded to {blob_path}')
                 except Exception as e:
                     upload_results[equity][filing_type] = {"status": "failed", "error": str(e)}
