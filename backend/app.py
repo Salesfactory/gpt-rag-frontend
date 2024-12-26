@@ -57,7 +57,8 @@ from shared.cosmo_db import(
     update_report,
     delete_report,
     get_filtered_reports,
-    create_template
+    create_template,
+    delete_template
 )
 
 load_dotenv()
@@ -851,6 +852,7 @@ def removeSummarizationReport(template_id):
         if not template_id:
             raise MissingRequiredFieldError('template_id')
         #delete from cosmosDB container
+        delete_template(template_id)
         return create_success_response({"deleted": template_id})
     except NotFound as e:
         return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
