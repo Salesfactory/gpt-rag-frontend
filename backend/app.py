@@ -2129,25 +2129,33 @@ from utils import *
 from sec_edgar_downloader import Downloader
 from app_config import FILING_TYPES, BASE_FOLDER
 
-doc_processor = FinancialDocumentProcessor() # from financial_doc_processor
 
+doc_processor = FinancialDocumentProcessor() # from financial_doc_processor
 @app.route('/api/SECEdgar/financialdocuments', methods=['GET'])
 def process_edgar_document():
     """
-    Process a single financial document.
-    Payload example:
-    {
-        "equity_id": "AAPL",
-        "filing_type": "10-K",
-        "after_date": "2024-01-01"  # optional
-    }
+    Process a single financial document from SEC EDGAR.
+    
+    Args for payload:
+        equity_id (str): Stock symbol/ticker (e.g., 'AAPL')
+        filing_type (str): SEC filing type (e.g., '10-K')
+        after_date (str, optional): Filter for filings after this date (YYYY-MM-DD)
+        
+    Returns:
+        JSON Response with processing status and results
+        
+    Raises:
+        400: Invalid request parameters
+        404: Document not found
+        500: Internal server error
     """
     try:
         # Validate request and setup
         if not check_and_install_wkhtmltopdf():
             return jsonify({
                 "status": "error",
-                "message": "Failed to install required dependency wkhtmltopdf"
+                "message": "Failed to install required dependency wkhtmltopdf",
+                "code": 500
             }), 500
 
         # Get and validate parameters
@@ -2155,7 +2163,8 @@ def process_edgar_document():
         if not data:
             return jsonify({
                 "status": "error",
-                "message": "No data provided"
+                "message": "No data provided",
+                "code": 400
             }), 400
 
         # Extract and validate parameters
@@ -2166,17 +2175,20 @@ def process_edgar_document():
         if not equity_id or not filing_type:
             return jsonify({
                 "status": "error",
-                "message": "Both equity_id and filing_type are required"
+                "message": "Both equity_id and filing_type are required",
+                "code": 400
             }), 400
 
         if filing_type not in FILING_TYPES:
             return jsonify({
                 "status": "error",
-                "message": f"Invalid filing type. Must be one of: {FILING_TYPES}"
+                "message": f"Invalid filing type. Must be one of: {FILING_TYPES}",
+                "code": 400
             }), 400
 
         # Download filing
         download_result = doc_processor.download_filing(equity_id, filing_type, after_date)
+
         if download_result.get("status") != "success":
             return jsonify(download_result), download_result.get("code", 500)
 
@@ -2188,7 +2200,8 @@ def process_edgar_document():
         logger.error(f"API execution failed: {str(e)}")
         return jsonify({
             "status": "error",
-            "message": str(e)
+            "message": str(e),
+            "code": 500
         }), 500
 
 
@@ -2204,7 +2217,7 @@ def web_search():
         "mode": "news" or "general", default is "news" //required
         "max_results": optional int, default = 2 //optional
         "include_domains": optional list of strings, default = None //
-        "days": optional int, default = 30 //
+        "search_days": optional int, default = 30 //
     }
     """
     try:
@@ -2278,11 +2291,21 @@ from app_config import IMAGE_PATH
 from summarization import DocumentSummarizer
 @app.route('/api/SECEdgar/financialdocuments/summary', methods=['POST'])
 def generate_summary():
-    # payload example:
-    # {
-    #     "equity_name": "MS",
-    #     "financial_type": "10-K"
-    # }
+    """
+    Endpoint to generate a summary of financial documents from SEC Edgar.
+
+    Request Payload Example:
+    {
+        "equity_name": "MS",          # The name of the equity (e.g., 'MS' for Morgan Stanley)
+        "financial_type": "10-K"      # The type of financial document (e.g., '10-K' for annual reports)
+    }
+
+    Required Fields:
+    - equity_name (str): The name of the equity.
+    - financial_type (str): The type of financial document.
+
+    Both fields must be non-empty strings.
+    """
     try:
         try: 
             data = request.get_json()
@@ -2415,13 +2438,8 @@ def generate_summary():
         except Exception as e:
             logging.error(f"Failed to clean up: {e}")
 
-def _extract_response_data(response):
-    """Helper function to extract JSON data from response objects"""
-    if isinstance(response, tuple):
-        return response[0].get_json()
-    return response.get_json()
-
-@app.route('/api/SECEdgar/process-and-summarize', methods=['POST'])
+from utils import _extract_response_data
+@app.route('/api/SECEdgar/financialdocuments/process-and-summarize', methods=['POST'])
 def process_and_summarize_document():
     """
     Process and summarize a financial document in sequence.
@@ -2550,9 +2568,8 @@ def process_and_summarize_document():
             'details': str(e)
         }), 500
 
-from datetime import datetime
-from pathlib import Path
 
+from pathlib import Path
 from curation_report_generator import graph
 from financial_doc_processor import markdown_to_html, BlobStorageManager
 from financial_agent_utils.curation_report_utils import (
@@ -2566,7 +2583,6 @@ from financial_agent_utils.curation_report_config import (
     ALLOWED_CURATION_REPORTS, 
     NUM_OF_QUERIES
 )
-
 
 @app.route('/api/reports/generate/curation', methods=['POST'])
 def generate_report():

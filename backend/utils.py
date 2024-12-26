@@ -314,3 +314,9 @@ def cleanup_resources() -> bool:
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
         return False
+
+def _extract_response_data(response):
+    """Helper function to extract JSON data from response objects"""
+    if isinstance(response, tuple):
+        return response[0].get_json()
+    return response.get_json()
