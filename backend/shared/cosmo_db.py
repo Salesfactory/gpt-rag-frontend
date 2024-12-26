@@ -244,7 +244,6 @@ def get_templates():
         logging.error(f"Unexpected error retrieving templates: {e}")
         raise
 
-get_templates()
 
 def get_template_by_ID(template_id):
     """Get a template by its ID"""
