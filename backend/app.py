@@ -2469,7 +2469,8 @@ def process_and_summarize_document():
             return jsonify({
                 'status': 'error',
                 'error': 'Invalid request',
-                'details': 'Request body is requred and must be a valid JSON object'
+                'details': 'Request body is requred and must be a valid JSON object',
+                'timestamp': datetime.now().isoformat()
             }), 400
 
         # Validate required fields
@@ -2478,7 +2479,8 @@ def process_and_summarize_document():
             return jsonify({
                 'status': 'error',
                 'error': 'Missing required fields',
-                'details': f"Missing required fields: {', '.join(required_fields)}"
+                'details': f"Missing required fields: {', '.join(required_fields)}",
+                'timestamp': datetime.now().isoformat()
             }), 400
 
         # Validate filing type
@@ -2486,7 +2488,8 @@ def process_and_summarize_document():
             return jsonify({
                 'status': 'error',
                 'error': 'Invalid filing type',
-                'details': f"Invalid filing type. Must be one of: {', '.join(FILING_TYPES)}"
+                'details': f"Invalid filing type. Must be one of: {', '.join(FILING_TYPES)}",
+                'timestamp': datetime.now().isoformat()
             }), 400
 
         # Validate date format if provided
@@ -2497,7 +2500,8 @@ def process_and_summarize_document():
                 return jsonify({
                     'status': 'error',
                     'error': 'Invalid date format',
-                    'details': 'Use YYYY-MM-DD'
+                    'details': 'Use YYYY-MM-DD',
+                    'timestamp': datetime.now().isoformat()
                 }), 400
 
     except ValueError as e:
@@ -2505,7 +2509,8 @@ def process_and_summarize_document():
         return jsonify({
             'status': 'error',
             'error': 'Invalid request data',
-            'details': str(e)
+            'details': str(e),
+            'timestamp': datetime.now().isoformat()
         }), 400
 
     try:
@@ -2524,7 +2529,8 @@ def process_and_summarize_document():
                 return jsonify({
                     'status': 'error',
                     'error': process_data.get('message'),
-                    'details': process_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR)
+                    'details': process_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
+                    'timestamp': datetime.now().isoformat()
                 }), 500
 
         # Step 2: Generate summary
@@ -2547,7 +2553,8 @@ def process_and_summarize_document():
                 return jsonify({
                     'status': 'error',
                     'error': summary_data.get('message'),
-                    'details': summary_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR)
+                    'details': summary_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
+                    'timestamp': datetime.now().isoformat()
                 }), 500
 
         # Return combined results
@@ -2565,7 +2572,8 @@ def process_and_summarize_document():
         return jsonify({
             'status': 'error',
             'error': 'An unexpected error occurred while processing the document',
-            'details': str(e)
+            'details': str(e),
+            'timestamp': datetime.now().isoformat()
         }), 500
 
 
