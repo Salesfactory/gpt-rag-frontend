@@ -48,6 +48,13 @@ from utils import (
 )
 import stripe.error
 
+from shared.cosmo_db import(
+    create_report,
+    get_report,
+    update_report,
+    delete_report,
+    get_filtered_reports
+)
 
 load_dotenv()
 
@@ -633,6 +640,154 @@ def deleteChatConversation(chat_id):
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
 
+#get report by id argument from Container Reports
+@app.route("/api/reports/<report_id>", methods=["GET"])
+def getReport(report_id):
+    """
+    Endpoint to get a report by ID.
+    """
+    try:
+        report = get_report(report_id)
+        return jsonify(report), 200
+    except NotFound as e:
+        logging.warning(f"Report with id {report_id} not found.")
+        return jsonify({"error": f"Report with this id {report_id} not found"}), 404
+    except Exception as e:
+        logging.exception(f"An error occurred retrieving the report with id {report_id}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+#create Reports curation and companySummarization container Reports
+@app.route("/api/reports", methods=["POST"])
+def createReport():
+    """
+    Endpoint to create a new report.
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        
+        # Validate the 'name' field
+        if "name" not in data:
+            return jsonify({"error": "Field 'name' is required"}), 400
+        
+        # Validate the 'type' field
+        if "type" not in data:
+            return jsonify({"error": "Field 'type' is required"}), 400
+
+        if data["type"] not in ["curation", "companySummarization"]:
+            return jsonify({"error": "Invalid 'type'. Must be 'curation' or 'companySummarization'"}), 400
+
+        # Validate fields according to type
+        if data["type"] == "companySummarization":
+            required_fields = ["reportTemplate", "companyTickers"]
+            missing_fields = [field for field in required_fields if field not in data]
+
+            if missing_fields:
+                return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+            # Validate 'reportTemplate'
+            valid_templates = ["10-K", "10-Q", "8-K", "DEF 14A"]
+            if data["reportTemplate"] not in valid_templates:
+                return jsonify({"error": f"'reportTemplate' must be one of: {', '.join(valid_templates)}"}), 400
+
+        elif data["type"] == "curation":
+            required_fields = ["category"]
+            missing_fields = [field for field in required_fields if field not in data]
+
+            if missing_fields:
+                return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+            # Validate 'category'
+            valid_categories = ["Ecommerce", "Weekly Economic", "Monthly Economic"]
+            if data["category"] not in valid_categories:
+                return jsonify({"error": f"'category' must be one of: {', '.join(valid_categories)}"}), 400
+
+        # Validar the 'status' field
+        if "status" not in data:
+            return jsonify({"error": "Field 'status' is required"}), 400
+
+        valid_statuses = ["active", "archived"]
+        if data["status"] not in valid_statuses:
+            return jsonify({"error": f"'status' must be one of: {', '.join(valid_statuses)}"}), 400
+
+        # Delegate report creation
+        new_report = create_report(data)
+        return jsonify(new_report), 201
+
+    except Exception as e:
+        logging.exception("Error creating report")
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+
+#update Reports curation and companySummarization container Reports
+@app.route("/api/reports/<report_id>", methods=["PUT"])
+def updateReport(report_id):
+    """
+    Endpoint to update a report by ID.
+    """
+    try:
+        updated_data = request.get_json()
+
+        if updated_data is None:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        
+        updated_report = update_report(report_id, updated_data)
+        return "", 204
+    
+    except NotFound as e:
+        logging.warning(f"Tried to update a report that doesn't exist: {report_id}")
+        return jsonify({"error": f"Tried to update a report with this id {report_id} that does not exist"}), 404
+
+    except Exception as e:
+        logging.exception(f"Error updating report with ID {report_id}")  # Logs the full exception
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+    
+#delete report from Container Reports
+@app.route("/api/reports/<report_id>", methods=["DELETE"])
+def deleteReport(report_id):
+    """
+    Endpoint to delete a report by ID.
+    """
+    try:
+        delete_report(report_id)
+        
+        return "",204
+    
+    except NotFound as e:
+        # If the report does not exist, return 404 Not Found
+        logging.warning(f"Report with id {report_id} not found.")
+        return jsonify({"error": f"Report with id {report_id} not found."}), 404
+    
+    except Exception as e:
+        logging.exception(f"Error deleting report with id {report_id}")
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+
+
+
+
+@app.route("/api/reports", methods=["GET"])
+def getFilteredType():
+    """
+    Endpoint to obtain reports by type or retrieve all reports if no type is specified.
+    """
+    report_type = request.args.get("type")
+
+    try:
+        if report_type:
+            reports = get_filtered_reports(report_type)
+        else:
+            reports = get_filtered_reports()
+
+        return jsonify(reports), 200
+
+    except NotFound as e:
+        logging.warning(f"No reports found for type '{report_type}'.")
+        return jsonify({"error": f"No reports found for type '{report_type}'."}), 404
+
+    except Exception as e:
+        logging.exception(f"Error retrieving reports.")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 # methods to provide access to speech services and blob storage account blobs
 
@@ -1976,6 +2131,11 @@ from app_config import FILING_TYPES, BASE_FOLDER
 
 @app.route('/api/SECEdgar/financialdocuments', methods=['GET'])
 def process_financial_documents():
+    # payload example:
+# {
+#     "equity_ids": ["AAPL", "MSFT"],
+#     "filing_types": ["10-Q", "10-K"]
+# }
     try:
         # # Check and install wkhtmltopdf if needed
         if not check_and_install_wkhtmltopdf():
@@ -2028,14 +2188,16 @@ def process_financial_documents():
             FILING_TYPES=filing_types,
             get_downloaded_files=get_downloaded_files
         )
-        
+
+        blob_manager = BlobStorageManager() # from financial_doc_processor
+
         results = {}
         # Validate collected documents paths
         if validate_document_paths(document_paths):
             logger.info("Document collection completed successfully")
             
             # Upload to blob storage
-            results = upload_to_blob(document_paths, container_client, base_folder=BASE_FOLDER)
+            results = blob_manager.upload_to_blob(document_paths)
             
             # Check if all uploads were successful
             all_uploads_successful = True
@@ -2071,6 +2233,233 @@ def process_financial_documents():
             "status": "error",
             "message": str(e)
         }), 500
+
+
+from tavily_tool import TavilySearch
+
+@app.route('/api/web-search', methods = ['POST'])
+def web_search():
+    """ 
+    Endpoint for multiple web search
+
+    Expected Json body:
+    {
+        "query": "search query", //required
+        "mode": "news" or "general", default is "news" //required
+        "max_results": optional int, default = 2 //optional
+        "include_domains": optional list of strings, default = None //
+        "days": optional int, default = 30 //
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        # validate required fields:
+        if not data or 'query' not in data:
+            logger.error("Missing required field: 'query'")
+            return jsonify({
+                'error': "Missing required field: 'query'"
+            }), 400
+        
+        # get optional parameters 
+        mode = data.get('mode', 'news')
+        max_results = data.get('max_results', 2)
+        if not isinstance(max_results, int) or max_results < 1:
+            logger.error(f"Invalid max_results: {max_results}")
+            return jsonify({
+                'error': "Invalid max_results. Please provide a positive integer."
+            }), 400
+        include_domains = data.get('include_domains', None)
+        if include_domains is not None and not isinstance(include_domains, list):
+            logger.error(f"Invalid include_domains: {include_domains}")
+            return jsonify({
+                'error': "Invalid include_domains. Please provide a list of strings."
+            }), 400
+        
+        search_days = data.get('search_days', 30)
+        
+
+        # initialize searcher
+        logger.info("Initializing TavilySearch")
+        try:
+            searcher = TavilySearch(max_results=max_results, 
+                                    include_domains=include_domains, 
+                                    search_days = search_days)
+        except ValueError as e:
+            logger.error(f"Error initializing TavilySearch: {e}")
+            return jsonify({
+                'error': f"Invalid configuration: {str(e)}"
+            }), 400
+
+        # perform search based on mode. If mode is not provided, default to news
+        if mode.lower() == 'news':
+            logger.info("Performing news search")
+            results = searcher.search_news(data['query'])
+        elif mode.lower() == 'general':
+            logger.info("Performing general search")
+            results = searcher.search_general(data['query'])
+        else:
+            logger.error("Invalid mode. Please use 'news' or 'general'.")
+            return jsonify({
+                'error': "Invalid mode. Please use 'news' or 'general'."
+            }), 400
     
+        # format results
+        logger.info("Formatting search results")
+        formatted_results = searcher.format_result(results)
+        
+        logger.info("Search completed successfully")
+        return jsonify(formatted_results)
+
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        return jsonify({
+            'error': "An error occurred while processing the request."
+        }), 500
+
+from app_config import IMAGE_PATH
+from summarization import DocumentSummarizer
+
+@app.route('/api/SECEdgar/financialdocuments/summary', methods=['POST'])
+def generate_summary():
+    # payload example:
+    # {
+    #     "equity_name": "MS",
+    #     "financial_type": "10-K"
+    # }
+    try:
+        try: 
+            data = request.get_json()
+            if not data: 
+                return jsonify({
+                    'error': 'Invalid request',
+                    'details': 'Request body is requred and must be a valid JSON object'
+                }), 400
+            equity_name = data.get('equity_name')
+            financial_type = data.get('financial_type')
+
+            if not all([equity_name, financial_type]):
+                return jsonify({
+                    'error': 'Missing required fields',
+                    'details': 'equity_name and financial_type are required'
+                }), 400
+            
+            if not isinstance(equity_name, str) or not isinstance(financial_type, str):
+                return jsonify({
+                    'error': 'Invalid input type',
+                    'details': 'equity_name and financial_type must be strings'
+                }), 400
+            
+            if not equity_name.strip() or not financial_type.strip():
+                return jsonify({
+                    'error': 'Empty input',
+                    'details': 'equity_name and financial_type cannot be empty'
+                }), 400
+            
+        except ValueError as e:
+            return jsonify({
+                'error': 'Invalid input',
+                'details': f"Failed to parse request body: {str(e)}"
+            }), 400
+
+        # Initialize components with error handling
+        try:
+            blob_manager = BlobStorageManager()
+            summarizer = DocumentSummarizer()
+        except ConnectionError as e:
+            logging.error(f"Failed to connect to blob storage: {e}")
+            return jsonify({
+                'error': 'Connection error',
+                'details': 'Failed to connect to storage service'
+            }), 503
+        except Exception as e:
+            logging.error(f"Failed to initialize components: {e}")
+            return jsonify({
+                'error': 'Service initialization failed',
+                'details': str(e)
+            }), 500
+
+        # Reset directories
+        try:
+            reset_local_dirs()
+        except PermissionError as e:
+            logging.error(f"Permission error while cleaning up directories: {str(e)}")
+            return jsonify({
+                'error': 'Permission error',
+                'details': 'Failed to clean up directories due to permission issues'
+            }), 500
+        except OSError as e:
+            logging.error(f"OS error while reseting directories: {str(e)}")
+            return jsonify({
+                'error': 'System error',
+                'details': 'Failed to prepare working directories'
+            }), 500
+        except Exception as e:
+            logging.error(f"Failed to clean up directories: {e}")
+            return jsonify({
+                'error': 'Cleanup failed',
+                'details': 'Failed to clean up directories to prepare for processing'
+            }), 500
+        
+        # Download documents
+
+        downloaded_files = blob_manager.download_documents(equity_name=equity_name, 
+                                                               financial_type=financial_type)
+
+        # Process documents
+        for file_path in downloaded_files:
+            doc_id = extract_pdf_pages_to_images(file_path, IMAGE_PATH)
+            
+        # Generate summaries
+        all_summaries = summarizer.process_document_images(IMAGE_PATH)
+        final_summary = summarizer.generate_final_summary(all_summaries)
+        
+        # Save the summary locally and upload to blob
+        local_output_path = f'pdf/{financial_type}_{equity_name}_summary.pdf'
+        save_str_to_pdf(final_summary, local_output_path)
+        
+        # Upload summary to blob
+        document_paths = create_document_paths(local_output_path, equity_name, financial_type)
+
+        # upload to blob and get the blob path/remote links
+        upload_results = blob_manager.upload_to_blob(document_paths)
+
+        blob_path = upload_results[equity_name][financial_type]['blob_path']
+        blob_url = upload_results[equity_name][financial_type]['blob_url']
+
+        # Clean up local directories
+        try:
+            reset_local_dirs()
+        except Exception as e:
+            logging.error(f"Failed to clean up directories: {e}")
+        
+        return jsonify({
+            'status': 'success',
+            'equity_name': equity_name,
+            'financial_type': financial_type,
+            'blob_path': blob_path,
+            'remote_blob_url': blob_url,
+            'summary': final_summary,
+        }), 200
+
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}", exc_info=True)
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e)
+        }), 500
+    finally:
+        # Ensure cleanup happens
+        try:
+            reset_local_dirs()
+        except PermissionError as e:
+            logging.error(f"Permission error while cleaning up directories: {str(e)}")
+        except OSError as e:
+            logging.error(f"OS error while reseting directories: {str(e)}")
+        except Exception as e:
+            logging.error(f"Failed to clean up: {e}")
+
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

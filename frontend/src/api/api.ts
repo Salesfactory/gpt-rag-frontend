@@ -580,3 +580,60 @@ export async function getInvitations({ user }: any): Promise<any> {
         return { data: null };
     }
 }
+
+//create report type "curation" or "companySummarization"
+export async function createReport(reportData: object) {
+    const response = await fetch(`/api/reports`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reportData),
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating a new report");
+    }
+
+    const newReport = await response.json();
+    return newReport;
+}
+
+//This function, if sent with the "type" parameter, receives a request with the required report. If nothing is sent, it will receive all the reports from the container.
+export async function getFilteredReports(type?: string) {
+    const url = type 
+        ? `/api/reports?type=${encodeURIComponent(type)}` 
+        : `/api/reports`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status > 299 || !response.ok) {
+        const errorType = type ? `type ${type}` : "all reports";
+        throw new Error(`Error getting reports for ${errorType}`);
+    }
+
+    const reports = await response.json();
+    return reports;
+}
+
+export async function deleteReport(reportId: string) {
+    const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status === 404) {
+        throw Error(`Report with ID ${reportId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error deleting report with ID ${reportId}`);
+    }
+}
