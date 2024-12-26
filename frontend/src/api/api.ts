@@ -638,7 +638,7 @@ export async function getSummarizationReportTemplateByID(templateID: string) {
 }
 
 export async function createSummarizationReport(templateData: SummarizationReportProps) {
-    const response = await fetch('/api/reports/summarization', {
+    const response = await fetch('/api/reports/summarization/templates', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(templateData),
@@ -653,7 +653,7 @@ export async function createSummarizationReport(templateData: SummarizationRepor
 }
 
 export async function deleteSumarizationReportTemplate(templateID: string) {
-    const response = await fetch(`/api/reports/summarization/${templateID}`, {
+    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {
         method: 'DELETE',
         headers: {'Content-Type': 'application/json'},
     });
