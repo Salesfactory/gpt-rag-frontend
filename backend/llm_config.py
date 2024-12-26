@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field
 from typing import Dict, Optional
 import json
 from openai import AzureOpenAI
-from langchain_openai import AzureChatOpenAI
 import os
 from dotenv import load_dotenv
 
@@ -61,7 +60,7 @@ class PromptTemplate(BaseModel):
 class LLMManager:
     def __init__(self):
         self.prompts = PromptTemplate()
-        self._clients: Dict[str, AzureOpenAI | AzureChatOpenAI] = {}
+        self._clients: Dict[str, AzureOpenAI] = {}
         self.config: Dict[str, LLMConfig] = {
             "gpt4o": LLMConfig(
                 api_base=os.getenv('OPENAI_API_BASE'),
@@ -77,31 +76,16 @@ class LLMManager:
             )
         }
 
-    def get_client(self, client_type: str = "gpt4o", use_langchain: bool = False) -> AzureOpenAI | AzureChatOpenAI:
-        """Get or create an Azure OpenAI client
-        
-        Args:
-            client_type: Type of client to create ("gpt4o" or "embedding")
-            use_langchain: If True, returns a LangChain AzureChatOpenAI client instead of regular AzureOpenAI
-        """
-        client_key = f"{client_type}_langchain" if use_langchain else client_type
-        
-        if client_key not in self._clients:
+    def get_client(self, client_type: str = "gpt4o") -> AzureOpenAI:
+        """Get or create an Azure OpenAI client"""
+        if client_type not in self._clients:
             config = self.config[client_type]
-            if use_langchain:
-                self._clients[client_key] = AzureChatOpenAI(
-                    openai_api_key=config.api_key,
-                    openai_api_version=config.api_version,
-                    azure_endpoint=config.api_base,
-                    deployment_name=config.model_name
-                )
-            else:
-                self._clients[client_key] = AzureOpenAI(
-                    api_key=config.api_key,
-                    api_version=config.api_version,
-                    base_url=f"{config.api_base}/openai/deployments/{config.model_name}"
-                )
-        return self._clients[client_key]
+            self._clients[client_type] = AzureOpenAI(
+                api_key=config.api_key,
+                api_version=config.api_version,
+                base_url=f"{config.api_base}/openai/deployments/{config.model_name}"
+            )
+        return self._clients[client_type]
 
     def get_prompt(self, prompt_type: str) -> str:
         """Get a prompt template by type"""
