@@ -852,8 +852,8 @@ def removeSummarizationReport(template_id):
         if not template_id:
             raise MissingRequiredFieldError('template_id')
         #delete from cosmosDB container
-        delete_template(template_id)
-        return create_success_response({"deleted": template_id})
+        result = delete_template(template_id)
+        return create_success_response(result)
     except NotFound as e:
         return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
     except MissingRequiredFieldError as field:
