@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo } from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -619,4 +619,46 @@ export async function getFilteredReports(type?: string) {
 
     const reports = await response.json();
     return reports;
+}
+
+// Summarization reports 
+export async function getSummarizationTemplates() {
+    const response = await fetch('/api/reports/summarization/templates', {method: 'GET', headers: {'Content-Type': 'application/json'}});
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error getting summarization templates');
+    }
+    const reports = await response.json();
+    return reports;
+}
+
+export async function getSummarizationReportTemplateByID(templateID: string) {
+    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {method: 'GET', headers: {'Content-Type': 'application/json'}});
+}
+
+export async function createSummarizationReport(templateData: SummarizationReportProps) {
+    const response = await fetch('/api/reports/summarization', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(templateData),
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error creating a new summarization report');
+    }
+
+    const newReport = await response.json();
+    return newReport;
+}
+
+export async function deleteSumarizationReportTemplate(templateID: string) {
+    const response = await fetch(`/api/reports/summarization/${templateID}`, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error deleting summarization report');
+    }
+    const deletedReport = await response.json();
+    return deletedReport;
 }
