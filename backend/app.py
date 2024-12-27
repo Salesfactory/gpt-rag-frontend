@@ -51,9 +51,11 @@ import stripe.error
 from shared.cosmo_db import(
     create_report,
     get_report,
+    get_user_container,
     update_report,
     delete_report,
-    get_filtered_reports
+    get_filtered_reports,
+    update_user
 )
 
 load_dotenv()
@@ -764,7 +766,44 @@ def deleteReport(report_id):
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 
+#Get User for email receivers
+@app.route("/api/user/<user_id>", methods=["GET"])
+def getUserid(user_id):
+    """
+    Endpoint to get a user by ID.
+    """
+    try:
+        user = get_user_container(user_id)
+        return jsonify(user), 200
+    except NotFound as e:
+        logging.warning(f"Report with id {user_id} not found.")
+        return jsonify({"error": f"Report with this id {user_id} not found"}), 404
+    except Exception as e:
+        logging.exception(f"An error occurred retrieving the report with id {user_id}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
+#Update Users
+@app.route("/api/user/<user_id>", methods=["PUT"])
+def updateUser(user_id):
+    """
+    Endpoint to update a user
+    """
+    try:
+        updated_data = request.get_json()
+
+        if updated_data is None:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        
+        updated_data = update_user(user_id, updated_data)
+        return "", 204
+    
+    except NotFound as e:
+        logging.warning(f"Tried to update a user that doesn't exist: {user_id}")
+        return jsonify({"error": f"Tried to update a user with this id {user_id} that does not exist"}), 404
+
+    except Exception as e:
+        logging.exception(f"Error updating user with ID {user_id}")  # Logs the full exception
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 @app.route("/api/reports", methods=["GET"])
 def getFilteredType():

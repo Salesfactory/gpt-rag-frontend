@@ -637,3 +637,21 @@ export async function deleteReport(reportId: string) {
         throw Error(`Error deleting report with ID ${reportId}`);
     }
 }
+
+export async function updateUser({ userId, updatedData }: { userId: string; updatedData: object }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData)
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating user with ID ${userId}`);
+    }
+}

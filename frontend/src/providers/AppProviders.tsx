@@ -17,6 +17,7 @@ interface UserInfo {
     email: string | null;
     role?: Role;
     organizationId?: string;
+    isReportEmailReceiver?: boolean;
 }
 
 interface OrganizationInfo {

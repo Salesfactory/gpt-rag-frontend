@@ -67,7 +67,7 @@ const ReportManagement: React.FC = () => {
     };
 
     return (
-        <div className="min-vh-100 bg-light">
+        <div className="min-vh-50 bg-light">
             <div className="bg-white shadow-sm mb-4">
                 <div className="container py-4">
                     <h1 className="h3 mb-0">Report Management</h1>

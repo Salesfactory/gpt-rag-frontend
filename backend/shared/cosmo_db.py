@@ -11,6 +11,27 @@ AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
 AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
+def get_cosmos_container_users():
+    """
+    Establishes the connection to the Cosmos DB `reports` container.
+    """
+    credential = DefaultAzureCredential()
+    client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+
+    try:
+        logging.info("Connection to Cosmos DB established successfully.")
+        return container
+    
+    except AzureError as az_err:
+        logging.error(f"AzureError encountered while connecting to Cosmos DB: {az_err}")
+        raise Exception(f"Azure connection error: {az_err}") from az_err
+
+    except Exception as e:
+        logging.error(f"Unexpected error while connecting to Cosmos DB: {e}")
+        raise Exception(f"Unexpected connection error: {e}") from e
+
 def get_cosmos_container_report():
     """
     Establishes the connection to the Cosmos DB `reports` container.
@@ -179,4 +200,74 @@ def delete_report(report_id):
     
     except Exception as e:
         logging.error(f"Error deleting report with id {report_id}: {e}")
+        raise
+
+def get_user_container(user_id):
+    """
+    Retrieves a specific document (user_id) from the Cosmos DB container using its `id` as partition key.
+
+    Parameters:
+        user_id (str): The ID of the user to retrieve.
+
+    Returns:
+        dict: The user document retrieved from the database.
+
+    Raises:
+    Exception: For any other unexpected error that occurs during retrieval.
+    CosmosResourceNotFoundError: If the user with the specified ID does not exist in the database.
+    """
+    container = get_cosmos_container_users()
+    
+    try:
+        user = container.read_item(item=user_id, partition_key=user_id)
+        logging.info(f"User successfully retrieved: {user}")
+        return user
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Report with id '{user_id}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving report with id '{user_id}'")
+        raise
+
+def update_user(user_id, updated_data):
+    """
+    Updates an existing document using its `id` as the partition key.
+
+    Handles database errors and raises exceptions as needed.
+    """
+    container = get_cosmos_container_users()
+    
+    try:
+        current_user = get_user_container(user_id)
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"User with id '{user_id}' not found in Cosmos DB.")
+        raise NotFound
+    
+    except Exception as e:
+        logging.error(f"Unexpected error while retrieving user with id '{user_id}'")
+        raise
+
+    try:
+        current_user.update(updated_data)
+
+        current_user["id"] = user_id
+
+        # Perform the upsert operation
+        container.upsert_item(current_user)
+        logging.info(f"Report updated successfully: {current_user}")
+        return current_user
+
+    except CosmosResourceNotFoundError:
+        logging.error(f"Failed to upsert item: Report ID '{user_id}' not found during upsert.")
+        raise NotFound(f"Cannot upsert report because it does not exist with id '{user_id}'")
+
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+
+    except Exception as e:
+        logging.error(f"Unexpected error while updating report with id '{user_id}': {e}")
         raise
