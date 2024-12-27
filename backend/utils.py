@@ -85,9 +85,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+################################################
+# financialDocument (EDGAR) Ingestion
+################################################
+
 def validate_payload(data: Dict[str, Any]) -> Tuple[bool, str]:
     """
-    Validate the request payload.
+    Validate the request payload for Edgar financialDocument endpoint
     
     Args:
         data (dict): The request payload
@@ -96,26 +100,24 @@ def validate_payload(data: Dict[str, Any]) -> Tuple[bool, str]:
         tuple: (is_valid: bool, error_message: str)
     """
     # Check if equity_ids exists and is not empty
-    if not data.get('equity_ids'):
-        return False, "equity_ids is required"
+    if not data.get('equity_id'):
+        return False, "equity_id is required"
     
-    # Check if equity_ids is a list
-    if not isinstance(data['equity_ids'], list):
-        return False, "equity_ids must be a list"
+    # check if date is provided 
+    if not data.get('after_date'):
+        logger.warning("No after_date provided, retrieving most recent filings")
     
     # Check if equity_ids is not empty
-    if len(data['equity_ids']) == 0:
-        return False, "equity_ids cannot be empty"
+    if data['equity_id'].strip() == "":
+        return False, "equity_id cannot be empty"
     
     # Validate filing_types if provided
-    if 'filing_types' in data:
-        if not isinstance(data['filing_types'], list):
-            return False, "filing_types must be a list"
-        
-        # Check if all filing types are valid
-        invalid_types = [ft for ft in data['filing_types'] if ft not in ALLOWED_FILING_TYPES]
-        if invalid_types:
-            return False, f"Invalid filing type(s): {', '.join(invalid_types)}. Allowed types are: {', '.join(ALLOWED_FILING_TYPES)}"
+    if not data.get('filing_type'):
+        return False, "filing_type is required"
+    
+    # Check if all filing types are valid
+    if data['filing_type'] not in ALLOWED_FILING_TYPES:
+        return False, f"Invalid filing type(s): {data['filing_type']}. Allowed types are: {', '.join(ALLOWED_FILING_TYPES)}"
     
     return True, ""
 
@@ -312,3 +314,9 @@ def cleanup_resources() -> bool:
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
         return False
+
+def _extract_response_data(response):
+    """Helper function to extract JSON data from response objects"""
+    if isinstance(response, tuple):
+        return response[0].get_json()
+    return response.get_json()

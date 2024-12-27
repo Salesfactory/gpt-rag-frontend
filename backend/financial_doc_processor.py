@@ -362,6 +362,10 @@ class BlobUploadError(BlobStorageError):
 class BlobDownloadError(BlobStorageError):
     """Failed to download blob"""
     pass
+# class to catch metadata error 
+class BlobMetadataError(BlobStorageError):
+    """Failed to retrieve metadata"""
+    pass
 
 class ReportGenerationError(Exception):
     """Base exception for report generation errors"""
@@ -465,9 +469,33 @@ class BlobStorageManager:
             raise
         
         return downloaded_files
+    
+    def get_document_metadata(self, remote_file_path: str) -> dict:
+        """Retrieve metadata for a specific blob from defined container in env
+        
+        Args:
+            remote_file_path (str): Path to the blob in blob storage
+        
+        Returns:
+            dict: Metadata of the blob
+        
+        Raises:
+            BlobMetadataError: If there is an error retrieving metadata
+        Example:
+            metadata = doc_processor.get_document_metadata('financial/10-K/AAPL.pdf')
+            print(metadata)
+        """
+        
+        try: 
+            blob_client = self.container_client.get_blob_client(remote_file_path)
+            blob_properties = blob_client.get_blob_properties()
+            return blob_properties.metadata
+        except Exception as e:
+            raise BlobMetadataError(f"Error retrieving metadata for {remote_file_path}: {str(e)}")
+
 
     # make sure the document_paths is a dict with the structure of create_document_paths
-    def upload_to_blob(self, document_paths: dict = None, file_path: str = None, blob_folder: str = None) -> Dict:
+    def upload_to_blob(self, document_paths: dict, metadata: dict = None, file_path: str = None, blob_folder: str = None) -> Dict:
         """
         Upload files to Azure Blob Storage. Can handle either a document_paths dictionary 
         or a single file path.
@@ -561,7 +589,8 @@ class BlobStorageManager:
                                 name=blob_path, 
                                 data=data, 
                                 overwrite=True, 
-                                content_settings=ContentSettings(content_type=content_type)
+                                content_settings=ContentSettings(content_type=content_type),
+                                metadata=metadata
                             )
                         except Exception as e:
                             raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
@@ -571,7 +600,8 @@ class BlobStorageManager:
                     upload_results[equity][filing_type] = {
                         "status": "success",
                         "blob_path": blob_path,
-                        "blob_url": blob_url
+                        "blob_url": blob_url,
+                        "metadata": metadata
                     }
                     logger.info(f'Document has been uploaded to {blob_path}')
                 except Exception as e:
@@ -579,3 +609,103 @@ class BlobStorageManager:
                     logger.error(f"Failed to upload {equity} {filing_type}: {str(e)}")
         return upload_results
     
+
+from sec_edgar_downloader import Downloader
+from utils import cleanup_resources
+class FinancialDocumentProcessor:
+    def __init__(self):
+        self.dl = Downloader(
+            os.getenv("USER_AGENT_NAME", "SalesFactory"),
+            os.getenv("USER_AGENT_EMAIL", "nam.tran@salesfactory.com")
+        )
+        self.blob_manager = BlobStorageManager()
+
+    def download_filing(self, equity_id: str, filing_type: str, after_date: str = None) -> dict:
+        """Download a single SEC filing."""
+        try:
+            if after_date:
+                logger.info(f"Downloading {filing_type} for {equity_id} after {after_date}")
+                num_downloaded_file = self.dl.get(filing_type, equity_id, limit=1, download_details=True, after=after_date)
+                if num_downloaded_file == 0:
+                    return {
+                        "status": "error",
+                        "message": f"No {filing_type} found after {after_date} for {equity_id}",
+                        "code": 404
+                    }
+            else:
+                logger.info(f"Downloading most recent {filing_type} for {equity_id}")
+                self.dl.get(filing_type, equity_id, limit=1, download_details=True)
+
+            return {
+                "status": "success",
+                "message": f"Successfully downloaded {filing_type} for {equity_id}",
+                "code": 200
+            }
+        except Exception as e:
+            logger.error(f"Download failed: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Failed to download {filing_type} for {equity_id}: {str(e)}",
+                "code": 500
+            }
+
+    def process_and_upload(self, equity_id: str, filing_type: str) -> dict:
+        """Process and upload a single document."""
+        try:
+            document_paths = collect_filing_documents(
+                EQUITY_IDS=[equity_id],
+                FILING_TYPES=[filing_type],
+                get_downloaded_files=get_downloaded_files
+            )
+
+            if not validate_document_paths(document_paths):
+                return {
+                    "status": "error",
+                    "message": "Document collection validation failed",
+                    "code": 400
+                }
+            
+            # add metadata to uploaded document 
+            from datetime import datetime
+            metadata = {
+                'equity_id': equity_id,
+                'filing_type': filing_type,
+                'uploaded_date': datetime.now().strftime('%Y-%m-%d'),
+                'source': 'SEC EDGAR',
+            }
+
+            results = self.blob_manager.upload_to_blob(document_paths, metadata=metadata)
+
+            equity_result = results.get(equity_id, {})
+            filing_result = equity_result.get(filing_type, {})
+            upload_successful = filing_result.get("status") == "success"
+
+            if upload_successful:
+                if cleanup_resources():
+                    logger.info("Successfully cleaned up files")
+                else:
+                    logger.warning("Failed to clean up files")
+            else:
+                logger.warning("Skipping cleanup as upload failed")
+
+            return {
+                "status": "success" if upload_successful else "error",
+                "message": "Document processed successfully" if upload_successful else "Upload failed",
+                "results": results,
+                "code": 200 if upload_successful else 500
+            }
+        except Exception as e:
+            logger.error(f"Processing failed: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"Processing failed: {str(e)}",
+                "code": 500
+            }
+
+# example usage for get_document_metadata
+if __name__ == "__main__":
+    doc_processor = BlobStorageManager()
+    metadata = doc_processor.get_document_metadata('financial/10-K/AAPL.pdf')
+    print(metadata)
+
+# if upload date is within the past 

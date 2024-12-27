@@ -2129,114 +2129,83 @@ from utils import *
 from sec_edgar_downloader import Downloader
 from app_config import FILING_TYPES, BASE_FOLDER
 
+
+doc_processor = FinancialDocumentProcessor() # from financial_doc_processor
 @app.route('/api/SECEdgar/financialdocuments', methods=['GET'])
-def process_financial_documents():
-    # payload example:
-# {
-#     "equity_ids": ["AAPL", "MSFT"],
-#     "filing_types": ["10-Q", "10-K"]
-# }
+def process_edgar_document():
+    """
+    Process a single financial document from SEC EDGAR.
+    
+    Args for payload:
+        equity_id (str): Stock symbol/ticker (e.g., 'AAPL')
+        filing_type (str): SEC filing type (e.g., '10-K')
+        after_date (str, optional): Filter for filings after this date (YYYY-MM-DD)
+        
+    Returns:
+        JSON Response with processing status and results
+        
+    Raises:
+        400: Invalid request parameters
+        404: Document not found
+        500: Internal server error
+    """
     try:
-        # # Check and install wkhtmltopdf if needed
+        # Validate request and setup
         if not check_and_install_wkhtmltopdf():
             return jsonify({
                 "status": "error",
-                "message": "Failed to install required dependency wkhtmltopdf"
+                "message": "Failed to install required dependency wkhtmltopdf",
+                "code": 500
             }), 500
 
-        # Initialize the SEC Edgar Downloader
-        dl = Downloader(
-            os.getenv("USER_AGENT_NAME", "SalesFactory"),
-            os.getenv("USER_AGENT_EMAIL", "nam.tran@salesfactory.com")
-        )
-        # Get parameters from request body
+        # Get and validate parameters
         data = request.get_json()
-
         if not data:
             return jsonify({
                 "status": "error",
-                "message": "No data provided"
+                "message": "No data provided",
+                "code": 400
             }), 400
-        
-        # Validate the payload
-        is_valid, error_message = validate_payload(data)
-        if not is_valid:
+
+        # Extract and validate parameters
+        equity_id = data.get('equity_id')
+        filing_type = data.get('filing_type')
+        after_date = data.get('after_date', None)
+
+        if not equity_id or not filing_type:
             return jsonify({
                 "status": "error",
-                "message": error_message
+                "message": "Both equity_id and filing_type are required",
+                "code": 400
             }), 400
 
-        equity_ids = data.get('equity_ids', [])  # required to provide a list of equity ids
-        filing_types = data.get('filing_types', FILING_TYPES)  # use default if not provided (10-Q, 10-K, 8-K)
-
-        # Download SEC filings
-        for equity_id in equity_ids:
-            for filing_type in filing_types:
-                try:
-                    logger.info(f"Downloading {filing_type} for {equity_id}")
-                    dl.get(filing_type, equity_id, limit=1, download_details=True)
-                except Exception as e:
-                    logger.error(f"Failed to download {filing_type} for {equity_id}: {str(e)}")
-                    return jsonify({
-                        "status": "error",
-                        "message": f"Failed to download {filing_type} for {equity_id}: {str(e)}"
-                    }), 500
-
-        # Collect documents path for all downloaded files 
-        document_paths = collect_filing_documents(
-            EQUITY_IDS=equity_ids,
-            FILING_TYPES=filing_types,
-            get_downloaded_files=get_downloaded_files
-        )
-
-        blob_manager = BlobStorageManager() # from financial_doc_processor
-
-        results = {}
-        # Validate collected documents paths
-        if validate_document_paths(document_paths):
-            logger.info("Document collection completed successfully")
-            
-            # Upload to blob storage
-            results = blob_manager.upload_to_blob(document_paths)
-            
-            # Check if all uploads were successful
-            all_uploads_successful = True
-            for equity, filings in results.items():
-                for filing_type, result in filings.items():
-                    if result["status"] != "success":
-                        all_uploads_successful = False
-                        break
-            
-            # Only cleanup if all uploads were successful
-            if all_uploads_successful:
-                if cleanup_resources():
-                    logger.info("Successfully cleaned up all files in sec-edgar-filings")
-                else:
-                    logger.error("Failed to clean up files in sec-edgar-filings")
-            else:
-                logger.warning("Skipping cleanup as some uploads failed")
-                
-            return jsonify({
-                "status": "success",
-                "message": "Documents processed successfully",
-                "results": results
-            }), 200
-        else:
+        if filing_type not in FILING_TYPES:
             return jsonify({
                 "status": "error",
-                "message": "Document collection validation failed"
+                "message": f"Invalid filing type. Must be one of: {FILING_TYPES}",
+                "code": 400
             }), 400
-            
+
+        # Download filing
+        download_result = doc_processor.download_filing(equity_id, filing_type, after_date)
+
+        if download_result.get("status") != "success":
+            return jsonify(download_result), download_result.get("code", 500)
+
+        # Process and upload document
+        upload_result = doc_processor.process_and_upload(equity_id, filing_type)
+        return jsonify(upload_result), upload_result.get("code", 500)
+
     except Exception as e:
         logger.error(f"API execution failed: {str(e)}")
         return jsonify({
             "status": "error",
-            "message": str(e)
+            "message": str(e),
+            "code": 500
         }), 500
 
 
 from tavily_tool import TavilySearch
-
 @app.route('/api/web-search', methods = ['POST'])
 def web_search():
     """ 
@@ -2248,7 +2217,7 @@ def web_search():
         "mode": "news" or "general", default is "news" //required
         "max_results": optional int, default = 2 //optional
         "include_domains": optional list of strings, default = None //
-        "days": optional int, default = 30 //
+        "search_days": optional int, default = 30 //
     }
     """
     try:
@@ -2317,16 +2286,26 @@ def web_search():
             'error': "An error occurred while processing the request."
         }), 500
 
+
 from app_config import IMAGE_PATH
 from summarization import DocumentSummarizer
-
 @app.route('/api/SECEdgar/financialdocuments/summary', methods=['POST'])
 def generate_summary():
-    # payload example:
-    # {
-    #     "equity_name": "MS",
-    #     "financial_type": "10-K"
-    # }
+    """
+    Endpoint to generate a summary of financial documents from SEC Edgar.
+
+    Request Payload Example:
+    {
+        "equity_name": "MS",          # The name of the equity (e.g., 'MS' for Morgan Stanley)
+        "financial_type": "10-K"      # The type of financial document (e.g., '10-K' for annual reports)
+    }
+
+    Required Fields:
+    - equity_name (str): The name of the equity.
+    - financial_type (str): The type of financial document.
+
+    Both fields must be non-empty strings.
+    """
     try:
         try: 
             data = request.get_json()
@@ -2459,9 +2438,146 @@ def generate_summary():
         except Exception as e:
             logging.error(f"Failed to clean up: {e}")
 
-from datetime import datetime
-from pathlib import Path
+from utils import _extract_response_data
+@app.route('/api/SECEdgar/financialdocuments/process-and-summarize', methods=['POST'])
+def process_and_summarize_document():
+    """
+    Process and summarize a financial document in sequence.
+    
+    Args:
+        equity_id (str): Stock symbol/ticker (e.g., 'AAPL')
+        filing_type (str): SEC filing type (e.g., '10-K')
+        after_date (str, optional): Filter for filings after this date (YYYY-MM-DD)
+    
+    Returns:
+        JSON Response with structure:
+        {
+            "status": "success",
+            "edgar_data_process": {...},
+            "summary_process": {...}
+        }
+        
+    Raises:
+        400: Invalid request parameters
+        404: Document not found
+        500: Internal server error
+    """
+    # Input validation
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'error': 'Invalid request',
+                'details': 'Request body is requred and must be a valid JSON object',
+                'timestamp': datetime.now().isoformat()
+            }), 400
 
+        # Validate required fields
+        required_fields = ['equity_id', 'filing_type']
+        if not all(field in data for field in required_fields):
+            return jsonify({
+                'status': 'error',
+                'error': 'Missing required fields',
+                'details': f"Missing required fields: {', '.join(required_fields)}",
+                'timestamp': datetime.now().isoformat()
+            }), 400
+
+        # Validate filing type
+        if data['filing_type'] not in FILING_TYPES:
+            return jsonify({
+                'status': 'error',
+                'error': 'Invalid filing type',
+                'details': f"Invalid filing type. Must be one of: {', '.join(FILING_TYPES)}",
+                'timestamp': datetime.now().isoformat()
+            }), 400
+
+        # Validate date format if provided
+        if 'after_date' in data:
+            try:
+                datetime.strptime(data['after_date'], '%Y-%m-%d')
+            except ValueError:
+                return jsonify({
+                    'status': 'error',
+                    'error': 'Invalid date format',
+                    'details': 'Use YYYY-MM-DD',
+                    'timestamp': datetime.now().isoformat()
+                }), 400
+
+    except ValueError as e:
+        logger.error(f"Invalid request data: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': 'Invalid request data',
+            'details': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 400
+
+    try:
+        # Step 1: Process document
+        logger.info(f"Starting document processing for {data['equity_id']} {data['filing_type']}")
+        with app.test_request_context(
+            '/api/SECEdgar/financialdocuments',
+            method='GET',
+            json=data
+        ) as ctx:
+            process_result = process_edgar_document()
+            process_data = _extract_response_data(process_result)
+
+            if process_data.get('status') != 'success':
+                logger.error(f"Document processing failed: {process_data.get('message')}")
+                return jsonify({
+                    'status': 'error',
+                    'error': process_data.get('message'),
+                    'details': process_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
+                    'timestamp': datetime.now().isoformat()
+                }), 500
+
+        # Step 2: Generate summary
+        logger.info(f"Starting summary generation for {data['equity_id']} {data['filing_type']}")
+        summary_payload = {
+            "equity_name": data["equity_id"],
+            "financial_type": data["filing_type"]
+        }
+
+        with app.test_request_context(
+            '/api/SECEdgar/financialdocuments/summary',
+            method='POST',
+            json=summary_payload
+        ) as ctx:
+            summary_result = generate_summary()
+            summary_data = _extract_response_data(summary_result)
+
+            if summary_data.get('status') != 'success':
+                logger.error(f"Summary generation failed: {summary_data.get('message')}")
+                return jsonify({
+                    'status': 'error',
+                    'error': summary_data.get('message'),
+                    'details': summary_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
+                    'timestamp': datetime.now().isoformat()
+                }), 500
+
+        # Return combined results
+        response_data = {
+            'status': 'success',
+            'edgar_data_process': process_data,
+            'summary_process': summary_data
+        }
+        
+        logger.info(f"Successfully processed and summarized document for {data['equity_id']}")
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in process_and_summarize_document: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': 'An unexpected error occurred while processing the document',
+            'details': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+
+from pathlib import Path
 from curation_report_generator import graph
 from financial_doc_processor import markdown_to_html, BlobStorageManager
 from financial_agent_utils.curation_report_utils import (
@@ -2475,7 +2591,6 @@ from financial_agent_utils.curation_report_config import (
     ALLOWED_CURATION_REPORTS, 
     NUM_OF_QUERIES
 )
-
 
 @app.route('/api/reports/generate/curation', methods=['POST'])
 def generate_report():
