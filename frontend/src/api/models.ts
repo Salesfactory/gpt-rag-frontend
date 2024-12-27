@@ -109,4 +109,5 @@ export type PostSettingsProps = {
 export type SummarizationReportProps = {
     name: string;
     description: string;
+    companyTickers: string[];
 }
