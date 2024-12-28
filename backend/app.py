@@ -2470,7 +2470,7 @@ def process_and_summarize_document():
                 'status': 'error',
                 'error': 'Invalid request',
                 'details': 'Request body is requred and must be a valid JSON object',
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }), 400
 
         # Validate required fields
@@ -2480,7 +2480,7 @@ def process_and_summarize_document():
                 'status': 'error',
                 'error': 'Missing required fields',
                 'details': f"Missing required fields: {', '.join(required_fields)}",
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }), 400
 
         # Validate filing type
@@ -2489,7 +2489,7 @@ def process_and_summarize_document():
                 'status': 'error',
                 'error': 'Invalid filing type',
                 'details': f"Invalid filing type. Must be one of: {', '.join(FILING_TYPES)}",
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(timezone.utc).isoformat()
             }), 400
 
         # Validate date format if provided
@@ -2501,7 +2501,7 @@ def process_and_summarize_document():
                     'status': 'error',
                     'error': 'Invalid date format',
                     'details': 'Use YYYY-MM-DD',
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': datetime.now(timezone.utc).isoformat()
                 }), 400
 
     except ValueError as e:
@@ -2510,7 +2510,7 @@ def process_and_summarize_document():
             'status': 'error',
             'error': 'Invalid request data',
             'details': str(e),
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 400
 
     try:
@@ -2526,12 +2526,20 @@ def process_and_summarize_document():
 
             if process_data.get('status') != 'success':
                 logger.error(f"Document processing failed: {process_data.get('message')}")
-                return jsonify({
-                    'status': 'error',
-                    'error': process_data.get('message'),
-                    'details': process_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                if process_data.get('code') == 404:
+                    return jsonify({
+                        'status': 'not_found',
+                        'error': process_data.get('message'),
+                        'code': process_data.get('code'),
+                        'timestamp': datetime.now(timezone.utc).isoformat()
+                    }), 404
+                else:
+                    return jsonify({
+                        'status': 'error',
+                        'error': process_data.get('message'),
+                        'code': process_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
+                        'timestamp': datetime.now(timezone.utc).isoformat()
+                    }), 500
 
         # Step 2: Generate summary
         logger.info(f"Starting summary generation for {data['equity_id']} {data['filing_type']}")
@@ -2554,7 +2562,7 @@ def process_and_summarize_document():
                     'status': 'error',
                     'error': summary_data.get('message'),
                     'details': summary_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
-                    'timestamp': datetime.now().isoformat()
+                    'timestamp': datetime.now(timezone.utc).isoformat()
                 }), 500
 
         # Return combined results
@@ -2573,7 +2581,7 @@ def process_and_summarize_document():
             'status': 'error',
             'error': 'An unexpected error occurred while processing the document',
             'details': str(e),
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }), 500
 
 
@@ -2617,7 +2625,7 @@ def generate_report():
         })
 
         # Generate file path
-        current_date = datetime.now()
+        current_date = datetime.now(timezone.utc)
         week_of_month = (current_date.day - 1) // 7 + 1
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
             file_path = Path(f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html")

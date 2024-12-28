@@ -9,6 +9,7 @@ from pathlib import Path
 from collections import defaultdict
 import markdown2
 from typing import Dict, List
+from datetime import datetime, timezone
 
 import pandas as pd
 import fitz
@@ -621,16 +622,50 @@ class FinancialDocumentProcessor:
         self.blob_manager = BlobStorageManager()
 
     def download_filing(self, equity_id: str, filing_type: str, after_date: str = None) -> dict:
-        """Download a single SEC filing."""
+        """
+        Download a single SEC filing.
+        
+        Args:
+            equity_id (str): The equity identifier (e.g., 'AAPL')
+            filing_type (str): The type of filing (e.g., '10-K')
+            after_date (str): Date string in 'YYYY-MM-DD' format
+            
+        Returns:
+            dict: Status of the download operation
+        """
         try:
             if after_date:
-                logger.info(f"Downloading {filing_type} for {equity_id} after {after_date}")
-                num_downloaded_file = self.dl.get(filing_type, equity_id, limit=1, download_details=True, after=after_date)
-                if num_downloaded_file == 0:
+                # Validate date format
+                try:
+                    # Parse the input date
+                    parsed_date = datetime.strptime(after_date, '%Y-%m-%d')
+                    
+                    # Ensure date is in UTC timezone
+                    utc_date = parsed_date.replace(tzinfo=timezone.utc)
+                    
+                    # Convert to string format expected by SEC EDGAR
+                    formatted_date = utc_date.strftime('%Y-%m-%d')
+                    
+                    logger.info(f"Downloading {filing_type} for {equity_id} after {formatted_date}")
+                    num_downloaded_file = self.dl.get(
+                        filing_type, 
+                        equity_id, 
+                        limit=1, 
+                        download_details=True, 
+                        after=formatted_date
+                    )
+                    
+                    if num_downloaded_file == 0:
+                        return {
+                            "status": "not_found",
+                            "message": f"No {filing_type} found after {formatted_date} for {equity_id}",
+                            "code": 404
+                        }
+                except ValueError as e:
                     return {
                         "status": "error",
-                        "message": f"No {filing_type} found after {after_date} for {equity_id}",
-                        "code": 404
+                        "message": f"Error: {str(e)}",
+                        "code": 400
                     }
             else:
                 logger.info(f"Downloading most recent {filing_type} for {equity_id}")
