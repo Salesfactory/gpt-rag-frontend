@@ -9,7 +9,7 @@ from pathlib import Path
 from collections import defaultdict
 import markdown2
 from typing import Dict, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pandas as pd
 import fitz
@@ -646,13 +646,17 @@ class FinancialDocumentProcessor:
                     # Convert to string format expected by SEC EDGAR
                     formatted_date = utc_date.strftime('%Y-%m-%d')
                     
+                    # Add one day
+                    next_date = parsed_date + timedelta(days=1)
+                    
                     logger.info(f"Downloading {filing_type} for {equity_id} after {formatted_date}")
                     num_downloaded_file = self.dl.get(
                         filing_type, 
                         equity_id, 
                         limit=1, 
                         download_details=True, 
-                        after=formatted_date
+                        after=formatted_date,
+                        before = next_date
                     )
                     
                     if num_downloaded_file == 0:
