@@ -2638,12 +2638,16 @@ def generate_report():
         logger.info("Converting markdown to html")
         markdown_to_html(report['final_report'], str(file_path))
 
-        # Upload to blob storage
         logger.info("Uploading to blob storage")
         blob_storage_manager = BlobStorageManager()
+        if report_topic_rqst in WEEKLY_CURATION_REPORT:
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
+        else:
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
+
         upload_result = blob_storage_manager.upload_to_blob(
             file_path=str(file_path),
-            blob_folder=f"Reports/Curation_Reports/{report_topic_rqst}"
+            blob_folder=blob_folder
         )
 
         # Cleanup files
