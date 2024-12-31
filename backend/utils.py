@@ -320,3 +320,64 @@ def _extract_response_data(response):
     if isinstance(response, tuple):
         return response[0].get_json()
     return response.get_json()
+
+################################################
+# Email distribution Utils
+################################################
+from typing import List
+from email.message import EmailMessage
+import smtplib
+from dotenv import load_dotenv
+load_dotenv()
+
+class EmailServiceError(Exception):
+    """Base exception for email service errors"""
+    pass
+
+class EmailService:
+    def __init__(
+            self, 
+            smtp_server: str,
+            smtp_port: int,
+            username: str,
+            password: str,
+    ):
+        self.smtp_server = smtp_server
+        self.smtp_port = smtp_port
+        self.username = username
+        self.password = password
+
+    def send_email(self, 
+                   subject: str, 
+                   html_content: str, 
+                   recipients: List[str], 
+                   attachment_path: Optional[str] = None) -> None:
+
+        """ 
+        # TODO: provide docstring
+        """
+
+        msg: EmailMessage = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = self.username
+        msg['Bcc'] = ','.join(recipients)
+        msg.add_alternative(html_content, subtype='html')
+
+        if attachment_path:
+            with open(attachment_path, 'rb') as file:
+                file_data = file.read()
+                file_name = attachment_path.split('\\')[-1]
+                msg.add_attachment(file_data, 
+                                   maintype='application', 
+                                   subtype='octet-stream', 
+                                   filename=file_name)
+            
+        try:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.username, self.password)
+                server.send_message(msg)
+                logger.info(f'Email sent to {recipients}')
+        except Exception as e:
+            logger.error(f'Failed to send email: {str(e)}')
+            raise EmailServiceError(f'Failed to send email: {str(e)}')
