@@ -389,6 +389,56 @@ class BlobStorageManager:
             raise BlobConnectionError(f"Invalid connection string: {str(e)}")
         except Exception as e:
             raise BlobConnectionError(f"Failed to initialize blob storage: {str(e)}")
+    
+    def download_blob_from_a_link(self, url: str, filename: str = None) -> bool:
+        """
+        Download a document from a given blob URL and save it to the downloads directo ry.
+        
+        Args:
+            url (str): The full Azure blob storage URL
+            filename (str, optional): Name for the downloaded file. If not provided, 
+                                    will be extracted from the URL
+            
+        Returns:
+            None
+        """
+        try:
+            # Parse the URL to get the container and blob path
+            from urllib.parse import urlparse
+            parsed_url = urlparse(url)
+            
+            # Split the path into parts
+            path_parts = parsed_url.path.lstrip('/').split('/')
+            
+            # Get blob path
+            blob_path = '/'.join(path_parts[1:])
+            
+            # If filename not provided, use the last part of the blob path
+            if not filename:
+                filename = os.path.basename(blob_path)
+            
+            # Create downloads directory in project root
+            downloads_dir = os.path.join(os.getcwd(), 'blob_downloads')
+            os.makedirs(downloads_dir, exist_ok=True)
+            
+            # Construct the full local path
+            local_data_path = os.path.join(downloads_dir, filename)
+            
+            # Get the blob client
+            blob_client = self.container_client.get_blob_client(blob_path)
+            
+            # Download the blob
+            with open(local_data_path, 'wb') as file:
+                download_stream = blob_client.download_blob()
+                file.write(download_stream.readall())
+                    
+            logger.info(f"Successfully downloaded blob to {local_data_path}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Failed to download blob: {str(e)}")
+            return False
+
 
     def download_documents(self, equity_name: str,
                          financial_type: str,
@@ -470,7 +520,6 @@ class BlobStorageManager:
             raise
         
         return downloaded_files
-    
     def get_document_metadata(self, remote_file_path: str) -> dict:
         """Retrieve metadata for a specific blob from defined container in env
         
@@ -740,7 +789,4 @@ class FinancialDocumentProcessor:
 # example usage for get_document_metadata
 if __name__ == "__main__":
     doc_processor = BlobStorageManager()
-    metadata = doc_processor.get_document_metadata('financial/10-K/AAPL.pdf')
-    print(metadata)
-
-# if upload date is within the past 
+    metadata = doc_processor.download_blob_from_a_link('https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/Reports/Curation_Reports/Monthly_Economics/December_2024.html?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-01-06T13:29:33Z&st=2024-09-25T04:29:33Z&spr=https&sig=rmMDVy0aPztEj6A%2FMQHFbioHbLuiL3tn622D993%2Fvow%3D')
