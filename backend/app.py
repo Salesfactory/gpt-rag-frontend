@@ -2677,12 +2677,16 @@ def generate_report():
         logger.info("Converting markdown to html")
         markdown_to_html(report['final_report'], str(file_path))
 
-        # Upload to blob storage
         logger.info("Uploading to blob storage")
         blob_storage_manager = BlobStorageManager()
+        if report_topic_rqst in WEEKLY_CURATION_REPORT:
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
+        else:
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
+
         upload_result = blob_storage_manager.upload_to_blob(
             file_path=str(file_path),
-            blob_folder=f"Reports/Curation_Reports/{report_topic_rqst}"
+            blob_folder=blob_folder
         )
 
         # Cleanup files
@@ -2715,6 +2719,111 @@ def generate_report():
     except Exception as e:
         logger.error(f"Unexpected error during report generation: {str(e)}", exc_info=True)
         return jsonify({'error': 'An unexpected error occurred while generating the report'}), 500
+
+from utils import EmailServiceError, EmailService
+@app.route('/api/reports/email', methods=['POST'])
+def send_email_endpoint():
+    """Send an email with optional attachments.
+    
+    Expected JSON payload:
+    {
+        "subject": "Email subject",
+        "html_content": "HTML formatted content", 
+        "recipients": ["email1@domain.com", "email2@domain.com"],
+        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes
+    }
+
+    Returns:
+        JSON response indicating success/failure
+    """
+    try:
+        # Get and validate request data
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No JSON data provided'
+            }), 400
+
+        # Validate required fields
+        required_fields = {'subject', 'html_content', 'recipients'}
+        missing_fields = required_fields - set(data.keys())
+        if missing_fields:
+            return jsonify({
+                'status': 'error',
+                'message': f'Missing required fields: {", ".join(missing_fields)}'
+            }), 400
+
+        # Validate recipients format
+        if not isinstance(data['recipients'], list):
+            return jsonify({
+                'status': 'error',
+                'message': 'Recipients must be provided as a list'
+            }), 400
+
+        if not data['recipients']:
+            return jsonify({
+                'status': 'error',
+                'message': 'At least one recipient is required'
+            }), 400
+
+        # Validate attachment path if provided
+        attachment_path = data.get('attachment_path')
+        if attachment_path:
+            # Convert Windows path to proper format
+            attachment_path = Path(attachment_path.replace('\\', '/')).resolve()
+            if not attachment_path.exists():
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Attachment file not found: {attachment_path}'
+                }), 400
+            
+            # Update the attachment_path in data
+            data['attachment_path'] = str(attachment_path)
+
+        # Validate email configuration
+        email_config = {
+            'smtp_server': os.getenv('EMAIL_SMTP_SERVER'),
+            'smtp_port': os.getenv('EMAIL_SMTP_PORT'),
+            'username': os.getenv('EMAIL_USER_NAME'),
+            'password': os.getenv('EMAIL_USER_PASSWORD')
+        }
+
+        if not all(email_config.values()):
+            logger.error("Missing email configuration environment variables")
+            return jsonify({
+                'status': 'error',
+                'message': 'Email service configuration error'
+            }), 500
+
+        # Initialize and send email
+        email_service = EmailService(**email_config)
+        email_service.send_email(
+            subject=data['subject'],
+            html_content=data['html_content'],
+            recipients=data['recipients'],
+            attachment_path=data.get('attachment_path')
+        )
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Email sent successfully'
+        }), 200
+
+    except EmailServiceError as e:
+        logger.error(f"Email service error: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to send email: {str(e)}'
+        }), 500
+        
+    except Exception as e:
+        logger.exception("Unexpected error in send_email_endpoint")
+        return jsonify({
+            'status': 'error',
+            'message': f'An unexpected error occurred: {str(e)}'
+        }), 500
+    
 
 
 if __name__ == "__main__":

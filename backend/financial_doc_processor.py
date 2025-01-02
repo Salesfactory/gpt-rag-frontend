@@ -496,7 +496,7 @@ class BlobStorageManager:
 
 
     # make sure the document_paths is a dict with the structure of create_document_paths
-    def upload_to_blob(self, document_paths: dict, metadata: dict = None, file_path: str = None, blob_folder: str = None) -> Dict:
+    def upload_to_blob(self, document_paths: dict = None, metadata: dict = None, file_path: str = None, blob_folder: str = None) -> Dict:
         """
         Upload files to Azure Blob Storage. Can handle either a document_paths dictionary 
         or a single file path.
