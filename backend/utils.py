@@ -354,7 +354,16 @@ class EmailService:
                    attachment_path: Optional[str] = None) -> None:
 
         """ 
-        # TODO: provide docstring
+        Send an email to the recipients.
+
+        Args:
+            subject (str): Subject of the email
+            html_content (str): HTML content of the email
+            recipients (List[str]): List of recipients
+            attachment_path (Optional[str]): Path to the attachment file
+
+        Returns:
+            None
         """
 
         msg: EmailMessage = EmailMessage()
@@ -364,14 +373,24 @@ class EmailService:
         msg.add_alternative(html_content, subtype='html')
 
         if attachment_path:
-            with open(attachment_path, 'rb') as file:
-                file_data = file.read()
-                file_name = attachment_path.split('\\')[-1]
-                msg.add_attachment(file_data, 
-                                   maintype='application', 
-                                   subtype='octet-stream', 
-                                   filename=file_name)
-            
+            try: 
+                # convert to path object and resolve to absolute path
+                file_path = Path(attachment_path).resolve()
+                # validate file exists and is accessible
+                if not file_path.exists():
+                    raise EmailServiceError(f"File not found: {attachment_path}")
+
+                with open(file_path, 'rb') as file:
+                    file_data = file.read()
+                    file_name = file_path.name
+                    msg.add_attachment(file_data, 
+                                    maintype='application', 
+                                    subtype='octet-stream', 
+                                    filename=file_name)
+            except (OSError, EmailServiceError) as e:
+                logger.error(f"Error adding attachment: {str(e)}")
+                raise EmailServiceError(f"Error adding attachment: {str(e)}")
+        
         try:
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
