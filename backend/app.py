@@ -25,7 +25,7 @@ from urllib.parse import unquote
 import uuid
 
 from identity.flask import Auth
-from datetime import timedelta, datetime, UTC
+from datetime import timedelta, datetime
 
 import smtplib
 from email.mime.text import MIMEText
@@ -44,9 +44,6 @@ from utils import (
     SubscriptionError,
     InvalidSubscriptionError,
     InvalidFinancialPriceError,
-    InvalidParameterError,
-    MissingJSONPayloadError,
-    MissingRequiredFieldError,
     require_client_principal,
 )
 import stripe.error
@@ -58,10 +55,6 @@ from shared.cosmo_db import(
     update_report,
     delete_report,
     get_filtered_reports,
-    create_template,
-    delete_template,
-    get_templates,
-    get_template_by_ID,
     update_user
 )
 
@@ -233,7 +226,7 @@ class UserService:
 
             logger.info(
                 f"[auth] Checking authorization for user {client_principal_id} "
-                f"with email {email} at {datetime.now(UTC).isoformat()}"
+                f"with email {email} at {datetime.utcnow().isoformat()}"
             )
 
             # Make the request using a session for better performance
@@ -834,99 +827,6 @@ def getFilteredType():
     except Exception as e:
         logging.exception(f"Error retrieving reports.")
         return jsonify({"error": "Internal Server Error"}), 500
-
-@app.route("/api/reports/summarization/templates", methods=["POST"])
-def addSummarizationReport():
-    """
-    Endpoint to add a summarization report template.
-
-    This endpoint expects a JSON payload with the following fields:
-    - name: The name of the report template. Must be one of ["10-K", "10-Q", "8-K", "DEF 14A"].
-    - description: A description of the report template.
-
-    MissingJSONPayloadError: If the JSON payload is missing.
-    MissingRequiredFieldError: If the 'name' or 'description' field is missing.
-    InvalidParameterError: If the 'name' field is not one of the valid names.
-
-    JSON response with the created report template if successful.
-    JSON error response with appropriate HTTP status code if an error occurs.
-    """
-    try: 
-        data = request.get_json()
-        if not data:
-            raise MissingJSONPayloadError('Missing JSON payload')
-        if not "name" in data:
-            raise MissingRequiredFieldError('name')
-        if not "description" in data:
-            raise MissingRequiredFieldError('description')
-        if not "companyTickers" in data:
-            raise MissingRequiredFieldError('companyTickers')
-        valid_names=["10-K", "10-Q", "8-K", "DEF 14A"]
-        if not data["name"] in valid_names:
-            raise InvalidParameterError('name', f"Must be one of: {', '.join(valid_names)}")
-        new_template = {'name': data['name'], 'companyTickers': data['companyTickers'], 'description': data['description'], 'status': 'active', 'type': 'summarization'}
-        # add to cosmosDB container
-        result = create_template(new_template)
-        return create_success_response(result)
-    except MissingJSONPayloadError as e:
-        return create_error_response("Invalid or Missing JSON payload", HTTPStatus.BAD_REQUEST)
-    except MissingRequiredFieldError as field:
-        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
-    except InvalidParameterError as e:
-        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
-    except Exception as e:
-        logging.exception(e)
-        return jsonify({"error": "An unexpected error occurred. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
-
-
-@app.route('/api/reports/summarization/templates/<template_id>', methods=['DELETE'])
-def removeSummarizationReport(template_id):
-    """
-    Endpoint to remove a summarization report template by ID.
-
-    This endpoint expects the following URL parameter:
-    - template_id: The ID of the report template to be removed.
-
-    NotFound: If the report template with the specified ID does not exist.
-    Exception: For any other unexpected errors.
-
-    JSON response with appropriate HTTP status code:
-    - 204 No Content: If the report template is successfully deleted.
-    - 404 Not Found: If the report template with the specified ID does not exist.
-    - 500 Internal Server Error: If an unexpected error occurs.
-    """
-    try:
-        if not template_id:
-            raise MissingRequiredFieldError('template_id')
-        #delete from cosmosDB container
-        result = delete_template(template_id)
-        return create_success_response(result)
-    except NotFound as e:
-        return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
-    except MissingRequiredFieldError as field:
-        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
-    except Exception as e:
-        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
-
-@app.route('/api/reports/summarization/templates/', methods=['GET'])
-def getSummarizationReports():
-    try:
-        result = get_templates()
-        return create_success_response(result)
-    except Exception as e:
-        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR) 
-
-@app.route('/api/reports/summarization/templates/<template_id>', methods=['GET'])
-def getSummarizationReport(template_id):
-    try:
-        result = get_template_by_ID(template_id)
-        return create_success_response(result)
-    except NotFound as e:
-        return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
-    except Exception as e:
-        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
-
-
 
 # methods to provide access to speech services and blob storage account blobs
 
