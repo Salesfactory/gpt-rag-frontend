@@ -15,7 +15,8 @@ import {
     IconHeadset,
     IconDots,
     IconSubtask,
-    IconReportMoney
+    IconReportMoney,
+    IconClipboardText
 } from "@tabler/icons-react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Sidebar.module.css";
@@ -189,7 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <IconChecklist className={styles.sidebarLinkIcon} />,
                     to: "/details-settings",
                     tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user"]
+                    roles: ["admin"]
                 }
             ]
         },

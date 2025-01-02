@@ -99,9 +99,13 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+################################################
+# financialDocument (EDGAR) Ingestion
+################################################
+
 def validate_payload(data: Dict[str, Any]) -> Tuple[bool, str]:
     """
-    Validate the request payload.
+    Validate the request payload for Edgar financialDocument endpoint
     
     Args:
         data (dict): The request payload
@@ -110,26 +114,24 @@ def validate_payload(data: Dict[str, Any]) -> Tuple[bool, str]:
         tuple: (is_valid: bool, error_message: str)
     """
     # Check if equity_ids exists and is not empty
-    if not data.get('equity_ids'):
-        return False, "equity_ids is required"
+    if not data.get('equity_id'):
+        return False, "equity_id is required"
     
-    # Check if equity_ids is a list
-    if not isinstance(data['equity_ids'], list):
-        return False, "equity_ids must be a list"
+    # check if date is provided 
+    if not data.get('after_date'):
+        logger.warning("No after_date provided, retrieving most recent filings")
     
     # Check if equity_ids is not empty
-    if len(data['equity_ids']) == 0:
-        return False, "equity_ids cannot be empty"
+    if data['equity_id'].strip() == "":
+        return False, "equity_id cannot be empty"
     
     # Validate filing_types if provided
-    if 'filing_types' in data:
-        if not isinstance(data['filing_types'], list):
-            return False, "filing_types must be a list"
-        
-        # Check if all filing types are valid
-        invalid_types = [ft for ft in data['filing_types'] if ft not in ALLOWED_FILING_TYPES]
-        if invalid_types:
-            return False, f"Invalid filing type(s): {', '.join(invalid_types)}. Allowed types are: {', '.join(ALLOWED_FILING_TYPES)}"
+    if not data.get('filing_type'):
+        return False, "filing_type is required"
+    
+    # Check if all filing types are valid
+    if data['filing_type'] not in ALLOWED_FILING_TYPES:
+        return False, f"Invalid filing type(s): {data['filing_type']}. Allowed types are: {', '.join(ALLOWED_FILING_TYPES)}"
     
     return True, ""
 
@@ -326,3 +328,70 @@ def cleanup_resources() -> bool:
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
         return False
+
+def _extract_response_data(response):
+    """Helper function to extract JSON data from response objects"""
+    if isinstance(response, tuple):
+        return response[0].get_json()
+    return response.get_json()
+
+################################################
+# Email distribution Utils
+################################################
+from typing import List
+from email.message import EmailMessage
+import smtplib
+from dotenv import load_dotenv
+load_dotenv()
+
+class EmailServiceError(Exception):
+    """Base exception for email service errors"""
+    pass
+
+class EmailService:
+    def __init__(
+            self, 
+            smtp_server: str,
+            smtp_port: int,
+            username: str,
+            password: str,
+    ):
+        self.smtp_server = smtp_server
+        self.smtp_port = smtp_port
+        self.username = username
+        self.password = password
+
+    def send_email(self, 
+                   subject: str, 
+                   html_content: str, 
+                   recipients: List[str], 
+                   attachment_path: Optional[str] = None) -> None:
+
+        """ 
+        # TODO: provide docstring
+        """
+
+        msg: EmailMessage = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = self.username
+        msg['Bcc'] = ','.join(recipients)
+        msg.add_alternative(html_content, subtype='html')
+
+        if attachment_path:
+            with open(attachment_path, 'rb') as file:
+                file_data = file.read()
+                file_name = attachment_path.split('\\')[-1]
+                msg.add_attachment(file_data, 
+                                   maintype='application', 
+                                   subtype='octet-stream', 
+                                   filename=file_name)
+            
+        try:
+            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.username, self.password)
+                server.send_message(msg)
+                logger.info(f'Email sent to {recipients}')
+        except Exception as e:
+            logger.error(f'Failed to send email: {str(e)}')
+            raise EmailServiceError(f'Failed to send email: {str(e)}')

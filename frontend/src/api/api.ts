@@ -664,3 +664,38 @@ export async function deleteSumarizationReportTemplate(templateID: string) {
     const deletedReport = await response.json();
     return deletedReport;
 }
+
+export async function deleteReport(reportId: string) {
+    const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status === 404) {
+        throw Error(`Report with ID ${reportId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error deleting report with ID ${reportId}`);
+    }
+}
+
+export async function updateUser({ userId, updatedData }: { userId: string; updatedData: object }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData)
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating user with ID ${userId}`);
+    }
+}

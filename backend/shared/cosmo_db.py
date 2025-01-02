@@ -259,4 +259,74 @@ def get_template_by_ID(template_id):
 
     except Exception as e:
         logging.error(f"Unexpected error retrieving template with id '{template_id}': {e}")
+
+
+def get_user_container(user_id):
+    """
+    Retrieves a specific document (user_id) from the Cosmos DB container using its `id` as partition key.
+
+    Parameters:
+        user_id (str): The ID of the user to retrieve.
+
+    Returns:
+        dict: The user document retrieved from the database.
+
+    Raises:
+    Exception: For any other unexpected error that occurs during retrieval.
+    CosmosResourceNotFoundError: If the user with the specified ID does not exist in the database.
+    """
+    container = get_cosmos_container("users")
+    
+    try:
+        user = container.read_item(item=user_id, partition_key=user_id)
+        logging.info(f"User successfully retrieved: {user}")
+        return user
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Report with id '{user_id}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving report with id '{user_id}'")
+        raise
+
+def update_user(user_id, updated_data):
+    """
+    Updates an existing document using its `id` as the partition key.
+
+    Handles database errors and raises exceptions as needed.
+    """
+    container = get_cosmos_container("users")
+    
+    try:
+        current_user = get_user_container(user_id)
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"User with id '{user_id}' not found in Cosmos DB.")
+        raise NotFound
+    
+    except Exception as e:
+        logging.error(f"Unexpected error while retrieving user with id '{user_id}'")
+        raise
+
+    try:
+        current_user.update(updated_data)
+
+        current_user["id"] = user_id
+
+        # Perform the upsert operation
+        container.upsert_item(current_user)
+        logging.info(f"Report updated successfully: {current_user}")
+        return current_user
+
+    except CosmosResourceNotFoundError:
+        logging.error(f"Failed to upsert item: Report ID '{user_id}' not found during upsert.")
+        raise NotFound(f"Cannot upsert report because it does not exist with id '{user_id}'")
+
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+
+    except Exception as e:
+        logging.error(f"Unexpected error while updating report with id '{user_id}': {e}")
         raise
