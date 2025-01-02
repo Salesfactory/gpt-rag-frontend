@@ -43,20 +43,6 @@ class InvalidSubscriptionError(SubscriptionError):
 
     pass
 
-class MissingJSONPayloadError(Exception):
-    """Raised when JSON payload is missing"""
-
-    pass
-
-class MissingRequiredFieldError(Exception):
-    """Raised when a required field is missing"""
-
-    pass
-
-class InvalidParameterError(Exception):
-    """Raised when an invalid parameter is provided"""
-
-    pass
 
 
 # Security: Decorator to ensure client principal ID is present
