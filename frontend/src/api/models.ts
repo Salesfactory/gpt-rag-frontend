@@ -105,3 +105,9 @@ export type PostSettingsProps = {
     } | null;
     temperature: number;
 };
+
+export type SummarizationReportProps = {
+    name: string;
+    description: string;
+    companyTickers: string[];
+}
