@@ -2784,11 +2784,6 @@ def generate_report():
         else:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
 
-        if report_topic_rqst in WEEKLY_CURATION_REPORT:
-            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
-        else:
-            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
-
         upload_result = blob_storage_manager.upload_to_blob(
             file_path=str(file_path),
             blob_folder=blob_folder
