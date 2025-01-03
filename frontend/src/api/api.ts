@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo } from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -621,6 +621,50 @@ export async function getFilteredReports(type?: string) {
     return reports;
 }
 
+// Summarization reports 
+export async function getSummarizationTemplates() {
+    const response = await fetch('/api/reports/summarization/templates', {method: 'GET', headers: {'Content-Type': 'application/json'}});
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error getting summarization templates');
+    }
+    const reports = await response.json();
+    return reports;
+}
+
+export async function getSummarizationReportTemplateByID(templateID: string) {
+    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {method: 'GET', headers: {'Content-Type': 'application/json'}});
+    const report = await response.json();
+    return report;
+}
+
+export async function createSummarizationReport(templateData: SummarizationReportProps) {
+    const response = await fetch('/api/reports/summarization/templates', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(templateData),
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error creating a new summarization report');
+    }
+
+    const newReport = await response.json();
+    return newReport;
+}
+
+export async function deleteSumarizationReportTemplate(templateID: string) {
+    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error deleting summarization report');
+    }
+    const deletedReport = await response.json();
+    return deletedReport;
+}
+
 export async function deleteReport(reportId: string) {
     const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}`, {
         method: "DELETE",
@@ -635,5 +679,23 @@ export async function deleteReport(reportId: string) {
 
     if (response.status > 299 || !response.ok) {
         throw Error(`Error deleting report with ID ${reportId}`);
+    }
+}
+
+export async function updateUser({ userId, updatedData }: { userId: string; updatedData: object }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData)
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating user with ID ${userId}`);
     }
 }

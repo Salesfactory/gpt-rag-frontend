@@ -44,6 +44,9 @@ from utils import (
     SubscriptionError,
     InvalidSubscriptionError,
     InvalidFinancialPriceError,
+    InvalidParameterError,
+    MissingJSONPayloadError,
+    MissingRequiredFieldError,
     require_client_principal,
 )
 import stripe.error
@@ -51,9 +54,15 @@ import stripe.error
 from shared.cosmo_db import(
     create_report,
     get_report,
+    get_user_container,
     update_report,
     delete_report,
-    get_filtered_reports
+    get_filtered_reports,
+    create_template,
+    delete_template,
+    get_templates,
+    get_template_by_ID,
+    update_user
 )
 
 load_dotenv()
@@ -224,7 +233,7 @@ class UserService:
 
             logger.info(
                 f"[auth] Checking authorization for user {client_principal_id} "
-                f"with email {email} at {datetime.utcnow().isoformat()}"
+                f"with email {email} at {datetime.now(timezone.utc).isoformat()}"
             )
 
             # Make the request using a session for better performance
@@ -764,7 +773,44 @@ def deleteReport(report_id):
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 
+#Get User for email receivers
+@app.route("/api/user/<user_id>", methods=["GET"])
+def getUserid(user_id):
+    """
+    Endpoint to get a user by ID.
+    """
+    try:
+        user = get_user_container(user_id)
+        return jsonify(user), 200
+    except NotFound as e:
+        logging.warning(f"Report with id {user_id} not found.")
+        return jsonify({"error": f"Report with this id {user_id} not found"}), 404
+    except Exception as e:
+        logging.exception(f"An error occurred retrieving the report with id {user_id}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
+#Update Users
+@app.route("/api/user/<user_id>", methods=["PUT"])
+def updateUser(user_id):
+    """
+    Endpoint to update a user
+    """
+    try:
+        updated_data = request.get_json()
+
+        if updated_data is None:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        
+        updated_data = update_user(user_id, updated_data)
+        return "", 204
+    
+    except NotFound as e:
+        logging.warning(f"Tried to update a user that doesn't exist: {user_id}")
+        return jsonify({"error": f"Tried to update a user with this id {user_id} that does not exist"}), 404
+
+    except Exception as e:
+        logging.exception(f"Error updating user with ID {user_id}")  # Logs the full exception
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 @app.route("/api/reports", methods=["GET"])
 def getFilteredType():
@@ -788,6 +834,99 @@ def getFilteredType():
     except Exception as e:
         logging.exception(f"Error retrieving reports.")
         return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route("/api/reports/summarization/templates", methods=["POST"])
+def addSummarizationReport():
+    """
+    Endpoint to add a summarization report template.
+
+    This endpoint expects a JSON payload with the following fields:
+    - name: The name of the report template. Must be one of ["10-K", "10-Q", "8-K", "DEF 14A"].
+    - description: A description of the report template.
+
+    MissingJSONPayloadError: If the JSON payload is missing.
+    MissingRequiredFieldError: If the 'name' or 'description' field is missing.
+    InvalidParameterError: If the 'name' field is not one of the valid names.
+
+    JSON response with the created report template if successful.
+    JSON error response with appropriate HTTP status code if an error occurs.
+    """
+    try: 
+        data = request.get_json()
+        if not data:
+            raise MissingJSONPayloadError('Missing JSON payload')
+        if not "name" in data:
+            raise MissingRequiredFieldError('name')
+        if not "description" in data:
+            raise MissingRequiredFieldError('description')
+        if not "companyTickers" in data:
+            raise MissingRequiredFieldError('companyTickers')
+        valid_names=["10-K", "10-Q", "8-K", "DEF 14A"]
+        if not data["name"] in valid_names:
+            raise InvalidParameterError('name', f"Must be one of: {', '.join(valid_names)}")
+        new_template = {'name': data['name'], 'companyTickers': data['companyTickers'], 'description': data['description'], 'status': 'active', 'type': 'summarization'}
+        # add to cosmosDB container
+        result = create_template(new_template)
+        return create_success_response(result)
+    except MissingJSONPayloadError as e:
+        return create_error_response("Invalid or Missing JSON payload", HTTPStatus.BAD_REQUEST)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+    except InvalidParameterError as e:
+        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+    except Exception as e:
+        logging.exception(e)
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+@app.route('/api/reports/summarization/templates/<template_id>', methods=['DELETE'])
+def removeSummarizationReport(template_id):
+    """
+    Endpoint to remove a summarization report template by ID.
+
+    This endpoint expects the following URL parameter:
+    - template_id: The ID of the report template to be removed.
+
+    NotFound: If the report template with the specified ID does not exist.
+    Exception: For any other unexpected errors.
+
+    JSON response with appropriate HTTP status code:
+    - 204 No Content: If the report template is successfully deleted.
+    - 404 Not Found: If the report template with the specified ID does not exist.
+    - 500 Internal Server Error: If an unexpected error occurs.
+    """
+    try:
+        if not template_id:
+            raise MissingRequiredFieldError('template_id')
+        #delete from cosmosDB container
+        result = delete_template(template_id)
+        return create_success_response(result)
+    except NotFound as e:
+        return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+    except Exception as e:
+        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+@app.route('/api/reports/summarization/templates/', methods=['GET'])
+def getSummarizationReports():
+    try:
+        result = get_templates()
+        return create_success_response(result)
+    except Exception as e:
+        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR) 
+
+@app.route('/api/reports/summarization/templates/<template_id>', methods=['GET'])
+def getSummarizationReport(template_id):
+    try:
+        result = get_template_by_ID(template_id)
+        return create_success_response(result)
+    except NotFound as e:
+        return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
+    except Exception as e:
+        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
 
 # methods to provide access to speech services and blob storage account blobs
 
@@ -2640,6 +2779,11 @@ def generate_report():
 
         logger.info("Uploading to blob storage")
         blob_storage_manager = BlobStorageManager()
+        if report_topic_rqst in WEEKLY_CURATION_REPORT:
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
+        else:
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
+
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
         else:
