@@ -10,7 +10,7 @@ import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Opt
  *
  * @param {Array} allowedRoles - Array of roles that are permitted to access the route.
  */
-type Role = "admin" | "user";
+type Role = "platformAdmin" | "admin" | "user";
 type SubscriptionTier = "Basic" | "Custom" | "Premium" | "Basic + Financial Assistant" | "Custom + Financial Assistant" | "Premium + Financial Assistant";
 
 interface ProtectedRouteProps {

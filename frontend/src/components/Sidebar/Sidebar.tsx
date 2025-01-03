@@ -75,14 +75,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <IconMessage className={styles.sidebarLinkIcon} />,
                     to: "/",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user"]
+                    roles: ["admin", "user", "platformAdmin"]
                 },
                 {
                     title: "Notifications",
                     icon: <IconBell className={styles.sidebarLinkIcon} />,
                     to: "/notification-settings",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user"]
+                    roles: ["admin", "user", "platformAdmin"]
                 }
             ]
         },
@@ -97,28 +97,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <IconUsers className={styles.sidebarLinkIcon} />,
                     to: "/admin",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
+                    roles: ["admin", "platformAdmin"]
                 },
                 {
                     title: "Invitations",
                     icon: <IconUserCheck className={styles.sidebarLinkIcon} />,
                     to: "/invitations",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
+                    roles: ["admin", "platformAdmin"]
                 },
                 {
                     title: "Organization Management",
                     icon: <IconAddressBook className={styles.sidebarLinkIcon} />,
                     to: "/organization",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
+                    roles: ["admin", "platformAdmin"]
                 },
                 {
                     title: "Financial Assistant",
                     icon: <IconReportMoney className={styles.sidebarLinkIcon} />,
                     to: "/financialassistant",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
+                    roles: ["admin", "platformAdmin"]
                 }
             ]
         },
@@ -133,14 +133,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <IconRosetteDiscountCheck className={styles.sidebarLinkIcon} />,
                     to: "/subscription-management",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
+                    roles: ["admin", "platformAdmin"]
                 },
                 {
                     title: "User Management",
                     icon: <IconSubtask className={styles.sidebarLinkIcon} />,
                     to: "/manage-email-lists",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
+                    roles: ["admin", "platformAdmin"]
                 }
             ]
         },
@@ -157,18 +157,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {
                             title: "Upload Resources",
                             href: "/upload-resources",
-                            roles: ["admin", "user"],
+                            roles: ["admin", "user", "platformAdmin"],
                             tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
                         },
                         {
                             title: "Request Studies",
                             href: "/request-studies",
-                            roles: ["admin", "user"],
+                            roles: ["admin", "user", "platformAdmin"],
                             tiers: ["Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
                         }
                     ],
                     tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user"]
+                    roles: ["admin", "user", "platformAdmin"]
                 }
             ]
         },
@@ -176,6 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             divider: true
         },
         {
+            //It is only visible to platform administrators
             section: "Reports",
             items: [
                 {
@@ -183,14 +184,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <IconFileInvoice className={styles.sidebarLinkIcon} />,
                     to: "/view-manage-reports",
                     tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user"]
+                    roles: ["platformAdmin"]
                 },
                 {
                     title: "Distribution Lists",
                     icon: <IconChecklist className={styles.sidebarLinkIcon} />,
                     to: "/details-settings",
                     tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
+                    roles: ["platformAdmin"]
                 }
             ]
         },
@@ -205,7 +206,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <IconHeadset className={styles.sidebarLinkIcon} />,
                     to: "/help-center",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user"]
+                    roles: ["admin", "user", "platformAdmin"]
                 }
             ]
         }
