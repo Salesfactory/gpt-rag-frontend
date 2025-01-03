@@ -390,6 +390,45 @@ class BlobStorageManager:
         except Exception as e:
             raise BlobConnectionError(f"Failed to initialize blob storage: {str(e)}")
     
+    #todo: add report blob path to the click here link in the html template like this: https://webgpt0-vm2b2htvuuclm.azurewebsites.net/?agent=financial&document=Ecommerce&blobpath=%22https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/Reports/Curation_Reports/Ecommerce/De[%E2%80%A6]KdAaWXqNHsjhB5c3cWaAT3rWymLUB3YuZQdOc%2F6FYG8%3D%22
+    #todo: then retrieve the document in init and load the report content to the llm
+    
+    def get_rpcontent_from_blob_path(self, blob_path: str) -> str:
+        """
+        Get report content from blob path.
+        
+        Args:
+            blob_path (str): Path to the blob, e.g. 'Reports/Curation_Reports/Ecommerce/December_2024.html'
+        """
+        try:
+            # Remove any leading/trailing slashes
+            clean_path = blob_path.strip('/')
+            
+            logger.info(f"Attempting to access blob at path: {clean_path}")
+            
+            blob_client = self.container_client.get_blob_client(clean_path)
+            
+            if not blob_client.exists():
+                logger.error(f"Blob not found: {clean_path}")
+                raise BlobDownloadError(f"Blob not found at path: {clean_path}")
+            
+            downloaded_blob = blob_client.download_blob()
+            return downloaded_blob.content_as_text()
+            
+        except Exception as e:
+            logger.exception(f"Error accessing blob at {blob_path}")
+            raise BlobDownloadError(f"Failed to download blob: {str(e)}")
+    
+    # todo: double check this function
+    def _get_blob_path_parts_from_url(self, url: str) -> List[str]:
+        """
+        Get the blob path parts from a given URL.
+        """
+        from urllib.parse import urlparse
+
+        parsed_url = urlparse(url)
+        return parsed_url.path.lstrip('/').split('/')
+    
     def download_blob_from_a_link(self, url: str, filename: str = None) -> bool:
         """
         Download a document from a given blob URL and save it to the downloads directo ry.
@@ -790,4 +829,7 @@ class FinancialDocumentProcessor:
 # example usage for get_document_metadata
 if __name__ == "__main__":
     doc_processor = BlobStorageManager()
-    metadata = doc_processor.download_blob_from_a_link('https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/Reports/Curation_Reports/Monthly_Economics/December_2024.html?sv=2022-11-02&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-01-06T13:29:33Z&st=2024-09-25T04:29:33Z&spr=https&sig=rmMDVy0aPztEj6A%2FMQHFbioHbLuiL3tn622D993%2Fvow%3D')
+    content = doc_processor.get_rpcontent_from_blob_path('/Reports/Curation_Reports/Monthly_Economics/December_2024.html')
+    print(content)
+
+

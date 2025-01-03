@@ -354,9 +354,10 @@ def send_email(
         # overwrite the attachment path if provided
         if attachment_path:
             payload["attachment_path"] = attachment_path
-        
-        if attachment_path.lower() == 'no':
-            payload["attachment_path"] = None
+
+            # if attachment path is 'no', set it to None
+            if attachment_path.lower() == 'no':
+                payload["attachment_path"] = None
         
         if email_subject:
             payload["subject"] = email_subject
