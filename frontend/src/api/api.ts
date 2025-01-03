@@ -628,13 +628,13 @@ export async function getSummarizationTemplates() {
         throw Error('Error getting summarization templates');
     }
     const reports = await response.json();
-    return reports;
+    return reports.data;
 }
 
 export async function getSummarizationReportTemplateByID(templateID: string) {
     const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {method: 'GET', headers: {'Content-Type': 'application/json'}});
     const report = await response.json();
-    return report;
+    return report.data;
 }
 
 export async function createSummarizationReport(templateData: SummarizationReportProps) {
