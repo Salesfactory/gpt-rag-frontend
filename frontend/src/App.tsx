@@ -24,6 +24,8 @@ import CurationReports from "./pages/reports/CurationReports";
 import CurationCreation from "./pages/reports/ReportCreation/CurationCreation";
 import SummarizationReports from "./pages/reports/SummarizationReports";
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
+import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
+import { TemplateReports } from "./pages/reports/ReportTemplates";
 
 export default function App() {
     return (
@@ -129,6 +131,8 @@ export default function App() {
                     <Route path="/create-curation-report" element={<CurationCreation />}/>
                     <Route path="/summarization-reports" element={<SummarizationReports />}/>
                     <Route path="/create-summarization-report" element={<SummarizationCreation/>}/>
+                    <Route path="/report-templates" element={<TemplateReports/>}/>
+                    <Route path="/create-template-report" element={<TemplateCreation/>}/>
                 </Route>
             </Route>
 
