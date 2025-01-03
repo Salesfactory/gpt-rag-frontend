@@ -2884,10 +2884,10 @@ def send_email_endpoint():
 
         # Validate email configuration
         email_config = {
-            'smtp_server': os.getenv('EMAIL_SMTP_SERVER'),
-            'smtp_port': os.getenv('EMAIL_SMTP_PORT'),
-            'username': os.getenv('EMAIL_USER_NAME'),
-            'password': os.getenv('EMAIL_USER_PASSWORD')
+            'smtp_server': os.getenv('EMAIL_HOST'),
+            'smtp_port': os.getenv('EMAIL_PORT'),
+            'username': os.getenv('EMAIL_USER'),
+            'password': os.getenv('EMAIL_PASS')
         }
 
         if not all(email_config.values()):
