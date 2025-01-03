@@ -1,0 +1,106 @@
+import React, { useEffect, useState } from "react";
+import styles from "./ReportTemplates.module.css";
+import { Label, Spinner } from "@fluentui/react";
+import { IconArrowBack, IconEdit, IconFilePlus, IconTrash } from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
+import { getSummarizationTemplates } from "../../api";
+export const TemplateReports: React.FC = () => {
+    const [loading, setLoading] = useState<boolean>(false);
+    const [data, setFilteredData] = useState<any>([]);
+    const [isDeleteActive, setIsDeleteActive] = useState(false);
+    const [deletedReportID, setdeletedReportID] = useState("");
+    const [deletedReportName, setdeletedReportName] = useState("");
+
+    useEffect(() => {
+        const getReportsTemplatesList = async () => {
+            setLoading(true);
+            try {
+                let templateList = await getSummarizationTemplates();
+                console.log(templateList);
+                if (!Array.isArray(templateList)) {
+                    templateList = [];
+                }
+                setFilteredData(templateList);
+            } catch (error) {
+                console.error("Error fetching user list:", error);
+                setFilteredData([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        getReportsTemplatesList();
+    }, []);
+
+    const navigate = useNavigate();
+    return (
+        <div className={styles.page_container}>
+            <div className={styles.labelContainer}>
+                <button
+                    className={styles.button}
+                    title="Return to Report Management"
+                    aria-label="Return to Report Management"
+                    onClick={() => navigate("/view-manage-reports")}
+                >
+                    <IconArrowBack className={styles.iconColor} />
+                    <Label className={styles.textButton}>Return to Report Management</Label>
+                </button>
+            </div>
+            <div id="options-row" className={styles.row}>
+                <h1 className={styles.title}>Summarization Report Templates</h1>
+            </div>
+            <div className={styles.card}>
+                <div className={styles.labelContainer}>
+                    <button
+                        className={styles.button}
+                        title="Add a New Report"
+                        aria-label="Add a New Report"
+                        onClick={() => navigate("/create-template-report")}
+                    >
+                        <IconFilePlus className={styles.iconColor} />
+                        <Label className={styles.textButton}>Add Template Report</Label>
+                    </button>
+                </div>
+                {loading ? (
+                    <Spinner styles={{ root: { marginTop: "50px" } }} />
+                ) : (
+                    <table className={styles.table}>
+                        <thead>
+                            <tr className={styles.thead}>
+                                <th className={styles.tableName}>Template Name</th>
+                                <th>Company Ticker</th>
+                                <th>Created At</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.length > 0 ? (
+                                data.map((report: any, index: number) => (
+                                    <tr key={index} className={`${index % 2 === 0 ? styles.tableBackgroundAlt : styles.tableBackground}`}>
+                                        <td className={styles.tableName}>{report.name}</td>
+                                        <td className={styles.tableText}>{report.companyTickers}</td>
+                                        <td className={styles.tableText}>{report.createdAt}</td>
+                                        <td>
+                                        <div className={styles.tableStatusContainer}>
+                                            <div className={`${report.status === 'active' ? styles.tableStatusActive : styles.tableStatusArchived}`}>
+                                                {report.status}
+                                            </div>
+                                        </div>
+                                        </td>
+                                    <td>
+                                        <div className={styles.tableText}>
+                                            <button className={styles.button} title="Delete Report" aria-label="Delete Report" onClick={() => console.log('delete')}>
+                                                <IconTrash className={styles.iconColor}/>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    </tr>
+                                ))
+                            ) : (<></>)}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </div>
+    );
+};
