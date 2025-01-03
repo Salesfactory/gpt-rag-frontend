@@ -50,3 +50,12 @@ class EmailTemplateManager:
             )
         except Exception as e:
             raise EmailRenderError(f"Error rendering email template: {str(e)}")
+
+
+
+""" 
+The next step is:
+
+- load the report content from the blob link to model context in the report template 
+- the financial agent will use the blob link to get the report content and load it to the model's context 
+"""
