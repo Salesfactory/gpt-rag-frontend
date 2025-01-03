@@ -2,6 +2,12 @@ from typing import List, Dict, Literal
 from pathlib import Path
 import jinja2 
 
+class EmailRenderError(Exception):
+    """Exception raised for errors in email rendering. """
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
 class EmailTemplateManager:
     """Manages email template rendering. """
 
@@ -33,12 +39,14 @@ class EmailTemplateManager:
         Returns:
             str: Rendered HTML content
         """
-
-        template = self.env.get_template('report_email.html')
-        return template.render(
+        try:
+            template = self.env.get_template('report_email.html')
+            return template.render(
             title=title,
-            intro_text=intro_text,
-            key_points=key_points,
-            why_it_matters=why_it_matters,
-            document_type=document_type
-        )
+                intro_text=intro_text,
+                key_points=key_points,
+                why_it_matters=why_it_matters,
+                document_type=document_type
+            )
+        except Exception as e:
+            raise EmailRenderError(f"Error rendering email template: {str(e)}")

@@ -2787,16 +2787,17 @@ def send_email_endpoint():
         }), 500
 
 from rp2email import process_and_send_email
-@app.route('/api/reports/process-and-email', methods=['POST'])
-def process_report_and_email():
+@app.route('/api/reports/digest', methods=['POST'])
+def digest_report():
     """
-    Process report and send email notification.
+    Process report and send email .
     
     Expected payload:
     {
         "blob_link": "https://...",
         "recipients": ["email1@domain.com"],
         "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes. 
+        By default, it will automatically attach the document from the blob link (PDF converted). Select "no" to disable this feature.
         "email_subject": "Custom email subject"  # Optional
     }
     """

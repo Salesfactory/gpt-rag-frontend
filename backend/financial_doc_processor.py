@@ -588,7 +588,8 @@ class BlobStorageManager:
                             name=blob_path, 
                             data=data, 
                             overwrite=True, 
-                            content_settings=ContentSettings(content_type=content_type)
+                            content_settings=ContentSettings(content_type=content_type),
+                            metadata=metadata
                         )
                     except Exception as e:
                         raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
