@@ -25,7 +25,7 @@ from urllib.parse import unquote
 import uuid
 
 from identity.flask import Auth
-from datetime import timedelta, datetime, UTC
+from datetime import timedelta, datetime
 
 import smtplib
 from email.mime.text import MIMEText
@@ -233,7 +233,7 @@ class UserService:
 
             logger.info(
                 f"[auth] Checking authorization for user {client_principal_id} "
-                f"with email {email} at {datetime.now(UTC).isoformat()}"
+                f"with email {email} at {datetime.now(timezone.utc).isoformat()}"
             )
 
             # Make the request using a session for better performance

@@ -4,7 +4,7 @@ from azure.identity import DefaultAzureCredential
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError
 import uuid
 import logging
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from werkzeug.exceptions import NotFound
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
@@ -39,8 +39,8 @@ def create_report(data):
     try:
         container = get_cosmos_container("reports")
         data["id"] = str(uuid.uuid4())
-        data["createAt"] = datetime.now(UTC).isoformat() + "Z"
-        data["updatedAt"] = datetime.now(UTC).isoformat() + "Z"
+        data["createAt"] = datetime.now(timezone.utc).isoformat() + "Z"
+        data["updatedAt"] = datetime.now(timezone.utc).isoformat() + "Z"
         container.upsert_item(data)
         logging.info(f"Document created: {data}")
         return data
@@ -191,8 +191,8 @@ def create_template(data):
     try:
         container = get_cosmos_container("templates")
         data["id"] = str(uuid.uuid4())
-        data["createAt"] = datetime.now(UTC).isoformat() + "Z"
-        data["updatedAt"] = datetime.now(UTC).isoformat() + "Z"
+        data["createAt"] = datetime.now(timezone.utc).isoformat() + "Z"
+        data["updatedAt"] = datetime.now(timezone.utc).isoformat() + "Z"
         container.upsert_item(data)
         logging.info(f"Document created: {data}")
         return data
