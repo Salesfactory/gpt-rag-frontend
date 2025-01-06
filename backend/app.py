@@ -2832,6 +2832,7 @@ def send_email_endpoint():
         "html_content": "HTML formatted content", 
         "recipients": ["email1@domain.com", "email2@domain.com"],
         "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes. 
+        "save_email": "yes"  # Optional, default is "no"
     }
 
     Returns:
@@ -2899,16 +2900,28 @@ def send_email_endpoint():
 
         # Initialize and send email
         email_service = EmailService(**email_config)
-        email_service.send_email(
-            subject=data['subject'],
-            html_content=data['html_content'],
-            recipients=data['recipients'],
-            attachment_path=data.get('attachment_path')
-        )
+
+        email_params = {
+            "subject": data['subject'],
+            "html_content": data['html_content'],
+            "recipients": data['recipients'],
+            "attachment_path": data.get('attachment_path')
+        }
+
+        # send the email 
+        email_service.send_email(**email_params)
+
+        # save the email to blob storage
+        if data.get('save_email', 'no').lower() == 'yes':
+            blob_name = email_service._save_email_to_blob(**email_params)
+            logger.info(f"Email has been saved to blob storage: {blob_name}")
+        else:
+            blob_name = None
 
         return jsonify({
             'status': 'success',
-            'message': 'Email sent successfully'
+            'message': 'Email sent successfully',
+            'blob_name': blob_name
         }), 200
 
     except EmailServiceError as e:
@@ -2916,6 +2929,13 @@ def send_email_endpoint():
         return jsonify({
             'status': 'error',
             'message': f'Failed to send email: {str(e)}'
+        }), 500
+    
+    except BlobUploadError as e:
+        logger.error(f"Blob upload error: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Email has been sent, but failed to upload to blob storage: {str(e)}'
         }), 500
         
     except Exception as e:
@@ -2938,6 +2958,7 @@ def digest_report():
         "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes. 
         By default, it will automatically attach the document from the blob link (PDF converted). Select "no" to disable this feature.
         "email_subject": "Custom email subject"  # Optional
+        "save_email": "yes"  # Optional, default is "yes"
     }
     """
     try:
@@ -2962,6 +2983,7 @@ def digest_report():
             recipients=data['recipients'],
             attachment_path=data.get('attachment_path', None),
             email_subject=data.get('email_subject', None),
+            save_email=data.get('save_email', 'yes')
         )
         
         if success:

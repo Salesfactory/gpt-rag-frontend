@@ -321,7 +321,8 @@ def send_email(
         email_data: Dict[str, Any], 
         recipients: List[str],
         attachment_path: Optional[str] = None,
-        email_subject: Optional[str] = None
+        email_subject: Optional[str] = None,
+        save_email: Optional[str] = "yes"
 ) -> bool:
     """Send an email to the recipients.
 
@@ -330,6 +331,7 @@ def send_email(
         recipients: List of recipients
         attachment_path: Path to the attachment file (local path)
         email_subject: Subject of the email
+        save_email: Whether to save the email to blob storage
 
     Returns:
         bool: True if the email is sent successfully, False otherwise. 
@@ -348,7 +350,8 @@ def send_email(
             "subject": email_data["subject"],
             "html_content": email_data["html_content"],
             "recipients": recipients,
-            "attachment_path": email_data["attachment_path"]
+            "attachment_path": email_data["attachment_path"],
+            "save_email": save_email
         }
 
         # overwrite the attachment path if provided
@@ -380,10 +383,12 @@ def send_email(
     except Exception as e:
         logger.exception(f"Error sending email: {str(e)}")
         raise EmailSendingError(f"Unexpected error while sending email: {str(e)}")
+    
 def process_and_send_email(blob_link: str, 
                          recipients: List[str],
                          attachment_path: Optional[str] = None,
-                         email_subject: Optional[str] = None
+                         email_subject: Optional[str] = None,
+                         save_email: Optional[str] = "yes"
                          ) -> bool:
     """
     Process the report and send the email. 
@@ -404,7 +409,7 @@ def process_and_send_email(blob_link: str,
             # initialize and process report 
             email_data = processor.process()
             # send email 
-            success = send_email(email_data, recipients, attachment_path, email_subject)
+            success = send_email(email_data, recipients, attachment_path, email_subject, save_email)
             return success
         
         except Exception as e:

@@ -415,3 +415,48 @@ class EmailService:
             logger.error(f'Failed to send email: {str(e)}')
             raise EmailServiceError(f'Failed to send email: {str(e)}')
     
+    def _save_email_to_blob(self, 
+                            html_content: str,
+                            subject: str,
+                            recipients: List[str],
+                            attachment_path: Optional[str] = None) -> str:
+        """
+        Save the email content to a blob storage container
+        """
+        EMAIL_CONTAINER_NAME = 'emails'
+        from azure.storage.blob import BlobServiceClient
+        from datetime import datetime, timezone
+        from azure.storage.blob import ContentSettings
+
+        blob_service_client = BlobServiceClient.from_connection_string(os.getenv('BLOB_CONNECTION_STRING'))
+        blob_container_client = blob_service_client.get_container_client(EMAIL_CONTAINER_NAME)
+        
+        # get the blob storage container
+        from financial_doc_processor import BlobUploadError
+        import uuid
+
+
+        # create an id for the email 
+        email_id = str(uuid.uuid4())
+
+        # create a blob name for the email 
+        blob_name = f"{email_id}/content.html"
+
+        # add metadata to the blob
+        metadata = {
+            "email_id": email_id,
+            "subject": subject,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "recipients": ', '.join(recipients),
+            "has_attachment": str(bool(attachment_path))
+        }
+
+        # upload the email content to the blob
+        try:
+            blob_container_client.upload_blob(blob_name, html_content, metadata=metadata, content_settings=ContentSettings(content_type='text/html'))
+        except BlobUploadError as e:
+            logger.error(f"Error uploading email to blob: {str(e)}")
+            raise BlobUploadError(f"Error uploading email to blob: {str(e)}")
+
+        # return the blob name
+        return blob_name
