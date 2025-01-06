@@ -65,7 +65,7 @@ from shared.cosmo_db import(
     update_user
 )
 
-load_dotenv()
+load_dotenv(override=True)
 
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
@@ -2883,9 +2883,9 @@ def send_email_endpoint():
             # Update the attachment_path in data
             data['attachment_path'] = str(attachment_path)
 
-        # Validate email configuration
+        # Validate email configuration        
         email_config = {
-            'smtp_server': os.getenv('EMAIL_HOST'),
+            'smtp_server': os.getenv('EMAIL_HOST'), 
             'smtp_port': os.getenv('EMAIL_PORT'),
             'username': os.getenv('EMAIL_USER'),
             'password': os.getenv('EMAIL_PASS')
@@ -2916,6 +2916,7 @@ def send_email_endpoint():
             blob_name = email_service._save_email_to_blob(**email_params)
             logger.info(f"Email has been saved to blob storage: {blob_name}")
         else:
+            logger.info("Email has not been saved to blob storage because save_email is set to no")
             blob_name = None
 
         return jsonify({
