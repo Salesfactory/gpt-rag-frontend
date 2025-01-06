@@ -371,6 +371,8 @@ def send_email(
 
         if response.status_code == 200:
             logger.info("Email sent successfully")
+            # log recipients 
+            logger.info(f"Recipients: {recipients}")
             return True
         
         error_data = response.get_json()
