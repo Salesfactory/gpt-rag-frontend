@@ -316,7 +316,7 @@ class ReportProcessor:
 # Send Email
 ####################################
 from flask import current_app
-
+from datetime import datetime, timezone
 def send_email(
         email_data: Dict[str, Any], 
         recipients: List[str],
@@ -370,7 +370,7 @@ def send_email(
             response = client.post(EMAIL_ENDPOINT, json=payload)
 
         if response.status_code == 200:
-            logger.info("Email sent successfully")
+            logger.info(f"Email sent successfully at {datetime.now(timezone.utc)}")
             # log recipients 
             logger.info(f"Recipients: {recipients}")
             return True
