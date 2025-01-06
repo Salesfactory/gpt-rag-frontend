@@ -2824,13 +2824,14 @@ from utils import EmailServiceError, EmailService
 @app.route('/api/reports/email', methods=['POST'])
 def send_email_endpoint():
     """Send an email with optional attachments.
+    Note: currently attachment path has to be in the same directory as the app.py file. 
     
     Expected JSON payload:
     {
         "subject": "Email subject",
         "html_content": "HTML formatted content", 
         "recipients": ["email1@domain.com", "email2@domain.com"],
-        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes
+        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes. 
     }
 
     Returns:
@@ -2883,10 +2884,10 @@ def send_email_endpoint():
 
         # Validate email configuration
         email_config = {
-            'smtp_server': os.getenv('EMAIL_SMTP_SERVER'),
-            'smtp_port': os.getenv('EMAIL_SMTP_PORT'),
-            'username': os.getenv('EMAIL_USER_NAME'),
-            'password': os.getenv('EMAIL_USER_PASSWORD')
+            'smtp_server': os.getenv('EMAIL_HOST'),
+            'smtp_port': os.getenv('EMAIL_PORT'),
+            'username': os.getenv('EMAIL_USER'),
+            'password': os.getenv('EMAIL_PASS')
         }
 
         if not all(email_config.values()):
@@ -2923,7 +2924,63 @@ def send_email_endpoint():
             'status': 'error',
             'message': f'An unexpected error occurred: {str(e)}'
         }), 500
+
+from rp2email import process_and_send_email
+@app.route('/api/reports/digest', methods=['POST'])
+def digest_report():
+    """
+    Process report and send email .
     
+    Expected payload:
+    {
+        "blob_link": "https://...",
+        "recipients": ["email1@domain.com"],
+        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes. 
+        By default, it will automatically attach the document from the blob link (PDF converted). Select "no" to disable this feature.
+        "email_subject": "Custom email subject"  # Optional
+    }
+    """
+    try:
+        # Validate request data
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No JSON data provided'
+            }), 400
+            
+        # Validate required fields
+        if 'blob_link' not in data or 'recipients' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required fields: blob_link and recipients'
+            }), 400
+            
+        # Process report and send email
+        success = process_and_send_email(
+            blob_link=data['blob_link'],
+            recipients=data['recipients'],
+            attachment_path=data.get('attachment_path', None),
+            email_subject=data.get('email_subject', None),
+        )
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': 'Report processed and email sent successfully'
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to process report and send email'
+            }), 500
+            
+    except Exception as e:
+        logger.exception("Error processing report and sending email")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 
 if __name__ == "__main__":
