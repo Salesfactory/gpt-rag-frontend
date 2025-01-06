@@ -349,69 +349,124 @@ class EmailServiceError(Exception):
     pass
 
 class EmailService:
-    def __init__(
-            self, 
-            smtp_server: str,
-            smtp_port: int,
-            username: str,
-            password: str,
-    ):
+    def __init__(self, smtp_server, smtp_port, username, password):
         self.smtp_server = smtp_server
-        self.smtp_port = smtp_port
+        self.smtp_port = int(smtp_port)
         self.username = username
         self.password = password
+        self._server = None
 
-    def send_email(self, 
-                   subject: str, 
-                   html_content: str, 
-                   recipients: List[str], 
-                   attachment_path: Optional[str] = None) -> None:
-
-        """ 
-        Send an email to the recipients.
-
-        Args:
-            subject (str): Subject of the email
-            html_content (str): HTML content of the email
-            recipients (List[str]): List of recipients
-            attachment_path (Optional[str]): Path to the attachment file
-
-        Returns:
-            None
-        """
-
-        msg: EmailMessage = EmailMessage()
-        msg['Subject'] = subject
-        msg['From'] = self.username
-        msg['Bcc'] = ','.join(recipients)
-        msg.add_alternative(html_content, subtype='html')
-
-        if attachment_path:
-            try: 
-                # convert to path object and resolve to absolute path
-                file_path = Path(attachment_path).resolve()
-                # validate file exists and is accessible
-                if not file_path.exists():
-                    raise EmailServiceError(f"File not found: {attachment_path}")
-
-                with open(file_path, 'rb') as file:
-                    file_data = file.read()
-                    file_name = file_path.name
-                    msg.add_attachment(file_data, 
-                                    maintype='application', 
-                                    subtype='octet-stream', 
-                                    filename=file_name)
-            except (OSError, EmailServiceError) as e:
-                logger.error(f"Error adding attachment: {str(e)}")
-                raise EmailServiceError(f"Error adding attachment: {str(e)}")
-        
-        try:
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
+    def _get_server(self):
+        """Get or create SMTP server connection with SSL"""
+        if self._server is None:
+            try:
+                # Use SMTP_SSL instead of SMTP
+                server = smtplib.SMTP_SSL(self.smtp_server, self.smtp_port, timeout=30)
                 server.login(self.username, self.password)
+                self._server = server
+            except Exception as e:
+                logger.error(f"Failed to create SMTP connection: {str(e)}")
+                raise EmailServiceError(f"SMTP connection failed: {str(e)}")
+        return self._server
+
+    def send_email(self, subject, html_content, recipients, attachment_path=None):
+        max_retries = 3
+        retry_delay = 2  # seconds
+        import time
+        
+        for attempt in range(max_retries):
+            try:
+                msg = EmailMessage()
+                msg['Subject'] = subject
+                msg['From'] = self.username
+                msg['Bcc'] = ','.join(recipients)
+                msg.add_alternative(html_content, subtype='html')
+
+                if attachment_path:
+                    self._add_attachment(msg, attachment_path)
+
+                server = self._get_server()
                 server.send_message(msg)
-                logger.info(f'Email sent to {recipients}')
-        except Exception as e:
-            logger.error(f'Failed to send email: {str(e)}')
-            raise EmailServiceError(f'Failed to send email: {str(e)}')
+                return  # Success, exit the function
+                
+            except smtplib.SMTPServerDisconnected:
+                logger.warning(f"SMTP server disconnected (attempt {attempt + 1}/{max_retries})")
+                self._server = None  # Reset the connection
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
+                raise EmailServiceError("Failed to maintain SMTP connection after multiple attempts")
+                
+            except Exception as e:
+                logger.error(f"Error sending email (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
+                raise EmailServiceError(f"Failed to send email: {str(e)}")
     
+    def _add_attachment(self, msg, attachment_path):
+        """Add an attachment to the email message"""
+        try: 
+            # convert to path object and resolve to absolute path
+            file_path = Path(attachment_path).resolve()
+            # validate file exists and is accessible
+            if not file_path.exists():
+                raise EmailServiceError(f"File not found: {attachment_path}")
+
+            with open(file_path, 'rb') as file:
+                file_data = file.read()
+                file_name = file_path.name
+                msg.add_attachment(file_data, 
+                                maintype='application', 
+                                subtype='octet-stream', 
+                                filename=file_name)
+        except (OSError, EmailServiceError) as e:
+            logger.error(f"Error adding attachment: {str(e)}")
+            raise EmailServiceError(f"Error adding attachment: {str(e)}")
+        
+
+    def _save_email_to_blob(self, 
+                            html_content: str,
+                            subject: str,
+                            recipients: List[str],
+                            attachment_path: Optional[str] = None) -> str:
+        """
+        Save the email content to a blob storage container
+        """
+        EMAIL_CONTAINER_NAME = 'emails'
+        from azure.storage.blob import BlobServiceClient
+        from datetime import datetime, timezone
+        from azure.storage.blob import ContentSettings
+
+        blob_service_client = BlobServiceClient.from_connection_string(os.getenv('BLOB_CONNECTION_STRING'))
+        blob_container_client = blob_service_client.get_container_client(EMAIL_CONTAINER_NAME)
+        
+        # get the blob storage container
+        from financial_doc_processor import BlobUploadError
+        import uuid
+
+
+        # create an id for the email 
+        email_id = str(uuid.uuid4())
+
+        # create a blob name for the email 
+        blob_name = f"{email_id}/content.html"
+
+        # add metadata to the blob
+        metadata = {
+            "email_id": email_id,
+            "subject": subject,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "recipients": ', '.join(recipients),
+            "has_attachment": str(bool(attachment_path))
+        }
+
+        # upload the email content to the blob
+        try:
+            blob_container_client.upload_blob(blob_name, html_content, metadata=metadata, content_settings=ContentSettings(content_type='text/html'))
+        except BlobUploadError as e:
+            logger.error(f"Error uploading email to blob: {str(e)}")
+            raise BlobUploadError(f"Error uploading email to blob: {str(e)}")
+
+        # return the blob name
+        return blob_name
