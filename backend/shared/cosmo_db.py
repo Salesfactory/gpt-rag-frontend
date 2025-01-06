@@ -39,8 +39,8 @@ def create_report(data):
     try:
         container = get_cosmos_container("reports")
         data["id"] = str(uuid.uuid4())
-        data["createAt"] = datetime.now(timezone.utc).isoformat() + "Z"
-        data["updatedAt"] = datetime.now(timezone.utc).isoformat() + "Z"
+        data["createAt"] = datetime.now(timezone.utc).isoformat()
+        data["updatedAt"] = datetime.now(timezone.utc).isoformat()
         container.upsert_item(data)
         logging.info(f"Document created: {data}")
         return data
@@ -191,8 +191,8 @@ def create_template(data):
     try:
         container = get_cosmos_container("templates")
         data["id"] = str(uuid.uuid4())
-        data["createAt"] = datetime.now(timezone.utc).isoformat() + "Z"
-        data["updatedAt"] = datetime.now(timezone.utc).isoformat() + "Z"
+        data["createAt"] = datetime.now(timezone.utc).isoformat()
+        data["updatedAt"] = datetime.now(timezone.utc).isoformat()
         container.upsert_item(data)
         logging.info(f"Document created: {data}")
         return data

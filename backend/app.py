@@ -651,7 +651,8 @@ def deleteChatConversation(chat_id):
 
 #get report by id argument from Container Reports
 @app.route("/api/reports/<report_id>", methods=["GET"])
-def getReport(report_id):
+@auth.login_required()
+def getReport(*, context, report_id):
     """
     Endpoint to get a report by ID.
     """
@@ -667,7 +668,8 @@ def getReport(report_id):
 
 #create Reports curation and companySummarization container Reports
 @app.route("/api/reports", methods=["POST"])
-def createReport():
+@auth.login_required()
+def createReport(*, context):
     """
     Endpoint to create a new report.
     """
@@ -731,7 +733,8 @@ def createReport():
 
 #update Reports curation and companySummarization container Reports
 @app.route("/api/reports/<report_id>", methods=["PUT"])
-def updateReport(report_id):
+@auth.login_required()
+def updateReport(*, context, report_id):
     """
     Endpoint to update a report by ID.
     """
@@ -754,7 +757,8 @@ def updateReport(report_id):
     
 #delete report from Container Reports
 @app.route("/api/reports/<report_id>", methods=["DELETE"])
-def deleteReport(report_id):
+@auth.login_required()
+def deleteReport(*, context, report_id):
     """
     Endpoint to delete a report by ID.
     """
@@ -775,7 +779,8 @@ def deleteReport(report_id):
 
 #Get User for email receivers
 @app.route("/api/user/<user_id>", methods=["GET"])
-def getUserid(user_id):
+@auth.login_required()
+def getUserid(*, context, user_id):
     """
     Endpoint to get a user by ID.
     """
@@ -791,7 +796,8 @@ def getUserid(user_id):
 
 #Update Users
 @app.route("/api/user/<user_id>", methods=["PUT"])
-def updateUser(user_id):
+@auth.login_required()
+def updateUser(*, context, user_id):
     """
     Endpoint to update a user
     """
@@ -813,7 +819,8 @@ def updateUser(user_id):
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 @app.route("/api/reports", methods=["GET"])
-def getFilteredType():
+@auth.login_required()
+def getFilteredType(*, context):
     """
     Endpoint to obtain reports by type or retrieve all reports if no type is specified.
     """
@@ -836,7 +843,8 @@ def getFilteredType():
         return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route("/api/reports/summarization/templates", methods=["POST"])
-def addSummarizationReport():
+@auth.login_required()
+def addSummarizationReport(*, context):
     """
     Endpoint to add a summarization report template.
 
@@ -880,7 +888,8 @@ def addSummarizationReport():
 
 
 @app.route('/api/reports/summarization/templates/<template_id>', methods=['DELETE'])
-def removeSummarizationReport(template_id):
+@auth.login_required()
+def removeSummarizationReport(*, context, template_id):
     """
     Endpoint to remove a summarization report template by ID.
 
@@ -909,7 +918,8 @@ def removeSummarizationReport(template_id):
         return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @app.route('/api/reports/summarization/templates/', methods=['GET'])
-def getSummarizationReports():
+@auth.login_required()
+def getSummarizationReports(*, context):
     try:
         result = get_templates()
         return create_success_response(result)
@@ -917,7 +927,8 @@ def getSummarizationReports():
         return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR) 
 
 @app.route('/api/reports/summarization/templates/<template_id>', methods=['GET'])
-def getSummarizationReport(template_id):
+@auth.login_required()
+def getSummarizationReport(*, context, template_id):
     try:
         result = get_template_by_ID(template_id)
         return create_success_response(result)
