@@ -1,6 +1,6 @@
 // SidebarItemTypes.ts
 
-export type Role = "admin" | "user";
+export type Role = "platformAdmin"|"admin" | "user";
 
 export type SubscriptionTier =
     | "Basic"
