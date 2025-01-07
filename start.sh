@@ -5,6 +5,18 @@ echo "starting script"
 
 export $(grep -v '^#' .env | xargs)
 
+# Install system dependencies for PDF processing
+echo "Installing system dependencies"
+sudo apt-get update
+sudo apt-get install -y \
+    libgobject-2.0-0 \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    shared-mime-info
+    
 # echo ""
 # echo "Loading azd .env file from current environment"
 # echo ""
