@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import styles from "./ReportTemplates.module.css";
 import { Label, Spinner } from "@fluentui/react";
-import { IconArrowBack, IconEdit, IconFilePlus, IconTrash } from "@tabler/icons-react";
+import { IconArrowBack, IconEdit, IconFilePlus, IconTrash, IconX } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
-import { getSummarizationTemplates } from "../../api";
+import { getSummarizationTemplates, deleteSumarizationReportTemplate } from "../../api";
 export const TemplateReports: React.FC = () => {
+    const [dataLoad, setDataLoad] = useState(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [data, setFilteredData] = useState<any>([]);
     const [isDeleteActive, setIsDeleteActive] = useState(false);
@@ -29,7 +30,29 @@ export const TemplateReports: React.FC = () => {
             }
         };
         getReportsTemplatesList();
-    }, []);
+    }, [dataLoad]);
+
+    const handleDeleteButton = (id: string, name: string) => {
+        setIsDeleteActive(true);
+        setdeletedReportID(id);
+        setdeletedReportName(name);
+    }
+
+    const handleCancelDelete = () => {
+        setIsDeleteActive(false);
+    }
+
+    const handleConfirmDelete = async() => {
+        setIsDeleteActive(false);
+        try {
+            await deleteSumarizationReportTemplate(deletedReportID);
+            setDataLoad(!dataLoad);
+        } catch (error) {
+            console.error("Error trying to delete the report: ", error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const navigate = useNavigate();
     return (
@@ -79,7 +102,7 @@ export const TemplateReports: React.FC = () => {
                                     <tr key={index} className={`${index % 2 === 0 ? styles.tableBackgroundAlt : styles.tableBackground}`}>
                                         <td className={styles.tableName}>{report.name}</td>
                                         <td className={styles.tableText}>{report.companyTickers}</td>
-                                        <td className={styles.tableText}>{report.createdAt}</td>
+                                        <td className={styles.tableText}>{new Date(report.createAt).toLocaleString()}</td>
                                         <td>
                                         <div className={styles.tableStatusContainer}>
                                             <div className={`${report.status === 'active' ? styles.tableStatusActive : styles.tableStatusArchived}`}>
@@ -89,17 +112,39 @@ export const TemplateReports: React.FC = () => {
                                         </td>
                                     <td>
                                         <div className={styles.tableText}>
-                                            <button className={styles.button} title="Delete Report" aria-label="Delete Report" onClick={() => console.log('delete')}>
+                                            <button className={styles.button} title="Delete Report" aria-label="Delete Report" onClick={() => handleDeleteButton(report.id, report.name)}>
                                                 <IconTrash className={styles.iconColor}/>
                                             </button>
                                         </div>
                                     </td>
                                     </tr>
                                 ))
-                            ) : (<></>)}
+                            ) : (
+                                <tr key='error'>
+                                    <td>
+                                    <Label className={styles.tableName}>No Reports available.</Label>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 )}
+                <div>
+                {isDeleteActive && (
+                <div className={styles.modal}>
+                    <button className={styles.closeButton} onClick={handleCancelDelete}><IconX/></button>
+                    <Label className={styles.text}>Are you sure you want to delete {deletedReportName}</Label>
+                    <div className={styles.buttonContainer}>
+                        <button className={styles.button} title="Cancel" aria-label="Cancel" onClick={handleCancelDelete}>
+                            Cancel
+                        </button>
+                        <button className={styles.button} title="Confirm" aria-label="Confirm" onClick={handleConfirmDelete}>
+                                Confirm
+                        </button>
+                    </div>
+                </div>
+            )}
+                </div>
             </div>
         </div>
     );
