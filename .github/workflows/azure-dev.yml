@@ -24,7 +24,9 @@ jobs:
           libharfbuzz-subset0 \
           libffi-dev \
           libjpeg-dev \
-          libopenjp2-7-dev
+          libopenjp2-7-dev \
+          libgobject-2.0-0 \
+          libglib2.0-0
 
       - name: Azure Login
         uses: azure/login@v2
