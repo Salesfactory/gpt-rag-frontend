@@ -855,16 +855,18 @@ def addSummarizationReport():
         data = request.get_json()
         if not data:
             raise MissingJSONPayloadError('Missing JSON payload')
-        if not "name" in data:
-            raise MissingRequiredFieldError('name')
+        if not "templateType" in data:
+            raise MissingRequiredFieldError('templateType')
         if not "description" in data:
             raise MissingRequiredFieldError('description')
-        if not "companyTickers" in data:
-            raise MissingRequiredFieldError('companyTickers')
+        if not "companyTicker" in data:
+            raise MissingRequiredFieldError('companyTicker')
+        if not "companyName" in data:
+            raise MissingRequiredFieldError('companyName')
         valid_names=["10-K", "10-Q", "8-K", "DEF 14A"]
         if not data["name"] in valid_names:
             raise InvalidParameterError('name', f"Must be one of: {', '.join(valid_names)}")
-        new_template = {'name': data['name'], 'companyTickers': data['companyTickers'], 'description': data['description'], 'status': 'active', 'type': 'summarization'}
+        new_template = {'templateType': data['templateType'], 'description': data['description'], 'companyTicker': data['companyTicker'], 'companyName': data['companyName'], 'status': 'active', 'type': 'summarization'}
         # add to cosmosDB container
         result = create_template(new_template)
         return create_success_response(result)
