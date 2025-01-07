@@ -9,15 +9,15 @@ export $(grep -v '^#' .env | xargs)
 echo "Installing system dependencies"
 sudo apt-get update
 sudo apt-get install -y \
-    libgobject-2.0-0 \
-    libcairo2 \
     libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libgdk-pixbuf2.0-0 \
-    libffi-dev \
-    shared-mime-info \
     libharfbuzz0b \
-    libpangoft2-1.0-0
+    libpangoft2-1.0-0 \
+    libharfbuzz-subset0 \
+    libffi-dev \
+    libjpeg-dev \
+    libopenjp2-7-dev \
+    libgobject-2.0-0 \
+    libglib2.0-0
     
 # echo ""
 # echo "Loading azd .env file from current environment"
