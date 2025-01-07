@@ -15,7 +15,9 @@ sudo apt-get install -y \
     libpangocairo-1.0-0 \
     libgdk-pixbuf2.0-0 \
     libffi-dev \
-    shared-mime-info
+    shared-mime-info \
+    libharfbuzz0b \
+    libpangoft2-1.0-0
     
 # echo ""
 # echo "Loading azd .env file from current environment"
