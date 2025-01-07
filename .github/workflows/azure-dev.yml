@@ -25,8 +25,15 @@ jobs:
           libffi-dev \
           libjpeg-dev \
           libopenjp2-7-dev \
-          libgobject-2.0-0 \
-          libglib2.0-0
+          libglib2.0-0 \
+          libglib2.0-dev \
+          libcairo2 \
+          libcairo2-dev \
+          libpangocairo-1.0-0 \
+          pkg-config \
+          python3-dev \
+          python3-cffi \
+          libgobject-2.0-0
 
       - name: Azure Login
         uses: azure/login@v2

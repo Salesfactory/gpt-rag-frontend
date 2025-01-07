@@ -16,8 +16,18 @@ sudo apt-get install -y \
     libffi-dev \
     libjpeg-dev \
     libopenjp2-7-dev \
+    libglib2.0-0 \
+    libglib2.0-dev \
+    libcairo2 \
+    libcairo2-dev \
+    libpangocairo-1.0-0 \
+    pkg-config \
+    python3-dev \
+    python3-cffi \
     libgobject-2.0-0 \
-    libglib2.0-0
+    fonts-liberation \
+    libgdk-pixbuf2.0-0 \
+    shared-mime-info
     
 # echo ""
 # echo "Loading azd .env file from current environment"
