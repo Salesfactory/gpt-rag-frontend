@@ -31,3 +31,6 @@ langgraph==0.2.60
 markdown2==2.5.2
 langchain-openai==0.2.14
 pydantic-settings==2.7.0
+markdown
+pydantic[email]
+weasyprint==63.1

@@ -4,7 +4,6 @@ echo "starting script"
 # Loading env variables
 
 export $(grep -v '^#' .env | xargs)
-
 # echo ""
 # echo "Loading azd .env file from current environment"
 # echo ""

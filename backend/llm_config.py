@@ -55,6 +55,28 @@ class PromptTemplate(BaseModel):
         """
     )
 
+    email_template: str = Field(
+        default="""
+        Summarize the following report in to 3 main key points. 
+
+        I want to maintain the title of the report.
+
+        You should include an intro text with just one sentence capture the main theme of the report, and tell them here are 3 key points of the reports.
+
+        I also want to add a part 'Why it matters' at the end.
+
+        Be concise and to the point. No more than 2 sentences per point.
+
+        No need to include any citations or references.
+
+        If there is any HTML tags, please remove them.
+
+        Here is the report:
+
+        {report_content}
+        """
+    )
+
     class Config:
         frozen = True
 

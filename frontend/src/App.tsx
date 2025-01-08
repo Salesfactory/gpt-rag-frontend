@@ -31,14 +31,11 @@ export default function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/payment" element={<PaymentGateway />} />
 
-            {/* Access Denied Route */}
-            <Route path="/access-denied" element={<AccessDenied />} />
-
             {/* Protected Routes for Authenticated Users (Regular and Admin) */}
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["user", "admin"]}
+                        allowedRoles={["user", "admin", "platformAdmin"]}
                         allowedTiers={[
                             "Basic",
                             "Custom",
@@ -55,7 +52,8 @@ export default function App() {
                     <Route path="/success-payment" element={<SuccessPayment />} />
                     <Route path="/help-center" element={<HelpCenter />} />
                     <Route path="/logout" element={<Logout />} />
-                    <Route path="/notification-settings" element={<Notifications/>}/>
+                    <Route path="/notification-settings" element={<Notifications />} />
+                    <Route path="/access-denied" element={<AccessDenied />} />
                 </Route>
             </Route>
 
@@ -63,7 +61,7 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["admin"]}
+                        allowedRoles={["admin", "platformAdmin"]}
                         allowedTiers={[
                             "Basic",
                             "Custom",
@@ -88,7 +86,7 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["admin", "user"]}
+                        allowedRoles={["admin", "user", "platformAdmin"]}
                         allowedTiers={["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
                     />
                 }
@@ -103,7 +101,7 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["admin", "user"]}
+                        allowedRoles={["platformAdmin"]}
                         allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
                     />
                 }
@@ -117,16 +115,16 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["admin"]}
+                        allowedRoles={["platformAdmin"]}
                         allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
                     />
                 }
             >
                 <Route element={<Layout />}>
                     <Route path="/curation-reports" element={<CurationReports />} />
-                    <Route path="/create-curation-report" element={<CurationCreation />}/>
-                    <Route path="/summarization-reports" element={<SummarizationReports />}/>
-                    <Route path="/create-summarization-report" element={<SummarizationCreation/>}/>
+                    <Route path="/create-curation-report" element={<CurationCreation />} />
+                    <Route path="/summarization-reports" element={<SummarizationReports />} />
+                    <Route path="/create-summarization-report" element={<SummarizationCreation />} />
                 </Route>
             </Route>
 
