@@ -3033,7 +3033,7 @@ def list_blobs():
         data = request.get_json()
 
         container_name = data.get('container_name')
-        prefix = data.get('prefix')
+        prefix = data.get('prefix', None)
 
         include_metadata = data.get('include_metadata', 'no').lower() == 'yes'
 
