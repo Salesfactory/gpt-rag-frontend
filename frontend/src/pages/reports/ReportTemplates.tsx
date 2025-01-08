@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import styles from "./ReportTemplates.module.css";
 import { Label, Spinner } from "@fluentui/react";
 import { IconArrowBack, IconEdit, IconFilePlus, IconTrash, IconX } from "@tabler/icons-react";
-import { useNavigate } from "react-router-dom";
-import { getSummarizationTemplates, deleteSumarizationReportTemplate } from "../../api";
+import { useNavigate, useLocation } from "react-router-dom";
+import { getSummarizationTemplates, deleteSummarizationReportTemplate } from "../../api";
 export const TemplateReports: React.FC = () => {
     const [dataLoad, setDataLoad] = useState(false);
     const [loading, setLoading] = useState<boolean>(false);
@@ -11,9 +11,19 @@ export const TemplateReports: React.FC = () => {
     const [isDeleteActive, setIsDeleteActive] = useState(false);
     const [deletedReportID, setdeletedReportID] = useState("");
     const [deletedReportName, setdeletedReportName] = useState("");
+    const [popUp, setPopUp] = useState(false);
 
+    const location = useLocation();
     useEffect(() => {
         const getReportsTemplatesList = async () => {
+            if (location.state && location.state.popUp) {
+                setPopUp(true);
+                // Clear the popUp state after handling it
+                navigate(location.pathname, { replace: true, state: {} });
+                setTimeout(() => {
+                    setPopUp(false);
+                }, 3000);
+            }
             setLoading(true);
             try {
                 let templateList = await getSummarizationTemplates();
@@ -32,10 +42,10 @@ export const TemplateReports: React.FC = () => {
         getReportsTemplatesList();
     }, [dataLoad]);
 
-    const handleDeleteButton = (id: string, name: string) => {
+    const handleDeleteButton = (id: string, templateType: string, companyName: string) => {
         setIsDeleteActive(true);
         setdeletedReportID(id);
-        setdeletedReportName(name);
+        setdeletedReportName(templateType + " - " + companyName);
     }
 
     const handleCancelDelete = () => {
@@ -45,7 +55,7 @@ export const TemplateReports: React.FC = () => {
     const handleConfirmDelete = async() => {
         setIsDeleteActive(false);
         try {
-            await deleteSumarizationReportTemplate(deletedReportID);
+            await deleteSummarizationReportTemplate(deletedReportID);
             setDataLoad(!dataLoad);
         } catch (error) {
             console.error("Error trying to delete the report: ", error);
@@ -89,9 +99,10 @@ export const TemplateReports: React.FC = () => {
                     <table className={styles.table}>
                         <thead>
                             <tr className={styles.thead}>
-                                <th className={styles.tableName}>Template Name</th>
-                                <th>Company Ticker</th>
+                                <th className={styles.tableName}>Template Type</th>
+                                <th>Company Name</th>
                                 <th>Created At</th>
+                                <th>Description</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -100,9 +111,10 @@ export const TemplateReports: React.FC = () => {
                             {data.length > 0 ? (
                                 data.map((report: any, index: number) => (
                                     <tr key={index} className={`${index % 2 === 0 ? styles.tableBackgroundAlt : styles.tableBackground}`}>
-                                        <td className={styles.tableName}>{report.name}</td>
-                                        <td className={styles.tableText}>{report.companyTickers}</td>
-                                        <td className={styles.tableText}>{new Date(report.createAt).toLocaleString()}</td>
+                                        <td className={styles.tableName}>{report.templateType}</td>
+                                        <td className={styles.tableText}>{report.companyName}</td>
+                                        <td className={styles.tableText}>{new Date(report.createdAt).toLocaleString()}</td>
+                                        <td className={styles.tableText}>{report.description}</td>
                                         <td>
                                         <div className={styles.tableStatusContainer}>
                                             <div className={`${report.status === 'active' ? styles.tableStatusActive : styles.tableStatusArchived}`}>
@@ -112,7 +124,7 @@ export const TemplateReports: React.FC = () => {
                                         </td>
                                     <td>
                                         <div className={styles.tableText}>
-                                            <button className={styles.button} title="Delete Report" aria-label="Delete Report" onClick={() => handleDeleteButton(report.id, report.name)}>
+                                            <button className={styles.button} title="Delete Report" aria-label="Delete Report" onClick={() => handleDeleteButton(report.id, report.templateType, report.companyName)}>
                                                 <IconTrash className={styles.iconColor}/>
                                             </button>
                                         </div>
@@ -146,6 +158,12 @@ export const TemplateReports: React.FC = () => {
             )}
                 </div>
             </div>
+            {popUp && (
+                    <div className={styles.modalPopup}>
+                        <Label className={styles.text}>The report has been added. It needs to be implemented for generation. <br /> 
+                    If not implemented, it will not be generated.</Label>
+                    </div>
+                )}
         </div>
     );
 };
