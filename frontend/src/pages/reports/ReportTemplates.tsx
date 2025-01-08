@@ -99,7 +99,7 @@ export const TemplateReports: React.FC = () => {
                     <table className={styles.table}>
                         <thead>
                             <tr className={styles.thead}>
-                                <th className={styles.tableName}>Template Type</th>
+                                <th className={styles.tableName}>Summarization Report</th>
                                 <th>Company Name</th>
                                 <th>Created At</th>
                                 <th>Description</th>
@@ -108,10 +108,9 @@ export const TemplateReports: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {data.length > 0 ? (
-                                data.map((report: any, index: number) => (
+                            {data.length > 0 ? (data.map((report: any, index: number) => (
                                     <tr key={index} className={`${index % 2 === 0 ? styles.tableBackgroundAlt : styles.tableBackground}`}>
-                                        <td className={styles.tableName}>{report.templateType}</td>
+                                        <td className={styles.tableName}>{report.companyTicker} {report.templateType}</td>
                                         <td className={styles.tableText}>{report.companyName}</td>
                                         <td className={styles.tableText}>{new Date(report.createdAt).toLocaleString()}</td>
                                         <td className={styles.tableText}>{report.description}</td>
