@@ -3035,7 +3035,7 @@ def list_blobs():
         container_name = data.get('container_name')
         prefix = data.get('prefix', None)
 
-        include_metadata = data.get('include_metadata', 'no').lower() == 'yes'
+        include_metadata = data.get('include_metadata', 'no').lower()
 
         # convert max_results to int
         max_results = data.get('max_results', 10)

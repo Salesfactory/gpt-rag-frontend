@@ -930,7 +930,7 @@ class FinancialDocumentProcessor:
 if __name__ == "__main__":
     doc_processor = BlobStorageManager()
     blobs = doc_processor.list_blobs_in_container(
-        container_name=os.getenv("documentss"),
+        container_name='documents',
         prefix="Reports/Curation_Reports/Ecommerce",
         include_metadata='yes',
         max_results=10
