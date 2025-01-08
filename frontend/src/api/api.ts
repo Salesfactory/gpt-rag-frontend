@@ -652,7 +652,7 @@ export async function createSummarizationReport(templateData: SummarizationRepor
     return newReport;
 }
 
-export async function deleteSumarizationReportTemplate(templateID: string) {
+export async function deleteSummarizationReportTemplate(templateID: string) {
     const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {
         method: 'DELETE',
         headers: {'Content-Type': 'application/json'},
