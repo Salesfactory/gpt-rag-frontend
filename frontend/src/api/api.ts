@@ -699,3 +699,60 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
         throw Error(`Error updating user with ID ${userId}`);
     }
 }
+
+export async function changeSubscription({ subscriptionId, newPlanId}: {subscriptionId: string;newPlanId: string;}): Promise<any> {
+    
+    try {
+        const response = await fetch(`/api/subscriptions/${subscriptionId}/change`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                new_plan_id: newPlanId,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Subscription change failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const result: { message: string; subscription: any; } = await response.json();
+
+        console.log("Subscription changed successfully:", result.message);
+        return result.subscription;
+    } catch (error) {
+        console.error(
+            "Error changing subscription:",
+            error instanceof Error ? error.message : error
+        );
+        throw error;
+    }
+}
+
+export async function cancelSubscription({ subscriptionId }: {subscriptionId: string;}): Promise<void> {
+    
+    try {
+        const response = await fetch(`/api/subscriptions/${subscriptionId}/cancel`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Subscription cancellation failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        console.log("Subscription canceled successfully");
+    } catch (error) {
+        console.error(
+            "Error canceling subscription:",
+            error instanceof Error ? error.message : error
+        );
+        throw error;
+    }
+}
+

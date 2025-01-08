@@ -1824,7 +1824,6 @@ def get_product_prices(product_id):
         logging.error(f"Error fetching prices: {e}")
         raise
 
-
 @app.route("/api/prices", methods=["GET"])
 def get_product_prices_endpoint():
     product_id = request.args.get("product_id", PRODUCT_ID_DEFAULT)
@@ -2258,7 +2257,74 @@ def determine_subscription_tiers(subscription):
 
     return tiers
 
+@app.route('/api/subscriptions/<subscription_id>/change', methods=['PUT'])
+def change_subscription(subscription_id):
+    try:
+        
+        data = request.json
+        new_plan_id = data.get('new_plan_id')
+        if not new_plan_id:
+            return jsonify({'error': 'new_plan_id is required'}), 400
 
+        # Retrieve subscription from Stripe
+        stripe_subscription = stripe.Subscription.retrieve(subscription_id)
+        if not stripe_subscription or stripe_subscription['status'] == 'canceled':
+            return jsonify({'error': 'Subscription not found or is already canceled'}), 404
+
+        # Update the plan, which is reflected and charged when changing it
+        updated_subscription = stripe.Subscription.modify(
+            subscription_id,
+            items=[{
+                'id': stripe_subscription['items']['data'][0]['id'],
+                'price': new_plan_id,
+            }],
+            proration_behavior='none',  # No proration
+            billing_cycle_anchor='now',  # Change the billing cycle so that it is charged at that moment
+            cancel_at_period_end=False  # Do not cancel the subscription
+        )
+
+        result = {
+            'message': 'Subscription change successfully',
+            'subscription': updated_subscription
+        }
+
+        return jsonify(result), 200
+
+    except stripe.error.InvalidRequestError as e:
+        return jsonify({'error': f'Invalid request: {str(e)}'}), 400
+    except stripe.error.AuthenticationError:
+        return jsonify({'error': 'Authentication with Stripe API failed'}), 403
+    except stripe.error.PermissionError:
+        return jsonify({'error': 'Permission error when accessing the Stripe API'}), 403
+    except stripe.error.RateLimitError:
+        return jsonify({'error': 'Too many requests to Stripe API, please try again later'}), 429
+    except stripe.error.StripeError as e:
+        return jsonify({'error': f'Stripe API error: {str(e)}'}), 500
+
+    except Exception as e:
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+
+@app.route('/api/subscriptions/<subscription_id>/cancel', methods=['DELETE'])
+def cancel_subscription(subscription_id):
+    try:
+
+        subscription = stripe.Subscription.retrieve(subscription_id)
+
+        if not subscription:
+            return jsonify({'message': 'Subscription not found'}), 404
+        
+        canceled_subscription = stripe.Subscription.delete(subscription_id)
+
+        return jsonify({'message': 'Subscription canceled successfully'}), 200
+
+    except stripe.error.InvalidRequestError as e:
+        return jsonify({'message': 'Invalid subscription ID'}), 404
+    except stripe.error.AuthenticationError as e:
+        return jsonify({'message': 'Unauthorized access'}), 403
+    except Exception as e:
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+    
 ################################################
 # Financial Doc Ingestion
 ################################################
