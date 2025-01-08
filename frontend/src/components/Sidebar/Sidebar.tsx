@@ -112,13 +112,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     to: "/organization",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin"]
-                },
-                {
-                    title: "Financial Assistant",
-                    icon: <IconReportMoney className={styles.sidebarLinkIcon} />,
-                    to: "/financialassistant",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin"]
                 }
             ]
         },
