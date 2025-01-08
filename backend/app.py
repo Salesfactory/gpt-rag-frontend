@@ -864,8 +864,8 @@ def addSummarizationReport():
         if not "companyName" in data:
             raise MissingRequiredFieldError('companyName')
         valid_names=["10-K", "10-Q", "8-K", "DEF 14A"]
-        if not data["name"] in valid_names:
-            raise InvalidParameterError('name', f"Must be one of: {', '.join(valid_names)}")
+        if not data["templateType"] in valid_names:
+            raise InvalidParameterError('templateType', f"Must be one of: {', '.join(valid_names)}")
         new_template = {'templateType': data['templateType'], 'description': data['description'], 'companyTicker': data['companyTicker'], 'companyName': data['companyName'], 'status': 'active', 'type': 'summarization'}
         # add to cosmosDB container
         result = create_template(new_template)
