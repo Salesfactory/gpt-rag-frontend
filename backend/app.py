@@ -972,16 +972,12 @@ def getStorageAccount():
 def create_checkout_session():
     price = request.json["priceId"]
     userId = request.json["userId"]
-    addFinancialAssistant = request.json["addFinancialAssistant"]
     success_url = request.json["successUrl"]
     cancel_url = request.json["cancelUrl"]
     organizationId = request.json["organizationId"]
-    items = [{"price": price, "quantity": 1}]
-    if addFinancialAssistant:
-        items.append({"price": FINANCIAL_ASSISTANT_PRICE_ID, "quantity": 1})
     try:
         checkout_session = stripe.checkout.Session.create(
-            line_items=items,
+            line_items=[{"price": price, "quantity": 1}],
             mode="subscription",
             client_reference_id=userId,
             metadata={"userId": userId, "organizationId": organizationId},

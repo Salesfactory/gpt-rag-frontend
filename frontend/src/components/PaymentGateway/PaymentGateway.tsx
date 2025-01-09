@@ -17,7 +17,6 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
 
     const [prices, setPrices] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [isFinancialAssistantActive, setIsFinancialAssistantActive] = useState<boolean>(false);
 
     useEffect(() => {
         // Fetch product prices when the component mounts
@@ -50,7 +49,6 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
         const { url } = await createCheckoutSession({
             userId: user.id,
             priceId,
-            addFinancialAssistant: isFinancialAssistantActive,
             successUrl: window.location.origin + "#/success-payment",
             cancelUrl: window.location.origin + "/",
             organizationId: user.organizationId || ""
@@ -58,28 +56,10 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
         window.location.href = url;
     };
 
-    const handleFinancialAgent = () => {
-        setIsFinancialAssistantActive(!isFinancialAssistantActive);
-    };
-
     return (
         <div className={styles.subscriptionPlan} aria-labelledby="subscription-plans-title">
             <div id="options-row" className={styles.row}>
                 <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
-            </div>
-            <div className="d-flex justify-content-between align-items-center">
-                Add Financial Assistant to your subscription (additional $400/month)
-                <div className="d-flex flex-column align-items-start">
-                    <div className="form-check form-switch">
-                        <input
-                            className={`form-check-input ${styles.financialToggle}`}
-                            type="checkbox"
-                            checked={isFinancialAssistantActive}
-                            onChange={handleFinancialAgent}
-                        />
-                        <span className={`form-check-label ${styles.financialToggleText}`}>Financial Assistant</span>
-                    </div>
-                </div>
             </div>
             <div className={styles.planContainer}>
                 {prices.map((price, index) => {

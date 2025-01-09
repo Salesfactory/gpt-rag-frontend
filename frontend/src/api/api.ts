@@ -477,7 +477,7 @@ export async function uploadFile(file: any) {
     }
 }
 
-export async function createCheckoutSession({ userId, priceId, addFinancialAssistant, successUrl, cancelUrl, organizationId }: any) {
+export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl, organizationId }: any) {
     const response = await fetch("/create-checkout-session", {
         method: "POST",
         headers: {
@@ -486,7 +486,6 @@ export async function createCheckoutSession({ userId, priceId, addFinancialAssis
         body: JSON.stringify({
             userId,
             priceId,
-            addFinancialAssistant,
             successUrl,
             cancelUrl,
             organizationId
