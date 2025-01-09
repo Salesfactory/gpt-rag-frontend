@@ -599,6 +599,44 @@ export async function createReport(reportData: object) {
     return newReport;
 }
 
+export async function getReportBlobs({
+    container_name,
+    prefix,
+    include_metadata,
+    max_results,
+}: {
+    container_name: string;
+    prefix: string;
+    include_metadata: string;
+    max_results: string;
+}) {
+    const params = new URLSearchParams({
+        container_name,
+        prefix,
+        include_metadata,
+        max_results,
+    });
+
+    try {
+        const response = await fetch(`/api/reports/storage/files?${params}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+    
+        if (response.status > 299 || !response.ok) {
+            throw Error("Error getting report blobs");
+        }
+    
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error getting report blobs", error);
+        return { data: [] };
+    }
+}
+
 //This function, if sent with the "type" parameter, receives a request with the required report. If nothing is sent, it will receive all the reports from the container.
 export async function getFilteredReports(type?: string) {
     const url = type 
