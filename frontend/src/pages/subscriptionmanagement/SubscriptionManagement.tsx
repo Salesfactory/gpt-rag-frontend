@@ -133,7 +133,7 @@ const SubscriptionManagement: React.FC = () => {
     }
 
     const handleCheckout = async (priceId: string) => {
-        console.log(selectedSubscriptionName, selectedSubscriptionID)
+
     }
 
     const FinancialAssistantText = subscriptionStatus ? "You are subscribed to the Financial Assistant feature." : 
