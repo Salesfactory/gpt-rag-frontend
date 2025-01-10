@@ -388,7 +388,7 @@ Common 500 error scenarios:
 
 Endpoint to generate curated reports based on a specific topic 
 
-POST /api/SECEdgar/financialdocuments/curation
+POST /api/reports/generate/curation
 
 ### Example Request 
 
