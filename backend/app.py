@@ -3005,6 +3005,74 @@ def digest_report():
             'message': str(e)
         }), 500
 
+@app.route('/api/reports/storage/files', methods=['GET'])
+def list_blobs():
+    """ 
+    List blobs i nteh container with optional filtering
+
+    Query params: 
+    - prefix(str): filter blobs by prefix 
+    - include_metadata(str): include metadata in results 
+    - max_results(int): maximum number of results to return 
+    - container_name(str): name of the container to list blobs from 
+
+    Returns: 
+        JSON response with list of blobs 
+
+    Example Payload:
+    {
+        "prefix": "Reports/Curation_Reports/Monthly_Economics/",
+        "include_metadata": "yes",
+        "max_results": 10,
+        "container_name": "documents"
+    }
+    """
+
+    try: 
+        # get query params 
+        data = request.get_json()
+
+        container_name = data.get('container_name')
+        prefix = data.get('prefix', None)
+
+        include_metadata = data.get('include_metadata', 'no').lower()
+
+        # convert max_results to int
+        max_results = data.get('max_results', 10)
+
+        if not container_name:
+            return jsonify({
+                "status": "error",
+                "message": "Blob container name is required"
+            }), 400
+        
+        blob_storage_manager = BlobStorageManager()
+        blobs = blob_storage_manager.list_blobs_in_container(
+            container_name = container_name,
+            prefix = prefix,
+            include_metadata = include_metadata,
+            max_results =max_results 
+        )
+
+        return jsonify({
+            "status": "success",
+            "data": blobs,
+            "count": len(blobs)
+        }), 200
+    
+    except ValueError as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+    
+    except Exception as e:
+        logger.exception("Unexpected error in list_blobs")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

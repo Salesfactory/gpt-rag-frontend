@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from collections import defaultdict
 import markdown2
-from typing import Dict, List
+from typing import Dict, List, Any
 from datetime import datetime, timezone, timedelta
 
 import pandas as pd
@@ -346,6 +346,10 @@ class BlobStorageError(Exception):
 
 class BlobConnectionError(BlobStorageError):
     """Failed to connect to blob storage"""
+    pass
+
+class ContainerNotFoundError(BlobStorageError):
+    """Container not found in blob storage"""
     pass
 
 class BlobAuthenticationError(BlobStorageError):
@@ -700,6 +704,93 @@ class BlobStorageManager:
         return upload_results
     
 
+    def list_blobs_in_container(
+            self,
+            container_name: str,
+            prefix: str = None,
+            include_metadata: str = 'no',
+            max_results: int = None
+    ) -> List[Dict[str, Any]]:
+        """ 
+        List blobs in a container with filtering and metadat 
+
+        Args: 
+            container_name(str): Name of the container to list blobs from 
+            prefix(str, optional): Filter results to blob with this prefix
+            include_metadata(str, optional): Include metadata in results 
+            max_results (int, optional): Maximum number of results to return 
+
+        Returns:
+            List[Dict[str, Any]]: List of blobs information dictionaries containing 
+                - name: Blob name 
+                - size: size in bytes
+                - created_on: Creation timestamp 
+                - last_modified: Last modified timestamp 
+                - content_type: MIME type of the blob 
+                - metadata: Blob metadata if include_metadata is True 
+                - url: Blob URL 
+        
+        Raises: 
+            ValueError: If container_name is empty or max_results is invalid
+            ContainerNotFoundError: if container doesn't exist
+            BlobAuthenticationError: if authentication fails
+        """
+        if not container_name or not container_name.strip():
+            raise ValueError("Container name is required and cannot be empty")
+        
+        if max_results is None and max_results <= 0:
+            raise ValueError("max_results must be greater than 0")
+        
+        try: 
+            container_client = self.blob_service_client.get_container_client(container_name)
+
+            # Verify container exists
+            if not container_client.exists():
+                raise ContainerNotFoundError(f"Container not found: {container_name}")
+            
+            # build list params 
+            list_params = {
+                "name_starts_with": prefix if prefix else None, 
+                "results_per_page": max_results
+            }
+
+            # list blobs with params 
+            blob_list = []
+            blobs = container_client.list_blobs(**{k: v for k, v in list_params.items() if v is not None})
+        
+            for blob in blobs:
+                blob_info = {
+                    "name": blob.name,
+                    "size": blob.size, 
+                    "created_on": blob.creation_time.isoformat(),
+                    "last_modified": blob.last_modified.isoformat(),
+                    "content_type": blob.content_settings.content_type,
+                    "url": f"{self.blob_service_client.url}{container_name}/{blob.name}"
+                }
+                if include_metadata == 'yes':
+                    try: 
+                        blob_client = container_client.get_blob_client(blob.name)
+                        properties = blob_client.get_blob_properties()
+                        blob_info['metadata'] = properties.metadata 
+                    except Exception as e:
+                        logger.warning(f"Failed to retrieve metadata for {blob.name}: {str(e)}")
+                        blob_info['metadata'] = None
+
+                blob_list.append(blob_info)
+
+                if max_results and len(blob_list) >= max_results: 
+                    break        
+
+            return blob_list
+
+        except Exception as e: 
+            if "AuthenticationFailed" in str(e):
+                raise BlobAuthenticationError(f"Error authenticating with blob storage: {str(e)}")
+            logger.error(f"Error listing blobs in container: {str(e)}")
+            raise 
+
+
+
 from sec_edgar_downloader import Downloader
 from utils import cleanup_resources
 class FinancialDocumentProcessor:
@@ -838,7 +929,10 @@ class FinancialDocumentProcessor:
 # example usage for get_document_metadata
 if __name__ == "__main__":
     doc_processor = BlobStorageManager()
-    content = doc_processor.get_rpcontent_from_blob_path('/Reports/Curation_Reports/Monthly_Economics/December_2024.html')
-    print(content)
-
-
+    blobs = doc_processor.list_blobs_in_container(
+        container_name='documents',
+        prefix="Reports/Curation_Reports/Ecommerce",
+        include_metadata='yes',
+        max_results=10
+    )
+    print(blobs)
