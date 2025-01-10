@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 TEMP_DIR = "blob_downloads"
 EMAIL_ENDPOINT = '/api/reports/email'
 PDF_OUTPUT_NAME = "report.pdf"
+AZURE_FUNCTION_URL = f"{os.getenv('AZURE_FUNCTION_URL')}{os.getenv('AZURE_FUNCTION_CODE')}"
 
 ####################################
 # Pydantic Models
@@ -289,10 +290,45 @@ class ReportProcessor:
             raise 
     
     def html_to_pdf(self, html_content: str, output_path: str) -> Path:
-        """Convert the html content to a pdf file."""
-        from weasyprint import HTML
-        HTML(string=html_content).write_pdf(output_path)
-        return Path(output_path)
+        """Convert the html content to a pdf file using the azure function"""
+        import requests 
+
+        # Format the payload exactly as shown in the working test
+        payload = {
+            "html": html_content
+        }
+        
+        try: 
+            # Make the request with timeout
+            logger.info(f"Calling the pdf converter")
+            response = requests.post(
+                AZURE_FUNCTION_URL,
+                json=payload,  # Use json parameter to match the raw JSON format
+                timeout=30  
+            )
+            response.raise_for_status()
+
+            # Create directory if it doesn't exist
+            output_dir = Path(output_path).parent
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            # Save the PDF content to a file
+            logger.info(f"Saving the PDF to {output_path}")
+            with open(output_path, 'wb') as f:
+                f.write(response.content)
+            logger.info(f"PDF saved successfully")
+
+            return Path(output_path)
+
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error occurred: {e.response.text if e.response else str(e)}")
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error occurred: {str(e)}")
+            raise
+        except IOError as e:
+            logger.error(f"Error saving PDF file: {str(e)}")
+            raise
 
     def cleanup(self) -> None:
         """Clean up temporary files. """
@@ -417,32 +453,3 @@ def process_and_send_email(blob_link: str,
         except Exception as e:
             logger.exception(f"Error processing and sending email: {str(e)}")
             return False
-
-
-
-# """  
-
-# Requirements for this endpoint:
-# - Blob link from the report
-# - List of recipients
-# - Optional: attachment path and email subject
-# - email_subject: subject of the email
-
-
-
-# What does this endpoint do?
-
-# 1. Download the report from the blob link -> that's why we need the blob link 
-# 2. Open the report and extract the content from the local path 
-# 3. Summarize the report -> that's why we need to initialize the llm and the prompt 
-# 4. parse the summary into the email schema -> use llm to parse 
-# 5. render the email template -> use the email template manager to render the email template with jinja2
-# 6. pass the formatted email to the email service endpoint 
-# 7. send the email to the recipients 
-# ---------------------------------------------------
-# What do I need for the email service endpoint? ? 
-# 1. List of recipients 
-# 2. Subject of the email 
-# 3. Link to the blob report content (original). Get the link where it is downloaded 
-# 4. html content for the email (formatted)  
-# """
