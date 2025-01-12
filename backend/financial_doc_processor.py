@@ -41,8 +41,31 @@ def get_secret(secretName):
     return retrieved_secret.value
 
 
+# Retrieve the connection string for Azure Blob Storage from secrets
 BLOB_CONNECTION_STRING = get_secret("storageConnectionString")
+# Retrieve the Blob container name from environment variables
 BLOB_CONTAINER_NAME = os.getenv("BLOB_CONTAINER_NAME")
+
+# Validate that the connection string is available
+if not BLOB_CONNECTION_STRING:
+    raise ValueError(
+        "The connection string for Azure Blob Storage (BLOB_CONNECTION_STRING) is not set. Please ensure it is correctly configured."
+    )
+
+# Validate that the container name is provided
+if not BLOB_CONTAINER_NAME:
+    raise ValueError(
+        "The Blob container name (BLOB_CONTAINER_NAME) is not set. Please ensure it is correctly configured."
+    )
+
+# Assign the Blob container name to a variable for clarity
+blob_container_name = BLOB_CONTAINER_NAME
+
+# Initialize the Blob service client using the provided connection string
+blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
+
+# Get the container client for the specified Blob container
+container_client = blob_service_client.get_container_client(blob_container_name)
 
 
 # configure logging
@@ -127,15 +150,6 @@ def collect_filing_documents(
         raise
 
     return dict(document_paths)
-
-
-BLOB_CONNECTION_STRING = os.getenv("BLOB_CONNECTION_STRING")
-if not BLOB_CONNECTION_STRING:
-    raise ValueError("BLOB_CONNECTION_STRING environment variable is not set")
-blob_container_name = BLOB_CONTAINER_NAME
-
-blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
-container_client = blob_service_client.get_container_client(blob_container_name)
 
 
 def validate_document_paths(document_paths: Dict[str, Dict[str, str]]) -> bool:
