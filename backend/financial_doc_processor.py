@@ -31,41 +31,73 @@ from app_config import BLOB_CONTAINER_NAME, PDF_PATH
 load_dotenv()
 
 
-def get_secret(secretName):
-    keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
-    KVUri = f"https://{keyVaultName}.vault.azure.net"
-    credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=KVUri, credential=credential)
-    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")
-    retrieved_secret = client.get_secret(secretName)
-    return retrieved_secret.value
+def get_secret(secret_name):
+    """
+    Retrieve a secret value from Azure Key Vault.
+
+    Args:
+        secret_name (str): The name of the secret to retrieve.
+
+    Returns:
+        str: The value of the secret.
+
+    Raises:
+        Exception: If the secret cannot be retrieved.
+    """
+    try:
+        keyVaultName = os.getenv("AZURE_KEY_VAULT_NAME")
+        if not keyVaultName:
+            raise ValueError("Environment variable 'AZURE_KEY_VAULT_NAME' is not set.")
+
+        KVUri = f"https://{keyVaultName}.vault.azure.net"
+        credential = DefaultAzureCredential()
+        client = SecretClient(vault_url=KVUri, credential=credential)
+        logging.info(
+            f"[webbackend] retrieving {secret_name} secret from {keyVaultName}."
+        )
+        retrieved_secret = client.get_secret(secret_name)
+        return retrieved_secret.value
+    except Exception as e:
+        logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
+        raise
 
 
 # Retrieve the connection string for Azure Blob Storage from secrets
-BLOB_CONNECTION_STRING = get_secret("storageConnectionString")
+try:
+    BLOB_CONNECTION_STRING = get_secret("storageConnectionString")
+    if not BLOB_CONNECTION_STRING:
+        raise ValueError(
+            "The connection string for Azure Blob Storage (BLOB_CONNECTION_STRING): '{BLOB_CONNECTION_STRING}' is not set. Please ensure it is correctly configured."
+        )
+
+    logging.info("Successfully retrieved Blob connection string.")
+    # Validate that the connection string is available
+
+except Exception as e:
+    logging.error("Error retrieving the connection string for Azure Blob Storage.")
+    logging.debug(f"Detailed error: {e}")  # Log detailed errors at the debug level
+    raise
+
 # Retrieve the Blob container name from environment variables
 BLOB_CONTAINER_NAME = os.getenv("BLOB_CONTAINER_NAME")
-
-# Validate that the connection string is available
-if not BLOB_CONNECTION_STRING:
-    raise ValueError(
-        "The connection string for Azure Blob Storage (BLOB_CONNECTION_STRING) is not set. Please ensure it is correctly configured."
-    )
-
-# Validate that the container name is provided
 if not BLOB_CONTAINER_NAME:
     raise ValueError(
         "The Blob container name (BLOB_CONTAINER_NAME) is not set. Please ensure it is correctly configured."
     )
 
-# Assign the Blob container name to a variable for clarity
-blob_container_name = BLOB_CONTAINER_NAME
-
-# Initialize the Blob service client using the provided connection string
-blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
-
-# Get the container client for the specified Blob container
-container_client = blob_service_client.get_container_client(blob_container_name)
+# Initialize the Blob service client
+try:
+    blob_service_client = BlobServiceClient.from_connection_string(
+        BLOB_CONNECTION_STRING
+    )
+    container_client = blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
+    if not container_client.exists():
+        logging.warning(f"Blob container '{BLOB_CONTAINER_NAME}' does not exist.")
+        # Uncomment below to create the container dynamically:
+        # container_client.create_container()
+except Exception as e:
+    logging.error(f"Failed to initialize Blob service client or access container: {e}")
+    raise
 
 
 # configure logging
