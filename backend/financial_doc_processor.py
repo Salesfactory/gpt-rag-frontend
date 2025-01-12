@@ -721,7 +721,22 @@ class BlobStorageManager:
 
         if document_paths and file_path:
             raise ValueError("Cannot provide both document_paths and file_path")
+        try:
+            blob_sas_token = get_secret("blobSasToken")
+            if not blob_sas_token:
+                raise ValueError(
+                    "The SAS token for Azure Blob Storage (blob_sas_token) is not set. Please ensure it is correctly configured."
+                )
 
+            logging.info("Successfully retrieved Blob SAS token.")
+            # Validate that the SAS token is available
+
+        except Exception as e:
+            logging.error("Error retrieving the SAS token for Azure Blob Storage.")
+            logging.debug(
+                f"Detailed error: {e}"
+            )  # Log detailed errors at the debug level
+            raise
         # Handle single file upload
         if file_path:
             if not os.path.exists(file_path):
@@ -753,7 +768,7 @@ class BlobStorageManager:
                         raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
 
                 # get the blob url for the uploaded file
-                blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
+                blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{blob_sas_token}"
 
                 result = {
                     "status": "success",
@@ -771,7 +786,22 @@ class BlobStorageManager:
         # Handle document_paths dictionary upload (original functionality)
         if not isinstance(document_paths, dict):
             raise ValueError("document_paths must be a dictionary")
+        try:
+            blob_sas_token = get_secret("blobSasToken")
+            if not blob_sas_token:
+                raise ValueError(
+                    "The SAS token for Azure Blob Storage (blob_sas_token) is not set. Please ensure it is correctly configured."
+                )
 
+            logging.info("Successfully retrieved Blob SAS token.")
+            # Validate that the SAS token is available
+
+        except Exception as e:
+            logging.error("Error retrieving the SAS token for Azure Blob Storage.")
+            logging.debug(
+                f"Detailed error: {e}"
+            )  # Log detailed errors at the debug level
+            raise
         upload_results = {}
         for equity, filings in document_paths.items():
             upload_results[equity] = {}
@@ -813,7 +843,7 @@ class BlobStorageManager:
                             )
 
                     # get the blob url for the uploaded file
-                    blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{os.getenv('BLOB_SAS_TOKEN')}"
+                    blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{blob_sas_token}"
                     upload_results[equity][filing_type] = {
                         "status": "success",
                         "blob_path": blob_path,
