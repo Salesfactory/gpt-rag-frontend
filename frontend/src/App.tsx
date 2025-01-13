@@ -12,6 +12,7 @@ import HelpCenter from "./pages/helpcenter/HelpCenter";
 import UploadResources from "./pages/resources/UploadResources";
 import RequestStudies from "./pages/studies/RequestStudies";
 import ReportManagement from "./pages/reports/ReportManagement";
+import Reports from "./pages/reports/Reports";
 import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
@@ -103,12 +104,13 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["platformAdmin"]}
+                        allowedRoles={["admin", "platformAdmin"]}
                         allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
                     />
                 }
             >
                 <Route element={<Layout />}>
+                    <Route path="/view-reports" element={<Reports />} />
                     <Route path="/view-manage-reports" element={<ReportManagement />} />
                     <Route path="/details-settings" element={<DistributionLists />} />
                 </Route>
@@ -117,7 +119,7 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["platformAdmin"]}
+                        allowedRoles={["admin", "platformAdmin"]}
                         allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
                     />
                 }
