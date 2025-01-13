@@ -7,6 +7,7 @@ import styles from "./Organization.module.css";
 
 const Organization = () => {
     const { organization } = useAppContext();
+    const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
 
     if (!organization) {
         return (
@@ -53,7 +54,7 @@ const Organization = () => {
                         </div>
                         <div className={styles.infoItem}>
                             <Label>Subscription Expiration</Label>
-                            <span className={styles.info}>{organization?.subscriptionExpirationDate} </span>
+                            <span className={styles.info}>{expirationDate} </span>
                         </div>
                     </div>
                 </div>

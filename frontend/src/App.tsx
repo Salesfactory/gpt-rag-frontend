@@ -8,7 +8,6 @@ import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
 import Organization from "./pages/organization/Organization";
-import FinancialAssistant from "./pages/financialassistant/FinancialAssistant";
 import HelpCenter from "./pages/helpcenter/HelpCenter";
 import UploadResources from "./pages/resources/UploadResources";
 import RequestStudies from "./pages/studies/RequestStudies";
@@ -80,9 +79,8 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
-                    <Route path="/financialassistant" element={<FinancialAssistant />} />
-                    <Route path="/subscription-management" element={<SubscriptionManagement />} />
-                    <Route path="/manage-email-lists" element={<UserManagement />} />
+                    <Route path="/subscription-management" element={<SubscriptionManagement/>}/>
+                    <Route path="/manage-email-lists" element={<UserManagement/>}/>
                 </Route>
             </Route>
 
