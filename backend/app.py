@@ -1115,9 +1115,7 @@ def create_checkout_session():
     organizationId = request.json["organizationId"]
     try:
         checkout_session = stripe.checkout.Session.create(
-            line_items=[
-                {"price": price, "quantity": 1},
-            ],
+            line_items=[{"price": price, "quantity": 1}],
             mode="subscription",
             client_reference_id=userId,
             metadata={"userId": userId, "organizationId": organizationId},
