@@ -16,6 +16,21 @@ class LLMConfig(BaseModel):
     api_version: str = Field(default=os.getenv("AZURE_OPENAI_API_VERSION"))
     model_name: str = Field(default=os.getenv("OPENAI_GPT_MODEL"))
 
+    def __init__(self, **data):
+        super().__init__(**data)
+        if not self.api_base:
+            raise ValueError(
+                "Environment variable 'AZURE_OPENAI_ENDPOINT' is required."
+            )
+        if not self.api_key:
+            raise ValueError("Environment variable 'AZURE_OPENAI_API_KEY' is required.")
+        if not self.api_version:
+            raise ValueError(
+                "Environment variable 'AZURE_OPENAI_API_VERSION' is required."
+            )
+        if not self.model_name:
+            raise ValueError("Environment variable 'OPENAI_GPT_MODEL' is required.")
+
     class Config:
         frozen = True  # Makes the config immutable
 
