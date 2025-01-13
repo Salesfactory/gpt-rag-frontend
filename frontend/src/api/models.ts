@@ -107,7 +107,8 @@ export type PostSettingsProps = {
 };
 
 export type SummarizationReportProps = {
-    name: string;
+    templateType: string;
     description: string;
-    companyTickers: string[];
+    companyTicker: string;
+    companyName: string;
 }
