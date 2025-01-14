@@ -14,8 +14,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install zip
-        run: sudo apt-get update && sudo apt-get install -y zip
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
+          zip \
+          libpango-1.0-0 \
+          libharfbuzz0b \
+          libpangoft2-1.0-0 \
+          libharfbuzz-subset0 \
+          libffi-dev \
+          libjpeg-dev \
+          libopenjp2-7-dev \
+          libglib2.0-0 \
+          libglib2.0-dev \
+          libcairo2 \
+          libcairo2-dev \
+          libpangocairo-1.0-0 \
+          pkg-config \
+          python3-dev \
+          python3-cffi \
+          libgobject-2.0-0
 
       - name: Azure Login
         uses: azure/login@v2

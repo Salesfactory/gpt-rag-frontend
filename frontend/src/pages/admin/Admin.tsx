@@ -289,7 +289,17 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     );
 };
 
-export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser }: { isOpen: boolean; onDismiss: any; onConfirm: any; isDeletingUser: boolean; }) => {
+export const DeleteUserDialog = ({
+    isOpen,
+    onDismiss,
+    onConfirm,
+    isDeletingUser
+}: {
+    isOpen: boolean;
+    onDismiss: any;
+    onConfirm: any;
+    isDeletingUser: boolean;
+}) => {
     return (
         <Dialog
             minWidth={800}
@@ -307,37 +317,37 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser 
                 onDismiss: onDismiss,
                 styles: { main: { maxWidth: 450 } }
             }}
-            > 
-                {isDeletingUser && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            zIndex: 9999
+        >
+            {isDeletingUser && (
+                <div
+                    style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        zIndex: 9999
+                    }}
+                >
+                    <Spinner
+                        styles={{
+                            root: {
+                                width: "50px",
+                                height: "50px"
+                            }
                         }}
-                    >
-                        <Spinner
-                            styles={{
-                                root: {
-                                    width: "50px",
-                                    height: "50px"
-                                }
-                            }}
-                        />
-                    </div>
-                )}
-                <DialogContent>
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "end",
-                            gap: "10px"
-                        }}
-                    >
+                    />
+                </div>
+            )}
+            <DialogContent>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "end",
+                        gap: "10px"
+                    }}
+                >
                     <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
-                        <PrimaryButton
+                    <PrimaryButton
                         styles={{
                             root: {
                                 backgroundColor: "#9FC51D",
@@ -356,14 +366,14 @@ export const DeleteUserDialog = ({ isOpen, onDismiss, onConfirm, isDeletingUser 
                                 color: "white"
                             }
                         }}
-                            style={{ marginTop: "20px" }}
+                        style={{ marginTop: "20px" }}
                         onClick={() => {
                             onConfirm();
                         }}
-                            text="Delete user"
-                        />
-                    </div>
-                </DialogContent>
+                        text="Delete user"
+                    />
+                </div>
+            </DialogContent>
         </Dialog>
     );
 };
@@ -390,7 +400,6 @@ const Admin = () => {
     if (!user) {
         return <div>Please log in to view the user list.</div>;
     }
-
 
     useEffect(() => {
         const getUserList = async () => {
@@ -443,8 +452,8 @@ const Admin = () => {
     }, [search]);
 
     const handleDeleteClick = (user: any) => {
-        setSelectedUser(user); 
-        setIsDeleting(true);    
+        setSelectedUser(user);
+        setIsDeleting(true);
     };
 
     const deleteUserFromOrganization = (id: string) => {
@@ -468,185 +477,189 @@ const Admin = () => {
     return (
         <div className={styles.page_container}>
             <ToastContainer />
-            {user.role !== "admin" && <h1>Access denied</h1>}
-            {user.role === "admin" && (
-                <>
-                    <div id="options-row" className={styles.row}>
-                        <h1 className={styles.title}>Roles and access</h1>
-                    </div>
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            justifyContent: "space-between",
-                            alignItems: "center"
+            <>
+                <div id="options-row" className={styles.row}>
+                    <h1 className={styles.title}>Roles and access</h1>
+                </div>
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                    }}
+                >
+                    <PrimaryButton
+                        className={styles.option}
+                        disabled={loading}
+                        styles={{
+                            root: {
+                                backgroundColor: "#9FC51D",
+                                borderColor: "#9FC51D",
+                                color: "white",
+                                borderRadius: "6px"
+                            },
+                            rootHovered: {
+                                backgroundColor: "#ACC41D",
+                                borderColor: "#ACC41D",
+                                color: "white"
+                            },
+                            rootPressed: {
+                                backgroundColor: "#9FC51D",
+                                borderColor: "#9FC51D",
+                                color: "white"
+                            }
+                        }}
+                        onClick={() => {
+                            setIsOpen(true);
                         }}
                     >
-                        <PrimaryButton
-                            className={styles.option}
-                            disabled={loading}
-                            styles={{
-                                root: {
-                                    backgroundColor: "#9FC51D",
-                                    borderColor: "#9FC51D",
-                                    color: "white",
-                                    borderRadius: "6px"
-                                },
-                                rootHovered: {
-                                    backgroundColor: "#ACC41D",
-                                    borderColor: "#ACC41D",
-                                    color: "white"
-                                },
-                                rootPressed: {
-                                    backgroundColor: "#9FC51D",
-                                    borderColor: "#9FC51D",
-                                    color: "white"
-                                }
-                            }}
-                            onClick={() => {
-                                setIsOpen(true);
-                            }}
-                        >
-                            <AddFilled className={styles.addIcon} />
-                            Create user
-                        </PrimaryButton>
-                        <TextField
-                            placeholder="Search..."
-                            style={{
-                                width: "268px",
-                                borderRadius: "6px",
-                                border: "1px solid #9F9C9C",
-                                padding: "0px 15px"
-                            }}
-                            styles={{
-                                fieldGroup: {
-                                    border: "none",
-                                    borderRadius: "6px"
-                                },
-                                root: {
-                                    border: "none"
-                                },
-                                field: {
-                                    "::placeholder": {
-                                        color: "#979797"
-                                    }
-                                }
-                            }}
-                            onChange={(_ev, newValue) => {
-                                setSearch(newValue || "");
-                            }}
-                            iconProps={{
-                                iconName: "Search",
-                                children: <SearchRegular className={styles.searchIcon} />
-                            }}
-                        />
-                    </div>
-                    
-                    {loading?null:<CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />}
-                    <DeleteUserDialog
-                        isOpen={isDeleting}
-                        onDismiss={() => {
-                            setIsDeleting(false);
+                        <AddFilled className={styles.addIcon} />
+                        Create user
+                    </PrimaryButton>
+                    <TextField
+                        placeholder="Search..."
+                        style={{
+                            width: "240px",
+                            borderRadius: "6px",
+                            border: "1px solid #9F9C9C",
+                            padding: "0px 15px"
                         }}
-                        onConfirm={() => {
-                            deleteUserFromOrganization(selectedUser?.id);
+                        styles={{
+                            fieldGroup: {
+                                border: "none",
+                                borderRadius: "6px"
+                            },
+                            root: {
+                                border: "none"
+                            },
+                            field: {
+                                "::placeholder": {
+                                    color: "#979797"
+                                }
+                            }
                         }}
-                    isDeletingUser={isDeletingUser}
+                        onChange={(_ev, newValue) => {
+                            setSearch(newValue || "");
+                        }}
+                        iconProps={{
+                            iconName: "Search",
+                            children: <SearchRegular className={styles.searchIcon} />
+                        }}
                     />
-                    {loading ? (
-                        <Spinner
-                            styles={{
-                                root: {
-                                    marginTop: "50px"
-                                }
-                            }}
-                        />
-                    ) : (
-                        <div className={styles.tableContainer}>
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th
+                </div>
+
+                {loading ? null : <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />}
+                <DeleteUserDialog
+                    isOpen={isDeleting}
+                    onDismiss={() => {
+                        setIsDeleting(false);
+                    }}
+                    onConfirm={() => {
+                        deleteUserFromOrganization(selectedUser?.id);
+                    }}
+                    isDeletingUser={isDeletingUser}
+                />
+                {loading ? (
+                    <Spinner
+                        styles={{
+                            root: {
+                                marginTop: "50px"
+                            }
+                        }}
+                    />
+                ) : (
+                    <div className={styles.tableContainer}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th
+                                        style={{
+                                            padding: "10px"
+                                        }}
+                                    >
+                                        Name
+                                    </th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredUsers.map((user: any, index) => {
+                                    return (
+                                        <tr
+                                            key={user.id}
                                             style={{
-                                                padding: "10px"
+                                                backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
                                             }}
                                         >
-                                            Name
-                                        </th>
-                                        <th>Email</th>
-                                        <th>Role</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredUsers.map((user: any, index) => {
-                                        return (
-                                            <tr
-                                                key={user.id}
+                                            <td
                                                 style={{
-                                                    backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
+                                                    padding: "10px",
+                                                    textAlign: "justify"
                                                 }}
                                             >
-                                                <td
+                                                {user.data.name}
+                                            </td>
+                                            <td
+                                                style={{
+                                                    textAlign: "justify"
+                                                }}
+                                            >
+                                                {user.data.email}
+                                            </td>
+                                            <td>
+                                                <div
                                                     style={{
-                                                        padding: "10px",
-                                                        textAlign: "justify"
+                                                        width: "100%",
+                                                        justifyContent: "flex-start",
+                                                        justifyItems: "center",
+                                                        textAlign: "center",
+                                                        display: "flex",
+                                                        textTransform: "capitalize"
                                                     }}
                                                 >
-                                                    {user.data.name}
-                                                </td>
-                                                <td
-                                                    style={{
-                                                        textAlign: "justify"
-                                                    }}
-                                                >
-                                                    {user.data.email}
-                                                </td>
-                                                <td>
                                                     <div
                                                         style={{
-                                                            width: "100%",
-                                                            justifyContent: "flex-start",
-                                                            justifyItems: "center",
-                                                            textAlign: "center",
-                                                            display: "flex",
-                                                            textTransform: "capitalize"
+                                                            width: "100px",
+                                                            backgroundColor: user.data.role === "admin" ? "#d7e9f4" : "#d7e5be",
+                                                            padding: "5px",
+                                                            color: user.data.role === "admin" ? "#064789" : "#1b4332",
+                                                            borderRadius: "15px"
                                                         }}
                                                     >
-                                                        <div
-                                                            style={{
-                                                                width: "100px",
-                                                                backgroundColor: user.data.role === "admin" ? "#d7e9f4" : "#d7e5be",
-                                                                padding: "5px",
-                                                                color: user.data.role === "admin" ? "#064789" : "#1b4332",
-                                                                borderRadius: "15px"
+                                                        {user.data.role}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {
+                                                    <div>
+                                                        <button className={styles.button} title="Edit user" aria-label="Edit user" onClick={() => {}}>
+                                                            <EditRegular />
+                                                        </button>
+                                                        <button
+                                                            className={styles.button}
+                                                            title="Delete user"
+                                                            aria-label="Delete user"
+                                                            onClick={() => {
+                                                                handleDeleteClick(user);
                                                             }}
                                                         >
-                                                            {user.data.role}
-                                                        </div>
+                                                            <DeleteRegular />
+                                                        </button>
                                                     </div>
-                                                </td>
-                                                <td>
-                                                    {
-                                                        <div>
-                                                            <button className={styles.button} title="Edit user" aria-label="Edit user" onClick={() => {}}>
-                                                                <EditRegular />
-                                                            </button>
-                                                            <button className={styles.button} title="Delete user" aria-label="Delete user" onClick={() => {handleDeleteClick(user)}}>
-                                                                <DeleteRegular />
-                                                            </button>
-                                                        </div>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </>
-            )}
+                                                }
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </>
         </div>
     );
 };

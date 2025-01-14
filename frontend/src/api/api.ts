@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo } from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -246,7 +246,6 @@ export function getCitationFilePath(citation: string): string {
         const parsedResponse = JSON.parse(xhr.responseText);
         storage_account = parsedResponse["storageaccount"];
     }
-    console.log("storage account:" + storage_account);
 
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
@@ -581,3 +580,217 @@ export async function getInvitations({ user }: any): Promise<any> {
         return { data: null };
     }
 }
+
+//create report type "curation" or "companySummarization"
+export async function createReport(reportData: object) {
+    const response = await fetch(`/api/reports`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reportData),
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating a new report");
+    }
+
+    const newReport = await response.json();
+    return newReport;
+}
+
+export async function getReportBlobs({
+    container_name,
+    prefix,
+    include_metadata,
+    max_results,
+}: {
+    container_name: string;
+    prefix: string;
+    include_metadata: string;
+    max_results: string;
+}) {
+    const params = new URLSearchParams({
+        container_name,
+        prefix,
+        include_metadata,
+        max_results,
+    });
+
+    try {
+        const response = await fetch(`/api/reports/storage/files?${params}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+    
+        if (response.status > 299 || !response.ok) {
+            throw Error("Error getting report blobs");
+        }
+    
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error getting report blobs", error);
+        return { data: [] };
+    }
+}
+
+//This function, if sent with the "type" parameter, receives a request with the required report. If nothing is sent, it will receive all the reports from the container.
+export async function getFilteredReports(type?: string) {
+    const url = type 
+        ? `/api/reports?type=${encodeURIComponent(type)}` 
+        : `/api/reports`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status > 299 || !response.ok) {
+        const errorType = type ? `type ${type}` : "all reports";
+        throw new Error(`Error getting reports for ${errorType}`);
+    }
+
+    const reports = await response.json();
+    return reports;
+}
+
+// Summarization reports 
+export async function getSummarizationTemplates() {
+    const response = await fetch('/api/reports/summarization/templates', {method: 'GET', headers: {'Content-Type': 'application/json'}});
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error getting summarization templates');
+    }
+    const reports = await response.json();
+    return reports.data;
+}
+
+export async function getSummarizationReportTemplateByID(templateID: string) {
+    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {method: 'GET', headers: {'Content-Type': 'application/json'}});
+    const report = await response.json();
+    return report.data;
+}
+
+export async function createSummarizationReport(templateData: SummarizationReportProps) {
+    const response = await fetch('/api/reports/summarization/templates', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(templateData),
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error creating a new summarization report');
+    }
+
+    const newReport = await response.json();
+    return newReport;
+}
+
+export async function deleteSummarizationReportTemplate(templateID: string) {
+    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error('Error deleting summarization report');
+    }
+    const deletedReport = await response.json();
+    return deletedReport;
+}
+
+export async function deleteReport(reportId: string) {
+    const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status === 404) {
+        throw Error(`Report with ID ${reportId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error deleting report with ID ${reportId}`);
+    }
+}
+
+export async function updateUser({ userId, updatedData }: { userId: string; updatedData: object }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData)
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating user with ID ${userId}`);
+    }
+}
+
+export async function changeSubscription({ subscriptionId, newPlanId}: {subscriptionId: string;newPlanId: string;}): Promise<any> {
+    
+    try {
+        const response = await fetch(`/api/subscriptions/${subscriptionId}/change`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                new_plan_id: newPlanId,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Subscription change failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const result: { message: string; subscription: any; } = await response.json();
+
+        console.log("Subscription changed successfully:", result.message);
+        return result.subscription;
+    } catch (error) {
+        console.error(
+            "Error changing subscription:",
+            error instanceof Error ? error.message : error
+        );
+        throw error;
+    }
+}
+
+export async function cancelSubscription({ subscriptionId }: {subscriptionId: string;}): Promise<void> {
+    
+    try {
+        const response = await fetch(`/api/subscriptions/${subscriptionId}/cancel`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Subscription cancellation failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        console.log("Subscription canceled successfully");
+    } catch (error) {
+        console.error(
+            "Error canceling subscription:",
+            error instanceof Error ? error.message : error
+        );
+        throw error;
+    }
+}
+
