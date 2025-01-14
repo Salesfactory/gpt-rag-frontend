@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, EmailStr
 from report_email_templates.email_templates import EmailTemplateManager
 from llm_config import LLMManager
 from financial_doc_processor import BlobStorageManager
+from utils import EmailService
 from dotenv import load_dotenv
 import requests
 
@@ -23,7 +24,6 @@ logger = logging.getLogger(__name__)
 TEMP_DIR = "blob_downloads"
 PDF_OUTPUT_NAME = "report.pdf"
 HTML_TO_PDF_ENDPOINT = os.getenv('ORCHESTRATOR_URI') + "/api/html_to_pdf_converter"
-EMAIL_ENDPOINT = os.getenv('WEB_APP_URL') + '/api/reports/email'
 
 def get_secret(secretName):
     keyVaultName = os.getenv("AZURE_KEY_VAULT_NAME")
@@ -441,50 +441,36 @@ def send_email(
             # if attachment path is 'no', set it to None
             if attachment_path.lower() == 'no':
                 payload["attachment_path"] = None
-        
+            else:
+                payload["attachment_path"] = str(attachment_path)
+
         if email_subject:
             payload["subject"] = email_subject
-        
-        
-        logger.info(f"Sending email request to: {EMAIL_ENDPOINT}")
+
         logger.info(f"Payload: {payload}")
 
-        # Add headers if needed (e.g., for authentication)
-        headers = {
-            "Content-Type": "application/json",
+        email_config = {
+            "smtp_server": os.getenv("EMAIL_HOST"),
+            "smtp_port": os.getenv("EMAIL_PORT"),
+            "username": os.getenv("EMAIL_USER"),
+            "password": os.getenv("EMAIL_PASS"),
         }
 
-        response = requests.post(
-            EMAIL_ENDPOINT, 
-            json=payload, 
-            headers=headers,
-            timeout=30  # Add timeout to prevent hanging
-        )
-        
-        # Log the response details for debugging
-        logger.info(f"Response status code: {response.status_code}")
-        logger.info(f"Response headers: {dict(response.headers)}")
+        email_service = EmailService(**email_config)
 
-        if response.status_code == 200:
-            logger.info(f"Email sent successfully at {datetime.now(timezone.utc)}")
-            logger.info(f"Recipients: {recipients}")
-            return True
-        
-        # Handle error responses
-        error_message = f"Failed to send email. Status code: {response.status_code}"
-        try:
-            error_data = response.json()
-            error_message += f". Error: {error_data.get('message', 'Unknown error')}"
-        except requests.exceptions.JSONDecodeError:
-            error_message += f". Response: {response.text[:200] if response.text else 'No response body'}"
-        
-        logger.error(error_message)
-        raise EmailSendingError(error_message)
-        
-    except requests.exceptions.ConnectionError as e:
-        error_msg = f"Connection error while sending email: {str(e)}. Please ensure the email service is running at {EMAIL_ENDPOINT}"
-        logger.error(error_msg)
-        raise EmailSendingError(error_msg)
+        email_params = {
+            "subject": payload["subject"],
+            "html_content": payload["html_content"],
+            "recipients": payload["recipients"],
+            "attachment_path": payload.get("attachment_path"),
+        }
+
+        # send the email
+        email_service.send_email(**email_params)
+
+        logger.info(f"Email sent successfully at {datetime.now(timezone.utc)}")
+        logger.info(f"Recipients: {recipients}")
+        return True
     except requests.exceptions.RequestException as e:
         error_msg = f"Network error while sending email: {str(e)}"
         logger.error(error_msg)
