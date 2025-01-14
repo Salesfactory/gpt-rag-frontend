@@ -27,7 +27,6 @@ export const TemplateReports: React.FC = () => {
             setLoading(true);
             try {
                 let templateList = await getSummarizationTemplates();
-                console.log(templateList);
                 if (!Array.isArray(templateList)) {
                     templateList = [];
                 }
