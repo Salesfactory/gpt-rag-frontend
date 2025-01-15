@@ -266,7 +266,9 @@ const SubscriptionManagement: React.FC = () => {
                         ) : (
                             <div>
                                 <Label className={styles.modalTitle}>Subscription Confirmation</Label>
-                                <Label className={styles.modalText}>Are you sure you want to subscribe to the {selectedSubscriptionName} plan?</Label>
+                                <Label className={styles.modalText}>Are you sure you want to subscribe to the {selectedSubscriptionName} plan?
+                                    The subscription change will charge the new subscription fee
+                                </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
                                     <PrimaryButton onClick={() => handleCheckout(selectedSubscriptionID)} text="Confirm Subscription" />
