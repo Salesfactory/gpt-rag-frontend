@@ -153,9 +153,11 @@ const SubscriptionManagement: React.FC = () => {
         } finally{
             setLoading(false)
             setIsSubscriptionChangeModal(true);
+            setDataLoad(true)
             timer = setTimeout(() => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
+            //If we don't reload the page, the subscription tiers won't update correctly in the platform
             window.location.reload();
         }
         
