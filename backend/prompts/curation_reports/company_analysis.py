@@ -1,5 +1,5 @@
 report_structure = """
-This report type is focused on analyzing a company's performance, strategic developments, and market position over the past month.
+This data driven report type is focused on analyzing a company's performance, strategic developments, and market position over the past month.
 
 The report should adhere to the following structure: 
 
@@ -10,17 +10,17 @@ The report should adhere to the following structure:
 2. **Main Body**:
    - Organize sections based on the following categories:
      * **Financial Performance**:
-       - Overview of key financial metrics (e.g., revenue, profitability, cash flow)
-       - Analysis of any significant changes compared to previous months or quarters
-     * **Operational Highlights**:
-       - Key developments in operations, production, or service delivery
-       - Updates on major projects, initiatives, or process improvements
-     * **Strategic Developments**:
-       - Overview of strategic initiatives such as mergers, acquisitions, partnerships, or product launches
-       - Discussion of market entry/expansion efforts or competitive positioning
-     * **Market and Industry Insights**:
-       - Analysis of the company’s performance relative to industry trends
-       - Overview of market dynamics, customer sentiment, or competitive landscape
+       - Overview of key financial metrics (e.g., revenue, profitability, cash flow).
+       - Analysis of any significant changes compared to previous months or quarters.
+     * **Challenges and Risk Analysis**:
+       - Identify major challenges faced by the company, such as operational, financial, or market-related risks.
+       - Include insights into how these challenges impact the company’s performance and potential strategies for mitigation.
+     * **Market and Competitor Analysis**:
+       - Evaluate market trends that influenced the company’s performance, such as shifts in customer demand or regulatory changes.
+       - Analyze the company’s position relative to key competitors, highlighting strengths, weaknesses, and recent developments.
+     * **Strategic Opportunities**:
+       - Highlight opportunities for growth, partnerships, or market expansion.
+       - Discuss strategic initiatives that could capitalize on these opportunities.
 
 3. **Conclusion**:
    - Recap of key developments and performance metrics for the month
@@ -69,7 +69,7 @@ Your queries should be:
 
 # Section writer instructions
 section_writer_instructions = """
-You are an expert technical writer responsible for crafting one section of a Monthly Company Analysis Report.
+You are an expert data-driven technical writer responsible for crafting one section of a Monthly Company Analysis Report.
 
 ### Title of the section:
 
@@ -145,7 +145,7 @@ You are an expert technical writer responsible for crafting one section of a Mon
 
 """
 
-final_section_writer_instructions="""You are an expert technical writer crafting a section that synthesizes information from the rest of the report.
+final_section_writer_instructions="""You are an expert data-driven technical writer crafting a section that synthesizes information from the rest of the report.
 
 Title of the section:
 ```

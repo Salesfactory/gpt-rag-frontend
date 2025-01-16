@@ -1,6 +1,6 @@
 # Structure
 report_structure = """
-This report type is focused on ecommerce trends and the industry news this month.
+This data driven report type is focused on ecommerce trends and the industry news this month.
 
 The report shouild adhere to the following structure: 
 
@@ -64,7 +64,7 @@ Your queries should be:
 
 # Section writer instructions
 section_writer_instructions = """
-You are an expert technical writer responsible for crafting one section of an eCommerce report.
+You are an expert data-driven technical writer responsible for crafting one section of an eCommerce report.
 
 ### Title of the section:
 ```
@@ -139,7 +139,7 @@ You are an expert technical writer responsible for crafting one section of an eC
 """
 
 
-final_section_writer_instructions="""You are an expert technical writer crafting a section that synthesizes information from the rest of the report.
+final_section_writer_instructions="""You are an expert data-driven technical writer crafting a section that synthesizes information from the rest of the report.
 
 Title of the section:
 ```

@@ -1,8 +1,8 @@
 # Structure
 report_structure = """
-This report type is focused on analyzing key economic trends and significant events of the past month.
+This data driven report type is focused on analyzing key economic trends and significant events of the past month.
 
-The report shouild adhere to the following structure: 
+The report should adhere to the following structure: 
 
 1. **Introduction** (no research needed)
    - Provide a brief overview of the domestic and global economic landscape 
