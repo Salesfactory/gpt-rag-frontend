@@ -341,9 +341,8 @@ def _extract_response_data(response):
 from typing import List
 from email.message import EmailMessage
 import smtplib
-from dotenv import load_dotenv
-load_dotenv()
 
+EMAIL_CONTAINER_NAME = 'emails'
 class EmailServiceError(Exception):
     """Base exception for email service errors"""
     pass
@@ -433,24 +432,29 @@ class EmailService:
         """
         Save the email content to a blob storage container
         """
-        EMAIL_CONTAINER_NAME = 'emails'
         from azure.storage.blob import BlobServiceClient
         from datetime import datetime, timezone
         from azure.storage.blob import ContentSettings
-
-        blob_service_client = BlobServiceClient.from_connection_string(os.getenv('BLOB_CONNECTION_STRING'))
-        blob_container_client = blob_service_client.get_container_client(EMAIL_CONTAINER_NAME)
-        
-        # get the blob storage container
+        from azure.identity import DefaultAzureCredential
         from financial_doc_processor import BlobUploadError
         import uuid
 
 
+        credential = DefaultAzureCredential()
+        BLOB_STORAGE_URL = f"https://{os.getenv('STORAGE_ACCOUNT')}.blob.core.windows.net"
+        blob_service_client = BlobServiceClient(
+            account_url=BLOB_STORAGE_URL,
+            credential=credential
+        )
+        blob_container_client = blob_service_client.get_container_client(EMAIL_CONTAINER_NAME)
         # create an id for the email 
         email_id = str(uuid.uuid4())
-
+        timestamp = datetime.now(timezone.utc).isoformat()
+        # get date only from timestamp
+        date_only = timestamp.split('T')[0]
+        
         # create a blob name for the email 
-        blob_name = f"{email_id}/content.html"
+        blob_name = f"{date_only}/{email_id}/content.html"
 
         # add metadata to the blob
         metadata = {
