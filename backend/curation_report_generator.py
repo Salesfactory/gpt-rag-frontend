@@ -53,7 +53,7 @@ web_search_tool = CustomSearchClient()
 # **kwargs: Additional parameters to pass to the search endpoint (e.g., include_domains)
 
 MAX_RESULTS = 3 # for web search query results
-REPORT_TYPES = Literal["Ecommerce", "Monthly_Economics", "Weekly_Economics"]
+REPORT_TYPES = Literal["Ecommerce", "Monthly_Economics", "Weekly_Economics", "Company_Analysis"]
 
 # get the right system prompt for the report
 

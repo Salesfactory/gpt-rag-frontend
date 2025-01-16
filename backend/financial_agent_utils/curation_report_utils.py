@@ -10,7 +10,8 @@ current_year = datetime.now().strftime("%Y")
 REPORT_TOPIC_PROMPT_DICT = {
     "Ecommerce": f"Please provide an ecommerce report for {current_month} {current_year}",
     "Monthly_Economics": f"Please provide an economics report for {current_month} {current_year}",
-    "Weekly_Economics": f"Please provide an economics report for this week"
+    "Weekly_Economics": f"Please provide an economics report for this week",
+    "Company_Analysis": f"Please provide a company analysis report in {current_month} {current_year} for company_name"
 }    
 
 
