@@ -499,6 +499,44 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     return session;
 }
 
+export async function getCustomerId({ subscriptionId }: { subscriptionId: any }): Promise<any> {
+    const response = await fetch("/get-customer", {
+        method: "POST",
+        headers: {
+           "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({
+            subscription_id: subscriptionId
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session")
+    }
+
+    const data = await response.json();
+    return data.customer_id;
+}
+
+export async function createCustomerPortalSession({ customerId, return_url }: any){
+    const response = await fetch("/create-customer-portal-session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            customer: customerId,
+            return_url
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session");
+    }
+
+    const session = await response.json();
+    return session;
+    
+}
+
 export async function getProductPrices({ user }: { user: any }): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";

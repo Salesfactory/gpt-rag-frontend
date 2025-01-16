@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./SubscriptionManagement.module.css"
 import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
-import { getFinancialAssistant, getProductPrices, removeFinancialAssistant, upgradeSubscription } from "../../api";
+import { createCustomerPortalSession, getCustomerId, getFinancialAssistant, getProductPrices, removeFinancialAssistant, upgradeSubscription } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 
@@ -133,7 +133,19 @@ const SubscriptionManagement: React.FC = () => {
     }
 
     const handleCheckout = async (priceId: string) => {
-
+        
+        if(subscriptionName === selectedSubscriptionName){
+            const customerId = await getCustomerId({
+                subscriptionId: organization?.subscriptionId
+            })
+    
+            const { url } = await createCustomerPortalSession({
+                customerId: customerId,
+                return_url: window.location.origin + "/#/subscription-management"
+            })
+            window.location.href = url;
+        }
+        
     }
 
     const FinancialAssistantText = subscriptionStatus ? "You are subscribed to the Financial Assistant feature." : 

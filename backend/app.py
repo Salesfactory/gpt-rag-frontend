@@ -1133,6 +1133,41 @@ def create_checkout_session():
 
     return jsonify({"url": checkout_session.url})
 
+@app.route("/get-customer", methods=['POST'])
+def get_customer():
+
+    subscription_id = request.json["subscription_id"]
+
+    try:
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        customer_id = subscription.get("customer")
+
+        if not customer_id:
+            return jsonify({"error": "No customer_id found for the provided subscription."}), 404
+        
+        return jsonify({"customer_id": customer_id}), 200
+
+    except stripe.error.StripeError as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": "Unexpected error: " + str(e)}), 500
+
+@app.route("/create-customer-portal-session", methods=["POST"])
+def create_customer_portal_session():
+    customer = request.json["customer"]
+    return_url = request.json["return_url"]
+
+    try:
+
+        portal_session = stripe.billing_portal.Session.create(
+            customer = customer,
+            return_url = return_url
+        )
+
+    except Exception as e:
+        return str(e)
+    
+    return jsonify({"url": portal_session.url})
 
 @app.route("/api/stripe", methods=["GET"])
 def getStripe():
