@@ -19,6 +19,11 @@ const DistributionLists: React.FC = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dataLoad, setDataLoad] = useState(false)
+    const roleStyles: { [key in 'admin' | 'user' | 'platformAdmin']: string }  = {
+        admin: styles.roleAdmin,
+        user: styles.roleUser,
+        platformAdmin: styles.rolePlatformAdmin,
+    }
 
     useEffect(() => {
         const getUserList = async () => {
@@ -111,7 +116,7 @@ const DistributionLists: React.FC = () => {
                                             </td>
                                             <td>
                                                 <div className={styles.roleContainer}>
-                                                    <div className={`${user.data.role === "admin" ? styles.roleAdmin : styles.roleUser}`}>
+                                                    <div className={roleStyles[user.data.role as 'admin' | 'user' | 'platformAdmin'] || ""}>
                                                         {user.data.role}
                                                     </div>
                                                 </div>
