@@ -55,6 +55,7 @@ from shared.cosmo_db import (
     create_report,
     get_report,
     get_user_container,
+    patch_user_data,
     update_report,
     delete_report,
     get_filtered_reports,
@@ -911,6 +912,27 @@ def updateUser(*, context, user_id):
             jsonify({"error": "An unexpected error occurred. Please try again later."}),
             500,
         )
+
+
+#Update User data info
+
+@app.route("/api/user/<user_id>/data", methods=["PATCH"])
+def patchUserData(user_id):
+    """
+    Endpoint to update the 'name' and 'email' fields of a user's 'data'
+    """
+    try:
+        patch_data = request.get_json()
+
+        if patch_data is None or not isinstance(patch_data, dict):
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        patch_data = patch_user_data(user_id, patch_data)
+        return "User data updated successfully", 204
+
+    except Exception as e:
+        logging.exception(f"Error updating user data for user ID {user_id}")
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 
 @app.route("/api/reports", methods=["GET"])

@@ -738,6 +738,24 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
     }
 }
 
+export async function updateUserData({ userId, patchData }: { userId: string; patchData: object }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}/data`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patchData)
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating user data of ID ${userId}`);
+    }
+}
+
 export async function changeSubscription({ subscriptionId, newPlanId}: {subscriptionId: string;newPlanId: string;}): Promise<any> {
     
     try {

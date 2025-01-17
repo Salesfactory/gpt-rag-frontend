@@ -330,3 +330,45 @@ def update_user(user_id, updated_data):
     except Exception as e:
         logging.error(f"Unexpected error while updating report with id '{user_id}': {e}")
         raise
+
+def patch_user_data(user_id, patch_data):
+    """
+    Updates the 'name', 'email' and role fields in the 'data' object of an existing user.
+
+    Handles database errors and raises exceptions as needed.
+    """
+    container = get_cosmos_container("users")
+
+    try:
+        
+        current_user = get_user_container(user_id)
+
+        if current_user is None:
+            logging.warning(f"User with id '{user_id}' not found in Cosmos DB.")
+            raise NotFound
+
+        allowed_keys = {"name", "email", "role"}
+        user_data = current_user.get("data", {})
+
+        for key in patch_data:
+            if key in allowed_keys:
+                user_data[key] = patch_data[key]
+
+        current_user["data"] = user_data
+        current_user["id"] = user_id
+
+        container.upsert_item(current_user)
+        logging.info(f"User data updated successfully: {current_user}")
+        return current_user
+
+    except CosmosResourceNotFoundError:
+        logging.error(f"User with id '{user_id}' not found during upsert.")
+        raise NotFound(f"Cannot update user because it does not exist with id '{user_id}'")
+
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+
+    except Exception as e:
+        logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
+        raise
