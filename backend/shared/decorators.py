@@ -1,29 +1,14 @@
 import os
 from flask import request, jsonify
 from functools import wraps
-from azure.keyvault.secrets import SecretClient
-from azure.identity import DefaultAzureCredential
-
-
-def get_secret(secretName):
-    try:
-        keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
-        KVUri = f"https://{keyVaultName}.vault.azure.net"
-        credential = DefaultAzureCredential()
-        client = SecretClient(vault_url=KVUri, credential=credential)
-        retrieved_secret = client.get_secret(secretName)
-        return retrieved_secret.value
-    except Exception as e:
-        print(f"Error retrieving secret {secretName}: {str(e)}")
-        return None
-
+from utils import get_azure_key_vault_secret
 
 def validate_token():
     """
     Decorator for Flask routes that requires a valid token in the Authorization header.
     """
 
-    secret = get_secret("webbackend-token")
+    secret = get_azure_key_vault_secret("webbackend-token")
 
     def decorator(f):
         @wraps(f)

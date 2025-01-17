@@ -18,7 +18,6 @@ from flask import (
 
 from flask_cors import CORS
 from dotenv import load_dotenv
-from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
@@ -48,6 +47,7 @@ from utils import (
     MissingJSONPayloadError,
     MissingRequiredFieldError,
     require_client_principal,
+    get_azure_key_vault_secret,
 )
 import stripe.error
 
@@ -95,18 +95,7 @@ INVITATION_LINK = os.getenv("INVITATION_LINK")
 LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
 logging.basicConfig(level=LOGLEVEL)
 
-
-def get_secret(secretName):
-    keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
-    KVUri = f"https://{keyVaultName}.vault.azure.net"
-    credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=KVUri, credential=credential)
-    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")
-    retrieved_secret = client.get_secret(secretName)
-    return retrieved_secret.value
-
-
-SPEECH_KEY = get_secret("speechKey")
+SPEECH_KEY = get_azure_key_vault_secret("speechKey")
 
 SPEECH_RECOGNITION_LANGUAGE = os.getenv("SPEECH_RECOGNITION_LANGUAGE")
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
@@ -116,7 +105,7 @@ AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
 # Retrieve the connection string for Azure Blob Storage from secrets
 try:
-    AZURE_STORAGE_CONNECTION_STRING = get_secret("storageConnectionString")
+    AZURE_STORAGE_CONNECTION_STRING = get_azure_key_vault_secret("storageConnectionString")
     if not AZURE_STORAGE_CONNECTION_STRING:
         raise ValueError(
             "The connection string for Azure Blob Storage (AZURE_STORAGE_CONNECTION_STRING):  is not set. Please ensure it is correctly configured."
@@ -390,7 +379,7 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
         # Get function key from Key Vault
         key_secret_name = "orchestrator-host--checkuser"
-        function_key = get_secret(key_secret_name)
+        function_key = get_azure_key_vault_secret(key_secret_name)
         if not function_key:
             raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
 
@@ -545,7 +534,7 @@ def chatgpt():
         else:
             keySecretName = "orchestrator-host--functionKey"
 
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -598,7 +587,7 @@ def getChatHistory():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--conversations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -632,7 +621,7 @@ def getChatConversation(chat_id):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     try:
         keySecretName = "orchestrator-host--conversations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         return jsonify({"error": f"Error getting function key: {e}"}), 500
 
@@ -654,7 +643,7 @@ def deleteChatConversation(chat_id):
     try:
         client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
         keySecretName = "orchestrator-host--conversations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
 
         url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
@@ -1138,7 +1127,7 @@ def create_checkout_session():
 def getStripe():
     try:
         keySecretName = "stripeKey"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
         return functionKey
     except Exception as e:
         logging.exception("[webbackend] exception in /api/stripe")
@@ -1182,7 +1171,7 @@ def webhook():
             # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
             # It is set during the infrastructure deployment.
             keySecretName = "orchestrator-host--subscriptions"
-            functionKey = get_secret(keySecretName)
+            functionKey = get_azure_key_vault_secret(keySecretName)
         except Exception as e:
             logging.exception(
                 "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1296,7 +1285,7 @@ def getSettings():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--settings"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -1351,7 +1340,7 @@ def setSettings():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--settings"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -1419,7 +1408,7 @@ def setFeedback():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--feedback"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--feedback")
         return (
@@ -1473,7 +1462,7 @@ def getUsers():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
@@ -1512,7 +1501,7 @@ def deleteUser():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
@@ -1685,7 +1674,7 @@ def getInvitations():
         )
     try:
         keySecretName = "orchestrator-host--invitations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1722,7 +1711,7 @@ def createInvitation():
         )
     try:
         keySecretName = "orchestrator-host--invitations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1775,7 +1764,7 @@ def checkUser():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
@@ -1818,7 +1807,7 @@ def getOrganization():
         )
     try:
         keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1863,7 +1852,7 @@ def createOrganization():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             f"[webbackend] exception in /api/orchestrator-host--subscriptions {e}"
@@ -1913,7 +1902,7 @@ def getUser():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
