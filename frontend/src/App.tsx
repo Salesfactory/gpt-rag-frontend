@@ -8,11 +8,11 @@ import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
 import Organization from "./pages/organization/Organization";
-import FinancialAssistant from "./pages/financialassistant/FinancialAssistant";
 import HelpCenter from "./pages/helpcenter/HelpCenter";
 import UploadResources from "./pages/resources/UploadResources";
 import RequestStudies from "./pages/studies/RequestStudies";
 import ReportManagement from "./pages/reports/ReportManagement";
+import Reports from "./pages/reports/Reports";
 import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
@@ -24,6 +24,8 @@ import CurationReports from "./pages/reports/CurationReports";
 import CurationCreation from "./pages/reports/ReportCreation/CurationCreation";
 import SummarizationReports from "./pages/reports/SummarizationReports";
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
+import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
+import { TemplateReports } from "./pages/reports/ReportTemplates";
 
 export default function App() {
     return (
@@ -78,9 +80,8 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
-                    <Route path="/financialassistant" element={<FinancialAssistant />} />
-                    <Route path="/subscription-management" element={<SubscriptionManagement />} />
-                    <Route path="/manage-email-lists" element={<UserManagement />} />
+                    <Route path="/subscription-management" element={<SubscriptionManagement/>}/>
+                    <Route path="/manage-email-lists" element={<UserManagement/>}/>
                 </Route>
             </Route>
 
@@ -103,12 +104,13 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["platformAdmin"]}
+                        allowedRoles={["admin", "platformAdmin"]}
                         allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
                     />
                 }
             >
                 <Route element={<Layout />}>
+                    <Route path="/view-reports" element={<Reports />} />
                     <Route path="/view-manage-reports" element={<ReportManagement />} />
                     <Route path="/details-settings" element={<DistributionLists />} />
                 </Route>
@@ -117,16 +119,18 @@ export default function App() {
             <Route
                 element={
                     <ProtectedRoute
-                        allowedRoles={["platformAdmin"]}
+                        allowedRoles={["admin", "platformAdmin"]}
                         allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
                     />
                 }
             >
                 <Route element={<Layout />}>
                     <Route path="/curation-reports" element={<CurationReports />} />
-                    <Route path="/create-curation-report" element={<CurationCreation />} />
-                    <Route path="/summarization-reports" element={<SummarizationReports />} />
-                    <Route path="/create-summarization-report" element={<SummarizationCreation />} />
+                    <Route path="/create-curation-report" element={<CurationCreation />}/>
+                    <Route path="/summarization-reports" element={<SummarizationReports />}/>
+                    <Route path="/create-summarization-report" element={<SummarizationCreation/>}/>
+                    <Route path="/report-templates" element={<TemplateReports/>}/>
+                    <Route path="/create-template-report" element={<TemplateCreation/>}/>
                 </Route>
             </Route>
 

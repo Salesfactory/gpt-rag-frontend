@@ -51,7 +51,7 @@ from utils import (
 )
 import stripe.error
 
-from shared.cosmo_db import(
+from shared.cosmo_db import (
     create_report,
     get_report,
     get_user_container,
@@ -62,7 +62,7 @@ from shared.cosmo_db import(
     delete_template,
     get_templates,
     get_template_by_ID,
-    update_user
+    update_user,
 )
 
 load_dotenv(override=True)
@@ -70,14 +70,14 @@ load_dotenv(override=True)
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
 ORCHESTRATOR_URI = os.getenv("ORCHESTRATOR_URI", default="")
-SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/settings"
-FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/feedback"
-HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/conversations"
-CHECK_USER_ENDPOINT = ORCHESTRATOR_URI + "/checkUser"
-SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/subscriptions"
-INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/invitations"
+SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/api/settings"
+FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/api/feedback"
+HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/api/conversations"
+CHECK_USER_ENDPOINT = ORCHESTRATOR_URI + "/api/checkUser"
+SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/api/subscriptions"
+INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/api/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
-FINANCIAL_ASSISTANT_ENDPOINT = ORCHESTRATOR_URI + "/financial-orc"
+FINANCIAL_ASSISTANT_ENDPOINT = ORCHESTRATOR_URI + "/api/financial-orc"
 PRODUCT_ID_DEFAULT = os.getenv("STRIPE_PRODUCT_ID")
 
 # email
@@ -111,8 +111,25 @@ SPEECH_KEY = get_secret("speechKey")
 SPEECH_RECOGNITION_LANGUAGE = os.getenv("SPEECH_RECOGNITION_LANGUAGE")
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
+
+
+# Retrieve the connection string for Azure Blob Storage from secrets
+try:
+    AZURE_STORAGE_CONNECTION_STRING = get_secret("storageConnectionString")
+    if not AZURE_STORAGE_CONNECTION_STRING:
+        raise ValueError(
+            "The connection string for Azure Blob Storage (AZURE_STORAGE_CONNECTION_STRING):  is not set. Please ensure it is correctly configured."
+        )
+
+    logging.info("Successfully retrieved Blob connection string.")
+    # Validate that the connection string is available
+
+except Exception as e:
+    logging.error("Error retrieving the connection string for Azure Blob Storage.")
+    logging.debug(f"Detailed error: {e}")  # Log detailed errors at the debug level
+    raise
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -649,9 +666,11 @@ def deleteChatConversation(chat_id):
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
 
-#get report by id argument from Container Reports
+
+# get report by id argument from Container Reports
 @app.route("/api/reports/<report_id>", methods=["GET"])
-def getReport(report_id):
+@auth.login_required()
+def getReport(*, context, report_id):
     """
     Endpoint to get a report by ID.
     """
@@ -662,12 +681,16 @@ def getReport(report_id):
         logging.warning(f"Report with id {report_id} not found.")
         return jsonify({"error": f"Report with this id {report_id} not found"}), 404
     except Exception as e:
-        logging.exception(f"An error occurred retrieving the report with id {report_id}")
+        logging.exception(
+            f"An error occurred retrieving the report with id {report_id}"
+        )
         return jsonify({"error": "Internal Server Error"}), 500
 
-#create Reports curation and companySummarization container Reports
+
+# create Reports curation and companySummarization container Reports
 @app.route("/api/reports", methods=["POST"])
-def createReport():
+@auth.login_required()
+def createReport(*, context):
     """
     Endpoint to create a new report.
     """
@@ -676,17 +699,24 @@ def createReport():
 
         if not data:
             return jsonify({"error": "Invalid or missing JSON payload"}), 400
-        
+
         # Validate the 'name' field
         if "name" not in data:
             return jsonify({"error": "Field 'name' is required"}), 400
-        
+
         # Validate the 'type' field
         if "type" not in data:
             return jsonify({"error": "Field 'type' is required"}), 400
 
         if data["type"] not in ["curation", "companySummarization"]:
-            return jsonify({"error": "Invalid 'type'. Must be 'curation' or 'companySummarization'"}), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid 'type'. Must be 'curation' or 'companySummarization'"
+                    }
+                ),
+                400,
+            )
 
         # Validate fields according to type
         if data["type"] == "companySummarization":
@@ -694,24 +724,52 @@ def createReport():
             missing_fields = [field for field in required_fields if field not in data]
 
             if missing_fields:
-                return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"Missing required fields: {', '.join(missing_fields)}"
+                        }
+                    ),
+                    400,
+                )
 
             # Validate 'reportTemplate'
             valid_templates = ["10-K", "10-Q", "8-K", "DEF 14A"]
             if data["reportTemplate"] not in valid_templates:
-                return jsonify({"error": f"'reportTemplate' must be one of: {', '.join(valid_templates)}"}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"'reportTemplate' must be one of: {', '.join(valid_templates)}"
+                        }
+                    ),
+                    400,
+                )
 
         elif data["type"] == "curation":
             required_fields = ["category"]
             missing_fields = [field for field in required_fields if field not in data]
 
             if missing_fields:
-                return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"Missing required fields: {', '.join(missing_fields)}"
+                        }
+                    ),
+                    400,
+                )
 
             # Validate 'category'
             valid_categories = ["Ecommerce", "Weekly Economic", "Monthly Economic"]
             if data["category"] not in valid_categories:
-                return jsonify({"error": f"'category' must be one of: {', '.join(valid_categories)}"}), 400
+                return (
+                    jsonify(
+                        {
+                            "error": f"'category' must be one of: {', '.join(valid_categories)}"
+                        }
+                    ),
+                    400,
+                )
 
         # Validar the 'status' field
         if "status" not in data:
@@ -719,7 +777,12 @@ def createReport():
 
         valid_statuses = ["active", "archived"]
         if data["status"] not in valid_statuses:
-            return jsonify({"error": f"'status' must be one of: {', '.join(valid_statuses)}"}), 400
+            return (
+                jsonify(
+                    {"error": f"'status' must be one of: {', '.join(valid_statuses)}"}
+                ),
+                400,
+            )
 
         # Delegate report creation
         new_report = create_report(data)
@@ -727,11 +790,16 @@ def createReport():
 
     except Exception as e:
         logging.exception("Error creating report")
-        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+        return (
+            jsonify({"error": "An unexpected error occurred. Please try again later."}),
+            500,
+        )
 
-#update Reports curation and companySummarization container Reports
+
+# update Reports curation and companySummarization container Reports
 @app.route("/api/reports/<report_id>", methods=["PUT"])
-def updateReport(report_id):
+@auth.login_required()
+def updateReport(*, context, report_id):
     """
     Endpoint to update a report by ID.
     """
@@ -740,42 +808,60 @@ def updateReport(report_id):
 
         if updated_data is None:
             return jsonify({"error": "Invalid or missing JSON payload"}), 400
-        
+
         updated_report = update_report(report_id, updated_data)
         return "", 204
-    
+
     except NotFound as e:
         logging.warning(f"Tried to update a report that doesn't exist: {report_id}")
-        return jsonify({"error": f"Tried to update a report with this id {report_id} that does not exist"}), 404
+        return (
+            jsonify(
+                {
+                    "error": f"Tried to update a report with this id {report_id} that does not exist"
+                }
+            ),
+            404,
+        )
 
     except Exception as e:
-        logging.exception(f"Error updating report with ID {report_id}")  # Logs the full exception
-        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
-    
-#delete report from Container Reports
+        logging.exception(
+            f"Error updating report with ID {report_id}"
+        )  # Logs the full exception
+        return (
+            jsonify({"error": "An unexpected error occurred. Please try again later."}),
+            500,
+        )
+
+
+# delete report from Container Reports
 @app.route("/api/reports/<report_id>", methods=["DELETE"])
-def deleteReport(report_id):
+@auth.login_required()
+def deleteReport(*, context, report_id):
     """
     Endpoint to delete a report by ID.
     """
     try:
         delete_report(report_id)
-        
-        return "",204
-    
+
+        return "", 204
+
     except NotFound as e:
         # If the report does not exist, return 404 Not Found
         logging.warning(f"Report with id {report_id} not found.")
         return jsonify({"error": f"Report with id {report_id} not found."}), 404
-    
+
     except Exception as e:
         logging.exception(f"Error deleting report with id {report_id}")
-        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+        return (
+            jsonify({"error": "An unexpected error occurred. Please try again later."}),
+            500,
+        )
 
 
-#Get User for email receivers
+# Get User for email receivers
 @app.route("/api/user/<user_id>", methods=["GET"])
-def getUserid(user_id):
+@auth.login_required()
+def getUserid(*, context, user_id):
     """
     Endpoint to get a user by ID.
     """
@@ -789,9 +875,11 @@ def getUserid(user_id):
         logging.exception(f"An error occurred retrieving the report with id {user_id}")
         return jsonify({"error": "Internal Server Error"}), 500
 
-#Update Users
+
+# Update Users
 @app.route("/api/user/<user_id>", methods=["PUT"])
-def updateUser(user_id):
+@auth.login_required()
+def updateUser(*, context, user_id):
     """
     Endpoint to update a user
     """
@@ -800,20 +888,34 @@ def updateUser(user_id):
 
         if updated_data is None:
             return jsonify({"error": "Invalid or missing JSON payload"}), 400
-        
+
         updated_data = update_user(user_id, updated_data)
         return "", 204
-    
+
     except NotFound as e:
         logging.warning(f"Tried to update a user that doesn't exist: {user_id}")
-        return jsonify({"error": f"Tried to update a user with this id {user_id} that does not exist"}), 404
+        return (
+            jsonify(
+                {
+                    "error": f"Tried to update a user with this id {user_id} that does not exist"
+                }
+            ),
+            404,
+        )
 
     except Exception as e:
-        logging.exception(f"Error updating user with ID {user_id}")  # Logs the full exception
-        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+        logging.exception(
+            f"Error updating user with ID {user_id}"
+        )  # Logs the full exception
+        return (
+            jsonify({"error": "An unexpected error occurred. Please try again later."}),
+            500,
+        )
+
 
 @app.route("/api/reports", methods=["GET"])
-def getFilteredType():
+@auth.login_required()
+def getFilteredType(*, context):
     """
     Endpoint to obtain reports by type or retrieve all reports if no type is specified.
     """
@@ -835,8 +937,10 @@ def getFilteredType():
         logging.exception(f"Error retrieving reports.")
         return jsonify({"error": "Internal Server Error"}), 500
 
+
 @app.route("/api/reports/summarization/templates", methods=["POST"])
-def addSummarizationReport():
+@auth.login_required()
+def addSummarizationReport(*, context):
     """
     Endpoint to add a summarization report template.
 
@@ -855,32 +959,41 @@ def addSummarizationReport():
         data = request.get_json()
         if not data:
             raise MissingJSONPayloadError('Missing JSON payload')
-        if not "name" in data:
-            raise MissingRequiredFieldError('name')
+        if not "templateType" in data:
+            raise MissingRequiredFieldError('templateType')
         if not "description" in data:
             raise MissingRequiredFieldError('description')
-        if not "companyTickers" in data:
-            raise MissingRequiredFieldError('companyTickers')
-        valid_names=["10-K", "10-Q", "8-K", "DEF 14A"]
-        if not data["name"] in valid_names:
-            raise InvalidParameterError('name', f"Must be one of: {', '.join(valid_names)}")
-        new_template = {'name': data['name'], 'companyTickers': data['companyTickers'], 'description': data['description'], 'status': 'active', 'type': 'summarization'}
+        if not "companyTicker" in data:
+            raise MissingRequiredFieldError('companyTicker')
+        if not "companyName" in data:
+            raise MissingRequiredFieldError('companyName')
+        if not data["templateType"] in ALLOWED_FILING_TYPES:
+            raise InvalidParameterError('templateType', f"Must be one of: {', '.join(ALLOWED_FILING_TYPES)}")
+        new_template = {'templateType': data['templateType'], 'description': data['description'], 'companyTicker': data['companyTicker'], 'companyName': data['companyName'], 'status': 'active', 'type': 'summarization'}
         # add to cosmosDB container
         result = create_template(new_template)
         return create_success_response(result)
     except MissingJSONPayloadError as e:
-        return create_error_response("Invalid or Missing JSON payload", HTTPStatus.BAD_REQUEST)
+        return create_error_response(
+            "Invalid or Missing JSON payload", HTTPStatus.BAD_REQUEST
+        )
     except MissingRequiredFieldError as field:
-        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+        return create_error_response(
+            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
+        )
     except InvalidParameterError as e:
         return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
     except Exception as e:
         logging.exception(e)
-        return jsonify({"error": "An unexpected error occurred. Please try again later."}), HTTPStatus.INTERNAL_SERVER_ERROR
+        return (
+            jsonify({"error": "An unexpected error occurred. Please try again later."}),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
 
-@app.route('/api/reports/summarization/templates/<template_id>', methods=['DELETE'])
-def removeSummarizationReport(template_id):
+@app.route("/api/reports/summarization/templates/<template_id>", methods=["DELETE"])
+@auth.login_required()
+def removeSummarizationReport(*, context, template_id):
     """
     Endpoint to remove a summarization report template by ID.
 
@@ -897,35 +1010,53 @@ def removeSummarizationReport(template_id):
     """
     try:
         if not template_id:
-            raise MissingRequiredFieldError('template_id')
-        #delete from cosmosDB container
+            raise MissingRequiredFieldError("template_id")
+        # delete from cosmosDB container
         result = delete_template(template_id)
         return create_success_response(result)
     except NotFound as e:
-        return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
+        return create_error_response(
+            f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND
+        )
     except MissingRequiredFieldError as field:
-        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+        return create_error_response(
+            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
+        )
     except Exception as e:
-        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
+        return create_error_response(
+            "An unexpected error occurred. Please try again later.",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
-@app.route('/api/reports/summarization/templates/', methods=['GET'])
-def getSummarizationReports():
+
+@app.route("/api/reports/summarization/templates/", methods=["GET"])
+@auth.login_required()
+def getSummarizationReports(*, context):
     try:
         result = get_templates()
         return create_success_response(result)
     except Exception as e:
-        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR) 
+        return create_error_response(
+            "An unexpected error occurred. Please try again later.",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
-@app.route('/api/reports/summarization/templates/<template_id>', methods=['GET'])
-def getSummarizationReport(template_id):
+
+@app.route("/api/reports/summarization/templates/<template_id>", methods=["GET"])
+@auth.login_required()
+def getSummarizationReport(*, context, template_id):
     try:
         result = get_template_by_ID(template_id)
         return create_success_response(result)
     except NotFound as e:
-        return create_error_response(f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND)
+        return create_error_response(
+            f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND
+        )
     except Exception as e:
-        return create_error_response("An unexpected error occurred. Please try again later.", HTTPStatus.INTERNAL_SERVER_ERROR)
-
+        return create_error_response(
+            "An unexpected error occurred. Please try again later.",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
 
 # methods to provide access to speech services and blob storage account blobs
@@ -977,9 +1108,7 @@ def create_checkout_session():
     organizationId = request.json["organizationId"]
     try:
         checkout_session = stripe.checkout.Session.create(
-            line_items=[
-                {"price": price, "quantity": 1},
-            ],
+            line_items=[{"price": price, "quantity": 1}],
             mode="subscription",
             client_reference_id=userId,
             metadata={"userId": userId, "organizationId": organizationId},
@@ -1824,7 +1953,6 @@ def get_product_prices(product_id):
         logging.error(f"Error fetching prices: {e}")
         raise
 
-
 @app.route("/api/prices", methods=["GET"])
 def get_product_prices_endpoint():
     product_id = request.args.get("product_id", PRODUCT_ID_DEFAULT)
@@ -2258,7 +2386,74 @@ def determine_subscription_tiers(subscription):
 
     return tiers
 
+@app.route('/api/subscriptions/<subscription_id>/change', methods=['PUT'])
+def change_subscription(subscription_id):
+    try:
+        
+        data = request.json
+        new_plan_id = data.get('new_plan_id')
+        if not new_plan_id:
+            return jsonify({'error': 'new_plan_id is required'}), 400
 
+        # Retrieve subscription from Stripe
+        stripe_subscription = stripe.Subscription.retrieve(subscription_id)
+        if not stripe_subscription or stripe_subscription['status'] == 'canceled':
+            return jsonify({'error': 'Subscription not found or is already canceled'}), 404
+
+        # Update the plan, which is reflected and charged when changing it
+        updated_subscription = stripe.Subscription.modify(
+            subscription_id,
+            items=[{
+                'id': stripe_subscription['items']['data'][0]['id'],
+                'price': new_plan_id,
+            }],
+            proration_behavior='none',  # No proration
+            billing_cycle_anchor='now',  # Change the billing cycle so that it is charged at that moment
+            cancel_at_period_end=False  # Do not cancel the subscription
+        )
+
+        result = {
+            'message': 'Subscription change successfully',
+            'subscription': updated_subscription
+        }
+
+        return jsonify(result), 200
+
+    except stripe.error.InvalidRequestError as e:
+        return jsonify({'error': f'Invalid request: {str(e)}'}), 400
+    except stripe.error.AuthenticationError:
+        return jsonify({'error': 'Authentication with Stripe API failed'}), 403
+    except stripe.error.PermissionError:
+        return jsonify({'error': 'Permission error when accessing the Stripe API'}), 403
+    except stripe.error.RateLimitError:
+        return jsonify({'error': 'Too many requests to Stripe API, please try again later'}), 429
+    except stripe.error.StripeError as e:
+        return jsonify({'error': f'Stripe API error: {str(e)}'}), 500
+
+    except Exception as e:
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+
+@app.route('/api/subscriptions/<subscription_id>/cancel', methods=['DELETE'])
+def cancel_subscription(subscription_id):
+    try:
+
+        subscription = stripe.Subscription.retrieve(subscription_id)
+
+        if not subscription:
+            return jsonify({'message': 'Subscription not found'}), 404
+        
+        canceled_subscription = stripe.Subscription.delete(subscription_id)
+
+        return jsonify({'message': 'Subscription canceled successfully'}), 200
+
+    except stripe.error.InvalidRequestError as e:
+        return jsonify({'message': 'Invalid subscription ID'}), 404
+    except stripe.error.AuthenticationError as e:
+        return jsonify({'message': 'Unauthorized access'}), 403
+    except Exception as e:
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+    
 ################################################
 # Financial Doc Ingestion
 ################################################
@@ -2269,20 +2464,22 @@ from sec_edgar_downloader import Downloader
 from app_config import FILING_TYPES, BASE_FOLDER
 
 
-doc_processor = FinancialDocumentProcessor() # from financial_doc_processor
-@app.route('/api/SECEdgar/financialdocuments', methods=['GET'])
+doc_processor = FinancialDocumentProcessor()  # from financial_doc_processor
+
+
+@app.route("/api/SECEdgar/financialdocuments", methods=["GET"])
 def process_edgar_document():
     """
     Process a single financial document from SEC EDGAR.
-    
+
     Args for payload:
         equity_id (str): Stock symbol/ticker (e.g., 'AAPL')
         filing_type (str): SEC filing type (e.g., '10-K')
         after_date (str, optional): Filter for filings after this date (YYYY-MM-DD)
-        
+
     Returns:
         JSON Response with processing status and results
-        
+
     Raises:
         400: Invalid request parameters
         404: Document not found
@@ -2291,42 +2488,60 @@ def process_edgar_document():
     try:
         # Validate request and setup
         if not check_and_install_wkhtmltopdf():
-            return jsonify({
-                "status": "error",
-                "message": "Failed to install required dependency wkhtmltopdf",
-                "code": 500
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Failed to install required dependency wkhtmltopdf",
+                        "code": 500,
+                    }
+                ),
+                500,
+            )
 
         # Get and validate parameters
         data = request.get_json()
         if not data:
-            return jsonify({
-                "status": "error",
-                "message": "No data provided",
-                "code": 400
-            }), 400
+            return (
+                jsonify(
+                    {"status": "error", "message": "No data provided", "code": 400}
+                ),
+                400,
+            )
 
         # Extract and validate parameters
-        equity_id = data.get('equity_id')
-        filing_type = data.get('filing_type')
-        after_date = data.get('after_date', None)
+        equity_id = data.get("equity_id")
+        filing_type = data.get("filing_type")
+        after_date = data.get("after_date", None)
 
         if not equity_id or not filing_type:
-            return jsonify({
-                "status": "error",
-                "message": "Both equity_id and filing_type are required",
-                "code": 400
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Both equity_id and filing_type are required",
+                        "code": 400,
+                    }
+                ),
+                400,
+            )
 
         if filing_type not in FILING_TYPES:
-            return jsonify({
-                "status": "error",
-                "message": f"Invalid filing type. Must be one of: {FILING_TYPES}",
-                "code": 400
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": f"Invalid filing type. Must be one of: {FILING_TYPES}",
+                        "code": 400,
+                    }
+                ),
+                400,
+            )
 
         # Download filing
-        download_result = doc_processor.download_filing(equity_id, filing_type, after_date)
+        download_result = doc_processor.download_filing(
+            equity_id, filing_type, after_date
+        )
 
         if download_result.get("status") != "success":
             return jsonify(download_result), download_result.get("code", 500)
@@ -2337,17 +2552,15 @@ def process_edgar_document():
 
     except Exception as e:
         logger.error(f"API execution failed: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e),
-            "code": 500
-        }), 500
+        return jsonify({"status": "error", "message": str(e), "code": 500}), 500
 
 
 from tavily_tool import TavilySearch
-@app.route('/api/web-search', methods = ['POST'])
+
+
+@app.route("/api/web-search", methods=["POST"])
 def web_search():
-    """ 
+    """
     Endpoint for multiple web search
 
     Expected Json body:
@@ -2361,74 +2574,83 @@ def web_search():
     """
     try:
         data = request.get_json()
-        
+
         # validate required fields:
-        if not data or 'query' not in data:
+        if not data or "query" not in data:
             logger.error("Missing required field: 'query'")
-            return jsonify({
-                'error': "Missing required field: 'query'"
-            }), 400
-        
-        # get optional parameters 
-        mode = data.get('mode', 'news')
-        max_results = data.get('max_results', 2)
+            return jsonify({"error": "Missing required field: 'query'"}), 400
+
+        # get optional parameters
+        mode = data.get("mode", "news")
+        max_results = data.get("max_results", 2)
         if not isinstance(max_results, int) or max_results < 1:
             logger.error(f"Invalid max_results: {max_results}")
-            return jsonify({
-                'error': "Invalid max_results. Please provide a positive integer."
-            }), 400
-        include_domains = data.get('include_domains', None)
+            return (
+                jsonify(
+                    {"error": "Invalid max_results. Please provide a positive integer."}
+                ),
+                400,
+            )
+        include_domains = data.get("include_domains", None)
         if include_domains is not None and not isinstance(include_domains, list):
             logger.error(f"Invalid include_domains: {include_domains}")
-            return jsonify({
-                'error': "Invalid include_domains. Please provide a list of strings."
-            }), 400
-        
-        search_days = data.get('search_days', 30)
-        
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid include_domains. Please provide a list of strings."
+                    }
+                ),
+                400,
+            )
+
+        search_days = data.get("search_days", 30)
 
         # initialize searcher
         logger.info("Initializing TavilySearch")
         try:
-            searcher = TavilySearch(max_results=max_results, 
-                                    include_domains=include_domains, 
-                                    search_days = search_days)
+            searcher = TavilySearch(
+                max_results=max_results,
+                include_domains=include_domains,
+                search_days=search_days,
+            )
         except ValueError as e:
             logger.error(f"Error initializing TavilySearch: {e}")
-            return jsonify({
-                'error': f"Invalid configuration: {str(e)}"
-            }), 400
+            return jsonify({"error": f"Invalid configuration: {str(e)}"}), 400
 
         # perform search based on mode. If mode is not provided, default to news
-        if mode.lower() == 'news':
+        if mode.lower() == "news":
             logger.info("Performing news search")
-            results = searcher.search_news(data['query'])
-        elif mode.lower() == 'general':
+            results = searcher.search_news(data["query"])
+        elif mode.lower() == "general":
             logger.info("Performing general search")
-            results = searcher.search_general(data['query'])
+            results = searcher.search_general(data["query"])
         else:
             logger.error("Invalid mode. Please use 'news' or 'general'.")
-            return jsonify({
-                'error': "Invalid mode. Please use 'news' or 'general'."
-            }), 400
-    
+            return (
+                jsonify({"error": "Invalid mode. Please use 'news' or 'general'."}),
+                400,
+            )
+
         # format results
         logger.info("Formatting search results")
         formatted_results = searcher.format_result(results)
-        
+
         logger.info("Search completed successfully")
         return jsonify(formatted_results)
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        return jsonify({
-            'error': "An error occurred while processing the request."
-        }), 500
+        return (
+            jsonify({"error": "An error occurred while processing the request."}),
+            500,
+        )
 
 
 from app_config import IMAGE_PATH
 from summarization import DocumentSummarizer
-@app.route('/api/SECEdgar/financialdocuments/summary', methods=['POST'])
+
+
+@app.route("/api/SECEdgar/financialdocuments/summary", methods=["POST"])
 def generate_summary():
     """
     Endpoint to generate a summary of financial documents from SEC Edgar.
@@ -2446,39 +2668,64 @@ def generate_summary():
     Both fields must be non-empty strings.
     """
     try:
-        try: 
+        try:
             data = request.get_json()
-            if not data: 
-                return jsonify({
-                    'error': 'Invalid request',
-                    'details': 'Request body is requred and must be a valid JSON object'
-                }), 400
-            equity_name = data.get('equity_name')
-            financial_type = data.get('financial_type')
+            if not data:
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid request",
+                            "details": "Request body is requred and must be a valid JSON object",
+                        }
+                    ),
+                    400,
+                )
+            equity_name = data.get("equity_name")
+            financial_type = data.get("financial_type")
 
             if not all([equity_name, financial_type]):
-                return jsonify({
-                    'error': 'Missing required fields',
-                    'details': 'equity_name and financial_type are required'
-                }), 400
-            
+                return (
+                    jsonify(
+                        {
+                            "error": "Missing required fields",
+                            "details": "equity_name and financial_type are required",
+                        }
+                    ),
+                    400,
+                )
+
             if not isinstance(equity_name, str) or not isinstance(financial_type, str):
-                return jsonify({
-                    'error': 'Invalid input type',
-                    'details': 'equity_name and financial_type must be strings'
-                }), 400
-            
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid input type",
+                            "details": "equity_name and financial_type must be strings",
+                        }
+                    ),
+                    400,
+                )
+
             if not equity_name.strip() or not financial_type.strip():
-                return jsonify({
-                    'error': 'Empty input',
-                    'details': 'equity_name and financial_type cannot be empty'
-                }), 400
-            
+                return (
+                    jsonify(
+                        {
+                            "error": "Empty input",
+                            "details": "equity_name and financial_type cannot be empty",
+                        }
+                    ),
+                    400,
+                )
+
         except ValueError as e:
-            return jsonify({
-                'error': 'Invalid input',
-                'details': f"Failed to parse request body: {str(e)}"
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid input",
+                        "details": f"Failed to parse request body: {str(e)}",
+                    }
+                ),
+                400,
+            )
 
         # Initialize components with error handling
         try:
@@ -2486,86 +2733,111 @@ def generate_summary():
             summarizer = DocumentSummarizer()
         except ConnectionError as e:
             logging.error(f"Failed to connect to blob storage: {e}")
-            return jsonify({
-                'error': 'Connection error',
-                'details': 'Failed to connect to storage service'
-            }), 503
+            return (
+                jsonify(
+                    {
+                        "error": "Connection error",
+                        "details": "Failed to connect to storage service",
+                    }
+                ),
+                503,
+            )
         except Exception as e:
             logging.error(f"Failed to initialize components: {e}")
-            return jsonify({
-                'error': 'Service initialization failed',
-                'details': str(e)
-            }), 500
+            return (
+                jsonify({"error": "Service initialization failed", "details": str(e)}),
+                500,
+            )
 
         # Reset directories
         try:
             reset_local_dirs()
         except PermissionError as e:
             logging.error(f"Permission error while cleaning up directories: {str(e)}")
-            return jsonify({
-                'error': 'Permission error',
-                'details': 'Failed to clean up directories due to permission issues'
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "error": "Permission error",
+                        "details": "Failed to clean up directories due to permission issues",
+                    }
+                ),
+                500,
+            )
         except OSError as e:
             logging.error(f"OS error while reseting directories: {str(e)}")
-            return jsonify({
-                'error': 'System error',
-                'details': 'Failed to prepare working directories'
-            }), 500
+            return (
+                jsonify(
+                    {
+                        "error": "System error",
+                        "details": "Failed to prepare working directories",
+                    }
+                ),
+                500,
+            )
         except Exception as e:
             logging.error(f"Failed to clean up directories: {e}")
-            return jsonify({
-                'error': 'Cleanup failed',
-                'details': 'Failed to clean up directories to prepare for processing'
-            }), 500
-        
+            return (
+                jsonify(
+                    {
+                        "error": "Cleanup failed",
+                        "details": "Failed to clean up directories to prepare for processing",
+                    }
+                ),
+                500,
+            )
+
         # Download documents
 
-        downloaded_files = blob_manager.download_documents(equity_name=equity_name, 
-                                                               financial_type=financial_type)
+        downloaded_files = blob_manager.download_documents(
+            equity_name=equity_name, financial_type=financial_type
+        )
 
         # Process documents
         for file_path in downloaded_files:
             doc_id = extract_pdf_pages_to_images(file_path, IMAGE_PATH)
-            
+
         # Generate summaries
         all_summaries = summarizer.process_document_images(IMAGE_PATH)
         final_summary = summarizer.generate_final_summary(all_summaries)
-        
+
         # Save the summary locally and upload to blob
-        local_output_path = f'pdf/{financial_type}_{equity_name}_summary.pdf'
+        local_output_path = f"pdf/{financial_type}_{equity_name}_summary.pdf"
         save_str_to_pdf(final_summary, local_output_path)
-        
+
         # Upload summary to blob
-        document_paths = create_document_paths(local_output_path, equity_name, financial_type)
+        document_paths = create_document_paths(
+            local_output_path, equity_name, financial_type
+        )
 
         # upload to blob and get the blob path/remote links
         upload_results = blob_manager.upload_to_blob(document_paths)
 
-        blob_path = upload_results[equity_name][financial_type]['blob_path']
-        blob_url = upload_results[equity_name][financial_type]['blob_url']
+        blob_path = upload_results[equity_name][financial_type]["blob_path"]
+        blob_url = upload_results[equity_name][financial_type]["blob_url"]
 
         # Clean up local directories
         try:
             reset_local_dirs()
         except Exception as e:
             logging.error(f"Failed to clean up directories: {e}")
-        
-        return jsonify({
-            'status': 'success',
-            'equity_name': equity_name,
-            'financial_type': financial_type,
-            'blob_path': blob_path,
-            'remote_blob_url': blob_url,
-            'summary': final_summary,
-        }), 200
+
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "equity_name": equity_name,
+                    "financial_type": financial_type,
+                    "blob_path": blob_path,
+                    "remote_blob_url": blob_url,
+                    "summary": final_summary,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logging.error(f"Unexpected error: {e}", exc_info=True)
-        return jsonify({
-            'error': 'Internal server error',
-            'details': str(e)
-        }), 500
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
     finally:
         # Ensure cleanup happens
         try:
@@ -2577,17 +2849,20 @@ def generate_summary():
         except Exception as e:
             logging.error(f"Failed to clean up: {e}")
 
+
 from utils import _extract_response_data
-@app.route('/api/SECEdgar/financialdocuments/process-and-summarize', methods=['POST'])
+
+
+@app.route("/api/SECEdgar/financialdocuments/process-and-summarize", methods=["POST"])
 def process_and_summarize_document():
     """
     Process and summarize a financial document in sequence.
-    
+
     Args:
         equity_id (str): Stock symbol/ticker (e.g., 'AAPL')
         filing_type (str): SEC filing type (e.g., '10-K')
         after_date (str, optional): Filter for filings after this date (YYYY-MM-DD)
-    
+
     Returns:
         JSON Response with structure:
         {
@@ -2595,7 +2870,7 @@ def process_and_summarize_document():
             "edgar_data_process": {...},
             "summary_process": {...}
         }
-        
+
     Raises:
         400: Invalid request parameters
         404: Document not found
@@ -2605,177 +2880,245 @@ def process_and_summarize_document():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'error': 'Invalid request',
-                'details': 'Request body is requred and must be a valid JSON object',
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error": "Invalid request",
+                        "details": "Request body is requred and must be a valid JSON object",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                ),
+                400,
+            )
 
         # Validate required fields
-        required_fields = ['equity_id', 'filing_type']
+        required_fields = ["equity_id", "filing_type"]
         if not all(field in data for field in required_fields):
-            return jsonify({
-                'status': 'error',
-                'error': 'Missing required fields',
-                'details': f"Missing required fields: {', '.join(required_fields)}",
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error": "Missing required fields",
+                        "details": f"Missing required fields: {', '.join(required_fields)}",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                ),
+                400,
+            )
 
         # Validate filing type
-        if data['filing_type'] not in FILING_TYPES:
-            return jsonify({
-                'status': 'error',
-                'error': 'Invalid filing type',
-                'details': f"Invalid filing type. Must be one of: {', '.join(FILING_TYPES)}",
-                'timestamp': datetime.now(timezone.utc).isoformat()
-            }), 400
+        if data["filing_type"] not in FILING_TYPES:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error": "Invalid filing type",
+                        "details": f"Invalid filing type. Must be one of: {', '.join(FILING_TYPES)}",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                ),
+                400,
+            )
 
         # Validate date format if provided
-        if 'after_date' in data:
+        if "after_date" in data:
             try:
-                datetime.strptime(data['after_date'], '%Y-%m-%d')
+                datetime.strptime(data["after_date"], "%Y-%m-%d")
             except ValueError:
-                return jsonify({
-                    'status': 'error',
-                    'error': 'Invalid date format',
-                    'details': 'Use YYYY-MM-DD',
-                    'timestamp': datetime.now(timezone.utc).isoformat()
-                }), 400
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error": "Invalid date format",
+                            "details": "Use YYYY-MM-DD",
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    ),
+                    400,
+                )
 
     except ValueError as e:
         logger.error(f"Invalid request data: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'error': 'Invalid request data',
-            'details': str(e),
-            'timestamp': datetime.now(timezone.utc).isoformat()
-        }), 400
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": "Invalid request data",
+                    "details": str(e),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            ),
+            400,
+        )
 
     try:
         # Step 1: Process document
-        logger.info(f"Starting document processing for {data['equity_id']} {data['filing_type']}")
+        logger.info(
+            f"Starting document processing for {data['equity_id']} {data['filing_type']}"
+        )
         with app.test_request_context(
-            '/api/SECEdgar/financialdocuments',
-            method='GET',
-            json=data
+            "/api/SECEdgar/financialdocuments", method="GET", json=data
         ) as ctx:
             process_result = process_edgar_document()
             process_data = _extract_response_data(process_result)
 
-            if process_data.get('status') != 'success':
-                logger.error(f"Document processing failed: {process_data.get('message')}")
-                if process_data.get('code') == 404:
-                    return jsonify({
-                        'status': 'not_found',
-                        'error': process_data.get('message'),
-                        'code': process_data.get('code'),
-                        'timestamp': datetime.now(timezone.utc).isoformat()
-                    }), 404
+            if process_data.get("status") != "success":
+                logger.error(
+                    f"Document processing failed: {process_data.get('message')}"
+                )
+                if process_data.get("code") == 404:
+                    return (
+                        jsonify(
+                            {
+                                "status": "not_found",
+                                "error": process_data.get("message"),
+                                "code": process_data.get("code"),
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                            }
+                        ),
+                        404,
+                    )
                 else:
-                    return jsonify({
-                        'status': 'error',
-                        'error': process_data.get('message'),
-                        'code': process_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
-                        'timestamp': datetime.now(timezone.utc).isoformat()
-                    }), 500
+                    return (
+                        jsonify(
+                            {
+                                "status": "error",
+                                "error": process_data.get("message"),
+                                "code": process_data.get(
+                                    "code", HTTPStatus.INTERNAL_SERVER_ERROR
+                                ),
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                            }
+                        ),
+                        500,
+                    )
 
         # Step 2: Generate summary
-        logger.info(f"Starting summary generation for {data['equity_id']} {data['filing_type']}")
+        logger.info(
+            f"Starting summary generation for {data['equity_id']} {data['filing_type']}"
+        )
         summary_payload = {
             "equity_name": data["equity_id"],
-            "financial_type": data["filing_type"]
+            "financial_type": data["filing_type"],
         }
 
         with app.test_request_context(
-            '/api/SECEdgar/financialdocuments/summary',
-            method='POST',
-            json=summary_payload
+            "/api/SECEdgar/financialdocuments/summary",
+            method="POST",
+            json=summary_payload,
         ) as ctx:
             summary_result = generate_summary()
             summary_data = _extract_response_data(summary_result)
 
-            if summary_data.get('status') != 'success':
-                logger.error(f"Summary generation failed: {summary_data.get('message')}")
-                return jsonify({
-                    'status': 'error',
-                    'error': summary_data.get('message'),
-                    'details': summary_data.get('code', HTTPStatus.INTERNAL_SERVER_ERROR),
-                    'timestamp': datetime.now(timezone.utc).isoformat()
-                }), 500
+            if summary_data.get("status") != "success":
+                logger.error(
+                    f"Summary generation failed: {summary_data.get('message')}"
+                )
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "error": summary_data.get("message"),
+                            "details": summary_data.get(
+                                "code", HTTPStatus.INTERNAL_SERVER_ERROR
+                            ),
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    ),
+                    500,
+                )
 
         # Return combined results
         response_data = {
-            'status': 'success',
-            'edgar_data_process': process_data,
-            'summary_process': summary_data
+            "status": "success",
+            "edgar_data_process": process_data,
+            "summary_process": summary_data,
         }
-        
-        logger.info(f"Successfully processed and summarized document for {data['equity_id']}")
+
+        logger.info(
+            f"Successfully processed and summarized document for {data['equity_id']}"
+        )
         return jsonify(response_data), 200
 
     except Exception as e:
-        logger.exception(f"Unexpected error in process_and_summarize_document: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'error': 'An unexpected error occurred while processing the document',
-            'details': str(e),
-            'timestamp': datetime.now(timezone.utc).isoformat()
-        }), 500
+        logger.exception(
+            f"Unexpected error in process_and_summarize_document: {str(e)}"
+        )
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": "An unexpected error occurred while processing the document",
+                    "details": str(e),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            ),
+            500,
+        )
 
 
 from pathlib import Path
 from curation_report_generator import graph
 from financial_doc_processor import markdown_to_html, BlobStorageManager
 from financial_agent_utils.curation_report_utils import (
-    REPORT_TOPIC_PROMPT_DICT, 
-    InvalidReportTypeError, 
-    ReportGenerationError, 
-    StorageError
+    REPORT_TOPIC_PROMPT_DICT,
+    InvalidReportTypeError,
+    ReportGenerationError,
+    StorageError,
 )
 from financial_agent_utils.curation_report_config import (
-    WEEKLY_CURATION_REPORT, 
-    ALLOWED_CURATION_REPORTS, 
-    NUM_OF_QUERIES
+    WEEKLY_CURATION_REPORT,
+    ALLOWED_CURATION_REPORTS,
+    NUM_OF_QUERIES,
 )
 
-@app.route('/api/reports/generate/curation', methods=['POST'])
+
+@app.route("/api/reports/generate/curation", methods=["POST"])
 def generate_report():
     try:
         data = request.get_json()
-        report_topic_rqst = data['report_topic']  # Will raise KeyError if missing
-        
+        report_topic_rqst = data["report_topic"]  # Will raise KeyError if missing
+
         # Validate report type
         if report_topic_rqst not in ALLOWED_CURATION_REPORTS:
-            raise InvalidReportTypeError(f"Invalid report type. Please choose from: {ALLOWED_CURATION_REPORTS}")
+            raise InvalidReportTypeError(
+                f"Invalid report type. Please choose from: {ALLOWED_CURATION_REPORTS}"
+            )
 
         # Get report configuration
         report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst]
         search_days = 10 if report_topic_rqst in WEEKLY_CURATION_REPORT else 30
-        
+
         # Generate report
         logger.info(f"Generating report for {report_topic_rqst}")
-        report = graph.invoke({
-            "topic": report_topic_prompt, # this is the prompt to to trigger the agent
-            "report_type": report_topic_rqst, # this is user request
-            "number_of_queries": NUM_OF_QUERIES, 
-            "search_mode": "news", 
-            "search_days": search_days
-        })
+        report = graph.invoke(
+            {
+                "topic": report_topic_prompt,  # this is the prompt to to trigger the agent
+                "report_type": report_topic_rqst,  # this is user request
+                "number_of_queries": NUM_OF_QUERIES,
+                "search_mode": "news",
+                "search_days": search_days,
+            }
+        )
 
         # Generate file path
         current_date = datetime.now(timezone.utc)
         week_of_month = (current_date.day - 1) // 7 + 1
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
-            file_path = Path(f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html")
+            file_path = Path(
+                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html"
+            )
         else:
-            file_path = Path(f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}.html")
+            file_path = Path(
+                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}.html"
+            )
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Convert and save report
         logger.info("Converting markdown to html")
-        markdown_to_html(report['final_report'], str(file_path))
+        markdown_to_html(report["final_report"], str(file_path))
 
         logger.info("Uploading to blob storage")
         blob_storage_manager = BlobStorageManager()
@@ -2785,8 +3128,7 @@ def generate_report():
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
 
         upload_result = blob_storage_manager.upload_to_blob(
-            file_path=str(file_path),
-            blob_folder=blob_folder
+            file_path=str(file_path), blob_folder=blob_folder
         )
 
         # Cleanup files
@@ -2794,44 +3136,59 @@ def generate_report():
         try:
             # Use shutil.rmtree to recursively remove directory and all contents
             import shutil
+
             if file_path.exists():
                 shutil.rmtree(file_path.parent, ignore_errors=True)
             logger.info(f"Successfully removed directory: {file_path.parent}")
         except Exception as e:
-            logger.warning(f"Error while cleaning up directory {file_path.parent}: {str(e)}")
+            logger.warning(
+                f"Error while cleaning up directory {file_path.parent}: {str(e)}"
+            )
             # Continue execution even if cleanup fails
             pass
 
-        return jsonify({
-            'status': 'success',
-            'message': f'Report generated for {report_topic_rqst}',
-            'report_url': upload_result['blob_url']
-        })
+        return jsonify(
+            {
+                "status": "success",
+                "message": f"Report generated for {report_topic_rqst}",
+                "report_url": upload_result["blob_url"],
+            }
+        )
 
     except KeyError:
         logger.error("Missing report_topic in request")
-        return jsonify({'error': 'report_topic is required'}), 400
-    
+        return jsonify({"error": "report_topic is required"}), 400
+
     except InvalidReportTypeError as e:
         logger.error(f"Invalid report topic: {str(e)}")
-        return jsonify({'error': str(e)}), 400
-    
+        return jsonify({"error": str(e)}), 400
+
     except Exception as e:
-        logger.error(f"Unexpected error during report generation: {str(e)}", exc_info=True)
-        return jsonify({'error': 'An unexpected error occurred while generating the report'}), 500
+        logger.error(
+            f"Unexpected error during report generation: {str(e)}", exc_info=True
+        )
+        return (
+            jsonify(
+                {"error": "An unexpected error occurred while generating the report"}
+            ),
+            500,
+        )
+
 
 from utils import EmailServiceError, EmailService
-@app.route('/api/reports/email', methods=['POST'])
+
+
+@app.route("/api/reports/email", methods=["POST"])
 def send_email_endpoint():
     """Send an email with optional attachments.
-    Note: currently attachment path has to be in the same directory as the app.py file. 
-    
+    Note: currently attachment path has to be in the same directory as the app.py file.
+
     Expected JSON payload:
     {
         "subject": "Email subject",
-        "html_content": "HTML formatted content", 
+        "html_content": "HTML formatted content",
         "recipients": ["email1@domain.com", "email2@domain.com"],
-        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes. 
+        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes.
         "save_email": "yes"  # Optional, default is "no"
     }
 
@@ -2842,121 +3199,157 @@ def send_email_endpoint():
         # Get and validate request data
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'No JSON data provided'
-            }), 400
+            return jsonify({"status": "error", "message": "No JSON data provided"}), 400
 
         # Validate required fields
-        required_fields = {'subject', 'html_content', 'recipients'}
+        required_fields = {"subject", "html_content", "recipients"}
         missing_fields = required_fields - set(data.keys())
         if missing_fields:
-            return jsonify({
-                'status': 'error',
-                'message': f'Missing required fields: {", ".join(missing_fields)}'
-            }), 400
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": f'Missing required fields: {", ".join(missing_fields)}',
+                    }
+                ),
+                400,
+            )
 
         # Validate recipients format
-        if not isinstance(data['recipients'], list):
-            return jsonify({
-                'status': 'error',
-                'message': 'Recipients must be provided as a list'
-            }), 400
+        if not isinstance(data["recipients"], list):
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Recipients must be provided as a list",
+                    }
+                ),
+                400,
+            )
 
-        if not data['recipients']:
-            return jsonify({
-                'status': 'error',
-                'message': 'At least one recipient is required'
-            }), 400
+        if not data["recipients"]:
+            return (
+                jsonify(
+                    {"status": "error", "message": "At least one recipient is required"}
+                ),
+                400,
+            )
 
         # Validate attachment path if provided
-        attachment_path = data.get('attachment_path')
+        attachment_path = data.get("attachment_path")
         if attachment_path:
             # Convert Windows path to proper format
-            attachment_path = Path(attachment_path.replace('\\', '/')).resolve()
+            attachment_path = Path(attachment_path.replace("\\", "/")).resolve()
             if not attachment_path.exists():
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Attachment file not found: {attachment_path}'
-                }), 400
-            
-            # Update the attachment_path in data
-            data['attachment_path'] = str(attachment_path)
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": f"Attachment file not found: {attachment_path}",
+                        }
+                    ),
+                    400,
+                )
 
-        # Validate email configuration        
+            # Update the attachment_path in data
+            data["attachment_path"] = str(attachment_path)
+
+        # Validate email configuration
         email_config = {
-            'smtp_server': os.getenv('EMAIL_HOST'), 
-            'smtp_port': os.getenv('EMAIL_PORT'),
-            'username': os.getenv('EMAIL_USER'),
-            'password': os.getenv('EMAIL_PASS')
+            "smtp_server": os.getenv("EMAIL_HOST"),
+            "smtp_port": os.getenv("EMAIL_PORT"),
+            "username": os.getenv("EMAIL_USER"),
+            "password": os.getenv("EMAIL_PASS"),
         }
 
         if not all(email_config.values()):
             logger.error("Missing email configuration environment variables")
-            return jsonify({
-                'status': 'error',
-                'message': 'Email service configuration error'
-            }), 500
+            return (
+                jsonify(
+                    {"status": "error", "message": "Email service configuration error"}
+                ),
+                500,
+            )
 
         # Initialize and send email
         email_service = EmailService(**email_config)
 
         email_params = {
-            "subject": data['subject'],
-            "html_content": data['html_content'],
-            "recipients": data['recipients'],
-            "attachment_path": data.get('attachment_path')
+            "subject": data["subject"],
+            "html_content": data["html_content"],
+            "recipients": data["recipients"],
+            "attachment_path": data.get("attachment_path"),
         }
 
-        # send the email 
+        # send the email
         email_service.send_email(**email_params)
 
         # save the email to blob storage
-        if data.get('save_email', 'no').lower() == 'yes':
+        if data.get("save_email", "no").lower() == "yes":
             blob_name = email_service._save_email_to_blob(**email_params)
             logger.info(f"Email has been saved to blob storage: {blob_name}")
         else:
-            logger.info("Email has not been saved to blob storage because save_email is set to no")
+            logger.info(
+                "Email has not been saved to blob storage because save_email is set to no"
+            )
             blob_name = None
 
-        return jsonify({
-            'status': 'success',
-            'message': 'Email sent successfully',
-            'blob_name': blob_name
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "Email sent successfully",
+                    "blob_name": blob_name,
+                }
+            ),
+            200,
+        )
 
     except EmailServiceError as e:
         logger.error(f"Email service error: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': f'Failed to send email: {str(e)}'
-        }), 500
-    
+        return (
+            jsonify({"status": "error", "message": f"Failed to send email: {str(e)}"}),
+            500,
+        )
+
     except BlobUploadError as e:
         logger.error(f"Blob upload error: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': f'Email has been sent, but failed to upload to blob storage: {str(e)}'
-        }), 500
-        
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"Email has been sent, but failed to upload to blob storage: {str(e)}",
+                }
+            ),
+            500,
+        )
+
     except Exception as e:
         logger.exception("Unexpected error in send_email_endpoint")
-        return jsonify({
-            'status': 'error',
-            'message': f'An unexpected error occurred: {str(e)}'
-        }), 500
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"An unexpected error occurred: {str(e)}",
+                }
+            ),
+            500,
+        )
+
 
 from rp2email import process_and_send_email
-@app.route('/api/reports/digest', methods=['POST'])
+
+
+@app.route("/api/reports/digest", methods=["POST"])
 def digest_report():
     """
     Process report and send email .
-    
+
     Expected payload:
     {
         "blob_link": "https://...",
         "recipients": ["email1@domain.com"],
-        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes. 
+        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes.
         By default, it will automatically attach the document from the blob link (PDF converted). Select "no" to disable this feature.
         "email_subject": "Custom email subject"  # Optional
         "save_email": "yes"  # Optional, default is "yes"
@@ -2966,44 +3359,114 @@ def digest_report():
         # Validate request data
         data = request.get_json()
         if not data:
-            return jsonify({
-                'status': 'error',
-                'message': 'No JSON data provided'
-            }), 400
-            
+            return jsonify({"status": "error", "message": "No JSON data provided"}), 400
+
         # Validate required fields
-        if 'blob_link' not in data or 'recipients' not in data:
-            return jsonify({
-                'status': 'error',
-                'message': 'Missing required fields: blob_link and recipients'
-            }), 400
-            
+        if "blob_link" not in data or "recipients" not in data:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Missing required fields: blob_link and recipients",
+                    }
+                ),
+                400,
+            )
+
         # Process report and send email
         success = process_and_send_email(
-            blob_link=data['blob_link'],
-            recipients=data['recipients'],
-            attachment_path=data.get('attachment_path', None),
-            email_subject=data.get('email_subject', None),
-            save_email=data.get('save_email', 'yes')
+            blob_link=data["blob_link"],
+            recipients=data["recipients"],
+            attachment_path=data.get("attachment_path", None),
+            email_subject=data.get("email_subject", None),
+            save_email=data.get("save_email", "yes"),
         )
-        
+
         if success:
-            return jsonify({
-                'status': 'success',
-                'message': 'Report processed and email sent successfully'
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "message": "Report processed and email sent successfully",
+                    }
+                ),
+                200,
+            )
         else:
-            return jsonify({
-                'status': 'error',
-                'message': 'Failed to process report and send email'
-            }), 500
-            
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Failed to process report and send email",
+                    }
+                ),
+                500,
+            )
+
     except Exception as e:
         logger.exception("Error processing report and sending email")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/reports/storage/files", methods=["GET"])
+def list_blobs():
+    """
+    List blobs i nteh container with optional filtering
+
+    Query params:
+    - prefix(str): filter blobs by prefix
+    - include_metadata(str): include metadata in results
+    - max_results(int): maximum number of results to return
+    - container_name(str): name of the container to list blobs from
+
+    Returns:
+        JSON response with list of blobs
+
+    Example Payload:
+    {
+        "prefix": "Reports/Curation_Reports/Monthly_Economics/",
+        "include_metadata": "yes",
+        "max_results": 10,
+        "container_name": "documents"
+    }
+    """
+
+    try:
+        # get query params
+        data = request.get_json()
+
+        container_name = data.get("container_name")
+        prefix = data.get("prefix", None)
+
+        include_metadata = data.get("include_metadata", "no").lower()
+
+        # convert max_results to int
+        max_results = data.get("max_results", 10)
+
+        if not container_name:
+            return (
+                jsonify(
+                    {"status": "error", "message": "Blob container name is required"}
+                ),
+                400,
+            )
+
+        blob_storage_manager = BlobStorageManager()
+        blobs = blob_storage_manager.list_blobs_in_container(
+            container_name=container_name,
+            prefix=prefix,
+            include_metadata=include_metadata,
+            max_results=max_results,
+        )
+
+        return jsonify({"status": "success", "data": blobs, "count": len(blobs)}), 200
+
+    except ValueError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+    except Exception as e:
+        logger.exception("Unexpected error in list_blobs")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
         async function fetchPrices() {
             try {
                 const data = await getProductPrices({ user });
-                setPrices(data.prices);
+                setPrices(data.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount));
             } catch (err) {
                 console.error("Failed to fetch product prices:", err);
                 setError("Unable to fetch product prices. Please try again later.");
@@ -62,32 +62,34 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                 <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
             </div>
             <div className={styles.planContainer}>
-                {prices.map((price, index) => (
-                    <>
-                        <div key={price.id} className={styles.plan}>
-                            <ChartPerson48Regular className={styles.planIcon} />
-                            <h2 className={styles.planName}>{price.nickname}</h2>
-                            <p className={styles.planPrice}>
-                                ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
-                            </p>
-                            <p className={styles.planDescription}>{price.description}</p>
-                            {price.id !== "free_plan" && (
-                                <button
-                                    className={styles.planButton}
-                                    onClick={() => handleCheckout(price.id)}
-                                    role="button"
-                                    aria-label={`Subscribe to ${price.nickname}`}
-                                >
-                                    {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
-                                        ? "Reactivate subscription"
-                                        : organization?.subscriptionStatus === "active"
-                                        ? "Edit payment information"
-                                        : "Subscribe"}
-                                </button>
-                            )}
-                        </div>
-                    </>
-                ))}
+                {prices.map((price, index) => {
+                    return (
+                        <>
+                            <div key={price.id} className={styles.plan}>
+                                <ChartPerson48Regular className={styles.planIcon} />
+                                <h2 className={styles.planName}>{price.nickname}</h2>
+                                <p className={styles.planPrice}>
+                                    ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
+                                </p>
+                                <p className={styles.planDescription}>{price.description}</p>
+                                {price.id !== "free_plan" && (
+                                    <button
+                                        className={styles.planButton}
+                                        onClick={() => handleCheckout(price.id)}
+                                        role="button"
+                                        aria-label={`Subscribe to ${price.nickname}`}
+                                    >
+                                        {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
+                                            ? "Reactivate subscription"
+                                            : organization?.subscriptionStatus === "active"
+                                            ? "Edit payment information"
+                                            : "Subscribe"}
+                                    </button>
+                                )}
+                            </div>
+                        </>
+                    );
+                })}
             </div>
         </div>
     );

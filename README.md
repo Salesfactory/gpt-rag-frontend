@@ -21,43 +21,6 @@ If you plan to customize the ingestion logic, create a new repo by clicking on t
 
 If you created a new repository please update the repository URL before running the git clone command
 
-## Install system dependencies for PDF processing
-If you are working on Windows you can skip this step.
-
-### Mac OS
-```
-brew update
-brew install weasyprint
-```
-In case of errors with the instalation you can run
-```
-export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH
-```
-### Linux (Devian-based)
-```
-sudo apt-get update
-sudo apt-get install -y \
-    libpango-1.0-0 \
-    libharfbuzz0b \
-    libpangoft2-1.0-0 \
-    libharfbuzz-subset0 \
-    libffi-dev \
-    libjpeg-dev \
-    libopenjp2-7-dev \
-    libglib2.0-0 \
-    libglib2.0-dev \
-    libcairo2 \
-    libcairo2-dev \
-    libpangocairo-1.0-0 \
-    pkg-config \
-    python3-dev \
-    python3-cffi \
-    libgobject-2.0-0 \
-    fonts-liberation \
-    libgdk-pixbuf2.0-0 \
-    shared-mime-info
-```
-
 **2) Build App**
 
 Everytime you change frontend code you need to build it before a new deployment, including in the first time:

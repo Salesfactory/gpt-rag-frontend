@@ -217,9 +217,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         name: organization.name,
                         owner: organization.owner,
                         subscriptionId: organization.subscriptionId,
-                        subscriptionTier: organization.subscriptionTier as SubscriptionTier // Type assertion
+                        subscriptionTier: organization.subscriptionTier as SubscriptionTier, // Type assertion
+                        subscriptionExpirationDate: organization.subscriptionExpirationDate,
+                        subscriptionStatus: organization.subscriptionStatus
                     });
-
+                        
                     if (organization.subscriptionId) {
                         await fetchSubscriptionTiers(organization.subscriptionId, userId);
                     }

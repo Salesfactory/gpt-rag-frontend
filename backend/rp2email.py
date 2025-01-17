@@ -3,12 +3,17 @@ import logging
 import markdown
 from pathlib import Path
 from typing import Literal, List, Dict, Optional, Any
-
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 from pydantic import BaseModel, Field, EmailStr
-
 from report_email_templates.email_templates import EmailTemplateManager
 from llm_config import LLMManager
 from financial_doc_processor import BlobStorageManager
+from utils import EmailService
+from dotenv import load_dotenv
+import requests
+
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,8 +22,23 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 TEMP_DIR = "blob_downloads"
-EMAIL_ENDPOINT = '/api/reports/email'
 PDF_OUTPUT_NAME = "report.pdf"
+HTML_TO_PDF_ENDPOINT = os.getenv('ORCHESTRATOR_URI') + "/api/html_to_pdf_converter"
+
+def get_secret(secretName):
+    keyVaultName = os.getenv("AZURE_KEY_VAULT_NAME")
+    KVUri = f"https://{keyVaultName}.vault.azure.net"
+    credential = DefaultAzureCredential()
+    client = SecretClient(vault_url=KVUri, credential=credential)
+    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")
+    retrieved_secret = client.get_secret(secretName)
+    return retrieved_secret.value
+
+
+# get function code from key vault for html 2 pdf 
+html2pdf_function_code = get_secret("orchestrator-host--html2pdf")
+
+
 
 ####################################
 # Pydantic Models
@@ -101,7 +121,18 @@ class ReportProcessor:
         
         Args:
             blob_link (str): Link to the report blob        
+        
+        Raises:
+            ValueError: If blob_link is None or empty
         """
+        if not blob_link:
+            raise ValueError("Blob link cannot be None or empty")
+        
+        # Validate URL format
+        from urllib.parse import urlparse
+        parsed_url = urlparse(blob_link)
+        if not all([parsed_url.scheme, parsed_url.netloc]):
+            raise ValueError(f"Invalid blob link format: {blob_link}. URL must include scheme (e.g., https://) and hostname")
 
         self.blob_link = blob_link
         self.blob_manager = BlobStorageManager()
@@ -289,10 +320,60 @@ class ReportProcessor:
             raise 
     
     def html_to_pdf(self, html_content: str, output_path: str) -> Path:
-        """Convert the html content to a pdf file."""
-        from weasyprint import HTML
-        HTML(string=html_content).write_pdf(output_path)
-        return Path(output_path)
+        """Convert the HTML content to a PDF file using the Azure function."""
+        import requests
+        import json
+        from pathlib import Path
+
+        payload = json.dumps({"html": html_content})
+
+        key_secret_name = "orchestrator-host--html2pdf"
+
+        try:
+            function_key = get_secret(key_secret_name)
+        except Exception as e:
+            logger.exception(f"Error getting the function key: {str(e)}")
+            raise RuntimeError(f"Failed to retrieve function key: {key_secret_name}")
+
+        headers = {
+            "Content-Type": "application/json",
+            "x-functions-key": function_key
+        }
+
+        try:
+            logger.info("Attempting to connect to HTML to PDF converter")
+            response = requests.post(
+                HTML_TO_PDF_ENDPOINT, 
+                headers=headers, 
+                data=payload,
+                timeout=30  # Add timeout
+            )
+            response.raise_for_status()
+
+            output_dir = Path(output_path).parent
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            with open(output_path, 'wb') as f:
+                f.write(response.content)
+            logger.info(f"PDF saved successfully at {output_path}")
+
+            return Path(output_path)
+
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Connection error to HTML to PDF converter: {str(e)}")
+            raise RuntimeError(
+                f"Failed to connect to HTML to PDF converter at {HTML_TO_PDF_ENDPOINT}. "
+                "Please ensure the Azure Function is running and accessible."
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error occurred: {e.response.text if e.response else str(e)}")
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error occurred: {str(e)}")
+            raise
+        except IOError as e:
+            logger.error(f"Error saving PDF file: {str(e)}")
+            raise
 
     def cleanup(self) -> None:
         """Clean up temporary files. """
@@ -324,7 +405,7 @@ def send_email(
         email_subject: Optional[str] = None,
         save_email: Optional[str] = "yes"
 ) -> bool:
-    """Send an email to the recipients.
+    """Send an email to the recipients
 
     Args: 
         email_data: Dictionary containing email content 
@@ -354,37 +435,50 @@ def send_email(
             "save_email": save_email
         }
 
-        # overwrite the attachment path if provided
         if attachment_path:
             payload["attachment_path"] = attachment_path
 
             # if attachment path is 'no', set it to None
             if attachment_path.lower() == 'no':
                 payload["attachment_path"] = None
-        
+            else:
+                payload["attachment_path"] = str(attachment_path)
+
         if email_subject:
             payload["subject"] = email_subject
-        
-        # send email using the endpoint 
-        with current_app.test_client() as client: 
-            response = client.post(EMAIL_ENDPOINT, json=payload)
 
-        if response.status_code == 200:
-            logger.info(f"Email sent successfully at {datetime.now(timezone.utc)}")
-            # log recipients 
-            logger.info(f"Recipients: {recipients}")
-            return True
-        
-        error_data = response.get_json()
-        error_message = error_data.get('message', 'Unknown error')
-        logger.error(f"Failed to send email. Status code: {response.status_code}. Error: {error_message}")
-        raise EmailSendingError(error_message)  # Raise the custom exception
-        
-    except EmailSendingError:
-        raise  # Re-raise email-specific errors
+        logger.info(f"Payload: {payload}")
+
+        email_config = {
+            "smtp_server": os.getenv("EMAIL_HOST"),
+            "smtp_port": os.getenv("EMAIL_PORT"),
+            "username": os.getenv("EMAIL_USER"),
+            "password": os.getenv("EMAIL_PASS"),
+        }
+
+        email_service = EmailService(**email_config)
+
+        email_params = {
+            "subject": payload["subject"],
+            "html_content": payload["html_content"],
+            "recipients": payload["recipients"],
+            "attachment_path": payload.get("attachment_path"),
+        }
+
+        # send the email
+        email_service.send_email(**email_params)
+
+        logger.info(f"Email sent successfully at {datetime.now(timezone.utc)}")
+        logger.info(f"Recipients: {recipients}")
+        return True
+    except requests.exceptions.RequestException as e:
+        error_msg = f"Network error while sending email: {str(e)}"
+        logger.error(error_msg)
+        raise EmailSendingError(error_msg)
     except Exception as e:
-        logger.exception(f"Error sending email: {str(e)}")
-        raise EmailSendingError(f"Unexpected error while sending email: {str(e)}")
+        error_msg = f"Unexpected error while sending email: {str(e)}"
+        logger.error(error_msg)
+        raise EmailSendingError(error_msg)
     
 def process_and_send_email(blob_link: str, 
                          recipients: List[str],
@@ -402,47 +496,21 @@ def process_and_send_email(blob_link: str,
     Returns:
         bool: True if the email is sent successfully, False otherwise. 
     """
-    processor = None
-    success = False
-    processor = ReportProcessor(blob_link)
-
-    with processor._resource_cleanup():
-        try: 
-            # initialize and process report 
+    try:
+        if not blob_link:
+            raise ValueError("Blob link cannot be None or empty")
+            
+        processor = ReportProcessor(blob_link)
+        with processor._resource_cleanup():
             email_data = processor.process()
-            # send email 
             success = send_email(email_data, recipients, attachment_path, email_subject, save_email)
             return success
         
-        except Exception as e:
-            logger.exception(f"Error processing and sending email: {str(e)}")
-            return False
+    except ValueError as e:
+        logger.error(f"Invalid input: {str(e)}")
+        return False
+    except Exception as e:
+        logger.exception(f"Error processing and sending email: {str(e)}")
+        return False
 
 
-
-# """  
-
-# Requirements for this endpoint:
-# - Blob link from the report
-# - List of recipients
-# - Optional: attachment path and email subject
-# - email_subject: subject of the email
-
-
-
-# What does this endpoint do?
-
-# 1. Download the report from the blob link -> that's why we need the blob link 
-# 2. Open the report and extract the content from the local path 
-# 3. Summarize the report -> that's why we need to initialize the llm and the prompt 
-# 4. parse the summary into the email schema -> use llm to parse 
-# 5. render the email template -> use the email template manager to render the email template with jinja2
-# 6. pass the formatted email to the email service endpoint 
-# 7. send the email to the recipients 
-# ---------------------------------------------------
-# What do I need for the email service endpoint? ? 
-# 1. List of recipients 
-# 2. Subject of the email 
-# 3. Link to the blob report content (original). Get the link where it is downloaded 
-# 4. html content for the email (formatted)  
-# """

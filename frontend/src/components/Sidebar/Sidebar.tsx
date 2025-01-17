@@ -112,13 +112,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     to: "/organization",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "platformAdmin"]
-                },
-                {
-                    title: "Financial Assistant",
-                    icon: <IconReportMoney className={styles.sidebarLinkIcon} />,
-                    to: "/financialassistant",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
                 }
             ]
         },
@@ -180,18 +173,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             section: "Reports",
             items: [
                 {
+                    title: "Reports",
+                    icon: <IconFileInvoice className={styles.sidebarLinkIcon} />,
+                    to: "/view-reports",
+                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin", "platformAdmin"]
+                },
+                {
                     title: "Report Management",
                     icon: <IconFileInvoice className={styles.sidebarLinkIcon} />,
                     to: "/view-manage-reports",
                     tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["platformAdmin"]
+                    roles: ["admin", "platformAdmin"]
                 },
                 {
                     title: "Distribution Lists",
                     icon: <IconChecklist className={styles.sidebarLinkIcon} />,
                     to: "/details-settings",
                     tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["platformAdmin"]
+                    roles: ["admin", "platformAdmin"]
                 }
             ]
         },
