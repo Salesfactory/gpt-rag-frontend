@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import styles from "./SubscriptionManagement.module.css"
+import styles from "./SubscriptionManagement.module.css";
 import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
 import { changeSubscription, getFinancialAssistant, getProductPrices, removeFinancialAssistant, upgradeSubscription } from "../../api";
@@ -7,31 +7,29 @@ import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 
 const SubscriptionManagement: React.FC = () => {
-    const { user, organization, subscriptionTiers, setIsFinancialAssistantActive} = useAppContext();
+    const { user, organization, subscriptionTiers, setIsFinancialAssistantActive } = useAppContext();
     const [subscriptionStatus, setSubscriptionStatus] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isErrorModal, setIsErrorModal] = useState(false)
-    const [isSubscriptionModal, setIsSubscriptionModal] = useState(false)
-    const [isUnsubscriptionModal, setIsUnsubscriptionModal] = useState(false)
-    const [isViewModal, setIsViewModal] = useState(false)
-    const [subscriptionName, setSusbscriptionName] = useState('')  
+    const [isErrorModal, setIsErrorModal] = useState(false);
+    const [isSubscriptionModal, setIsSubscriptionModal] = useState(false);
+    const [isUnsubscriptionModal, setIsUnsubscriptionModal] = useState(false);
+    const [isViewModal, setIsViewModal] = useState(false);
+    const [subscriptionName, setSusbscriptionName] = useState("");
     const [prices, setPrices] = useState<any[]>([]);
-    const [isConfirmationModal, setIsConfirmationModal] = useState(false)
-    const [selectedSubscriptionName, setSelectedSubscriptionName] = useState('')
-    const [selectedSubscriptionID, setSelectedSubscriptionID] = useState('')
-    const [dataLoad, setDataLoad] = useState(false)
-    const [isSubscriptionChangeModal, setIsSubscriptionChangeModal] = useState(false)
+    const [isConfirmationModal, setIsConfirmationModal] = useState(false);
+    const [selectedSubscriptionName, setSelectedSubscriptionName] = useState("");
+    const [selectedSubscriptionID, setSelectedSubscriptionID] = useState("");
+    const [dataLoad, setDataLoad] = useState(false);
+    const [isSubscriptionChangeModal, setIsSubscriptionChangeModal] = useState(false);
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
-
-
 
     useEffect(() => {
         const fetchStatus = async () => {
             setLoading(true);
             try {
-                setSusbscriptionName(subscriptionTiers[0] || '')
+                setSusbscriptionName(subscriptionTiers[0] || "");
                 if (!user?.organizationId) {
                     throw new Error("Organization ID is required");
                 }
@@ -48,13 +46,13 @@ const SubscriptionManagement: React.FC = () => {
                 if (error.status === false) {
                     setSubscriptionStatus(false);
                     setError("Financial Assistant feature is not present in this subscription.");
-                    setIsErrorModal(true)
+                    setIsErrorModal(true);
                 } else if (error.status === null) {
                     setError("Bad request: unable to retrieve subscription status.");
-                    setIsErrorModal(true)
+                    setIsErrorModal(true);
                 } else {
                     setError("An error occurred while fetching subscription status.");
-                    setIsErrorModal(true)
+                    setIsErrorModal(true);
                 }
             } finally {
                 setLoading(false);
@@ -65,21 +63,19 @@ const SubscriptionManagement: React.FC = () => {
     }, [dataLoad]);
 
     useEffect(() => {
-            
-            async function fetchPrices() {
-                try {
-                    const data = await getProductPrices({ user });
-                    setPrices(data.prices);
-                } catch (err) {
-                    console.error("Failed to fetch product prices:", err);
-                    setError("Unable to fetch product prices. Please try again later.");
-                    setIsErrorModal(true)
-                }
+        async function fetchPrices() {
+            try {
+                const data = await getProductPrices({ user });
+                setPrices(data.prices);
+            } catch (err) {
+                console.error("Failed to fetch product prices:", err);
+                setError("Unable to fetch product prices. Please try again later.");
+                setIsErrorModal(true);
             }
-    
-            fetchPrices();
-        }, [dataLoad]);
-    
+        }
+
+        fetchPrices();
+    }, [dataLoad]);
 
     const handleSubscribe = async () => {
         try {
@@ -93,7 +89,7 @@ const SubscriptionManagement: React.FC = () => {
         } catch {
             setError("An error occurred while subscribing to the Financial Assistant feature.");
             setIsSubscriptionModal(false);
-            setIsErrorModal(true)
+            setIsErrorModal(true);
         } finally {
             setLoading(false);
         }
@@ -112,61 +108,58 @@ const SubscriptionManagement: React.FC = () => {
         } catch {
             setError("An error occurred while unsubscribing from the Financial Assistant feature.");
             setIsUnsubscriptionModal(false);
-            setIsErrorModal(true)
+            setIsErrorModal(true);
         } finally {
             setLoading(false);
         }
     };
 
     const handleFinancialAssistantToggle = async () => {
-        if(subscriptionStatus == true){
-            setIsUnsubscriptionModal(true)
-        }else{
-            setIsSubscriptionModal(true)
+        if (subscriptionStatus == true) {
+            setIsUnsubscriptionModal(true);
+        } else {
+            setIsSubscriptionModal(true);
         }
-    }
+    };
 
-    const handleViewSubscription = () =>{
-        setIsViewModal(true)
-    }
+    const handleViewSubscription = () => {
+        setIsViewModal(true);
+    };
 
-    const handleSelectedSubscription = (priceNickname: string, priceID: string) =>{
-        setSelectedSubscriptionName(priceNickname)
-        setSelectedSubscriptionID(priceID)
-        setIsConfirmationModal(true)
-    }
+    const handleSelectedSubscription = (priceNickname: string, priceID: string) => {
+        setSelectedSubscriptionName(priceNickname);
+        setSelectedSubscriptionID(priceID);
+        setIsConfirmationModal(true);
+    };
 
     const handleCheckout = async (priceId: string) => {
         setIsConfirmationModal(false);
-        setIsViewModal(false)
-        setLoading(true)
+        setIsViewModal(false);
+        setLoading(true);
         let timer: NodeJS.Timeout;
 
-        try{
+        try {
             await changeSubscription({
                 subscriptionId: organization?.subscriptionId ?? "",
-                newPlanId: priceId
+                newPlanId: priceId,
+                user
             });
-        } catch(error){
+        } catch (error) {
             console.error("Error trying to change the subscription: ", error);
-            setError("Error trying to change the subscription: ")
-        } finally{
-            setLoading(false)
+            setError("Error trying to change the subscription: ");
+        } finally {
+            setLoading(false);
             setIsSubscriptionChangeModal(true);
-            setDataLoad(true)
+            setDataLoad(true);
             timer = setTimeout(() => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
             //If we don't reload the page, the subscription tiers won't update correctly in the platform
             window.location.reload();
         }
-        
-        
-    }
+    };
 
-    const FinancialAssistantText = subscriptionStatus ? "You are subscribed to the Financial Assistant feature." : 
-    "Subscribe to Financial Assistant"
-    
+    const FinancialAssistantText = subscriptionStatus ? "You are subscribed to the Financial Assistant feature." : "Subscribe to Financial Assistant";
 
     return (
         <div className={styles.page_container}>
@@ -175,39 +168,38 @@ const SubscriptionManagement: React.FC = () => {
             </div>
             <div className={styles.card}>
                 {loading ? (
-                        <Spinner styles={{root: {marginTop: "50px"}}}/>
-                    ) : (
-                        <table className={styles.table}>
-                            <thead className={styles.thead}>
-                                <tr key="types">
-                                    <th className={styles.tableName}>Subscription Name</th>
-                                    <th>Expiration Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr key="subscription">
-                                    <td className={styles.tableName}>
-                                        {subscriptionName}
-                                    </td>
-                                    <td className={styles.tableText}>
-                                        {expirationDate}
-                                    </td>
-                                    <td className={styles.tableText}>
+                    <Spinner styles={{ root: { marginTop: "50px" } }} />
+                ) : (
+                    <table className={styles.table}>
+                        <thead className={styles.thead}>
+                            <tr key="types">
+                                <th className={styles.tableName}>Subscription Name</th>
+                                <th>Expiration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr key="subscription">
+                                <td className={styles.tableName}>{subscriptionName}</td>
+                                <td className={styles.tableText}>{expirationDate}</td>
+                                <td className={styles.tableText}>
                                     <div className={styles.tableText}>
-                                            <button className={styles.button} title="View Subscription" aria-label="View Subscription"
-                                            onClick={handleViewSubscription}>
-                                                View
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    )}
+                                        <button
+                                            className={styles.button}
+                                            title="View Subscription"
+                                            aria-label="View Subscription"
+                                            onClick={handleViewSubscription}
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                )}
                 <div className={styles.group}>
-                    <MessageBar messageBarType={subscriptionStatus ? MessageBarType.success : MessageBarType.warning} 
-                    className={styles.messageBarText}>
+                    <MessageBar messageBarType={subscriptionStatus ? MessageBarType.success : MessageBarType.warning} className={styles.messageBarText}>
                         {FinancialAssistantText}
                     </MessageBar>
                     <div className="form-check form-switch">
@@ -222,14 +214,15 @@ const SubscriptionManagement: React.FC = () => {
                 </div>
                 {isViewModal && (
                     <div className={styles.modalSubscription}>
-                        <button className={styles.closeButton} onClick={() => setIsViewModal(false)}><IconX/></button>
+                        <button className={styles.closeButton} onClick={() => setIsViewModal(false)}>
+                            <IconX />
+                        </button>
                         {prices.map((price, index) => (
                             <div key={price.id} className={`${price.nickname === subscriptionName ? styles.activePlan : styles.plan}`}>
                                 <ChartPerson48Regular className={styles.planIcon} />
                                 <h2 className={styles.planName}>{price.nickname}</h2>
-                                <p className={styles.planDescription}>{price.description}
-                                </p>
-                                
+                                <p className={styles.planDescription}>{price.description}</p>
+
                                 <p className={styles.planPrice}>
                                     ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
                                 </p>
@@ -246,17 +239,20 @@ const SubscriptionManagement: React.FC = () => {
                                         : "Subscribe"}
                                 </button>
                             </div>
-                ))}
+                        ))}
                     </div>
                 )}
                 {isConfirmationModal && (
                     <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsConfirmationModal(false)}><IconX/></button>
+                        <button className={styles.closeButton} onClick={() => setIsConfirmationModal(false)}>
+                            <IconX />
+                        </button>
                         {selectedSubscriptionName === subscriptionName ? (
                             <div>
                                 <Label className={styles.modalTitle}>Payment Detail change</Label>
-                                <Label className={styles.modalText}>You are already subscripted to the {selectedSubscriptionName} plan. Confirming this action will change
-                                your payment information.
+                                <Label className={styles.modalText}>
+                                    You are already subscripted to the {selectedSubscriptionName} plan. Confirming this action will change your payment
+                                    information.
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
@@ -266,8 +262,9 @@ const SubscriptionManagement: React.FC = () => {
                         ) : (
                             <div>
                                 <Label className={styles.modalTitle}>Subscription Confirmation</Label>
-                                <Label className={styles.modalText}>Are you sure you want to subscribe to the {selectedSubscriptionName} plan?
-                                    The subscription change will charge the new subscription fee
+                                <Label className={styles.modalText}>
+                                    Are you sure you want to subscribe to the {selectedSubscriptionName} plan? The subscription change will charge the new
+                                    subscription fee
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
@@ -275,12 +272,13 @@ const SubscriptionManagement: React.FC = () => {
                                 </div>
                             </div>
                         )}
-                        
                     </div>
                 )}
                 {isSubscriptionModal && (
                     <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsSubscriptionModal(false)}><IconX/></button>
+                        <button className={styles.closeButton} onClick={() => setIsSubscriptionModal(false)}>
+                            <IconX />
+                        </button>
                         <Label className={styles.modalTitle}>Subscribe to Financial Assistant</Label>
                         <Label className={styles.modalText}>Subscribing to the Financial Assistant feature will cost $29.99 per month.</Label>
                         <div className={styles.buttonContainer}>
@@ -291,7 +289,9 @@ const SubscriptionManagement: React.FC = () => {
                 )}
                 {isUnsubscriptionModal && (
                     <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsUnsubscriptionModal(false)}><IconX/></button>
+                        <button className={styles.closeButton} onClick={() => setIsUnsubscriptionModal(false)}>
+                            <IconX />
+                        </button>
                         <Label className={styles.modalTitle}>Unsubscribe from Financial Assistant</Label>
                         <Label className={styles.modalText}>Are you sure you want to remove the Financial Assistant from your subscription?</Label>
                         <div className={styles.buttonContainer}>
@@ -302,7 +302,9 @@ const SubscriptionManagement: React.FC = () => {
                 )}
                 {isErrorModal && (
                     <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsErrorModal(false)}><IconX/></button>
+                        <button className={styles.closeButton} onClick={() => setIsErrorModal(false)}>
+                            <IconX />
+                        </button>
                         <Label className={styles.modalTitle}>Error</Label>
                         <Label className={styles.modalText}>{error}</Label>
                     </div>
@@ -314,9 +316,7 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
                 )}
             </div>
-            
         </div>
-    
     );
 };
 
