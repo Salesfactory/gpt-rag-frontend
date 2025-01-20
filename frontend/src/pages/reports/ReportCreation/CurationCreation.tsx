@@ -60,11 +60,12 @@ const CurationCreation: React.FC = () => {
                 setIsPopupActive(true)
                 timer = setTimeout(() => {
                     setIsPopupActive(false);
+                    navigate('/curation-reports')
                 }, 3000);
-    
+                
             } catch (error){
                 console.error("Error trying to create the report: ", error);
-            }
+            } 
     }
 
     return (
@@ -81,10 +82,11 @@ const CurationCreation: React.FC = () => {
             <div className={styles.card}>
                 <div>
                     <form>
-                        <Label>Report Name</Label>
+                        <Label>Report Name<span className={styles.fieldDisclaimer}> *</span></Label>
                         <input type="text" className={styles.input} onChange={handleInputName} value={inputReportName}></input>
-                        <Label>Curation Report Category</Label>
+                        <Label>Curation Report Category<span className={styles.fieldDisclaimer}> *</span></Label>
                         <Dropdown placeholder="Select a Curation Report Category" options={curationReportOptions} onChange={handleTypeDropdownChange} defaultValue={categorySelection} responsiveMode={ResponsiveMode.unknown}/>
+                        <span className={styles.fieldDisclaimer}>All fields are required (*)</span>
                     </form>
                 </div>
                 <div>
@@ -102,7 +104,7 @@ const CurationCreation: React.FC = () => {
             {isConfirm && (
                 <div className={styles.modal}>
                     <button className={styles.closeButton} onClick={handleCancelButton}><IconX/></button>
-                    <Label className={styles.text}>Are you sure you want to create the report {inputReportName} ?</Label>
+                    <Label className={styles.text}>Are you sure you want to create the report "{inputReportName}" ?</Label>
                     <div className={styles.buttonModalContainer}>
                         <button className={styles.button} title="Cancel" aria-label="Cancel" onClick={handleCancelButton}>
                             Cancel
