@@ -3121,9 +3121,15 @@ def generate_report():
             raise InvalidReportTypeError(
                 f"Invalid report type. Please choose from: {ALLOWED_CURATION_REPORTS}"
             )
+        if report_topic_rqst == "Company_Analysis" and not data.get("company_name"):
+            raise ValueError("company_name is required for Company Analysis report")
+        
+        if report_topic_rqst == "Company_Analysis":
+            # modify the prompt to include the company name
+            report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst].replace("company_name", data["company_name"])
+        else:
+            report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst]
 
-        # Get report configuration
-        report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst]
         search_days = 10 if report_topic_rqst in WEEKLY_CURATION_REPORT else 30
 
         # Generate report
@@ -3182,9 +3188,17 @@ def generate_report():
             )
             # Continue execution even if cleanup fails
             pass
-
-        return jsonify(
-            {
+        if report_topic_rqst == "Company_Analysis":
+            return jsonify(
+                {
+                "status": "success",
+                "message": f"Company Analysis report generated for {data['company_name']}",
+                "report_url": upload_result["blob_url"],
+            }
+        )
+        else:
+            return jsonify(
+                {
                 "status": "success",
                 "message": f"Report generated for {report_topic_rqst}",
                 "report_url": upload_result["blob_url"],
