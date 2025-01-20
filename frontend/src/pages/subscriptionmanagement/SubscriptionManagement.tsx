@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import styles from "./SubscriptionManagement.module.css"
 import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
-import { getFinancialAssistant, getProductPrices, removeFinancialAssistant, upgradeSubscription } from "../../api";
+import { changeSubscription, getFinancialAssistant, getProductPrices, removeFinancialAssistant, upgradeSubscription } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 
 const SubscriptionManagement: React.FC = () => {
-    const { user, organization, subscriptionTiers } = useAppContext();
+    const { user, organization, subscriptionTiers, setIsFinancialAssistantActive} = useAppContext();
     const [subscriptionStatus, setSubscriptionStatus] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -15,11 +15,13 @@ const SubscriptionManagement: React.FC = () => {
     const [isSubscriptionModal, setIsSubscriptionModal] = useState(false)
     const [isUnsubscriptionModal, setIsUnsubscriptionModal] = useState(false)
     const [isViewModal, setIsViewModal] = useState(false)
-    const subscriptionName =  subscriptionTiers[0] || '';
+    const [subscriptionName, setSusbscriptionName] = useState('')  
     const [prices, setPrices] = useState<any[]>([]);
     const [isConfirmationModal, setIsConfirmationModal] = useState(false)
     const [selectedSubscriptionName, setSelectedSubscriptionName] = useState('')
     const [selectedSubscriptionID, setSelectedSubscriptionID] = useState('')
+    const [dataLoad, setDataLoad] = useState(false)
+    const [isSubscriptionChangeModal, setIsSubscriptionChangeModal] = useState(false)
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
 
@@ -29,6 +31,7 @@ const SubscriptionManagement: React.FC = () => {
         const fetchStatus = async () => {
             setLoading(true);
             try {
+                setSusbscriptionName(subscriptionTiers[0] || '')
                 if (!user?.organizationId) {
                     throw new Error("Organization ID is required");
                 }
@@ -59,7 +62,7 @@ const SubscriptionManagement: React.FC = () => {
         };
 
         fetchStatus();
-    }, [user, organization]);
+    }, [dataLoad]);
 
     useEffect(() => {
             
@@ -75,7 +78,7 @@ const SubscriptionManagement: React.FC = () => {
             }
     
             fetchPrices();
-        }, [user]);
+        }, [dataLoad]);
     
 
     const handleSubscribe = async () => {
@@ -103,6 +106,7 @@ const SubscriptionManagement: React.FC = () => {
             await removeFinancialAssistant({ user: userObj, subscriptionId: organization?.subscriptionId ?? "default-org-id" });
             setSubscriptionStatus(false);
             setIsUnsubscriptionModal(false);
+            setIsFinancialAssistantActive(false);
             //This reloads the page so the financial assistant toggle disappears after click
             window.location.reload();
         } catch {
@@ -133,7 +137,31 @@ const SubscriptionManagement: React.FC = () => {
     }
 
     const handleCheckout = async (priceId: string) => {
+        setIsConfirmationModal(false);
+        setIsViewModal(false)
+        setLoading(true)
+        let timer: NodeJS.Timeout;
 
+        try{
+            await changeSubscription({
+                subscriptionId: organization?.subscriptionId ?? "",
+                newPlanId: priceId
+            });
+        } catch(error){
+            console.error("Error trying to change the subscription: ", error);
+            setError("Error trying to change the subscription: ")
+        } finally{
+            setLoading(false)
+            setIsSubscriptionChangeModal(true);
+            setDataLoad(true)
+            timer = setTimeout(() => {
+                setIsSubscriptionChangeModal(false);
+            }, 5000);
+            //If we don't reload the page, the subscription tiers won't update correctly in the platform
+            window.location.reload();
+        }
+        
+        
     }
 
     const FinancialAssistantText = subscriptionStatus ? "You are subscribed to the Financial Assistant feature." : 
@@ -238,7 +266,9 @@ const SubscriptionManagement: React.FC = () => {
                         ) : (
                             <div>
                                 <Label className={styles.modalTitle}>Subscription Confirmation</Label>
-                                <Label className={styles.modalText}>Are you sure you want to subscribe to the {selectedSubscriptionName} plan?</Label>
+                                <Label className={styles.modalText}>Are you sure you want to subscribe to the {selectedSubscriptionName} plan?
+                                    The subscription change will charge the new subscription fee
+                                </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
                                     <PrimaryButton onClick={() => handleCheckout(selectedSubscriptionID)} text="Confirm Subscription" />
@@ -250,11 +280,11 @@ const SubscriptionManagement: React.FC = () => {
                 )}
                 {isSubscriptionModal && (
                     <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setSubscriptionStatus(false)}><IconX/></button>
+                        <button className={styles.closeButton} onClick={() => setIsSubscriptionModal(false)}><IconX/></button>
                         <Label className={styles.modalTitle}>Subscribe to Financial Assistant</Label>
                         <Label className={styles.modalText}>Subscribing to the Financial Assistant feature will cost $29.99 per month.</Label>
                         <div className={styles.buttonContainer}>
-                            <DefaultButton onClick={() => setSubscriptionStatus(false)} text="Cancel" />
+                            <DefaultButton onClick={() => setIsSubscriptionModal(false)} text="Cancel" />
                             <PrimaryButton onClick={handleSubscribe} text="Confirm Subscription" />
                         </div>
                     </div>
@@ -272,10 +302,16 @@ const SubscriptionManagement: React.FC = () => {
                 )}
                 {isErrorModal && (
                     <div className={styles.modal}>
-                    <button className={styles.closeButton} onClick={() => setIsErrorModal(false)}><IconX/></button>
-                    <Label className={styles.modalTitle}>Error</Label>
-                    <Label className={styles.modalText}>{error}</Label>
-                </div>
+                        <button className={styles.closeButton} onClick={() => setIsErrorModal(false)}><IconX/></button>
+                        <Label className={styles.modalTitle}>Error</Label>
+                        <Label className={styles.modalText}>{error}</Label>
+                    </div>
+                )}
+                {isSubscriptionChangeModal && (
+                    <div className={styles.modal}>
+                        <Label className={styles.modalTitle}>Subscription Changed</Label>
+                        <Label className={styles.modalText}>Your Subscription has been successfully changed</Label>
+                    </div>
                 )}
             </div>
             
