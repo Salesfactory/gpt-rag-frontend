@@ -1,8 +1,8 @@
 # Structure
 report_structure = """
-This report type is focused on analyzing key economic trends and significant events of the past month.
+This data driven report type is focused on analyzing key economic trends and significant events of the past month.
 
-The report shouild adhere to the following structure: 
+The report should adhere to the following structure: 
 
 1. **Introduction** (no research needed)
    - Provide a brief overview of the domestic and global economic landscape 
@@ -181,14 +181,16 @@ January 2024: Key Economic Trends Shaping the Global Landscape
 - No sources section needed
 
 For Conclusion/Summary:
-- Use ## for section title (Markdown format)
-- 100-150 word limit
-- Leverage the insights from this report by identifying actionable strategies for policymakers, businesses, or investors to address risks and capitalize on trends.
+- Use ## for section title (Markdown format).
+- 100-150 word limit.
+- Leverage the insights from this report by identifying actionable strategies for the company, its stakeholders, or investors to address challenges and capitalize on opportunities.
 - Highlight (bold) key takeaways and actionable insights.
-- For comparative reports:
+
+- For comparative analyses:
     * Must include a focused comparison table using Markdown table syntax.
     * Table should distill insights from the report.
     * Keep table entries clear and concise.
+
 - For non-comparative reports:
     * Use ONLY ONE structural element IF it helps clarify points made in the report:
     * Either a focused table summarizing key metrics or findings (using Markdown table syntax).

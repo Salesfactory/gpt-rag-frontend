@@ -504,6 +504,58 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     return session;
 }
 
+export async function getCustomerId({ subscriptionId }: { subscriptionId: string }): Promise<string> {
+    const response = await fetch("/get-customer", {
+        method: "POST",
+        headers: {
+           "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({
+            subscription_id: subscriptionId
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session")
+    }
+
+    const data = await response.json();
+    return data.customer_id;
+}
+
+interface CustomerPortalSession {
+    url: string;
+}
+
+export async function createCustomerPortalSession({ 
+    customerId, 
+    return_url
+}: {
+    customerId: string;
+    return_url: string;
+}): Promise<CustomerPortalSession>{
+    const response = await fetch("/create-customer-portal-session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            customer: customerId,
+            return_url
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session");
+    }
+    
+    if (!response.ok) {
+        throw new Error("Error creating customer portal session");
+    }
+
+    const session = await response.json();
+    return session;
+    
+}
+
 export async function getProductPrices({ user }: { user: any }): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
@@ -740,6 +792,24 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
 
     if (response.status > 299 || !response.ok) {
         throw Error(`Error updating user with ID ${userId}`);
+    }
+}
+
+export async function updateUserData({ userId, patchData }: { userId: string; patchData: object }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}/data`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patchData)
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating user data of ID ${userId}`);
     }
 }
 

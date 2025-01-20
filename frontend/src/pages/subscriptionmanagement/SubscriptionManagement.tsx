@@ -2,7 +2,15 @@ import React, { useEffect, useState } from "react";
 import styles from "./SubscriptionManagement.module.css";
 import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
-import { changeSubscription, getFinancialAssistant, getProductPrices, removeFinancialAssistant, upgradeSubscription } from "../../api";
+import {
+    createCustomerPortalSession,
+    getCustomerId,
+    changeSubscription,
+    getFinancialAssistant,
+    getProductPrices,
+    removeFinancialAssistant,
+    upgradeSubscription
+} from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 
@@ -133,6 +141,17 @@ const SubscriptionManagement: React.FC = () => {
     };
 
     const handleCheckout = async (priceId: string) => {
+        if (subscriptionName === selectedSubscriptionName) {
+            const customerId = await getCustomerId({
+                subscriptionId: organization?.subscriptionId ?? ""
+            });
+
+            const { url } = await createCustomerPortalSession({
+                customerId: customerId,
+                return_url: window.location.origin + "/#/subscription-management"
+            });
+            window.location.href = url;
+        }
         setIsConfirmationModal(false);
         setIsViewModal(false);
         setLoading(true);
@@ -251,7 +270,8 @@ const SubscriptionManagement: React.FC = () => {
                             <div>
                                 <Label className={styles.modalTitle}>Payment Detail change</Label>
                                 <Label className={styles.modalText}>
-                                    You are already subscripted to the {selectedSubscriptionName} plan. Confirming this action will change your payment
+
+                                    You are already subscribed to the {selectedSubscriptionName} plan. Confirming this action will change your payment
                                     information.
                                 </Label>
                                 <div className={styles.buttonContainer}>
@@ -310,9 +330,9 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
                 )}
                 {isSubscriptionChangeModal && (
-                    <div className={styles.modal}>
+                    <div className={styles.modalSubscriptionChange}>
                         <Label className={styles.modalTitle}>Subscription Changed</Label>
-                        <Label className={styles.modalText}>Your Subscription has been successfully changed</Label>
+                        <Label className={styles.modalSubscriptionChangeText}>Your subscription has been successfully changed</Label>
                     </div>
                 )}
             </div>
