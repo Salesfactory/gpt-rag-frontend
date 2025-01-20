@@ -499,7 +499,7 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
     return session;
 }
 
-export async function getCustomerId({ subscriptionId }: { subscriptionId: any }): Promise<any> {
+export async function getCustomerId({ subscriptionId }: { subscriptionId: string }): Promise<string> {
     const response = await fetch("/get-customer", {
         method: "POST",
         headers: {
@@ -517,7 +517,17 @@ export async function getCustomerId({ subscriptionId }: { subscriptionId: any })
     return data.customer_id;
 }
 
-export async function createCustomerPortalSession({ customerId, return_url }: any){
+interface CustomerPortalSession {
+    url: string;
+}
+
+export async function createCustomerPortalSession({ 
+    customerId, 
+    return_url
+}: {
+    customerId: string;
+    return_url: string;
+}): Promise<CustomerPortalSession>{
     const response = await fetch("/create-customer-portal-session", {
         method: "POST",
         headers: {
@@ -530,6 +540,10 @@ export async function createCustomerPortalSession({ customerId, return_url }: an
     });
     if (response.status > 299 || !response.ok) {
         throw Error("Error creating checkout session");
+    }
+    
+    if (!response.ok) {
+        throw new Error("Error creating customer portal session");
     }
 
     const session = await response.json();
