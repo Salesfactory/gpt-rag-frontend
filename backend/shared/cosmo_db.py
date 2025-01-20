@@ -345,7 +345,7 @@ def patch_user_data(user_id, patch_data):
 
         if current_user is None:
             logging.warning(f"User with id '{user_id}' not found in Cosmos DB.")
-            raise NotFound
+            raise NotFound(f"User not found")
 
         allowed_keys = {"name", "email", "role"}
         user_data = current_user.get("data", {})
@@ -353,22 +353,32 @@ def patch_user_data(user_id, patch_data):
         for key in patch_data:
             if key in allowed_keys:
                 user_data[key] = patch_data[key]
+        
+        for key in allowed_keys:
+            if not user_data.get(key):
+                logging.error(f"Field '{key}' cannot be empty.")
+                raise ValueError(f"Field '{key}' cannot be empty.")
 
         current_user["data"] = user_data
         current_user["id"] = user_id
+
 
         container.upsert_item(current_user)
         logging.info(f"User data updated successfully: {current_user}")
         return current_user
 
-    except CosmosResourceNotFoundError:
+    except CosmosResourceNotFoundError as nf:
         logging.error(f"User with id '{user_id}' not found during upsert.")
-        raise NotFound(f"Cannot update user because it does not exist with id '{user_id}'")
+        raise nf
 
     except AzureError as az_err:
         logging.error(f"AzureError while performing upsert: {az_err}")
-        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+        raise az_err
+
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
 
     except Exception as e:
         logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
-        raise
+        raise e
