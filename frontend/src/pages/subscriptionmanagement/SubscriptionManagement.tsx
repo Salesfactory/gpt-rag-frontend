@@ -21,6 +21,8 @@ const SubscriptionManagement: React.FC = () => {
     const [selectedSubscriptionName, setSelectedSubscriptionName] = useState("");
     const [selectedSubscriptionID, setSelectedSubscriptionID] = useState("");
     const [isRecentChangesModal, setIsRecentChangesModal] = useState<Boolean>(false);
+    const [logsData, setlogsData] = useState<any>([])
+    const [filteredLogsData, setFilteredLogsData] = useState<any>()
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
 
@@ -158,9 +160,9 @@ const SubscriptionManagement: React.FC = () => {
     ];
 
     const FilterOptions = [
-        { key: "1", text: "All Actions" },
-        { key: "2", text: "Financial Assistant Change" },
-        { key: "3", text: "Subscription Tier Change" }
+        { key: "1", text: "All Actions"},
+        { key: "2", text: "Financial Assistant" },
+        { key: "3", text: "Subscription Tier" }
     ];
 
     useEffect(() => {
@@ -274,6 +276,8 @@ const SubscriptionManagement: React.FC = () => {
         setIsRecentChangesModal(true);
     };
 
+    const handleFilterChange = (event: any, selectedOption: any) => {}
+
     const FinancialAssistantText = subscriptionStatus ? "You are subscribed to the Financial Assistant feature." : "Subscribe to Financial Assistant";
 
     return (
@@ -340,7 +344,7 @@ const SubscriptionManagement: React.FC = () => {
                         </div>
                         <div className={styles.auditFilter}>
                             <Label className={styles.modalText}>Filter by Action:</Label>
-                            <Dropdown placeholder="Select Action to filter" options={FilterOptions} />
+                            <Dropdown placeholder="Select Action to filter" options={FilterOptions} onChange={handleFilterChange} />
                         </div>
                         <table className={styles.table}>
                             <thead className={styles.thead}>
