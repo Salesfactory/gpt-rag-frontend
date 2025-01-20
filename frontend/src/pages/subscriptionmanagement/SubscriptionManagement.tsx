@@ -269,7 +269,7 @@ const SubscriptionManagement: React.FC = () => {
                             <div>
                                 <Label className={styles.modalTitle}>Payment Detail change</Label>
                                 <Label className={styles.modalText}>
-                                    You are already subscripted to the {selectedSubscriptionName} plan. Confirming this action will change your payment
+                                    You are already subscribed to the {selectedSubscriptionName} plan. Confirming this action will change your payment
                                     information.
                                 </Label>
                                 <div className={styles.buttonContainer}>
@@ -328,9 +328,9 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
                 )}
                 {isSubscriptionChangeModal && (
-                    <div className={styles.modal}>
+                    <div className={styles.modalSubscriptionChange}>
                         <Label className={styles.modalTitle}>Subscription Changed</Label>
-                        <Label className={styles.modalText}>Your Subscription has been successfully changed</Label>
+                        <Label className={styles.modalSubscriptionChangeText}>Your subscription has been successfully changed</Label>
                     </div>
                 )}
             </div>
