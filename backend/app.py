@@ -1133,6 +1133,53 @@ def create_checkout_session():
 
     return jsonify({"url": checkout_session.url})
 
+@app.route("/get-customer", methods=['POST'])
+def get_customer():
+
+    subscription_id = request.json["subscription_id"]
+
+    if not subscription_id:
+        logging.warning({"Error": "No subscription_id was provided for this request."})
+        return jsonify({"error": "No subscription_id was provided for this request."}), 404
+
+    try:
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        customer_id = subscription.get("customer")
+
+        if not customer_id:
+            logging.warning({"error": "No customer_id found for the provided subscription."})
+            return jsonify({"error": "No customer_id found for the provided subscription."}), 404
+        
+        return jsonify({"customer_id": customer_id}), 200
+
+    except stripe.error.StripeError as e:
+        logging.warning({"error": {str(e)}})
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        logging.warning({"error": "Unexpected error: " + {str(e)}})
+        return jsonify({"error": "Unexpected error: " + str(e)}), 500
+
+@app.route("/create-customer-portal-session", methods=["POST"])
+def create_customer_portal_session():
+    customer = request.json["customer"]
+    return_url = request.json["return_url"]
+
+    if not customer or not return_url:
+        logging.warning({"error": "Missing 'customer' or 'return_url'"})
+        return jsonify({"error": "Missing 'customer' or 'return_url'"}), 404
+
+    try:
+
+        portal_session = stripe.billing_portal.Session.create(
+            customer = customer,
+            return_url = return_url
+        )
+
+    except Exception as e:
+        logging.warning({"error": "Unexpected error: " + {str(e)}})
+        return jsonify({"error": "Unexpected error: " + str(e)}), 500
+    
+    return jsonify({"url": portal_session.url})
 
 @app.route("/api/stripe", methods=["GET"])
 def getStripe():
