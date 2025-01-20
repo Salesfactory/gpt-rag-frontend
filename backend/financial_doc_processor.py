@@ -14,8 +14,6 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 import fitz
 from dotenv import load_dotenv
-from azure.keyvault.secrets import SecretClient
-from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -24,47 +22,16 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 
-from utils import convert_html_to_pdf
+from utils import convert_html_to_pdf, get_azure_key_vault_secret
 from app_config import BLOB_CONTAINER_NAME, PDF_PATH
 
 # Load environment variables
 load_dotenv()
 
 
-def get_secret(secret_name):
-    """
-    Retrieve a secret value from Azure Key Vault.
-
-    Args:
-        secret_name (str): The name of the secret to retrieve.
-
-    Returns:
-        str: The value of the secret.
-
-    Raises:
-        Exception: If the secret cannot be retrieved.
-    """
-    try:
-        keyVaultName = os.getenv("AZURE_KEY_VAULT_NAME")
-        if not keyVaultName:
-            raise ValueError("Environment variable 'AZURE_KEY_VAULT_NAME' is not set.")
-
-        KVUri = f"https://{keyVaultName}.vault.azure.net"
-        credential = DefaultAzureCredential()
-        client = SecretClient(vault_url=KVUri, credential=credential)
-        logging.info(
-            f"[webbackend] retrieving {secret_name} secret from {keyVaultName}."
-        )
-        retrieved_secret = client.get_secret(secret_name)
-        return retrieved_secret.value
-    except Exception as e:
-        logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
-        raise
-
-
 # Retrieve the connection string for Azure Blob Storage from secrets
 try:
-    BLOB_CONNECTION_STRING = get_secret("storageConnectionString")
+    BLOB_CONNECTION_STRING = get_azure_key_vault_secret("storageConnectionString")
     if not BLOB_CONNECTION_STRING:
         raise ValueError(
             "The connection string for Azure Blob Storage (BLOB_CONNECTION_STRING): '{BLOB_CONNECTION_STRING}' is not set. Please ensure it is correctly configured."
@@ -722,7 +689,7 @@ class BlobStorageManager:
         if document_paths and file_path:
             raise ValueError("Cannot provide both document_paths and file_path")
         try:
-            blob_sas_token = get_secret("blobSasToken")
+            blob_sas_token = get_azure_key_vault_secret("blobSasToken")
             if not blob_sas_token:
                 raise ValueError(
                     "The SAS token for Azure Blob Storage (blob_sas_token) is not set. Please ensure it is correctly configured."
@@ -787,7 +754,7 @@ class BlobStorageManager:
         if not isinstance(document_paths, dict):
             raise ValueError("document_paths must be a dictionary")
         try:
-            blob_sas_token = get_secret("blobSasToken")
+            blob_sas_token = get_azure_key_vault_secret("blobSasToken")
             if not blob_sas_token:
                 raise ValueError(
                     "The SAS token for Azure Blob Storage (blob_sas_token) is not set. Please ensure it is correctly configured."
