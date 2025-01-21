@@ -110,7 +110,7 @@
     position: sticky;
     bottom: 0;
     flex: 0 0 auto;
-    padding: 15px;
+    padding: 10px 5px 5px 10px;
     display: flex;
     align-items: start;
     border-radius: 6px;
