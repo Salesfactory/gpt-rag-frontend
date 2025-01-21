@@ -362,6 +362,7 @@ export async function getFinancialAssistant({ user, subscriptionId }: { user?: U
 
 export async function upgradeSubscription({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
     const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
+    const userName = user?.name ?? "anonymous";
     const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
 
     try {
@@ -369,7 +370,8 @@ export async function upgradeSubscription({ user, subscriptionId }: { user?: Use
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+                "X-MS-CLIENT-PRINCIPAL-NAME": userName
             },
             body: JSON.stringify({
                 organizationId: userOrganizationId,
@@ -394,13 +396,14 @@ export async function upgradeSubscription({ user, subscriptionId }: { user?: Use
 
 export async function removeFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
     const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
-
+    const userName = user?.name ?? "anonymous";
     try {
         const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+                "X-MS-CLIENT-PRINCIPAL-NAME": userName
             }
         });
 
@@ -477,7 +480,7 @@ export async function uploadFile(file: any) {
     }
 }
 
-export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl, organizationId }: any) {
+export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl, organizationId, userName, organizationName }: any) {
     const response = await fetch("/create-checkout-session", {
         method: "POST",
         headers: {
@@ -488,7 +491,9 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
             priceId,
             successUrl,
             cancelUrl,
-            organizationId
+            organizationId,
+            userName,
+            organizationName
         })
     });
     if (response.status > 299 || !response.ok) {
@@ -497,6 +502,58 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
 
     const session = await response.json();
     return session;
+}
+
+export async function getCustomerId({ subscriptionId }: { subscriptionId: string }): Promise<string> {
+    const response = await fetch("/get-customer", {
+        method: "POST",
+        headers: {
+           "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({
+            subscription_id: subscriptionId
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session")
+    }
+
+    const data = await response.json();
+    return data.customer_id;
+}
+
+interface CustomerPortalSession {
+    url: string;
+}
+
+export async function createCustomerPortalSession({ 
+    customerId, 
+    return_url
+}: {
+    customerId: string;
+    return_url: string;
+}): Promise<CustomerPortalSession>{
+    const response = await fetch("/create-customer-portal-session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            customer: customerId,
+            return_url
+        })
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error creating checkout session");
+    }
+    
+    if (!response.ok) {
+        throw new Error("Error creating customer portal session");
+    }
+
+    const session = await response.json();
+    return session;
+    
 }
 
 export async function getProductPrices({ user }: { user: any }): Promise<any> {
@@ -738,13 +795,34 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
     }
 }
 
-export async function changeSubscription({ subscriptionId, newPlanId}: {subscriptionId: string;newPlanId: string;}): Promise<any> {
-    
+export async function updateUserData({ userId, patchData }: { userId: string; patchData: object }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}/data`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patchData)
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating user data of ID ${userId}`);
+    }
+}
+
+export async function changeSubscription({ subscriptionId, newPlanId, user}: {subscriptionId: string;newPlanId: string; user:any;}): Promise<any> {
+    const userId = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const userName = user ? user.name : "anonymous";
     try {
         const response = await fetch(`/api/subscriptions/${subscriptionId}/change`, {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID":userId,
+                "X-MS-CLIENT-PRINCIPAL-NAME": userName
             },
             body: JSON.stringify({
                 new_plan_id: newPlanId,
@@ -769,13 +847,16 @@ export async function changeSubscription({ subscriptionId, newPlanId}: {subscrip
     }
 }
 
-export async function cancelSubscription({ subscriptionId }: {subscriptionId: string;}): Promise<void> {
-    
+export async function cancelSubscription({ subscriptionId, user }: {subscriptionId: string; user:any}): Promise<void> {
+    const userId = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const userName = user ? user.name : "anonymous";
     try {
         const response = await fetch(`/api/subscriptions/${subscriptionId}/cancel`, {
             method: "DELETE",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID":userId,
+                "X-MS-CLIENT-PRINCIPAL-NAME": userName,
             },
         });
 

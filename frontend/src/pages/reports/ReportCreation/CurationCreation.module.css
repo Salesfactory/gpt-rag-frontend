@@ -154,9 +154,9 @@
 
 .modalPopup{
     position: fixed;
-    top: 10%;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     width: auto; 
     height: auto;
     display: flex;
@@ -213,4 +213,8 @@
 .closeButtonContainer:active{
     background-color: rgba(214, 214, 214, 0.315);
     border-radius: 5px;
+}
+
+.fieldDisclaimer{
+    color: red;
 }

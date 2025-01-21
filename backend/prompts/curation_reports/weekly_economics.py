@@ -1,6 +1,6 @@
 # Structure
 report_structure = """
-This report type is focused on analyzing key economic trends and significant events of the past week.
+This data driven report type is focused on analyzing key economic trends and significant events of the past week.
 
 The report should adhere to the following structure:
 
