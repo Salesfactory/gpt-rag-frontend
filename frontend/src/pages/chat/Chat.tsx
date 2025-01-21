@@ -99,9 +99,6 @@ const Chat = () => {
             agent = "consumer";
         }
 
-        console.log("AGENT=", agent);
-        console.log("isFinancialAssistant=", isFinancialAssistantActive);
-
         try {
             let history: ChatTurn[] = [];
             if (dataConversation.length > 0) {
@@ -391,36 +388,36 @@ const Chat = () => {
                         {!lastQuestionRef.current && dataConversation.length <= 0 ? (
                             <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
-                                { !isFinancialAssistantActive &&
+                                {!isFinancialAssistantActive && (
                                     <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                         <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
                                         <h1>FreddAid</h1>
 
                                         <p style={{ width: "80%", textAlign: "center" }}>
-                                            Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver
-                                            actionable insights.
+                                            Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to
+                                            deliver actionable insights.
                                         </p>
                                     </div>
-                                }
+                                )}
 
-                                { isFinancialAssistantActive && 
+                                {isFinancialAssistantActive && (
                                     <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                         <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
                                         <h1>FinlAI</h1>
 
                                         <p style={{ width: "80%", textAlign: "center" }}>
-                                            Your financial ally, delivering real-time insights and strategic guidance to help you stay ahead of opportunities 
+                                            Your financial ally, delivering real-time insights and strategic guidance to help you stay ahead of opportunities
                                             and threats in an ever-changing financial landscape.
                                         </p>
                                     </div>
-                                }
+                                )}
                             </div>
                         ) : (
                             <div
                                 className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
                                 aria-label="Chat messages"
                                 tabIndex={0}
-                            > 
+                            >
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                 {dataConversation.length > 0
                                     ? dataConversation.map((item, index) => {
