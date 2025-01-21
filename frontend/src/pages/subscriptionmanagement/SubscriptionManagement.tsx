@@ -32,6 +32,22 @@ const SubscriptionManagement: React.FC = () => {
             organizationName: "DemoOrg",
             organizationOwner: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
             subscriptionId: "sub_8Hk3nYRwT8aabNZX987654QP",
+            action: "New Subscription",
+            changeTime: "2025-01-18T16:10:12.345678",
+            modified_by: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
+            modified_by_name: "JaneSmith01",
+            status_financial_assistant: "active",
+            _rid: "aknFAKdwoTNeAAAAAAAAAA==",
+            _self: "dbs/aknFAA==/colls/aknFAKdwoTN=/docs/aknFAKdwoTNeAAAAAAAAAA==/",
+            _etag: '"d2046752-0000-0300-0000-679bef340000"',
+            _attachments: "attachments/",
+            _ts: 1737154212
+        },
+        {
+            id: "12a4b3c7-df12-4e34-9a56-5f78a1d2b3c4",
+            organizationName: "DemoOrg",
+            organizationOwner: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
+            subscriptionId: "sub_8Hk3nYRwT8aabNZX987654QP",
             action: "Financial Assistant Change",
             changeTime: "2025-01-18T16:10:12.345678",
             modified_by: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
@@ -370,7 +386,7 @@ const SubscriptionManagement: React.FC = () => {
                                                             minute: "2-digit",
                                                             hour12: false
                                                         })
-                                                        .replaceAll(",", "")}
+                                                        .replace(",", "")}
                                                 </td>
                                                 <td className={styles.tableText}>Subscription Tier change</td>
                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
@@ -391,7 +407,7 @@ const SubscriptionManagement: React.FC = () => {
                                                             minute: "2-digit",
                                                             hour12: false
                                                         })
-                                                        .replaceAll(",", "")}
+                                                        .replace(",", "")}
                                                 </td>
                                                 <td className={styles.tableText}>FA Add-On Toggled</td>
                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
