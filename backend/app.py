@@ -3181,6 +3181,14 @@ def generate_report():
             file_path = Path(
                 f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html"
             )
+        elif report_topic_rqst == "Company_Analysis":
+            # add company name to the file path
+            company_name = str(data["company_name"]).replace(" ", "_")  # Ensure string and replace spaces
+            logger.info(f"Company name before replacement: {data['company_name']}")
+            logger.info(f"Company name after replacement: {company_name}")
+            file_path = Path(
+                f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}/{current_date.strftime('%B_%Y')}.html"
+            )
         else:
             file_path = Path(
                 f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}.html"
@@ -3196,6 +3204,8 @@ def generate_report():
         blob_storage_manager = BlobStorageManager()
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
+        elif report_topic_rqst == "Company_Analysis":
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}"
         else:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
 

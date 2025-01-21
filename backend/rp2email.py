@@ -176,8 +176,21 @@ class ReportProcessor:
             # save the html content to a pdf file 
             date_str = datetime.now(timezone.utc).strftime("%m_%d_%y")
             document_type = email_data.document_type
+            logger.info(f"Document type: {document_type}")
 
-            pdf_path = self.html_to_pdf(html_content, f"{TEMP_DIR}/{document_type}_{date_str}.pdf")
+            if "Company_Analysis" in self.blob_link:
+                # Extract company name from the blob link using URL parsing
+                from urllib.parse import unquote
+                path_parts = unquote(self.blob_link.split('?')[0]).split('/')
+                company_name = path_parts[-2].replace('%20', '_')  # Replace spaces with underscores
+                logger.info(f"Company name: {company_name}")
+                logger.info(f"document type: {document_type}")
+                logger.info(f"date: {date_str}")
+                local_pdf_path = f"{TEMP_DIR}/{company_name}_Company_Analysis_{date_str}.pdf"
+                logger.info(f"Local PDF path: {local_pdf_path}")
+                pdf_path = self.html_to_pdf(html_content, local_pdf_path)
+            else:
+                pdf_path = self.html_to_pdf(html_content, f"{TEMP_DIR}/{document_type}_{date_str}.pdf")
 
             # generate HTML email from schema and template 
             logger.info("Generating HTML email content")
@@ -316,55 +329,81 @@ class ReportProcessor:
         import json
         from pathlib import Path
 
-        payload = json.dumps({"html": html_content})
-
-        key_secret_name = "orchestrator-host--html2pdf"
+        # Debug logging
+        logger.info(f"HTML_TO_PDF_ENDPOINT: {HTML_TO_PDF_ENDPOINT}")
+        content_size = len(html_content.encode('utf-8'))
+        logger.info(f"HTML content size: {content_size / 1024:.2f} KB")
 
         try:
-            function_key = get_azure_key_vault_secret(key_secret_name)
+            # Validate endpoint
+            if not HTML_TO_PDF_ENDPOINT:
+                raise ValueError("HTML_TO_PDF_ENDPOINT is not set")
+
+            # Get function key with error handling
+            try:
+                function_key = get_azure_key_vault_secret("orchestrator-host--html2pdf")
+                if not function_key:
+                    raise ValueError("Empty function key retrieved from key vault")
+            except Exception as e:
+                logger.error(f"Failed to get function key: {str(e)}")
+                raise
+
+            headers = {
+                "Content-Type": "application/json",
+                "x-functions-key": function_key
+            }
+
+            # Log request details (excluding sensitive data)
+            logger.info(f"Making request to converter with headers: {{'Content-Type': {headers['Content-Type']}}}")
+            
+            # Make the request with better error handling
+            try:
+                response = requests.post(
+                    HTML_TO_PDF_ENDPOINT, 
+                    headers=headers, 
+                    json={"html": html_content},  # Use json parameter instead of manually dumping
+                    timeout=30
+                )
+                
+                # Detailed error logging
+                if response.status_code != 200:
+                    logger.error(f"Conversion failed with status code: {response.status_code}")
+                    logger.error(f"Response headers: {dict(response.headers)}")
+                    logger.error(f"Response content: {response.text[:500]}...")  # Log first 500 chars of response
+                    
+                    # More specific error messages based on status code
+                    if response.status_code == 400:
+                        logger.error("Bad request - Check if HTML content is valid")
+                    elif response.status_code == 401:
+                        logger.error("Unauthorized - Check function key")
+                    elif response.status_code == 413:
+                        logger.error("Content too large - Check size limits")
+                    
+                    response.raise_for_status()
+
+                # Process successful response
+                output_dir = Path(output_path).parent
+                output_dir.mkdir(parents=True, exist_ok=True)
+
+                with open(output_path, 'wb') as f:
+                    f.write(response.content)
+                logger.info(f"PDF saved successfully at {output_path}")
+
+                return Path(output_path)
+
+            except requests.exceptions.Timeout:
+                logger.error("Request timed out after 30 seconds")
+                raise RuntimeError("PDF conversion timed out")
+            except requests.exceptions.ConnectionError as e:
+                logger.error(f"Connection failed: {str(e)}")
+                raise RuntimeError(f"Cannot connect to {HTML_TO_PDF_ENDPOINT}")
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Request failed: {str(e)}")
+                raise
+
         except Exception as e:
-            logger.exception(f"Error getting the function key: {str(e)}")
-            raise RuntimeError(f"Failed to retrieve function key: {key_secret_name}")
-
-        headers = {
-            "Content-Type": "application/json",
-            "x-functions-key": function_key
-        }
-
-        try:
-            logger.info("Attempting to connect to HTML to PDF converter")
-            response = requests.post(
-                HTML_TO_PDF_ENDPOINT, 
-                headers=headers, 
-                data=payload,
-                timeout=30  # Add timeout
-            )
-            response.raise_for_status()
-
-            output_dir = Path(output_path).parent
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            with open(output_path, 'wb') as f:
-                f.write(response.content)
-            logger.info(f"PDF saved successfully at {output_path}")
-
-            return Path(output_path)
-
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"Connection error to HTML to PDF converter: {str(e)}")
-            raise RuntimeError(
-                f"Failed to connect to HTML to PDF converter at {HTML_TO_PDF_ENDPOINT}. "
-                "Please ensure the Azure Function is running and accessible."
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error occurred: {e.response.text if e.response else str(e)}")
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request error occurred: {str(e)}")
-            raise
-        except IOError as e:
-            logger.error(f"Error saving PDF file: {str(e)}")
-            raise
+            logger.exception("PDF conversion failed")
+            raise RuntimeError(f"PDF conversion failed: {str(e)}")
 
     def cleanup(self) -> None:
         """Clean up temporary files. """
