@@ -1125,12 +1125,14 @@ def create_checkout_session():
     success_url = request.json["successUrl"]
     cancel_url = request.json["cancelUrl"]
     organizationId = request.json["organizationId"]
+    userName = request.json["userName"]
+    organizationName = request.json["organizationName"]
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[{"price": price, "quantity": 1}],
             mode="subscription",
             client_reference_id=userId,
-            metadata={"userId": userId, "organizationId": organizationId},
+            metadata={"userId": userId, "organizationId": organizationId, "userName":userName, "organizationName":organizationName},
             success_url=success_url,
             cancel_url=cancel_url,
             automatic_tax={"enabled": True},
@@ -2076,8 +2078,8 @@ def financial_assistant(subscriptionId):
             items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}],
             metadata={
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "add_financial_assistant",
-                "modification_time": datetime.now().isoformat(),
             },
         )
         # Logging: Success confirmation
@@ -2180,8 +2182,8 @@ def remove_financial_assistant(subscriptionId):
             items=[{"id": assistant_item_id, "deleted": True}],
             metadata={
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "remove_financial_assistant",
-                "modification_time": datetime.now().isoformat(),
             },
         )
 
@@ -2473,6 +2475,11 @@ def change_subscription(subscription_id):
                 'id': stripe_subscription['items']['data'][0]['id'],
                 'price': new_plan_id,
             }],
+            metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
+                "modification_type": "subscription_tier_change",
+            },
             proration_behavior='none',  # No proration
             billing_cycle_anchor='now',  # Change the billing cycle so that it is charged at that moment
             cancel_at_period_end=False  # Do not cancel the subscription

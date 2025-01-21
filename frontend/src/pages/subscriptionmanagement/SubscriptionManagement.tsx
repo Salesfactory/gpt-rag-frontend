@@ -160,7 +160,8 @@ const SubscriptionManagement: React.FC = () => {
         try {
             await changeSubscription({
                 subscriptionId: organization?.subscriptionId ?? "",
-                newPlanId: priceId
+                newPlanId: priceId,
+                user
             });
         } catch (error) {
             console.error("Error trying to change the subscription: ", error);
@@ -269,6 +270,7 @@ const SubscriptionManagement: React.FC = () => {
                             <div>
                                 <Label className={styles.modalTitle}>Payment Detail change</Label>
                                 <Label className={styles.modalText}>
+
                                     You are already subscribed to the {selectedSubscriptionName} plan. Confirming this action will change your payment
                                     information.
                                 </Label>
