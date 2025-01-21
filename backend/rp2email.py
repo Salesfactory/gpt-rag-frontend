@@ -11,6 +11,7 @@ from utils import EmailService, get_azure_key_vault_secret
 from dotenv import load_dotenv
 import requests
 
+
 load_dotenv()
 
 logging.basicConfig(
@@ -20,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 TEMP_DIR = "blob_downloads"
-PDF_OUTPUT_NAME = "report.pdf"
+# PDF_OUTPUT_NAME = "report.pdf"
 HTML_TO_PDF_ENDPOINT = os.getenv('ORCHESTRATOR_URI') + "/api/html_to_pdf_converter"
 
 # get function code from key vault for html 2 pdf 
@@ -34,7 +35,7 @@ html2pdf_function_code = get_azure_key_vault_secret("orchestrator-host--html2pdf
 
 class KeyPoint(BaseModel):
     title: str = Field(..., description = "The title of the key point")
-    content: str = Field(..., description= "Detailed content of the key point")
+    content: str = Field(..., description= "Detailed content of the important, insightful, interesting key point. Should be a very intriguing hook to get the reader to read the rest of the report")
 
     def to_dict(self) -> Dict[str, str]:
         """Convert KeyPoint to dictionary format """
@@ -46,9 +47,9 @@ class KeyPoint(BaseModel):
 class EmailSchema(BaseModel):
     title: str = Field(..., description = "Title of the report")
     intro_text: str = Field(..., description = "Introductory text below the title")
-    keypoints: List[KeyPoint] = Field(..., description = "3 lists of key points from the report")
-    why_it_matters: str = Field(..., description = "The 'Why it matters' section")
-    document_type: Literal["WeeklyEconomics", "CompanyAnalysis", "CreativeBrief", "Ecommerce", "MonthlyMacroeconomics"] = Field(..., description="The type of the document")
+    keypoints: List[KeyPoint] = Field(..., description = "3 lists of important, insightful, statistical key points from the report")
+    why_it_matters: str = Field(..., description = "The 'Why it matters' section. This should target business owner, investor, and analyst")
+    document_type: Literal["WeeklyEconomics", "CompanyAnalysis", "CreativeBrief", "Ecommerce", "MonthlyMacroeconomics", "HomeImprovement"] = Field(..., description="The type of the document")
 
     def get_keypoints_dict(self)  -> List[Dict[str, str]]:
         """Convert keypoints to dictionary format """
@@ -164,9 +165,6 @@ class ReportProcessor:
             logger.info("Downloading report from blob link")
             html_content = self._get_report_content()
 
-            # save the html content to a pdf file 
-            pdf_path = self.html_to_pdf(html_content, f"{TEMP_DIR}/{PDF_OUTPUT_NAME}")
-
             # summarize the report 
             logger.info("Summarizing the report")
             summary = self._summarize_report(html_content)
@@ -174,6 +172,12 @@ class ReportProcessor:
             # parse to email schema 
             logger.info("Parsing the report to email schema")
             email_data = self._parse_report_to_email_schema(summary)
+
+            # save the html content to a pdf file 
+            date_str = datetime.now(timezone.utc).strftime("%m_%d_%y")
+            document_type = email_data.document_type
+
+            pdf_path = self.html_to_pdf(html_content, f"{TEMP_DIR}/{document_type}_{date_str}.pdf")
 
             # generate HTML email from schema and template 
             logger.info("Generating HTML email content")
@@ -249,7 +253,6 @@ class ReportProcessor:
         try:
             # Generate a unique ID for the email
             import uuid
-            from datetime import datetime, timezone
             email_id = str(uuid.uuid4())
             
             # Create a temporary file with the email content
