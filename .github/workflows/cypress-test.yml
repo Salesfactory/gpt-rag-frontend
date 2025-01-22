@@ -47,11 +47,6 @@ jobs:
         run: |
           curl -I http://localhost:5173
 
-      # 6. Wait for Frontend to Start
-      - name: Wait for Frontend to Start
-        run: |
-          wait-on http://localhost:5173
-
       # 7. Run Cypress Tests
       - name: Run Cypress Tests
         working-directory: frontend
