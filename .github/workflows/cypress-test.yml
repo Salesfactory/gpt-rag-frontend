@@ -42,6 +42,11 @@ jobs:
           HOST: "localhost"
           PORT: 5173
 
+      # Debug Server State
+      - name: Debug Server State
+        run: |
+          curl -I http://localhost:5173
+
       # 6. Wait for Frontend to Start
       - name: Wait for Frontend to Start
         run: |
