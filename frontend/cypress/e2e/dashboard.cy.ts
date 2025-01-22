@@ -1,5 +1,4 @@
 describe("Agent Section Tests", () => {
-    const WEB_APP_URL = Cypress.env("WEB_APP_URL") || "http://localhost:5173";
     beforeEach(() => {
         // Replace with the URL of your dashboard
         cy.intercept("GET", "/api/auth/user", {
@@ -90,8 +89,7 @@ describe("Agent Section Tests", () => {
             ]
         }).as("getChatHistory"); // Alias for later reference
         // Start from the web app that triggers the B2C sign-in
-        cy.visit(WEB_APP_URL);
-        // Verify the button is visible
+        cy.visit("http://localhost:5173"); // Use the retrieved URL        // Verify the button is visible
         cy.get("button#headerCollapse").should("be.visible");
 
         // Click the button
