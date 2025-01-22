@@ -35,17 +35,16 @@ jobs:
           npm run dev &
         env:
           HOST: "localhost"
-          PORT: 3000
 
       # 5. Wait for Frontend to Start
       - name: Wait for Frontend to Start
         run: |
-          npx wait-on http://localhost:3000
+          npx wait-on http://localhost:5173/
 
       # 6. Run Cypress Tests
       - name: Run Cypress Tests
         working-directory: frontend
         env:
-          WEB_APP_URL: "http://localhost:3000"
+          WEB_APP_URL: "http://localhost:5173/"
         run: |
           npx cypress run
