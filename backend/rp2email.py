@@ -172,6 +172,9 @@ class ReportProcessor:
             logger.info("Downloading report from blob link")
             html_content = self._get_report_content()
 
+            # Initialize pdf_path at the start of the method
+            pdf_path = None
+            
             # summarize the report 
             logger.info("Summarizing the report")
             summary = self._summarize_report(html_content)
@@ -185,18 +188,29 @@ class ReportProcessor:
             document_type = email_data.document_type
             logger.info(f"Document type: {document_type}")
 
+            # Extract company name only for Company Analysis
+            company_name = None
             if "Company_Analysis" in self.blob_link:
-                # Extract company name from the blob link using URL parsing
-                path_parts = unquote(self.blob_link.split('?')[0]).split('/')
-                company_name = path_parts[-2].replace('%20', '_')  # Replace spaces with underscores
-                logger.info(f"Company name: {company_name}")
-                logger.info(f"document type: {document_type}")
-                logger.info(f"date: {date_str}")
-                local_pdf_path = f"{TEMP_DIR}/{company_name}_Company_Analysis_{date_str}.pdf"
+                try:
+                    path_parts = unquote(self.blob_link.split('?')[0]).split('/')
+                    if len(path_parts) < 2:
+                        raise ValueError("Blob link path is too short to extract company name")
+                    company_name = path_parts[-2].replace('%20', '_')
+                    logger.info(f"Company name: {company_name}")
+                except Exception as e:
+                    logger.error(f"Failed to extract company name from blob link: {self.blob_link}")
+                    raise ValueError(f"Invalid blob link format: {str(e)}")
+
+            # Create PDF for all document types
+            try:
+                local_pdf_path = self._build_pdf_filename(document_type, date_str, company_name)
                 logger.info(f"Local PDF path: {local_pdf_path}")
                 pdf_path = self.html_to_pdf(html_content, local_pdf_path)
-            else:
-                pdf_path = self.html_to_pdf(html_content, f"{TEMP_DIR}/{document_type}_{date_str}.pdf")
+                if not pdf_path:
+                    raise ValueError("PDF creation failed - no path returned")
+            except Exception as e:
+                logger.error(f"Failed to create PDF: {str(e)}")
+                raise ValueError(f"PDF creation failed: {str(e)}")
 
             # generate HTML email from schema and template 
             logger.info("Generating HTML email content")
@@ -218,7 +232,42 @@ class ReportProcessor:
         except Exception as e:
             logger.exception("Error processing the report")
             raise ReportProcessingError(f"Error processing the report: {str(e)}")
+        
+    def _build_pdf_filename(self, document_type: str, date_str: str, company_name: Optional[str] = None) -> str:
+        """Helper function to build PDF filename based on document type and metadata
+        
+        Args:
+            document_type: Type of the document
+            date_str: Date string for the filename
+            company_name: Optional company name for company analysis reports
+            
+        Returns:
+            str: The constructed PDF filename
+            
+        Raises:
+            ValueError: If required parameters are invalid or if filename contains invalid characters
+        """
+        try:
+            # Validate inputs
+            if not document_type or not date_str:
+                raise ValueError("document_type and date_str are required")
 
+            # Clean company name if present (remove invalid filename characters)
+            if company_name:
+                # Replace invalid filename characters with underscores
+                company_name = ''.join(c if c.isalnum() or c in '-_' else '_' for c in company_name)
+                return f"{TEMP_DIR}/{company_name}_Company_Analysis_{date_str}.pdf"
+            
+            return f"{TEMP_DIR}/{document_type}_{date_str}.pdf"
+            
+        except Exception as e:
+            logger.error(f"Error building PDF filename: {str(e)}")
+            
+            # Fallback to a safe default filename using UUID
+            safe_filename = f"{TEMP_DIR}/report_{uuid.uuid4()}_{date_str}.pdf"
+            logger.info(f"Using safe fallback filename: {safe_filename}")
+            return safe_filename
+    
     def _get_report_content(self) -> str:
         """Download and read the report content from the blob link. """
         try:
