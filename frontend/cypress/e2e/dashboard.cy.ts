@@ -1,6 +1,5 @@
 describe("Agent Section Tests", () => {
-    const WEB_APP_URL = Cypress.env("WEB_APP_URL") || "http://localhost:5173";
-    console.log("WEB_APP_URL:", WEB_APP_URL);
+    const WEB_APP_URL = "http://localhost:5173";
 
     beforeEach(() => {
         // Replace with the URL of your dashboard
