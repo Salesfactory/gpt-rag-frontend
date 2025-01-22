@@ -10,7 +10,16 @@ from financial_doc_processor import BlobStorageManager
 from utils import EmailService, get_azure_key_vault_secret
 from dotenv import load_dotenv
 import requests
-
+import json
+from pathlib import Path
+from contextlib import contextmanager
+from typing import Generator
+from urllib.parse import unquote
+from urllib.parse import urlparse
+import uuid
+from flask import current_app
+from datetime import datetime, timezone
+import shutil
 
 load_dotenv()
 
@@ -99,8 +108,7 @@ class EmailSendingError(Exception):
 ####################################
 # Report Processor
 ####################################
-from contextlib import contextmanager
-from typing import Generator
+
 class ReportProcessor:
     """Process reports and conver them to email format. """
 
@@ -118,7 +126,6 @@ class ReportProcessor:
             raise ValueError("Blob link cannot be None or empty")
         
         # Validate URL format
-        from urllib.parse import urlparse
         parsed_url = urlparse(blob_link)
         if not all([parsed_url.scheme, parsed_url.netloc]):
             raise ValueError(f"Invalid blob link format: {blob_link}. URL must include scheme (e.g., https://) and hostname")
@@ -180,7 +187,6 @@ class ReportProcessor:
 
             if "Company_Analysis" in self.blob_link:
                 # Extract company name from the blob link using URL parsing
-                from urllib.parse import unquote
                 path_parts = unquote(self.blob_link.split('?')[0]).split('/')
                 company_name = path_parts[-2].replace('%20', '_')  # Replace spaces with underscores
                 logger.info(f"Company name: {company_name}")
@@ -265,7 +271,6 @@ class ReportProcessor:
         
         try:
             # Generate a unique ID for the email
-            import uuid
             email_id = str(uuid.uuid4())
             
             # Create a temporary file with the email content
@@ -325,10 +330,6 @@ class ReportProcessor:
     
     def html_to_pdf(self, html_content: str, output_path: str) -> Path:
         """Convert the HTML content to a PDF file using the Azure function."""
-        import requests
-        import json
-        from pathlib import Path
-
         # Debug logging
         logger.info(f"HTML_TO_PDF_ENDPOINT: {HTML_TO_PDF_ENDPOINT}")
         content_size = len(html_content.encode('utf-8'))
@@ -415,7 +416,6 @@ class ReportProcessor:
             # clean up the blob downloads directory
             blob_downloads = Path(os.getcwd()) / f'{TEMP_DIR}'
             if blob_downloads.exists():
-                import shutil
                 shutil.rmtree(blob_downloads)
                 logger.info("Cleaned up blob downloads directory")
 
@@ -426,8 +426,7 @@ class ReportProcessor:
 ####################################
 # Send Email
 ####################################
-from flask import current_app
-from datetime import datetime, timezone
+
 def send_email(
         email_data: Dict[str, Any], 
         recipients: List[str],
