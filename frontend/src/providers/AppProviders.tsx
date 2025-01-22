@@ -5,6 +5,19 @@ import { Spinner } from "@fluentui/react";
 import { checkUser, getOrganizationSubscription } from "../api";
 import { toast } from "react-toastify";
 
+// Define the debug mode based on the environment
+const isDebugMode = process.env.NODE_ENV === "development";
+
+/**
+ * Logs messages to the console only in development mode.
+ * @param args - The messages or data to log.
+ */
+const debugLog = (...args: any[]) => {
+    if (isDebugMode) {
+        console.log(...args);
+    }
+};
+
 // Updated Role and SubscriptionTier types
 type Role = "admin" | "user";
 
@@ -136,7 +149,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Move agentType update into useEffect to prevent state updates on every render
     useEffect(() => {
         if (agentParam && agentType !== agentParam) {
-            console.log(`Updating agentType from "${agentType}" to "${agentParam}"`);
+            debugLog(`Updating agentType from "${agentType}" to "${agentParam}"`);
             setAgentType(agentParam);
         }
     }, [agentParam, agentType]);
@@ -154,36 +167,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         setShowFeedbackRatingPanel(prev => !prev);
                         setSettingsPanel(false);
                         setShowHistoryPanel(false);
-                        console.log("Toggle Feedback Rating Panel");
+                        debugLog("Toggle Feedback Rating Panel");
                         break;
                     case "Period":
                         event.preventDefault();
                         setShowHistoryPanel(prev => !prev);
                         setShowFeedbackRatingPanel(false);
                         setSettingsPanel(false);
-                        console.log("Toggle History Panel");
+                        debugLog("Toggle History Panel");
                         break;
                     case "Comma":
                         event.preventDefault();
                         setSettingsPanel(prev => !prev);
                         setShowHistoryPanel(false);
                         setShowFeedbackRatingPanel(false);
-                        console.log("Toggle Settings Panel");
+                        debugLog("Toggle Settings Panel");
                         break;
                     case "Digit0":
                         event.preventDefault();
                         window.location.href = "/logout";
-                        console.log("Redirecting to /logout");
+                        debugLog("Redirecting to /logout");
                         break;
                     case "Digit9":
                         event.preventDefault();
                         window.location.href = "#/admin";
-                        console.log("Redirecting to /admin");
+                        debugLog("Redirecting to /admin");
                         break;
                     case "Digit7":
                         event.preventDefault();
                         window.location.href = "#/payment";
-                        console.log("Redirecting to /payment");
+                        debugLog("Redirecting to /payment");
                         break;
                     default:
                         break;
@@ -195,10 +208,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     useEffect(() => {
         window.addEventListener("keydown", handleKeyDown);
-        console.log("Keyboard event listener added.");
+        debugLog("Keyboard event listener added.");
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
-            console.log("Keyboard event listener removed.");
+            debugLog("Keyboard event listener removed.");
         };
     }, [handleKeyDown]);
 
@@ -211,7 +224,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 url += `?${params.toString()}`;
             }
 
-            console.log(`Fetching user authentication from URL: ${url}`);
+            debugLog(`Fetching user authentication from URL: ${url}`);
 
             const response = await fetch(url, {
                 method: "GET",
@@ -222,12 +235,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             });
 
             if (!response.ok) {
+                debugLog(`HTTP error while fetching user auth! Status: ${response.status}`);
                 console.error(`HTTP error while fetching user auth! Status: ${response.status}`);
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log("User authentication data fetched:", data);
+            debugLog("User authentication data fetched:", data);
             return data;
         };
 
@@ -241,27 +255,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 if (authData.authenticated) {
                     setUser(authData.user);
                     setIsAuthenticated(true);
-                    console.log(`User authenticated: ${authData.user.name}`);
+                    debugLog(`User authenticated: ${authData.user.name}`);
                 } else {
-                    console.log("User not authenticated.");
+                    debugLog("User not authenticated.");
                 }
 
                 // Handle financial assistant activation based on local storage or agentType
                 const savedState = localStorage.getItem(`financialAssistantActive_${authData.user?.id}`);
                 if (savedState !== null) {
                     setIsFinancialAssistantActive(JSON.parse(savedState));
-                    console.log("Financial Assistant activation state loaded from localStorage.");
+                    debugLog("Financial Assistant activation state loaded from localStorage.");
                 }
                 if (agentType === "financial") {
                     setIsFinancialAssistantActive(true);
-                    console.log("Financial Assistant activated based on agentType.");
+                    debugLog("Financial Assistant activated based on agentType.");
                 }
             } catch (error) {
+                debugLog("Initialization failed:", error);
                 console.error("Initialization failed:", error);
                 toast.error("Failed to initialize user authentication.");
             } finally {
                 setIsLoading(false);
-                console.log("Initialization completed.");
+                debugLog("Initialization completed.");
             }
         };
 
@@ -271,12 +286,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Effect to fetch organization details when user.id changes
     useEffect(() => {
         if (!user?.id || !user.organizationId) {
-            console.log("No user ID or organization ID available. Skipping organization fetch.");
+            debugLog("No user ID or organization ID available. Skipping organization fetch.");
             return;
         }
 
         const fetchOrganizationDetails = async (userId: string, organizationId: string) => {
-            console.log(`Fetching organization details for User ID: ${userId}, Organization ID: ${organizationId}`);
+            debugLog(`Fetching organization details for User ID: ${userId}, Organization ID: ${organizationId}`);
             setIsOrganizationLoading(true);
 
             try {
@@ -296,26 +311,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         subscriptionStatus: organization.subscriptionStatus
                     });
 
-                    console.log("Organization details fetched:", organization);
+                    debugLog("Organization details fetched:", organization);
 
                     if (organization.subscriptionId) {
                         await fetchSubscriptionTiers(organization.subscriptionId, userId);
                     }
                 } else {
-                    console.log("No organization details found.");
+                    debugLog("No organization details found.");
                 }
             } catch (error) {
+                debugLog("Failed to fetch organization details:", error);
                 console.error("Failed to fetch organization details:", error);
                 toast.error("Failed to fetch organization details.");
                 throw error;
             } finally {
                 setIsOrganizationLoading(false);
-                console.log("Organization fetch completed.");
+                debugLog("Organization fetch completed.");
             }
         };
 
         const fetchSubscriptionTiers = async (subscriptionId: string, userId: string) => {
-            console.log(`Fetching subscription tiers for Subscription ID: ${subscriptionId}`);
+            debugLog(`Fetching subscription tiers for Subscription ID: ${subscriptionId}`);
             setIsSubscriptionTiersLoading(true);
 
             try {
@@ -329,19 +345,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
                 if (!response.ok) {
                     const errorData = await response.json();
+                    debugLog(`HTTP error while fetching subscription tiers! Status: ${response.status}`, errorData);
                     console.error(`HTTP error while fetching subscription tiers! Status: ${response.status}`, errorData);
                     throw new Error(errorData.error || "Failed to fetch subscription tiers");
                 }
 
                 const data = await response.json();
                 setSubscriptionTiers(data.subscriptionTiers as SubscriptionTier[]);
-                console.log("Subscription tiers fetched:", data.subscriptionTiers);
+                debugLog("Subscription tiers fetched:", data.subscriptionTiers);
             } catch (error: any) {
+                debugLog("Failed to fetch subscription tiers:", error);
                 console.error("Failed to fetch subscription tiers:", error);
                 toast.error(error.message || "Failed to fetch subscription tiers.");
             } finally {
                 setIsSubscriptionTiersLoading(false);
-                console.log("Subscription tiers fetch completed.");
+                debugLog("Subscription tiers fetch completed.");
             }
         };
 
@@ -351,12 +369,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Effect to fetch chat history when user.id changes
     useEffect(() => {
         if (!user?.id) {
-            console.log("No user ID available. Skipping chat history fetch.");
+            debugLog("No user ID available. Skipping chat history fetch.");
             return;
         }
 
         const fetchChatHistory = async () => {
-            console.log(`Fetching chat history for User ID: ${user.id}`);
+            debugLog(`Fetching chat history for User ID: ${user.id}`);
             setIsChatHistoryLoading(true);
 
             try {
@@ -368,19 +386,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 });
 
                 if (!response.ok) {
+                    debugLog(`HTTP error while fetching chat history! Status: ${response.status}`);
                     console.error(`HTTP error while fetching chat history! Status: ${response.status}`);
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
 
                 const data: ConversationHistoryItem[] = await response.json();
                 setDataHistory(data);
-                console.log("Chat history fetched:", data);
+                debugLog("Chat history fetched:", data);
             } catch (error) {
+                debugLog("Failed to fetch chat history:", error);
                 console.error("Failed to fetch chat history:", error);
                 toast.error("Failed to fetch chat history.");
             } finally {
                 setIsChatHistoryLoading(false);
-                console.log("Chat history fetch completed.");
+                debugLog("Chat history fetch completed.");
             }
         };
 
@@ -456,9 +476,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         ]
     );
 
-    // Render loading spinner if data is still loading (initial authentication)
+    // Render loading spinner if data is still loading (initial authentication or other loading states)
     if (isLoading || isOrganizationLoading || isSubscriptionTiersLoading || isChatHistoryLoading) {
-        console.log("AppProvider: Loading initial authentication data. Rendering Spinner.");
+        debugLog(
+            `AppProvider: Loading states - isLoading: ${isLoading}, isOrganizationLoading: ${isOrganizationLoading}, isSubscriptionTiersLoading: ${isSubscriptionTiersLoading}, isChatHistoryLoading: ${isChatHistoryLoading}. Rendering Spinner.`
+        );
         return (
             <div
                 style={{

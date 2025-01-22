@@ -1,8 +1,22 @@
 // src/ProtectedRoute.tsx
+
 import React from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { useAppContext } from "../providers/AppProviders";
 import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Optional: Create a loading spinner component
+
+// Define the debug mode based on the environment
+const isDebugMode = process.env.NODE_ENV === "development";
+
+/**
+ * Logs messages to the console only in development mode.
+ * @param args - The messages or data to log.
+ */
+const debugLog = (...args: any[]) => {
+    if (isDebugMode) {
+        console.log(...args);
+    }
+};
 
 /**
  * ProtectedRoute component ensures that only authenticated users with allowed roles can access certain routes.
@@ -24,8 +38,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
         useAppContext();
 
     // Debug: Log context values
-    console.log("ProtectedRoute Rendered with props:", { allowedRoles, allowedTiers });
-    console.log("Context Values:", {
+    debugLog("ProtectedRoute Rendered with props:", { allowedRoles, allowedTiers });
+    debugLog("Context Values:", {
         user,
         isAuthenticated,
         organization,
@@ -39,39 +53,39 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
     // Check if the user has the required role
     const hasRequiredRole = (): boolean => {
         if (!user?.role) {
-            console.log("hasRequiredRole: User role is undefined or null.");
+            debugLog("hasRequiredRole: User role is undefined or null.");
             return false;
         }
         const hasRole = allowedRoles.includes(user.role);
-        console.log(`hasRequiredRole: User role "${user.role}" is ${hasRole ? "" : "not "}allowed.`);
+        debugLog(`hasRequiredRole: User role "${user.role}" is ${hasRole ? "" : "not "}allowed.`);
         return hasRole;
     };
 
     // Check if the user's subscription tier is in the allowed tiers
     const hasRequiredTier = (): boolean => {
         if (!organization?.subscriptionId) {
-            console.log("hasRequiredTier: User does not have a subscription ID.");
+            debugLog("hasRequiredTier: User does not have a subscription ID.");
             return false;
         }
         if (!subscriptionTiers || subscriptionTiers.length === 0) {
-            console.log("hasRequiredTier: No subscription tiers available.");
+            debugLog("hasRequiredTier: No subscription tiers available.");
             return false;
         }
         const hasTier = subscriptionTiers.some(tier => allowedTiers.includes(tier));
-        console.log(`hasRequiredTier: User has ${hasTier ? "" : "no "}allowed subscription tiers.`);
+        debugLog(`hasRequiredTier: User has ${hasTier ? "" : "no "}allowed subscription tiers.`);
         return hasTier;
     };
 
     // Ensure the organization and subscription information is valid
     const isValidSubscriptionForOrganization = (): boolean => {
         const isValid = user?.organizationId && organization?.subscriptionId ? true : false;
-        console.log(`isValidSubscriptionForOrganization: ${isValid ? "Valid" : "Invalid"}.`);
+        debugLog(`isValidSubscriptionForOrganization: ${isValid ? "Valid" : "Invalid"}.`);
         return isValid;
     };
 
     // Show a loading spinner while loading data
     if (isLoading || isOrganizationLoading || isSubscriptionTiersLoading || isChatHistoryLoading) {
-        console.log(
+        debugLog(
             `ProtectedRoute: Loading states - isLoading: ${isLoading}, isOrganizationLoading: ${isOrganizationLoading}, isSubscriptionTiersLoading: ${isSubscriptionTiersLoading}, isChatHistoryLoading: ${isChatHistoryLoading}. Rendering LoadingSpinner.`
         );
         return <LoadingSpinner />;
@@ -79,19 +93,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
 
     // Determine which navigation path to take
     if (isAuthenticated && hasRequiredRole() && hasRequiredTier()) {
-        console.log("ProtectedRoute: User is authenticated with required role and tier. Rendering Outlet.");
+        debugLog("ProtectedRoute: User is authenticated with required role and tier. Rendering Outlet.");
         return <Outlet />;
     } else if (!hasRequiredRole()) {
-        console.log("ProtectedRoute: User does not have the required role. Redirecting to /access-denied.");
+        debugLog("ProtectedRoute: User does not have the required role. Redirecting to /access-denied.");
         return <Navigate to="/access-denied" replace />;
     } else if (!isValidSubscriptionForOrganization()) {
-        console.log("ProtectedRoute: Subscription is invalid. Redirecting to /onboarding.");
+        debugLog("ProtectedRoute: Subscription is invalid. Redirecting to /onboarding.");
         return <Navigate to="/onboarding" replace />;
     } else if (!hasRequiredTier()) {
-        console.log("ProtectedRoute: User does not have the required subscription tier. Redirecting to /access-denied.");
+        debugLog("ProtectedRoute: User does not have the required subscription tier. Redirecting to /access-denied.");
         return <Navigate to="/access-denied" replace />;
     } else {
-        console.log("ProtectedRoute: Default redirect to /access-denied.");
+        debugLog("ProtectedRoute: Default redirect to /access-denied.");
         return <Navigate to="/access-denied" replace />;
     }
 };
