@@ -1,4 +1,5 @@
 describe("Agent Section Tests", () => {
+
     beforeEach(() => {
         // Replace with the URL of your dashboard
         cy.intercept("GET", "/api/auth/user", {
