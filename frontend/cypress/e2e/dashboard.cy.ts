@@ -1,5 +1,7 @@
 describe("Agent Section Tests", () => {
+
     const WEB_APP_URL = "http://localhost:5173";
+
 
     beforeEach(() => {
         // Replace with the URL of your dashboard
