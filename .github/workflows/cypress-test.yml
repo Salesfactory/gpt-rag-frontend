@@ -28,23 +28,29 @@ jobs:
         run: |
           npm install
 
-      # 4. Start Frontend Server
+      # 4. Install wait-on Globally
+      - name: Install wait-on Globally
+        run: |
+          npm install -g wait-on
+
+      # 5. Start Frontend Server
       - name: Start Frontend Server
         working-directory: frontend
         run: |
           npm run dev &
         env:
           HOST: "localhost"
+          PORT: 5173
 
-      # 5. Wait for Frontend to Start
+      # 6. Wait for Frontend to Start
       - name: Wait for Frontend to Start
         run: |
-          npx wait-on http://localhost:5173/
+          wait-on http://localhost:5173
 
-      # 6. Run Cypress Tests
+      # 7. Run Cypress Tests
       - name: Run Cypress Tests
         working-directory: frontend
         env:
-          WEB_APP_URL: "http://localhost:5173/"
+          WEB_APP_URL: "http://localhost:5173"
         run: |
           npx cypress run
