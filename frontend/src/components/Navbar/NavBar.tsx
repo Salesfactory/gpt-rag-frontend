@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styles from "./Navbar.module.css";
-import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconAppsFilled} from "@tabler/icons-react";
+import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconAppsFilled } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { Link, useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profile";
@@ -28,7 +28,6 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
     const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     const userName = user?.name || "";
-    const email = user?.email || " ";
     const subscriptiontype = subscriptionTiers || " ";
     const location = useLocation().pathname;
 
@@ -97,7 +96,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
             <div className="navbar-collapse justify-content-end px-0" id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-4">
                     {/* Financial Assistant Toggle */}
-                    {fastatus && location === "/" &&(
+                    {fastatus && location === "/" && (
                         <li className="nav-item">
                             <div className="d-flex flex-column align-items-start">
                                 <div className="form-check form-switch">
@@ -113,7 +112,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                         </li>
                     )}
                     {/* Feedback Panel Button */}
-                    {location === "/" &&(
+                    {location === "/" && (
                         <li className="nav-item">
                             <button onClick={handleShowFeedbackRatingPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
                                 <IconMessageCircle className={styles.iconLarge} />
@@ -122,39 +121,35 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
                         </li>
                     )}
                     {/* Hide Chat History Button */}
-                    {location === "/" &&(
-                    <li className="nav-item">
-                        <button onClick={handleShowHistoryPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
-                            <IconHistory className={styles.iconLarge} />
-                            <span className="d-none d-md-inline">{historyContent}</span>
-                        </button>
-                    </li>
+                    {location === "/" && (
+                        <li className="nav-item">
+                            <button onClick={handleShowHistoryPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                                <IconHistory className={styles.iconLarge} />
+                                <span className="d-none d-md-inline">{historyContent}</span>
+                            </button>
+                        </li>
                     )}
                     {/* Settings Button */}
-                    {location === "/" &&(
-                    <li className="nav-item">
-                        <button onClick={handleShowSettings} className="btn btn-light btn-sm d-flex align-items-center gap-1">
-                            <IconSettings className={styles.iconLarge} />
-                            <span className="d-none d-md-inline">Settings</span>
-                        </button>
-                    </li>
+                    {location === "/" && (
+                        <li className="nav-item">
+                            <button onClick={handleShowSettings} className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                                <IconSettings className={styles.iconLarge} />
+                                <span className="d-none d-md-inline">Settings</span>
+                            </button>
+                        </li>
                     )}
 
                     {/* User Profile Card */}
                     <li className="nav-item dropdown">
-                        <button
-                            className="nav-link"
-                            onClick={handleOnClickProfileCard}
-                        >
+                        <button className="nav-link" onClick={handleOnClickProfileCard}>
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                 <IconAppsFilled className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
                                     <p className={`${styles.userName} mb-0`}>{userName}</p>
-                                    <p className={`${styles.userEmail} mb-0`}>{email}</p>
                                 </div>
                             </div>
                         </button>
-                            {isDropdownOpen && <ProfilePanel />}
+                        {isDropdownOpen && <ProfilePanel />}
                     </li>
                 </ul>
             </div>
