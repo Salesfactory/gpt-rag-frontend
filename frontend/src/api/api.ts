@@ -796,7 +796,7 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
 }
 
 export async function updateUserData({ userId, patchData }: { userId: string; patchData: object }) {
-    const response = await fetch(`/api/user/${encodeURIComponent(userId)}/data`, {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json",

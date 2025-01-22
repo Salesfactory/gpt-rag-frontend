@@ -223,8 +223,9 @@
 }
 
 .modalText{
-    text-align: justify;
+    text-align: left;
     font-weight: 400;
+    padding-bottom: 10px;
 }
 
 .buttonContainer{
