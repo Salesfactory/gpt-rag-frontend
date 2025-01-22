@@ -283,6 +283,20 @@
   .lg {
     /* Define styles if needed */
   }
+
+  .leftSidebar {
+    left: -260px;
+  }
+
+  .showSidebar  {
+    left: 0;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+
+  .brandLogo,
+  .scrollSidebar {
+    padding: 0 16px;
+  }
   
   /* Responsive Adjustments */
   @media (max-width: 1199px) {
