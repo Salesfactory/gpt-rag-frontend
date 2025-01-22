@@ -3,13 +3,11 @@ import logging
 import markdown
 from pathlib import Path
 from typing import Literal, List, Dict, Optional, Any
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 from pydantic import BaseModel, Field, EmailStr
 from report_email_templates.email_templates import EmailTemplateManager
 from llm_config import LLMManager
 from financial_doc_processor import BlobStorageManager
-from utils import EmailService
+from utils import EmailService, get_azure_key_vault_secret
 from dotenv import load_dotenv
 import requests
 
@@ -25,18 +23,8 @@ TEMP_DIR = "blob_downloads"
 PDF_OUTPUT_NAME = "report.pdf"
 HTML_TO_PDF_ENDPOINT = os.getenv('ORCHESTRATOR_URI') + "/api/html_to_pdf_converter"
 
-def get_secret(secretName):
-    keyVaultName = os.getenv("AZURE_KEY_VAULT_NAME")
-    KVUri = f"https://{keyVaultName}.vault.azure.net"
-    credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=KVUri, credential=credential)
-    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")
-    retrieved_secret = client.get_secret(secretName)
-    return retrieved_secret.value
-
-
 # get function code from key vault for html 2 pdf 
-html2pdf_function_code = get_secret("orchestrator-host--html2pdf")
+html2pdf_function_code = get_azure_key_vault_secret("orchestrator-host--html2pdf")
 
 
 
@@ -330,7 +318,7 @@ class ReportProcessor:
         key_secret_name = "orchestrator-host--html2pdf"
 
         try:
-            function_key = get_secret(key_secret_name)
+            function_key = get_azure_key_vault_secret(key_secret_name)
         except Exception as e:
             logger.exception(f"Error getting the function key: {str(e)}")
             raise RuntimeError(f"Failed to retrieve function key: {key_secret_name}")

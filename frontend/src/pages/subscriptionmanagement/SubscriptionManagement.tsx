@@ -160,7 +160,8 @@ const SubscriptionManagement: React.FC = () => {
         try {
             await changeSubscription({
                 subscriptionId: organization?.subscriptionId ?? "",
-                newPlanId: priceId
+                newPlanId: priceId,
+                user
             });
         } catch (error) {
             console.error("Error trying to change the subscription: ", error);
