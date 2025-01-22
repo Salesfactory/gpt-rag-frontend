@@ -140,21 +140,27 @@ const SubscriptionManagement: React.FC = () => {
         setIsConfirmationModal(true);
     };
 
-    const handleCheckout = async (priceId: string) => {
-        if (subscriptionName === selectedSubscriptionName) {
-            const customerId = await getCustomerId({
-                subscriptionId: organization?.subscriptionId ?? ""
-            });
+    const handleCreateCustomerPortal = async () => {
+        const customerId = await getCustomerId({
+            subscriptionId: organization?.subscriptionId ?? ""
+        });
 
+        try {
             const { url } = await createCustomerPortalSession({
                 customerId: customerId,
+                subscription_id: organization?.subscriptionId ?? "",
                 return_url: window.location.origin + "/#/subscription-management"
             });
             window.location.href = url;
+        } catch (error) {
+            console.error("Error trying to create the customer portal: ", error);
         }
         setIsConfirmationModal(false);
         setIsViewModal(false);
         setLoading(true);
+    };
+
+    const handleChangeSubscription = async (priceId: string) => {
         let timer: NodeJS.Timeout;
 
         try {
@@ -173,7 +179,7 @@ const SubscriptionManagement: React.FC = () => {
             timer = setTimeout(() => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
-            //If we don't reload the page, the subscription tiers won't update correctly in the platform
+
             window.location.reload();
         }
     };
@@ -270,13 +276,12 @@ const SubscriptionManagement: React.FC = () => {
                             <div>
                                 <Label className={styles.modalTitle}>Payment Detail change</Label>
                                 <Label className={styles.modalText}>
-
                                     You are already subscribed to the {selectedSubscriptionName} plan. Confirming this action will change your payment
                                     information.
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton onClick={() => handleCheckout(selectedSubscriptionID)} text="Confirm change" />
+                                    <PrimaryButton onClick={() => handleCreateCustomerPortal()} text="Confirm change" />
                                 </div>
                             </div>
                         ) : (
@@ -288,7 +293,7 @@ const SubscriptionManagement: React.FC = () => {
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton onClick={() => handleCheckout(selectedSubscriptionID)} text="Confirm Subscription" />
+                                    <PrimaryButton onClick={() => handleChangeSubscription(selectedSubscriptionID)} text="Confirm Subscription" />
                                 </div>
                             </div>
                         )}

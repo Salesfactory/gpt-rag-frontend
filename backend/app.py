@@ -1184,22 +1184,33 @@ def get_customer():
 def create_customer_portal_session():
     customer = request.json["customer"]
     return_url = request.json["return_url"]
+    subscription_id = request.json["subscription_id"]
 
     if not customer or not return_url:
         logging.warning({"error": "Missing 'customer' or 'return_url'"})
         return jsonify({"error": "Missing 'customer' or 'return_url'"}), 404
 
+    if not subscription_id:
+        logging.warning({"error": "Missing 'subscription_id'."})
+        return jsonify({"error": "Missing 'subscription_id'."}), 404
+
     try:
+       # Clear the metadata of the specific subscription
+        stripe.Subscription.modify(subscription_id, metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
+                "modification_type": "",
+            })
 
         portal_session = stripe.billing_portal.Session.create(
-            customer = customer,
-            return_url = return_url
+            customer=customer,
+            return_url=return_url
         )
 
     except Exception as e:
-        logging.warning({"error": "Unexpected error: " + {str(e)}})
-        return jsonify({"error": "Unexpected error: " + str(e)}), 500
-    
+        logging.warning({"error": f"Unexpected error: {str(e)}"})
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
     return jsonify({"url": portal_session.url})
 
 @app.route("/api/stripe", methods=["GET"])
