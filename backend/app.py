@@ -64,6 +64,7 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    get_audit_logs
 )
 
 load_dotenv(override=True)
@@ -3554,6 +3555,20 @@ def list_blobs():
     except Exception as e:
         logger.exception("Unexpected error in list_blobs")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/logs", methods=["GET"])
+def get_logs():
+    try:
+        items = get_audit_logs()
+        if not items:
+            raise NotFound("No logs found") 
+        return create_success_response(items)
+    except NotFound as e:
+        return jsonify({"error": str(e)}), HTTPStatus.NOT_FOUND
+    except Exception as e:
+        logger.exception("Unexpected error in get_logs")
+        return jsonify({"error": str(e)}), 500
+    
 
 
 if __name__ == "__main__":

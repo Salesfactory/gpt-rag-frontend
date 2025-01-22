@@ -440,3 +440,37 @@
     gap: 10px;
     width: auto;
 }
+
+.modalAudit {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: auto;
+    flex-direction: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+    padding: 40px;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 40px;
+    color: #4a5568;
+}
+
+@media (max-width: 1024px) {
+    .modalAudit {
+        width: 100%;
+        flex-direction: column;
+        padding: 20px;
+    }
+}
+.modalAuditHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}

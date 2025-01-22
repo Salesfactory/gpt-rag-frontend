@@ -875,3 +875,23 @@ export async function cancelSubscription({ subscriptionId, user }: {subscription
     }
 }
 
+export async function getLogs(): Promise<any> {
+    try {
+        const response = await fetch("/api/logs", {method:'GET',
+            headers:{
+                "Content-Type": "application/json"
+            }
+        })
+
+        if (response.status > 299 || !response.ok) {
+            throw Error("Error getting logs");
+        }
+
+        const logs = await response.json();
+        return logs.data;
+    } catch (error) {
+        console.error("Error getting logs:", error);
+        throw error;
+    }
+}
+

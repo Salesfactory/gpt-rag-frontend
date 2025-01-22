@@ -382,3 +382,29 @@ def patch_user_data(user_id, patch_data):
     except Exception as e:
         logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
         raise e
+
+
+def get_audit_logs():
+    """Get all the audit logs in a cosmosDB container"""
+    container = get_cosmos_container("auditLogs")
+    try:
+        items = list(container.query_items(
+            query="SELECT * FROM c",
+            enable_cross_partition_query=True
+        ))
+
+        if not items:
+            logging.warning(f"No audit logs found.")
+            raise NotFound
+
+        logging.info(f"Audit logs successfully retrieved: {items}")
+        print(items)
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No audit logs found.")
+        raise NotFound
+    
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving audit logs: {e}")
+        raise

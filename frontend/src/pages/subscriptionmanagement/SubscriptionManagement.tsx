@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./SubscriptionManagement.module.css";
-import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner, Dropdown } from "@fluentui/react";
+import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner, Dropdown, IconButton, Stack } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
 import {
     createCustomerPortalSession,
@@ -9,7 +9,8 @@ import {
     getFinancialAssistant,
     getProductPrices,
     removeFinancialAssistant,
-    upgradeSubscription
+    upgradeSubscription,
+    getLogs
 } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
@@ -29,169 +30,20 @@ const SubscriptionManagement: React.FC = () => {
     const [selectedSubscriptionName, setSelectedSubscriptionName] = useState("");
     const [selectedSubscriptionID, setSelectedSubscriptionID] = useState("");
     const [isRecentChangesModal, setIsRecentChangesModal] = useState<Boolean>(false);
-    const [logsData, setlogsData] = useState<any>([])
-    const [filteredLogsData, setFilteredLogsData] = useState<any>()
+    const [recentChangesLoading, setRecentChangesLoading] = useState<Boolean>(false);
+    const [logsData, setlogsData] = useState<any>([]);
+    const [filteredLogsData, setFilteredLogsData] = useState<any>();
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
 
-    const dummyData = [
-        {
-            id: "12a4b3c7-df12-4e34-9a56-5f78a1d2b3c4",
-            organizationName: "DemoOrg",
-            organizationOwner: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
-            subscriptionId: "sub_8Hk3nYRwT8aabNZX987654QP",
-            action: "New Subscription",
-            changeTime: "2025-01-18T16:10:12.345678",
-            modified_by: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
-            modified_by_name: "JaneSmith01",
-            status_financial_assistant: "active",
-            _rid: "aknFAKdwoTNeAAAAAAAAAA==",
-            _self: "dbs/aknFAA==/colls/aknFAKdwoTN=/docs/aknFAKdwoTNeAAAAAAAAAA==/",
-            _etag: '"d2046752-0000-0300-0000-679bef340000"',
-            _attachments: "attachments/",
-            _ts: 1737154212
-        },
-        {
-            id: "12a4b3c7-df12-4e34-9a56-5f78a1d2b3c4",
-            organizationName: "DemoOrg",
-            organizationOwner: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
-            subscriptionId: "sub_8Hk3nYRwT8aabNZX987654QP",
-            action: "Financial Assistant Change",
-            changeTime: "2025-01-18T16:10:12.345678",
-            modified_by: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
-            modified_by_name: "JaneSmith01",
-            status_financial_assistant: "active",
-            _rid: "aknFAKdwoTNeAAAAAAAAAA==",
-            _self: "dbs/aknFAA==/colls/aknFAKdwoTN=/docs/aknFAKdwoTNeAAAAAAAAAA==/",
-            _etag: '"d2046752-0000-0300-0000-679bef340000"',
-            _attachments: "attachments/",
-            _ts: 1737154212
-        },
-        {
-            id: "45c8e3f2-gh34-5i67-jk89-lmno4567pqrs",
-            organizationName: "DemoOrg",
-            organizationOwner: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
-            subscriptionId: "sub_8Hk3nYRwT8aabNZX987654QP",
-            action: "Subscription Tier Change",
-            changeTime: "2025-01-18T15:45:01.456789",
-            previous_plan: "Pro",
-            current_plan: "Enterprise",
-            modified_by: "789ghi45-jkl6-7mno-pqrs-234tu567vwxy",
-            modified_by_name: "JaneSmith01",
-            _rid: "aknFAKdwoTNcAAAAAAAAAA==",
-            _self: "dbs/aknFAA==/colls/aknFAKdwoTN=/docs/aknFAKdwoTNcAAAAAAAAAA==/",
-            _etag: '"d2042348-0000-0300-0000-679bef110000"',
-            _attachments: "attachments/",
-            _ts: 1737153901
-        },
-        {
-            id: "67f9g0h1-ij45-6k78-lm90-nopq5678qrst",
-            organizationName: "TestCompany",
-            organizationOwner: "234ghi78-jkl9-8mno-pqrs-456tu123vwxy",
-            subscriptionId: "sub_1Kl2mNRyU9bcdLQW234567OP",
-            action: "Financial Assistant Change",
-            changeTime: "2025-01-18T14:22:33.789012",
-            modified_by: "234ghi78-jkl9-8mno-pqrs-456tu123vwxy",
-            modified_by_name: "MikeDeveloper",
-            status_financial_assistant: "inactive",
-            _rid: "vxnFAJeroUReAAAAAAAAAA==",
-            _self: "dbs/vxnFAA==/colls/vxnFAJeroUR=/docs/vxnFAJeroUReAAAAAAAAAA==/",
-            _etag: '"e3059856-0000-0400-0000-679adc760000"',
-            _attachments: "attachments/",
-            _ts: 1737150153
-        },
-        {
-            id: "89g0h1i2-jk56-7l89-mn01-opqr6789stuv",
-            organizationName: "TestCompany",
-            organizationOwner: "234ghi78-jkl9-8mno-pqrs-456tu123vwxy",
-            subscriptionId: "sub_1Kl2mNRyU9bcdLQW234567OP",
-            action: "Subscription Tier Change",
-            changeTime: "2025-01-18T13:50:22.012345",
-            previous_plan: "Enterprise",
-            current_plan: "Custom",
-            modified_by: "234ghi78-jkl9-8mno-pqrs-456tu123vwxy",
-            modified_by_name: "MikeDeveloper",
-            _rid: "vxnFAJeroURcAAAAAAAAAA==",
-            _self: "dbs/vxnFAA==/colls/vxnFAJeroUR=/docs/vxnFAJeroURcAAAAAAAAAA==/",
-            _etag: '"e3053458-0000-0400-0000-679adc120000"',
-            _attachments: "attachments/",
-            _ts: 1737149422
-        },
-        {
-            id: "01j2k3l4-mn56-8o90-pq12-rstu7890vwxy",
-            organizationName: "AlphaSolutions",
-            organizationOwner: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            subscriptionId: "sub_3Mn4oQRxV0cdeMRS345678XY",
-            action: "Financial Assistant Change",
-            changeTime: "2025-01-18T12:30:55.678901",
-            modified_by: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            modified_by_name: "AliceManager",
-            status_financial_assistant: "active",
-            _rid: "wznFAKdwoVPeAAAAAAAAAA==",
-            _self: "dbs/wznFAA==/colls/wznFAKdwoVP=/docs/wznFAKdwoVPeAAAAAAAAAA==/",
-            _etag: '"f4061234-0000-0500-0000-679abd560000"',
-            _attachments: "attachments/",
-            _ts: 1737145855
-        },
-        {
-            id: "01j2k3l4-mn56-8o90-pq12-rstu7890vwxy",
-            organizationName: "AlphaSolutions",
-            organizationOwner: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            subscriptionId: "sub_3Mn4oQRxV0cdeMRS345678XY",
-            action: "Financial Assistant Change",
-            changeTime: "2025-01-18T12:30:55.678901",
-            modified_by: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            modified_by_name: "AliceManager",
-            status_financial_assistant: "active",
-            _rid: "wznFAKdwoVPeAAAAAAAAAA==",
-            _self: "dbs/wznFAA==/colls/wznFAKdwoVP=/docs/wznFAKdwoVPeAAAAAAAAAA==/",
-            _etag: '"f4061234-0000-0500-0000-679abd560000"',
-            _attachments: "attachments/",
-            _ts: 1737145855
-        },
-        {
-            id: "01j2k3l4-mn56-8o90-pq12-rstu7890vwxy",
-            organizationName: "AlphaSolutions",
-            organizationOwner: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            subscriptionId: "sub_3Mn4oQRxV0cdeMRS345678XY",
-            action: "Financial Assistant Change",
-            changeTime: "2025-01-18T12:30:55.678901",
-            modified_by: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            modified_by_name: "AliceManager",
-            status_financial_assistant: "active",
-            _rid: "wznFAKdwoVPeAAAAAAAAAA==",
-            _self: "dbs/wznFAA==/colls/wznFAKdwoVP=/docs/wznFAKdwoVPeAAAAAAAAAA==/",
-            _etag: '"f4061234-0000-0500-0000-679abd560000"',
-            _attachments: "attachments/",
-            _ts: 1737145855
-        },
-        {
-            id: "01j2k3l4-mn56-8o90-pq12-rstu7890vwxy",
-            organizationName: "AlphaSolutions",
-            organizationOwner: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            subscriptionId: "sub_3Mn4oQRxV0cdeMRS345678XY",
-            action: "Financial Assistant Change",
-            changeTime: "2025-01-18T12:30:55.678901",
-            modified_by: "345jkl89-mno1-2pqr-stuv-567wx890yz12",
-            modified_by_name: "AliceManager",
-            status_financial_assistant: "active",
-            _rid: "wznFAKdwoVPeAAAAAAAAAA==",
-            _self: "dbs/wznFAA==/colls/wznFAKdwoVP=/docs/wznFAKdwoVPeAAAAAAAAAA==/",
-            _etag: '"f4061234-0000-0500-0000-679abd560000"',
-            _attachments: "attachments/",
-            _ts: 1737145855
-        }
-    ];
-
     const FilterOptions = [
-        { key: "1", text: "All Actions"},
+        { key: "1", text: "All Actions" },
         { key: "2", text: "Financial Assistant" },
         { key: "3", text: "Subscription Tier" }
     ];
 
     const [dataLoad, setDataLoad] = useState(false);
     const [isSubscriptionChangeModal, setIsSubscriptionChangeModal] = useState(false);
-
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -299,12 +151,37 @@ const SubscriptionManagement: React.FC = () => {
         setSelectedSubscriptionID(priceID);
         setIsConfirmationModal(true);
     };
-    
-    const handleRecentChangesModal = () => {
+
+    const handleRecentChangesModal = async () => {
         setIsRecentChangesModal(true);
+        setRecentChangesLoading(true);
+        try {
+            const logs = await getLogs();
+            setlogsData(logs);
+            setFilteredLogsData(logs);
+        } catch (error) {
+            console.error("Error trying to get logs: ", error);
+            setError("Error trying to get logs: ");
+            setIsErrorModal(true);
+        } finally {
+            setRecentChangesLoading(false);
+        }
     };
 
-    const handleFilterChange = (event: any, selectedOption: any) => {}
+    const handleFilterChange = (event: any, selectedOption: any) => {
+        if (selectedOption === undefined) {
+            setFilteredLogsData(logsData)
+        }
+        if (selectedOption.text === "All Actions") {
+            setFilteredLogsData(logsData)
+        } else if (selectedOption.text === "Financial Assistant") {
+            const filteredLogs = logsData.filter((log: any) => log.action === "Financial Assistant Change");
+            setFilteredLogsData(filteredLogs)
+        } else if (selectedOption.text === "Subscription Tier") {
+            const filteredLogs = logsData.filter((log: any) => log.action === "Subscription Tier Change");
+            setFilteredLogsData(filteredLogs)
+    }
+}
     const handleCheckout = async (priceId: string) => {
         if (subscriptionName === selectedSubscriptionName) {
             const customerId = await getCustomerId({
@@ -400,74 +277,87 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
                 </div>
                 {isRecentChangesModal && (
-                    <div className={styles.modalAudit}>
-                        <div className={styles.modalHeader}>
-                            <h1 className={styles.row}>Recent Changes</h1>
-                            <button className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
-                                <IconX />
-                            </button>
+                    <>
+                        <div className={styles.modalAudit}>
+                            <div className={styles.modalHeader}>
+                                <h1 className={styles.row}>Recent Changes</h1>
+                                <button className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
+                                    <IconX />
+                                </button>
+                            </div>
+                            <div className={styles.auditFilter}>
+                                <Label className={styles.modalText}>Filter by Action:</Label>
+                                <Dropdown placeholder="Select Action to filter" options={FilterOptions} onChange={handleFilterChange} />
+                            </div>
+                            {recentChangesLoading ? (
+                                <Spinner styles={{ root: { marginTop: "50px" } }} />
+                            ) : (
+                                <div className={styles.row}>
+                                    <table className={styles.table}>
+                                        <thead className={styles.thead}>
+                                            <tr key="types">
+                                                <th className={styles.tableName}>Date</th>
+                                                <th>Action</th>
+                                                <th>Modified by</th>
+                                                <th>Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className={styles.auditBody}>
+                                            {filteredLogsData.map((data: any, index: number) => (
+                                                <tr className={styles.auditRow} key={index}>
+                                                    {data.action === "Subscription Tier Change" && (
+                                                        <>
+                                                            <td className={styles.tableDate}>
+                                                                {new Date(data.changeTime)
+                                                                    .toLocaleDateString("en-US", {
+                                                                        month: "short",
+                                                                        day: "2-digit",
+                                                                        year: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                        hour12: false
+                                                                    })
+                                                                    .replace(",", "")}
+                                                            </td>
+                                                            <td className={styles.tableText}>Subscription Tier change</td>
+                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                            <td className={styles.tableText}>
+                                                                {data.previous_plan} → {data.current_plan}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                    {data.action === "Financial Assistant Change" && (
+                                                        <>
+                                                            <td className={styles.tableDate}>
+                                                                {new Date(data.changeTime)
+                                                                    .toLocaleDateString("en-US", {
+                                                                        month: "short",
+                                                                        day: "2-digit",
+                                                                        year: "numeric",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                        hour12: false
+                                                                    })
+                                                                    .replace(",", "")}
+                                                            </td>
+                                                            <td className={styles.tableText}>FA Add-On Toggled</td>
+                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                            <td className={styles.tableText}>Status: {data.status_financial_assistant}</td>
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                            <div>
+                                <p>Showing 1 to 2 of 2 results</p>
+                                <IconButton iconProps={{ iconName: "ChevronLeft" }} disabled ariaLabel="Previous page" />
+                                <IconButton iconProps={{ iconName: "ChevronRight" }} disabled ariaLabel="Next page" />
+                            </div>
                         </div>
-                        <div className={styles.auditFilter}>
-                            <Label className={styles.modalText}>Filter by Action:</Label>
-                            <Dropdown placeholder="Select Action to filter" options={FilterOptions} onChange={handleFilterChange} />
-                        </div>
-                        <table className={styles.table}>
-                            <thead className={styles.thead}>
-                                <tr key="types">
-                                    <th className={styles.tableName}>Date</th>
-                                    <th>Action</th>
-                                    <th>Modified by</th>
-                                    <th>Details</th>
-                                </tr>
-                            </thead>
-                            <tbody className={styles.auditBody}>
-                                {dummyData.map((data, index) => (
-                                    <tr className={styles.auditRow} key={index}>
-                                        {data.action === "Subscription Tier Change" && (
-                                            <>
-                                                <td className={styles.tableDate}>
-                                                    {new Date(data.changeTime)
-                                                        .toLocaleDateString("en-US", {
-                                                            month: "short",
-                                                            day: "2-digit",
-                                                            year: "numeric",
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                            hour12: false
-                                                        })
-                                                        .replace(",", "")}
-                                                </td>
-                                                <td className={styles.tableText}>Subscription Tier change</td>
-                                                <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                <td className={styles.tableText}>
-                                                    {data.previous_plan} → {data.current_plan}
-                                                </td>
-                                            </>
-                                        )}
-                                        {data.action === "Financial Assistant Change" && (
-                                            <>
-                                                <td className={styles.tableDate}>
-                                                    {new Date(data.changeTime)
-                                                        .toLocaleDateString("en-US", {
-                                                            month: "short",
-                                                            day: "2-digit",
-                                                            year: "numeric",
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                            hour12: false
-                                                        })
-                                                        .replace(",", "")}
-                                                </td>
-                                                <td className={styles.tableText}>FA Add-On Toggled</td>
-                                                <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                <td className={styles.tableText}>Status: {data.status_financial_assistant}</td>
-                                            </>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    </>
                 )}
                 {isViewModal && (
                     <div className={styles.modalSubscription}>
@@ -508,7 +398,6 @@ const SubscriptionManagement: React.FC = () => {
                             <div>
                                 <Label className={styles.modalTitle}>Payment Detail change</Label>
                                 <Label className={styles.modalText}>
-
                                     You are already subscribed to the {selectedSubscriptionName} plan. Confirming this action will change your payment
                                     information.
                                 </Label>

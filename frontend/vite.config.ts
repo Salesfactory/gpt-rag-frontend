@@ -47,7 +47,8 @@ export default defineConfig({
                 changeOrigin: true
             },
             "/api/reports":"http://localhost:8000/",
-            "/api/reports/<report_id>":"http://localhost:8000/"
+            "/api/reports/<report_id>":"http://localhost:8000/",
+            "/api/logs":"http://localhost:8000/"
         },
         host: true
     }
