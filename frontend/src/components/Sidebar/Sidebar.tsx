@@ -309,7 +309,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     </Link>
                     <button
                         onClick={handleOnClickCloseSideBar}
-                        className={`d-block ${styles.closeBtn} ${styles.sidebarToggler} ${styles.cursorPointer}`}
+                        className={`d-xl-none d-block  ${styles.closeBtn} ${styles.sidebarToggler} ${styles.cursorPointer}`}
                         id="sidebarCollapse"
                         aria-label="Close Sidebar"
                     >

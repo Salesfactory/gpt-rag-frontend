@@ -6,13 +6,14 @@ import { Link, useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profile";
 
 interface NavbarProps {
+    isCollapsed: boolean;
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 function persistFinancialAssistantState(userId: string | undefined, state: boolean) {
     localStorage.setItem(`financialAssistantActive_${userId}`, JSON.stringify(state));
 }
 
-const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
+const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const {
         showHistoryPanel,
         setShowHistoryPanel,
@@ -63,7 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ setIsCollapsed }) => {
     };
 
     const handleOnClickShowSidebar = () => {
-        setIsCollapsed(false);
+        setIsCollapsed(!isCollapsed);
         setShowHistoryPanel(false);
         setShowFeedbackRatingPanel(false);
         setIsDropdownOpen(false);
