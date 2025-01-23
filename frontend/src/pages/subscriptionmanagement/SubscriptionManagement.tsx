@@ -33,9 +33,13 @@ const SubscriptionManagement: React.FC = () => {
     const [recentChangesLoading, setRecentChangesLoading] = useState<Boolean>(false);
     const [logsData, setlogsData] = useState<any>([]);
     const [filteredLogsData, setFilteredLogsData] = useState<any>();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [paginatedLogs, setPaginatedLogs] = useState<any>();
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
+    
 
+    const rowsPerPage = 5;
     const FilterOptions = [
         { key: "1", text: "All Actions" },
         { key: "2", text: "Financial Assistant" },
@@ -159,6 +163,8 @@ const SubscriptionManagement: React.FC = () => {
             const logs = await getLogs();
             setlogsData(logs);
             setFilteredLogsData(logs);
+            setPaginatedLogs(logs.slice(0, rowsPerPage));
+            setCurrentPage(1);
         } catch (error) {
             console.error("Error trying to get logs: ", error);
             setError("Error trying to get logs: ");
@@ -169,19 +175,26 @@ const SubscriptionManagement: React.FC = () => {
     };
 
     const handleFilterChange = (event: any, selectedOption: any) => {
-        if (selectedOption === undefined) {
-            setFilteredLogsData(logsData)
-        }
-        if (selectedOption.text === "All Actions") {
-            setFilteredLogsData(logsData)
+        let filteredLogs;
+        if (!selectedOption || selectedOption.text === "All Actions") {
+            filteredLogs = logsData;
         } else if (selectedOption.text === "Financial Assistant") {
-            const filteredLogs = logsData.filter((log: any) => log.action === "Financial Assistant Change");
-            setFilteredLogsData(filteredLogs)
+            filteredLogs = logsData.filter((log: any) => log.action === "Financial Assistant Change");
         } else if (selectedOption.text === "Subscription Tier") {
-            const filteredLogs = logsData.filter((log: any) => log.action === "Subscription Tier Change");
-            setFilteredLogsData(filteredLogs)
-    }
-}
+            filteredLogs = logsData.filter((log: any) => log.action === "Subscription Tier Change");
+        }
+        setFilteredLogsData(filteredLogs);
+        setPaginatedLogs(filteredLogs.slice(0, rowsPerPage)); // Reset pagination
+        setCurrentPage(1); // Reset pagination
+    };
+
+    const handlePagination = (page: number) => {
+        const startIndex = (page - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        setPaginatedLogs(filteredLogsData.slice(startIndex, endIndex));
+        setCurrentPage(page); // Update the current page
+    };
+
     const handleCheckout = async (priceId: string) => {
         if (subscriptionName === selectedSubscriptionName) {
             const customerId = await getCustomerId({
@@ -292,6 +305,7 @@ const SubscriptionManagement: React.FC = () => {
                             {recentChangesLoading ? (
                                 <Spinner styles={{ root: { marginTop: "50px" } }} />
                             ) : (
+                                <>
                                 <div className={styles.row}>
                                     <table className={styles.table}>
                                         <thead className={styles.thead}>
@@ -303,7 +317,7 @@ const SubscriptionManagement: React.FC = () => {
                                             </tr>
                                         </thead>
                                         <tbody className={styles.auditBody}>
-                                            {filteredLogsData.map((data: any, index: number) => (
+                                            {paginatedLogs.map((data: any, index: number) => (
                                                 <tr className={styles.auditRow} key={index}>
                                                     {data.action === "Subscription Tier Change" && (
                                                         <>
@@ -329,7 +343,7 @@ const SubscriptionManagement: React.FC = () => {
                                                     {data.action === "Financial Assistant Change" && (
                                                         <>
                                                             <td className={styles.tableDate}>
-                                                                {new Date(data.changeTime)
+                                                                {data._ts ? new Date(data._ts * 1000)
                                                                     .toLocaleDateString("en-US", {
                                                                         month: "short",
                                                                         day: "2-digit",
@@ -338,7 +352,7 @@ const SubscriptionManagement: React.FC = () => {
                                                                         minute: "2-digit",
                                                                         hour12: false
                                                                     })
-                                                                    .replace(",", "")}
+                                                                    .replace(",", "") : "Invalid date"}
                                                             </td>
                                                             <td className={styles.tableText}>FA Add-On Toggled</td>
                                                             <td className={styles.tableText}>{data.modified_by_name}</td>
@@ -350,12 +364,27 @@ const SubscriptionManagement: React.FC = () => {
                                         </tbody>
                                     </table>
                                 </div>
+                                    <div style={{ display: "flex", marginTop: "20px" }}>
+                                        {paginatedLogs.length === 0 ? <p>No logs found</p> : <p>
+                                            Page {currentPage} of {Math.ceil(filteredLogsData.length / rowsPerPage)}
+                                        </p>}
+                                        <div style={{ marginLeft: "auto" }}>
+                                            <IconButton
+                                                iconProps={{ iconName: "ChevronLeft" }}
+                                                ariaLabel="Previous page"
+                                                onClick={() => handlePagination(currentPage - 1)}
+                                                disabled={currentPage == 1}
+                                            />
+                                            <IconButton
+                                                iconProps={{ iconName: "ChevronRight" }}
+                                                disabled={currentPage === Math.ceil(filteredLogsData.length / rowsPerPage)}
+                                                ariaLabel="Next page"
+                                                onClick={() => {handlePagination(currentPage + 1)}}
+                                            />
+                                        </div>
+                                    </div>
+                                    </>
                             )}
-                            <div>
-                                <p>Showing 1 to 2 of 2 results</p>
-                                <IconButton iconProps={{ iconName: "ChevronLeft" }} disabled ariaLabel="Previous page" />
-                                <IconButton iconProps={{ iconName: "ChevronRight" }} disabled ariaLabel="Next page" />
-                            </div>
                         </div>
                     </>
                 )}

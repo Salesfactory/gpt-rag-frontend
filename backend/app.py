@@ -3556,18 +3556,20 @@ def list_blobs():
         logger.exception("Unexpected error in list_blobs")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/api/logs", methods=["GET"])
+@app.route("/api/logs/", methods=["GET"])
 def get_logs():
     try:
         items = get_audit_logs()
         if not items:
-            raise NotFound("No logs found") 
+            raise NotFound("No logs found")
         return create_success_response(items)
+    except InvalidParameterError as e:
+        return create_error_response(str(e), 400)
     except NotFound as e:
-        return jsonify({"error": str(e)}), HTTPStatus.NOT_FOUND
+        return create_error_response(str(e), 204)
     except Exception as e:
         logger.exception("Unexpected error in get_logs")
-        return jsonify({"error": str(e)}), 500
+        return create_error_response(str(e), 500)
     
 
 

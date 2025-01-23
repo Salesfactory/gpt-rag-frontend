@@ -887,8 +887,16 @@ export async function getLogs(): Promise<any> {
             throw Error("Error getting logs");
         }
 
+        if (response.status === 204) {
+            return [];
+        }
+
         const logs = await response.json();
-        return logs.data;
+        // order data using timestamp in descending order
+        const orderedLogs = logs.data.sort((a: any, b: any) => {
+            return new Date(b.changeTime).getTime() - new Date(a.changeTime).getTime();
+        });
+        return orderedLogs;
     } catch (error) {
         console.error("Error getting logs:", error);
         throw error;
