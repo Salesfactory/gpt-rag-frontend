@@ -84,7 +84,7 @@
 .chatMessageStream {
     flex-grow: 1;
     max-height: 1024px;
-    max-width: 138vh;
+    max-width: 80.5%;
     width: 90%;
     overflow-y: auto;
     padding-left: 24px;
