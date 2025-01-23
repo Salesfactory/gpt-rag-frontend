@@ -1182,17 +1182,17 @@ def get_customer():
 
 @app.route("/create-customer-portal-session", methods=["POST"])
 def create_customer_portal_session():
-    customer = request.json["customer"]
-    return_url = request.json["return_url"]
-    subscription_id = request.json["subscription_id"]
+    customer = request.json.get("customer")
+    return_url = request.json.get("return_url")
+    subscription_id = request.json.get("subscription_id")
 
     if not customer or not return_url:
         logging.warning({"error": "Missing 'customer' or 'return_url'"})
-        return jsonify({"error": "Missing 'customer' or 'return_url'"}), 404
+        return jsonify({"error": "Missing 'customer' or 'return_url'"}), 400
 
     if not subscription_id:
         logging.warning({"error": "Missing 'subscription_id'."})
-        return jsonify({"error": "Missing 'subscription_id'."}), 404
+        return jsonify({"error": "Missing 'subscription_id'."}), 400
 
     try:
        # Clear the metadata of the specific subscription
@@ -1208,7 +1208,7 @@ def create_customer_portal_session():
         )
 
     except Exception as e:
-        logging.warning({"error": f"Unexpected error: {str(e)}"})
+        logging.error({"error": f"Unexpected error: {str(e)}"})
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
     return jsonify({"url": portal_session.url})

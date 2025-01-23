@@ -13,6 +13,8 @@ import {
 } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const SubscriptionManagement: React.FC = () => {
     const { user, organization, subscriptionTiers, setIsFinancialAssistantActive } = useAppContext();
@@ -141,23 +143,23 @@ const SubscriptionManagement: React.FC = () => {
     };
 
     const handleCreateCustomerPortal = async () => {
-        const customerId = await getCustomerId({
-            subscriptionId: organization?.subscriptionId ?? ""
-        });
-
         try {
+            const customerId = await getCustomerId({
+                subscriptionId: organization?.subscriptionId ?? ""
+            });
             const { url } = await createCustomerPortalSession({
                 customerId: customerId,
                 subscription_id: organization?.subscriptionId ?? "",
                 return_url: window.location.origin + "/#/subscription-management"
             });
+
             window.location.href = url;
         } catch (error) {
-            console.error("Error trying to create the customer portal: ", error);
+            toast("Failed to create the customer portal link. Please try again.", { type: "warning" });
+        } finally {
+            setIsConfirmationModal(false);
+            setIsViewModal(false);
         }
-        setIsConfirmationModal(false);
-        setIsViewModal(false);
-        setLoading(true);
     };
 
     const handleChangeSubscription = async (priceId: string) => {
@@ -188,6 +190,7 @@ const SubscriptionManagement: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
+            <ToastContainer />
             <div id="options-row" className={styles.row}>
                 <h1 className={styles.title}>Subscription Management</h1>
             </div>
