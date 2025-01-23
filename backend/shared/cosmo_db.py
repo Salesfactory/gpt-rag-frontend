@@ -384,12 +384,13 @@ def patch_user_data(user_id, patch_data):
         raise e
 
 
-def get_audit_logs():
+def get_audit_logs(organization_id):
     """Get all the audit logs in a cosmosDB container"""
     container = get_cosmos_container("auditLogs")
     try:
         items = list(container.query_items(
-            query="SELECT * FROM c",
+            query="SELECT * FROM c WHERE c.organization_id = @organization_id",
+            parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True
         ))
 

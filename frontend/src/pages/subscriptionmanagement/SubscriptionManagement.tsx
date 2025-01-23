@@ -37,6 +37,7 @@ const SubscriptionManagement: React.FC = () => {
     const [paginatedLogs, setPaginatedLogs] = useState<any>();
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
+    const organizationId = organization?.id
     
 
     const rowsPerPage = 5;
@@ -160,7 +161,7 @@ const SubscriptionManagement: React.FC = () => {
         setIsRecentChangesModal(true);
         setRecentChangesLoading(true);
         try {
-            const logs = await getLogs();
+            const logs = await getLogs(organizationId)
             setlogsData(logs);
             setFilteredLogsData(logs);
             setPaginatedLogs(logs.slice(0, rowsPerPage));

@@ -3556,10 +3556,14 @@ def list_blobs():
         logger.exception("Unexpected error in list_blobs")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/api/logs/", methods=["GET"])
+@app.route("/api/logs/", methods=["POST"])
 def get_logs():
+    data = request.get_json()
+    organization_id = data.get("organization_id")
+    if not organization_id:
+        raise InvalidParameterError("Organization ID is required")
     try:
-        items = get_audit_logs()
+        items = get_audit_logs(organization_id)
         if not items:
             raise NotFound("No logs found")
         return create_success_response(items)

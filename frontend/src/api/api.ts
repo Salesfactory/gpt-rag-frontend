@@ -875,12 +875,15 @@ export async function cancelSubscription({ subscriptionId, user }: {subscription
     }
 }
 
-export async function getLogs(): Promise<any> {
+export async function getLogs(organizationId: any): Promise<any> {
     try {
-        const response = await fetch("/api/logs", {method:'GET',
+        const response = await fetch('/api/logs/', {method:'POST',
             headers:{
                 "Content-Type": "application/json"
-            }
+            },
+            body: JSON.stringify({
+                organization_id: organizationId
+            })
         })
 
         if (response.status > 299 || !response.ok) {
