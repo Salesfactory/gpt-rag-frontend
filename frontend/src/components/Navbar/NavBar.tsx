@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styles from "./Navbar.module.css";
-import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconBell, IconAppsFilled } from "@tabler/icons-react";
+import { IconMenu2, IconMessageCircle, IconHistory, IconSettings, IconAppsFilled } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { Link, useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profile";
@@ -29,7 +29,6 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     const userName = user?.name || "";
-    const email = user?.email || " ";
     const subscriptiontype = subscriptionTiers || " ";
     const location = useLocation().pathname;
 
@@ -148,7 +147,6 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                 <IconAppsFilled className={`fs-6 ${styles.iconLarge}`} />
                                 <div className={styles.userDetails}>
                                     <p className={`${styles.userName} mb-0`}>{userName}</p>
-                                    <p className={`${styles.userEmail} mb-0`}>{email}</p>
                                 </div>
                             </div>
                         </button>

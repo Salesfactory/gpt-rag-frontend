@@ -160,3 +160,4 @@ flask_session/
 pyproject.toml
 poetry.lock
 
+cypress.env.json

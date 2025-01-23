@@ -1125,12 +1125,14 @@ def create_checkout_session():
     success_url = request.json["successUrl"]
     cancel_url = request.json["cancelUrl"]
     organizationId = request.json["organizationId"]
+    userName = request.json["userName"]
+    organizationName = request.json["organizationName"]
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[{"price": price, "quantity": 1}],
             mode="subscription",
             client_reference_id=userId,
-            metadata={"userId": userId, "organizationId": organizationId},
+            metadata={"userId": userId, "organizationId": organizationId, "userName":userName, "organizationName":organizationName},
             success_url=success_url,
             cancel_url=cancel_url,
             automatic_tax={"enabled": True},
@@ -1180,24 +1182,35 @@ def get_customer():
 
 @app.route("/create-customer-portal-session", methods=["POST"])
 def create_customer_portal_session():
-    customer = request.json["customer"]
-    return_url = request.json["return_url"]
+    customer = request.json.get("customer")
+    return_url = request.json.get("return_url")
+    subscription_id = request.json.get("subscription_id")
 
     if not customer or not return_url:
         logging.warning({"error": "Missing 'customer' or 'return_url'"})
-        return jsonify({"error": "Missing 'customer' or 'return_url'"}), 404
+        return jsonify({"error": "Missing 'customer' or 'return_url'"}), 400
+
+    if not subscription_id:
+        logging.warning({"error": "Missing 'subscription_id'."})
+        return jsonify({"error": "Missing 'subscription_id'."}), 400
 
     try:
+       # Clear the metadata of the specific subscription
+        stripe.Subscription.modify(subscription_id, metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
+                "modification_type": "",
+            })
 
         portal_session = stripe.billing_portal.Session.create(
-            customer = customer,
-            return_url = return_url
+            customer=customer,
+            return_url=return_url
         )
 
     except Exception as e:
-        logging.warning({"error": "Unexpected error: " + {str(e)}})
-        return jsonify({"error": "Unexpected error: " + str(e)}), 500
-    
+        logging.error({"error": f"Unexpected error: {str(e)}"})
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
     return jsonify({"url": portal_session.url})
 
 @app.route("/api/stripe", methods=["GET"])
@@ -2076,8 +2089,8 @@ def financial_assistant(subscriptionId):
             items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}],
             metadata={
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "add_financial_assistant",
-                "modification_time": datetime.now().isoformat(),
             },
         )
         # Logging: Success confirmation
@@ -2180,8 +2193,8 @@ def remove_financial_assistant(subscriptionId):
             items=[{"id": assistant_item_id, "deleted": True}],
             metadata={
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "remove_financial_assistant",
-                "modification_time": datetime.now().isoformat(),
             },
         )
 
@@ -2473,6 +2486,11 @@ def change_subscription(subscription_id):
                 'id': stripe_subscription['items']['data'][0]['id'],
                 'price': new_plan_id,
             }],
+            metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
+                "modification_type": "subscription_tier_change",
+            },
             proration_behavior='none',  # No proration
             billing_cycle_anchor='now',  # Change the billing cycle so that it is charged at that moment
             cancel_at_period_end=False  # Do not cancel the subscription
@@ -3181,6 +3199,14 @@ def generate_report():
             file_path = Path(
                 f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html"
             )
+        elif report_topic_rqst == "Company_Analysis":
+            # add company name to the file path
+            company_name = str(data["company_name"]).replace(" ", "_")  # Ensure string and replace spaces
+            logger.info(f"Company name before replacement: {data['company_name']}")
+            logger.info(f"Company name after replacement: {company_name}")
+            file_path = Path(
+                f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}/{current_date.strftime('%B_%Y')}.html"
+            )
         else:
             file_path = Path(
                 f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}.html"
@@ -3196,6 +3222,8 @@ def generate_report():
         blob_storage_manager = BlobStorageManager()
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
+        elif report_topic_rqst == "Company_Analysis":
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}"
         else:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
 

@@ -13,6 +13,8 @@ import {
 } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const SubscriptionManagement: React.FC = () => {
     const { user, organization, subscriptionTiers, setIsFinancialAssistantActive } = useAppContext();
@@ -140,27 +142,34 @@ const SubscriptionManagement: React.FC = () => {
         setIsConfirmationModal(true);
     };
 
-    const handleCheckout = async (priceId: string) => {
-        if (subscriptionName === selectedSubscriptionName) {
+    const handleCreateCustomerPortal = async () => {
+        try {
             const customerId = await getCustomerId({
                 subscriptionId: organization?.subscriptionId ?? ""
             });
-
             const { url } = await createCustomerPortalSession({
                 customerId: customerId,
+                subscription_id: organization?.subscriptionId ?? "",
                 return_url: window.location.origin + "/#/subscription-management"
             });
+
             window.location.href = url;
+        } catch (error) {
+            toast("Failed to create the customer portal link. Please try again.", { type: "warning" });
+        } finally {
+            setIsConfirmationModal(false);
+            setIsViewModal(false);
         }
-        setIsConfirmationModal(false);
-        setIsViewModal(false);
-        setLoading(true);
+    };
+
+    const handleChangeSubscription = async (priceId: string) => {
         let timer: NodeJS.Timeout;
 
         try {
             await changeSubscription({
                 subscriptionId: organization?.subscriptionId ?? "",
-                newPlanId: priceId
+                newPlanId: priceId,
+                user
             });
         } catch (error) {
             console.error("Error trying to change the subscription: ", error);
@@ -172,7 +181,7 @@ const SubscriptionManagement: React.FC = () => {
             timer = setTimeout(() => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
-            //If we don't reload the page, the subscription tiers won't update correctly in the platform
+
             window.location.reload();
         }
     };
@@ -181,6 +190,7 @@ const SubscriptionManagement: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
+            <ToastContainer />
             <div id="options-row" className={styles.row}>
                 <h1 className={styles.title}>Subscription Management</h1>
             </div>
@@ -274,7 +284,7 @@ const SubscriptionManagement: React.FC = () => {
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton onClick={() => handleCheckout(selectedSubscriptionID)} text="Confirm change" />
+                                    <PrimaryButton onClick={() => handleCreateCustomerPortal()} text="Confirm change" />
                                 </div>
                             </div>
                         ) : (
@@ -286,7 +296,7 @@ const SubscriptionManagement: React.FC = () => {
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton onClick={() => handleCheckout(selectedSubscriptionID)} text="Confirm Subscription" />
+                                    <PrimaryButton onClick={() => handleChangeSubscription(selectedSubscriptionID)} text="Confirm Subscription" />
                                 </div>
                             </div>
                         )}

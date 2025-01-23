@@ -48,9 +48,11 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
 
         const { url } = await createCheckoutSession({
             userId: user.id,
+            userName: user.name,
             priceId,
             successUrl: window.location.origin + "#/success-payment",
             cancelUrl: window.location.origin + "/",
+            organizationName: organization?.name,
             organizationId: user.organizationId || ""
         });
         window.location.href = url;
