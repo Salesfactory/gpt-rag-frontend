@@ -198,101 +198,70 @@ class UserService:
         client_principal_id: str,
         client_principal_name: str,
         email: str,
-        function_key: str,
-        check_user_endpoint: str,
         timeout: int = 10,
     ) -> Dict[str, Any]:
         """
-        Check user authorization with the orchestrator using POST request
+        Check user authorization using local database logic.
 
         Args:
             client_principal_id: The user's principal ID from Azure B2C
             client_principal_name: The user's principal name from Azure B2C
             email: The user's email address
-            function_key: The function key for authentication
-            check_user_endpoint: The endpoint URL for checking user authorization
-            timeout: Request timeout in seconds (default: 10)
+            timeout: Timeout for potential long-running operations (default: 10 seconds)
 
         Returns:
-            Dict containing the authorization response
+            Dict containing the user's profile data, including role and organizationId
 
         Raises:
-            requests.RequestException: If the request fails
-            ValueError: If the response format is invalid
-            TimeoutError: If the request times out
+            ValueError: If the user is not found or data is invalid
+            Exception: For unexpected errors
         """
         try:
-            # Prepare request payload
-            payload = {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
+            logger.info(
+                f"[auth] Validating user {client_principal_id} "
+                f"with email {email} and name {client_principal_name}"
+            )
+
+            # Create user payload for `get_set_user` function
+            client_principal = {
                 "id": client_principal_id,
                 "name": client_principal_name,
-                "email": email,
+                "email": email  # Default role, if necessary
             }
 
-            # Prepare headers
-            headers = {
-                "Content-Type": "application/json",
-                "x-functions-key": function_key,
-            }
+            # Call get_set_user to retrieve or create the user in the database
+            user_response = get_set_user(client_principal)
+
+            # Validate response
+            if not user_response or "user_data" not in user_response:
+                logger.error(f"[auth] User data could not be retrieved for {client_principal_id}")
+                raise ValueError("Failed to retrieve user data")
+
+            # Extract user data
+            user_data = user_response["user_data"]
+            logger.info(f"[auth] User data retrieved: {user_data}")
+
+            # Ensure required fields are present
+            required_fields = ["role", "organizationId"]
+            for field in required_fields:
+                if field not in user_data:
+                    logger.error(f"[auth] Missing required field: {field}")
+                    raise ValueError(f"User profile is missing required field: {field}")
 
             logger.info(
-                f"[auth] Checking authorization for user {client_principal_id} "
-                f"with email {email} at {datetime.now(timezone.utc).isoformat()}"
+                f"[auth] Successfully validated user {client_principal_id} "
+                f"with role {user_data['role']} and organizationId {user_data['organizationId']}"
             )
 
-            # Make the request using a session for better performance
-            with requests.Session() as session:
-                response = session.post(
-                    check_user_endpoint,
-                    headers=headers,
-                    data=json.dumps(payload),
-                    timeout=timeout,
-                )
+            # Return the user's profile data
+            return user_data
 
-                # Log the response (truncated for security)
-                truncated_response = (
-                    response.text[:500] + "..."
-                    if len(response.text) > 500
-                    else response.text
-                )
-                logger.info(f"[auth] Authorization response: {truncated_response}")
-
-                # Raise an exception for bad status codes
-                response.raise_for_status()
-
-                # Parse response
-                try:
-                    data = response.json()
-                except json.JSONDecodeError as e:
-                    logger.error(f"[auth] Failed to parse JSON response: {str(e)}")
-                    raise ValueError("Invalid JSON response") from e
-
-                # Validate response format if needed
-                if not data:
-                    raise ValueError("Empty response received")
-
-                return data
-
-        except requests.Timeout as e:
-            logger.error(
-                f"[auth] Request timed out after {timeout} seconds for "
-                f"user {client_principal_id}: {str(e)}"
-            )
-            raise TimeoutError(f"Request timed out after {timeout} seconds") from e
-
-        except requests.RequestException as e:
-            logger.error(
-                f"[auth] Request failed for user {client_principal_id}: {str(e)}"
-            )
+        except ValueError as e:
+            logger.error(f"[auth] Validation error for user {client_principal_id}: {str(e)}")
             raise
 
         except Exception as e:
-            logger.error(
-                f"[auth] Unexpected error checking authorization for "
-                f"user {client_principal_id}: {str(e)}"
-            )
+            logger.error(f"[auth] Unexpected error validating user {client_principal_id}: {str(e)}")
             raise
 
 
@@ -383,7 +352,6 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         if not function_key:
             raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
 
-        check_user_endpoint = CHECK_USER_ENDPOINT
         client_principal_name = context["user"]["name"]
         email = context["user"]["emails"][0]
         # Check user authorization
@@ -391,8 +359,6 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
             client_principal_id,
             client_principal_name,
             email,
-            function_key,
-            check_user_endpoint,
             timeout=10,
         )
 
@@ -1546,20 +1512,16 @@ def getUsers():
             ),
             400,
         )
-
-    user_id = request.params.get("id")
-    organization_id = request.params.get("organizationId")
+    user_id =request.args.get("user_id")
+    organization_id = request.args.get("organizationId")
 
     try:
+        
         if user_id:
-            user = get_user(user_id)
-            return jsonify({
-                "user": user
-            }), 200
+            user = get_user_by_id(user_id)
+            return user
         users = get_users(organization_id)
-        return jsonify({
-                "users": users
-        }), 200
+        return users
     
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
@@ -1577,12 +1539,10 @@ def deleteUser():
         )
 
     try:
-        user_id = request.params.get("id")
+        user_id =request.args.get("user_id")
         if user_id:
             user = delete_user(user_id)
-            return jsonify({
-                "user": user
-            }), 200
+            return "", 204
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
