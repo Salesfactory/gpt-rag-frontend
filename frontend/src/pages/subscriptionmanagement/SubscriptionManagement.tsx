@@ -37,14 +37,14 @@ const SubscriptionManagement: React.FC = () => {
     const [paginatedLogs, setPaginatedLogs] = useState<any>();
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
-    const organizationId = organization?.id
-    
+    const organizationId = organization?.id;
 
     const rowsPerPage = 5;
     const FilterOptions = [
         { key: "1", text: "All Actions" },
         { key: "2", text: "Financial Assistant" },
-        { key: "3", text: "Subscription Tier" }
+        { key: "3", text: "Subscription Tier" },
+        { key: "4", text: "Subscription created" }
     ];
 
     const [dataLoad, setDataLoad] = useState(false);
@@ -161,7 +161,8 @@ const SubscriptionManagement: React.FC = () => {
         setIsRecentChangesModal(true);
         setRecentChangesLoading(true);
         try {
-            const logs = await getLogs(organizationId)
+            const logs = await getLogs(organizationId);
+            console.log(logs);
             setlogsData(logs);
             setFilteredLogsData(logs);
             setPaginatedLogs(logs.slice(0, rowsPerPage));
@@ -183,6 +184,8 @@ const SubscriptionManagement: React.FC = () => {
             filteredLogs = logsData.filter((log: any) => log.action === "Financial Assistant Change");
         } else if (selectedOption.text === "Subscription Tier") {
             filteredLogs = logsData.filter((log: any) => log.action === "Subscription Tier Change");
+        } else if (selectedOption.text === "Subscription created") {
+            filteredLogs = logsData.filter((log: any) => log.action === "Subscription created");
         }
         setFilteredLogsData(filteredLogs);
         setPaginatedLogs(filteredLogs.slice(0, rowsPerPage)); // Reset pagination
@@ -307,68 +310,97 @@ const SubscriptionManagement: React.FC = () => {
                                 <Spinner styles={{ root: { marginTop: "50px" } }} />
                             ) : (
                                 <>
-                                <div className={styles.row}>
-                                    <table className={styles.table}>
-                                        <thead className={styles.thead}>
-                                            <tr key="types">
-                                                <th className={styles.tableName}>Date</th>
-                                                <th>Action</th>
-                                                <th>Modified by</th>
-                                                <th>Details</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className={styles.auditBody}>
-                                            {paginatedLogs.map((data: any, index: number) => (
-                                                <tr className={styles.auditRow} key={index}>
-                                                    {data.action === "Subscription Tier Change" && (
-                                                        <>
-                                                            <td className={styles.tableDate}>
-                                                                {new Date(data.changeTime)
-                                                                    .toLocaleDateString("en-US", {
-                                                                        month: "short",
-                                                                        day: "2-digit",
-                                                                        year: "numeric",
-                                                                        hour: "2-digit",
-                                                                        minute: "2-digit",
-                                                                        hour12: false
-                                                                    })
-                                                                    .replace(",", "")}
-                                                            </td>
-                                                            <td className={styles.tableText}>Subscription Tier change</td>
-                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                            <td className={styles.tableText}>
-                                                                {data.previous_plan} → {data.current_plan}
-                                                            </td>
-                                                        </>
-                                                    )}
-                                                    {data.action === "Financial Assistant Change" && (
-                                                        <>
-                                                            <td className={styles.tableDate}>
-                                                                {data._ts ? new Date(data._ts * 1000)
-                                                                    .toLocaleDateString("en-US", {
-                                                                        month: "short",
-                                                                        day: "2-digit",
-                                                                        year: "numeric",
-                                                                        hour: "2-digit",
-                                                                        minute: "2-digit",
-                                                                        hour12: false
-                                                                    })
-                                                                    .replace(",", "") : "Invalid date"}
-                                                            </td>
-                                                            <td className={styles.tableText}>FA Add-On Toggled</td>
-                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                            <td className={styles.tableText}>Status: {data.status_financial_assistant}</td>
-                                                        </>
-                                                    )}
+                                    <div className={styles.row}>
+                                        <table className={styles.table}>
+                                            <thead className={styles.thead}>
+                                                <tr key="types">
+                                                    <th className={styles.tableName}>Date</th>
+                                                    <th>Action</th>
+                                                    <th>Modified by</th>
+                                                    <th>Details</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            </thead>
+                                            <tbody className={styles.auditBody}>
+                                                {paginatedLogs.map((data: any, index: number) => (
+                                                    <tr className={styles.auditRow} key={index}>
+                                                        {data.action === "Subscription Tier Change" && (
+                                                            <>
+                                                                <td className={styles.tableDate}>
+                                                                    {data._ts
+                                                                        ? new Date(data._ts * 1000)
+                                                                              .toLocaleDateString("en-US", {
+                                                                                  month: "short",
+                                                                                  day: "2-digit",
+                                                                                  year: "numeric",
+                                                                                  hour: "2-digit",
+                                                                                  minute: "2-digit",
+                                                                                  hour12: false
+                                                                              })
+                                                                              .replace(",", "")
+                                                                        : "Invalid date"}
+                                                                </td>
+                                                                <td className={styles.tableText}>Subscription Tier change</td>
+                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText}>
+                                                                    {data.previous_plan} → {data.current_plan}
+                                                                </td>
+                                                            </>
+                                                        )}
+                                                        {data.action === "Financial Assistant Change" && (
+                                                            <>
+                                                                <td className={styles.tableDate}>
+                                                                    {data._ts
+                                                                        ? new Date(data._ts * 1000)
+                                                                              .toLocaleDateString("en-US", {
+                                                                                  month: "short",
+                                                                                  day: "2-digit",
+                                                                                  year: "numeric",
+                                                                                  hour: "2-digit",
+                                                                                  minute: "2-digit",
+                                                                                  hour12: false
+                                                                              })
+                                                                              .replace(",", "")
+                                                                        : "Invalid date"}
+                                                                </td>
+                                                                <td className={styles.tableText}>FA Add-On Toggled</td>
+                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText}>Status: {data.status_financial_assistant}</td>
+                                                            </>
+                                                        )}
+                                                        {data.action === "Subscription created" && (
+                                                            <>
+                                                                <td className={styles.tableDate}>
+                                                                    {data._ts
+                                                                        ? new Date(data._ts * 1000)
+                                                                              .toLocaleDateString("en-US", {
+                                                                                  month: "short",
+                                                                                  day: "2-digit",
+                                                                                  year: "numeric",
+                                                                                  hour: "2-digit",
+                                                                                  minute: "2-digit",
+                                                                                  hour12: false
+                                                                              })
+                                                                              .replace(",", "")
+                                                                        : "Invalid date"}
+                                                                </td>
+                                                                <td className={styles.tableText}>Subscription created</td>
+                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText}>Status: Active</td>
+                                                            </>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                     <div style={{ display: "flex", marginTop: "20px" }}>
-                                        {paginatedLogs.length === 0 ? <p>No logs found</p> : <p>
-                                            Page {currentPage} of {Math.ceil(filteredLogsData.length / rowsPerPage)}
-                                        </p>}
+                                        {paginatedLogs.length === 0 ? (
+                                            <p>No logs found</p>
+                                        ) : (
+                                            <p>
+                                                Page {currentPage} of {Math.ceil(filteredLogsData.length / rowsPerPage)}
+                                            </p>
+                                        )}
                                         <div style={{ marginLeft: "auto" }}>
                                             <IconButton
                                                 iconProps={{ iconName: "ChevronLeft" }}
@@ -380,11 +412,13 @@ const SubscriptionManagement: React.FC = () => {
                                                 iconProps={{ iconName: "ChevronRight" }}
                                                 disabled={currentPage === Math.ceil(filteredLogsData.length / rowsPerPage)}
                                                 ariaLabel="Next page"
-                                                onClick={() => {handlePagination(currentPage + 1)}}
+                                                onClick={() => {
+                                                    handlePagination(currentPage + 1);
+                                                }}
                                             />
                                         </div>
                                     </div>
-                                    </>
+                                </>
                             )}
                         </div>
                     </>
