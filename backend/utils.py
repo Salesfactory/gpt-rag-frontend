@@ -1,9 +1,17 @@
 from functools import wraps
 import logging
+import uuid
+import os
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
+from azure.identity import DefaultAzureCredential
+from azure.cosmos import CosmosClient
 
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 # Response Formatting: Type hint for JSON responses
 JsonResponse = Tuple[Dict[str, Any], int]
@@ -509,3 +517,60 @@ def get_azure_key_vault_secret(secret_name):
     except Exception as e:
         logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
         raise
+
+
+def set_feedback(
+    client_principal,
+    conversation_id,
+    feedback_message,
+    question,
+    answer,
+    rating,
+    category,
+):
+    if not client_principal["id"]:
+        return {"error": "User ID not found."}
+
+    if not conversation_id:
+        return {"error": "Conversation ID not found."}
+
+    if not question:
+        return {"error": "Question not found."}
+
+    if not answer:
+        return {"error": "Answer not found."}
+
+    if rating and rating not in [0, 1]:
+        return {"error": "Invalid rating value."}
+
+    if feedback_message and len(feedback_message) > 500:
+        return {"error": "Feedback message is too long."}
+
+    logging.info(
+        "User ID and Conversation ID found. Setting feedback for user: "
+        + client_principal["id"]
+        + " and conversation: "
+        + str(conversation_id)
+    )
+
+    feedback = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("feedback")
+    try:
+        feedback = {
+            "id": str(uuid.uuid4()),
+            "user_id": client_principal["id"],
+            "conversation_id": conversation_id,
+            "feedback_message": feedback_message,
+            "question": question,
+            "answer": answer,
+            "rating": rating,
+            "category": category,
+        }
+        result = container.create_item(body=feedback)
+        print("Feedback created: ", result)
+    except Exception as e:
+        logging.info(f"[util__module] set_feedback: something went wrong. {str(e)}")
+    return feedback
