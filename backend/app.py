@@ -74,7 +74,6 @@ ORCHESTRATOR_URI = os.getenv("ORCHESTRATOR_URI", default="")
 SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/api/settings"
 FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/api/feedback"
 HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/api/conversations"
-CHECK_USER_ENDPOINT = ORCHESTRATOR_URI + "/api/checkUser"
 SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/api/subscriptions"
 INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/api/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
@@ -1548,31 +1547,20 @@ def getUsers():
             400,
         )
 
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
+    user_id = request.params.get("id")
+    organization_id = request.params.get("organizationId")
 
     try:
-        organizationId = request.args.get("organizationId")
-        url = CHECK_USER_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"organizationId": organizationId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        if user_id:
+            user = get_user(user_id)
+            return jsonify({
+                "user": user
+            }), 200
+        users = get_users(organization_id)
+        return jsonify({
+                "users": users
+        }), 200
+    
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
@@ -1587,30 +1575,14 @@ def deleteUser():
             jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
+
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        userId = request.args.get("userId")
-        url = CHECK_USER_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "DELETE", url, headers=headers, params={"id": userId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        user_id = request.params.get("id")
+        if user_id:
+            user = delete_user(user_id)
+            return jsonify({
+                "user": user
+            }), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500

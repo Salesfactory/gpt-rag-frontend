@@ -1,9 +1,17 @@
 from functools import wraps
 import logging
+import uuid
+import os
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
+from azure.identity import DefaultAzureCredential
+from azure.cosmos import CosmosClient
 
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 # Response Formatting: Type hint for JSON responses
 JsonResponse = Tuple[Dict[str, Any], int]
@@ -509,3 +517,81 @@ def get_azure_key_vault_secret(secret_name):
     except Exception as e:
         logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
         raise
+
+def check_users_existance():
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    _user = {}
+
+    try:
+        results = list(
+            container.query_items(
+                query="SELECT c FROM c",
+                max_item_count=1,
+                enable_cross_partition_query=True,
+            )
+        )
+        if results:
+            if len(results) > 0:
+                return True
+        return False
+    except Exception as e:
+        logging.info(f"[util__module] get_user: something went wrong. {str(e)}")
+    return _user
+
+
+# return all users
+def get_users(organization_id):
+    users = []
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    try:
+        users = container.query_items(
+            query="SELECT * FROM c WHERE c.data.organizationId = @organization_id",
+            parameters=[{"name": "@organization_id", "value": organization_id}],
+            enable_cross_partition_query=True,
+        )
+        users = list(users)
+
+    except Exception as e:
+        logging.info(
+            f"[get_users] get_users: no users found (keyvalue store with 'users' id does not exist)."
+        )
+    return users
+
+def delete_user(user_id):
+    if not user_id:
+        return {"error": "User ID not found."}
+
+    logging.info("User ID found. Deleting user: " + user_id)
+
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    try:
+        user = container.read_item(item=user_id, partition_key=user_id)
+        user_email = user["data"]["email"]
+        user["data"]["organizationId"] = None
+        user["data"]["role"] = None
+        container.replace_item(item=user_id, body=user)
+        logging.info(f"[delete_user] User {user_id} deleted from its organization")
+        logging.info(f"[delete_user] Deleting all {user_id} active invitations")
+        container = db.get_container_client("invitations")
+        invitations = container.query_items(
+            query="SELECT * FROM c WHERE c.invited_user_email = @user_email",
+            parameters=[{"name": "@user_email", "value": user_email}],
+            enable_cross_partition_query=True,
+        )
+        for invitation in invitations:
+            container.delete_item(item=invitation["id"], partition_key=invitation["id"])
+            logging.info(f"Deleted invitation with ID: {invitation['id']}")
+
+    except Exception as e:
+        logging.error(f"[delete_user] delete_user: something went wrong. {str(e)}")
+
+    return user
