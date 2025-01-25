@@ -1,9 +1,17 @@
 from functools import wraps
 import logging
+import uuid
+import os
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
+from azure.identity import DefaultAzureCredential
+from azure.cosmos import CosmosClient
 
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com/"
 
 # Response Formatting: Type hint for JSON responses
 JsonResponse = Tuple[Dict[str, Any], int]
@@ -509,3 +517,73 @@ def get_azure_key_vault_secret(secret_name):
     except Exception as e:
         logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
         raise
+
+################################################
+# INVITATION UTILS
+################################################
+
+def get_invitations(organization_id):
+    if not organization_id:
+        return {"error": "Organization ID not found."}
+
+    logging.info(
+        "Organization ID found. Getting invitations for organization: " + organization_id
+    )
+
+    invitations = []
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("invitations")
+    try:
+        query = "SELECT * FROM c WHERE c.organization_id = @organization_id"
+        parameters = [{"name": "@organization_id", "value": organization_id}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            invitations = result
+    except Exception as e:
+        logging.info(
+            f"[get_invitations] get_invitations: something went wrong. {str(e)}"
+        )
+    return invitations
+
+def get_invitation(invited_user_email):
+    if not invited_user_email:
+        return {"error": "User ID not found."}
+
+    logging.info("[get_invitation] Getting invitation for user: " + invited_user_email)
+
+    invitation = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("invitations")
+    try:
+        query = "SELECT * FROM c WHERE c.invited_user_email = @invited_user_email AND c.active = true"
+        parameters = [{"name": "@invited_user_email", "value": invited_user_email}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            logging.info(
+                f"[get_invitation] active invitation found for user {invited_user_email}"
+            )
+            invitation = result[0]
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(
+                f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
+            )
+        else:
+            logging.info(
+                f"[get_invitation] no active invitation found for user {invited_user_email}"
+            )
+    except Exception as e:
+        logging.error(f"[get_invitation] something went wrong. {str(e)}")
+    return invitation

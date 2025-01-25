@@ -1759,35 +1759,22 @@ def getInvitations():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
+            
             jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
+    
+    user_id = request.args.get("user_id")
+    organization_id = request.args.get("organizationId")
+
     try:
-        keySecretName = "orchestrator-host--invitations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        if organization_id:
+            invitations = get_invitations(organization_id)
+            return invitations
+        invitation = get_invitation(user_id)
+        return invitation
     except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        organizationId = request.args.get("organizationId")
-        url = INVITATIONS_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"organizationId": organizationId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
-    except Exception as e:
-        logging.exception("[webbackend] exception in /get-organization")
+        logging.exception("[webbackend] exception in /getInvitation")
         return jsonify({"error": str(e)}), 500
 
 
