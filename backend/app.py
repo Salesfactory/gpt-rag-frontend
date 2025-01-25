@@ -64,6 +64,7 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    create_invitation
 )
 
 load_dotenv(override=True)
@@ -1799,40 +1800,16 @@ def createInvitation():
             jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
-    try:
-        keySecretName = "orchestrator-host--invitations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
+
     try:
         organizationId = request.json["organizationId"]
         invitedUserEmail = request.json["invitedUserEmail"]
         role = request.json["role"]
-        url = INVITATIONS_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps(
-            {
-                "invited_user_email": invitedUserEmail,
-                "organization_id": organizationId,
-                "role": role,
-            }
-        )
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        response = create_invitation(invitedUserEmail, organizationId, role)
+        return jsonify(response)
     except Exception as e:
         logging.exception("[webbackend] exception in /getUser")
-        return jsonify({"error": str(e)}), 500
+        create_error_response('An unexpected error occurred. Please try again later.', HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/api/checkuser", methods=["POST"])
@@ -1881,7 +1858,7 @@ def checkUser():
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        return jsonify(response), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500

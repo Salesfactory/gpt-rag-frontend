@@ -382,3 +382,53 @@ def patch_user_data(user_id, patch_data):
     except Exception as e:
         logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
         raise e
+    
+def create_invitation(invited_user_email, organization_id, role):
+    """
+    Creates a new document in the container.
+    """
+    if not invited_user_email:
+        raise ValueError("Invited user email is required.")
+    if not organization_id:
+        raise ValueError("Organization ID is required.")
+    if not role:
+        raise ValueError("Role is required.")
+    try:
+        user_container = get_cosmos_container("users")
+        user = user_container.query_items(
+             query="SELECT * FROM c WHERE c.data.email = @invited_user_email",
+            parameters=[{"name": "@invited_user_email", "value": invited_user_email}],
+            enable_cross_partition_query=True,
+        )
+        for u in user:
+             if u["data"].get("organizationId") is None:
+                u["data"]["organizationId"] = organization_id
+                u["data"]["role"] = role
+                user_container.replace_item(item=u["id"], body=u)
+                logging.info(
+                    f"[create_invitation] Updated user {invited_user_email} organizationId to {organization_id}"
+                )
+        invitation = {
+            "id": str(uuid.uuid4()),
+            "invited_user_email": invited_user_email,
+            "organization_id": organization_id,
+            "role": role,
+            "active": True,
+        }
+        container = get_cosmos_container("invitations")
+        result = container.create_item(body=invitation)
+        logging.info(f"Document created: {invitation}")
+        return result
+    except CosmosResourceNotFoundError as nf:
+        logging.error(str(nf))
+        raise NotFound(f"User not found")
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
+
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise
