@@ -1538,11 +1538,13 @@ def deleteUser():
             400,
         )
 
+    user_id = request.args.get("userId")
+    if not user_id:
+        return jsonify({"error": "Missing required parameter: user_id"}), 400
+
     try:
-        user_id =request.args.get("user_id")
-        if user_id:
-            user = delete_user(user_id)
-            return "", 204
+        delete_user(user_id)
+        return "", 204
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
