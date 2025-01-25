@@ -64,6 +64,7 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    get_organization_subscription
 )
 
 load_dotenv(override=True)
@@ -1890,35 +1891,18 @@ def checkUser():
 @app.route("/api/get-organization-subscription", methods=["GET"])
 def getOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
     try:
-        keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
+        if not client_principal_id:
+            raise MissingRequiredFieldError("client_principal_id")
         organizationId = request.args.get("organizationId")
-        url = SUBSCRIPTION_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"organizationId": organizationId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        if not organizationId:
+            raise MissingRequiredFieldError("organizationId")
+        response = get_organization_subscription(organizationId)
+        return jsonify(response)
+    except NotFound as e:
+        return create_error_response(str(e), 204)
+    except MissingRequiredFieldError as e:
+        return create_error_response('Missing required field: ' + str(e), 400)
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
