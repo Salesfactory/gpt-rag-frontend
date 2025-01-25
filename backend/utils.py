@@ -1,9 +1,17 @@
 from functools import wraps
 import logging
+import uuid
+import os
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
+from azure.identity import DefaultAzureCredential
+from azure.cosmos import CosmosClient
 
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 # Response Formatting: Type hint for JSON responses
 JsonResponse = Tuple[Dict[str, Any], int]
@@ -509,3 +517,163 @@ def get_azure_key_vault_secret(secret_name):
     except Exception as e:
         logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
         raise
+
+
+################################################
+# CHECK USERS UTILS
+################################################
+# Get user data from the database
+def get_set_user(client_principal):
+    if not client_principal["id"]:
+        return {"error": "User ID not found."}
+
+    logging.info("[get_user] Retrieving data for user: " + client_principal["id"])
+
+    user = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    is_new_user = False
+
+    try:
+        try:
+            user = container.read_item(
+                item=client_principal["id"], partition_key=client_principal["id"]
+            )
+            logging.info(f"[get_user] user_id {client_principal['id']} found.")
+        except Exception as e:
+            logging.info(
+                f"[get_user] sent an inexistent user_id, saving new {client_principal['id']}."
+            )
+            is_new_user = True
+
+            logging.info(
+                "[get_user] Checking user invitations for new user registration"
+            )
+            user_invitation = get_invitation(client_principal["email"])
+
+            user = container.create_item(
+                body={
+                    "id": client_principal["id"],
+                    "data": {
+                        "name": client_principal["name"],
+                        "email": client_principal["email"],
+                        "role": user_invitation["role"] if user_invitation else "admin",
+                        "organizationId": (
+                            user_invitation["organization_id"]
+                            if user_invitation
+                            else None
+                        ),
+                    },
+                }
+            )
+    except Exception as e:
+        logging.error(f"[get_user] Error creating the user: {e}")
+        return {
+            "is_new_user": None,
+            "user_data": None,
+        }
+
+    return {"is_new_user": is_new_user, "user_data": user["data"]}
+
+
+def check_users_existance():
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    _user = {}
+
+    try:
+        results = list(
+            container.query_items(
+                query="SELECT c FROM c",
+                max_item_count=1,
+                enable_cross_partition_query=True,
+            )
+        )
+        if results:
+            if len(results) > 0:
+                return True
+        return False
+    except Exception as e:
+        logging.info(f"[util__module] get_user: something went wrong. {str(e)}")
+    return _user
+
+def get_user_by_id(user_id):
+    if not user_id:
+        return {"error": "User ID not found."}
+
+    logging.info("User ID found. Getting data for user: " + user_id)
+
+    user = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    try:
+        query = "SELECT * FROM c WHERE c.id = @user_id"
+        parameters = [{"name": "@user_id", "value": user_id}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            user = result[0]
+    except Exception as e:
+        logging.info(f"[get_user] get_user: something went wrong. {str(e)}")
+    return user
+
+# return all users
+def get_users(organization_id):
+    users = []
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    try:
+        users = container.query_items(
+            query="SELECT * FROM c WHERE c.data.organizationId = @organization_id",
+            parameters=[{"name": "@organization_id", "value": organization_id}],
+            enable_cross_partition_query=True,
+        )
+        users = list(users)
+
+    except Exception as e:
+        logging.info(
+            f"[get_users] get_users: no users found (keyvalue store with 'users' id does not exist)."
+        )
+    return users
+
+def delete_user(user_id):
+    if not user_id:
+        return {"error": "User ID not found."}
+
+    logging.info("User ID found. Deleting user: " + user_id)
+
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
+    try:
+        user = container.read_item(item=user_id, partition_key=user_id)
+        user_email = user["data"]["email"]
+        user["data"]["organizationId"] = None
+        user["data"]["role"] = None
+        container.replace_item(item=user_id, body=user)
+        logging.info(f"[delete_user] User {user_id} deleted from its organization")
+        logging.info(f"[delete_user] Deleting all {user_id} active invitations")
+        container = db.get_container_client("invitations")
+        invitations = container.query_items(
+            query="SELECT * FROM c WHERE c.invited_user_email = @user_email",
+            parameters=[{"name": "@user_email", "value": user_email}],
+            enable_cross_partition_query=True,
+        )
+        for invitation in invitations:
+            container.delete_item(item=invitation["id"], partition_key=invitation["id"])
+            logging.info(f"Deleted invitation with ID: {invitation['id']}")
+
+    except Exception as e:
+        logging.error(f"[delete_user] delete_user: something went wrong. {str(e)}")
