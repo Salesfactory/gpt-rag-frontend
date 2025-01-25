@@ -1,8 +1,17 @@
 from functools import wraps
 import logging
+import uuid
+import os
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
+from datetime import datetime, timezone, timedelta
+from azure.identity import DefaultAzureCredential
+from azure.cosmos import CosmosClient
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 
 # Response Formatting: Type hint for JSON responses
@@ -474,6 +483,57 @@ class EmailService:
 
         # return the blob name
         return blob_name
+
+################################################
+# Chat History Get All Chats From User
+################################################
+
+def get_conversations(user_id):
+    try:
+        logging.info("ENTRE AQUI PARA OBTENER TODAS LAS CONVERSACIONES")
+        credential = DefaultAzureCredential()
+        db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+        db = db_client.get_database_client(database=AZURE_DB_NAME)
+        container = db.get_container_client("conversations")
+
+        query = (
+            "SELECT * FROM c WHERE c.conversation_data.interaction.user_id = @user_id"
+        )
+        parameters = [dict(name="@user_id", value=user_id)]
+
+        conversations = container.query_items(
+            query=query, parameters=parameters, enable_cross_partition_query=True
+        )
+
+        # DEFAULT DATE 1 YEAR AGO in case start_date is not present
+        now = datetime.now()
+        one_year_ago = now - timedelta(days=365)
+        default_date = one_year_ago.strftime("%Y-%m-%d %H:%M:%S")
+
+        formatted_conversations = [
+            {
+                "id": con["id"],
+                "start_date": (
+                    con["conversation_data"]["start_date"]
+                    if "start_date" in con["conversation_data"]
+                    else default_date
+                ),
+                "content": con["conversation_data"]["history"][0]["content"],
+                "type": (
+                    con["conversation_data"]["type"]
+                    if "type" in con["conversation_data"]
+                    else "default"
+                ),
+            }
+            for con in conversations
+        ]
+
+        return formatted_conversations
+    except Exception as e:
+        logging.error(
+            f"Error retrieving the conversations for user '{user_id}': {str(e)}"
+        )
+        return []
 
 ################################################
 # AZURE GET SECRET
