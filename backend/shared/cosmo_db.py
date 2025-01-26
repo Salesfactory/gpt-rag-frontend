@@ -315,13 +315,13 @@ def get_invitation(invited_user_email):
             logging.info(
                 f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
             )
+            return invitation
         else:
             logging.info(
                 f"[get_invitation] no active invitation found for user {invited_user_email}"
             )
     except Exception as e:
         logging.error(f"[get_invitation] something went wrong. {str(e)}")
-    return invitation
 
 
 def set_user(client_principal):

@@ -1840,21 +1840,19 @@ def createInvitation():
 def checkUser():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
     if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
+        return create_error_response('')
 
     try:
+        if not request.json or "email" not in request.json:
+            raise MissingRequiredFieldError('email')
         email = request.json["email"]
         response = set_user({"id": client_principal_id, "email": email, "role": "user", "name": client_principal_name})
-        return response
+        return response['user_data']
+    except MissingRequiredFieldError as field:
+        return create_error_response(
+            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
+        )
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
