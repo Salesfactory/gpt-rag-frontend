@@ -1794,22 +1794,30 @@ def getInvitations():
 
 @app.route("/api/createInvitation", methods=["POST"])
 def createInvitation():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
-
     try:
-        organizationId = request.json["organizationId"]
-        invitedUserEmail = request.json["invitedUserEmail"]
-        role = request.json["role"]
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not client_principal_id:
+            raise MissingRequiredFieldError("client_principal_id")
+        data = request.get_json()
+        if not data:
+            raise MissingJSONPayloadError()
+        if not "invitedUserEmail" in data:
+            raise MissingRequiredFieldError("invitedUserEmail")
+        if not "organizationId" in data:
+            raise MissingRequiredFieldError("organizationId")
+        if not "role" in data:
+            raise MissingRequiredFieldError("role")
+        invitedUserEmail = data["invitedUserEmail"]
+        organizationId = data["organizationId"]
+        role = data["role"]
         response = create_invitation(invitedUserEmail, organizationId, role)
         return jsonify(response)
+    except MissingJSONPayloadError as e:
+        return create_error_response(f'Invalid or Missing JSON payload', HTTPStatus.BAD_REQUEST)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
     except Exception as e:
-        logging.exception("[webbackend] exception in /getUser")
-        create_error_response('An unexpected error occurred. Please try again later.', HTTPStatus.INTERNAL_SERVER_ERROR)
+        return create_error_response(f'An unexpected error occurred. Please try again later. {e}', HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/api/checkuser", methods=["POST"])
