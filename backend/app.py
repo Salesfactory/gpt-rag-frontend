@@ -1937,7 +1937,7 @@ def createOrganization():
         response = create_organization(client_principal_id, organizationName)
         return jsonify(response)
     except NotFound as e:
-        return create_error_response(str(e), HTTPStatus.NOT_FOUND)
+        return create_error_response(f'User {client_principal_id} not found', HTTPStatus.NOT_FOUND)
     except MissingRequiredFieldError as e:
         return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
     except Exception as e:
