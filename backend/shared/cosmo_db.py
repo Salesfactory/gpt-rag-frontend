@@ -307,7 +307,7 @@ def update_user(user_id, updated_data):
     
     except Exception as e:
         logging.error(f"Unexpected error while retrieving user with id '{user_id}'")
-        raise
+        raise Exception
 
     try:
         current_user.update(updated_data)
@@ -417,7 +417,7 @@ def create_invitation(invited_user_email, organization_id, role):
         }
         container = get_cosmos_container("invitations")
         result = container.create_item(body=invitation)
-        logging.info(f"Document created: {invitation}")
+        logging.info(f"Invitation created: {invitation}")
         return result
     except CosmosResourceNotFoundError as nf:
         logging.error(str(nf))
@@ -431,4 +431,4 @@ def create_invitation(invited_user_email, organization_id, role):
 
     except Exception as e:
         logging.error(f"Error inserting data into Cosmos DB: {e}")
-        raise
+        return Exception(f"Error inserting data into Cosmos DB: {e}")
