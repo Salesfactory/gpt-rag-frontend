@@ -290,6 +290,46 @@ def get_user_container(user_id):
         logging.error(f"Unexpected error retrieving report with id '{user_id}'")
         raise
 
+def set_user(user_data):
+    try:
+        try:
+            container = get_cosmos_container("users")
+            user = container.read_item(item=user_data["id"], partition_key=user_data["id"])
+        except Exception as e:
+            is_new_user = True
+            invitation_container = get_cosmos_container("invitations")
+            query = "SELECT * FROM c WHERE c.invited_user_email = @invited_user_email AND c.active = true"
+            parameters = [{"name": "@invited_user_email", "value": user_data["email"]}]
+            user_invitation = invitation_container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True)
+
+            user = container.create_item(
+                body={
+                    "id": user_data["id"],
+                    "data": {
+                        "name": user_data["name"],
+                        "email": user_data["email"],
+                        "role": user_invitation["role"] if user_invitation else "admin",
+                        "organizationId": (
+                            user_invitation["organization_id"]
+                            if user_invitation
+                            else None
+                        ),
+                    },
+                }
+            )
+    except Exception as e:
+        logging.error(f"[get_user] Error creating the user: {e}")
+        return {
+            "is_new_user": None,
+            "user_data": None,
+        }
+    return user["data"]
+
+        
+
+
+
+
 def update_user(user_id, updated_data):
     """
     Updates an existing document using its `id` as the partition key.
