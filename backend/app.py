@@ -1931,15 +1931,15 @@ def createOrganization():
     try:
         if not client_principal_id:
             raise MissingRequiredFieldError("Missing required parameters, client_principal_id")
+        if not 'organizationName' in request.json:
+            raise MissingRequiredFieldError("organizationName")
         organizationName = request.json["organizationName"]
-        if not organizationName:
-            raise MissingRequiredFieldError("Missing required parameters, organizationName")
         response = create_organization(client_principal_id, organizationName)
         return jsonify(response)
     except NotFound as e:
         return create_error_response(f'User {client_principal_id} not found', HTTPStatus.NOT_FOUND)
-    except MissingRequiredFieldError as e:
-        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f'Missing required parameters, {field}', HTTPStatus.BAD_REQUEST)
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
