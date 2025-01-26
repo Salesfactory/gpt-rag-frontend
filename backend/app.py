@@ -1853,7 +1853,7 @@ def checkUser():
 
     try:
         email = request.json["email"]
-        response = set_user({"id": client_principal_id, "email": email, "role": "user"})
+        response = set_user({"id": client_principal_id, "email": email, "role": "user", "name": client_principal_name})
         return response
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
