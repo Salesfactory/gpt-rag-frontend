@@ -46,6 +46,7 @@ from utils import (
     InvalidParameterError,
     MissingJSONPayloadError,
     MissingRequiredFieldError,
+    MissingParameterError,
     require_client_principal,
     get_azure_key_vault_secret,
 )
@@ -1896,13 +1897,13 @@ def getOrganization():
             raise MissingRequiredFieldError("client_principal_id")
         organizationId = request.args.get("organizationId")
         if not organizationId:
-            raise MissingRequiredFieldError("organizationId")
+            raise MissingParameterError("organizationId")
         response = get_organization_subscription(organizationId)
         return jsonify(response)
     except NotFound as e:
-        return create_error_response(str(e), 204)
-    except MissingRequiredFieldError as e:
-        return create_error_response('Missing required field: ' + str(e), 400)
+        return create_error_response('Subscription not Found', 204)
+    except MissingParameterError as e:
+        return create_error_response('Missing required parameter: ' + str(e), HTTPStatus.BAD_REQUEST)
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
