@@ -1901,7 +1901,7 @@ def getOrganization():
         response = get_organization_subscription(organizationId)
         return jsonify(response)
     except NotFound as e:
-        return {}, 204
+        return jsonify({}), 204
     except MissingParameterError as e:
         return create_error_response('Missing required parameter: ' + str(e), HTTPStatus.BAD_REQUEST)
     except Exception as e:
