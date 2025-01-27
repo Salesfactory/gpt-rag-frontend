@@ -84,7 +84,7 @@
 .chatMessageStream {
     flex-grow: 1;
     max-height: 1024px;
-    max-width: 1028px;
+    max-width: 80.5%;
     width: 90%;
     overflow-y: auto;
     padding-left: 24px;
@@ -110,7 +110,7 @@
     position: sticky;
     bottom: 0;
     flex: 0 0 auto;
-    padding: 15px;
+    padding: 10px 5px 5px 10px;
     display: flex;
     align-items: start;
     border-radius: 6px;

@@ -18,7 +18,6 @@ from flask import (
 
 from flask_cors import CORS
 from dotenv import load_dotenv
-from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
@@ -48,6 +47,7 @@ from utils import (
     MissingJSONPayloadError,
     MissingRequiredFieldError,
     require_client_principal,
+    get_azure_key_vault_secret,
 )
 import stripe.error
 
@@ -55,6 +55,7 @@ from shared.cosmo_db import (
     create_report,
     get_report,
     get_user_container,
+    patch_user_data,
     update_report,
     delete_report,
     get_filtered_reports,
@@ -95,18 +96,7 @@ INVITATION_LINK = os.getenv("INVITATION_LINK")
 LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
 logging.basicConfig(level=LOGLEVEL)
 
-
-def get_secret(secretName):
-    keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
-    KVUri = f"https://{keyVaultName}.vault.azure.net"
-    credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=KVUri, credential=credential)
-    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")
-    retrieved_secret = client.get_secret(secretName)
-    return retrieved_secret.value
-
-
-SPEECH_KEY = get_secret("speechKey")
+SPEECH_KEY = get_azure_key_vault_secret("speechKey")
 
 SPEECH_RECOGNITION_LANGUAGE = os.getenv("SPEECH_RECOGNITION_LANGUAGE")
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
@@ -116,7 +106,7 @@ AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
 # Retrieve the connection string for Azure Blob Storage from secrets
 try:
-    AZURE_STORAGE_CONNECTION_STRING = get_secret("storageConnectionString")
+    AZURE_STORAGE_CONNECTION_STRING = get_azure_key_vault_secret("storageConnectionString")
     if not AZURE_STORAGE_CONNECTION_STRING:
         raise ValueError(
             "The connection string for Azure Blob Storage (AZURE_STORAGE_CONNECTION_STRING):  is not set. Please ensure it is correctly configured."
@@ -390,7 +380,7 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
         # Get function key from Key Vault
         key_secret_name = "orchestrator-host--checkuser"
-        function_key = get_secret(key_secret_name)
+        function_key = get_azure_key_vault_secret(key_secret_name)
         if not function_key:
             raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
 
@@ -545,7 +535,7 @@ def chatgpt():
         else:
             keySecretName = "orchestrator-host--functionKey"
 
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -598,7 +588,7 @@ def getChatHistory():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--conversations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -632,7 +622,7 @@ def getChatConversation(chat_id):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     try:
         keySecretName = "orchestrator-host--conversations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         return jsonify({"error": f"Error getting function key: {e}"}), 500
 
@@ -654,7 +644,7 @@ def deleteChatConversation(chat_id):
     try:
         client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
         keySecretName = "orchestrator-host--conversations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
 
         url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
@@ -913,6 +903,35 @@ def updateUser(*, context, user_id):
         )
 
 
+#Update User data info
+
+@app.route("/api/user/<user_id>", methods=["PATCH"])
+def patchUserData(user_id):
+    """
+    Endpoint to update the 'name', role and 'email' fields of a user's 'data'
+    """
+    try:
+        patch_data = request.get_json()
+
+        if patch_data is None or not isinstance(patch_data, dict):
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        patch_data = patch_user_data(user_id, patch_data)
+        return jsonify({"message": "User data updated successfully"}), 200
+
+    except NotFound as nf:
+        logging.error(f"User with ID {user_id} not found.")
+        return jsonify({"error": str(e)}), 404
+
+    except ValueError as ve:
+        logging.error(f"Validation error for user ID {user_id}: {str(ve)}")
+        return jsonify({"error": str(ve)}), 400
+
+    except Exception as e:
+        logging.exception(f"Error updating user data for user ID {user_id}")
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+
+
 @app.route("/api/reports", methods=["GET"])
 @auth.login_required()
 def getFilteredType(*, context):
@@ -955,28 +974,21 @@ def addSummarizationReport(*, context):
     JSON response with the created report template if successful.
     JSON error response with appropriate HTTP status code if an error occurs.
     """
-    try:
+    try: 
         data = request.get_json()
         if not data:
-            raise MissingJSONPayloadError("Missing JSON payload")
-        if not "name" in data:
-            raise MissingRequiredFieldError("name")
+            raise MissingJSONPayloadError('Missing JSON payload')
+        if not "templateType" in data:
+            raise MissingRequiredFieldError('templateType')
         if not "description" in data:
-            raise MissingRequiredFieldError("description")
-        if not "companyTickers" in data:
-            raise MissingRequiredFieldError("companyTickers")
-        valid_names = ["10-K", "10-Q", "8-K", "DEF 14A"]
-        if not data["name"] in valid_names:
-            raise InvalidParameterError(
-                "name", f"Must be one of: {', '.join(valid_names)}"
-            )
-        new_template = {
-            "name": data["name"],
-            "companyTickers": data["companyTickers"],
-            "description": data["description"],
-            "status": "active",
-            "type": "summarization",
-        }
+            raise MissingRequiredFieldError('description')
+        if not "companyTicker" in data:
+            raise MissingRequiredFieldError('companyTicker')
+        if not "companyName" in data:
+            raise MissingRequiredFieldError('companyName')
+        if not data["templateType"] in ALLOWED_FILING_TYPES:
+            raise InvalidParameterError('templateType', f"Must be one of: {', '.join(ALLOWED_FILING_TYPES)}")
+        new_template = {'templateType': data['templateType'], 'description': data['description'], 'companyTicker': data['companyTicker'], 'companyName': data['companyName'], 'status': 'active', 'type': 'summarization'}
         # add to cosmosDB container
         result = create_template(new_template)
         return create_success_response(result)
@@ -1113,12 +1125,14 @@ def create_checkout_session():
     success_url = request.json["successUrl"]
     cancel_url = request.json["cancelUrl"]
     organizationId = request.json["organizationId"]
+    userName = request.json["userName"]
+    organizationName = request.json["organizationName"]
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[{"price": price, "quantity": 1}],
             mode="subscription",
             client_reference_id=userId,
-            metadata={"userId": userId, "organizationId": organizationId},
+            metadata={"userId": userId, "organizationId": organizationId, "userName":userName, "organizationName":organizationName},
             success_url=success_url,
             cancel_url=cancel_url,
             automatic_tax={"enabled": True},
@@ -1140,12 +1154,70 @@ def create_checkout_session():
 
     return jsonify({"url": checkout_session.url})
 
+@app.route("/get-customer", methods=['POST'])
+def get_customer():
+
+    subscription_id = request.json["subscription_id"]
+
+    if not subscription_id:
+        logging.warning({"Error": "No subscription_id was provided for this request."})
+        return jsonify({"error": "No subscription_id was provided for this request."}), 404
+
+    try:
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        customer_id = subscription.get("customer")
+
+        if not customer_id:
+            logging.warning({"error": "No customer_id found for the provided subscription."})
+            return jsonify({"error": "No customer_id found for the provided subscription."}), 404
+        
+        return jsonify({"customer_id": customer_id}), 200
+
+    except stripe.error.StripeError as e:
+        logging.warning({"error": {str(e)}})
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        logging.warning({"error": "Unexpected error: " + {str(e)}})
+        return jsonify({"error": "Unexpected error: " + str(e)}), 500
+
+@app.route("/create-customer-portal-session", methods=["POST"])
+def create_customer_portal_session():
+    customer = request.json.get("customer")
+    return_url = request.json.get("return_url")
+    subscription_id = request.json.get("subscription_id")
+
+    if not customer or not return_url:
+        logging.warning({"error": "Missing 'customer' or 'return_url'"})
+        return jsonify({"error": "Missing 'customer' or 'return_url'"}), 400
+
+    if not subscription_id:
+        logging.warning({"error": "Missing 'subscription_id'."})
+        return jsonify({"error": "Missing 'subscription_id'."}), 400
+
+    try:
+       # Clear the metadata of the specific subscription
+        stripe.Subscription.modify(subscription_id, metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
+                "modification_type": "",
+            })
+
+        portal_session = stripe.billing_portal.Session.create(
+            customer=customer,
+            return_url=return_url
+        )
+
+    except Exception as e:
+        logging.error({"error": f"Unexpected error: {str(e)}"})
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+    return jsonify({"url": portal_session.url})
 
 @app.route("/api/stripe", methods=["GET"])
 def getStripe():
     try:
         keySecretName = "stripeKey"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
         return functionKey
     except Exception as e:
         logging.exception("[webbackend] exception in /api/stripe")
@@ -1189,7 +1261,7 @@ def webhook():
             # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
             # It is set during the infrastructure deployment.
             keySecretName = "orchestrator-host--subscriptions"
-            functionKey = get_secret(keySecretName)
+            functionKey = get_azure_key_vault_secret(keySecretName)
         except Exception as e:
             logging.exception(
                 "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1303,7 +1375,7 @@ def getSettings():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--settings"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -1358,7 +1430,7 @@ def setSettings():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--settings"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -1426,7 +1498,7 @@ def setFeedback():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--feedback"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--feedback")
         return (
@@ -1480,7 +1552,7 @@ def getUsers():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
@@ -1519,7 +1591,7 @@ def deleteUser():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
@@ -1692,7 +1764,7 @@ def getInvitations():
         )
     try:
         keySecretName = "orchestrator-host--invitations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1729,7 +1801,7 @@ def createInvitation():
         )
     try:
         keySecretName = "orchestrator-host--invitations"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1782,7 +1854,7 @@ def checkUser():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
@@ -1825,7 +1897,7 @@ def getOrganization():
         )
     try:
         keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -1870,7 +1942,7 @@ def createOrganization():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             f"[webbackend] exception in /api/orchestrator-host--subscriptions {e}"
@@ -1920,7 +1992,7 @@ def getUser():
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_secret(keySecretName)
+        functionKey = get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
         return (
@@ -2017,8 +2089,8 @@ def financial_assistant(subscriptionId):
             items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}],
             metadata={
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "add_financial_assistant",
-                "modification_time": datetime.now().isoformat(),
             },
         )
         # Logging: Success confirmation
@@ -2121,8 +2193,8 @@ def remove_financial_assistant(subscriptionId):
             items=[{"id": assistant_item_id, "deleted": True}],
             metadata={
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "remove_financial_assistant",
-                "modification_time": datetime.now().isoformat(),
             },
         )
 
@@ -2414,6 +2486,11 @@ def change_subscription(subscription_id):
                 'id': stripe_subscription['items']['data'][0]['id'],
                 'price': new_plan_id,
             }],
+            metadata={
+                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                "modified_by_name":request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
+                "modification_type": "subscription_tier_change",
+            },
             proration_behavior='none',  # No proration
             billing_cycle_anchor='now',  # Change the billing cycle so that it is charged at that moment
             cancel_at_period_end=False  # Do not cancel the subscription
@@ -3092,9 +3169,15 @@ def generate_report():
             raise InvalidReportTypeError(
                 f"Invalid report type. Please choose from: {ALLOWED_CURATION_REPORTS}"
             )
+        if report_topic_rqst == "Company_Analysis" and not data.get("company_name"):
+            raise ValueError("company_name is required for Company Analysis report")
+        
+        if report_topic_rqst == "Company_Analysis":
+            # modify the prompt to include the company name
+            report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst].replace("company_name", data["company_name"])
+        else:
+            report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst]
 
-        # Get report configuration
-        report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst]
         search_days = 10 if report_topic_rqst in WEEKLY_CURATION_REPORT else 30
 
         # Generate report
@@ -3116,6 +3199,14 @@ def generate_report():
             file_path = Path(
                 f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html"
             )
+        elif report_topic_rqst == "Company_Analysis":
+            # add company name to the file path
+            company_name = str(data["company_name"]).replace(" ", "_")  # Ensure string and replace spaces
+            logger.info(f"Company name before replacement: {data['company_name']}")
+            logger.info(f"Company name after replacement: {company_name}")
+            file_path = Path(
+                f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}/{current_date.strftime('%B_%Y')}.html"
+            )
         else:
             file_path = Path(
                 f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}.html"
@@ -3131,6 +3222,8 @@ def generate_report():
         blob_storage_manager = BlobStorageManager()
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
+        elif report_topic_rqst == "Company_Analysis":
+            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}"
         else:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
 
@@ -3153,9 +3246,17 @@ def generate_report():
             )
             # Continue execution even if cleanup fails
             pass
-
-        return jsonify(
-            {
+        if report_topic_rqst == "Company_Analysis":
+            return jsonify(
+                {
+                "status": "success",
+                "message": f"Company Analysis report generated for {data['company_name']}",
+                "report_url": upload_result["blob_url"],
+            }
+        )
+        else:
+            return jsonify(
+                {
                 "status": "success",
                 "message": f"Report generated for {report_topic_rqst}",
                 "report_url": upload_result["blob_url"],

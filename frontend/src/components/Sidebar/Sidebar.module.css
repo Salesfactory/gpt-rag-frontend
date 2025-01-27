@@ -227,7 +227,8 @@
   /* Brand Logo */
   .brandLogo {
     min-height: 72px;
-    padding: 3em 28px 1.5em;
+    padding: 1.5em 50px 1.5em;
+
   }
   
   .brandLogoImg {
@@ -239,7 +240,7 @@
         background: none; /* Remove background */
         border: none; /* Replace #000 with your desired border color */
         color: none; /* Text color matching your border color or choose another */
-        padding: 0; /* Adjust padding as needed */
+        padding-left: 20px; /* Adjust padding as needed */
         border-radius: 0; /* Optional: for rounded corners */
         cursor: pointer; /* Pointer cursor on hover */
         transition: all 0.3s ease; /* Optional: smooth transition for hover effect */
@@ -283,6 +284,16 @@
   .lg {
     /* Define styles if needed */
   }
+
+  .leftSidebar {
+    left: -260px;
+  }
+
+  .showSidebar  {
+    left: 0;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+
   
   /* Responsive Adjustments */
   @media (max-width: 1199px) {

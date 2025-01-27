@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar } from "@fluentui/react";
+import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar, ResponsiveMode } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/react-icons";
@@ -7,7 +7,7 @@ import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/
 import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
-import { getUsers, inviteUser, createInvitation, deleteUser } from "../../api";
+import { getUsers, inviteUser, createInvitation, deleteUser, updateUserData } from "../../api";
 
 import styles from "./Admin.module.css";
 
@@ -397,6 +397,19 @@ const Admin = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeletingUser, setIsDeletingUser] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [inputUserName, setInputUserName] = useState("")
+    const [inputEmailName, setInputEmailName] = useState("")
+    const roleOptions = [
+            { key: "1", text: "user" },
+            { key: "2", text: "admin" }
+        ];
+    const [categorySelection, setCategorySelection] = useState('')
+    const [errorMessage, setErrorMessage] = useState("")
+    const [isError, setIsError] = useState(false)
+    const [dataLoad, setDataLoad] = useState(false)
+    const [isEditSuccess, setIsEditSuccess] = useState(false)
+
     if (!user) {
         return <div>Please log in to view the user list.</div>;
     }
@@ -438,7 +451,7 @@ const Admin = () => {
         };
 
         getUserList();
-    }, [user]);
+    }, [dataLoad]);
 
     useEffect(() => {
         if (!search) {
@@ -473,6 +486,66 @@ const Admin = () => {
             setIsDeletingUser(false);
         });
     };
+
+    const handleEditClick = (user: any) => {
+        setSelectedUser(user)
+        setIsEditing(true)
+    };
+
+    const handleInputName = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setInputUserName(event.target.value)
+    }
+
+    const handleInputEmail = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setInputEmailName(event.target.value)
+    }
+
+    const handleTypeDropdownChange = (event: any, selectedOption: any) => {
+        setCategorySelection(selectedOption.text)
+    }
+
+    const editUser = async (userID: string) => {
+        
+        if(inputUserName == ('')){
+            setErrorMessage("Please type the Username");
+            setIsError(true);
+            return;
+        }
+        if(inputEmailName == ('')){
+            setErrorMessage("Please type the Email");
+            setIsError(true);
+            return;
+        }
+        if(categorySelection == ('')){
+            setErrorMessage('Please select the Report Category')
+            setIsError(true);
+            return;
+        }
+
+        
+        let timer: NodeJS.Timeout;
+
+        try{
+            await updateUserData({
+                userId: userID,
+                patchData:{
+                    name: inputUserName,
+                    email: inputEmailName,
+                    role: categorySelection
+                }
+            });
+            setIsEditing(false)
+            setIsEditSuccess(true)
+            timer = setTimeout(() => {
+                setIsEditSuccess(false);
+            }, 3000);
+            
+        } catch (error){
+            console.error("Error trying to update the state: ", error)
+        } finally {
+            setDataLoad(true)
+        }
+    }
 
     return (
         <div className={styles.page_container}>
@@ -560,6 +633,58 @@ const Admin = () => {
                     }}
                     isDeletingUser={isDeletingUser}
                 />
+                {isEditing && (
+                    <div className={styles.modal}>
+                        <Label className={styles.modalTitle}>Edit User</Label>
+                        <form>
+                            <Label>User Name</Label>
+                            <input type="text" className={styles.input} onChange={handleInputName}
+                            placeholder={selectedUser.data.name} value={inputUserName}></input>
+                            <Label>User Email</Label>
+                            <input type="text" className={styles.input} onChange={handleInputEmail}
+                            placeholder={selectedUser.data.email} value={inputEmailName}></input>
+                            <Label>Curation Report Category</Label>
+                            <Dropdown placeholder="Select a Role" options={roleOptions} onChange={handleTypeDropdownChange} 
+                            defaultValue={categorySelection} responsiveMode={ResponsiveMode.unknown}/>
+                            {isError && (
+                                <span className={styles.modalError}>{errorMessage}</span>
+                            )}
+                            
+                            <DefaultButton style={{ marginTop: "50px", marginRight: "95px"}} onClick={() => setIsEditing(false)} text="Cancel" />
+                            <PrimaryButton
+                                styles={{
+                                    root: {
+                                        backgroundColor: "#9FC51D",
+                                        borderColor: "#9FC51D",
+                                        color: "white",
+                                        borderRadius: "5px"
+                                    },
+                                    rootHovered: {
+                                        backgroundColor: "#ACC41D",
+                                        borderColor: "#ACC41D",
+                                        color: "white"
+                                    },
+                                    rootPressed: {
+                                        backgroundColor: "#9FC51D",
+                                        borderColor: "#9FC51D",
+                                        color: "white"
+                                    }
+                                }}
+                                style={{ marginTop: "20px" }}
+                                onClick={() => {
+                                    editUser(selectedUser.id);
+                                }}
+                                text="Edit User"
+                            />
+                            
+                        </form>
+                    </div>
+                )}
+                {isEditSuccess && (
+                    <div className={styles.modalSuccess}>
+                        <Label>User Edited successfully!</Label>
+                    </div>
+                )}
                 {loading ? (
                     <Spinner
                         styles={{
@@ -636,7 +761,14 @@ const Admin = () => {
                                             <td>
                                                 {
                                                     <div>
-                                                        <button className={styles.button} title="Edit user" aria-label="Edit user" onClick={() => {}}>
+                                                        <button className={styles.button} 
+                                                        title="Edit user" 
+                                                        aria-label="Edit user" 
+                                                        onClick={() => {
+                                                            handleEditClick(user)
+                                                            }}
+                                                        >
+
                                                             <EditRegular />
                                                         </button>
                                                         <button

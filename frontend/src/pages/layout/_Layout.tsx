@@ -17,10 +17,10 @@ const Layout: React.FC = () => {
             {/* Sidebar End */}
 
             {/* Main Wrapper */}
-            <div className={`${styles.bodyWrapper} ${styles.bodyWrapperFull}`}>
+            <div className={`${styles.bodyWrapper} ${styles.bodyWrapperFull} ${isCollapsed ? styles.collapsed : styles.expanded}`}>
                 {/* Header Start */}
-                <header className={`${styles.appHeader} ${styles.appHeaderFull} border-bottom py-2 bg-light`}>
-                    <Navbar setIsCollapsed={setIsCollapsed} />
+                <header className={`${styles.appHeader} border-bottom py-0.5 bg-light`}>
+                    <Navbar setIsCollapsed={setIsCollapsed} isCollapsed={isCollapsed} />
                 </header>
                 {/* Header End */}
 

@@ -341,9 +341,8 @@ def _extract_response_data(response):
 from typing import List
 from email.message import EmailMessage
 import smtplib
-from dotenv import load_dotenv
-load_dotenv()
 
+EMAIL_CONTAINER_NAME = 'emails'
 class EmailServiceError(Exception):
     """Base exception for email service errors"""
     pass
@@ -433,24 +432,29 @@ class EmailService:
         """
         Save the email content to a blob storage container
         """
-        EMAIL_CONTAINER_NAME = 'emails'
         from azure.storage.blob import BlobServiceClient
         from datetime import datetime, timezone
         from azure.storage.blob import ContentSettings
-
-        blob_service_client = BlobServiceClient.from_connection_string(os.getenv('BLOB_CONNECTION_STRING'))
-        blob_container_client = blob_service_client.get_container_client(EMAIL_CONTAINER_NAME)
-        
-        # get the blob storage container
+        from azure.identity import DefaultAzureCredential
         from financial_doc_processor import BlobUploadError
         import uuid
 
 
+        credential = DefaultAzureCredential()
+        BLOB_STORAGE_URL = f"https://{os.getenv('STORAGE_ACCOUNT')}.blob.core.windows.net"
+        blob_service_client = BlobServiceClient(
+            account_url=BLOB_STORAGE_URL,
+            credential=credential
+        )
+        blob_container_client = blob_service_client.get_container_client(EMAIL_CONTAINER_NAME)
         # create an id for the email 
         email_id = str(uuid.uuid4())
-
+        timestamp = datetime.now(timezone.utc).isoformat()
+        # get date only from timestamp
+        date_only = timestamp.split('T')[0]
+        
         # create a blob name for the email 
-        blob_name = f"{email_id}/content.html"
+        blob_name = f"{date_only}/{email_id}/content.html"
 
         # add metadata to the blob
         metadata = {
@@ -470,3 +474,38 @@ class EmailService:
 
         # return the blob name
         return blob_name
+
+################################################
+# AZURE GET SECRET
+################################################
+def get_azure_key_vault_secret(secret_name):
+    """
+    Retrieve a secret value from Azure Key Vault.
+
+    Args:
+        secret_name (str): The name of the secret to retrieve.
+
+    Returns:
+        str: The value of the secret.
+
+    Raises:
+        Exception: If the secret cannot be retrieved.
+    """
+    from azure.keyvault.secrets import SecretClient
+    from azure.identity import DefaultAzureCredential
+    try:
+        keyVaultName = os.getenv("AZURE_KEY_VAULT_NAME")
+        if not keyVaultName:
+            raise ValueError("Environment variable 'AZURE_KEY_VAULT_NAME' is not set.")
+
+        KVUri = f"https://{keyVaultName}.vault.azure.net"
+        credential = DefaultAzureCredential()
+        client = SecretClient(vault_url=KVUri, credential=credential)
+        logging.info(
+            f"[webbackend] retrieving {secret_name} secret from {keyVaultName}."
+        )
+        retrieved_secret = client.get_secret(secret_name)
+        return retrieved_secret.value
+    except Exception as e:
+        logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
+        raise

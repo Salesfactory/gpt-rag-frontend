@@ -33,6 +33,7 @@ export default function App() {
             {/* Public Routes */}
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/payment" element={<PaymentGateway />} />
+            <Route path="/access-denied" element={<AccessDenied />} />
 
             {/* Protected Routes for Authenticated Users (Regular and Admin) */}
             <Route
