@@ -290,6 +290,89 @@ def get_user_container(user_id):
         logging.error(f"Unexpected error retrieving report with id '{user_id}'")
         raise
 
+def get_invitation(invited_user_email):
+    if not invited_user_email:
+        return {"error": "User ID not found."}
+
+    logging.info("[get_invitation] Getting invitation for user: " + invited_user_email)
+
+    container = get_cosmos_container("invitations")
+    try:
+        query = "SELECT * FROM c WHERE c.invited_user_email = @invited_user_email AND c.active = true"
+        parameters = [{"name": "@invited_user_email", "value": invited_user_email}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            logging.info(
+                f"[get_invitation] active invitation found for user {invited_user_email}"
+            )
+            invitation = result[0]
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(
+                f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
+            )
+            return invitation
+        else:
+            logging.info(
+                f"[get_invitation] no active invitation found for user {invited_user_email}"
+            )
+    except Exception as e:
+        logging.error(f"[get_invitation] something went wrong. {str(e)}")
+
+
+def set_user(client_principal):
+    user = {}
+    container = get_cosmos_container("users")
+    is_new_user = False
+    try:
+        try:
+            user = container.read_item(
+                item=client_principal["id"], partition_key=client_principal["id"]
+            )
+            logging.info(f"[get_user] user_id {client_principal['id']} found.")
+        except Exception as e:
+            logging.info(
+                f"[get_user] sent an inexistent user_id, saving new {client_principal['id']}."
+            )
+            is_new_user = True
+
+            logging.info(
+                "[get_user] Checking user invitations for new user registration"
+            )
+            user_invitation = get_invitation(client_principal["email"])
+
+            user = container.create_item(
+                body={
+                    "id": client_principal["id"],
+                    "data": {
+                        "name": client_principal["name"],
+                        "email": client_principal["email"],
+                        "role": user_invitation["role"] if user_invitation else "admin",
+                        "organizationId": (
+                            user_invitation["organization_id"]
+                            if user_invitation
+                            else None
+                        ),
+                    },
+                }
+            )
+    except Exception as e:
+        logging.error(f"[get_user] Error creating the user: {e}")
+        return {
+            "is_new_user": None,
+            "user_data": None,
+        }
+
+    return {"is_new_user": is_new_user, "user_data": user["data"]}
+        
+
+
+
+
 def update_user(user_id, updated_data):
     """
     Updates an existing document using its `id` as the partition key.
