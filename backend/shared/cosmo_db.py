@@ -382,3 +382,32 @@ def patch_user_data(user_id, patch_data):
     except Exception as e:
         logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
         raise e
+    
+def get_organization_subscription(organizationId):
+    """
+    Retrieves a specific document (organizationId) from the Cosmos DB container using its `id` as partition key.
+
+    Parameters:
+        organizationId (str): The ID of the organization to retrieve.
+
+    Returns:
+        dict: The organization document retrieved from the database.
+
+    Raises:
+    Exception: For any other unexpected error that occurs during retrieval.
+    CosmosResourceNotFoundError: If the organization with the specified ID does not exist in the database.
+    """
+    container = get_cosmos_container("organizations")
+    
+    try:
+        organization = container.read_item(item=organizationId, partition_key=organizationId)
+        logging.info(f"Organization successfully retrieved: {organization}")
+        return organization
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Organization with id '{organizationId}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving organization with id '{organizationId}': {e}")
+        raise
