@@ -186,3 +186,40 @@
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
     gap: 30px;
 }
+
+.roleAdmin{
+    width: 100px;
+    background-color: #d7e9f4;
+    padding: 5px;
+    color: #064789;
+    border-radius: 15px;
+}
+
+.roleUser{
+    width: 100px;
+    background-color: #d7e5be;
+    padding: 5px;
+    color: #1b4332;
+    border-radius: 15px;
+}
+
+.rolePlatformAdmin{
+    width: 100px;
+    font-size: 0.8em;
+    background-color: #d9ff98;
+    padding: 5px;
+    color: #1b4332;
+    border-radius: 15px;
+}
+
+@media (max-width: 900px){
+    .roleAdmin{
+        width: 50px;
+    }
+    .roleUser{
+        width: 50px;
+    }
+    .rolePlatformAdmin{
+        width: 50px;
+    }
+}
