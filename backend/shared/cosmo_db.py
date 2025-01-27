@@ -382,3 +382,39 @@ def patch_user_data(user_id, patch_data):
     except Exception as e:
         logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
         raise e
+    
+
+def create_organization(user_id, organization_name):
+    """
+    Creates a new organization in the container.
+    """
+    try:
+        container = get_cosmos_container("organizations")
+        result = container.create_item(
+        body={
+            "id": str(uuid.uuid4()),
+            "name": organization_name,
+            "owner": user_id,
+            "sessionId": None,
+            "subscriptionStatus": "inactive",
+            "subscriptionExpirationDate": None,
+        }
+    )
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        logging.info(f"[util__module] Successfully created new organization, adding organizationId to user {user_id}")
+    try:
+        user = get_user_container(user_id)
+        user["data"]["organizationId"] = result["id"]
+        update_user(user_id, user)
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise
+    except CosmosResourceNotFoundError as nf:
+        logging.error(f"User with id '{user_id}' not found during upsert.")
+        raise NotFound(f"User not found")
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise az_err
+
+    return result  
