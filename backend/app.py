@@ -3488,6 +3488,7 @@ def digest_report():
             attachment_path=data.get("attachment_path", None),
             email_subject=data.get("email_subject", None),
             save_email=data.get("save_email", "yes"),
+            is_summarization=data.get("is_summarization", False),
         )
 
         if success:
