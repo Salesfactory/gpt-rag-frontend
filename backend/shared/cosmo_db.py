@@ -400,16 +400,14 @@ def get_company_list():
 
     try:
         items = list(container.query_items(
-            query="SELECT * FROM c",
+            query="SELECT c.id, c.name, c.ticker, c.is_active, c.created_at, c.lastRun FROM c",
             enable_cross_partition_query=True
         ))
 
         if not items:
             logging.warning(f"No companies found in the 'companyAnalysis' container.")
-            raise NotFound
+            return []
 
-        logging.info(f"Companies successfully retrieved: {items}")
-        print(items)
         return items
 
     except CosmosResourceNotFoundError:
