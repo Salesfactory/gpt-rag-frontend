@@ -7,6 +7,7 @@ from http import HTTPStatus
 from typing import Tuple, Dict, Any
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
+from azure.cosmos.exceptions import CosmosResourceNotFoundError
 
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
@@ -527,6 +528,11 @@ def set_settings(client_principal, temperature, frequency_penalty, presence_pena
     db = db_client.get_database_client(database=AZURE_DB_NAME)
     container = db.get_container_client("settings")
 
+    # set default values
+    temperature = temperature if temperature is not None else 0.0
+    frequency_penalty = frequency_penalty if frequency_penalty is not None else 0.0
+    presence_penalty = presence_penalty if presence_penalty is not None else 0.0
+
     # validate temperature, frequency_penalty, presence_penalty
     if temperature < 0 or temperature > 1:
         logging.error(
@@ -546,13 +552,6 @@ def set_settings(client_principal, temperature, frequency_penalty, presence_pena
         )
         return
 
-    # set default values
-    if not temperature:
-        temperature = 0.0
-    if not frequency_penalty:
-        frequency_penalty = 0.0
-    if not presence_penalty:
-        presence_penalty = 0.0
 
     if client_principal["id"]:
         query = "SELECT * FROM c WHERE c.user_id = @user_id"
@@ -580,9 +579,15 @@ def set_settings(client_principal, temperature, frequency_penalty, presence_pena
                 logging.info(
                     f"Successfully updated settings document for user {client_principal['id']}"
                 )
+                return{
+                    "status": "success",
+                    "message": "Settings updated successfully"
+                }
+            except CosmosResourceNotFoundError:
+                logging.error(f"[util__module] No settings found for user {client_principal['id']}")
             except Exception as e:
                 logging.error(
-                    f"Failed to update settings document for user {client_principal['id']}. Error: {str(e)}"
+                    f"[util__module] Failed to update settings document for user {client_principal['id']}. Error: {str(e)}"
                 )
         else:
             logging.info(
@@ -600,12 +605,30 @@ def set_settings(client_principal, temperature, frequency_penalty, presence_pena
                 logging.info(
                     f"Successfully created new settings document for user {client_principal['id']}"
                 )
+                return{
+                    "status": "success",
+                    "message": "Settings updated successfully"
+                }
+            except CosmosResourceNotFoundError:
+                logging.info(f"[util__module] get_setting: No settings found for user {client_principal['id']}")
             except Exception as e:
                 logging.error(
                     f"Failed to create settings document for user {client_principal['id']}. Error: {str(e)}"
                 )
     else:
         logging.info(f"[util__module] set_settings: user_id not provided.")
+
+def get_client_principal():
+    """Util to extract the Client Principal Headers"""
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+
+    if not client_principal_id or not client_principal_name:
+        return None, jsonify({
+            "error": "Missing required parameters, client_principal_id or client_principal_name"
+        }), 400
+
+    return {"id": client_principal_id, "name": client_principal_name}, None, None
 
 def get_setting(client_principal):
     if not client_principal["id"]:
@@ -619,7 +642,7 @@ def get_setting(client_principal):
     db = db_client.get_database_client(database=AZURE_DB_NAME)
     container = db.get_container_client("settings")
     try:
-        query = "SELECT * FROM c WHERE c.user_id = @user_id"
+        query = "SELECT c.temperature, c.frequencyPenalty, c.presencePenalty FROM c WHERE c.user_id = @user_id"
         parameters = [{"name": "@user_id", "value": client_principal["id"]}]
         result = list(
             container.query_items(

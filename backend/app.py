@@ -1354,23 +1354,9 @@ def getBlob():
 
 @app.route("/api/settings", methods=["GET"])
 def getSettings():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
-
-    client_principal = {
-        'id': client_principal_id,
-        'name': client_principal_name
-    }
+    client_principal, error_response, status_code = get_client_principal()
+    if error_response:
+        return error_response, status_code
 
     try:
         settings = get_setting(client_principal)
@@ -1383,24 +1369,11 @@ def getSettings():
 
 @app.route("/api/settings", methods=["POST"])
 def setSettings():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
-
-    client_principal = {
-        'id': client_principal_id,
-        'name': client_principal_name
-    }
     
+    client_principal, error_response, status_code = get_client_principal()
+    if error_response:
+        return error_response, status_code
+
     try:
         request_body = request.json
         if not request_body:
@@ -1418,8 +1391,8 @@ def setSettings():
         )
 
         return jsonify({
-            "client_principal_id": client_principal_id,
-            "client_principal_name": client_principal_name,
+            "client_principal_id": client_principal["id"],
+            "client_principal_name": client_principal["name"],
             "temperature": temperature,
             "frequency_penalty": frequency_penalty,
             "presence_penalty": presence_penalty,
