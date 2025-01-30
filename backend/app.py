@@ -585,6 +585,10 @@ def chatgpt():
 @app.route("/api/chat-history", methods=["GET"])
 def getChatHistory():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+    if not client_principal_id:
+        return jsonify({"error": "Missing client principal ID"}), 400
+    
     try:
         conversations = get_conversations(client_principal_id)
         return jsonify(conversations), 200

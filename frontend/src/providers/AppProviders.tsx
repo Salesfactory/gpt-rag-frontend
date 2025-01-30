@@ -381,7 +381,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 const response = await fetch("/api/chat-history", {
                     method: "GET",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "X-MS-CLIENT-PRINCIPAL-ID": user.id
                     }
                 });
 

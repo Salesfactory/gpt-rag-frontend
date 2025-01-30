@@ -8,9 +8,15 @@ from typing import Tuple, Dict, Any
 from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
+from azure.cosmos.exceptions import CosmosHttpResponseError
+
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+
+if not AZURE_DB_ID:
+    raise ValueError("AZURE_DB_ID is not set in environment variables")
+
 AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 
@@ -490,20 +496,24 @@ class EmailService:
 
 def get_conversations(user_id):
     try:
-        logging.info("ENTRE AQUI PARA OBTENER TODAS LAS CONVERSACIONES")
         credential = DefaultAzureCredential()
         db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
         db = db_client.get_database_client(database=AZURE_DB_NAME)
         container = db.get_container_client("conversations")
 
         query = (
-            "SELECT * FROM c WHERE c.conversation_data.interaction.user_id = @user_id"
+            "SELECT c.id, c.conversation_data.start_date, c.conversation_data.history[0].content AS first_message, c.conversation_data.type FROM c WHERE c.conversation_data.interaction.user_id = @user_id"
         )
         parameters = [dict(name="@user_id", value=user_id)]
 
-        conversations = container.query_items(
-            query=query, parameters=parameters, enable_cross_partition_query=True
-        )
+        try:
+            conversations = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        except CosmosHttpResponseError as e:
+            logging.error(f"CosmosDB error retrieving conversations for user '{user_id}': {e}")
+            return []
+        except Exception as e:
+            logging.exception(f"Unexpected error retrieving conversations for user '{user_id}': {e}")
+            return []
 
         # DEFAULT DATE 1 YEAR AGO in case start_date is not present
         now = datetime.now()
@@ -513,17 +523,9 @@ def get_conversations(user_id):
         formatted_conversations = [
             {
                 "id": con["id"],
-                "start_date": (
-                    con["conversation_data"]["start_date"]
-                    if "start_date" in con["conversation_data"]
-                    else default_date
-                ),
-                "content": con["conversation_data"]["history"][0]["content"],
-                "type": (
-                    con["conversation_data"]["type"]
-                    if "type" in con["conversation_data"]
-                    else "default"
-                ),
+                "start_date": con.get("start_date", default_date),
+                "content": con.get("first_message", "No content"),
+                "type": con.get("type", "default"),
             }
             for con in conversations
         ]
