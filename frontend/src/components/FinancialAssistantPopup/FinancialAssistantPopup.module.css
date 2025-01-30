@@ -1,7 +1,8 @@
 .body {
     position: fixed;
-    top: 110px;
-    right: 30%; 
+    top: 20%;
+    left: 50%;          
+    transform: translate(-50%, -50%);
     width: auto; 
     max-width: 300px; 
     height: auto;
