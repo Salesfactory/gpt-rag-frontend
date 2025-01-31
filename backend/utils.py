@@ -682,22 +682,18 @@ def get_set_user(client_principal):
     is_new_user = False
 
     try:
+        user = container.read_item(
+            item=client_principal["id"], partition_key=client_principal["id"]
+        )
+        logging.info(f"[get_user] user_id {client_principal['id']} found.")
+    except CosmosHttpResponseError:
+        logging.info(f"[get_user] User {client_principal['id']} not found. Creating new user.")
+        is_new_user = True
+
+        logging.info("[get_user] Checking user invitations for new user registration")
+        user_invitation = get_invitation(client_principal["email"])
+
         try:
-            user = container.read_item(
-                item=client_principal["id"], partition_key=client_principal["id"]
-            )
-            logging.info(f"[get_user] user_id {client_principal['id']} found.")
-        except Exception as e:
-            logging.info(
-                f"[get_user] sent an inexistent user_id, saving new {client_principal['id']}."
-            )
-            is_new_user = True
-
-            logging.info(
-                "[get_user] Checking user invitations for new user registration"
-            )
-            user_invitation = get_invitation(client_principal["email"])
-
             user = container.create_item(
                 body={
                     "id": client_principal["id"],
@@ -706,19 +702,17 @@ def get_set_user(client_principal):
                         "email": client_principal["email"],
                         "role": user_invitation["role"] if user_invitation else "admin",
                         "organizationId": (
-                            user_invitation["organization_id"]
-                            if user_invitation
-                            else None
+                            user_invitation["organization_id"] if user_invitation else None
                         ),
                     },
                 }
             )
-    except Exception as e:
-        logging.error(f"[get_user] Error creating the user: {e}")
-        return {
-            "is_new_user": None,
-            "user_data": None,
-        }
+        except Exception as e:
+            logging.error(f"[get_user] Error creating the user: {e}")
+            return {
+                "is_new_user": False,
+                "user_data": None,
+            }
 
     return {"is_new_user": is_new_user, "user_data": user["data"]}
 
