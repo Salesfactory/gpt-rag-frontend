@@ -1706,13 +1706,14 @@ def getInvitations():
     
     user_id = request.args.get("user_id")
     organization_id = request.args.get("organizationId")
+    
+    if not organization_id and not user_id:
+        return jsonify({"error": "Either 'organization_id' or 'user_id' is required"}), 400
 
     try:
         if organization_id:
-            invitations = get_invitations(organization_id)
-            return invitations
-        invitation = get_invitation(user_id)
-        return invitation
+            return jsonify(get_invitations(organization_id))
+        return get_invitation(user_id)
     except Exception as e:
         logging.exception("[webbackend] exception in /getInvitation")
         return jsonify({"error": str(e)}), 500
