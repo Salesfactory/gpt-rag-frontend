@@ -2,6 +2,7 @@ from functools import wraps
 import logging
 import uuid
 import os
+from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
@@ -520,13 +521,14 @@ def get_azure_key_vault_secret(secret_name):
         raise
 
 
+################################################
+# SETTINGS UTILS
+################################################
+
 def set_settings(client_principal, temperature, frequency_penalty, presence_penalty):
 
     new_setting = {}
-    credential = DefaultAzureCredential()
-    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = db_client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client("settings")
+    container = get_cosmos_container("settings")
 
     # set default values
     temperature = temperature if temperature is not None else 0.0
@@ -637,10 +639,7 @@ def get_setting(client_principal):
     logging.info("User ID found. Getting settings for user: " + client_principal["id"])
 
     setting = {}
-    credential = DefaultAzureCredential()
-    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = db_client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client("settings")
+    container = get_cosmos_container("settings")
     try:
         query = "SELECT c.temperature, c.frequencyPenalty, c.presencePenalty FROM c WHERE c.user_id = @user_id"
         parameters = [{"name": "@user_id", "value": client_principal["id"]}]
@@ -656,3 +655,70 @@ def get_setting(client_principal):
             f"[util__module] get_setting: no settings found for user {client_principal['id']} (keyvalue store with '{client_principal['id']}' id does not exist)."
         )
     return setting
+
+
+################################################
+# INVITATION UTILS
+################################################
+
+def get_invitations(organization_id):
+    if not organization_id:
+        return {"error": "Organization ID not found."}
+
+    logging.info(
+        "Organization ID found. Getting invitations for organization: " + organization_id
+    )
+
+    invitations = []
+    container = get_cosmos_container("invitations")
+    try:
+        query = "SELECT TOP 1 * FROM c WHERE c.organization_id = @organization_id"
+        parameters = [{"name": "@organization_id", "value": organization_id}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if not result:
+            logging.info(f"[get_invitation] No active invitations found for organization {organization_id}")
+            invitations = result[0]
+            return {}
+        if result:
+            invitations = result
+    except Exception as e:
+        logging.info(
+            f"[get_invitations] get_invitations: something went wrong. {str(e)}"
+        )
+    return invitations
+
+def get_invitation(invited_user_email):
+    if not invited_user_email:
+        return {"error": "User ID not found."}
+
+    logging.info("[get_invitation] Getting invitation for user: " + invited_user_email)
+
+    container = get_cosmos_container("invitations")
+    try:
+        query = "SELECT * FROM c WHERE c.invited_user_email = @invited_user_email AND c.active = true"
+        parameters = [{"name": "@invited_user_email", "value": invited_user_email}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if not result:
+            logging.info(f"[get_invitation] No active invitation found for user {invited_user_email}")
+            return {}
+        if result:
+            logging.info(
+                f"[get_invitation] active invitation found for user {invited_user_email}"
+            )
+            invitation = result[0]
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(
+                f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
+            )
+    except Exception as e:
+        logging.error(f"[get_invitation] something went wrong. {str(e)}")
+    return invitation
