@@ -53,9 +53,10 @@ class KeyPoint(BaseModel):
             "content": self.content
         }
 
-class EmailSchema(BaseModel):
+class EmailBaseSchema(BaseModel):
     title: str = Field(..., description = "Title of the report")
     intro_text: str = Field(..., description = "Introductory text below the title")
+class EmailSchema(EmailBaseSchema):
     keypoints: List[KeyPoint] = Field(..., description = "3 lists of important, insightful, statistical key points from the report")
     why_it_matters: str = Field(..., description = "The 'Why it matters' section. This should target business owner, investor, and analyst")
     document_type: Literal["WeeklyEconomics", "CompanyAnalysis", "CreativeBrief", "Ecommerce", "MonthlyMacroeconomics", "HomeImprovement"] = Field(..., description="The type of the document")
@@ -233,6 +234,53 @@ class ReportProcessor:
             logger.exception("Error processing the report")
             raise ReportProcessingError(f"Error processing the report: {str(e)}")
         
+    def process_summary(self) -> Dict[str, Any]:
+        """
+        Process a report summary from blob storage into an email-friendly format.
+        
+        This method performs several steps:
+        ....
+
+        Returns:
+            Dict[str, Any]: A dictionary containing:
+                - subject (str): The email subject line derived from the report title
+                - html_content (str): The rendered HTML email body
+                - document_type (str): The type of document/report
+                - attachment_path (str): Local filesystem path to the PDF version
+        
+        Raises:
+            ReportProcessingError: If any step in the processing pipeline fails
+            BlobServiceError: If downloading the report from blob storage fails
+            FileNotFoundError: If the downloaded report file cannot be found
+        """
+        try:
+            # download and read report 
+            logger.info("Downloading report from blob link")
+            pdf_path = self._get_pdf_path()
+
+            # parse to email schema 
+            email_data = EmailBaseSchema(
+                title="Summarization",
+                intro_text="Here is a summary of the report",
+            )
+
+            # generate HTML email from schema and template 
+            logger.info("Generating HTML email content")
+            email_html = self.template_manager.render_summary_template(
+                title=email_data.title,
+                intro_text=email_data.intro_text,
+            )
+
+            return {
+                "subject": email_data.title,
+                "html_content": email_html,
+                "attachment_path": str(pdf_path)
+            }
+
+        except Exception as e:
+            logger.exception("Error processing the report")
+            raise ReportProcessingError(f"Error processing the report: {str(e)}")
+        
     def _build_pdf_filename(self, document_type: str, date_str: str, company_name: Optional[str] = None) -> str:
         """Helper function to build PDF filename based on document type and metadata
         
@@ -286,6 +334,23 @@ class ReportProcessor:
             else:
                 raise FileNotFoundError(f"HTML file not found: {html_file_path}")
         
+        except Exception as e:
+            logger.exception(f"Error downloading and reading the report: {str(e)}")
+            raise 
+
+    def _get_pdf_path(self) -> str:
+        """Download and read the report content from the blob link. """
+        try:
+            # download blob from link 
+            self.downloaded_file = self.blob_manager.download_blob_from_a_link(self.blob_link)
+
+            # get the pdf file within blob downloads
+            pdf_file_path = next(Path(os.getcwd()).glob(f'{TEMP_DIR}/*.pdf'))
+
+            if pdf_file_path.exists():
+                return pdf_file_path
+            else:
+                raise FileNotFoundError(f"PDF file not found: {pdf_file_path}")
         except Exception as e:
             logger.exception(f"Error downloading and reading the report: {str(e)}")
             raise 
@@ -562,7 +627,8 @@ def process_and_send_email(blob_link: str,
                          recipients: List[str],
                          attachment_path: Optional[str] = None,
                          email_subject: Optional[str] = None,
-                         save_email: Optional[str] = "yes"
+                         save_email: Optional[str] = "yes",
+                         is_summarization: Optional[bool] = False,
                          ) -> bool:
     """
     Process the report and send the email. 
@@ -580,7 +646,10 @@ def process_and_send_email(blob_link: str,
             
         processor = ReportProcessor(blob_link)
         with processor._resource_cleanup():
-            email_data = processor.process()
+            if not is_summarization:
+                email_data = processor.process()
+            elif is_summarization:
+                email_data = processor.process_summary() 
             success = send_email(email_data, recipients, attachment_path, email_subject, save_email)
             return success
         
