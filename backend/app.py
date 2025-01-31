@@ -35,6 +35,7 @@ from functools import wraps
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
+from azure.cosmos.exceptions import CosmosHttpResponseError
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
 from utils import (
@@ -1841,21 +1842,36 @@ def checkUser():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     if not client_principal_id or not client_principal_name:
-        return create_error_response('')
+        return create_error_response("Missing authentication headers", HTTPStatus.UNAUTHORIZED)
+    
+    if not request.json or "email" not in request.json:
+        return create_error_response("Email is required", HTTPStatus.BAD_REQUEST)
+    
+    email = request.json["email"]
 
     try:
-        if not request.json or "email" not in request.json:
-            raise MissingRequiredFieldError('email')
-        email = request.json["email"]
-        response = set_user({"id": client_principal_id, "email": email, "role": "user", "name": client_principal_name})
-        return response['user_data']
+        response = set_user({
+            "id": client_principal_id,
+            "email": email,
+            "role": "user",
+            "name": client_principal_name
+        })
+
+        if not response or "user_data" not in response:
+            return create_error_response("Failed to set user", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return response["user_data"]
+
     except MissingRequiredFieldError as field:
-        return create_error_response(
-            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
-        )
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+    
+    except CosmosHttpResponseError as cosmos_error:
+        logging.error(f"[webbackend] Cosmos DB error in /api/checkUser: {cosmos_error}")
+        return create_error_response("Database error in CosmosDB", HTTPStatus.INTERNAL_SERVER_ERROR)
+
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/checkUser")
-        return jsonify({"error": str(e)}), 500
+        logging.exception("[webbackend] Unexpected exception in /api/checkUser")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 @app.route("/api/get-organization-subscription", methods=["GET"])
