@@ -72,7 +72,6 @@ load_dotenv(override=True)
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
 ORCHESTRATOR_URI = os.getenv("ORCHESTRATOR_URI", default="")
-SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/api/settings"
 FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/api/feedback"
 HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/api/conversations"
 CHECK_USER_ENDPOINT = ORCHESTRATOR_URI + "/api/checkUser"
@@ -263,7 +262,6 @@ class UserService:
 
                 # Raise an exception for bad status codes
                 response.raise_for_status()
-
                 # Parse response
                 try:
                     data = response.json()
@@ -274,7 +272,6 @@ class UserService:
                 # Validate response format if needed
                 if not data:
                     raise ValueError("Empty response received")
-
                 return data
 
         except requests.Timeout as e:
@@ -296,7 +293,6 @@ class UserService:
                 f"user {client_principal_id}: {str(e)}"
             )
             raise
-
 
 @app.route("/")
 @auth.login_required
@@ -1346,49 +1342,14 @@ def getBlob():
 
 @app.route("/api/settings", methods=["GET"])
 def getSettings():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
+    client_principal, error_response, status_code = get_client_principal()
+    if error_response:
+        return error_response, status_code
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--settings"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--functionKey"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-
-    try:
-        url = SETTINGS_ENDPOINT
-        payload = json.dumps(
-            {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
-            }
-        )
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        settings = get_setting(client_principal)
+        
+        return settings
     except Exception as e:
         logging.exception("[webbackend] exception in /api/settings")
         return jsonify({"error": str(e)}), 500
@@ -1396,55 +1357,34 @@ def getSettings():
 
 @app.route("/api/settings", methods=["POST"])
 def setSettings():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
+    
+    client_principal, error_response, status_code = get_client_principal()
+    if error_response:
+        return error_response, status_code
 
     try:
-        temperature = float(request.json["temperature"])
-    except:
-        temperature = 0
+        request_body = request.json
+        if not request_body:
+            return jsonify({"error": "Invalid request body"}), 400
 
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--settings"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--functionKey"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
+        temperature = request_body.get("temperature", 0.0)
+        frequency_penalty = request_body.get("frequency_penalty", 0.0)
+        presence_penalty = request_body.get("presence_penalty", 0.0)
+
+        set_settings(
+            client_principal=client_principal,
+            temperature=temperature,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty
         )
 
-    try:
-        url = SETTINGS_ENDPOINT
-        payload = json.dumps(
-            {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
-                "temperature": temperature,
-            }
-        )
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        return jsonify({
+            "client_principal_id": client_principal["id"],
+            "client_principal_name": client_principal["name"],
+            "temperature": temperature,
+            "frequency_penalty": frequency_penalty,
+            "presence_penalty": presence_penalty,
+        }), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/settings")
         return jsonify({"error": str(e)}), 500
@@ -3476,6 +3416,7 @@ def digest_report():
             attachment_path=data.get("attachment_path", None),
             email_subject=data.get("email_subject", None),
             save_email=data.get("save_email", "yes"),
+            is_summarization=data.get("is_summarization", False),
         )
 
         if success:
