@@ -4,12 +4,14 @@ import uuid
 import os
 import uuid
 import os
+from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
-from azure.cosmos.exceptions import CosmosResourceNotFoundError
+from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
+from werkzeug.exceptions import NotFound
 
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
@@ -676,10 +678,7 @@ def get_set_user(client_principal):
     logging.info("[get_user] Retrieving data for user: " + client_principal["id"])
 
     user = {}
-    credential = DefaultAzureCredential()
-    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = db_client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client("users")
+    container = get_cosmos_container("users")
     is_new_user = False
 
     try:
@@ -725,10 +724,7 @@ def get_set_user(client_principal):
 
 
 def check_users_existance():
-    credential = DefaultAzureCredential()
-    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = db_client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client("users")
+    container = get_cosmos_container("users")
     _user = {}
 
     try:
@@ -754,10 +750,7 @@ def get_user_by_id(user_id):
     logging.info("User ID found. Getting data for user: " + user_id)
 
     user = {}
-    credential = DefaultAzureCredential()
-    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = db_client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client("users")
+    container = get_cosmos_container("users")
     try:
         query = "SELECT * FROM c WHERE c.id = @user_id"
         parameters = [{"name": "@user_id", "value": user_id}]
@@ -775,10 +768,7 @@ def get_user_by_id(user_id):
 # return all users
 def get_users(organization_id):
     users = []
-    credential = DefaultAzureCredential()
-    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = db_client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client("users")
+    container = get_cosmos_container("users")
     try:
         users = container.query_items(
             query="SELECT * FROM c WHERE c.data.organizationId = @organization_id",
@@ -799,10 +789,7 @@ def delete_user(user_id):
 
     logging.info("User ID found. Deleting user: " + user_id)
 
-    credential = DefaultAzureCredential()
-    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = db_client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client("users")
+    container = get_cosmos_container("users")
     try:
         user = container.read_item(item=user_id, partition_key=user_id)
         user_email = user["data"]["email"]
@@ -811,7 +798,7 @@ def delete_user(user_id):
         container.replace_item(item=user_id, body=user)
         logging.info(f"[delete_user] User {user_id} deleted from its organization")
         logging.info(f"[delete_user] Deleting all {user_id} active invitations")
-        container = db.get_container_client("invitations")
+        container = get_cosmos_container("invitations")
         invitations = container.query_items(
             query="SELECT * FROM c WHERE c.invited_user_email = @user_email",
             parameters=[{"name": "@user_email", "value": user_email}],
@@ -821,5 +808,10 @@ def delete_user(user_id):
             container.delete_item(item=invitation["id"], partition_key=invitation["id"])
             logging.info(f"Deleted invitation with ID: {invitation['id']}")
 
+    except CosmosResourceNotFoundError:
+        logging.warning(f"[delete_user] User not Found.")
+        raise NotFound
+    except CosmosHttpResponseError:
+        logging.warning(f"[delete_user] Unexpected Error in the CosmosDB Database")
     except Exception as e:
         logging.error(f"[delete_user] delete_user: something went wrong. {str(e)}")

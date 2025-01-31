@@ -1485,10 +1485,14 @@ def deleteUser():
         return jsonify({"error": "Missing required parameter: user_id"}), 400
 
     try:
-        delete_user(user_id)
+        success = delete_user(user_id)
+        if not success:
+            return jsonify({"error": "User not found or already deleted"}), 404
         return "", 204
+    except NotFound:
+        return jsonify({"error": "User not found"}), 404
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/checkUser")
+        logging.exception(f"[webbackend] exception in /api/deleteuser for user {user_id}")
         return jsonify({"error": str(e)}), 500
 
 
