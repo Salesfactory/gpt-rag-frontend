@@ -708,7 +708,6 @@ def get_invitation(invited_user_email):
         )
         if not result:
             logging.info(f"[get_invitation] No active invitation found for user {invited_user_email}")
-            invitation = result[0]
             return {}
         if result:
             logging.info(
