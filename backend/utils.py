@@ -2,6 +2,7 @@ from functools import wraps
 import logging
 import uuid
 import os
+from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
@@ -491,11 +492,13 @@ class EmailService:
 
 def get_conversation(conversation_id, user_id):
     try:
-        logging.info("#######################################################################################################################################################")
-        credential = DefaultAzureCredential()
-        db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-        db = db_client.get_database_client(database=AZURE_DB_NAME)
-        container = db.get_container_client("conversations")
+        if not conversation_id:
+            raise ValueError("conversation_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+
+        container = get_cosmos_container("conversations")
+
         conversation = container.read_item(
             item=conversation_id, partition_key=conversation_id
         )
@@ -529,10 +532,13 @@ def get_conversation(conversation_id, user_id):
 
 def delete_conversation(conversation_id, user_id):
     try:
-        credential = DefaultAzureCredential()
-        db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-        db = db_client.get_database_client(database=AZURE_DB_NAME)
-        container = db.get_container_client("conversations")
+        if not conversation_id:
+            raise ValueError("conversation_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+
+        container = get_cosmos_container("conversations")
+
         conversation = container.read_item(
             item=conversation_id, partition_key=conversation_id
         )
