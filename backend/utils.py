@@ -1,9 +1,18 @@
 from functools import wraps
 import logging
+import uuid
+import os
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
+from azure.identity import DefaultAzureCredential
+from azure.cosmos import CosmosClient
+from azure.cosmos.exceptions import CosmosResourceNotFoundError
 
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 # Response Formatting: Type hint for JSON responses
 JsonResponse = Tuple[Dict[str, Any], int]
@@ -509,3 +518,141 @@ def get_azure_key_vault_secret(secret_name):
     except Exception as e:
         logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
         raise
+
+
+def set_settings(client_principal, temperature, frequency_penalty, presence_penalty):
+
+    new_setting = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("settings")
+
+    # set default values
+    temperature = temperature if temperature is not None else 0.0
+    frequency_penalty = frequency_penalty if frequency_penalty is not None else 0.0
+    presence_penalty = presence_penalty if presence_penalty is not None else 0.0
+
+    # validate temperature, frequency_penalty, presence_penalty
+    if temperature < 0 or temperature > 1:
+        logging.error(
+            f"[util__module] set_settings: invalid temperature value {temperature}."
+        )
+        return
+
+    if frequency_penalty < 0 or frequency_penalty > 1:
+        logging.error(
+            f"[util__module] set_settings: invalid frequency_penalty value {frequency_penalty}."
+        )
+        return
+
+    if presence_penalty < 0 or presence_penalty > 1:
+        logging.error(
+            f"[util__module] set_settings: invalid presence_penalty value {presence_penalty}."
+        )
+        return
+
+
+    if client_principal["id"]:
+        query = "SELECT * FROM c WHERE c.user_id = @user_id"
+        parameters = [{"name": "@user_id", "value": client_principal["id"]}]
+
+        logging.info(f"[util__module] set_settings: user_id {client_principal['id']}.")
+
+        results = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if results:
+            logging.info(
+                f"[util__module] set_settings: user_id {client_principal['id']} found, results are {results}."
+            )
+            setting = results[0]
+
+            setting["temperature"] = temperature
+            setting["frequencyPenalty"] = frequency_penalty
+            setting["presencePenalty"] = presence_penalty
+            try:
+                container.replace_item(item=setting["id"], body=setting)
+                logging.info(
+                    f"Successfully updated settings document for user {client_principal['id']}"
+                )
+                return{
+                    "status": "success",
+                    "message": "Settings updated successfully"
+                }
+            except CosmosResourceNotFoundError:
+                logging.error(f"[util__module] No settings found for user {client_principal['id']}")
+            except Exception as e:
+                logging.error(
+                    f"[util__module] Failed to update settings document for user {client_principal['id']}. Error: {str(e)}"
+                )
+        else:
+            logging.info(
+                f"[util__module] set_settings: user_id {client_principal['id']} not found. creating new document."
+            )
+
+            try:
+                new_setting["id"] = str(uuid.uuid4())
+                new_setting["user_id"] = client_principal["id"]
+                new_setting["temperature"] = temperature
+                new_setting["frequencyPenalty"] = frequency_penalty
+                new_setting["presencePenalty"] = presence_penalty
+                container.create_item(body=new_setting)
+
+                logging.info(
+                    f"Successfully created new settings document for user {client_principal['id']}"
+                )
+                return{
+                    "status": "success",
+                    "message": "Settings updated successfully"
+                }
+            except CosmosResourceNotFoundError:
+                logging.info(f"[util__module] get_setting: No settings found for user {client_principal['id']}")
+            except Exception as e:
+                logging.error(
+                    f"Failed to create settings document for user {client_principal['id']}. Error: {str(e)}"
+                )
+    else:
+        logging.info(f"[util__module] set_settings: user_id not provided.")
+
+def get_client_principal():
+    """Util to extract the Client Principal Headers"""
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+
+    if not client_principal_id or not client_principal_name:
+        return None, jsonify({
+            "error": "Missing required parameters, client_principal_id or client_principal_name"
+        }), 400
+
+    return {"id": client_principal_id, "name": client_principal_name}, None, None
+
+def get_setting(client_principal):
+    if not client_principal["id"]:
+        return {}
+
+    logging.info("User ID found. Getting settings for user: " + client_principal["id"])
+
+    setting = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("settings")
+    try:
+        query = "SELECT c.temperature, c.frequencyPenalty, c.presencePenalty FROM c WHERE c.user_id = @user_id"
+        parameters = [{"name": "@user_id", "value": client_principal["id"]}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            setting = result[0]
+    except Exception as e:
+        logging.info(
+            f"[util__module] get_setting: no settings found for user {client_principal['id']} (keyvalue store with '{client_principal['id']}' id does not exist)."
+        )
+    return setting
