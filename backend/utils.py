@@ -11,6 +11,13 @@ from azure.cosmos import CosmosClient
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+
+if not AZURE_DB_ID:
+    raise ValueError("AZURE_DB_ID is not set in environment variables")
+
+if not AZURE_DB_NAME:
+    raise ValueError("AZURE_DB_NAME is not set in environment variables")
+
 AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 # Response Formatting: Type hint for JSON responses
