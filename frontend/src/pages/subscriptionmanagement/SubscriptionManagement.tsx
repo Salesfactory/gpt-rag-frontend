@@ -31,13 +31,13 @@ const SubscriptionManagement: React.FC = () => {
     const [selectedSubscriptionID, setSelectedSubscriptionID] = useState("");
     const [isRecentChangesModal, setIsRecentChangesModal] = useState<Boolean>(false);
     const [recentChangesLoading, setRecentChangesLoading] = useState<Boolean>(false);
-    const [logsData, setlogsData] = useState<any>([]);
+    const [logsData, setLogsData] = useState<any>([]);
     const [filteredLogsData, setFilteredLogsData] = useState<any>();
     const [currentPage, setCurrentPage] = useState(1);
     const [paginatedLogs, setPaginatedLogs] = useState<any>();
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
-    const organizationId = organization?.id;
+    const organizationId = organization?.id || "";
 
     const rowsPerPage = 5;
     const FilterOptions = [
@@ -163,7 +163,7 @@ const SubscriptionManagement: React.FC = () => {
         try {
             const logs = await getLogs(organizationId);
             console.log(logs);
-            setlogsData(logs);
+            setLogsData(logs);
             setFilteredLogsData(logs);
             setPaginatedLogs(logs.slice(0, rowsPerPage));
             setCurrentPage(1);

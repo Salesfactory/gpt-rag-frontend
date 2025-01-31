@@ -19,12 +19,12 @@ def create_error_response(message: str, status_code: int) -> JsonResponse:
 
 
 # Response Formatting: Standardized success response creation
-def create_success_response(data: Dict[str, Any]) -> JsonResponse:
+def create_success_response(data: Dict[str, Any], optionalCode=HTTPStatus.OK) -> JsonResponse:
     """
     Create a standardized success response.
     Response Formatting: Ensures consistent success response structure.
     """
-    return jsonify({"data": data, "status": HTTPStatus.OK}), HTTPStatus.OK
+    return jsonify({"data": data, "status": optionalCode}), optionalCode
 
 
 # Error Handling: Custom exception hierarchy for subscription-specific errors

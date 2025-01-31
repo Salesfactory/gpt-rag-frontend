@@ -1,7 +1,7 @@
 import os
 from azure.cosmos import CosmosClient
 from azure.identity import DefaultAzureCredential
-from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError
+from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError, CosmosHttpResponseError
 import uuid
 import logging
 from datetime import datetime, timezone
@@ -396,16 +396,19 @@ def get_audit_logs(organization_id):
 
         if not items:
             logging.warning(f"No audit logs found.")
-            raise NotFound
+            return []
 
         logging.info(f"Audit logs successfully retrieved: {items}")
-        print(items)
         return items
 
     except CosmosResourceNotFoundError:
         logging.warning(f"No audit logs found.")
         raise NotFound
     
+    except CosmosHttpResponseError as ch_err:
+        logging.error(f"HTTP error while retrieving audit logs: {ch_err}")
+        raise Exception("Error with Cosmos DB HTTP operation.")
+
     except Exception as e:
         logging.error(f"Unexpected error retrieving audit logs: {e}")
         raise

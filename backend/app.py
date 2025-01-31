@@ -3558,22 +3558,25 @@ def list_blobs():
 
 @app.route("/api/logs/", methods=["POST"])
 def get_logs():
-    data = request.get_json()
-    organization_id = data.get("organization_id")
-    if not organization_id:
-        raise InvalidParameterError("Organization ID is required")
+    try: 
+        data = request.get_json()
+        if data == None:
+            return create_error_response('Request data is required', 400)
+        organization_id = data.get("organization_id")
+        if not organization_id:
+            return create_error_response('Organization ID is required', 400)
+    except Exception as e:
+        return create_error_response(str(e), 400)
     try:
         items = get_audit_logs(organization_id)
         if not items:
-            raise NotFound("No logs found")
+            return create_success_response([], 204)
         return create_success_response(items)
     except InvalidParameterError as e:
         return create_error_response(str(e), 400)
-    except NotFound as e:
-        return create_error_response(str(e), 204)
     except Exception as e:
         logger.exception("Unexpected error in get_logs")
-        return create_error_response(str(e), 500)
+        return create_error_response("Internal Server Error", 500)
     
 
 
