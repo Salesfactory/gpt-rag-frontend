@@ -418,3 +418,39 @@ def create_organization(user_id, organization_name):
         raise az_err
 
     return result  
+
+
+def get_company_list():
+    """
+    Retrieve all companies from the CosmosDB 'companyAnalysis' container.
+
+    Returns:
+        list: A list of company records from the database.
+
+    Raises:
+        NotFound: If no companies are found in the container.
+        Exception: For any unexpected errors during retrieval.
+    """
+
+    container = get_cosmos_container("companyAnalysis")
+
+    try:
+        items = list(container.query_items(
+            query="SELECT c.id, c.name, c.ticker, c.is_active, c.created_at, c.lastRun FROM c",
+            enable_cross_partition_query=True
+        ))
+
+        if not items:
+            logging.warning(f"No companies found in the 'companyAnalysis' container.")
+            return []
+
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"CosmosDB container not found or inaccessible.")
+        raise NotFound
+    
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving Companies: {e}")
+        raise
+
