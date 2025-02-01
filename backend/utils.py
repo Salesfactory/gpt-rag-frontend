@@ -67,6 +67,11 @@ class InvalidParameterError(Exception):
 
     pass
 
+class MissingParameterError(Exception):
+    """Raised when a required parameter is missing"""
+
+    pass
+
 
 # Security: Decorator to ensure client principal ID is present
 def require_client_principal(f):
