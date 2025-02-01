@@ -1751,9 +1751,7 @@ def createInvitation():
         organizationId = data["organizationId"]
         role = data["role"]
         response = create_invitation(invitedUserEmail, organizationId, role)
-        return jsonify({"invitedUserEmail": response['invited_user_email'], "organizationId": response['organization_id'], "role": response['role']}), 200
-    except MissingJSONPayloadError as e:
-        return create_error_response(f'Invalid or Missing JSON payload', HTTPStatus.BAD_REQUEST)
+        return jsonify(response), 200
     except MissingRequiredFieldError as field:
         return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
     except Exception as e:

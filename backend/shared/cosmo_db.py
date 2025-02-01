@@ -11,6 +11,7 @@ AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
 AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
+
 def get_cosmos_container(container_name):
     """
     Establishes the connection to the Cosmos DB container specified by `container_name`.
@@ -21,16 +22,23 @@ def get_cosmos_container(container_name):
     container = db.get_container_client(container_name)
 
     try:
-        logging.info(f"Connection to Cosmos DB container '{container_name}' established successfully.")
+        logging.info(
+            f"Connection to Cosmos DB container '{container_name}' established successfully."
+        )
         return container
-    
+
     except AzureError as az_err:
-        logging.error(f"AzureError encountered while connecting to Cosmos DB container '{container_name}': {az_err}")
+        logging.error(
+            f"AzureError encountered while connecting to Cosmos DB container '{container_name}': {az_err}"
+        )
         raise Exception(f"Azure connection error: {az_err}") from az_err
 
     except Exception as e:
-        logging.error(f"Unexpected error while connecting to Cosmos DB container '{container_name}': {e}")
+        logging.error(
+            f"Unexpected error while connecting to Cosmos DB container '{container_name}': {e}"
+        )
         raise Exception(f"Unexpected connection error: {e}") from e
+
 
 def create_report(data):
     """
@@ -48,6 +56,7 @@ def create_report(data):
         logging.error(f"Error inserting data into Cosmos DB: {e}")
         raise
 
+
 def get_report(report_id):
     """
     Retrieves a specific document (report) from the Cosmos DB container using its `id` as partition key.
@@ -63,8 +72,7 @@ def get_report(report_id):
     CosmosResourceNotFoundError: If the report with the specified ID does not exist in the database.
     """
     container = get_cosmos_container("reports")
-    
-    
+
     try:
         report = container.read_item(item=report_id, partition_key=report_id)
         logging.info(f"Report successfully retrieved: {report}")
@@ -77,6 +85,7 @@ def get_report(report_id):
     except Exception as e:
         logging.error(f"Unexpected error retrieving report with id '{report_id}'")
         raise
+
 
 def get_filtered_reports(report_type=None):
     """
@@ -101,26 +110,31 @@ def get_filtered_reports(report_type=None):
         parameters = []
 
     try:
-        items = list(container.query_items(
-            query=query,
-            parameters=parameters,
-            enable_cross_partition_query=True
-        ))
+        items = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
 
         if not items:
             logging.warning(f"No reports found.")
             raise NotFound
 
-        logging.info(f"Reports successfully retrieved for type '{report_type}': {items}")
+        logging.info(
+            f"Reports successfully retrieved for type '{report_type}': {items}"
+        )
         return items
 
     except CosmosResourceNotFoundError:
         logging.warning(f"No reports found with type '{report_type}'.")
         raise NotFound
-    
+
     except Exception as e:
-        logging.error(f"Unexpected error retrieving reports with type '{report_type}': {e}")
+        logging.error(
+            f"Unexpected error retrieving reports with type '{report_type}': {e}"
+        )
         raise
+
 
 def update_report(report_id, updated_data):
     """
@@ -129,14 +143,14 @@ def update_report(report_id, updated_data):
     Handles database errors and raises exceptions as needed.
     """
     container = get_cosmos_container("reports")
-    
+
     try:
         current_report = get_report(report_id)
 
     except CosmosResourceNotFoundError:
         logging.warning(f"Report with id '{report_id}' not found in Cosmos DB.")
         raise NotFound
-    
+
     except Exception as e:
         logging.error(f"Unexpected error while retrieving report with id '{report_id}'")
         raise
@@ -144,7 +158,7 @@ def update_report(report_id, updated_data):
     try:
         current_report.update(updated_data)
 
-        current_report["id"] = report_id  
+        current_report["id"] = report_id
 
         # Perform the upsert operation
         container.upsert_item(current_report)
@@ -152,37 +166,46 @@ def update_report(report_id, updated_data):
         return current_report
 
     except CosmosResourceNotFoundError:
-        logging.error(f"Failed to upsert item: Report ID '{report_id}' not found during upsert.")
-        raise NotFound(f"Cannot upsert report because it does not exist with id '{report_id}'")
+        logging.error(
+            f"Failed to upsert item: Report ID '{report_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert report because it does not exist with id '{report_id}'"
+        )
 
     except AzureError as az_err:
         logging.error(f"AzureError while performing upsert: {az_err}")
         raise Exception("Error with Azure Cosmos DB operation.") from az_err
 
     except Exception as e:
-        logging.error(f"Unexpected error while updating report with id '{report_id}': {e}")
+        logging.error(
+            f"Unexpected error while updating report with id '{report_id}': {e}"
+        )
         raise
+
 
 def delete_report(report_id):
     """
     Deletes a specific document using its `id` as partition key.
     """
     container = get_cosmos_container("reports")
-    
+
     try:
         container.delete_item(item=report_id, partition_key=report_id)
         logging.info(f"Report with id {report_id} deleted successfully.")
         return {"message": f"Report with id {report_id} deleted successfully."}
-    
+
     except CosmosResourceNotFoundError:
         logging.warning(f"Report with id '{report_id}' not found in Cosmos DB.")
         raise NotFound
-    
+
     except Exception as e:
         logging.error(f"Error deleting report with id {report_id}: {e}")
         raise
 
+
 # Template management
+
 
 def create_template(data):
     """
@@ -200,33 +223,36 @@ def create_template(data):
         logging.error(f"Error inserting data into Cosmos DB: {e}")
         raise
 
+
 def delete_template(template_id):
     """
     Deletes a specific document using its `id` as partition key.
     """
     container = get_cosmos_container("templates")
-    
+
     try:
         container.delete_item(item=template_id, partition_key=template_id)
         logging.info(f"Template with id {template_id} deleted successfully.")
         return {"message": f"Template with id {template_id} deleted successfully."}
-    
+
     except CosmosResourceNotFoundError:
         logging.warning(f"Template with id '{template_id}' not found in Cosmos DB.")
         raise NotFound
-    
+
     except Exception as e:
         logging.error(f"Error deleting template with id {template_id}: {e}")
         raise
+
 
 def get_templates():
     """Get all the templates in a cosmosDB container"""
     container = get_cosmos_container("templates")
     try:
-        items = list(container.query_items(
-            query="SELECT * FROM c",
-            enable_cross_partition_query=True
-        ))
+        items = list(
+            container.query_items(
+                query="SELECT * FROM c", enable_cross_partition_query=True
+            )
+        )
 
         if not items:
             logging.warning(f"No templates found.")
@@ -239,7 +265,7 @@ def get_templates():
     except CosmosResourceNotFoundError:
         logging.warning(f"No templates found.")
         raise NotFound
-    
+
     except Exception as e:
         logging.error(f"Unexpected error retrieving templates: {e}")
         raise
@@ -258,7 +284,9 @@ def get_template_by_ID(template_id):
         raise NotFound
 
     except Exception as e:
-        logging.error(f"Unexpected error retrieving template with id '{template_id}': {e}")
+        logging.error(
+            f"Unexpected error retrieving template with id '{template_id}': {e}"
+        )
 
 
 def get_user_container(user_id):
@@ -276,7 +304,7 @@ def get_user_container(user_id):
     CosmosResourceNotFoundError: If the user with the specified ID does not exist in the database.
     """
     container = get_cosmos_container("users")
-    
+
     try:
         user = container.read_item(item=user_id, partition_key=user_id)
         logging.info(f"User successfully retrieved: {user}")
@@ -290,6 +318,7 @@ def get_user_container(user_id):
         logging.error(f"Unexpected error retrieving report with id '{user_id}'")
         raise
 
+
 def update_user(user_id, updated_data):
     """
     Updates an existing document using its `id` as the partition key.
@@ -297,14 +326,14 @@ def update_user(user_id, updated_data):
     Handles database errors and raises exceptions as needed.
     """
     container = get_cosmos_container("users")
-    
+
     try:
         current_user = get_user_container(user_id)
 
     except CosmosResourceNotFoundError:
         logging.warning(f"User with id '{user_id}' not found in Cosmos DB.")
         raise NotFound
-    
+
     except Exception as e:
         logging.error(f"Unexpected error while retrieving user with id '{user_id}'")
         raise Exception
@@ -320,16 +349,23 @@ def update_user(user_id, updated_data):
         return current_user
 
     except CosmosResourceNotFoundError:
-        logging.error(f"Failed to upsert item: Report ID '{user_id}' not found during upsert.")
-        raise NotFound(f"Cannot upsert report because it does not exist with id '{user_id}'")
+        logging.error(
+            f"Failed to upsert item: Report ID '{user_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert report because it does not exist with id '{user_id}'"
+        )
 
     except AzureError as az_err:
         logging.error(f"AzureError while performing upsert: {az_err}")
         raise Exception("Error with Azure Cosmos DB operation.") from az_err
 
     except Exception as e:
-        logging.error(f"Unexpected error while updating report with id '{user_id}': {e}")
+        logging.error(
+            f"Unexpected error while updating report with id '{user_id}': {e}"
+        )
         raise
+
 
 def patch_user_data(user_id, patch_data):
     """
@@ -340,7 +376,7 @@ def patch_user_data(user_id, patch_data):
     container = get_cosmos_container("users")
 
     try:
-        
+
         current_user = get_user_container(user_id)
 
         if current_user is None:
@@ -353,7 +389,7 @@ def patch_user_data(user_id, patch_data):
         for key in patch_data:
             if key in allowed_keys:
                 user_data[key] = patch_data[key]
-        
+
         for key in allowed_keys:
             if not user_data.get(key):
                 logging.error(f"Field '{key}' cannot be empty.")
@@ -361,7 +397,6 @@ def patch_user_data(user_id, patch_data):
 
         current_user["data"] = user_data
         current_user["id"] = user_id
-
 
         container.upsert_item(current_user)
         logging.info(f"User data updated successfully: {current_user}")
@@ -380,10 +415,12 @@ def patch_user_data(user_id, patch_data):
         raise ve
 
     except Exception as e:
-        logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
+        logging.error(
+            f"Unexpected error while updating user data with id '{user_id}': {e}"
+        )
         raise e
 
-    
+
 def create_invitation(invited_user_email, organization_id, role):
     """
     Creates a new document in the container.
@@ -396,30 +433,46 @@ def create_invitation(invited_user_email, organization_id, role):
         raise ValueError("Role is required.")
     try:
         user_container = get_cosmos_container("users")
-        user = user_container.query_items(
-             query="SELECT * FROM c WHERE c.data.email = @invited_user_email",
-            parameters=[{"name": "@invited_user_email", "value": invited_user_email}],
-            enable_cross_partition_query=True,
+        invitations_container = get_cosmos_container("invitations")
+        users = list(
+            user_container.query_items(
+                query="SELECT * FROM c WHERE c.data.email = @invited_user_email",
+                parameters=[
+                    {"name": "@invited_user_email", "value": invited_user_email}
+                ],
+                enable_cross_partition_query=True,
+            )
         )
-        for u in user:
-             if u["data"].get("organizationId") is None:
-                u["data"]["organizationId"] = organization_id
-                u["data"]["role"] = role
-                user_container.replace_item(item=u["id"], body=u)
-                logging.info(
-                    f"[create_invitation] Updated user {invited_user_email} organizationId to {organization_id}"
+        if not users:
+            logging.warning(f"No users found with email '{invited_user_email}'")
+            raise NotFound(f"No users found with email '{invited_user_email}'")
+        user = users[0]
+
+        with invitations_container.client_connection as client:
+            if user["data"].get("organization_id") is None:
+                client.patch_item(
+                    item=user["id"],
+                    partition_key=user["data"]["email"],
+                    operations=[
+                        {
+                            "op": "add",
+                            "path": "/data/organizationId",
+                            "value": organization_id,
+                        },
+                        {"op": "add", "path": "/data/role", "value": role},
+                    ],
                 )
-        invitation = {
-            "id": str(uuid.uuid4()),
-            "invited_user_email": invited_user_email,
-            "organization_id": organization_id,
-            "role": role,
-            "active": True,
-        }
-        container = get_cosmos_container("invitations")
-        result = container.create_item(body=invitation)
-        logging.info(f"Invitation created: {invitation}")
-        return result
+                logging.info(f"[create_invitation] User updated: {invited_user_email} with organization_id: {organization_id}")
+                invitation = {
+                    "id": str(uuid.uuid4()),
+                    "invited_user_email": invited_user_email,
+                    "organization_id": organization_id,
+                    "role": role,
+                    "active": True,
+                }
+                client.create_item(body=invitation)
+                logging.info(f"Invitation created: {invitation}")
+        return {"status": "success", "message": "Invitation created successfully."}
     except CosmosResourceNotFoundError as nf:
         logging.error(str(nf))
         raise NotFound(f"User not found")
@@ -429,7 +482,6 @@ def create_invitation(invited_user_email, organization_id, role):
     except ValueError as ve:
         logging.error(str(ve))
         raise ve
-
     except Exception as e:
         logging.error(f"Error inserting data into Cosmos DB: {e}")
         return Exception(f"Error inserting data into Cosmos DB: {e}")
@@ -450,10 +502,12 @@ def get_company_list():
     container = get_cosmos_container("companyAnalysis")
 
     try:
-        items = list(container.query_items(
-            query="SELECT c.id, c.name, c.ticker, c.is_active, c.created_at, c.lastRun FROM c",
-            enable_cross_partition_query=True
-        ))
+        items = list(
+            container.query_items(
+                query="SELECT c.id, c.name, c.ticker, c.is_active, c.created_at, c.lastRun FROM c",
+                enable_cross_partition_query=True,
+            )
+        )
 
         if not items:
             logging.warning(f"No companies found in the 'companyAnalysis' container.")
@@ -464,8 +518,7 @@ def get_company_list():
     except CosmosResourceNotFoundError:
         logging.warning(f"CosmosDB container not found or inaccessible.")
         raise NotFound
-    
+
     except Exception as e:
         logging.error(f"Unexpected error retrieving Companies: {e}")
         raise
-
