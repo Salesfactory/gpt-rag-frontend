@@ -528,10 +528,12 @@ interface CustomerPortalSession {
 
 export async function createCustomerPortalSession({ 
     customerId, 
-    return_url
+    return_url,
+    subscription_id
 }: {
     customerId: string;
     return_url: string;
+    subscription_id:string;
 }): Promise<CustomerPortalSession>{
     const response = await fetch("/create-customer-portal-session", {
         method: "POST",
@@ -540,7 +542,8 @@ export async function createCustomerPortalSession({
         },
         body: JSON.stringify({
             customer: customerId,
-            return_url
+            return_url,
+            subscription_id
         })
     });
     if (response.status > 299 || !response.ok) {
@@ -796,7 +799,7 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
 }
 
 export async function updateUserData({ userId, patchData }: { userId: string; patchData: object }) {
-    const response = await fetch(`/api/user/${encodeURIComponent(userId)}/data`, {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json",

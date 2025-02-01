@@ -16,7 +16,8 @@ import {
     IconDots,
     IconSubtask,
     IconReportMoney,
-    IconClipboardText
+    IconClipboardText,
+    IconAdjustments
 } from "@tabler/icons-react";
 import salesLogo from "../../img/logo.png";
 import styles from "./Sidebar.module.css";
@@ -90,28 +91,53 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             divider: true
         },
         {
-            section: "Admin Features",
             items: [
                 {
-                    title: "Roles and Access",
-                    icon: <IconUsers className={styles.sidebarLinkIcon} />,
-                    to: "/admin",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
-                },
-                {
-                    title: "Invitations",
-                    icon: <IconUserCheck className={styles.sidebarLinkIcon} />,
-                    to: "/invitations",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
-                },
-                {
-                    title: "Organization Management",
-                    icon: <IconAddressBook className={styles.sidebarLinkIcon} />,
-                    to: "/organization",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
+                    title: "Control Center",
+                    icon: <IconAdjustments className={styles.sidebarLinkIcon} />,
+                    links: [
+                        {
+                            title: "Team Member Roles",
+                            href: "/admin",
+                            tiers: [
+                                "Basic",
+                                "Custom",
+                                "Premium",
+                                "Basic + Financial Assistant",
+                                "Custom + Financial Assistant",
+                                "Premium + Financial Assistant"
+                            ],
+                            roles: ["admin", "platformAdmin"]
+                        },
+                        {
+                            title: "Team Onboarding",
+                            href: "/invitations",
+                            tiers: [
+                                "Basic",
+                                "Custom",
+                                "Premium",
+                                "Basic + Financial Assistant",
+                                "Custom + Financial Assistant",
+                                "Premium + Financial Assistant"
+                            ],
+                            roles: ["admin", "platformAdmin"]
+                        },
+                        {
+                            title: "Workspace Governance",
+                            href: "/organization",
+                            tiers: [
+                                "Basic",
+                                "Custom",
+                                "Premium",
+                                "Basic + Financial Assistant",
+                                "Custom + Financial Assistant",
+                                "Premium + Financial Assistant"
+                            ],
+                            roles: ["admin", "platformAdmin"]
+                        }
+                    ],
+                    tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin", "user", "platformAdmin"]
                 }
             ]
         },
@@ -119,21 +145,40 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             divider: true
         },
         {
-            section: "Subscription",
             items: [
                 {
-                    title: "Subscription Management",
+                    title: "My Subscription",
                     icon: <IconRosetteDiscountCheck className={styles.sidebarLinkIcon} />,
-                    to: "/subscription-management",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
-                },
-                {
-                    title: "User Management",
-                    icon: <IconSubtask className={styles.sidebarLinkIcon} />,
-                    to: "/manage-email-lists",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
+                    links: [
+                        {
+                            title: "Subscription Management",
+                            href: "/subscription-management",
+                            tiers: [
+                                "Basic",
+                                "Custom",
+                                "Premium",
+                                "Basic + Financial Assistant",
+                                "Custom + Financial Assistant",
+                                "Premium + Financial Assistant"
+                            ],
+                            roles: ["admin", "platformAdmin"]
+                        },
+                        {
+                            title: "Team Management",
+                            href: "/manage-email-lists",
+                            tiers: [
+                                "Basic",
+                                "Custom",
+                                "Premium",
+                                "Basic + Financial Assistant",
+                                "Custom + Financial Assistant",
+                                "Premium + Financial Assistant"
+                            ],
+                            roles: ["admin", "platformAdmin"]
+                        }
+                    ],
+                    tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin", "user", "platformAdmin"]
                 }
             ]
         },
@@ -141,7 +186,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             divider: true
         },
         {
-            section: "Premium Features",
             items: [
                 {
                     title: "Premium Features",
@@ -170,28 +214,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         },
         {
             //It is only visible to platform administrators
-            section: "Reports",
             items: [
                 {
                     title: "Reports",
                     icon: <IconFileInvoice className={styles.sidebarLinkIcon} />,
-                    to: "/view-reports",
-                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
-                },
-                {
-                    title: "Report Management",
-                    icon: <IconFileInvoice className={styles.sidebarLinkIcon} />,
-                    to: "/view-manage-reports",
-                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
-                },
-                {
-                    title: "Distribution Lists",
-                    icon: <IconChecklist className={styles.sidebarLinkIcon} />,
-                    to: "/details-settings",
-                    tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "platformAdmin"]
+                    links: [
+                        {
+                            title: "Reports Dashboard",
+                            href: "/view-reports",
+                            tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                            roles: ["admin", "platformAdmin"]
+                        },
+                        {
+                            title: "Report Creation",
+                            href: "/view-manage-reports",
+                            tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                            roles: ["admin", "platformAdmin"]
+                        },
+                        {
+                            title: "Sharing & Distribution",
+                            href: "/details-settings",
+                            tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                            roles: ["admin", "platformAdmin"]
+                        }
+                    ],
+                    tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin", "user", "platformAdmin"]
                 }
             ]
         },
@@ -261,7 +309,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     </Link>
                     <button
                         onClick={handleOnClickCloseSideBar}
-                        className={`d-xl-none d-block ${styles.closeBtn} ${styles.sidebarToggler} ${styles.cursorPointer}`}
+                        className={`d-xl-none d-block  ${styles.closeBtn} ${styles.sidebarToggler} ${styles.cursorPointer}`}
                         id="sidebarCollapse"
                         aria-label="Close Sidebar"
                     >

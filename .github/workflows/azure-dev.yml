@@ -11,10 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install Dependencies
+      # 2. Install System Dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y \
           zip \
@@ -35,28 +37,33 @@ jobs:
           python3-cffi \
           libgobject-2.0-0
 
+      # 3. Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # 4. Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
 
+      # 5. Build Frontend
       - name: Build Frontend
         working-directory: frontend
         run: |
           npm install
           npm run build
 
+      # 6. Package Backend
       - name: Package Backend
         working-directory: backend
         run: |
           rm -rf backend_env
           zip -r ../deploy.zip *
 
+      # 7. Deploy to Azure
       - name: Deploy to Azure
         uses: azure/cli@v2
         with:

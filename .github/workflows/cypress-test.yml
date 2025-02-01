@@ -1,0 +1,56 @@
+# .github/workflows/cypress-test.yml
+name: Cypress Tests
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  cypress-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      # 3. Install Dependencies
+      - name: Install Dependencies
+        working-directory: frontend
+        run: |
+          npm install
+
+      # 4. Install wait-on Globally
+      - name: Install wait-on Globally
+        run: |
+          npm install -g wait-on
+
+      # 5. Start Frontend Server
+      - name: Start Frontend Server
+        working-directory: frontend
+        run: |
+          npm run dev &
+        env:
+          HOST: "localhost"
+          PORT: 5173
+
+      # Debug Server State
+      - name: Debug Server State
+        run: |
+          curl -I http://localhost:5173
+
+      # 7. Run Cypress Tests
+      - name: Run Cypress Tests
+        working-directory: frontend
+        env:
+          WEB_APP_URL: "http://localhost:5173"
+        run: |
+          npx cypress run
