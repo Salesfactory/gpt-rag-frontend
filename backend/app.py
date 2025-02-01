@@ -1832,10 +1832,12 @@ def checkUser():
 @app.route("/api/get-organization-subscription", methods=["GET"])
 def getOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organizationId = request.args.get("organizationId")
+    if not client_principal_id:
+        create_error_response('Missing required parameter: client_principal_id', HTTPStatus.BAD_REQUEST)
+    if not organizationId:
+        create_error_response('Missing required parameter: organizationId', HTTPStatus.BAD_REQUEST)
     try:
-        if not client_principal_id:
-            raise MissingRequiredFieldError("client_principal_id")
-        organizationId = request.args.get("organizationId")
         if not organizationId:
             raise MissingParameterError("organizationId")
         response = get_organization_subscription(organizationId)

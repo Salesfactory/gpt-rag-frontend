@@ -1,7 +1,7 @@
 import os
 from azure.cosmos import CosmosClient
 from azure.identity import DefaultAzureCredential
-from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError
+from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError, CosmosHttpResponseError
 import uuid
 import logging
 from datetime import datetime, timezone
@@ -398,6 +398,9 @@ def get_organization_subscription(organizationId):
     Exception: For any other unexpected error that occurs during retrieval.
     CosmosResourceNotFoundError: If the organization with the specified ID does not exist in the database.
     """
+    if not organizationId:
+        logging.error(f"Organization ID not provided.")
+        raise ValueError("Organization ID is required.")
     container = get_cosmos_container("organizations")
     
     try:
@@ -408,10 +411,14 @@ def get_organization_subscription(organizationId):
     except CosmosResourceNotFoundError:
         logging.warning(f"Organization with id '{organizationId}' not found in Cosmos DB.")
         raise NotFound
+    
+    except CosmosHttpResponseError as ch_err:
+        logging.error(f"CosmosHttpError encountered while retrieving organization with id '{organizationId}': {ch_err}")
+        raise Exception(f"Error retrieving organization with id '{organizationId}': {ch_err}") from ch_err
 
     except Exception as e:
         logging.error(f"Unexpected error retrieving organization with id '{organizationId}': {e}")
-         raise
+        raise
           
 def get_company_list():
     """
