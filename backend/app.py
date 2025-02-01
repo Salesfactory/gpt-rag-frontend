@@ -1990,10 +1990,14 @@ def getUser():
 
     try:
         user = get_user_container(client_principal_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
         return jsonify(user), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /getUser")
         return jsonify({"error": str(e)}), 500
+    except NotFound as e:
+        return jsonify({"error": str(e)}), 404
 
 
 def get_product_prices(product_id):
