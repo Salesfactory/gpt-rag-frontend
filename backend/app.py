@@ -1868,14 +1868,19 @@ def getOrganization():
 @app.route("/api/create-organization", methods=["POST"])
 def createOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    try:
-        if not client_principal_id:
-            raise MissingRequiredFieldError("Missing required parameters, client_principal_id")
+    if not client_principal_id:
+        return (
+            jsonify({"error": "Missing required parameters, client_principal_id"}),
+            400,
+        )
         if not 'organizationName' in request.json:
-            raise MissingRequiredFieldError("organizationName")
+            return jsonify({"error": "Missing required parameters, organizationName"}), 400
+    try:
         organizationName = request.json["organizationName"]
         response = create_organization(client_principal_id, organizationName)
-        return jsonify(response)
+        if not response:
+            return create_error_response("Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR)
+        return jsonify(response), HTTPStatus.CREATED
     except NotFound as e:
         return create_error_response(f'User {client_principal_id} not found', HTTPStatus.NOT_FOUND)
     except MissingRequiredFieldError as field:

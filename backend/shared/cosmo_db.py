@@ -389,6 +389,10 @@ def create_organization(user_id, organization_name):
     Creates a new organization in the container.
     """
     try:
+        if not user_id:
+            raise ValueError("User ID cannot be empty.")
+        if not organization_name:
+            raise ValueError("Organization name cannot be empty.")
         container = get_cosmos_container("organizations")
         result = container.create_item(
         body={
@@ -400,9 +404,15 @@ def create_organization(user_id, organization_name):
             "subscriptionExpirationDate": None,
         }
     )
+        if not result:
+            logging.warning(f"Organization with name '{organization_name}' not created in Cosmos DB.")
+            raise RuntimeError(f"Organization not created")
     except Exception as e:
         logging.error(f"Error inserting data into Cosmos DB: {e}")
-        logging.info(f"[util__module] Successfully created new organization, adding organizationId to user {user_id}")
+        raise e
+    except RuntimeError as re:
+        logging.error(f"Organization with name '{organization_name}' not created in Cosmos DB.")
+        raise re
     try:
         user = get_user_container(user_id)
         user["data"]["organizationId"] = result["id"]
