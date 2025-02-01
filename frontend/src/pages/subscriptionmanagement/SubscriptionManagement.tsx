@@ -40,12 +40,33 @@ const SubscriptionManagement: React.FC = () => {
     const organizationId = organization?.id || "";
 
     const rowsPerPage = 5;
+
+    const FilterMapping = {
+        "All actions": null,
+        "Financial Assistant": "Financial Assistant Change",
+        "Subscription Tier": "Subscription Tier Change",
+        "Subscription created": "Subscription created"
+    }
+
     const FilterOptions = [
         { key: "1", text: "All Actions" },
         { key: "2", text: "Financial Assistant" },
         { key: "3", text: "Subscription Tier" },
         { key: "4", text: "Subscription created" }
     ];
+
+    const formatTimestamp = (timestamp: number) => {
+        const date = new Date(timestamp * 1000);
+        const options: Intl.DateTimeFormatOptions = {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+        };
+        return date.toLocaleString("en-US", options).replace(',', '');
+    };
 
     const [dataLoad, setDataLoad] = useState(false);
     const [isSubscriptionChangeModal, setIsSubscriptionChangeModal] = useState(false);
@@ -177,16 +198,10 @@ const SubscriptionManagement: React.FC = () => {
     };
 
     const handleFilterChange = (event: any, selectedOption: any) => {
-        let filteredLogs;
-        if (!selectedOption || selectedOption.text === "All Actions") {
-            filteredLogs = logsData;
-        } else if (selectedOption.text === "Financial Assistant") {
-            filteredLogs = logsData.filter((log: any) => log.action === "Financial Assistant Change");
-        } else if (selectedOption.text === "Subscription Tier") {
-            filteredLogs = logsData.filter((log: any) => log.action === "Subscription Tier Change");
-        } else if (selectedOption.text === "Subscription created") {
-            filteredLogs = logsData.filter((log: any) => log.action === "Subscription created");
-        }
+        const actionFilter = FilterMapping[selectedOption?.text as keyof typeof FilterMapping || "All actions"]
+        const filteredLogs = actionFilter
+            ? logsData.filter((log: any) => log.action === actionFilter)
+            : logsData;
         setFilteredLogsData(filteredLogs);
         setPaginatedLogs(filteredLogs.slice(0, rowsPerPage)); // Reset pagination
         setCurrentPage(1); // Reset pagination
@@ -324,69 +339,36 @@ const SubscriptionManagement: React.FC = () => {
                                                 {paginatedLogs.map((data: any, index: number) => (
                                                     <tr className={styles.auditRow} key={index}>
                                                         {data.action === "Subscription Tier Change" && (
-                                                            <>
+                                                            <React.Fragment key={index}>
                                                                 <td className={styles.tableDate}>
-                                                                    {data._ts
-                                                                        ? new Date(data._ts * 1000)
-                                                                              .toLocaleDateString("en-US", {
-                                                                                  month: "short",
-                                                                                  day: "2-digit",
-                                                                                  year: "numeric",
-                                                                                  hour: "2-digit",
-                                                                                  minute: "2-digit",
-                                                                                  hour12: false
-                                                                              })
-                                                                              .replace(",", "")
-                                                                        : "Invalid date"}
+                                                                    {formatTimestamp(data._ts)}
                                                                 </td>
                                                                 <td className={styles.tableText}>Subscription Tier change</td>
                                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
                                                                 <td className={styles.tableText}>
                                                                     {data.previous_plan} → {data.current_plan}
                                                                 </td>
-                                                            </>
+                                                            </React.Fragment>
                                                         )}
                                                         {data.action === "Financial Assistant Change" && (
-                                                            <>
+                                                            <React.Fragment>
                                                                 <td className={styles.tableDate}>
-                                                                    {data._ts
-                                                                        ? new Date(data._ts * 1000)
-                                                                              .toLocaleDateString("en-US", {
-                                                                                  month: "short",
-                                                                                  day: "2-digit",
-                                                                                  year: "numeric",
-                                                                                  hour: "2-digit",
-                                                                                  minute: "2-digit",
-                                                                                  hour12: false
-                                                                              })
-                                                                              .replace(",", "")
-                                                                        : "Invalid date"}
+                                                                    {formatTimestamp(data._ts)}
                                                                 </td>
                                                                 <td className={styles.tableText}>FA Add-On Toggled</td>
                                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
                                                                 <td className={styles.tableText}>Status: {data.status_financial_assistant}</td>
-                                                            </>
+                                                            </React.Fragment>
                                                         )}
                                                         {data.action === "Subscription created" && (
-                                                            <>
+                                                            <React.Fragment>
                                                                 <td className={styles.tableDate}>
-                                                                    {data._ts
-                                                                        ? new Date(data._ts * 1000)
-                                                                              .toLocaleDateString("en-US", {
-                                                                                  month: "short",
-                                                                                  day: "2-digit",
-                                                                                  year: "numeric",
-                                                                                  hour: "2-digit",
-                                                                                  minute: "2-digit",
-                                                                                  hour12: false
-                                                                              })
-                                                                              .replace(",", "")
-                                                                        : "Invalid date"}
+                                                                    {formatTimestamp(data._ts)}
                                                                 </td>
                                                                 <td className={styles.tableText}>Subscription created</td>
                                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
                                                                 <td className={styles.tableText}>Status: Active</td>
-                                                            </>
+                                                            </React.Fragment>
                                                         )}
                                                     </tr>
                                                 ))}
@@ -398,7 +380,7 @@ const SubscriptionManagement: React.FC = () => {
                                             <p>No logs found</p>
                                         ) : (
                                             <p>
-                                                Page {currentPage} of {Math.ceil(filteredLogsData.length / rowsPerPage)}
+                                                Page {currentPage} of {Math.ceil((filteredLogsData?.length || 0) / rowsPerPage)}
                                             </p>
                                         )}
                                         <div style={{ marginLeft: "auto" }}>
@@ -410,7 +392,7 @@ const SubscriptionManagement: React.FC = () => {
                                             />
                                             <IconButton
                                                 iconProps={{ iconName: "ChevronRight" }}
-                                                disabled={currentPage === Math.ceil(filteredLogsData.length / rowsPerPage)}
+                                                disabled={currentPage === Math.ceil((filteredLogsData?.length || 0) / rowsPerPage)}
                                                 ariaLabel="Next page"
                                                 onClick={() => {
                                                     handlePagination(currentPage + 1);
@@ -446,8 +428,8 @@ const SubscriptionManagement: React.FC = () => {
                                     {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
                                         ? "Reactivate subscription"
                                         : organization?.subscriptionStatus === "active" && price.nickname === subscriptionName
-                                        ? "Change payment information"
-                                        : "Subscribe"}
+                                            ? "Change payment information"
+                                            : "Subscribe"}
                                 </button>
                             </div>
                         ))}
