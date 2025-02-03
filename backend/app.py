@@ -64,6 +64,7 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    create_invitation
 )
 
 load_dotenv(override=True)
@@ -1733,46 +1734,29 @@ def getInvitations():
 
 @app.route("/api/createInvitation", methods=["POST"])
 def createInvitation():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
     try:
-        keySecretName = "orchestrator-host--invitations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not client_principal_id:
+            raise MissingRequiredFieldError("client_principal_id")
+        data = request.get_json()
+        if not data:
+            raise MissingJSONPayloadError()
+        if not "invitedUserEmail" in data:
+            raise MissingRequiredFieldError("invitedUserEmail")
+        if not "organizationId" in data:
+            raise MissingRequiredFieldError("organizationId")
+        if not "role" in data:
+            raise MissingRequiredFieldError("role")
+        invitedUserEmail = data["invitedUserEmail"]
+        organizationId = data["organizationId"]
+        role = data["role"]
+        response = create_invitation(invitedUserEmail, organizationId, role)
+        return jsonify(response), HTTPStatus.CREATED 
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
     except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        organizationId = request.json["organizationId"]
-        invitedUserEmail = request.json["invitedUserEmail"]
-        role = request.json["role"]
-        url = INVITATIONS_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps(
-            {
-                "invited_user_email": invitedUserEmail,
-                "organization_id": organizationId,
-                "role": role,
-            }
-        )
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
-    except Exception as e:
-        logging.exception("[webbackend] exception in /getUser")
-        return jsonify({"error": str(e)}), 500
+        logging.exception(str(e))
+        return create_error_response(f'An unexpected error occurred. Please try again later. {e}', HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/api/checkuser", methods=["POST"])
@@ -1821,7 +1805,7 @@ def checkUser():
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        return jsonify(response), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
