@@ -1751,10 +1751,11 @@ def createInvitation():
         organizationId = data["organizationId"]
         role = data["role"]
         response = create_invitation(invitedUserEmail, organizationId, role)
-        return jsonify(response), 200
+        return jsonify(response), HTTPStatus.CREATED 
     except MissingRequiredFieldError as field:
         return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
     except Exception as e:
+        logging.exception(str(e))
         return create_error_response(f'An unexpected error occurred. Please try again later. {e}', HTTPStatus.INTERNAL_SERVER_ERROR)
 
 

@@ -423,69 +423,52 @@ def patch_user_data(user_id, patch_data):
 
 def create_invitation(invited_user_email, organization_id, role):
     """
-    Creates a new document in the container.
+    Creates a new Invitation in the container.
     """
     if not invited_user_email:
-        raise ValueError("Invited user email is required.")
+        return {"error": "User email is required."}
+
     if not organization_id:
-        raise ValueError("Organization ID is required.")
+        return {"error": "Organization ID is required."}
+
     if not role:
-        raise ValueError("Role is required.")
+        return {"error": "Role is required."}
+    container = get_cosmos_container("invitations")
+    invitation = {}
     try:
         user_container = get_cosmos_container("users")
-        invitations_container = get_cosmos_container("invitations")
-        users = list(
-            user_container.query_items(
-                query="SELECT * FROM c WHERE c.data.email = @invited_user_email",
-                parameters=[
-                    {"name": "@invited_user_email", "value": invited_user_email}
-                ],
-                enable_cross_partition_query=True,
-            )
+        user = user_container.query_items(
+            query="SELECT TOP 1 * FROM c WHERE c.data.email = @invited_user_email",
+            parameters=[{"name": "@invited_user_email", "value": invited_user_email}],
+            enable_cross_partition_query=True,
         )
-        if not users:
-            logging.warning(f"No users found with email '{invited_user_email}'")
-            raise NotFound(f"No users found with email '{invited_user_email}'")
-        user = users[0]
-
-        with invitations_container.client_connection as client:
-            if user["data"].get("organization_id") is None:
-                client.patch_item(
-                    item=user["id"],
-                    partition_key=user["data"]["email"],
-                    operations=[
-                        {
-                            "op": "add",
-                            "path": "/data/organizationId",
-                            "value": organization_id,
-                        },
-                        {"op": "add", "path": "/data/role", "value": role},
-                    ],
+        for u in user:
+            if u["data"].get("organizationId") is None:
+                u["data"]["organizationId"] = organization_id
+                u["data"]["role"] = role
+                user_container.replace_item(item=u["id"], body=u)
+                logging.info(
+                    f"[create_invitation] Updated user {invited_user_email} organizationId to {organization_id}"
                 )
-                logging.info(f"[create_invitation] User updated: {invited_user_email} with organization_id: {organization_id}")
-                invitation = {
-                    "id": str(uuid.uuid4()),
-                    "invited_user_email": invited_user_email,
-                    "organization_id": organization_id,
-                    "role": role,
-                    "active": True,
-                }
-                client.create_item(body=invitation)
-                logging.info(f"Invitation created: {invitation}")
-        return {"status": "success", "message": "Invitation created successfully."}
-    except CosmosResourceNotFoundError as nf:
-        logging.error(str(nf))
-        raise NotFound(f"User not found")
-    except AzureError as az_err:
-        logging.error(f"AzureError while performing upsert: {az_err}")
-        raise
+
+        invitation = {
+            "id": str(uuid.uuid4()),
+            "invited_user_email": invited_user_email,
+            "organization_id": organization_id,
+            "role": role,
+            "active": True,
+        }
+        result = container.create_item(body=invitation)
+    except Exception as e:
+        logging.info(
+            f"create_invitation: something went wrong. {str(e)}"
+        )
+        raise e
     except ValueError as ve:
         logging.error(str(ve))
         raise ve
-    except Exception as e:
-        logging.error(f"Error inserting data into Cosmos DB: {e}")
-        return Exception(f"Error inserting data into Cosmos DB: {e}")
 
+    return invitation
 
 def get_company_list():
     """
