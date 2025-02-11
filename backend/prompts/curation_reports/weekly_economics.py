@@ -90,7 +90,7 @@ You are an expert technical writer responsible for crafting one section of a Wee
    - Use precise economic terminology while maintaining clarity.
 
 2. **Length and Style:**
-   - Limit the section to **150-200 words**.
+   - Limit the section to **80-120 words**.
    - Maintain an analytical and professional tone; avoid subjective or speculative language.
    - Write in clear, concise language suitable for policymakers, investors, and professionals.
    - Start with your **most important insight in bold**.
@@ -137,7 +137,7 @@ You are an expert technical writer responsible for crafting one section of a Wee
    - Include title, date, and URL for each source.
 
 6. **Quality Checks:**
-   - Strictly adhere to the **150-200 word count** (excluding title and sources).
+   - Strictly adhere to the **80-120 word count** (excluding title and sources).
    - Use only one structural element (table or list) where necessary.
    - Start with **bold insight** to capture attention.
    - Ensure your writing is concise, specific, and actionable.
@@ -185,7 +185,7 @@ Week 1 of January 2024: Key Economic Trends Shaping the Global Landscape
 
 For Conclusion/Summary:
 - Use ## for section title (Markdown format).
-- 100-150 word limit.
+- 100-120 word limit.
 - Leverage the insights from this report by identifying actionable strategies for policymakers, businesses, or investors to address risks and capitalize on trends.
 - Highlight (bold) key takeaways and actionable insights.
 - For comparative reports:
@@ -208,8 +208,6 @@ For Conclusion/Summary:
 - Focus on the single most critical insight for each section.
 
 4. Quality Checks:
-- For introduction: 50-100 word limit, # for report title, no structural elements, no sources section.
-- For conclusion: 100-150 word limit, ## for section title, only ONE structural element at most, no sources section.
 - Use Markdown format.
 - Do not include word count or any preamble in your response.
 """

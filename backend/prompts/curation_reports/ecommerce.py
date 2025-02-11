@@ -85,7 +85,7 @@ You are an expert data-driven technical writer responsible for crafting one sect
    - Use precise eCommerce terminology (e.g., platform names, market strategies).
 
 2. **Length and Style:**
-   - Limit the section to **150-200 words**.
+   - Limit the section to **80-120 words**.
    - Avoid any marketing language; maintain a technical and analytical focus.
    - Write in clear, simple language suitable for professional readers.
    - Start with your **most important insight in bold**.
@@ -132,7 +132,7 @@ You are an expert data-driven technical writer responsible for crafting one sect
    - Include title, date, and URL for each source.
 
 6. **Quality Checks:**
-   - Strictly adhere to the **150-200 word count** (excluding title and sources).
+   - Strictly adhere to the **80-120 word count** (excluding title and sources).
    - Use only one structural element (table or list) where necessary.
    - Start with **bold insight** to capture attention.
    - Ensure your writing is concise, specific, and actionable.
@@ -163,10 +163,10 @@ For Introduction:
 - The title should mention the month and year of the report along with the main ecommerce theme of the month. Here is an example"
 
 ```
-January 2024: eCommerce Trends to Kickstart the New Year
+{report_month_year}: eCommerce Trends to Kickstart the New Year
 ``` 
 
-- 50-100 word limit
+- 80-120 word limit
 - Write in simple and clear language
 - Focus on the core motivation for the report in 1-2 paragraphs
 - Use a clear narrative arc to introduce the report
@@ -175,7 +175,7 @@ January 2024: eCommerce Trends to Kickstart the New Year
 
 For Conclusion/Summary:
 - Use ## for section title (Markdown format)
-- 100-150 word limit
+- 100-120 word limit
 - Leverage the insights in this report by aligning strategies with market trends, mitigating identified risks, and implementing recommended actions to drive immediate business impact.
 - Highlight (bold) the actionable, insightful suggestions
 - For comparative reports:
@@ -198,7 +198,5 @@ For Conclusion/Summary:
 - Focus on your single most important point
 
 4. Quality Checks:
-- For introduction: 50-100 word limit, # for report title, no structural elements, no sources section
-- For conclusion: 100-150 word limit, ## for section title, only ONE structural element at most, no sources section
 - Markdown format
 - Do not include word count or any preamble in your response"""
