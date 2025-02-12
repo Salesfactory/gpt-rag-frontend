@@ -64,6 +64,7 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    create_organization
 )
 
 load_dotenv(override=True)
@@ -1867,50 +1868,25 @@ def getOrganization():
 @app.route("/api/create-organization", methods=["POST"])
 def createOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-
     if not client_principal_id:
         return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
+            jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
-
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            f"[webbackend] exception in /api/orchestrator-host--subscriptions {e}"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
+        if not 'organizationName' in request.json:
+            return jsonify({"error": "Missing required parameters, organizationName"}), 400
     try:
         organizationName = request.json["organizationName"]
-        payload = json.dumps(
-            {
-                "id": client_principal_id,
-                "organizationName": organizationName,
-            }
-        )
-        url = SUBSCRIPTION_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        response = create_organization(client_principal_id, organizationName)
+        if not response:
+            return create_error_response("Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR)
+        return jsonify(response), HTTPStatus.CREATED
+    except NotFound as e:
+        return create_error_response(f'User {client_principal_id} not found', HTTPStatus.NOT_FOUND)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f'Missing required parameters, {field}', HTTPStatus.BAD_REQUEST)
     except Exception as e:
-        logging.exception("[webbackend] exception in /post-organization")
-        return jsonify({"error": str(e)}), 500
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/api/getUser", methods=["GET"])
