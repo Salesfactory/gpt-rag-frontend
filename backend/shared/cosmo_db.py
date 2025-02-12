@@ -1,7 +1,7 @@
 import os
 from azure.cosmos import CosmosClient
 from azure.identity import DefaultAzureCredential
-from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError
+from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError, CosmosHttpResponseError
 import uuid
 import logging
 from datetime import datetime, timezone
@@ -289,6 +289,85 @@ def get_user_container(user_id):
     except Exception as e:
         logging.error(f"Unexpected error retrieving report with id '{user_id}'")
         raise
+
+def get_invitation(invited_user_email):
+    if not invited_user_email:
+        return {"error": "User ID not found."}
+
+    logging.info("[get_invitation] Getting invitation for user: " + invited_user_email)
+
+    container = get_cosmos_container("invitations")
+    try:
+        query = "SELECT * FROM c WHERE c.invited_user_email = @invited_user_email AND c.active = true"
+        parameters = [{"name": "@invited_user_email", "value": invited_user_email}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            logging.info(
+                f"[get_invitation] active invitation found for user {invited_user_email}"
+            )
+            invitation = result[0]
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(
+                f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
+            )
+            return invitation
+        else:
+            logging.info(
+                f"[get_invitation] no active invitation found for user {invited_user_email}"
+            )
+            return None
+    except Exception as e:
+        logging.error(f"[get_invitation] something went wrong. {str(e)}")
+
+
+def set_user(client_principal):
+    user = {}
+    user_id = client_principal.get("id")
+    user_email = client_principal.get("email")
+
+    if not user_id or not user_email:
+        logging.error("[set_user] Missing required user information.")
+        return {"error": "Missing required user information."}, 400
+
+    container = get_cosmos_container("users")
+    is_new_user = False
+
+    try:
+        user = container.read_item(item=user_id, partition_key=user_id)
+        logging.info(f"[get_user] user_id {user_id} found.")
+    except CosmosHttpResponseError:
+        logging.info(f"[get_user] User {user_id} not found. Creating new user.")
+        is_new_user = True
+
+        logging.info("[get_user] Checking user invitations for new user registration")
+        user_invitation = get_invitation(user_email)
+
+        user = container.create_item(
+            body={
+                "id": user_id,
+                "data": {
+                    "name": client_principal.get("name"),
+                    "email": user_email,
+                    "role": user_invitation["role"] if user_invitation else "admin",
+                    "organizationId": (
+                        user_invitation["organization_id"] if user_invitation else None
+                    ),
+                },
+            }
+        )
+    except Exception as e:
+        logging.error(f"[get_user] Error creating the user: {e}")
+        return {"is_new_user": None, "user_data": None}
+
+    return {"is_new_user": is_new_user, "user_data": user["data"]}
+
+
+
 
 def update_user(user_id, updated_data):
     """
