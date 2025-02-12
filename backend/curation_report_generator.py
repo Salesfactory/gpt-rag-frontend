@@ -380,6 +380,7 @@ def write_final_sections(state: SectionState):
     week_of_month = (current_date.day - 1) // 7 + 1
     year = current_date.year
     current_week_and_month_and_year = f"Current week: {week_of_month}, Current month: {current_date.strftime('%B')}, Current year: {year}"
+    report_month_year = current_date.strftime("%B %Y")
 
     if report_type in WEEKLY_CURATION_REPORT:
         system_instructions = report_prompts.final_section_writer_instructions.format(section_title=section.name, 
@@ -392,7 +393,8 @@ def write_final_sections(state: SectionState):
     else:
         system_instructions = report_prompts.final_section_writer_instructions.format(section_title=section.name,
                                                                                     section_topic=section.description, 
-                                                                                    context=completed_report_sections)
+                                                                                    context=completed_report_sections,
+                                                                                    report_month_year=report_month_year)
 
     # Generate section  
     logger.info(f"Generating final section content for section {state['section'].name}")
