@@ -47,6 +47,7 @@ from utils import (
     InvalidParameterError,
     MissingJSONPayloadError,
     MissingRequiredFieldError,
+    MissingParameterError,
     require_client_principal,
     get_azure_key_vault_secret,
 )
@@ -65,6 +66,7 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    get_organization_subscription
     create_invitation
     set_user,
     create_organization
@@ -1819,35 +1821,20 @@ def checkUser():
 @app.route("/api/get-organization-subscription", methods=["GET"])
 def getOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organizationId = request.args.get("organizationId")
     if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
+        create_error_response('Missing required parameter: client_principal_id', HTTPStatus.BAD_REQUEST)
+    if not organizationId:
+        create_error_response('Missing required parameter: organizationId', HTTPStatus.BAD_REQUEST)
     try:
-        keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        organizationId = request.args.get("organizationId")
-        url = SUBSCRIPTION_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"organizationId": organizationId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        if not organizationId:
+            raise MissingParameterError("organizationId")
+        response = get_organization_subscription(organizationId)
+        return jsonify(response)
+    except NotFound as e:
+        return jsonify({}), 204
+    except MissingParameterError as e:
+        return create_error_response('Missing required parameter: ' + str(e), HTTPStatus.BAD_REQUEST)
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500

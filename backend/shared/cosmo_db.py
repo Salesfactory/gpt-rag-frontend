@@ -495,7 +495,43 @@ def patch_user_data(user_id, patch_data):
         )
         raise e
 
+    
+def get_organization_subscription(organizationId):
+    """
+    Retrieves a specific document (organizationId) from the Cosmos DB container using its `id` as partition key.
 
+    Parameters:
+        organizationId (str): The ID of the organization to retrieve.
+
+    Returns:
+        dict: The organization document retrieved from the database.
+
+    Raises:
+    Exception: For any other unexpected error that occurs during retrieval.
+    CosmosResourceNotFoundError: If the organization with the specified ID does not exist in the database.
+    """
+    if not organizationId:
+        logging.error(f"Organization ID not provided.")
+        raise ValueError("Organization ID is required.")
+    container = get_cosmos_container("organizations")
+    
+    try:
+        organization = container.read_item(item=organizationId, partition_key=organizationId)
+        logging.info(f"Organization successfully retrieved: {organization}")
+        return organization
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Organization with id '{organizationId}' not found in Cosmos DB.")
+        raise NotFound
+    
+    except CosmosHttpResponseError as ch_err:
+        logging.error(f"CosmosHttpError encountered while retrieving organization with id '{organizationId}': {ch_err}")
+        raise Exception(f"Error retrieving organization with id '{organizationId}': {ch_err}") from ch_err
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving organization with id '{organizationId}': {e}")
+        raise
+          
 def create_invitation(invited_user_email, organization_id, role):
     """
     Creates a new Invitation in the container.
