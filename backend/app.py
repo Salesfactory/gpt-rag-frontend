@@ -35,6 +35,7 @@ from functools import wraps
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
+from azure.cosmos.exceptions import CosmosHttpResponseError
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
 from utils import (
@@ -65,6 +66,8 @@ from shared.cosmo_db import (
     get_template_by_ID,
     update_user,
     create_invitation
+    set_user,
+    create_organization
 )
 
 load_dotenv(override=True)
@@ -1763,32 +1766,33 @@ def createInvitation():
 def checkUser():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
     if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
+        return create_error_response("Missing authentication headers", HTTPStatus.UNAUTHORIZED)
+    
+    if not request.json or "email" not in request.json:
+        return create_error_response("Email is required", HTTPStatus.BAD_REQUEST)
+    
+    email = request.json["email"]
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
+        response = set_user({
+            "id": client_principal_id,
+            "email": email,
+            "role": "user",
+            "name": client_principal_name
+        })
+
+        if not response or "user_data" not in response:
+            return create_error_response("Failed to set user", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return response["user_data"]
+
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+    
+    except CosmosHttpResponseError as cosmos_error:
+        logging.error(f"[webbackend] Cosmos DB error in /api/checkUser: {cosmos_error}")
+        return create_error_response("Database error in CosmosDB", HTTPStatus.INTERNAL_SERVER_ERROR)
 
     try:
         email = request.json["email"]
@@ -1806,9 +1810,10 @@ def checkUser():
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
         return jsonify(response), 200
+
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/checkUser")
-        return jsonify({"error": str(e)}), 500
+        logging.exception("[webbackend] Unexpected exception in /api/checkUser")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 @app.route("/api/get-organization-subscription", methods=["GET"])
@@ -1851,50 +1856,25 @@ def getOrganization():
 @app.route("/api/create-organization", methods=["POST"])
 def createOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-
     if not client_principal_id:
         return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
+            jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
-
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            f"[webbackend] exception in /api/orchestrator-host--subscriptions {e}"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
+        if not 'organizationName' in request.json:
+            return jsonify({"error": "Missing required parameters, organizationName"}), 400
     try:
         organizationName = request.json["organizationName"]
-        payload = json.dumps(
-            {
-                "id": client_principal_id,
-                "organizationName": organizationName,
-            }
-        )
-        url = SUBSCRIPTION_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        response = create_organization(client_principal_id, organizationName)
+        if not response:
+            return create_error_response("Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR)
+        return jsonify(response), HTTPStatus.CREATED
+    except NotFound as e:
+        return create_error_response(f'User {client_principal_id} not found', HTTPStatus.NOT_FOUND)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f'Missing required parameters, {field}', HTTPStatus.BAD_REQUEST)
     except Exception as e:
-        logging.exception("[webbackend] exception in /post-organization")
-        return jsonify({"error": str(e)}), 500
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/api/getUser", methods=["GET"])
