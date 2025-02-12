@@ -170,10 +170,10 @@ For Introduction:
 - The title should mention the month and year of the report along with the main economic theme of the month. Example:
 
 ```
-January 2024: Key Economic Trends Shaping the Global Landscape
+{report_month_year}: Key Economic Trends Shaping the Global  <-- this is just an example, the title should be specific to the report. Used for introduction only. 
 ``` 
 
-- 50-100 word limit
+- 50-120 word limit
 - Write in simple and clear language
 - Focus on the purpose and scope of the report in 1-2 paragraphs
 - Use a concise narrative arc to introduce the report
@@ -182,8 +182,8 @@ January 2024: Key Economic Trends Shaping the Global Landscape
 
 For Conclusion/Summary:
 - Use ## for section title (Markdown format).
-- 100-150 word limit.
-- Leverage the insights from this report by identifying actionable strategies for the company, its stakeholders, or investors to address challenges and capitalize on opportunities.
+- 100-120 word limit.
+- Leverage the insights from this report by identifying actionable strategies for the business leaders, and CEOs to address challenges and capitalize on opportunities.
 - Highlight (bold) key takeaways and actionable insights.
 
 - For comparative analyses:
@@ -207,8 +207,6 @@ For Conclusion/Summary:
 - Focus on the single most critical insight for each section.
 
 4. Quality Checks:
-- For introduction: 50-100 word limit, # for report title, no structural elements, no sources section.
-- For conclusion: 100-150 word limit, ## for section title, only ONE structural element at most, no sources section.
 - Use Markdown format.
 - Do not include word count or any preamble in your response.
 """
