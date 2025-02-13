@@ -50,6 +50,8 @@ from utils import (
     MissingParameterError,
     require_client_principal,
     get_azure_key_vault_secret,
+    get_conversation,
+    delete_conversation,
 )
 import stripe.error
 
@@ -619,41 +621,32 @@ def getChatHistory():
 def getChatConversation(chat_id):
 
     if chat_id is None:
-        return jsonify({"error": "Missing chatId parameter"}), 400
+        return jsonify({"error": "Missing conversation_id parameter"}), 400
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    try:
-        keySecretName = "orchestrator-host--conversations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        return jsonify({"error": f"Error getting function key: {e}"}), 500
 
     try:
-        url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps({"user_id": client_principal_id})
-        response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-
-        return response.text, response.status_code
+        conversation = get_conversation(chat_id, client_principal_id)
+        return jsonify(conversation),200
+    except ValueError as ve:
+        logging.warning(f"ValueError fetching conversation_id: {str(ve)}")
+        return jsonify({"error": "Invalid input or client data"}), 400
     except Exception as e:
-        logging.exception("[webbackend] exception in /get-chat-history")
-        return jsonify({"error": str(e)}), 500
+        logging.exception(f"Unexpected error fetching conversation: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
 
 
 @app.route("/api/chat-conversations/<chat_id>", methods=["DELETE"])
 def deleteChatConversation(chat_id):
+
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
     try:
-        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-        keySecretName = "orchestrator-host--conversations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-
-        url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps({"user_id": client_principal_id})
-
-        response = requests.delete(url, headers=headers, data=payload)
-        return response.text, response.status_code
+        if chat_id:
+            delete_conversation(chat_id, client_principal_id)
+            return jsonify({"message": "Conversation deleted successfully"}), 200
+        else:
+            return jsonify({"error": "Missing conversation ID"}), 400
     except Exception as e:
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
