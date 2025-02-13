@@ -884,3 +884,41 @@ export async function cancelSubscription({ subscriptionId, user }: {subscription
     }
 }
 
+export async function getLogs(organizationId: string): Promise<any> {
+    try {
+        const response = await fetch('/api/logs/', {method:'POST',
+            headers:{
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                organization_id: organizationId
+            })
+        })
+
+        if (!response.ok) {
+            throw new Error(`Error getting logs: ${response.status} ${response.statusText}`);
+        }
+
+        if (response.status === 204) {
+            return [];
+        }
+
+        const logs = await response.json();
+        if (!logs.data || !Array.isArray(logs.data)) {
+            return [];
+        }
+        // order data using timestamp in descending order
+        const orderedLogs = logs.data.sort((a: any, b: any) => {
+            return new Date(b.changeTime).getTime() - new Date(a.changeTime).getTime();
+        });
+        return orderedLogs;
+    } catch (error: any) {
+        if (error instanceof TypeError) {
+            console.error('Network error: Unable to reach logs API.')
+            throw new Error('Network error: Unable to reach logs API. ')
+        }
+        console.error("API request failed:", error)
+        throw new Error(error.message || "Unexpected error fetching logs.")
+    }
+}
+

@@ -69,6 +69,7 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    get_audit_logs
     get_organization_subscription
     create_invitation
     set_user,
@@ -3351,6 +3352,29 @@ def list_blobs():
     except Exception as e:
         logger.exception("Unexpected error in list_blobs")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/logs/", methods=["POST"])
+def get_logs():
+    try: 
+        data = request.get_json()
+        if data == None:
+            return create_error_response('Request data is required', 400)
+        organization_id = data.get("organization_id")
+        if not organization_id:
+            return create_error_response('Organization ID is required', 400)
+    except Exception as e:
+        return create_error_response(str(e), 400)
+    try:
+        items = get_audit_logs(organization_id)
+        if not items:
+            return create_success_response([], 204)
+        return create_success_response(items)
+    except InvalidParameterError as e:
+        return create_error_response(str(e), 400)
+    except Exception as e:
+        logger.exception("Unexpected error in get_logs")
+        return create_error_response("Internal Server Error", 500)
+    
 
 
 if __name__ == "__main__":

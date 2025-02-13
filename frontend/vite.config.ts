@@ -46,8 +46,9 @@ export default defineConfig({
                 target: "http://127.0.0.1:8000/",
                 changeOrigin: true
             },
-            "/api/reports": "http://127.0.0.1:8000/",
-            "/api/reports/<report_id>": "http://127.0.0.1:8000/"
+            "/api/reports":"http://localhost:8000/",
+            "/api/reports/<report_id>":"http://localhost:8000/",
+            "/api/logs":"http://localhost:8000/"
         },
         host: true
     }

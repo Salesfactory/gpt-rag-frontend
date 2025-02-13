@@ -490,6 +490,39 @@ def patch_user_data(user_id, patch_data):
         raise ve
 
     except Exception as e:
+        logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
+        raise e
+
+
+def get_audit_logs(organization_id):
+    """Get all the audit logs in a cosmosDB container"""
+    container = get_cosmos_container("auditLogs")
+    try:
+        items = list(container.query_items(
+            query="SELECT * FROM c WHERE c.organization_id = @organization_id",
+            parameters=[{"name": "@organization_id", "value": organization_id}],
+            enable_cross_partition_query=True
+        ))
+
+        if not items:
+            logging.warning(f"No audit logs found.")
+            return []
+
+        logging.info(f"Audit logs successfully retrieved: {items}")
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No audit logs found.")
+        raise NotFound
+    
+    except CosmosHttpResponseError as ch_err:
+        logging.error(f"HTTP error while retrieving audit logs: {ch_err}")
+        raise Exception("Error with Cosmos DB HTTP operation.")
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving audit logs: {e}")
+        raise
+=======
         logging.error(
             f"Unexpected error while updating user data with id '{user_id}': {e}"
         )
@@ -663,3 +696,4 @@ def get_company_list():
     except Exception as e:
         logging.error(f"Unexpected error retrieving Companies: {e}")
         raise
+
