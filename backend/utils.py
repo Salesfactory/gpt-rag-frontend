@@ -1,9 +1,42 @@
 from functools import wraps
 import logging
+import uuid
+import os
+from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
 
+from datetime import datetime, timezone, timedelta
+from azure.identity import DefaultAzureCredential
+from azure.cosmos import CosmosClient
+
+from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
+from werkzeug.exceptions import NotFound
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+
+if not AZURE_DB_ID:
+    raise ValueError("AZURE_DB_ID is not set in environment variables")
+
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
+
+AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
+AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
+
+if not AZURE_DB_ID:
+    raise ValueError("AZURE_DB_ID is not set in environment variables")
+
+if not AZURE_DB_NAME:
+    raise ValueError("AZURE_DB_NAME is not set in environment variables")
+
+
+AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 
 # Response Formatting: Type hint for JSON responses
 JsonResponse = Tuple[Dict[str, Any], int]
@@ -55,6 +88,11 @@ class MissingRequiredFieldError(Exception):
 
 class InvalidParameterError(Exception):
     """Raised when an invalid parameter is provided"""
+
+    pass
+
+class MissingParameterError(Exception):
+    """Raised when a required parameter is missing"""
 
     pass
 
@@ -475,6 +513,121 @@ class EmailService:
         # return the blob name
         return blob_name
 
+
+################################################
+# Chat History show a previous chat of the user
+################################################
+
+def get_conversation(conversation_id, user_id):
+    try:
+        if not conversation_id:
+            raise ValueError("conversation_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+
+        container = get_cosmos_container("conversations")
+
+        conversation = container.read_item(
+            item=conversation_id, partition_key=conversation_id
+        )
+        if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
+            return {}
+        formatted_conversation = {
+            "id": conversation_id,
+            "start_date": conversation["conversation_data"]["start_date"],
+            "messages": [
+                {
+                    "role": message["role"],
+                    "content": message["content"],
+                    "thoughts": message["thoughts"] if "thoughts" in message else "",
+                    "data_points": (
+                        message["data_points"] if "data_points" in message else ""
+                    ),
+                }
+                for message in conversation["conversation_data"]["history"]
+            ],
+            "type": (
+                conversation["conversation_data"]["type"]
+                if "type" in conversation["conversation_data"]
+                else "default"
+            ),
+        }
+        return formatted_conversation
+    except Exception:
+        logging.error(f"Error retrieving the conversation '{conversation_id}'")
+        return {}
+
+
+def delete_conversation(conversation_id, user_id):
+    try:
+        if not conversation_id:
+            raise ValueError("conversation_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+
+        container = get_cosmos_container("conversations")
+
+        conversation = container.read_item(
+            item=conversation_id, partition_key=conversation_id
+        )
+
+        if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
+            raise Exception("User does not have permission to delete this conversation")
+
+        container.delete_item(item=conversation_id, partition_key=conversation_id)
+
+        return True
+    except Exception as e:
+        logging.error(f"Error deleting conversation '{conversation_id}': {str(e)}")
+        return False
+
+################################################
+# Chat History Get All Chats From User
+################################################
+
+def get_conversations(user_id):
+    try:
+        credential = DefaultAzureCredential()
+        db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+        db = db_client.get_database_client(database=AZURE_DB_NAME)
+        container = db.get_container_client("conversations")
+
+        query = (
+            "SELECT c.id, c.conversation_data.start_date, c.conversation_data.history[0].content AS first_message, c.conversation_data.type FROM c WHERE c.conversation_data.interaction.user_id = @user_id"
+        )
+        parameters = [dict(name="@user_id", value=user_id)]
+
+        try:
+            conversations = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        except CosmosHttpResponseError as e:
+            logging.error(f"CosmosDB error retrieving conversations for user '{user_id}': {e}")
+            return []
+        except Exception as e:
+            logging.exception(f"Unexpected error retrieving conversations for user '{user_id}': {e}")
+            return []
+
+        # DEFAULT DATE 1 YEAR AGO in case start_date is not present
+        now = datetime.now()
+        one_year_ago = now - timedelta(days=365)
+        default_date = one_year_ago.strftime("%Y-%m-%d %H:%M:%S")
+
+        formatted_conversations = [
+            {
+                "id": con["id"],
+                "start_date": con.get("start_date", default_date),
+                "content": con.get("first_message", "No content"),
+                "type": con.get("type", "default"),
+            }
+            for con in conversations
+        ]
+
+        return formatted_conversations
+    except Exception as e:
+        logging.error(
+            f"Error retrieving the conversations for user '{user_id}': {str(e)}"
+        )
+        return []
+
 ################################################
 # AZURE GET SECRET
 ################################################
@@ -509,3 +662,398 @@ def get_azure_key_vault_secret(secret_name):
     except Exception as e:
         logging.error(f"Failed to retrieve secret '{secret_name}': {e}")
         raise
+
+
+def set_feedback(
+    client_principal,
+    conversation_id,
+    feedback_message,
+    question,
+    answer,
+    rating,
+    category,
+):
+    if not client_principal["id"]:
+        return {"error": "User ID not found."}
+
+    if not conversation_id:
+        return {"error": "Conversation ID not found."}
+
+    if not question:
+        return {"error": "Question not found."}
+
+    if not answer:
+        return {"error": "Answer not found."}
+
+    if rating and rating not in [0, 1]:
+        return {"error": "Invalid rating value."}
+
+    if feedback_message and len(feedback_message) > 500:
+        return {"error": "Feedback message is too long."}
+
+    logging.info(
+        "User ID and Conversation ID found. Setting feedback for user: "
+        + client_principal["id"]
+        + " and conversation: "
+        + str(conversation_id)
+    )
+
+    feedback = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("feedback")
+    try:
+        feedback = {
+            "id": str(uuid.uuid4()),
+            "user_id": client_principal["id"],
+            "conversation_id": conversation_id,
+            "feedback_message": feedback_message,
+            "question": question,
+            "answer": answer,
+            "rating": rating,
+            "category": category,
+        }
+        result = container.create_item(body=feedback)
+        print("Feedback created: ", result)
+    except Exception as e:
+        logging.info(f"[util__module] set_feedback: something went wrong. {str(e)}")
+    return feedback
+################################################
+# SETTINGS UTILS
+################################################
+
+def set_settings(client_principal, temperature, frequency_penalty, presence_penalty):
+
+    new_setting = {}
+    container = get_cosmos_container("settings")
+
+    # set default values
+    temperature = temperature if temperature is not None else 0.0
+    frequency_penalty = frequency_penalty if frequency_penalty is not None else 0.0
+    presence_penalty = presence_penalty if presence_penalty is not None else 0.0
+
+    # validate temperature, frequency_penalty, presence_penalty
+    if temperature < 0 or temperature > 1:
+        logging.error(
+            f"[util__module] set_settings: invalid temperature value {temperature}."
+        )
+        return
+
+    if frequency_penalty < 0 or frequency_penalty > 1:
+        logging.error(
+            f"[util__module] set_settings: invalid frequency_penalty value {frequency_penalty}."
+        )
+        return
+
+    if presence_penalty < 0 or presence_penalty > 1:
+        logging.error(
+            f"[util__module] set_settings: invalid presence_penalty value {presence_penalty}."
+        )
+        return
+
+
+    if client_principal["id"]:
+        query = "SELECT * FROM c WHERE c.user_id = @user_id"
+        parameters = [{"name": "@user_id", "value": client_principal["id"]}]
+
+        logging.info(f"[util__module] set_settings: user_id {client_principal['id']}.")
+
+        results = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if results:
+            logging.info(
+                f"[util__module] set_settings: user_id {client_principal['id']} found, results are {results}."
+            )
+            setting = results[0]
+
+            setting["temperature"] = temperature
+            setting["frequencyPenalty"] = frequency_penalty
+            setting["presencePenalty"] = presence_penalty
+            try:
+                container.replace_item(item=setting["id"], body=setting)
+                logging.info(
+                    f"Successfully updated settings document for user {client_principal['id']}"
+                )
+                return{
+                    "status": "success",
+                    "message": "Settings updated successfully"
+                }
+            except CosmosResourceNotFoundError:
+                logging.error(f"[util__module] No settings found for user {client_principal['id']}")
+            except Exception as e:
+                logging.error(
+                    f"[util__module] Failed to update settings document for user {client_principal['id']}. Error: {str(e)}"
+                )
+        else:
+            logging.info(
+                f"[util__module] set_settings: user_id {client_principal['id']} not found. creating new document."
+            )
+
+            try:
+                new_setting["id"] = str(uuid.uuid4())
+                new_setting["user_id"] = client_principal["id"]
+                new_setting["temperature"] = temperature
+                new_setting["frequencyPenalty"] = frequency_penalty
+                new_setting["presencePenalty"] = presence_penalty
+                container.create_item(body=new_setting)
+
+                logging.info(
+                    f"Successfully created new settings document for user {client_principal['id']}"
+                )
+                return{
+                    "status": "success",
+                    "message": "Settings updated successfully"
+                }
+            except CosmosResourceNotFoundError:
+                logging.info(f"[util__module] get_setting: No settings found for user {client_principal['id']}")
+            except Exception as e:
+                logging.error(
+                    f"Failed to create settings document for user {client_principal['id']}. Error: {str(e)}"
+                )
+    else:
+        logging.info(f"[util__module] set_settings: user_id not provided.")
+
+def get_client_principal():
+    """Util to extract the Client Principal Headers"""
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+
+    if not client_principal_id or not client_principal_name:
+        return None, jsonify({
+            "error": "Missing required parameters, client_principal_id or client_principal_name"
+        }), 400
+
+    return {"id": client_principal_id, "name": client_principal_name}, None, None
+
+def get_setting(client_principal):
+    if not client_principal["id"]:
+        return {}
+
+    logging.info("User ID found. Getting settings for user: " + client_principal["id"])
+
+    setting = {}
+    container = get_cosmos_container("settings")
+    try:
+        query = "SELECT c.temperature, c.frequencyPenalty, c.presencePenalty FROM c WHERE c.user_id = @user_id"
+        parameters = [{"name": "@user_id", "value": client_principal["id"]}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            setting = result[0]
+    except Exception as e:
+        logging.info(
+            f"[util__module] get_setting: no settings found for user {client_principal['id']} (keyvalue store with '{client_principal['id']}' id does not exist)."
+        )
+    return setting
+
+################################################
+# INVITATION UTILS
+################################################
+
+def get_invitations(organization_id):
+    if not organization_id:
+        return {"error": "Organization ID not found."}
+
+    logging.info(
+        "Organization ID found. Getting invitations for organization: " + organization_id
+    )
+
+    invitations = []
+    container = get_cosmos_container("invitations")
+    try:
+        query = "SELECT TOP 1 * FROM c WHERE c.organization_id = @organization_id"
+        parameters = [{"name": "@organization_id", "value": organization_id}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if not result:
+            logging.info(f"[get_invitation] No active invitations found for organization {organization_id}")
+            invitations = result[0]
+            return {}
+        if result:
+            invitations = result
+    except Exception as e:
+        logging.info(
+            f"[get_invitations] get_invitations: something went wrong. {str(e)}"
+        )
+    return invitations
+
+def get_invitation(invited_user_email):
+    if not invited_user_email:
+        return {"error": "User ID not found."}
+
+    logging.info("[get_invitation] Getting invitation for user: " + invited_user_email)
+
+    container = get_cosmos_container("invitations")
+    try:
+        query = "SELECT * FROM c WHERE c.invited_user_email = @invited_user_email AND c.active = true"
+        parameters = [{"name": "@invited_user_email", "value": invited_user_email}]
+
+################################################
+# CHECK USERS UTILS
+################################################
+# Get user data from the database
+def get_set_user(client_principal):
+    if not client_principal["id"]:
+        return {"error": "User ID not found."}
+
+    logging.info("[get_user] Retrieving data for user: " + client_principal["id"])
+
+    user = {}
+    container = get_cosmos_container("users")
+    is_new_user = False
+
+    try:
+        user = container.read_item(
+            item=client_principal["id"], partition_key=client_principal["id"]
+        )
+        logging.info(f"[get_user] user_id {client_principal['id']} found.")
+    except CosmosHttpResponseError:
+        logging.info(f"[get_user] User {client_principal['id']} not found. Creating new user.")
+        is_new_user = True
+
+        logging.info("[get_user] Checking user invitations for new user registration")
+        user_invitation = get_invitation(client_principal["email"])
+
+        try:
+            user = container.create_item(
+                body={
+                    "id": client_principal["id"],
+                    "data": {
+                        "name": client_principal["name"],
+                        "email": client_principal["email"],
+                        "role": user_invitation["role"] if user_invitation else "admin",
+                        "organizationId": (
+                            user_invitation["organization_id"] if user_invitation else None
+                        ),
+                    },
+                }
+            )
+        except Exception as e:
+            logging.error(f"[get_user] Error creating the user: {e}")
+            return {
+                "is_new_user": False,
+                "user_data": None,
+            }
+
+    return {"is_new_user": is_new_user, "user_data": user["data"]}
+
+
+def check_users_existance():
+    container = get_cosmos_container("users")
+    _user = {}
+
+    try:
+        results = list(
+            container.query_items(
+                query="SELECT c FROM c",
+                max_item_count=1,
+                enable_cross_partition_query=True,
+            )
+        )
+        if results:
+            if len(results) > 0:
+                return True
+        return False
+    except Exception as e:
+        logging.info(f"[util__module] get_user: something went wrong. {str(e)}")
+    return _user
+
+def get_user_by_id(user_id):
+    if not user_id:
+        return {"error": "User ID not found."}
+
+    logging.info("User ID found. Getting data for user: " + user_id)
+
+    user = {}
+    container = get_cosmos_container("users")
+    try:
+        query = "SELECT * FROM c WHERE c.id = @user_id"
+        parameters = [{"name": "@user_id", "value": user_id}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if not result:
+            logging.info(f"[get_invitation] No active invitation found for user {invited_user_email}")
+            return {}
+        if result:
+            logging.info(
+                f"[get_invitation] active invitation found for user {invited_user_email}"
+            )
+            invitation = result[0]
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(
+                f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
+            )
+    except Exception as e:
+        logging.error(f"[get_invitation] something went wrong. {str(e)}")
+    return invitation
+        if result:
+            user = result[0]
+    except Exception as e:
+        logging.info(f"[get_user] get_user: something went wrong. {str(e)}")
+    return user
+
+# return all users
+def get_users(organization_id):
+    users = []
+    container = get_cosmos_container("users")
+    try:
+        users = container.query_items(
+            query="SELECT * FROM c WHERE c.data.organizationId = @organization_id",
+            parameters=[{"name": "@organization_id", "value": organization_id}],
+            enable_cross_partition_query=True,
+        )
+        users = list(users)
+
+    except Exception as e:
+        logging.info(
+            f"[get_users] get_users: no users found (keyvalue store with 'users' id does not exist)."
+        )
+    return users
+
+def delete_user(user_id):
+    if not user_id:
+        return {"error": "User ID not found."}
+
+    logging.info("User ID found. Deleting user: " + user_id)
+
+    container = get_cosmos_container("users")
+    try:
+        user = container.read_item(item=user_id, partition_key=user_id)
+        user_email = user["data"]["email"]
+        user["data"]["organizationId"] = None
+        user["data"]["role"] = None
+        container.replace_item(item=user_id, body=user)
+        logging.info(f"[delete_user] User {user_id} deleted from its organization")
+        logging.info(f"[delete_user] Deleting all {user_id} active invitations")
+        container = get_cosmos_container("invitations")
+        invitations = container.query_items(
+            query="SELECT * FROM c WHERE c.invited_user_email = @user_email",
+            parameters=[{"name": "@user_email", "value": user_email}],
+            enable_cross_partition_query=True,
+        )
+        for invitation in invitations:
+            container.delete_item(item=invitation["id"], partition_key=invitation["id"])
+            logging.info(f"Deleted invitation with ID: {invitation['id']}")
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"[delete_user] User not Found.")
+        raise NotFound
+    except CosmosHttpResponseError:
+        logging.warning(f"[delete_user] Unexpected Error in the CosmosDB Database")
+    except Exception as e:
+        logging.error(f"[delete_user] delete_user: something went wrong. {str(e)}")

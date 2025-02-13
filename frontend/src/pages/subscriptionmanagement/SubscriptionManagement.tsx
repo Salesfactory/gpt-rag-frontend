@@ -251,7 +251,7 @@ const SubscriptionManagement: React.FC = () => {
         } finally {
             setLoading(false);
             setIsSubscriptionChangeModal(true);
-            setDataLoad(true);
+            setDataLoad(!dataLoad);
             timer = setTimeout(() => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);

@@ -398,17 +398,22 @@ const Admin = () => {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeletingUser, setIsDeletingUser] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [inputUserName, setInputUserName] = useState("")
-    const [inputEmailName, setInputEmailName] = useState("")
+    const [inputUserName, setInputUserName] = useState("");
+    const [inputEmailName, setInputEmailName] = useState("");
     const roleOptions = [
-            { key: "1", text: "user" },
-            { key: "2", text: "admin" }
-        ];
-    const [categorySelection, setCategorySelection] = useState('')
-    const [errorMessage, setErrorMessage] = useState("")
-    const [isError, setIsError] = useState(false)
-    const [dataLoad, setDataLoad] = useState(false)
-    const [isEditSuccess, setIsEditSuccess] = useState(false)
+        { key: "1", text: "user" },
+        { key: "2", text: "admin" }
+    ];
+    const [categorySelection, setCategorySelection] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+    const [isError, setIsError] = useState(false);
+    const [dataLoad, setDataLoad] = useState(false);
+    const [isEditSuccess, setIsEditSuccess] = useState(false);
+    const roleStyles: { [key in "admin" | "user" | "platformAdmin"]: string } = {
+        admin: styles.roleAdmin,
+        user: styles.roleUser,
+        platformAdmin: styles.rolePlatformAdmin
+    };
 
     if (!user) {
         return <div>Please log in to view the user list.</div>;
@@ -488,64 +493,61 @@ const Admin = () => {
     };
 
     const handleEditClick = (user: any) => {
-        setSelectedUser(user)
-        setIsEditing(true)
+        setSelectedUser(user);
+        setIsEditing(true);
     };
 
     const handleInputName = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setInputUserName(event.target.value)
-    }
+        setInputUserName(event.target.value);
+    };
 
     const handleInputEmail = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setInputEmailName(event.target.value)
-    }
+        setInputEmailName(event.target.value);
+    };
 
     const handleTypeDropdownChange = (event: any, selectedOption: any) => {
-        setCategorySelection(selectedOption.text)
-    }
+        setCategorySelection(selectedOption.text);
+    };
 
     const editUser = async (userID: string) => {
-        
-        if(inputUserName == ('')){
+        if (inputUserName == "") {
             setErrorMessage("Please type the Username");
             setIsError(true);
             return;
         }
-        if(inputEmailName == ('')){
+        if (inputEmailName == "") {
             setErrorMessage("Please type the Email");
             setIsError(true);
             return;
         }
-        if(categorySelection == ('')){
-            setErrorMessage('Please select the Report Category')
+        if (categorySelection == "") {
+            setErrorMessage("Please select the Report Category");
             setIsError(true);
             return;
         }
 
-        
         let timer: NodeJS.Timeout;
 
-        try{
+        try {
             await updateUserData({
                 userId: userID,
-                patchData:{
+                patchData: {
                     name: inputUserName,
                     email: inputEmailName,
                     role: categorySelection
                 }
             });
-            setIsEditing(false)
-            setIsEditSuccess(true)
+            setIsEditing(false);
+            setIsEditSuccess(true);
             timer = setTimeout(() => {
                 setIsEditSuccess(false);
             }, 3000);
-            
-        } catch (error){
-            console.error("Error trying to update the state: ", error)
+        } catch (error) {
+            console.error("Error trying to update the state: ", error);
         } finally {
-            setDataLoad(true)
+            setDataLoad(!dataLoad);
         }
-    }
+    };
 
     return (
         <div className={styles.page_container}>
@@ -638,19 +640,32 @@ const Admin = () => {
                         <Label className={styles.modalTitle}>Edit User</Label>
                         <form>
                             <Label>User Name</Label>
-                            <input type="text" className={styles.input} onChange={handleInputName}
-                            placeholder={selectedUser.data.name} value={inputUserName}></input>
+                            <input
+                                type="text"
+                                className={styles.input}
+                                onChange={handleInputName}
+                                placeholder={selectedUser.data.name}
+                                value={inputUserName}
+                            ></input>
                             <Label>User Email</Label>
-                            <input type="text" className={styles.input} onChange={handleInputEmail}
-                            placeholder={selectedUser.data.email} value={inputEmailName}></input>
+                            <input
+                                type="text"
+                                className={styles.input}
+                                onChange={handleInputEmail}
+                                placeholder={selectedUser.data.email}
+                                value={inputEmailName}
+                            ></input>
                             <Label>Curation Report Category</Label>
-                            <Dropdown placeholder="Select a Role" options={roleOptions} onChange={handleTypeDropdownChange} 
-                            defaultValue={categorySelection} responsiveMode={ResponsiveMode.unknown}/>
-                            {isError && (
-                                <span className={styles.modalError}>{errorMessage}</span>
-                            )}
-                            
-                            <DefaultButton style={{ marginTop: "50px", marginRight: "95px"}} onClick={() => setIsEditing(false)} text="Cancel" />
+                            <Dropdown
+                                placeholder="Select a Role"
+                                options={roleOptions}
+                                onChange={handleTypeDropdownChange}
+                                defaultValue={categorySelection}
+                                responsiveMode={ResponsiveMode.unknown}
+                            />
+                            {isError && <span className={styles.modalError}>{errorMessage}</span>}
+
+                            <DefaultButton style={{ marginTop: "50px", marginRight: "95px" }} onClick={() => setIsEditing(false)} text="Cancel" />
                             <PrimaryButton
                                 styles={{
                                     root: {
@@ -676,7 +691,6 @@ const Admin = () => {
                                 }}
                                 text="Edit User"
                             />
-                            
                         </form>
                     </div>
                 )}
@@ -745,15 +759,7 @@ const Admin = () => {
                                                         textTransform: "capitalize"
                                                     }}
                                                 >
-                                                    <div
-                                                        style={{
-                                                            width: "100px",
-                                                            backgroundColor: user.data.role === "admin" ? "#d7e9f4" : "#d7e5be",
-                                                            padding: "5px",
-                                                            color: user.data.role === "admin" ? "#064789" : "#1b4332",
-                                                            borderRadius: "15px"
-                                                        }}
-                                                    >
+                                                    <div className={roleStyles[user.data.role as "admin" | "user" | "platformAdmin"] || ""}>
                                                         {user.data.role}
                                                     </div>
                                                 </div>
@@ -761,14 +767,14 @@ const Admin = () => {
                                             <td>
                                                 {
                                                     <div>
-                                                        <button className={styles.button} 
-                                                        title="Edit user" 
-                                                        aria-label="Edit user" 
-                                                        onClick={() => {
-                                                            handleEditClick(user)
+                                                        <button
+                                                            className={styles.button}
+                                                            title="Edit user"
+                                                            aria-label="Edit user"
+                                                            onClick={() => {
+                                                                handleEditClick(user);
                                                             }}
                                                         >
-
                                                             <EditRegular />
                                                         </button>
                                                         <button

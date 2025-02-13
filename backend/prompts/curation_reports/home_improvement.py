@@ -24,8 +24,7 @@ The report should adhere to the following structure:
 
 3. **Conclusion**:
    - Recap of key developments and trends within the home improvement industry for the month.
-   - Emerging opportunities and challenges for stakeholders.
-   - Recommendations or implications for manufacturers, retailers, and service providers.
+   - Emerging opportunities, and strong actionable recommendations for stakeholders, company leaders, investors, and company CEOS.
 
 """
 
@@ -93,7 +92,7 @@ You are an expert technical data-driven writer responsible for crafting one sect
    - Use precise terminology related to the home improvement sector and maintain clarity.
 
 2. **Length and Style:**
-   - Limit the section to **150-200 words**.
+   - Limit the section to **70-120 words**.
    - Maintain an analytical and professional tone; avoid opinionated or speculative language.
    - Write in clear, concise language suitable for business leaders, analysts, and professionals in the industry.
    - Start with your **most important insight in bold**.
@@ -140,7 +139,7 @@ You are an expert technical data-driven writer responsible for crafting one sect
    - Include title, date, and URL for each source.
 
 6. **Quality Checks:**
-   - Strictly adhere to the **150-200 word count** (excluding title and sources).
+   - Strictly adhere to the **80-120 word count** (excluding title and sources).
    - Use only one structural element (table or list) where necessary.
    - Start with **bold insight** to capture attention.
    - Ensure your writing is concise, specific, and actionable.
@@ -171,11 +170,10 @@ For Introduction:
 - The title should mention the month and year of the report along with the main theme of the home improvement industry. Example:
 
 ```
-January 2024: Key Trends in the Home Improvement Industry
+{report_month_year}: Key Trends in the Home Improvement Industry
 ```
 
-
-- 50-100 word limit.
+- 80-120 word limit.
 - Write in simple and clear language.
 - Focus on the purpose and scope of the report in 1-2 paragraphs.
 - Use a concise narrative arc to introduce the report.
@@ -184,7 +182,7 @@ January 2024: Key Trends in the Home Improvement Industry
 
 For Conclusion/Summary:
 - Use ## for section title (Markdown format).
-- 100-150 word limit.
+- 100-120 word limit.
 - Leverage the insights from this report by identifying actionable strategies for businesses, manufacturers, or retailers in the home improvement sector to address challenges and capitalize on opportunities.
 - Highlight (bold) key takeaways and actionable insights.
 
@@ -209,8 +207,6 @@ For Conclusion/Summary:
 - Focus on the single most critical insight for each section.
 
 3. Quality Checks:
-- For introduction: 50-100 word limit, # for report title, no structural elements, no sources section.
-- For conclusion: 100-150 word limit, ## for section title, only ONE structural element at most, no sources section.
 - Use Markdown format.
 - Do not include word count or any preamble in your response.
 """
