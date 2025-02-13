@@ -2,17 +2,18 @@ from functools import wraps
 import logging
 import uuid
 import os
-import uuid
-import os
 from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
+
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 from werkzeug.exceptions import NotFound
 
+from datetime import datetime, timezone, timedelta
+from azure.cosmos.exceptions import CosmosResourceNotFoundError
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
@@ -72,6 +73,11 @@ class MissingRequiredFieldError(Exception):
 
 class InvalidParameterError(Exception):
     """Raised when an invalid parameter is provided"""
+
+    pass
+
+class MissingParameterError(Exception):
+    """Raised when a required parameter is missing"""
 
     pass
 
@@ -491,6 +497,74 @@ class EmailService:
 
         # return the blob name
         return blob_name
+
+
+################################################
+# Chat History show a previous chat of the user
+################################################
+
+def get_conversation(conversation_id, user_id):
+    try:
+        if not conversation_id:
+            raise ValueError("conversation_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+
+        container = get_cosmos_container("conversations")
+
+        conversation = container.read_item(
+            item=conversation_id, partition_key=conversation_id
+        )
+        if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
+            return {}
+        formatted_conversation = {
+            "id": conversation_id,
+            "start_date": conversation["conversation_data"]["start_date"],
+            "messages": [
+                {
+                    "role": message["role"],
+                    "content": message["content"],
+                    "thoughts": message["thoughts"] if "thoughts" in message else "",
+                    "data_points": (
+                        message["data_points"] if "data_points" in message else ""
+                    ),
+                }
+                for message in conversation["conversation_data"]["history"]
+            ],
+            "type": (
+                conversation["conversation_data"]["type"]
+                if "type" in conversation["conversation_data"]
+                else "default"
+            ),
+        }
+        return formatted_conversation
+    except Exception:
+        logging.error(f"Error retrieving the conversation '{conversation_id}'")
+        return {}
+
+
+def delete_conversation(conversation_id, user_id):
+    try:
+        if not conversation_id:
+            raise ValueError("conversation_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+
+        container = get_cosmos_container("conversations")
+
+        conversation = container.read_item(
+            item=conversation_id, partition_key=conversation_id
+        )
+
+        if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
+            raise Exception("User does not have permission to delete this conversation")
+
+        container.delete_item(item=conversation_id, partition_key=conversation_id)
+
+        return True
+    except Exception as e:
+        logging.error(f"Error deleting conversation '{conversation_id}': {str(e)}")
+        return False
 
 ################################################
 # AZURE GET SECRET
