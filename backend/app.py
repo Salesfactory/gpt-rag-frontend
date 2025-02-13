@@ -1801,32 +1801,15 @@ def getUser():
         )
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-
-    try:
-        url = CHECK_USER_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"id": client_principal_id}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        user = get_user_container(client_principal_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify(user), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /getUser")
         return jsonify({"error": str(e)}), 500
+    except NotFound as e:
+        return jsonify({"error": str(e)}), 404
 
 
 def get_product_prices(product_id):
