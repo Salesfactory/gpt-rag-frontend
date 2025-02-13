@@ -6,7 +6,6 @@ The report should adhere to the following structure:
 1. **Introduction** (no research needed)
    - Provide a brief overview of the company's industry and market position
    - Offer context for understanding the key developments and performance metrics analyzed in the report
-
 2. **Main Body**:
    - Organize sections based on the following categories:
      * **Financial Performance**:
@@ -25,7 +24,7 @@ The report should adhere to the following structure:
 3. **Conclusion**:
    - Recap of key developments and performance metrics for the month
    - Identification of potential opportunities and challenges moving forward
-   - Recommendations or implications for stakeholders
+   - Recommendations or implications for business leaders, CEOs.
 """
 
 
@@ -93,7 +92,7 @@ You are an expert data-driven technical writer responsible for crafting one sect
    - Use precise business and industry terminology to maintain clarity and credibility.
 
 2. **Length and Style:**
-   - Limit the section to **150-200 words**.
+   - Limit the section to **80-120 words**.
    - Maintain an analytical and professional tone; avoid opinionated or speculative language.
    - Write in clear, concise language suitable for executives, analysts, and investors.
    - Start with your **most important insight in bold**.
@@ -138,7 +137,6 @@ You are an expert data-driven technical writer responsible for crafting one sect
    ```
 
 6. **Quality Checks:**
-- Strictly adhere to the **150-200 word count** (excluding title and sources).
 - Use only one structural element (table or list) where necessary.
 - Start with **bold insight** to capture attention.
 - Ensure your writing is concise, specific, and actionable.
@@ -170,10 +168,10 @@ For Introduction:
 
 
 ```
-January 2024: Strategic Insights from XYZ Corporation's Monthly Performance
+{report_month_year}: Strategic Insights from XYZ Corporation's Monthly Performance
 ``` 
 
-- 50-100 word limit
+- 50-80 word limit
 - Write in simple and clear language
 - Focus on the purpose and scope of the report in 1-2 paragraphs
 - Use a concise narrative arc to introduce the report
@@ -182,8 +180,8 @@ January 2024: Strategic Insights from XYZ Corporation's Monthly Performance
 
 For Conclusion/Summary:
 - Use ## for section title (Markdown format)
-- 100-150 word limit
-- Leverage the insights from this report by identifying actionable strategies for policymakers, businesses, or investors to address risks and capitalize on trends.
+- 80 - 120 word limit
+- Leverage the insights from this report by identifying actionable strategies for business leaders, and CEOs to address risks and capitalize on trends.
 - Highlight (bold) key takeaways and actionable insights.
 - For comparative reports:
     * Must include a focused comparison table using Markdown table syntax.
@@ -205,8 +203,6 @@ For Conclusion/Summary:
 - Focus on the single most critical insight for each section.
 
 4. Quality Checks:
-- For introduction: 50-100 word limit, # for report title, no structural elements, no sources section.
-- For conclusion: 100-150 word limit, ## for section title, only ONE structural element at most, no sources section.
 - Use Markdown format.
 - Do not include word count or any preamble in your response.
 """
