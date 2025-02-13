@@ -80,7 +80,9 @@ load_dotenv(override=True)
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
 ORCHESTRATOR_URI = os.getenv("ORCHESTRATOR_URI", default="")
-FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/api/feedback"
+
+SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/api/settings"
+
 HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/api/conversations"
 SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/api/subscriptions"
 INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/api/invitations"
@@ -1371,6 +1373,11 @@ def setFeedback():
             400,
         )
 
+    client_principal = {
+        'id': client_principal_id,
+        'name': client_principal_name
+    }
+
     conversation_id = request.json["conversation_id"]
     question = request.json["question"]
     answer = request.json["answer"]
@@ -1389,39 +1396,24 @@ def setFeedback():
         )
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--feedback"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--feedback")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
+        conversations = set_feedback(
+            client_principal=client_principal,
+            conversation_id=conversation_id,
+            feedback_message=feedback,
+            question=question,
+            answer=answer,
+            rating=rating,
+            category=category
         )
-
-    try:
-        url = FEEDBACK_ENDPOINT
-        payload = json.dumps(
-            {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
-                "conversation_id": conversation_id,
-                "question": question,
-                "answer": answer,
-                "category": category,
-                "feedback": feedback,
-                "rating": rating,
-            }
-        )
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        return jsonify({
+            "client_principal_id": client_principal_id,
+            "client_principal_name": client_principal_name,
+            "feedback_message": feedback,
+            "question": question,
+            "answer": answer,
+            "rating": rating,
+            "category": category
+        }), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/feedback")
         return jsonify({"error": str(e)}), 500
