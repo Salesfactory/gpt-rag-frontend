@@ -891,13 +891,37 @@ def get_invitations(organization_id):
 def get_invitation(invited_user_email):
     if not invited_user_email:
         return {"error": "User ID not found."}
-
     logging.info("[get_invitation] Getting invitation for user: " + invited_user_email)
-
-    container = get_cosmos_container("invitations")
+    invitation = {}
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("invitations")
     try:
         query = "SELECT * FROM c WHERE c.invited_user_email = @invited_user_email AND c.active = true"
         parameters = [{"name": "@invited_user_email", "value": invited_user_email}]
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+        if result:
+            logging.info(
+                f"[get_invitation] active invitation found for user {invited_user_email}"
+            )
+            invitation = result[0]
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(
+                f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
+            )
+        else:
+            logging.info(
+                f"[get_invitation] no active invitation found for user {invited_user_email}"
+            )
+    except Exception as e:
+        logging.error(f"[get_invitation] something went wrong. {str(e)}")
+    return invitation
 
 ################################################
 # CHECK USERS UTILS
@@ -972,11 +996,12 @@ def check_users_existance():
 def get_user_by_id(user_id):
     if not user_id:
         return {"error": "User ID not found."}
-
     logging.info("User ID found. Getting data for user: " + user_id)
-
     user = {}
-    container = get_cosmos_container("users")
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("users")
     try:
         query = "SELECT * FROM c WHERE c.id = @user_id"
         parameters = [{"name": "@user_id", "value": user_id}]
@@ -985,22 +1010,6 @@ def get_user_by_id(user_id):
                 query=query, parameters=parameters, enable_cross_partition_query=True
             )
         )
-        if not result:
-            logging.info(f"[get_invitation] No active invitation found for user {invited_user_email}")
-            return {}
-        if result:
-            logging.info(
-                f"[get_invitation] active invitation found for user {invited_user_email}"
-            )
-            invitation = result[0]
-            invitation["active"] = False
-            container.replace_item(item=invitation["id"], body=invitation)
-            logging.info(
-                f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
-            )
-    except Exception as e:
-        logging.error(f"[get_invitation] something went wrong. {str(e)}")
-    return invitation
         if result:
             user = result[0]
     except Exception as e:
