@@ -34,6 +34,12 @@ export async function deleteUser({ user, userId }: any): Promise<any> {
                 "X-MS-CLIENT-PRINCIPAL-ID": user.id
             }
         });
+        
+        /*This is a temporal fix. The deleteuser code in the frontend needs to be refactored*/
+        if (response.status === 200 || response.status === 204) {
+            return { success: true };
+        }
+
         const fetchedData = await response.json();
         return fetchedData;
     } catch (error) {
