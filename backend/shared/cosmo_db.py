@@ -510,24 +510,15 @@ def get_audit_logs(organization_id):
 
         logging.info(f"Audit logs successfully retrieved: {items}")
         return items
-
     except CosmosResourceNotFoundError:
         logging.warning(f"No audit logs found.")
         raise NotFound
-    
     except CosmosHttpResponseError as ch_err:
         logging.error(f"HTTP error while retrieving audit logs: {ch_err}")
         raise Exception("Error with Cosmos DB HTTP operation.")
-
     except Exception as e:
         logging.error(f"Unexpected error retrieving audit logs: {e}")
         raise
-=======
-        logging.error(
-            f"Unexpected error while updating user data with id '{user_id}': {e}"
-        )
-        raise e
-
     
 def get_organization_subscription(organizationId):
     """
@@ -696,4 +687,3 @@ def get_company_list():
     except Exception as e:
         logging.error(f"Unexpected error retrieving Companies: {e}")
         raise
-

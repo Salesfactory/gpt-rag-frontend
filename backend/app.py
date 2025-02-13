@@ -69,9 +69,9 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
-    get_audit_logs
-    get_organization_subscription
-    create_invitation
+    get_audit_logs,
+    get_organization_subscription,
+    create_invitation,
     set_user,
     create_organization
 )
