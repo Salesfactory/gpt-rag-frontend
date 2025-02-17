@@ -26,6 +26,9 @@ import uuid
 from identity.flask import Auth
 from datetime import timedelta, datetime
 
+from flask import Flask, Response, stream_with_context
+import requests
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -484,6 +487,64 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
             500,
         )
 
+
+@app.route("/stream_chatgpt", methods=["POST"])
+def proxy_orc():
+    conversation_id = request.json["conversation_id"]
+    question = request.json["question"]
+    file_blob_url = request.json["url"]
+    agent = request.json["agent"]
+    documentName = request.json["documentName"]
+    
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+    
+    logging.info("[webbackend] conversation_id: " + conversation_id)
+    logging.info("[webbackend] question: " + question)
+    logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
+    logging.info(f"[webbackend] User principal: {client_principal_id}")
+    logging.info(f"[webbackend] User name: {client_principal_name}")
+    logging.info(f"[webappend] Agent: {agent}")
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = "orchestrator-host--financial" if agent == "financial" else "orchestrator-host--functionKey"
+        functionKey = get_azure_key_vault_secret(keySecretName)
+    except Exception as e:
+        logging.exception(
+            "[webbackend] exception in /api/orchestrator-host--functionKey"
+        )
+        return (
+            jsonify(
+                {
+                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+                }
+            ),
+            500,
+        )
+    orchestrator_url = FINANCIAL_ASSISTANT_ENDPOINT if agent == "financial" else ORCHESTRATOR_ENDPOINT
+    
+    payload = json.dumps(
+        {
+            "conversation_id": conversation_id,
+            "question": question,
+            "url": file_blob_url,
+            "client_principal_id": client_principal_id,
+            "client_principal_name": client_principal_name,
+            "documentName": documentName,
+        }
+    )
+    
+    headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}
+    
+    def generate():
+        with requests.post(orchestrator_url, stream=True, headers=headers,
+                        data=payload) as r:
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk.decode()
+
+    return Response(stream_with_context(generate()), content_type="text/event-stream")
 
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
