@@ -98,13 +98,44 @@ const Chat = () => {
 
         agent = isFinancialAssistantActive ? "financial" : "consumer";
 
+        let history: ChatTurn[] = [];
+        if (dataConversation.length > 0) {
+            history.push(...dataConversation);
+        } else {
+            history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
+        }
+        history.push({ user: question, bot: undefined });
+        const request: ChatRequestGpt = {
+            history: history,
+            approach: Approaches.ReadRetrieveRead,
+            conversation_id: chatId !== null ? chatId : userId,
+            query: question,
+            file_blob_url: fileBlobUrl || "",
+            documentName,
+            agent,
+            overrides: {
+                promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
+                excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
+                top: retrieveCount,
+                semanticRanker: useSemanticRanker,
+                semanticCaptions: useSemanticCaptions,
+                suggestFollowupQuestions: useSuggestFollowupQuestions
+            }
+        };
+
         try {
             const response = await fetch("/stream_chatgpt", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ question: question, conversation_id: chatId, file_blob_url: fileBlobUrl })
+                body: JSON.stringify({
+                    question: request.query,
+                    conversation_id: request.conversation_id,
+                    url: request.file_blob_url,
+                    agent: request.agent,
+                    documentName: request.documentName
+                })
             });
 
             if (!response.body) {
