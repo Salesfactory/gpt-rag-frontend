@@ -933,6 +933,6 @@ export async function getCompanyData() {
         const companydata = await response.json()
         return companydata.data
     } catch {
-        console.log("errorcito")
+        console.error("API request failed")
     }
 }
