@@ -922,3 +922,17 @@ export async function getLogs(organizationId: string): Promise<any> {
     }
 }
 
+export async function getCompanyData() {
+    try {
+        const response = await fetch("/api/companydata", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        });
+        const companydata = await response.json()
+        return companydata.data
+    } catch {
+        console.log("errorcito")
+    }
+}

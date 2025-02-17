@@ -669,7 +669,7 @@ def get_company_list():
     try:
         items = list(
             container.query_items(
-                query="SELECT c.id, c.name, c.ticker, c.is_active, c.created_at, c.lastRun FROM c",
+                query="SELECT * FROM c",
                 enable_cross_partition_query=True,
             )
         )
