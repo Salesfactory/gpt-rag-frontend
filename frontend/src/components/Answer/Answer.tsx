@@ -11,6 +11,8 @@ import { AskResponse, getCitationFilePath, getFilePath } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 
+import { animated, useSpring } from "@react-spring/web";
+
 const userLanguage = navigator.language;
 let citation_label_text = "";
 if (userLanguage.startsWith("pt")) {
@@ -21,6 +23,14 @@ if (userLanguage.startsWith("pt")) {
     citation_label_text = "Sources";
 }
 
+let generating_answer_text = '';
+if (userLanguage.startsWith('pt')) {
+  generating_answer_text = 'Gerando resposta';
+} else if (userLanguage.startsWith('es')) {
+  generating_answer_text = 'Generando respuesta';
+} else {
+  generating_answer_text = 'Generating response';
+}
 interface Props {
     answer: AskResponse;
     isSelected?: boolean;
@@ -51,9 +61,30 @@ export const Answer = ({
     showFollowupQuestions,
     showSources
 }: Props) => {
+    const animatedStyles = useSpring({
+        from: { opacity: 0 },
+        to: { opacity: 1 }
+    });
+
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
 
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
+
+    if (answer.answer === "") {
+        return (
+            <animated.div style={{ ...animatedStyles }}>
+                <Stack className={styles.answerContainer} verticalAlign="space-between">
+                    <AnswerIcon />
+                    <Stack.Item grow>
+                        <p className={styles.answerText}>
+                            {generating_answer_text}
+                            <span className={styles.loadingdots} />
+                        </p>
+                    </Stack.Item>
+                </Stack>
+            </animated.div>
+        );
+    }
 
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">

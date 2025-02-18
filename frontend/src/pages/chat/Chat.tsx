@@ -83,6 +83,121 @@ const Chat = () => {
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
     const triggered = useRef(false);
 
+    const [lastAnswer, setLastAnswer] = useState<string>("");
+
+    const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
+        let agent;
+        lastQuestionRef.current = question;
+        lastFileBlobUrl.current = fileBlobUrl;
+
+        error && setError(undefined);
+        setIsLoading(true);
+        setActiveCitation(undefined);
+        setActiveAnalysisPanelTab(undefined);
+        setLastAnswer("");
+
+        agent = isFinancialAssistantActive ? "financial" : "consumer";
+
+        let history: ChatTurn[] = [];
+        if (dataConversation.length > 0) {
+            history.push(...dataConversation);
+        } else {
+            history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
+        }
+        history.push({ user: question, bot: undefined });
+        const request: ChatRequestGpt = {
+            history: history,
+            approach: Approaches.ReadRetrieveRead,
+            conversation_id: chatId !== null ? chatId : userId,
+            query: question,
+            file_blob_url: fileBlobUrl || "",
+            documentName,
+            agent,
+            overrides: {
+                promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
+                excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
+                top: retrieveCount,
+                semanticRanker: useSemanticRanker,
+                semanticCaptions: useSemanticCaptions,
+                suggestFollowupQuestions: useSuggestFollowupQuestions
+            }
+        };
+
+        try {
+            const response = await fetch("/stream_chatgpt", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    question: request.query,
+                    conversation_id: request.conversation_id,
+                    url: request.file_blob_url,
+                    agent: request.agent,
+                    documentName: request.documentName
+                })
+            });
+
+            if (!response.body) {
+                throw new Error("ReadableStream not supported in this browser.");
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let result = "";
+            let resultObj = {
+                conversation_id: "",
+                answer: "",
+                thoughts: ""
+            };
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                if (chunk.startsWith("{")) {
+                    resultObj = JSON.parse(chunk);
+                    const conditionOne = answers.map(a => ({ user: a[0] }));
+                    if (conditionOne.length <= 0) {
+                        setRefreshFetchHistory(true);
+                        setChatId(resultObj.conversation_id);
+                    } else {
+                        setRefreshFetchHistory(false);
+                    }
+                    setUserId(resultObj.conversation_id);
+                } else {
+                    result += chunk;
+                    setLastAnswer(result);
+                }
+            }
+            setAnswers([
+                ...answers,
+                [
+                    question,
+                    {
+                        answer: result || "",
+                        conversation_id: resultObj.conversation_id,
+                        data_points: [""],
+                        thoughts: resultObj.thoughts || []
+                    } as AskResponse
+                ]
+            ]);
+            const botResponse = {
+                answer: result || "",
+                conversation_id: resultObj.conversation_id,
+                data_points: [""],
+                thoughts: resultObj.thoughts || []
+            } as AskResponse;
+            setDataConversation([...dataConversation, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
+            lastQuestionRef.current = "";
+        } catch (error) {
+            console.error("Error fetching streamed response:", error);
+            setError(error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
         let agent = null;
         lastQuestionRef.current = question;
@@ -170,9 +285,6 @@ const Chat = () => {
         } catch (e) {
             setError(e);
             console.log(e);
-            console.log(typeof e);
-            console.log(Object.keys(e as object));
-            console.log((e as Error).toString());
         } finally {
             setIsLoading(false);
         }
@@ -399,7 +511,6 @@ const Chat = () => {
                                         </p>
                                     </div>
                                 )}
-
                                 {isFinancialAssistantActive && (
                                     <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                         <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
@@ -446,66 +557,75 @@ const Chat = () => {
                                               </div>
                                           );
                                       })
-                                    : answers.map((answer, index) => (
-                                          <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
-                                              <UserChatMessage message={answer[0]} />
-                                              <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
-                                                  <Answer
-                                                      key={index}
-                                                      answer={answer[1]}
-                                                      isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                      onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                      onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                      onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                      onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
-                                                      showFollowupQuestions={false}
-                                                      showSources={true}
-                                                  />
+                                    : answers.map((answer, index) => {
+                                          return (
+                                              <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                  <UserChatMessage message={answer[0]} />
+                                                  <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                                      <Answer
+                                                          key={index}
+                                                          answer={answer[1]}
+                                                          isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                          onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                          onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                          onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                          onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
+                                                          showFollowupQuestions={false}
+                                                          showSources={true}
+                                                      />
+                                                  </div>
                                               </div>
-                                          </div>
-                                      ))}
-
-                                {isLoading && (
-                                    <>
-                                        <UserChatMessage message={lastQuestionRef.current} />
-                                        <div className={styles.chatMessageGptMinWidth}>
-                                            <AnswerLoading />
-                                        </div>
-                                    </>
-                                )}
+                                          );
+                                      })}
                                 {error ? (
                                     <>
                                         <UserChatMessage message={lastQuestionRef.current} />
                                         <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
                                             <AnswerError
                                                 error={error_message_text + error.toString()}
-                                                onRetry={() =>
-                                                    makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)
+                                                onRetry={
+                                                    () => streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)
+                                                    //makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)
                                                 }
                                             />
                                         </div>
                                     </>
                                 ) : null}
+                                {lastQuestionRef.current !== "" && (
+                                    <>
+                                        <UserChatMessage message={lastQuestionRef.current} />
+                                        <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                            <Answer
+                                                answer={
+                                                    {
+                                                        answer: lastAnswer,
+                                                        conversation_id: chatId,
+                                                        data_points: [""],
+                                                        thoughts: ""
+                                                    } as AskResponse
+                                                }
+                                                isSelected={activeAnalysisPanelTab !== undefined}
+                                                onCitationClicked={(c, n) => {}}
+                                                onThoughtProcessClicked={() => {}}
+                                                onSupportingContentClicked={() => {}}
+                                                onFollowupQuestionClicked={q => {}}
+                                                showFollowupQuestions={false}
+                                                showSources={true}
+                                            />
+                                        </div>
+                                    </>
+                                )}
                                 <div ref={chatMessageStreamEnd} />
                             </div>
                         )}
                         <div className={styles.chatInput}>
-                            {/* <div className={styles.buttonsActions}>
-                                <button
-                                    className={lastQuestionRef.current || dataConversation.length > 0 ? styles.clearChatButton : styles.clearChatButtonDisabled}
-                                    onClick={clearChat}
-                                    aria-label="Clear chat"
-                                    type="button"
-                                >
-                                    <BroomRegular />
-                                </button>
-                            </div> */}
                             <QuestionInput
                                 clearOnSend
                                 placeholder={placeholderText}
                                 disabled={isLoading}
                                 onSend={(question, fileBlobUrl) => {
-                                    makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                    streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                    //makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
                                 }}
                                 extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                             />
