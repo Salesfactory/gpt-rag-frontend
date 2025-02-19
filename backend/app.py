@@ -490,26 +490,26 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
 @app.route("/stream_chatgpt", methods=["POST"])
 def proxy_orc():
-    conversation_id = request.json["conversation_id"]
-    question = request.json["question"]
-    file_blob_url = request.json["url"]
-    agent = request.json["agent"]
-    documentName = request.json["documentName"]
+    data = request.get_json()
+    conversation_id = data.get("conversation_id")
+    question = data.get("question")
+    file_blob_url = data.get("url")
+    agent = data.get("agent")
+    documentName = data.get("documentName")
+    
+    if not question:
+        return jsonify({"error": "Missing required parameters"}), 400
     
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     
-    logging.info("[webbackend] conversation_id: " + conversation_id)
-    logging.info("[webbackend] question: " + question)
-    logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
-    logging.info(f"[webbackend] User principal: {client_principal_id}")
-    logging.info(f"[webbackend] User name: {client_principal_name}")
-    logging.info(f"[webappend] Agent: {agent}")
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
         keySecretName = "orchestrator-host--financial" if agent == "financial" else "orchestrator-host--functionKey"
         functionKey = get_azure_key_vault_secret(keySecretName)
+        if not functionKey:
+            raise ValueError(f"Function key {keySecretName} is empty")
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -538,11 +538,15 @@ def proxy_orc():
     headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}
     
     def generate():
-        with requests.post(orchestrator_url, stream=True, headers=headers,
-                        data=payload) as r:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    yield chunk.decode()
+        try:
+            with requests.post(orchestrator_url, stream=True, headers=headers,
+                            data=payload) as r:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk.decode()
+        except Exception as e:
+            logging.exception(f"[webbackend] exception in /stream_chatgpt: {str(e)}")
+            yield jsonify({"error": str(e)}), 500
 
     return Response(stream_with_context(generate()), content_type="text/event-stream")
 
