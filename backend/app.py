@@ -26,6 +26,9 @@ import uuid
 from identity.flask import Auth
 from datetime import timedelta, datetime
 
+from flask import Flask, Response, stream_with_context
+import requests
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -484,6 +487,68 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
             500,
         )
 
+
+@app.route("/stream_chatgpt", methods=["POST"])
+def proxy_orc():
+    data = request.get_json()
+    conversation_id = data.get("conversation_id")
+    question = data.get("question")
+    file_blob_url = data.get("url")
+    agent = data.get("agent")
+    documentName = data.get("documentName")
+    
+    if not question:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+    
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = "orchestrator-host--financial" if agent == "financial" else "orchestrator-host--functionKey"
+        functionKey = get_azure_key_vault_secret(keySecretName)
+        if not functionKey:
+            raise ValueError(f"Function key {keySecretName} is empty")
+    except Exception as e:
+        logging.exception(
+            "[webbackend] exception in /api/orchestrator-host--functionKey"
+        )
+        return (
+            jsonify(
+                {
+                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+                }
+            ),
+            500,
+        )
+    orchestrator_url = FINANCIAL_ASSISTANT_ENDPOINT if agent == "financial" else ORCHESTRATOR_ENDPOINT
+    
+    payload = json.dumps(
+        {
+            "conversation_id": conversation_id,
+            "question": question,
+            "url": file_blob_url,
+            "client_principal_id": client_principal_id,
+            "client_principal_name": client_principal_name,
+            "documentName": documentName,
+        }
+    )
+    
+    headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}
+    
+    def generate():
+        try:
+            with requests.post(orchestrator_url, stream=True, headers=headers,
+                            data=payload) as r:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk.decode()
+        except Exception as e:
+            logging.exception(f"[webbackend] exception in /stream_chatgpt: {str(e)}")
+            yield jsonify({"error": str(e)}), 500
+
+    return Response(stream_with_context(generate()), content_type="text/event-stream")
 
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
