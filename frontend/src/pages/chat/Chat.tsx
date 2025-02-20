@@ -127,7 +127,9 @@ const Chat = () => {
             const response = await fetch("/stream_chatgpt", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "X-MS-CLIENT-PRINCIPAL-ID": user?.id || "",
+                    "X-MS-CLIENT-PRINCIPAL-NAME": user?.name || ""
                 },
                 body: JSON.stringify({
                     question: request.query,
