@@ -172,6 +172,8 @@ const Chat = () => {
                     setLastAnswer(result);
                 }
             }
+            const regex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
+            result = result.replace(regex, "");
             setAnswers([
                 ...answers,
                 [
