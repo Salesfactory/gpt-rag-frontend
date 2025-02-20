@@ -70,26 +70,26 @@ const Chat = () => {
     const lastFileBlobUrl = useRef<string | null>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [fileType, setFileType] = useState<string>("");
-
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
-
+    
     const [activeCitation, setActiveCitation] = useState<string>();
     const [activeAnalysisPanelTab, setActiveAnalysisPanelTab] = useState<AnalysisPanelTabs | undefined>(undefined);
-
+    
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
-
+    
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
     const triggered = useRef(false);
-
+    
     const [lastAnswer, setLastAnswer] = useState<string>("");
-
+    const restartChat = useRef<boolean>(false);
+    
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
         let agent;
         lastQuestionRef.current = question;
         lastFileBlobUrl.current = fileBlobUrl;
-
+        restartChat.current = false;
         error && setError(undefined);
         setIsLoading(true);
         setActiveCitation(undefined);
@@ -154,6 +154,10 @@ const Chat = () => {
             };
 
             while (true) {
+                if (restartChat.current) {
+                    handleNewChat();
+                    return;
+                }
                 const { done, value } = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value, { stream: true });
@@ -311,6 +315,7 @@ const Chat = () => {
 
     const handleNewChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
+            restartChat.current = true;
             lastQuestionRef.current = "";
             lastFileBlobUrl.current = "";
             error && setError(undefined);
