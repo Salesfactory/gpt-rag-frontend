@@ -414,11 +414,30 @@ const Chat = () => {
         setUseSuggestFollowupQuestions(!!checked);
     };
 
+    const extractAfterDomain = (url: string) => {
+        const extensions = [".net", ".com"];
+      
+        for (const ext of extensions) {
+          const index = url.lastIndexOf(ext);
+          if (index !== -1) {
+            let currentUrl = url.substring(index + ext.length);
+            if (currentUrl.startsWith("/")) {
+                currentUrl = currentUrl.substring(1);
+            }
+            return currentUrl;
+          }
+        }
+        return url;
+    }
+
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
             return window.open(citation, "_blank");
         }
-        const response = await getPdf(fileName);
+        // Extract filepath if necessary
+        const modifiedFilename = extractAfterDomain(fileName)
+
+        const response = await getPdf(modifiedFilename);
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
