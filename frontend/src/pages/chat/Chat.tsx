@@ -264,6 +264,7 @@ const Chat = () => {
                 thoughts: result.thoughts || []
             } as AskResponse;
             setDataConversation([...dataConversation, { user: question, bot: { message: response.answer, thoughts: response.thoughts } }]);
+            lastQuestionRef.current = "";
 
             // Voice Synthesis
             if (speechSynthesisEnabled) {
@@ -611,10 +612,13 @@ const Chat = () => {
                                         <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
                                             <AnswerError
                                                 error={error_message_text + error.toString()}
-                                                onRetry={
-                                                    () => streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)
-                                                    //makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current)
-                                                }
+                                                onRetry={() => {
+                                                    if (isFinancialAssistantActive) {
+                                                        makeApiRequestGpt(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current);
+                                                    } else {
+                                                        streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current);
+                                                    }
+                                                }}
                                             />
                                         </div>
                                     </>
@@ -652,8 +656,11 @@ const Chat = () => {
                                 placeholder={placeholderText}
                                 disabled={isLoading}
                                 onSend={(question, fileBlobUrl) => {
-                                    streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
-                                    //makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                    if (isFinancialAssistantActive) {
+                                        makeApiRequestGpt(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                    } else {
+                                        streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                    }
                                 }}
                                 extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                             />
