@@ -216,72 +216,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }, [handleKeyDown]);
 
     // Effect to fetch user authentication on component mount
-    useEffect(() => {
-        const fetchUserAuth = async (invitationToken?: string | null) => {
-            let url = "/api/auth/user";
-            if (invitationToken) {
-                const params = new URLSearchParams({ invitation: invitationToken });
-                url += `?${params.toString()}`;
-            }
+    // useEffect(() => {
+    //     const fetchUserAuth = async (invitationToken?: string | null) => {
+    //         let url = "/api/auth/user";
+    //         if (invitationToken) {
+    //             const params = new URLSearchParams({ invitation: invitationToken });
+    //             url += `?${params.toString()}`;
+    //         }
 
-            debugLog(`Fetching user authentication from URL: ${url}`);
+    //         debugLog(`Fetching user authentication from URL: ${url}`);
 
-            const response = await fetch(url, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            });
+    //         const response = await fetch(url, {
+    //             method: "GET",
+    //             credentials: "include",
+    //             headers: {
+    //                 "Content-Type": "application/json"
+    //             }
+    //         });
 
-            if (!response.ok) {
-                debugLog(`HTTP error while fetching user auth! Status: ${response.status}`);
-                console.error(`HTTP error while fetching user auth! Status: ${response.status}`);
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+    //         if (!response.ok) {
+    //             debugLog(`HTTP error while fetching user auth! Status: ${response.status}`);
+    //             console.error(`HTTP error while fetching user auth! Status: ${response.status}`);
+    //             throw new Error(`HTTP error! Status: ${response.status}`);
+    //         }
 
-            const data = await response.json();
-            debugLog("User authentication data fetched:", data);
-            return data;
-        };
+    //         const data = await response.json();
+    //         debugLog("User authentication data fetched:", data);
+    //         return data;
+    //     };
 
-        const initializeAuth = async () => {
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const invitationToken = urlParams.get("invitation");
+    //     const initializeAuth = async () => {
+    //         try {
+    //             const urlParams = new URLSearchParams(window.location.search);
+    //             const invitationToken = urlParams.get("invitation");
 
-                const authData = await fetchUserAuth(invitationToken);
+    //             const authData = await fetchUserAuth(invitationToken);
 
-                if (authData.authenticated) {
-                    setUser(authData.user);
-                    setIsAuthenticated(true);
-                    debugLog(`User authenticated: ${authData.user.name}`);
-                } else {
-                    debugLog("User not authenticated.");
-                }
+    //             if (authData.authenticated) {
+    //                 setUser(authData.user);
+    //                 setIsAuthenticated(true);
+    //                 debugLog(`User authenticated: ${authData.user.name}`);
+    //             } else {
+    //                 debugLog("User not authenticated.");
+    //             }
 
-                // Handle financial assistant activation based on local storage or agentType
-                const savedState = localStorage.getItem(`financialAssistantActive_${authData.user?.id}`);
-                if (savedState !== null) {
-                    setIsFinancialAssistantActive(JSON.parse(savedState));
-                    debugLog("Financial Assistant activation state loaded from localStorage.");
-                }
-                if (agentType === "financial") {
-                    setIsFinancialAssistantActive(true);
-                    debugLog("Financial Assistant activated based on agentType.");
-                }
-            } catch (error) {
-                debugLog("Initialization failed:", error);
-                console.error("Initialization failed:", error);
-                toast.error("Failed to initialize user authentication.");
-            } finally {
-                setIsLoading(false);
-                debugLog("Initialization completed.");
-            }
-        };
+    //             // Handle financial assistant activation based on local storage or agentType
+    //             const savedState = localStorage.getItem(`financialAssistantActive_${authData.user?.id}`);
+    //             if (savedState !== null) {
+    //                 setIsFinancialAssistantActive(JSON.parse(savedState));
+    //                 debugLog("Financial Assistant activation state loaded from localStorage.");
+    //             }
+    //             if (agentType === "financial") {
+    //                 setIsFinancialAssistantActive(true);
+    //                 debugLog("Financial Assistant activated based on agentType.");
+    //             }
+    //         } catch (error) {
+    //             debugLog("Initialization failed:", error);
+    //             console.error("Initialization failed:", error);
+    //             toast.error("Failed to initialize user authentication.");
+    //         } finally {
+    //             setIsLoading(false);
+    //             debugLog("Initialization completed.");
+    //         }
+    //     };
 
-        initializeAuth();
-    }, [agentType]); // Dependency only on agentType
+    //     initializeAuth();
+    // }, [agentType]); // Dependency only on agentType
 
     // Effect to fetch organization details when user.id changes
     useEffect(() => {
