@@ -77,7 +77,8 @@ from shared.cosmo_db import (
     get_organization_subscription,
     create_invitation,
     set_user,
-    create_organization
+    create_organization,
+    get_company_list
 )
 
 load_dotenv(override=True)
@@ -3500,7 +3501,17 @@ def get_logs():
         logger.exception("Unexpected error in get_logs")
         return create_error_response("Internal Server Error", 500)
     
-
+@app.route("/api/companydata", methods=["GET"])
+def get_company_data():
+    try:
+        data = get_company_list()
+        return create_success_response(data, 200)
+    except CosmosHttpResponseError as e:
+        logger.exception(f"Unexpected error in with cosmos db: {e}")
+        return create_error_response("Internal Server Error", 500)
+    except Exception as e:
+        logger.exception("Unexpected error in get_company_analysis")
+        return create_error_response("Internal Server Error", 500)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
