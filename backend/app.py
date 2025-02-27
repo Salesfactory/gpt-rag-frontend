@@ -58,7 +58,8 @@ from utils import (
     delete_conversation,
 )
 import stripe.error
-
+from bs4 import BeautifulSoup
+from urllib.parse import urlencode
 from shared.cosmo_db import (
     create_report,
     get_report,
@@ -278,15 +279,74 @@ class UserService:
             logger.error(f"[auth] Unexpected error validating user {client_principal_id}: {str(e)}")
             raise
 
+def store_request_params_in_session(keys=None):
+    """
+    Decorator to store specified request parameters into the Flask session.
+
+    Args:
+        keys (list, optional): A list of parameter keys to store.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if keys is not None:
+                for key in keys:
+                    if key in request.args:
+                        session[key] = request.args[key]
+                    elif key in request.form:
+                        session[key] = request.form[key]
+                logger.info(f"Stored request parameters in session: {session}")
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def append_script(file, query_params):
+    try:
+        with open(file, 'r') as f:
+            html_content = f.read()
+
+        soup = BeautifulSoup(html_content, 'html.parser')
+        encoded_params = urlencode(query_params)
+        full_url = f"?{encoded_params}"
+
+        script_tag = soup.new_tag('script', type='text/javascript')
+        script_content = f"""
+        console.log('Modifying location without reload: {full_url}');
+        if (window.history && window.history.pushState)
+            window.history.pushState(null, '', '{full_url}');
+        """
+        script_tag.string = script_content
+
+        soup.body.append(script_tag)
+
+        modified_html = str(soup)
+        return Response(modified_html, mimetype='text/html')
+
+    except FileNotFoundError:
+        return "HTML file not found", 404
+
+
 @app.route("/")
+@store_request_params_in_session(['agent','document'])
 @auth.login_required
 def index(*, context):
     """
     Endpoint to get the current user's data from Microsoft Graph API
     """
     logger.debug(f"User context: {context}")
-    return send_from_directory("static", "index.html")
 
+    # get session data if available
+    agent = session.get('agent')
+    document = session.get('document')
+
+    session.pop('agent', None)
+    session.pop('document', None)
+
+    if not agent or not document:
+        return send_from_directory("static", "index.html")
+
+    query_params = {"agent": agent, "document": document}
+    return append_script('static/index.html', query_params)
 
 # route for other static files
 

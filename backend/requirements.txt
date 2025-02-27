@@ -34,3 +34,4 @@ pydantic-settings==2.7.0
 markdown
 pydantic[email]
 weasyprint==63.1
+beautifulsoup4==4.13.3
