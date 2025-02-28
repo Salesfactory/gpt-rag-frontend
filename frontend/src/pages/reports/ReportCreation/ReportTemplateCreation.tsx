@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './ReportTemplateCreation.module.css';
 import { IconArrowBack, IconX } from '@tabler/icons-react';
-import { Label, Dropdown, IDropdownOption } from '@fluentui/react';
+import { Label, Dropdown, IDropdownOption, Spinner } from '@fluentui/react';
 import { useNavigate } from 'react-router-dom';
-import { createSummarizationReport } from '../../../api';
+import { createSummarizationReport, getCompanyData } from '../../../api';
 
 export const TemplateCreation: React.FC = () => {
 
@@ -13,7 +13,8 @@ export const TemplateCreation: React.FC = () => {
     const [description, setDescription] = useState('')
     const [errorMessage, setErrorMessage] = useState<string | null>("")
     const [isConfirm, setIsConfirm] = useState(false)
-
+    const [companyOptions, setCompanyOptions] = useState([])
+    const [loading, setLoading] = useState(false)
 
     const templateTypeOptions = [
         { key: '1', text: '10-K' },
@@ -21,15 +22,35 @@ export const TemplateCreation: React.FC = () => {
         { key: '3', text: '8-K' },
         { key: '4', text: 'DEF 14A' },
     ]
-    const companyOptions = [
-        { key: '1', text: "The Home Depot", value: 'LOW' },
-        { key: '2', text: "Lowe's Home Improvement", value: 'HD' },
-        { key: '3', text: "Walmart", value: 'WMT' },
-        { key: '4', text: "Ace Hardware", value: 'ACE' },
-        { key: '5', text: "Amazon", value: 'AMZN' },
-        { key: '7', text: "Costco", value: 'COST' },
-        { key: '8', text: "Target", value: 'TGT' },
-    ]
+    // const companyOptions = [
+    //     { key: '1', text: "The Home Depot", value: 'LOW' },
+    //     { key: '2', text: "Lowe's Home Improvement", value: 'HD' },
+    //     { key: '3', text: "Walmart", value: 'WMT' },
+    //     { key: '4', text: "Ace Hardware", value: 'ACE' },
+    //     { key: '5', text: "Amazon", value: 'AMZN' },
+    //     { key: '7', text: "Costco", value: 'COST' },
+    //     { key: '8', text: "Target", value: 'TGT' },
+    // ]
+
+    useEffect(() => {
+        const getDropdownCompanies = async () => {
+            setLoading(true)
+            try {
+                let data = await getCompanyData()
+                console.log(data)
+                setCompanyOptions(data)
+                console.log(companyOptions)
+            }
+            catch {
+                console.error("Error Fetching Company Data")
+                setCompanyOptions([])
+            }
+            finally {
+                setLoading(false)
+            }
+        }
+        getDropdownCompanies()
+    }, [])
 
     const handleDropdownTemplate = (event: any, selectedOption: any) => {
         setTemplateType(selectedOption.text)
@@ -99,14 +120,17 @@ export const TemplateCreation: React.FC = () => {
                 <h1 className={styles.title}>Summarization Report Template Creation</h1>
             </div>
             <div className={styles.card}>
-                <form>
+                {loading ? (
+                    <Spinner styles={{root: {marginTop: "50px", marginBottom: "50px", marginRight: "auto", marginLeft: 'auto'}}}/>
+                ) : (<form>
                     <Label>Template type</Label>
                     <Dropdown placeholder="Select a Template Name" options={templateTypeOptions} onChange={handleDropdownTemplate} defaultValue={""} />
                     <Label>Company</Label>
                     <Dropdown placeholder="Select a company" options={companyOptions} onChange={handleDropdownCompany} defaultValue={""} />
                     <Label>Description</Label>
                     <input type="text" className={styles.input} onChange={handleInputDescription} value={description}></input>
-                </form>
+                </form>)}
+                
                 {errorMessage !== null && <p className={styles.error}>{errorMessage}</p>}
                 <div className={styles.buttonContainer}>
                     <button className={styles.button} title="Cancel" aria-label="Cancel" onClick={handleCancelButton}>

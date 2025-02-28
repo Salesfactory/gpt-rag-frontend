@@ -1,4 +1,5 @@
-.page_container {
+/* Container Styles */
+.pageContainer {
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -7,11 +8,12 @@
 }
 
 @media (max-width: 900px) {
-    .page_container{
+    .pageContainer {
         padding: 100px 10px 100px 50px;
     }
 }
 
+/* Row Styles */
 .row {
     display: flex;
     flex-direction: row;
@@ -22,11 +24,20 @@
     margin-bottom: 10px;
 }
 
+/* Title Styles */
 .title {
     margin-bottom: 20px;
     margin-left: 20px;
 }
 
+@media (max-width: 768px) {
+    .title {
+        margin-bottom: 10px;
+        margin-left: 0px;
+    }
+}
+
+/* Card Styles */
 .card {
     display: flex;
     flex-direction: column;
@@ -36,11 +47,11 @@
     border-radius: 6px;
     box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.07), 0px 2px 4px 0px rgba(0, 0, 0, 0.05);
     padding: 20px 20px 30px 20px;
-    gap: 20px;
     margin-top: 15px;
     flex-grow: 2;
 }
 
+/* Table Styles */
 .table {
     margin-top: 2em;
     text-align: left;
@@ -49,75 +60,77 @@
     width: 100%;
 }
 
-.tableText{
+.tableText {
     text-align: justify;
 }
 
-@media (max-width: 900px){
-    .table{
+@media (max-width: 900px) {
+    .table {
         font-size: 0.7em;
     }
 }
 
-@media (max-width: 768px) {
-    .title{
-        margin-bottom: 10px;
-        margin-left: 0px;
-    }
-
-    .center {
-        margin-left: 20px;
-    }
-
-    .info{
-        overflow-x: auto;
-    }
-}
-
-.thead{    
+.thead {
     background-color: #a7c444;
     color: white;
 }
 
-.group{
+.tableName {
+    padding: 10px;
+}
+
+.tableDate {
+    padding: 10px;
+}
+
+.auditRow {
+    border-bottom: 1px solid #e9e9e9;
+}
+
+.auditRow td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+/* Group Styles */
+.group {
     margin-top: 2em;
     display: flex;
     align-items: flex-start;
     gap: 1rem;
 }
 
-.tableName{
-    padding: 10px;
-}
-
-.financialToggleText{
-    font-size: 0.9rem; 
-    font-weight: 410; 
+/* Financial Toggle Styles */
+.financialToggleText {
+    font-size: 0.9rem;
+    font-weight: 410;
     color: #000000;
-    white-space: nowrap; 
+    white-space: nowrap;
 }
 
-.financialToggle[type="checkbox"]{
+.financialToggle {
     padding-top: 13%;
     border-color: #85a717;
 }
 
-.financialToggle[type="checkbox"]:checked {
-    background-color: #85a717; 
+.financialToggle:checked {
+    background-color: #85a717;
     border-color: #85a717;
 }
 
-.financialToggle[type="checkbox"]:focus {
+.financialToggle:focus {
     outline: none;
     box-shadow: 0 0 0 0.2rem #aad12c;
 }
 
-.messageBarText {
+/* Message Bar Styles */
+.messageBar {
     font-size: 16px;
     flex-grow: auto;
 }
 
-.button{
+/* Button Styles */
+.button {
     display: flex;
     padding: 5px 10px;
     border: 2px solid #ffffff;
@@ -131,29 +144,29 @@
     transition: background-color 0.3s;
 }
 
-
-.button:hover{
+.button:hover {
     background-color: #788a10;
     border: 2px solid #88ae0a;
 }
 
-.button:active{
+.button:active {
     background-color: rgba(139, 195, 74, 0.5);
 }
 
-.modal{
+/* Modal Styles */
+.modal {
     position: fixed;
     top: 50%;
-    left: 50%;          
+    left: 50%;
     transform: translate(-50%, -50%);
-    width: 30em; 
+    width: 30em;
     height: 15em;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center; 
+    align-items: center;
     z-index: 500;
-    padding: 100px; 
+    padding: 100px;
     background-color: #f5f5f5;
     border: 1px solid #e3e3e3;
     border-radius: 6px;
@@ -161,6 +174,13 @@
     gap: 30px;
 }
 
+@media (max-width: 1024px) {
+    .modal {
+        width: 20em;
+    }
+}
+
+/* Modal Audit Styles */
 .modalSubscriptionChange{
     position: fixed;
     top: 50%;
@@ -189,16 +209,52 @@
 .modalSubscription{
     position: fixed;
     top: 50%;
-    left: 50%;          
+    left: 50%;
     transform: translate(-50%, -50%);
-    width: auto; 
+    width: 70%;
+    height: auto;
+    flex-direction: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+    padding: 40px;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 40px;
+    color: #4a5568;
+}
+
+@media (max-width: 1024px) {
+    .modalAudit {
+        width: 100%;
+        flex-direction: column;
+        padding: 20px;
+    }
+}
+
+.modalAuditHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* Modal Subscription Styles */
+.modalSubscription {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
     height: auto;
     display: flex;
     flex-direction: flex;
     justify-content: center;
-    align-items: center; 
+    align-items: center;
     z-index: 500;
-    padding: 100px; 
+    padding: 100px;
     background-color: #f5f5f5;
     border: 1px solid #e3e3e3;
     border-radius: 6px;
@@ -207,18 +263,16 @@
 }
 
 @media (max-width: 1024px) {
-    .modal{
-        width: 20em;
-    }
-    .modalSubscription{
+    .modalSubscription {
         width: 20em;
         gap: 20px;
         flex-direction: column;
-        padding: 50px; 
+        padding: 50px;
     }
 }
 
-.modalTitle{
+/* Modal Title and Text Styles */
+.modalTitle {
     text-align: center;
 }
 
@@ -228,7 +282,8 @@
     padding-bottom: 10px;
 }
 
-.buttonContainer{
+/* Button Container Styles */
+.buttonContainer {
     text-align: left;
     border-collapse: collapse;
     width: 100%;
@@ -237,6 +292,7 @@
     gap: 40px;
 }
 
+/* Close Button Styles */
 .closeButton {
     border: none;
     font-size: 20px;
@@ -251,11 +307,12 @@
     padding-top: 6px;
 }
 
-.closeButtonContainer:active{
+.closeButton:active {
     background-color: rgba(214, 214, 214, 0.315);
     border-radius: 5px;
 }
 
+/* Plan Styles */
 .plan {
     border: 2px solid #7fb600;
     border-radius: 8px;
@@ -271,7 +328,7 @@
     align-items: center;
 }
 
-.activePlan{
+.activePlan {
     border: 2px solid #b7ff0f;
     border-radius: 8px;
     padding: 20px;
@@ -287,12 +344,8 @@
 }
 
 @media (max-width: 1024px) {
-    .plan {
-        width: 200px;
-        height: 150px;
-        padding: 10px;
-    }
-    .activePlan{
+    .plan,
+    .activePlan {
         width: 200px;
         height: 150px;
         padding: 10px;
@@ -315,6 +368,11 @@
     margin: 20px 0;
 }
 
+@media (max-width: 1024px) {
+    .planPrice {
+        margin: 5px 0;
+    }
+}
 
 .planButton {
     background-color: #9fc51d;
@@ -327,27 +385,8 @@
     transition: background-color 0.3s;
 }
 
-.planIcon {
-    margin: 10px 0;
-}
-
-
 @media (max-width: 1024px) {
-    .planPrice{
-        margin: 5px 0;
-    }
-    .planIcon{
-        width: 0;
-        height: 0;
-    }
-    .planName {
-        font-size: 1em;
-    }
-    
-    .planPrice{
-        font-size: 0.7em;
-    }
-    .planButton{
+    .planButton {
         font-size: 0.6em;
         height: 40px;
     }
@@ -359,4 +398,80 @@
 
 .planButton:focus {
     background-color: #9fc51d;
+}
+
+.planIcon {
+    margin: 10px 0;
+}
+
+@media (max-width: 1024px) {
+    .planIcon {
+        width: 0;
+        height: 0;
+    }
+}
+
+/* Audit Button Styles */
+.auditText {
+    text-align: center;
+    cursor: pointer;
+}
+
+.auditButton {
+    display: flex;
+    padding: 5px 10px;
+    border: 2px solid #9fc51d;
+    border-radius: 6px;
+    height: auto;
+    width: auto;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+    margin-left: auto;
+}
+
+.auditBody {
+    height: auto;
+    gap: 10px;
+}
+
+.auditFilter {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    width: auto;
+}
+
+.modalAudit {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: auto;
+    flex-direction: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+    padding: 40px;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 40px;
+    color: #4a5568;
+}
+
+@media (max-width: 1024px) {
+    .modalAudit {
+        width: 100%;
+        flex-direction: column;
+        padding: 20px;
+    }
+}
+.modalAuditHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }

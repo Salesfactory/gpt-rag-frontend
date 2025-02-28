@@ -26,6 +26,9 @@ import uuid
 from identity.flask import Auth
 from datetime import timedelta, datetime
 
+from flask import Flask, Response, stream_with_context
+import requests
+
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -35,6 +38,7 @@ from functools import wraps
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
+from azure.cosmos.exceptions import CosmosHttpResponseError
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
 from utils import (
@@ -46,11 +50,16 @@ from utils import (
     InvalidParameterError,
     MissingJSONPayloadError,
     MissingRequiredFieldError,
+    MissingParameterError,
     require_client_principal,
     get_azure_key_vault_secret,
+    get_conversations,
+    get_conversation,
+    delete_conversation,
 )
 import stripe.error
-
+from bs4 import BeautifulSoup
+from urllib.parse import urlencode
 from shared.cosmo_db import (
     create_report,
     get_report,
@@ -64,6 +73,12 @@ from shared.cosmo_db import (
     get_templates,
     get_template_by_ID,
     update_user,
+    get_audit_logs,
+    get_organization_subscription,
+    create_invitation,
+    set_user,
+    create_organization,
+    get_company_list
 )
 
 load_dotenv(override=True)
@@ -71,10 +86,10 @@ load_dotenv(override=True)
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
 ORCHESTRATOR_URI = os.getenv("ORCHESTRATOR_URI", default="")
+
 SETTINGS_ENDPOINT = ORCHESTRATOR_URI + "/api/settings"
-FEEDBACK_ENDPOINT = ORCHESTRATOR_URI + "/api/feedback"
+
 HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/api/conversations"
-CHECK_USER_ENDPOINT = ORCHESTRATOR_URI + "/api/checkUser"
 SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/api/subscriptions"
 INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/api/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
@@ -199,113 +214,140 @@ class UserService:
         client_principal_id: str,
         client_principal_name: str,
         email: str,
-        function_key: str,
-        check_user_endpoint: str,
         timeout: int = 10,
     ) -> Dict[str, Any]:
         """
-        Check user authorization with the orchestrator using POST request
+        Check user authorization using local database logic.
 
         Args:
             client_principal_id: The user's principal ID from Azure B2C
             client_principal_name: The user's principal name from Azure B2C
             email: The user's email address
-            function_key: The function key for authentication
-            check_user_endpoint: The endpoint URL for checking user authorization
-            timeout: Request timeout in seconds (default: 10)
+            timeout: Timeout for potential long-running operations (default: 10 seconds)
 
         Returns:
-            Dict containing the authorization response
+            Dict containing the user's profile data, including role and organizationId
 
         Raises:
-            requests.RequestException: If the request fails
-            ValueError: If the response format is invalid
-            TimeoutError: If the request times out
+            ValueError: If the user is not found or data is invalid
+            Exception: For unexpected errors
         """
         try:
-            # Prepare request payload
-            payload = {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
+            logger.info(
+                f"[auth] Validating user {client_principal_id} "
+                f"with email {email} and name {client_principal_name}"
+            )
+
+            # Create user payload for `get_set_user` function
+            client_principal = {
                 "id": client_principal_id,
                 "name": client_principal_name,
-                "email": email,
+                "email": email  # Default role, if necessary
             }
 
-            # Prepare headers
-            headers = {
-                "Content-Type": "application/json",
-                "x-functions-key": function_key,
-            }
+            # Call get_set_user to retrieve or create the user in the database
+            user_response = get_set_user(client_principal)
+
+            # Validate response
+            if not user_response or "user_data" not in user_response:
+                logger.error(f"[auth] User data could not be retrieved for {client_principal_id}")
+                raise ValueError("Failed to retrieve user data")
+
+            # Extract user data
+            user_data = user_response["user_data"]
+            logger.info(f"[auth] User data retrieved: {user_data}")
+
+            # Ensure required fields are present
+            required_fields = ["role", "organizationId"]
+            for field in required_fields:
+                if field not in user_data:
+                    logger.error(f"[auth] Missing required field: {field}")
+                    raise ValueError(f"User profile is missing required field: {field}")
 
             logger.info(
-                f"[auth] Checking authorization for user {client_principal_id} "
-                f"with email {email} at {datetime.now(timezone.utc).isoformat()}"
+                f"[auth] Successfully validated user {client_principal_id} "
+                f"with role {user_data['role']} and organizationId {user_data['organizationId']}"
             )
 
-            # Make the request using a session for better performance
-            with requests.Session() as session:
-                response = session.post(
-                    check_user_endpoint,
-                    headers=headers,
-                    data=json.dumps(payload),
-                    timeout=timeout,
-                )
+            # Return the user's profile data
+            return user_data
 
-                # Log the response (truncated for security)
-                truncated_response = (
-                    response.text[:500] + "..."
-                    if len(response.text) > 500
-                    else response.text
-                )
-                logger.info(f"[auth] Authorization response: {truncated_response}")
-
-                # Raise an exception for bad status codes
-                response.raise_for_status()
-
-                # Parse response
-                try:
-                    data = response.json()
-                except json.JSONDecodeError as e:
-                    logger.error(f"[auth] Failed to parse JSON response: {str(e)}")
-                    raise ValueError("Invalid JSON response") from e
-
-                # Validate response format if needed
-                if not data:
-                    raise ValueError("Empty response received")
-
-                return data
-
-        except requests.Timeout as e:
-            logger.error(
-                f"[auth] Request timed out after {timeout} seconds for "
-                f"user {client_principal_id}: {str(e)}"
-            )
-            raise TimeoutError(f"Request timed out after {timeout} seconds") from e
-
-        except requests.RequestException as e:
-            logger.error(
-                f"[auth] Request failed for user {client_principal_id}: {str(e)}"
-            )
+        except ValueError as e:
+            logger.error(f"[auth] Validation error for user {client_principal_id}: {str(e)}")
             raise
 
         except Exception as e:
-            logger.error(
-                f"[auth] Unexpected error checking authorization for "
-                f"user {client_principal_id}: {str(e)}"
-            )
+            logger.error(f"[auth] Unexpected error validating user {client_principal_id}: {str(e)}")
             raise
+
+def store_request_params_in_session(keys=None):
+    """
+    Decorator to store specified request parameters into the Flask session.
+
+    Args:
+        keys (list, optional): A list of parameter keys to store.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if keys is not None:
+                for key in keys:
+                    if key in request.args:
+                        session[key] = request.args[key]
+                    elif key in request.form:
+                        session[key] = request.form[key]
+                logger.info(f"Stored request parameters in session: {session}")
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def append_script(file, query_params):
+    try:
+        with open(file, 'r') as f:
+            html_content = f.read()
+
+        soup = BeautifulSoup(html_content, 'html.parser')
+        encoded_params = urlencode(query_params)
+        full_url = f"?{encoded_params}"
+
+        script_tag = soup.new_tag('script', type='text/javascript')
+        script_content = f"""
+        console.log('Modifying location without reload: {full_url}');
+        if (window.history && window.history.pushState)
+            window.history.pushState(null, '', '{full_url}');
+        """
+        script_tag.string = script_content
+
+        soup.body.append(script_tag)
+
+        modified_html = str(soup)
+        return Response(modified_html, mimetype='text/html')
+
+    except FileNotFoundError:
+        return "HTML file not found", 404
 
 
 @app.route("/")
+@store_request_params_in_session(['agent','document'])
 @auth.login_required
 def index(*, context):
     """
     Endpoint to get the current user's data from Microsoft Graph API
     """
     logger.debug(f"User context: {context}")
-    return send_from_directory("static", "index.html")
 
+    # get session data if available
+    agent = session.get('agent')
+    document = session.get('document')
+
+    session.pop('agent', None)
+    session.pop('document', None)
+
+    if not agent or not document:
+        return send_from_directory("static", "index.html")
+
+    query_params = {"agent": agent, "document": document}
+    return append_script('static/index.html', query_params)
 
 # route for other static files
 
@@ -384,7 +426,6 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         if not function_key:
             raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
 
-        check_user_endpoint = CHECK_USER_ENDPOINT
         client_principal_name = context["user"]["name"]
         email = context["user"]["emails"][0]
         # Check user authorization
@@ -392,8 +433,6 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
             client_principal_id,
             client_principal_name,
             email,
-            function_key,
-            check_user_endpoint,
             timeout=10,
         )
 
@@ -510,6 +549,68 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         )
 
 
+@app.route("/stream_chatgpt", methods=["POST"])
+def proxy_orc():
+    data = request.get_json()
+    conversation_id = data.get("conversation_id")
+    question = data.get("question")
+    file_blob_url = data.get("url")
+    agent = data.get("agent")
+    documentName = data.get("documentName")
+    
+    if not question:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+    
+    try:
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = "orchestrator-host--financial" if agent == "financial" else "orchestrator-host--functionKey"
+        functionKey = get_azure_key_vault_secret(keySecretName)
+        if not functionKey:
+            raise ValueError(f"Function key {keySecretName} is empty")
+    except Exception as e:
+        logging.exception(
+            "[webbackend] exception in /api/orchestrator-host--functionKey"
+        )
+        return (
+            jsonify(
+                {
+                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+                }
+            ),
+            500,
+        )
+    orchestrator_url = FINANCIAL_ASSISTANT_ENDPOINT if agent == "financial" else ORCHESTRATOR_ENDPOINT
+    
+    payload = json.dumps(
+        {
+            "conversation_id": conversation_id,
+            "question": question,
+            "url": file_blob_url,
+            "client_principal_id": client_principal_id,
+            "client_principal_name": client_principal_name,
+            "documentName": documentName,
+        }
+    )
+    
+    headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}
+    
+    def generate():
+        try:
+            with requests.post(orchestrator_url, stream=True, headers=headers,
+                            data=payload) as r:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk.decode()
+        except Exception as e:
+            logging.exception(f"[webbackend] exception in /stream_chatgpt: {str(e)}")
+            yield jsonify({"error": str(e)}), 500
+
+    return Response(stream_with_context(generate()), content_type="text/event-stream")
+
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
     conversation_id = request.json["conversation_id"]
@@ -584,74 +685,52 @@ def chatgpt():
 @app.route("/api/chat-history", methods=["GET"])
 def getChatHistory():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+    if not client_principal_id:
+        return jsonify({"error": "Missing client principal ID"}), 400
+    
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--conversations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        conversations = get_conversations(client_principal_id)
+        return jsonify(conversations), 200
+    except ValueError as ve:
+        logging.warning(f"ValueError fetching chat history: {str(ve)}")
+        return jsonify({"error": "Invalid input or client data"}), 400
     except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--functionKey"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        url = HISTORY_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps({"user_id": client_principal_id})
-        response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
-    except Exception as e:
-        logging.exception("[webbackend] exception in /chat-history")
-        return jsonify({"error": str(e)}), 500
+        logging.exception(f"Unexpected error fetching chat history: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
+
 
 
 @app.route("/api/chat-conversation/<chat_id>", methods=["GET"])
 def getChatConversation(chat_id):
 
     if chat_id is None:
-        return jsonify({"error": "Missing chatId parameter"}), 400
+        return jsonify({"error": "Missing conversation_id parameter"}), 400
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    try:
-        keySecretName = "orchestrator-host--conversations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        return jsonify({"error": f"Error getting function key: {e}"}), 500
 
     try:
-        url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps({"user_id": client_principal_id})
-        response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-
-        return response.text, response.status_code
+        conversation = get_conversation(chat_id, client_principal_id)
+        return jsonify(conversation),200
+    except ValueError as ve:
+        logging.warning(f"ValueError fetching conversation_id: {str(ve)}")
+        return jsonify({"error": "Invalid input or client data"}), 400
     except Exception as e:
-        logging.exception("[webbackend] exception in /get-chat-history")
-        return jsonify({"error": str(e)}), 500
+        logging.exception(f"Unexpected error fetching conversation: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
 
 
 @app.route("/api/chat-conversations/<chat_id>", methods=["DELETE"])
 def deleteChatConversation(chat_id):
+
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
     try:
-        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-        keySecretName = "orchestrator-host--conversations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-
-        url = f"{HISTORY_ENDPOINT}/?id={chat_id}"
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps({"user_id": client_principal_id})
-
-        response = requests.delete(url, headers=headers, data=payload)
-        return response.text, response.status_code
+        if chat_id:
+            delete_conversation(chat_id, client_principal_id)
+            return jsonify({"message": "Conversation deleted successfully"}), 200
+        else:
+            return jsonify({"error": "Missing conversation ID"}), 400
     except Exception as e:
         logging.exception("[webbackend] exception in /delete-chat-conversation")
         return jsonify({"error": str(e)}), 500
@@ -1358,49 +1437,14 @@ def getBlob():
 
 @app.route("/api/settings", methods=["GET"])
 def getSettings():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
+    client_principal, error_response, status_code = get_client_principal()
+    if error_response:
+        return error_response, status_code
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--settings"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--functionKey"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-
-    try:
-        url = SETTINGS_ENDPOINT
-        payload = json.dumps(
-            {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
-            }
-        )
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        settings = get_setting(client_principal)
+        
+        return settings
     except Exception as e:
         logging.exception("[webbackend] exception in /api/settings")
         return jsonify({"error": str(e)}), 500
@@ -1408,55 +1452,34 @@ def getSettings():
 
 @app.route("/api/settings", methods=["POST"])
 def setSettings():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
+    
+    client_principal, error_response, status_code = get_client_principal()
+    if error_response:
+        return error_response, status_code
 
     try:
-        temperature = float(request.json["temperature"])
-    except:
-        temperature = 0
+        request_body = request.json
+        if not request_body:
+            return jsonify({"error": "Invalid request body"}), 400
 
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--settings"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--functionKey"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
+        temperature = request_body.get("temperature", 0.0)
+        frequency_penalty = request_body.get("frequency_penalty", 0.0)
+        presence_penalty = request_body.get("presence_penalty", 0.0)
+
+        set_settings(
+            client_principal=client_principal,
+            temperature=temperature,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty
         )
 
-    try:
-        url = SETTINGS_ENDPOINT
-        payload = json.dumps(
-            {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
-                "temperature": temperature,
-            }
-        )
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        return jsonify({
+            "client_principal_id": client_principal["id"],
+            "client_principal_name": client_principal["name"],
+            "temperature": temperature,
+            "frequency_penalty": frequency_penalty,
+            "presence_penalty": presence_penalty,
+        }), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/settings")
         return jsonify({"error": str(e)}), 500
@@ -1477,6 +1500,11 @@ def setFeedback():
             400,
         )
 
+    client_principal = {
+        'id': client_principal_id,
+        'name': client_principal_name
+    }
+
     conversation_id = request.json["conversation_id"]
     question = request.json["question"]
     answer = request.json["answer"]
@@ -1495,39 +1523,24 @@ def setFeedback():
         )
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--feedback"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--feedback")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
+        conversations = set_feedback(
+            client_principal=client_principal,
+            conversation_id=conversation_id,
+            feedback_message=feedback,
+            question=question,
+            answer=answer,
+            rating=rating,
+            category=category
         )
-
-    try:
-        url = FEEDBACK_ENDPOINT
-        payload = json.dumps(
-            {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
-                "conversation_id": conversation_id,
-                "question": question,
-                "answer": answer,
-                "category": category,
-                "feedback": feedback,
-                "rating": rating,
-            }
-        )
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        return jsonify({
+            "client_principal_id": client_principal_id,
+            "client_principal_name": client_principal_name,
+            "feedback_message": feedback,
+            "question": question,
+            "answer": answer,
+            "rating": rating,
+            "category": category
+        }), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/feedback")
         return jsonify({"error": str(e)}), 500
@@ -1547,32 +1560,17 @@ def getUsers():
             ),
             400,
         )
+    user_id =request.args.get("user_id")
+    organization_id = request.args.get("organizationId")
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-
-    try:
-        organizationId = request.args.get("organizationId")
-        url = CHECK_USER_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"organizationId": organizationId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        
+        if user_id:
+            user = get_user_by_id(user_id)
+            return user
+        users = get_users(organization_id)
+        return users
+    
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
@@ -1587,32 +1585,20 @@ def deleteUser():
             jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
+
+    user_id = request.args.get("userId")
+    if not user_id:
+        return jsonify({"error": "Missing required parameter: user_id"}), 400
+
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        success = delete_user(user_id)
+        if not success:
+            return jsonify({"error": "User not found or already deleted"}), 404
+        return "", 204
+    except NotFound:
+        return jsonify({"error": "User not found"}), 404
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        userId = request.args.get("userId")
-        url = CHECK_USER_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "DELETE", url, headers=headers, params={"id": userId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/checkUser")
+        logging.exception(f"[webbackend] exception in /api/deleteuser for user {user_id}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1759,112 +1745,84 @@ def getInvitations():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
+            
             jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
+    
+    user_id = request.args.get("user_id")
+    organization_id = request.args.get("organizationId")
+    
+    if not organization_id and not user_id:
+        return jsonify({"error": "Either 'organization_id' or 'user_id' is required"}), 400
+
     try:
-        keySecretName = "orchestrator-host--invitations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        if organization_id:
+            return jsonify(get_invitations(organization_id))
+        return get_invitation(user_id)
     except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        organizationId = request.args.get("organizationId")
-        url = INVITATIONS_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"organizationId": organizationId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
-    except Exception as e:
-        logging.exception("[webbackend] exception in /get-organization")
+        logging.exception("[webbackend] exception in /getInvitation")
         return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/createInvitation", methods=["POST"])
 def createInvitation():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
     try:
-        keySecretName = "orchestrator-host--invitations"
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not client_principal_id:
+            raise MissingRequiredFieldError("client_principal_id")
+        data = request.get_json()
+        if not data:
+            raise MissingJSONPayloadError()
+        if not "invitedUserEmail" in data:
+            raise MissingRequiredFieldError("invitedUserEmail")
+        if not "organizationId" in data:
+            raise MissingRequiredFieldError("organizationId")
+        if not "role" in data:
+            raise MissingRequiredFieldError("role")
+        invitedUserEmail = data["invitedUserEmail"]
+        organizationId = data["organizationId"]
+        role = data["role"]
+        response = create_invitation(invitedUserEmail, organizationId, role)
+        return jsonify(response), HTTPStatus.CREATED 
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
     except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        organizationId = request.json["organizationId"]
-        invitedUserEmail = request.json["invitedUserEmail"]
-        role = request.json["role"]
-        url = INVITATIONS_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        payload = json.dumps(
-            {
-                "invited_user_email": invitedUserEmail,
-                "organization_id": organizationId,
-                "role": role,
-            }
-        )
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
-    except Exception as e:
-        logging.exception("[webbackend] exception in /getUser")
-        return jsonify({"error": str(e)}), 500
+        logging.exception(str(e))
+        return create_error_response(f'An unexpected error occurred. Please try again later. {e}', HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/api/checkuser", methods=["POST"])
 def checkUser():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
     if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
+        return create_error_response("Missing authentication headers", HTTPStatus.UNAUTHORIZED)
+    
+    if not request.json or "email" not in request.json:
+        return create_error_response("Email is required", HTTPStatus.BAD_REQUEST)
+    
+    email = request.json["email"]
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
+        response = set_user({
+            "id": client_principal_id,
+            "email": email,
+            "role": "user",
+            "name": client_principal_name
+        })
+
+        if not response or "user_data" not in response:
+            return create_error_response("Failed to set user", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return response["user_data"]
+
+    except MissingRequiredFieldError as field:
+        return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
+    
+    except CosmosHttpResponseError as cosmos_error:
+        logging.error(f"[webbackend] Cosmos DB error in /api/checkUser: {cosmos_error}")
+        return create_error_response("Database error in CosmosDB", HTTPStatus.INTERNAL_SERVER_ERROR)
 
     try:
         email = request.json["email"]
@@ -1881,44 +1839,30 @@ def checkUser():
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        return jsonify(response), 200
+
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/checkUser")
-        return jsonify({"error": str(e)}), 500
+        logging.exception("[webbackend] Unexpected exception in /api/checkUser")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 @app.route("/api/get-organization-subscription", methods=["GET"])
 def getOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organizationId = request.args.get("organizationId")
     if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
+        create_error_response('Missing required parameter: client_principal_id', HTTPStatus.BAD_REQUEST)
+    if not organizationId:
+        create_error_response('Missing required parameter: organizationId', HTTPStatus.BAD_REQUEST)
     try:
-        keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            "[webbackend] exception in /api/orchestrator-host--subscriptions"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-    try:
-        organizationId = request.args.get("organizationId")
-        url = SUBSCRIPTION_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"organizationId": organizationId}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        if not organizationId:
+            raise MissingParameterError("organizationId")
+        response = get_organization_subscription(organizationId)
+        return jsonify(response)
+    except NotFound as e:
+        return jsonify({}), 204
+    except MissingParameterError as e:
+        return create_error_response('Missing required parameter: ' + str(e), HTTPStatus.BAD_REQUEST)
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
@@ -1927,50 +1871,25 @@ def getOrganization():
 @app.route("/api/create-organization", methods=["POST"])
 def createOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-
     if not client_principal_id:
         return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
+            jsonify({"error": "Missing required parameters, client_principal_id"}),
             400,
         )
-
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--subscriptions"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception(
-            f"[webbackend] exception in /api/orchestrator-host--subscriptions {e}"
-        )
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
+        if not 'organizationName' in request.json:
+            return jsonify({"error": "Missing required parameters, organizationName"}), 400
     try:
         organizationName = request.json["organizationName"]
-        payload = json.dumps(
-            {
-                "id": client_principal_id,
-                "organizationName": organizationName,
-            }
-        )
-        url = SUBSCRIPTION_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        response = create_organization(client_principal_id, organizationName)
+        if not response:
+            return create_error_response("Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR)
+        return jsonify(response), HTTPStatus.CREATED
+    except NotFound as e:
+        return create_error_response(f'User {client_principal_id} not found', HTTPStatus.NOT_FOUND)
+    except MissingRequiredFieldError as field:
+        return create_error_response(f'Missing required parameters, {field}', HTTPStatus.BAD_REQUEST)
     except Exception as e:
-        logging.exception("[webbackend] exception in /post-organization")
-        return jsonify({"error": str(e)}), 500
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/api/getUser", methods=["GET"])
@@ -1989,32 +1908,15 @@ def getUser():
         )
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = "orchestrator-host--checkuser"
-        functionKey = get_azure_key_vault_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--checkuser")
-        return (
-            jsonify(
-                {
-                    "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                }
-            ),
-            500,
-        )
-
-    try:
-        url = CHECK_USER_ENDPOINT
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request(
-            "GET", url, headers=headers, params={"id": client_principal_id}
-        )
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return response.text
+        user = get_user_container(client_principal_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify(user), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /getUser")
         return jsonify({"error": str(e)}), 500
+    except NotFound as e:
+        return jsonify({"error": str(e)}), 404
 
 
 def get_product_prices(product_id):
@@ -3488,6 +3390,7 @@ def digest_report():
             attachment_path=data.get("attachment_path", None),
             email_subject=data.get("email_subject", None),
             save_email=data.get("save_email", "yes"),
+            is_summarization=data.get("is_summarization", False),
         )
 
         if success:
@@ -3576,6 +3479,39 @@ def list_blobs():
         logger.exception("Unexpected error in list_blobs")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route("/api/logs/", methods=["POST"])
+def get_logs():
+    try: 
+        data = request.get_json()
+        if data == None:
+            return create_error_response('Request data is required', 400)
+        organization_id = data.get("organization_id")
+        if not organization_id:
+            return create_error_response('Organization ID is required', 400)
+    except Exception as e:
+        return create_error_response(str(e), 400)
+    try:
+        items = get_audit_logs(organization_id)
+        if not items:
+            return create_success_response([], 204)
+        return create_success_response(items)
+    except InvalidParameterError as e:
+        return create_error_response(str(e), 400)
+    except Exception as e:
+        logger.exception("Unexpected error in get_logs")
+        return create_error_response("Internal Server Error", 500)
+    
+@app.route("/api/companydata", methods=["GET"])
+def get_company_data():
+    try:
+        data = get_company_list()
+        return create_success_response(data, 200)
+    except CosmosHttpResponseError as e:
+        logger.exception(f"Unexpected error in with cosmos db: {e}")
+        return create_error_response("Internal Server Error", 500)
+    except Exception as e:
+        logger.exception("Unexpected error in get_company_analysis")
+        return create_error_response("Internal Server Error", 500)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

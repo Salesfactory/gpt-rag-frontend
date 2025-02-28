@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./SubscriptionManagement.module.css";
-import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner } from "@fluentui/react";
+import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner, Dropdown, IconButton, Stack } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
 import {
     createCustomerPortalSession,
@@ -9,7 +9,8 @@ import {
     getFinancialAssistant,
     getProductPrices,
     removeFinancialAssistant,
-    upgradeSubscription
+    upgradeSubscription,
+    getLogs
 } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
@@ -30,10 +31,47 @@ const SubscriptionManagement: React.FC = () => {
     const [isConfirmationModal, setIsConfirmationModal] = useState(false);
     const [selectedSubscriptionName, setSelectedSubscriptionName] = useState("");
     const [selectedSubscriptionID, setSelectedSubscriptionID] = useState("");
-    const [dataLoad, setDataLoad] = useState(false);
-    const [isSubscriptionChangeModal, setIsSubscriptionChangeModal] = useState(false);
+    const [isRecentChangesModal, setIsRecentChangesModal] = useState<Boolean>(false);
+    const [recentChangesLoading, setRecentChangesLoading] = useState<Boolean>(false);
+    const [logsData, setLogsData] = useState<any>([]);
+    const [filteredLogsData, setFilteredLogsData] = useState<any>();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [paginatedLogs, setPaginatedLogs] = useState<any>();
 
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
+    const organizationId = organization?.id || "";
+
+    const rowsPerPage = 5;
+
+    const FilterMapping = {
+        "All actions": null,
+        "Financial Assistant": "Financial Assistant Change",
+        "Subscription Tier": "Subscription Tier Change",
+        "Subscription created": "Subscription created"
+    }
+
+    const FilterOptions = [
+        { key: "1", text: "All Actions" },
+        { key: "2", text: "Financial Assistant" },
+        { key: "3", text: "Subscription Tier" },
+        { key: "4", text: "Subscription created" }
+    ];
+
+    const formatTimestamp = (timestamp: number) => {
+        const date = new Date(timestamp * 1000);
+        const options: Intl.DateTimeFormatOptions = {
+            year: "numeric",
+            month: "short",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+        };
+        return date.toLocaleString("en-US", options).replace(',', '');
+    };
+
+    const [dataLoad, setDataLoad] = useState(false);
+    const [isSubscriptionChangeModal, setIsSubscriptionChangeModal] = useState(false);
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -142,6 +180,42 @@ const SubscriptionManagement: React.FC = () => {
         setIsConfirmationModal(true);
     };
 
+    const handleRecentChangesModal = async () => {
+        setIsRecentChangesModal(true);
+        setRecentChangesLoading(true);
+        try {
+            const logs = await getLogs(organizationId);
+            console.log(logs);
+            setLogsData(logs);
+            setFilteredLogsData(logs);
+            setPaginatedLogs(logs.slice(0, rowsPerPage));
+            setCurrentPage(1);
+        } catch (error) {
+            console.error("Error trying to get logs: ", error);
+            setError("Error trying to get logs: ");
+            setIsErrorModal(true);
+        } finally {
+            setRecentChangesLoading(false);
+        }
+    };
+
+    const handleFilterChange = (event: any, selectedOption: any) => {
+        const actionFilter = FilterMapping[selectedOption?.text as keyof typeof FilterMapping || "All actions"]
+        const filteredLogs = actionFilter
+            ? logsData.filter((log: any) => log.action === actionFilter)
+            : logsData;
+        setFilteredLogsData(filteredLogs);
+        setPaginatedLogs(filteredLogs.slice(0, rowsPerPage)); // Reset pagination
+        setCurrentPage(1); // Reset pagination
+    };
+
+    const handlePagination = (page: number) => {
+        const startIndex = (page - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        setPaginatedLogs(filteredLogsData.slice(startIndex, endIndex));
+        setCurrentPage(page); // Update the current page
+    };
+
     const handleCreateCustomerPortal = async () => {
         try {
             const customerId = await getCustomerId({
@@ -177,7 +251,7 @@ const SubscriptionManagement: React.FC = () => {
         } finally {
             setLoading(false);
             setIsSubscriptionChangeModal(true);
-            setDataLoad(true);
+            setDataLoad(!dataLoad);
             timer = setTimeout(() => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
@@ -189,12 +263,15 @@ const SubscriptionManagement: React.FC = () => {
     const FinancialAssistantText = subscriptionStatus ? "You are subscribed to the Financial Assistant feature." : "Subscribe to Financial Assistant";
 
     return (
-        <div className={styles.page_container}>
+        <div className={styles.pageContainer}>
             <ToastContainer />
             <div id="options-row" className={styles.row}>
                 <h1 className={styles.title}>Subscription Management</h1>
             </div>
             <div className={styles.card}>
+                <button className={styles.auditButton} onClick={handleRecentChangesModal}>
+                    <Label className={styles.auditText}>Recent Changes</Label>
+                </button>
                 {loading ? (
                     <Spinner styles={{ root: { marginTop: "50px" } }} />
                 ) : (
@@ -240,6 +317,103 @@ const SubscriptionManagement: React.FC = () => {
                         <span className={`form-check-label ${styles.financialToggleText}`}>Financial Assistant</span>
                     </div>
                 </div>
+                {isRecentChangesModal && (
+                    <>
+                        <div className={styles.modalAudit}>
+                            <div className={styles.modalHeader}>
+                                <h1 className={styles.row}>Recent Changes</h1>
+                                <button className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
+                                    <IconX />
+                                </button>
+                            </div>
+                            <div className={styles.auditFilter}>
+                                <Label className={styles.modalText}>Filter by Action:</Label>
+                                <Dropdown placeholder="Select Action to filter" options={FilterOptions} onChange={handleFilterChange} />
+                            </div>
+                            {recentChangesLoading ? (
+                                <Spinner styles={{ root: { marginTop: "50px" } }} />
+                            ) : (
+                                <>
+                                    <div className={styles.row}>
+                                        <table className={styles.table}>
+                                            <thead className={styles.thead}>
+                                                <tr key="types">
+                                                    <th className={styles.tableName}>Date</th>
+                                                    <th>Action</th>
+                                                    <th>Modified by</th>
+                                                    <th>Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className={styles.auditBody}>
+                                                {paginatedLogs.map((data: any, index: number) => (
+                                                    <tr className={styles.auditRow} key={index}>
+                                                        {data.action === "Subscription Tier Change" && (
+                                                            <React.Fragment key={index}>
+                                                                <td className={styles.tableDate}>
+                                                                    {formatTimestamp(data._ts)}
+                                                                </td>
+                                                                <td className={styles.tableText}>Subscription Tier change</td>
+                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText}>
+                                                                    {data.previous_plan} → {data.current_plan}
+                                                                </td>
+                                                            </React.Fragment>
+                                                        )}
+                                                        {data.action === "Financial Assistant Change" && (
+                                                            <React.Fragment>
+                                                                <td className={styles.tableDate}>
+                                                                    {formatTimestamp(data._ts)}
+                                                                </td>
+                                                                <td className={styles.tableText}>FA Add-On Toggled</td>
+                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText}>Status: {data.status_financial_assistant}</td>
+                                                            </React.Fragment>
+                                                        )}
+                                                        {data.action === "Subscription created" && (
+                                                            <React.Fragment>
+                                                                <td className={styles.tableDate}>
+                                                                    {formatTimestamp(data._ts)}
+                                                                </td>
+                                                                <td className={styles.tableText}>Subscription created</td>
+                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText}>Status: Active</td>
+                                                            </React.Fragment>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div style={{ display: "flex", marginTop: "20px" }}>
+                                        {paginatedLogs.length === 0 ? (
+                                            <p>No logs found</p>
+                                        ) : (
+                                            <p>
+                                                Page {currentPage} of {Math.ceil((filteredLogsData?.length || 0) / rowsPerPage)}
+                                            </p>
+                                        )}
+                                        <div style={{ marginLeft: "auto" }}>
+                                            <IconButton
+                                                iconProps={{ iconName: "ChevronLeft" }}
+                                                ariaLabel="Previous page"
+                                                onClick={() => handlePagination(currentPage - 1)}
+                                                disabled={currentPage == 1}
+                                            />
+                                            <IconButton
+                                                iconProps={{ iconName: "ChevronRight" }}
+                                                disabled={currentPage === Math.ceil((filteredLogsData?.length || 0) / rowsPerPage)}
+                                                ariaLabel="Next page"
+                                                onClick={() => {
+                                                    handlePagination(currentPage + 1);
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </>
+                )}
                 {isViewModal && (
                     <div className={styles.modalSubscription}>
                         <button className={styles.closeButton} onClick={() => setIsViewModal(false)}>
@@ -263,8 +437,8 @@ const SubscriptionManagement: React.FC = () => {
                                     {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
                                         ? "Reactivate subscription"
                                         : organization?.subscriptionStatus === "active" && price.nickname === subscriptionName
-                                        ? "Change payment information"
-                                        : "Subscribe"}
+                                            ? "Change payment information"
+                                            : "Subscribe"}
                                 </button>
                             </div>
                         ))}
