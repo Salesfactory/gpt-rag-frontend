@@ -4,7 +4,7 @@ import jinja2
 
 import os
 
-WEB_APP_URL = os.getenv("WEB_APP_URL","")
+WEB_APP_URL = os.getenv("INVITATION_LINK","")
 
 class EmailRenderError(Exception):
     """Exception raised for errors in email rendering."""
