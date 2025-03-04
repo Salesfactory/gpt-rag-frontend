@@ -493,7 +493,7 @@ class BlobStorageManager:
         parsed_url = urlparse(url)
         return parsed_url.path.lstrip("/").split("/")
 
-    def download_blob_from_a_link(self, url: str, filename: str = None) -> bool:
+    def download_blob_from_a_link(self, url: str, filename: str = None):
         """
         Download a document from a given blob URL and save it to the downloads directo ry.
 
@@ -530,6 +530,8 @@ class BlobStorageManager:
 
             # Get the blob client
             blob_client = self.container_client.get_blob_client(blob_path)
+            
+            metadata = blob_client.get_blob_properties().metadata
 
             # Download the blob
             with open(local_data_path, "wb") as file:
@@ -537,11 +539,11 @@ class BlobStorageManager:
                 file.write(download_stream.readall())
 
             logger.info(f"Successfully downloaded blob to {local_data_path}")
-            return True
+            return True, metadata
 
         except Exception as e:
             logger.error(f"Failed to download blob: {str(e)}")
-            return False
+            return False, None
 
     def download_documents(
         self,
