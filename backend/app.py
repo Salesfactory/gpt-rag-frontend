@@ -3379,7 +3379,7 @@ def digest_report():
             return jsonify({"status": "error", "message": "No JSON data provided"}), 400
 
         # Validate required fields
-        if "blob_link" not in data or "recipients" not in data:
+        if "blob_link" not in data or "recipients" not in data or "summary" not in data:
             return (
                 jsonify(
                     {
@@ -3397,6 +3397,7 @@ def digest_report():
             attachment_path=data.get("attachment_path", None),
             email_subject=data.get("email_subject", None),
             save_email=data.get("save_email", "yes"),
+            summary=data.get("summary", None),
             is_summarization=data.get("is_summarization", False),
         )
 

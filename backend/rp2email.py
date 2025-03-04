@@ -236,7 +236,7 @@ class ReportProcessor:
             logger.exception("Error processing the report")
             raise ReportProcessingError(f"Error processing the report: {str(e)}")
         
-    def process_summary(self) -> Dict[str, Any]:
+    def process_summary(self, summary, title = "Summarization") -> Dict[str, Any]:
         """
         Process a report summary from blob storage into an email-friendly format.
         
@@ -256,14 +256,32 @@ class ReportProcessor:
             FileNotFoundError: If the downloaded report file cannot be found
         """
         try:
-            # download and read report 
-            logger.info("Downloading report from blob link")
-            pdf_path = self._get_pdf_path()
+            # parse to email schema 
+            logger.info("Parsing the report to email schema")
+            markdown_output = self._parse_summary_to_markdown(summary)
+
+            # get brief for email
+            intro_text = self._parse_summary_to_short_text(summary)
+
+            # Convert Markdown to HTML (this is for pdf only, not for email body)
+            html_output = markdown.markdown(markdown_output)
+            
+            # Create PDF for all document types
+            try:
+                date_str = datetime.now(timezone.utc).strftime("%m_%d_%y")
+                local_pdf_path = self._build_pdf_filename("summary", date_str)
+                logger.info(f"Local PDF path: {local_pdf_path}")
+                pdf_path = self.html_to_pdf(html_output, local_pdf_path)
+                if not pdf_path:
+                    raise ValueError("PDF creation failed - no path returned")
+            except Exception as e:
+                logger.error(f"Failed to create PDF: {str(e)}")
+                raise ValueError(f"PDF creation failed: {str(e)}")
 
             # parse to email schema 
             email_data = EmailBaseSchema(
-                title="Summarization",
-                intro_text="Here is a summary of the report",
+                title=title,
+                intro_text=intro_text,
             )
 
             # generate HTML email from schema and template 
@@ -443,7 +461,65 @@ class ReportProcessor:
         except Exception as e:
             logger.exception(f"Error parsing the report to email schema: {str(e)}")
             raise 
+
+
+    def _parse_summary_to_markdown(self, summary: str):
+        """Parse the report summary to markdown. """
+        try:
+            llm = self.llm_manager.get_client(
+                client_type='gpt4o',
+                use_langchain=True
+            )
+            
+            prompt = f"""
+        Please format the following summary into clean markdown, ensuring it is easy to read and understand. 
+        Use headers, bullet points, and numbered lists where appropriate. 
+        Maintain the original information and structure as much as possible, but improve the presentation.
+
+        Do not include any markdown code blocks (e.g., ```markdown) at the start or end of the response.
+
+        Summary:
+        {summary}
+
+        Markdown:
+        """
+            
+            response = llm.invoke(prompt)
+            markdown_output = response.content.strip()
+            return markdown_output
+        except Exception as e:
+            logger.exception(f"Error parsing the report to email schema: {str(e)}")
+            raise 
+
     
+    def _parse_summary_to_short_text(self, summary: str):
+        """Parse the report summary into the email schema. """
+        try:
+            llm = self.llm_manager.get_client(
+                client_type='gpt4o',
+                use_langchain=True
+            )
+            
+            prompt = f"""
+        Please create a brief, engaging introductory preview of the following summary. 
+        The preview should be no more than 2-3 sentences and capture the main essence of the summary. 
+        Focus on highlighting the most important or interesting points. 
+        Additionally, add a short, natural-sounding phrase at the end to invite the user to open the attached PDF for full details.
+
+        Summary:
+        {summary}
+
+        Preview:
+        """
+            
+            response = llm.invoke(prompt)
+            intro_text = response.content.strip()
+            return intro_text
+        except Exception as e:
+            logger.exception(f"Error parsing the report to email schema: {str(e)}")
+            return "Here is a summary of the report" 
+
+
     def html_to_pdf(self, html_content: str, output_path: str) -> Path:
         """Convert the HTML content to a PDF file using the Azure function."""
         # Debug logging
@@ -632,6 +708,7 @@ def process_and_send_email(blob_link: str,
                          attachment_path: Optional[str] = None,
                          email_subject: Optional[str] = None,
                          save_email: Optional[str] = "yes",
+                         summary: Optional[str] = None,
                          is_summarization: Optional[bool] = False,
                          ) -> bool:
     """
@@ -655,6 +732,7 @@ def process_and_send_email(blob_link: str,
             elif is_summarization:
                 email_data = processor.process_summary() 
             success = send_email(email_data, recipients, attachment_path, email_subject, save_email, document_id=email_data.get("document_id"))
+    
             return success
         
     except ValueError as e:
