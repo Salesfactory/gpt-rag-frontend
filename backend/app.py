@@ -3128,9 +3128,16 @@ def generate_report():
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}"
         else:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
+        
+        metadata = {
+            "document_id": uuid.uuid4(),
+            "report_type": report_topic_rqst,
+            "date": current_date.isoformat(),
+            "company_name": company_name if report_topic_rqst == "Company_Analysis" else ""
+        }
 
         upload_result = blob_storage_manager.upload_to_blob(
-            file_path=str(file_path), blob_folder=blob_folder
+            file_path=str(file_path), blob_folder=blob_folder, metadata=metadata
         )
 
         # Cleanup files

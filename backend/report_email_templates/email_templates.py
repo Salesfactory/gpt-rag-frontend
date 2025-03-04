@@ -2,6 +2,9 @@ from typing import List, Dict, Literal
 from pathlib import Path
 import jinja2
 
+import os
+
+WEB_APP_URL = os.getenv("WEB_APP_URL","")
 
 class EmailRenderError(Exception):
     """Exception raised for errors in email rendering."""
@@ -34,6 +37,7 @@ class EmailTemplateManager:
             "Ecommerce",
             "MonthlyMacroeconomics",
         ],
+        document_id: str
     ) -> str:
         """
         Render the report email template with provided content.
@@ -56,6 +60,7 @@ class EmailTemplateManager:
                 key_points=key_points,
                 why_it_matters=why_it_matters,
                 document_type=document_type,
+                follow_up_url=f"{WEB_APP_URL}/?agent=financial&documentId={document_id}"
             )
         except Exception as e:
             raise EmailRenderError(f"Error rendering email template: {str(e)}")

@@ -136,6 +136,7 @@ class ReportProcessor:
         self.llm_manager = LLMManager()
         self.template_manager = EmailTemplateManager()
         self.downloaded_file: Optional[Path] = None
+        self.metadata: Optional[Dict] = None
 
     @contextmanager
     def _resource_cleanup(self) -> Generator[None, None, None]:
@@ -220,7 +221,8 @@ class ReportProcessor:
                 intro_text=email_data.intro_text,
                 key_points=email_data.get_keypoints_dict(),
                 why_it_matters=email_data.why_it_matters,
-                document_type=email_data.document_type
+                document_type=email_data.document_type,
+                document_id=self.metadata.get("document_id")
             )
 
             return {
@@ -320,7 +322,7 @@ class ReportProcessor:
         """Download and read the report content from the blob link. """
         try:
             # download blob from link 
-            self.downloaded_file = self.blob_manager.download_blob_from_a_link(self.blob_link)
+            self.downloaded_file, self.metadata = self.blob_manager.download_blob_from_a_link(self.blob_link)
 
             # get the file within blob downloads
             html_file_path = next(Path(os.getcwd()).glob(f'{TEMP_DIR}/*.html'))
@@ -546,7 +548,8 @@ def send_email(
         recipients: List[str],
         attachment_path: Optional[str] = None,
         email_subject: Optional[str] = None,
-        save_email: Optional[str] = "yes"
+        save_email: Optional[str] = "yes",
+        document_id: Optional[str] = None
 ) -> bool:
     """Send an email to the recipients
 
@@ -575,7 +578,8 @@ def send_email(
             "html_content": email_data["html_content"],
             "recipients": recipients,
             "attachment_path": email_data["attachment_path"],
-            "save_email": save_email
+            "save_email": save_email,
+            "document_id": document_id
         }
 
         if attachment_path:
@@ -650,7 +654,7 @@ def process_and_send_email(blob_link: str,
                 email_data = processor.process()
             elif is_summarization:
                 email_data = processor.process_summary() 
-            success = send_email(email_data, recipients, attachment_path, email_subject, save_email)
+            success = send_email(email_data, recipients, attachment_path, email_subject, save_email, document_id=email_data.get("document_id"))
             return success
         
     except ValueError as e:
