@@ -15,7 +15,7 @@ from flask import (
     url_for,
     session,
 )
-
+import markdown
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
@@ -2786,9 +2786,24 @@ def generate_summary():
         all_summaries = summarizer.process_document_images(IMAGE_PATH)
         final_summary = summarizer.generate_final_summary(all_summaries)
 
-        # Save the summary locally and upload to blob
+        # format document summary
+        formatted_summary = summarizer.format_summary(final_summary)
+        html_output = markdown.markdown(formatted_summary)
+
+        # Save the summary locally
+        # save_str_to_pdf(formatted_summary, local_output_path)
+
         local_output_path = f"pdf/{financial_type}_{equity_name}_summary.pdf"
-        save_str_to_pdf(final_summary, local_output_path)
+        
+        try:
+            report_processor = ReportProcessor()
+           
+            pdf_path = report_processor.html_to_pdf(html_output, local_output_path)
+            if not pdf_path:
+                return jsonify({"error": "PDF creation failed"}), 500
+        except Exception as e:
+            logger.error(f"Failed to create PDF: {str(e)}")
+            return jsonify({"error": "PDF creation failed: " + str(e)}), 500
 
         # Upload summary to blob
         document_paths = create_document_paths(
@@ -3347,7 +3362,7 @@ def send_email_endpoint():
         )
 
 
-from rp2email import process_and_send_email
+from rp2email import process_and_send_email, ReportProcessor
 
 
 @app.route("/api/reports/digest", methods=["POST"])
@@ -3377,7 +3392,7 @@ def digest_report():
                 jsonify(
                     {
                         "status": "error",
-                        "message": "Missing required fields: blob_link and recipients",
+                        "message": "Missing required fields: blob_link and/or recipients and/or summary",
                     }
                 ),
                 400,

@@ -113,7 +113,7 @@ class EmailSendingError(Exception):
 class ReportProcessor:
     """Process reports and conver them to email format. """
 
-    def __init__(self, blob_link: str):
+    def __init__(self, blob_link: str = None):
         """
         Initialize report processor. 
         
@@ -123,13 +123,14 @@ class ReportProcessor:
         Raises:
             ValueError: If blob_link is None or empty
         """
-        if not blob_link:
-            raise ValueError("Blob link cannot be None or empty")
+        # if not blob_link:
+        #     raise ValueError("Blob link cannot be None or empty")
         
         # Validate URL format
-        parsed_url = urlparse(blob_link)
-        if not all([parsed_url.scheme, parsed_url.netloc]):
-            raise ValueError(f"Invalid blob link format: {blob_link}. URL must include scheme (e.g., https://) and hostname")
+        if blob_link:
+            parsed_url = urlparse(blob_link)
+            if not all([parsed_url.scheme, parsed_url.netloc]):
+                raise ValueError(f"Invalid blob link format: {blob_link}. URL must include scheme (e.g., https://) and hostname")
 
         self.blob_link = blob_link
         self.blob_manager = BlobStorageManager()
@@ -254,27 +255,12 @@ class ReportProcessor:
             FileNotFoundError: If the downloaded report file cannot be found
         """
         try:
-            # parse to email schema 
-            logger.info("Parsing the report to email schema")
-            markdown_output = self._parse_summary_to_markdown(summary)
+            # download and read report 
+            logger.info("Downloading report from blob link")
+            pdf_path = self._get_pdf_path()
 
             # get brief for email
             intro_text = self._parse_summary_to_short_text(summary)
-
-            # Convert Markdown to HTML (this is for pdf only, not for email body)
-            html_output = markdown.markdown(markdown_output)
-            
-            # Create PDF for all document types
-            try:
-                date_str = datetime.now(timezone.utc).strftime("%m_%d_%y")
-                local_pdf_path = self._build_pdf_filename("summary", date_str)
-                logger.info(f"Local PDF path: {local_pdf_path}")
-                pdf_path = self.html_to_pdf(html_output, local_pdf_path)
-                if not pdf_path:
-                    raise ValueError("PDF creation failed - no path returned")
-            except Exception as e:
-                logger.error(f"Failed to create PDF: {str(e)}")
-                raise ValueError(f"PDF creation failed: {str(e)}")
 
             # parse to email schema 
             email_data = EmailBaseSchema(
@@ -456,35 +442,6 @@ class ReportProcessor:
             llm_report_parser = llm.with_structured_output(EmailSchema)
             return llm_report_parser.invoke(summary)
         
-        except Exception as e:
-            logger.exception(f"Error parsing the report to email schema: {str(e)}")
-            raise 
-
-
-    def _parse_summary_to_markdown(self, summary: str):
-        """Parse the report summary to markdown. """
-        try:
-            llm = self.llm_manager.get_client(
-                client_type='gpt4o',
-                use_langchain=True
-            )
-            
-            prompt = f"""
-        Please format the following summary into clean markdown, ensuring it is easy to read and understand. 
-        Use headers, bullet points, and numbered lists where appropriate. 
-        Maintain the original information and structure as much as possible, but improve the presentation.
-
-        Do not include any markdown code blocks (e.g., ```markdown) at the start or end of the response.
-
-        Summary:
-        {summary}
-
-        Markdown:
-        """
-            
-            response = llm.invoke(prompt)
-            markdown_output = response.content.strip()
-            return markdown_output
         except Exception as e:
             logger.exception(f"Error parsing the report to email schema: {str(e)}")
             raise 
