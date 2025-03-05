@@ -137,6 +137,7 @@ class ReportProcessor:
         self.llm_manager = LLMManager()
         self.template_manager = EmailTemplateManager()
         self.downloaded_file: Optional[Path] = None
+        self.metadata: Optional[Dict] = None
 
     @contextmanager
     def _resource_cleanup(self) -> Generator[None, None, None]:
@@ -272,8 +273,9 @@ class ReportProcessor:
             logger.info("Generating HTML email content")
             email_html = self.template_manager.render_summary_template(
                 title=email_data.title,
-                intro_text=email_data.intro_text,
+                intro_text=email_data.intro_text
             )
+            #metadata=self.metadata
 
             return {
                 "subject": email_data.title,
@@ -324,7 +326,7 @@ class ReportProcessor:
         """Download and read the report content from the blob link. """
         try:
             # download blob from link 
-            self.downloaded_file = self.blob_manager.download_blob_from_a_link(self.blob_link)
+            self.downloaded_file, self.metadata = self.blob_manager.download_blob_from_a_link(self.blob_link)
 
             # get the file within blob downloads
             html_file_path = next(Path(os.getcwd()).glob(f'{TEMP_DIR}/*.html'))
@@ -346,7 +348,7 @@ class ReportProcessor:
         """Download and read the report content from the blob link. """
         try:
             # download blob from link 
-            self.downloaded_file = self.blob_manager.download_blob_from_a_link(self.blob_link)
+            self.downloaded_file, self.metadata = self.blob_manager.download_blob_from_a_link(self.blob_link)
 
             # get the pdf file within blob downloads
             pdf_file_path = next(Path(os.getcwd()).glob(f'{TEMP_DIR}/*.pdf'))

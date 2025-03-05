@@ -3143,9 +3143,16 @@ def generate_report():
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}"
         else:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
+            
+        metadata = {
+            "document_id": uuid.uuid4(),
+            "report_type": report_topic_rqst,
+            "date": current_date.isoformat(),
+            "company_name": company_name if report_topic_rqst == "Company_Analysis" else ""
+        }
 
         upload_result = blob_storage_manager.upload_to_blob(
-            file_path=str(file_path), blob_folder=blob_folder
+            file_path=str(file_path), blob_folder=blob_folder, metadata=metadata
         )
 
         # Cleanup files
@@ -3180,8 +3187,8 @@ def generate_report():
             }
         )
 
-    except KeyError:
-        logger.error("Missing report_topic in request")
+    except KeyError as e:
+        logger.error(f"Missing report_topic in request: {str(e)}")
         return jsonify({"error": "report_topic is required"}), 400
 
     except InvalidReportTypeError as e:
@@ -3387,12 +3394,12 @@ def digest_report():
             return jsonify({"status": "error", "message": "No JSON data provided"}), 400
 
         # Validate required fields
-        if "blob_link" not in data or "recipients" not in data or "summary" not in data:
+        if "blob_link" not in data or "recipients" not in data:
             return (
                 jsonify(
                     {
                         "status": "error",
-                        "message": "Missing required fields: blob_link and/or recipients and/or summary",
+                        "message": "Missing required fields: blob_link and/or recipients",
                     }
                 ),
                 400,
