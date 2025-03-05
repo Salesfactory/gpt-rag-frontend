@@ -116,3 +116,42 @@ class DocumentSummarizer:
             max_tokens=1500
         )
         return response.choices[0].message.content
+    
+    def format_summary(self, summary) -> str:
+        """
+        Format the final summary for display.
+
+        This function uses the GPT4o model to generate a formatted final summary
+
+        Returns:
+            str: The formatted final summary.
+        """
+
+        if not summary:
+            return None
+
+        try:
+            llm = self.llm_manager.get_client(
+                client_type='gpt4o',
+                use_langchain=True
+            )
+
+            prompt = f"""
+        Please format the following summary into clean markdown, ensuring it is easy to read and understand. 
+        Use headers, bullet points, and numbered lists where appropriate. 
+        Maintain the original information and structure as much as possible, but improve the presentation.
+
+        Do not include any markdown code blocks (e.g., ```markdown) at the start or end of the response.
+
+        Summary:
+        {summary}
+
+        Markdown:
+        """
+            
+            response = llm.invoke(prompt)
+            markdown_output = response.content.strip()
+            return markdown_output
+        except Exception as e:
+            logger.exception(f"Error parsing the report to email schema: {str(e)}")
+            raise 
