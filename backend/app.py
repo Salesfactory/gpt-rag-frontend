@@ -118,6 +118,10 @@ SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
 AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 
+AZURE_SEARCH_SERVICE_NAME = os.getenv("AZURE_SEARCH_SERVICE_NAME")
+AZURE_SEARCH_INDEXER_NAME = os.getenv("AZURE_SEARCH_INDEXER_NAME")
+AZURE_SEARCH_ADMIN_KEY = os.getenv("AZURE_SEARCH_ADMIN_KEY")
+AZURE_SEARCH_API_VERSION = os.getenv("AZURE_SEARCH_API_VERSION")
 
 # Retrieve the connection string for Azure Blob Storage from secrets
 try:
@@ -3139,6 +3143,29 @@ def generate_report():
         upload_result = blob_storage_manager.upload_to_blob(
             file_path=str(file_path), blob_folder=blob_folder, metadata=metadata
         )
+        
+        # Execute Azure Search indexer
+        try:
+            if not all([AZURE_SEARCH_SERVICE_NAME, AZURE_SEARCH_INDEXER_NAME, AZURE_SEARCH_ADMIN_KEY]):
+                logger.warning("Azure Search configuration is incomplete. Skipping indexer execution.")
+            else:
+                # Construct the Azure Search REST API endpoint
+                search_endpoint = f"https://{AZURE_SEARCH_SERVICE_NAME}.search.windows.net"
+                indexer_url = f"{search_endpoint}/indexers/{AZURE_SEARCH_INDEXER_NAME}/run?api-version={AZURE_SEARCH_API_VERSION}"
+                
+                # Make the request to run the indexer
+                headers = {
+                    "api-key": AZURE_SEARCH_ADMIN_KEY,
+                    "Content-Type": "application/json"
+                }
+                
+                response = requests.post(indexer_url, headers=headers)
+                response.raise_for_status()
+                logger.info(f"Successfully triggered Azure Search indexer run for {file_path}")
+        except Exception as e:
+            logger.error(f"Error executing Azure Search indexer: {str(e)}")
+            # Continue execution even if indexer fails
+            pass
 
         # Cleanup files
         logger.info("Cleaning up local files")
