@@ -3145,7 +3145,7 @@ def generate_report():
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
             
         metadata = {
-            "document_id": uuid.uuid4(),
+            "document_id": str(uuid.uuid4()),
             "report_type": report_topic_rqst,
             "date": current_date.isoformat(),
             "company_name": company_name if report_topic_rqst == "Company_Analysis" else ""
@@ -3188,8 +3188,8 @@ def generate_report():
         )
 
     except KeyError as e:
-        logger.error(f"Missing report_topic in request: {str(e)}")
-        return jsonify({"error": "report_topic is required"}), 400
+        logger.error(f"Missing key in request: {str(e)}")
+        return jsonify({"error": f"Missing key in request: {str(e)}"}), 400
 
     except InvalidReportTypeError as e:
         logger.error(f"Invalid report topic: {str(e)}")

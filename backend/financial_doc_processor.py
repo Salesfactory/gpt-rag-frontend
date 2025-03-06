@@ -1030,7 +1030,7 @@ class FinancialDocumentProcessor:
                 "filing_type": filing_type,
                 "uploaded_date": datetime.now().strftime("%Y-%m-%d"),
                 "source": "SEC EDGAR",
-                "document_id": uuid.uuid4(),
+                "document_id": str(uuid.uuid4()),
             }
 
             results = self.blob_manager.upload_to_blob(
