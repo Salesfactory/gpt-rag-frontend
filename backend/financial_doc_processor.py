@@ -530,18 +530,18 @@ class BlobStorageManager:
 
             # Get the blob client
             blob_client = self.container_client.get_blob_client(blob_path)
-
+            metadata = blob_client.get_blob_properties().metadata
             # Download the blob
             with open(local_data_path, "wb") as file:
                 download_stream = blob_client.download_blob()
                 file.write(download_stream.readall())
 
             logger.info(f"Successfully downloaded blob to {local_data_path}")
-            return True
+            return True, metadata
 
         except Exception as e:
             logger.error(f"Failed to download blob: {str(e)}")
-            return False
+            return False, None
 
     def download_documents(
         self,
@@ -738,6 +738,7 @@ class BlobStorageManager:
                     "status": "success",
                     "blob_path": blob_path,
                     "blob_url": blob_url,
+                    "metadata": metadata,
                 }
                 logger.info(f"Document has been uploaded to {blob_path}")
                 return result
@@ -1029,6 +1030,7 @@ class FinancialDocumentProcessor:
                 "filing_type": filing_type,
                 "uploaded_date": datetime.now().strftime("%Y-%m-%d"),
                 "source": "SEC EDGAR",
+                "document_id": str(uuid.uuid4()),
             }
 
             results = self.blob_manager.upload_to_blob(
