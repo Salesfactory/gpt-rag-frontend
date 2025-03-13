@@ -3115,7 +3115,7 @@ def generate_report():
         company_name = str(data.get("company_name", "")).replace(" ", "_")
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
             file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/{company_name}_{report_topic_rqst}_Week_{week_of_month}.html"
+                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/{report_topic_rqst}_Week_{week_of_month}.html"
             )
         elif report_topic_rqst == "Company_Analysis":
             # add company name to the file path
@@ -3125,7 +3125,7 @@ def generate_report():
             )
         else:
             file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}_{report_topic_rqst}_{datetime.now().strftime('%b %d %y')}.html"
+                f"Reports/Curation_Reports/{report_topic_rqst}/{report_topic_rqst}_{datetime.now().strftime('%b %d %y')}.html"
             )
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
