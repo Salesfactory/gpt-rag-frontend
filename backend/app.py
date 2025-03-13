@@ -3134,6 +3134,25 @@ def generate_report():
         # Convert and save report
         logger.info("Converting markdown to html")
         markdown_to_html(report["final_report"], str(file_path))
+        
+        # Read the generated HTML file
+        with open(str(file_path), 'r', encoding='utf-8') as f:
+            html_content = f.read()
+            
+        # Add logo to the top of the HTML content
+        logo_url = "https://www.salesfactory.com/hs-fs/hubfs/raw_assets/public/SalesFactory-2021/images/Sales-Factory-2020-logo-white-x2.png?width=251&height=75&name=Sales-Factory-2020-logo-white-x2.png"
+        logo_html = f'''<div class="header">
+            <a href="https://www.linkedin.com/company/the-sales-factory">
+                <img src="{logo_url}" 
+                     alt="Sales Factory Logo"  
+                     style="width: 30%; height: 30%; padding: 20px 30px 20px 10px; text-align: left; filter: brightness(0);"/>
+            </a>
+        </div>'''
+        html_content = html_content.replace('<body>', f'<body>{logo_html}')
+        
+        # Write the modified HTML back to the file
+        with open(str(file_path), 'w', encoding='utf-8') as f:
+            f.write(html_content)
 
         logger.info("Uploading to blob storage")
         blob_storage_manager = BlobStorageManager()
