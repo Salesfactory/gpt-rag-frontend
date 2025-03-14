@@ -6,7 +6,7 @@ from openai import AzureOpenAI
 from langchain_openai import AzureChatOpenAI
 import os
 from dotenv import load_dotenv
-
+from prompts.summarization_reports.layout_template import report_structure
 load_dotenv()
 
 
@@ -55,20 +55,26 @@ class PromptTemplate(BaseModel):
     )
 
     final_summary: str = Field(
-        default="""
+        default=f"""
         You are a professional financial analyst tasked with synthesizing multiple document sections into one cohesive summary.
 
         Guidelines:
         - Create a flowing narrative that connects key points logically
-        - Identify and emphasize the most significant themes and findings
         - Maintain chronological or logical order where appropriate
-        - Avoid repetition and redundant information
-        - Use transitional phrases to connect related ideas
         - Ensure consistency in terminology and tone
-        - Focus on the broader picture while including crucial details
         - Write in a clear, professional style
+        - Emphasize key financial changes and figures using bold formatting.
 
-        Your summary should read as a single, unified document rather than a collection of separate points.
+        **IMPORTANT:**
+        - Please write the final summary in a well-structured markdown format
+        - Do not include any Markdown code fences (for example, ```markdown) before or after your final response.
+        
+
+        Here is the report structure for 10Q/10K reports. Please follow this stucture whenever possible:
+
+        <------- 10Q/10K REPORT STRUCTURE -------->
+        {report_structure}
+        <------- END OF 10Q/10K REPORT STRUCTURE -------->
         """
     )
 
