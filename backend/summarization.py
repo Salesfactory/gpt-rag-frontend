@@ -8,6 +8,7 @@ from llm_config import LLMManager
 
 logger = logging.getLogger(__name__)
 
+
 class DocumentSummarizer:
     def __init__(self):
         self.llm_manager = LLMManager()
@@ -17,7 +18,7 @@ class DocumentSummarizer:
 
     def encode_image(self, image_path: str) -> str:
         with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+            return base64.b64encode(image_file.read()).decode("utf-8")
 
     def summarize_image(self, image_path: str) -> str:
         """
@@ -40,12 +41,20 @@ class DocumentSummarizer:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Please describe what you see in this image in 2-3 sentences."},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                    ]
-                }
+                        {
+                            "type": "text",
+                            "text": "Please describe what you see in this image in 3-5 sentences. Make sure to capture all the important financial information. If the image contains absolutely no useful information (e.g., disclaimers, generic legal text, or boilerplate content), simply respond with: 'No useful information on this page.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            },
+                        },
+                    ],
+                },
             ],
-            max_tokens=300
+            max_tokens=400,
         )
         return response.choices[0].message.content
 
@@ -67,7 +76,7 @@ class DocumentSummarizer:
         summaries = []
         file_names = []
         page_numbers = []
-        
+
         image_base_dir = Path(image_base_dir)
         for folder_path in image_base_dir.iterdir():
             if folder_path.is_dir():
@@ -75,24 +84,22 @@ class DocumentSummarizer:
                 for img_file in folder_path.glob("*.png"):
                     try:
                         summary = self.summarize_image(str(img_file))
-                        file_name = img_file.name.split('.')[0]
-                        page_num = int(file_name.split('_')[-1])
-                        
+                        file_name = img_file.name.split(".")[0]
+                        page_num = int(file_name.split("_")[-1])
+
                         summaries.append(summary)
                         file_names.append(file_name)
                         page_numbers.append(page_num)
-                        
+
                         logger.info(f"Processed: {img_file.name}")
                     except Exception as e:
                         logger.error(f"Error processing {img_file.name}: {str(e)}")
 
-        summary_df = pd.DataFrame({
-            'page_number': page_numbers,
-            'file_name': file_names,
-            'summary': summaries
-        }).sort_values('page_number')
+        summary_df = pd.DataFrame(
+            {"page_number": page_numbers, "file_name": file_names, "summary": summaries}
+        ).sort_values("page_number")
 
-        return "\n".join(summary_df['summary'].tolist())
+        return "\n".join(summary_df["summary"].tolist())
 
     def generate_final_summary(self, all_summaries: str) -> str:
         """
@@ -111,12 +118,13 @@ class DocumentSummarizer:
             model=self.llm_manager.config["gpt4o"].model_name,
             messages=[
                 {"role": "system", "content": self.final_summary_prompt},
-                {"role": "user", "content": [{"type": "text", "text": all_summaries}]}
+                {"role": "user", "content": [{"type": "text", "text": all_summaries}]},
             ],
-            max_tokens=1500
+            max_tokens=1500,
         )
         return response.choices[0].message.content
-    
+
+    # may not need this function anymore
     def format_summary(self, summary) -> str:
         """
         Format the final summary for display.
@@ -131,27 +139,24 @@ class DocumentSummarizer:
             return None
 
         try:
-            llm = self.llm_manager.get_client(
-                client_type='gpt4o',
-                use_langchain=True
-            )
+            llm = self.llm_manager.get_client(client_type="gpt4o", use_langchain=True)
 
             prompt = f"""
-        Please format the following summary into clean markdown, ensuring it is easy to read and understand. 
-        Use headers, bullet points, and numbered lists where appropriate. 
-        Maintain the original information and structure as much as possible, but improve the presentation.
+            Please transform the summary below into a clear, well-structured Markdown summary report. Use headers, bullet points, and numbered lists where appropriate to improve readability, while preserving the original information and overall structure as much as possible.
 
-        Do not include any markdown code blocks (e.g., ```markdown) at the start or end of the response.
+            Do not include any Markdown code fences (for example, ```markdown) before or after your final response.
 
-        Summary:
-        {summary}
-
-        Markdown:
-        """
+            Summary: 
             
+            {summary}
+
+            Markdown Response:
+
+        """
+
             response = llm.invoke(prompt)
             markdown_output = response.content.strip()
             return markdown_output
         except Exception as e:
             logger.exception(f"Error parsing the report to email schema: {str(e)}")
-            raise 
+            raise
