@@ -2786,9 +2786,8 @@ def generate_summary():
         all_summaries = summarizer.process_document_images(IMAGE_PATH)
         final_summary = summarizer.generate_final_summary(all_summaries)
 
-        # format document summary
-        formatted_summary = summarizer.format_summary(final_summary)
-        html_output = markdown.markdown(formatted_summary)
+        # note from Nam: we don't need to format the summary anymore since we instructed the LLM to format the final summary in the prompt already 
+        html_output = markdown.markdown(final_summary) 
 
         # Save the summary locally
         # save_str_to_pdf(formatted_summary, local_output_path)
