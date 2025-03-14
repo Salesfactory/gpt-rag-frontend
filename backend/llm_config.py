@@ -7,6 +7,7 @@ from langchain_openai import AzureChatOpenAI
 import os
 from dotenv import load_dotenv
 from prompts.summarization_reports.layout_template import report_structure
+
 load_dotenv()
 
 
