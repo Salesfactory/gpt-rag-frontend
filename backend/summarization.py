@@ -40,12 +40,12 @@ class DocumentSummarizer:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Please describe what you see in this image in 2-3 sentences."},
+                        {"type": "text", "text": "Please describe what you see in this image in 3-5 sentences. Make sure to capture all the important financial information. If the image contains absolutely no useful information (e.g., disclaimers, generic legal text, or boilerplate content), simply respond with: 'No useful information on this page."}, 
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                     ]
                 }
             ],
-            max_tokens=300
+            max_tokens=400
         )
         return response.choices[0].message.content
 
@@ -117,6 +117,7 @@ class DocumentSummarizer:
         )
         return response.choices[0].message.content
     
+    # may not need this function anymore
     def format_summary(self, summary) -> str:
         """
         Format the final summary for display.
@@ -137,16 +138,16 @@ class DocumentSummarizer:
             )
 
             prompt = f"""
-        Please format the following summary into clean markdown, ensuring it is easy to read and understand. 
-        Use headers, bullet points, and numbered lists where appropriate. 
-        Maintain the original information and structure as much as possible, but improve the presentation.
+            Please transform the summary below into a clear, well-structured Markdown summary report. Use headers, bullet points, and numbered lists where appropriate to improve readability, while preserving the original information and overall structure as much as possible.
 
-        Do not include any markdown code blocks (e.g., ```markdown) at the start or end of the response.
+            Do not include any Markdown code fences (for example, ```markdown) before or after your final response.
 
-        Summary:
-        {summary}
+            Summary: 
+            
+            {summary}
 
-        Markdown:
+            Markdown Response:
+
         """
             
             response = llm.invoke(prompt)
