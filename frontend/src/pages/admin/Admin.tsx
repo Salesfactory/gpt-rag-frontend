@@ -81,7 +81,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                 role
             });
 
-            if (invitationResponse.error) {
+            if (invitationResponse?.error) {
                 setErrorMessage(invitationResponse.error);
             } else {
                 setErrorMessage("");
