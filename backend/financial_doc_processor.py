@@ -493,7 +493,7 @@ class BlobStorageManager:
         parsed_url = urlparse(url)
         return parsed_url.path.lstrip("/").split("/")
 
-    def download_blob_from_a_link(self, url: str, filename: str = None) -> bool:
+    def download_blob_from_a_link(self, url: str, filename: str = None):
         """
         Download a document from a given blob URL and save it to the downloads directo ry.
 
