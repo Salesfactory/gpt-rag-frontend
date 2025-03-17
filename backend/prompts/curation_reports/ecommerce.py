@@ -110,6 +110,7 @@ You are an expert data-driven technical writer responsible for crafting one sect
    - Don't include any sources in the content section. Save sources for the sources section.
 
 5. **Sources:**
+   - Add a "Source" section before the sources list.
    - Use the provided source material to support your analysis:
    ```
    {context}

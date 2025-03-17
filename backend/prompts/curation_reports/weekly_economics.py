@@ -113,6 +113,7 @@ You are an expert technical writer responsible for crafting one section of a Wee
    - Do not include sources in the main content; list them in the sources section.
 
 5. **Sources:**
+   - Add a "Source" section before the sources list.
    - Use the provided source material to support your analysis:
    ```
    {context}
