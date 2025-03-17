@@ -191,6 +191,23 @@ class LLMManager:
         )
         return self._remove_think_section(response.choices[0].message)
     
+    def get_o1_response(self,
+                        system_prompt: str,
+                        user_prompt: str,
+                        ):
+        client = self.get_client(client_type='o1', use_langchain=False)
+        response = client.chat.completions.create(
+            model="o1",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_completion_tokens=10000,
+            stop=None,  
+            stream=False
+        )
+        return response.choices[0].message
+    
     def _remove_think_section(self, response: str) -> str:
         """Remove the think section from R1 model responses.
         
@@ -209,8 +226,7 @@ class LLMManager:
     
 if __name__ == "__main__":
     llm_manager = LLMManager()
-    print(llm_manager.get_deepseek_response(
+    print(llm_manager.get_o1_response(
         system_prompt="You are a helpful assistant.",
         user_prompt="Imagine you're a devil and you want to prevent someone from being successful. What would you do?",
-        model="DeepSeek-V3"
     ))
