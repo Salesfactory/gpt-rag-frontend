@@ -303,7 +303,10 @@ def write_section(state: SectionState):
 
     # Generate section  
     logger.info(f"Generating section content for section {state['section'].name}")
-    section_content = llm_writing.invoke([SystemMessage(content=system_instructions)]+[HumanMessage(content="Generate a report section based on the provided sources.")])
+    section_content = llm_manager.get_o1_response(
+        system_prompt=system_instructions,
+        user_prompt="Generate a report section based on the provided sources."
+    )
     
     ##################################################
     # Here, we have successfully generated a section of the report.
@@ -398,7 +401,10 @@ def write_final_sections(state: SectionState):
 
     # Generate section  
     logger.info(f"Generating final section content for section {state['section'].name}")
-    section_content = llm_writing.invoke([SystemMessage(content=system_instructions)]+[HumanMessage(content="Generate a report section based on the provided sources.")])
+    section_content = llm_manager.get_o1_response(
+        system_prompt=system_instructions,
+        user_prompt="Generate a report section based on the provided sources."
+    )
     
     # Write content to section 
     logger.info(f"Saving final section content to: {section.name} section object")
