@@ -602,12 +602,17 @@ def proxy_orc():
         try:
             with requests.post(orchestrator_url, stream=True, headers=headers,
                             data=payload) as r:
+                # Check for error status codes
+                if r.status_code != 200:
+                    raise Exception(f"Orchestrator returned status code {r.status_code}")
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         yield chunk.decode()
         except Exception as e:
             logging.exception(f"[webbackend] exception in /stream_chatgpt: {str(e)}")
-            yield jsonify({"error": str(e)}), 500
+            error_message = f"Error contacting orchestrator {str(e)}"
+            logging.error(error_message)
+            yield error_message
 
     return Response(stream_with_context(generate()), content_type="text/event-stream")
 
