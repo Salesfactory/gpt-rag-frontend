@@ -438,7 +438,7 @@ const Chat = () => {
     };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
+        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx") && !citation.endsWith(".html")) {
             return window.open(citation, "_blank");
         }
         // Extract filepath if necessary
@@ -448,9 +448,7 @@ const Chat = () => {
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
-            //var file = new Blob([response as BlobPart], { type: "application/pdf" });
             var file = new Blob([response as BlobPart]);
-
             readFile(file);
 
             function readFile(input: Blob) {
