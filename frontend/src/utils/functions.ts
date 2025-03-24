@@ -35,6 +35,10 @@ export function getFileType(citation: string): string {
             return "gif";
         case "txt":
             return "txt";
+        case "html":
+            return "html";
+        case "htm":
+            return "html";
         default:
             return "unknown";
     }
