@@ -7,14 +7,14 @@ The report should adhere to the following structure:
 1. **Introduction** (no research needed)
    - Provide a brief overview of the domestic and global economic landscape for the week.
    - Offer context for understanding the key economic events and trends analyzed in the report.
-
+   - Summarize key economic events and trends for the week.
 2. **Main Body**:
    - Organize sections based on the following categories:
      * **Global Economic Trends**:
        - Overview of major global economic indicators for the week (e.g., GDP updates, inflation snapshots, unemployment figures).
        - Analysis of significant developments (e.g., central bank announcements, trade disputes, geopolitical updates).
      * **Regional Highlights**:
-       - Focus on major regions: North America, Europe, Asia-Pacific, and Emerging Markets.
+       - Focus on these 3 major regions: North America, Europe, and Emerging Markets.
        - Key events, policy changes, and notable economic challenges.
      * **Industry-Specific Updates**:
        - Highlight weekly developments in key industries such as technology, energy, finance, and healthcare.
@@ -24,9 +24,7 @@ The report should adhere to the following structure:
        - Analysis of investor sentiment and short-term market trends.
 
 3. **Conclusion**
-   - Recap of key economic events and trends for the week.
-   - Emerging global and regional patterns.
-   - Implications for businesses, policymakers, and investors over the near term.
+   - Implications for businesses, and investors. Recommendations for things to watch out for in the coming week.
 """
 
 query_writer_instructions="""
@@ -115,6 +113,7 @@ You are an expert technical writer responsible for crafting one section of a Wee
    - Do not include sources in the main content; list them in the sources section.
 
 5. **Sources:**
+   - Add a "Source" section before the sources list.
    - Use the provided source material to support your analysis:
    ```
    {context}

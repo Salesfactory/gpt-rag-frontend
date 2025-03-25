@@ -72,19 +72,19 @@ const Chat = () => {
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
-    
+
     const [activeCitation, setActiveCitation] = useState<string>();
     const [activeAnalysisPanelTab, setActiveAnalysisPanelTab] = useState<AnalysisPanelTabs | undefined>(undefined);
-    
+
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
-    
+
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
     const triggered = useRef(false);
-    
+
     const [lastAnswer, setLastAnswer] = useState<string>("");
     const restartChat = useRef<boolean>(false);
-    
+
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
         let agent;
         lastQuestionRef.current = question;
@@ -162,15 +162,21 @@ const Chat = () => {
                 if (done) break;
                 const chunk = decoder.decode(value, { stream: true });
                 if (chunk.startsWith("{")) {
-                    resultObj = JSON.parse(chunk);
-                    const conditionOne = answers.map(a => ({ user: a[0] }));
-                    if (conditionOne.length <= 0) {
-                        setRefreshFetchHistory(true);
-                        setChatId(resultObj.conversation_id);
-                    } else {
-                        setRefreshFetchHistory(false);
+                    const startIndex = chunk.indexOf("{");
+                    const endIndex = chunk.lastIndexOf("}");
+                    if (endIndex !== -1 && startIndex !== -1 && endIndex > startIndex) {
+                        const jsonString = chunk.substring(startIndex, endIndex + 1);
+                        resultObj = JSON.parse(jsonString);
+                        const conditionOne = answers.map(a => ({ user: a[0] }));
+                        if (conditionOne.length <= 0) {
+                            setRefreshFetchHistory(true);
+                            setChatId(resultObj.conversation_id);
+                        } else {
+                            setRefreshFetchHistory(false);
+                        }
+                        setUserId(resultObj.conversation_id);
                     }
-                    setUserId(resultObj.conversation_id);
+                    result += chunk.slice(endIndex + 1);
                 } else {
                     result += chunk;
                     setLastAnswer(result);
@@ -417,34 +423,32 @@ const Chat = () => {
 
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
-      
+
         for (const ext of extensions) {
-          const index = url.lastIndexOf(ext);
-          if (index !== -1) {
-            let currentUrl = url.substring(index + ext.length);
-            if (currentUrl.startsWith("/")) {
-                currentUrl = currentUrl.substring(1);
+            const index = url.lastIndexOf(ext);
+            if (index !== -1) {
+                let currentUrl = url.substring(index + ext.length);
+                if (currentUrl.startsWith("/")) {
+                    currentUrl = currentUrl.substring(1);
+                }
+                return currentUrl;
             }
-            return currentUrl;
-          }
         }
         return url;
-    }
+    };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
+        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx") && !citation.endsWith(".html")) {
             return window.open(citation, "_blank");
         }
         // Extract filepath if necessary
-        const modifiedFilename = extractAfterDomain(fileName)
+        const modifiedFilename = extractAfterDomain(fileName);
 
         const response = await getPdf(modifiedFilename);
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
-            //var file = new Blob([response as BlobPart], { type: "application/pdf" });
             var file = new Blob([response as BlobPart]);
-
             readFile(file);
 
             function readFile(input: Blob) {

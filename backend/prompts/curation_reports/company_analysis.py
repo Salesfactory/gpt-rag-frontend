@@ -6,6 +6,7 @@ The report should adhere to the following structure:
 1. **Introduction** (no research needed)
    - Provide a brief overview of the company's industry and market position
    - Offer context for understanding the key developments and performance metrics analyzed in the report
+   - Summarize key developments and performance metrics for the month
 2. **Main Body**:
    - Organize sections based on the following categories:
      * **Financial Performance**:
@@ -22,7 +23,6 @@ The report should adhere to the following structure:
        - Discuss strategic initiatives that could capitalize on these opportunities.
 
 3. **Conclusion**:
-   - Recap of key developments and performance metrics for the month
    - Identification of potential opportunities and challenges moving forward
    - Recommendations or implications for business leaders, CEOs.
 """
@@ -117,6 +117,7 @@ You are an expert data-driven technical writer responsible for crafting one sect
    - Do not include sources in the main content; list them in the sources section.
 
 5. **Sources:**
+   - Add a "Source" section before the sources list.
    - Use the provided source material to support your analysis:
    ```
    {context}

@@ -15,7 +15,7 @@ from flask import (
     url_for,
     session,
 )
-
+import markdown
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
@@ -602,12 +602,17 @@ def proxy_orc():
         try:
             with requests.post(orchestrator_url, stream=True, headers=headers,
                             data=payload) as r:
+                # Check for error status codes
+                if r.status_code != 200:
+                    raise Exception(f"Orchestrator returned status code {r.status_code}")
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         yield chunk.decode()
         except Exception as e:
             logging.exception(f"[webbackend] exception in /stream_chatgpt: {str(e)}")
-            yield jsonify({"error": str(e)}), 500
+            error_message = f"Error contacting orchestrator {str(e)}"
+            logging.error(error_message)
+            yield error_message
 
     return Response(stream_with_context(generate()), content_type="text/event-stream")
 
@@ -2786,9 +2791,23 @@ def generate_summary():
         all_summaries = summarizer.process_document_images(IMAGE_PATH)
         final_summary = summarizer.generate_final_summary(all_summaries)
 
-        # Save the summary locally and upload to blob
-        local_output_path = f"pdf/{financial_type}_{equity_name}_summary.pdf"
-        save_str_to_pdf(final_summary, local_output_path)
+        # note from Nam: we don't need to format the summary anymore since we instructed the LLM to format the final summary in the prompt already 
+        html_output = markdown.markdown(final_summary) 
+
+        # Save the summary locally
+        # save_str_to_pdf(formatted_summary, local_output_path)
+
+        local_output_path = f"pdf/{equity_name}_{financial_type}_{datetime.now().strftime('%b %d %y')}_summary.pdf"
+        
+        try:
+            report_processor = ReportProcessor()
+           
+            pdf_path = report_processor.html_to_pdf(html_output, local_output_path)
+            if not pdf_path:
+                return jsonify({"error": "PDF creation failed"}), 500
+        except Exception as e:
+            logger.error(f"Failed to create PDF: {str(e)}")
+            return jsonify({"error": "PDF creation failed: " + str(e)}), 500
 
         # Upload summary to blob
         document_paths = create_document_paths(
@@ -3097,21 +3116,20 @@ def generate_report():
         # Generate file path
         current_date = datetime.now(timezone.utc)
         week_of_month = (current_date.day - 1) // 7 + 1
+        company_name = str(data.get("company_name", "")).replace(" ", "_")
         if report_topic_rqst in WEEKLY_CURATION_REPORT:
             file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/Week_{week_of_month}.html"
+                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/{report_topic_rqst}_Week_{week_of_month}.html"
             )
         elif report_topic_rqst == "Company_Analysis":
             # add company name to the file path
-            company_name = str(data["company_name"]).replace(" ", "_")  # Ensure string and replace spaces
-            logger.info(f"Company name before replacement: {data['company_name']}")
             logger.info(f"Company name after replacement: {company_name}")
             file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}/{current_date.strftime('%B_%Y')}.html"
+                f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}/{company_name}_{report_topic_rqst}_{datetime.now().strftime('%b %d %y')}.html"
             )
         else:
             file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}.html"
+                f"Reports/Curation_Reports/{report_topic_rqst}/{report_topic_rqst}_{datetime.now().strftime('%b %d %y')}.html"
             )
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3119,6 +3137,33 @@ def generate_report():
         # Convert and save report
         logger.info("Converting markdown to html")
         markdown_to_html(report["final_report"], str(file_path))
+        
+        # Read the generated HTML file
+        with open(str(file_path), 'r', encoding='utf-8') as f:
+            html_content = f.read()
+            
+        # Add logo to the top of the HTML content
+        logo_url = "https://www.salesfactory.com/hs-fs/hubfs/raw_assets/public/SalesFactory-2021/images/Sales-Factory-2020-logo-white-x2.png?width=251&height=75&name=Sales-Factory-2020-logo-white-x2.png"
+        style_and_logo = f'''<style>
+            body {{
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }}
+            .header {{
+                padding: 20px;
+            }}
+        </style>
+        <div class="header">
+            <a href="https://www.linkedin.com/company/the-sales-factory">
+                <img src="{logo_url}" 
+                     alt="Sales Factory Logo"  
+                     style="width: 250px; height: auto; filter: brightness(0);"/>
+            </a>
+        </div>'''
+        html_content = html_content.replace('<body>', f'<body>{style_and_logo}')
+        
+        # Write the modified HTML back to the file
+        with open(str(file_path), 'w', encoding='utf-8') as f:
+            f.write(html_content)
 
         logger.info("Uploading to blob storage")
         blob_storage_manager = BlobStorageManager()
@@ -3128,9 +3173,16 @@ def generate_report():
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}"
         else:
             blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
+            
+        metadata = {
+            "document_id": str(uuid.uuid4()),
+            "report_type": report_topic_rqst,
+            "date": current_date.isoformat(),
+            "company_name": company_name if report_topic_rqst == "Company_Analysis" else ""
+        }
 
         upload_result = blob_storage_manager.upload_to_blob(
-            file_path=str(file_path), blob_folder=blob_folder
+            file_path=str(file_path), blob_folder=blob_folder, metadata=metadata
         )
 
         # Cleanup files
@@ -3165,9 +3217,9 @@ def generate_report():
             }
         )
 
-    except KeyError:
-        logger.error("Missing report_topic in request")
-        return jsonify({"error": "report_topic is required"}), 400
+    except KeyError as e:
+        logger.error(f"Missing key in request: {str(e)}")
+        return jsonify({"error": f"Missing key in request: {str(e)}"}), 400
 
     except InvalidReportTypeError as e:
         logger.error(f"Invalid report topic: {str(e)}")
@@ -3347,7 +3399,7 @@ def send_email_endpoint():
         )
 
 
-from rp2email import process_and_send_email
+from rp2email import process_and_send_email, ReportProcessor
 
 
 @app.route("/api/reports/digest", methods=["POST"])
@@ -3377,7 +3429,7 @@ def digest_report():
                 jsonify(
                     {
                         "status": "error",
-                        "message": "Missing required fields: blob_link and recipients",
+                        "message": "Missing required fields: blob_link and/or recipients",
                     }
                 ),
                 400,
@@ -3390,6 +3442,7 @@ def digest_report():
             attachment_path=data.get("attachment_path", None),
             email_subject=data.get("email_subject", None),
             save_email=data.get("save_email", "yes"),
+            summary=data.get("summary", None),
             is_summarization=data.get("is_summarization", False),
         )
 

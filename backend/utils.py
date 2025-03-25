@@ -416,7 +416,7 @@ class EmailService:
                 msg = EmailMessage()
                 msg['Subject'] = subject
                 msg['From'] = self.username
-                msg['Bcc'] = ','.join(recipients)
+                msg['To'] = ','.join(recipients)
                 msg.add_alternative(html_content, subtype='html')
 
                 if attachment_path:

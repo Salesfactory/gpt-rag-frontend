@@ -113,7 +113,7 @@ class EmailSendingError(Exception):
 class ReportProcessor:
     """Process reports and conver them to email format. """
 
-    def __init__(self, blob_link: str):
+    def __init__(self, blob_link: str = None):
         """
         Initialize report processor. 
         
@@ -123,19 +123,21 @@ class ReportProcessor:
         Raises:
             ValueError: If blob_link is None or empty
         """
-        if not blob_link:
-            raise ValueError("Blob link cannot be None or empty")
+        # if not blob_link:
+        #     raise ValueError("Blob link cannot be None or empty")
         
         # Validate URL format
-        parsed_url = urlparse(blob_link)
-        if not all([parsed_url.scheme, parsed_url.netloc]):
-            raise ValueError(f"Invalid blob link format: {blob_link}. URL must include scheme (e.g., https://) and hostname")
+        if blob_link:
+            parsed_url = urlparse(blob_link)
+            if not all([parsed_url.scheme, parsed_url.netloc]):
+                raise ValueError(f"Invalid blob link format: {blob_link}. URL must include scheme (e.g., https://) and hostname")
 
         self.blob_link = blob_link
         self.blob_manager = BlobStorageManager()
         self.llm_manager = LLMManager()
         self.template_manager = EmailTemplateManager()
         self.downloaded_file: Optional[Path] = None
+        self.metadata: Optional[Dict] = None
 
     @contextmanager
     def _resource_cleanup(self) -> Generator[None, None, None]:
@@ -220,7 +222,8 @@ class ReportProcessor:
                 intro_text=email_data.intro_text,
                 key_points=email_data.get_keypoints_dict(),
                 why_it_matters=email_data.why_it_matters,
-                document_type=email_data.document_type
+                document_type=email_data.document_type,
+                document_id=self.metadata.get("document_id")
             )
 
             return {
@@ -234,7 +237,7 @@ class ReportProcessor:
             logger.exception("Error processing the report")
             raise ReportProcessingError(f"Error processing the report: {str(e)}")
         
-    def process_summary(self) -> Dict[str, Any]:
+    def process_summary(self, summary, title = "Summarization") -> Dict[str, Any]:
         """
         Process a report summary from blob storage into an email-friendly format.
         
@@ -258,18 +261,22 @@ class ReportProcessor:
             logger.info("Downloading report from blob link")
             pdf_path = self._get_pdf_path()
 
+            # get brief for email
+            intro_text = self._parse_summary_to_short_text(summary)
+
             # parse to email schema 
             email_data = EmailBaseSchema(
-                title="Summarization",
-                intro_text="Here is a summary of the report",
+                title=title,
+                intro_text=intro_text,
             )
 
             # generate HTML email from schema and template 
             logger.info("Generating HTML email content")
             email_html = self.template_manager.render_summary_template(
                 title=email_data.title,
-                intro_text=email_data.intro_text,
+                intro_text=email_data.intro_text
             )
+            #metadata=self.metadata
 
             return {
                 "subject": email_data.title,
@@ -320,7 +327,7 @@ class ReportProcessor:
         """Download and read the report content from the blob link. """
         try:
             # download blob from link 
-            self.downloaded_file = self.blob_manager.download_blob_from_a_link(self.blob_link)
+            self.downloaded_file, self.metadata = self.blob_manager.download_blob_from_a_link(self.blob_link)
 
             # get the file within blob downloads
             html_file_path = next(Path(os.getcwd()).glob(f'{TEMP_DIR}/*.html'))
@@ -342,7 +349,7 @@ class ReportProcessor:
         """Download and read the report content from the blob link. """
         try:
             # download blob from link 
-            self.downloaded_file = self.blob_manager.download_blob_from_a_link(self.blob_link)
+            self.downloaded_file, self.metadata = self.blob_manager.download_blob_from_a_link(self.blob_link)
 
             # get the pdf file within blob downloads
             pdf_file_path = next(Path(os.getcwd()).glob(f'{TEMP_DIR}/*.pdf'))
@@ -441,7 +448,36 @@ class ReportProcessor:
         except Exception as e:
             logger.exception(f"Error parsing the report to email schema: {str(e)}")
             raise 
+
     
+    def _parse_summary_to_short_text(self, summary: str):
+        """Parse the report summary into the email schema. """
+        try:
+            llm = self.llm_manager.get_client(
+                client_type='gpt4o',
+                use_langchain=True
+            )
+            
+            prompt = f"""
+        Please create a brief, engaging introductory preview of the following summary. 
+        The preview should be no more than 2-3 sentences and capture the main essence of the summary. 
+        Focus on highlighting the most important or interesting points. 
+        Additionally, add a short, natural-sounding phrase at the end to invite the user to open the attached PDF for full details.
+
+        Summary:
+        {summary}
+
+        Preview:
+        """
+            
+            response = llm.invoke(prompt)
+            intro_text = response.content.strip()
+            return intro_text
+        except Exception as e:
+            logger.exception(f"Error parsing the report to email schema: {str(e)}")
+            return "Here is a summary of the report" 
+
+
     def html_to_pdf(self, html_content: str, output_path: str) -> Path:
         """Convert the HTML content to a PDF file using the Azure function."""
         # Debug logging
@@ -628,6 +664,7 @@ def process_and_send_email(blob_link: str,
                          attachment_path: Optional[str] = None,
                          email_subject: Optional[str] = None,
                          save_email: Optional[str] = "yes",
+                         summary: Optional[str] = None,
                          is_summarization: Optional[bool] = False,
                          ) -> bool:
     """
@@ -649,7 +686,7 @@ def process_and_send_email(blob_link: str,
             if not is_summarization:
                 email_data = processor.process()
             elif is_summarization:
-                email_data = processor.process_summary() 
+                email_data = processor.process_summary(summary, email_subject) 
             success = send_email(email_data, recipients, attachment_path, email_subject, save_email)
             return success
         
