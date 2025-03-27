@@ -325,23 +325,28 @@ def markdown_to_html(markdown_text: str, output_file: str):
     # Define CSS styles
     css_styles = """
             <style>
+                @font-face {
+                    font-family: 'system-ui';
+                    src: local('system-ui'), local('-apple-system'), local('BlinkMacSystemFont'), local('Segoe UI'), local('Roboto'), local('sans-serif');
+                }
+                
                 body {
-                    font-family: 'Times New Roman', Times, serif;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     line-height: 1.6;
                     max-width: 900px;
                     margin: 0 auto;
                     padding: 20px;
-                    font-size: 12pt;  /* Standard size for Times New Roman */
+                    font-size: 12pt;
                 }
                 h1, h2, h3 {
-                    font-family: 'Times New Roman', Times, serif;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     color: #333;
                 }
                 table {
                     border-collapse: collapse;
                     width: 100%;
                     margin: 20px 0;
-                    font-family: 'Times New Roman', Times, serif;
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 }
                 th, td {
                     border: 1px solid #ddd;
@@ -350,6 +355,9 @@ def markdown_to_html(markdown_text: str, output_file: str):
                 }
                 th {
                     background-color: #f5f5f5;
+                }
+                * {
+                    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
                 }
             </style>
             """

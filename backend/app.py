@@ -3156,7 +3156,7 @@ def generate_report():
             <a href="https://www.linkedin.com/company/the-sales-factory">
                 <img src="{logo_url}" 
                      alt="Sales Factory Logo"  
-                     style="width: 250px; height: auto; filter: brightness(0);"/>
+                     style="width: 250px; height: auto;"/>
             </a>
         </div>'''
         html_content = html_content.replace('<body>', f'<body>{style_and_logo}')
