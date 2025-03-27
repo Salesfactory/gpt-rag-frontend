@@ -52,6 +52,13 @@ if not BLOB_CONTAINER_NAME:
         "The Blob container name (BLOB_CONTAINER_NAME) is not set. Please ensure it is correctly configured."
     )
 
+#Retrieve the Financial Agent Container name from environment variables
+FINANCIAL_AGENT_CONTAINER = os.getenv("FINANCIAL_AGENT_CONTAINER")
+if not FINANCIAL_AGENT_CONTAINER:
+    raise ValueError(
+        "The Financial Agent Container name (FINANCIAL_AGENT_CONTAINER) is not set. Please ensure it is correctly configured."
+    )
+
 # Initialize the Blob service client
 try:
     blob_service_client = BlobServiceClient.from_connection_string(
@@ -62,6 +69,11 @@ try:
         logging.warning(f"Blob container '{BLOB_CONTAINER_NAME}' does not exist.")
         # Uncomment below to create the container dynamically:
         # container_client.create_container()
+    
+    financial_container_client = blob_service_client.get_container_client(FINANCIAL_AGENT_CONTAINER)
+    if not financial_container_client.exists():
+        logging.warning(f"Blob container '{FINANCIAL_AGENT_CONTAINER}' does not exist.")
+
 except Exception as e:
     logging.error(f"Failed to initialize Blob service client or access container: {e}")
     raise
@@ -451,6 +463,10 @@ class BlobStorageManager:
             self.container_client = self.blob_service_client.get_container_client(
                 BLOB_CONTAINER_NAME
             )
+
+            self.container_client_financial = self.blob_service_client.get_container_client(
+                FINANCIAL_AGENT_CONTAINER
+            )
             self.blob_base_folder = "financial"
         except ValueError as e:
             raise BlobConnectionError(f"Invalid connection string: {str(e)}")
@@ -470,7 +486,7 @@ class BlobStorageManager:
 
             logger.info(f"Attempting to access blob at path: {clean_path}")
 
-            blob_client = self.container_client.get_blob_client(clean_path)
+            blob_client = self.container_client_financial.get_blob_client(clean_path)
 
             if not blob_client.exists():
                 logger.error(f"Blob not found: {clean_path}")
@@ -529,7 +545,7 @@ class BlobStorageManager:
             local_data_path = os.path.join(downloads_dir, filename)
 
             # Get the blob client
-            blob_client = self.container_client.get_blob_client(blob_path)
+            blob_client = self.container_client_financial.get_blob_client(blob_path)
             metadata = blob_client.get_blob_properties().metadata
             # Download the blob
             with open(local_data_path, "wb") as file:
@@ -652,7 +668,7 @@ class BlobStorageManager:
         """
 
         try:
-            blob_client = self.container_client.get_blob_client(remote_file_path)
+            blob_client = self.container_client_financial.get_blob_client(remote_file_path)
             blob_properties = blob_client.get_blob_properties()
             return blob_properties.metadata
         except Exception as e:
@@ -721,7 +737,7 @@ class BlobStorageManager:
                     content_type = "application/octet-stream"
                 with open(file_path, "rb") as data:
                     try:
-                        self.container_client.upload_blob(
+                        self.container_client_financial.upload_blob(
                             name=blob_path,
                             data=data,
                             overwrite=True,
@@ -732,7 +748,7 @@ class BlobStorageManager:
                         raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
 
                 # get the blob url for the uploaded file
-                blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{blob_sas_token}"
+                blob_url = f"{self.blob_service_client.url}{os.getenv('FINANCIAL_AGENT_CONTAINER')}/{blob_path}?{blob_sas_token}"
 
                 result = {
                     "status": "success",
@@ -793,7 +809,7 @@ class BlobStorageManager:
 
                     with open(document_path, "rb") as data:
                         try:
-                            self.container_client.upload_blob(
+                            self.container_client_financial.upload_blob(
                                 name=blob_path,
                                 data=data,
                                 overwrite=True,
@@ -808,7 +824,7 @@ class BlobStorageManager:
                             )
 
                     # get the blob url for the uploaded file
-                    blob_url = f"{self.blob_service_client.url}{os.getenv('BLOB_CONTAINER_NAME')}/{blob_path}?{blob_sas_token}"
+                    blob_url = f"{self.blob_service_client.url}{os.getenv('FINANCIAL_AGENT_CONTAINER')}/{blob_path}?{blob_sas_token}"
                     upload_results[equity][filing_type] = {
                         "status": "success",
                         "blob_path": blob_path,
