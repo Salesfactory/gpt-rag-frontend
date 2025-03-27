@@ -21,7 +21,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-
+from urllib.parse import urlparse
+ 
 from utils import convert_html_to_pdf, get_azure_key_vault_secret
 from app_config import BLOB_CONTAINER_NAME, PDF_PATH
 
@@ -443,7 +444,7 @@ class StorageError(ReportGenerationError):
 
 
 class BlobStorageManager:
-    def __init__(self):
+    def __init__(self, blob_base_folder: str = "financial"):
         try:
             self.blob_service_client = BlobServiceClient.from_connection_string(
                 BLOB_CONNECTION_STRING
@@ -451,7 +452,7 @@ class BlobStorageManager:
             self.container_client = self.blob_service_client.get_container_client(
                 BLOB_CONTAINER_NAME
             )
-            self.blob_base_folder = "financial"
+            self.blob_base_folder = blob_base_folder
         except ValueError as e:
             raise BlobConnectionError(f"Invalid connection string: {str(e)}")
         except Exception as e:
@@ -488,14 +489,30 @@ class BlobStorageManager:
         """
         Get the blob path parts from a given URL.
         """
-        from urllib.parse import urlparse
-
         parsed_url = urlparse(url)
         return parsed_url.path.lstrip("/").split("/")
+    
+    def _fix_space_issue_in_blob_path(self, blob_path: str) -> str:
+        """
+        Fix the space encoding issues in the blob path by:
+        1. Converting %20 back to spaces
+        2. Converting other URL-encoded characters back to their original form
+        
+        Args:
+            blob_path (str): The encoded blob path
+            
+        Returns:
+            str: The decoded blob path with proper spaces
+        """
+        from urllib.parse import unquote
+        
+        # Use urllib.parse.unquote to decode URL-encoded characters
+        decoded_path = unquote(blob_path)
+        return decoded_path
 
     def download_blob_from_a_link(self, url: str, filename: str = None):
         """
-        Download a document from a given blob URL and save it to the downloads directo ry.
+        Download a document from a given blob URL and save it to the downloads directory.
 
         Args:
             url (str): The full Azure blob storage URL
@@ -505,10 +522,9 @@ class BlobStorageManager:
         Returns:
             None
         """
-        try:
-            # Parse the URL to get the container and blob path
-            from urllib.parse import urlparse
 
+        try:
+            url = self._fix_space_issue_in_blob_path(url)
             parsed_url = urlparse(url)
 
             # Split the path into parts
@@ -1068,13 +1084,3 @@ class FinancialDocumentProcessor:
             }
 
 
-# example usage for get_document_metadata
-if __name__ == "__main__":
-    doc_processor = BlobStorageManager()
-    blobs = doc_processor.list_blobs_in_container(
-        container_name="documents",
-        prefix="Reports/Curation_Reports/Ecommerce",
-        include_metadata="yes",
-        max_results=10,
-    )
-    print(blobs)
