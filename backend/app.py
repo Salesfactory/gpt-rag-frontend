@@ -3143,7 +3143,7 @@ def generate_report():
             html_content = f.read()
             
         # Add logo to the top of the HTML content
-        logo_url = "https://www.salesfactory.com/hs-fs/hubfs/raw_assets/public/SalesFactory-2021/images/Sales-Factory-2020-logo-white-x2.png?width=251&height=75&name=Sales-Factory-2020-logo-white-x2.png"
+        logo_url = "https://raw.githubusercontent.com/Salesfactory/gpt-rag-frontend/develop/backend/images/Sales%20Factory%20Logo%20BW.jpg"  
         style_and_logo = f'''<style>
             body {{
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
