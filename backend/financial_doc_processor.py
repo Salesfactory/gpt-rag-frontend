@@ -21,8 +21,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-from urllib.parse import urlparse
- 
+from urllib.parse import urlparse, unquote
+
 from utils import convert_html_to_pdf, get_azure_key_vault_secret
 from app_config import BLOB_CONTAINER_NAME, PDF_PATH
 
@@ -457,7 +457,7 @@ class BlobStorageManager:
             raise BlobConnectionError(f"Invalid connection string: {str(e)}")
         except Exception as e:
             raise BlobConnectionError(f"Failed to initialize blob storage: {str(e)}")
-        
+
     def get_rpcontent_from_blob_path(self, blob_path: str) -> str:
         """
         Get report content from blob path.
@@ -491,21 +491,20 @@ class BlobStorageManager:
         """
         parsed_url = urlparse(url)
         return parsed_url.path.lstrip("/").split("/")
-    
+
     def _fix_space_issue_in_blob_path(self, blob_path: str) -> str:
         """
         Fix the space encoding issues in the blob path by:
         1. Converting %20 back to spaces
         2. Converting other URL-encoded characters back to their original form
-        
+
         Args:
             blob_path (str): The encoded blob path
-            
+
         Returns:
             str: The decoded blob path with proper spaces
         """
-        from urllib.parse import unquote
-        
+
         # Use urllib.parse.unquote to decode URL-encoded characters
         decoded_path = unquote(blob_path)
         return decoded_path
@@ -1082,5 +1081,3 @@ class FinancialDocumentProcessor:
                 "message": f"Processing failed: {str(e)}",
                 "code": 500,
             }
-
-
