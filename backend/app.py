@@ -3143,7 +3143,7 @@ def generate_report():
             html_content = f.read()
             
         # Add logo to the top of the HTML content
-        logo_url = "https://raw.githubusercontent.com/Salesfactory/gpt-rag-frontend/develop/backend/images/Sales%20Factory%20Logo%20BW.jpg"  # Since the image is in the same directory as app.py
+        logo_url = "https://raw.githubusercontent.com/Salesfactory/gpt-rag-frontend/develop/backend/images/Sales%20Factory%20Logo%20BW.jpg"  
         style_and_logo = f'''<style>
             body {{
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
