@@ -222,7 +222,8 @@ class ReportProcessor:
                 intro_text=email_data.intro_text,
                 key_points=email_data.get_keypoints_dict(),
                 why_it_matters=email_data.why_it_matters,
-                document_type=email_data.document_type
+                document_type=email_data.document_type,
+                document_id=self.metadata.get("document_id")
             )
 
             return {

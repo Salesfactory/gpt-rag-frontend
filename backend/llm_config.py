@@ -1,4 +1,6 @@
 # llm_config.py
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import SystemMessage, UserMessage
 from pydantic import BaseModel, Field
 from typing import Dict, Optional
 import json
@@ -6,7 +8,9 @@ from openai import AzureOpenAI
 from langchain_openai import AzureChatOpenAI
 import os
 from dotenv import load_dotenv
-
+from prompts.summarization_reports.layout_template import report_structure
+from azure.core.credentials import AzureKeyCredential
+import re
 load_dotenv()
 
 
@@ -55,20 +59,26 @@ class PromptTemplate(BaseModel):
     )
 
     final_summary: str = Field(
-        default="""
+        default=f"""
         You are a professional financial analyst tasked with synthesizing multiple document sections into one cohesive summary.
 
         Guidelines:
         - Create a flowing narrative that connects key points logically
-        - Identify and emphasize the most significant themes and findings
         - Maintain chronological or logical order where appropriate
-        - Avoid repetition and redundant information
-        - Use transitional phrases to connect related ideas
         - Ensure consistency in terminology and tone
-        - Focus on the broader picture while including crucial details
         - Write in a clear, professional style
+        - Emphasize key financial changes and figures using bold formatting.
 
-        Your summary should read as a single, unified document rather than a collection of separate points.
+        **IMPORTANT:**
+        - Please write the final summary in a well-structured markdown format
+        - Do not include any Markdown code fences (for example, ```markdown) before or after your final response.
+        
+
+        Here is the report structure for 10Q/10K reports. Please follow this stucture whenever possible:
+
+        <------- 10Q/10K REPORT STRUCTURE -------->
+        {report_structure}
+        <------- END OF 10Q/10K REPORT STRUCTURE -------->
         """
     )
 
@@ -115,6 +125,12 @@ class LLMManager:
                 api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
                 model_name=os.getenv("AZURE_OPENAI_EMBEDDING_MODEL"),
             ),
+            "o1": LLMConfig(
+                api_base=os.getenv("O1_ENDPOINT"),
+                api_key=os.getenv("O1_KEY"),
+                api_version="2024-12-01-preview",
+                model_name="o1",
+            ),
         }
 
     def get_client(
@@ -137,6 +153,12 @@ class LLMManager:
                     azure_endpoint=config.api_base,
                     deployment_name=config.model_name,
                 )
+            elif client_type == "o1":
+                self._clients[client_key] = AzureOpenAI(
+                    azure_endpoint=config.api_base,
+                    api_key=config.api_key,
+                    api_version=config.api_version,
+                )
             else:
                 self._clients[client_key] = AzureOpenAI(
                     api_key=config.api_key,
@@ -144,7 +166,67 @@ class LLMManager:
                     base_url=f"{config.api_base}/openai/deployments/{config.model_name}",
                 )
         return self._clients[client_key]
-
+    
+    def _get_deepseek_client(self, 
+                            endpoint: str = os.getenv("AZURE_INFERENCE_ENDPOINT") ,
+                            key: str = os.getenv("AZURE_INFERENCE_KEY")):
+        return ChatCompletionsClient(
+            endpoint=endpoint,
+            credential=AzureKeyCredential(key),
+        )
+    
+    def get_deepseek_response(self,
+                             system_prompt: str,
+                             user_prompt: str,
+                             model: str,
+                             ):
+        client = self._get_deepseek_client()
+        response = client.complete(
+        messages=[
+            SystemMessage(content=system_prompt),
+            UserMessage(content=user_prompt)
+        ],
+        max_tokens=2048,
+        model=model
+        )
+        return self._remove_think_section(response.choices[0].message)
+    
+    def get_o1_response(self,
+                        system_prompt: str,
+                        user_prompt: str,
+                        ):
+        client = self.get_client(client_type='o1', use_langchain=False)
+        response = client.chat.completions.create(
+            model="o1",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            max_completion_tokens=10000,
+            stop=None,  
+            stream=False
+        )
+        return response.choices[0].message
+    
+    def _remove_think_section(self, response: str) -> str:
+        """Remove the think section from R1 model responses.
+        
+        Args:
+            response: The response string from the model
+            
+        Returns:
+            The response with think sections removed
+        """
+        cleaned_content = re.sub(r"<think>.*?</think>\n?", "", response, flags=re.DOTALL)
+        return cleaned_content
+    
     def get_prompt(self, prompt_type: str) -> str:
         """Get a prompt template by type"""
         return getattr(self.prompts, prompt_type)
+    
+if __name__ == "__main__":
+    llm_manager = LLMManager()
+    print(llm_manager.get_o1_response(
+        system_prompt="You are a helpful assistant.",
+        user_prompt="Imagine you're a devil and you want to prevent someone from being successful. What would you do?",
+    ))
