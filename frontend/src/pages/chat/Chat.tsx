@@ -183,7 +183,17 @@ const Chat = () => {
                 }
             }
             const regex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
-            result = result.replace(regex, "");
+            // Function to clean citations
+            const cleanCitation = (citation: string) => {
+                return citation.replace(regex, "");
+            };
+
+            // Find and replace citations in the text
+            const citationRegex = /\[\[(\d+)\]\]\((.*?)\)/g;
+            result = result.replace(citationRegex, (match, number, citation) => {
+                const cleanedCitation = cleanCitation(citation);
+                return `[[${number}]](${cleanedCitation})`;
+            });
             setAnswers([
                 ...answers,
                 [
