@@ -5,7 +5,6 @@ import { DocumentRegular, ArrowUploadRegular, ArrowDownloadRegular, SearchRegula
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 const ALLOWED_FILE_TYPES = [".pdf"];
-const CONTAINER_NAME = "documents";
 
 // Interface for blob data
 interface BlobItem {
@@ -270,8 +269,8 @@ const UploadResources: React.FC = () => {
                 const fileProgress = (i / selectedFiles.length) * 100;
                 setUploadProgress(fileProgress);
                 
-                // Upload the file
-                const result = await uploadSourceFileToBlob(selectedFiles[i]);
+                // Upload the file with organization ID
+                const result = await uploadSourceFileToBlob(selectedFiles[i], user?.organizationId || "");
                 
                 if (result && result.blob_url) {
                     urls.push(result.blob_url);
@@ -476,14 +475,15 @@ const UploadResources: React.FC = () => {
                 
                 <DialogFooter>
                     <PrimaryButton 
-                        onClick={handleUpload} 
-                        disabled={isUploading || selectedFiles.length === 0}
-                        text="Upload"
-                    />
-                    <PrimaryButton 
                         onClick={closeUploadDialog} 
                         text="Cancel"
                         styles={{ root: { backgroundColor: '#d83b01' } }}
+                    />
+                    <PrimaryButton
+                        className={styles.upload_button}
+                        onClick={handleUpload} 
+                        disabled={isUploading || selectedFiles.length === 0}
+                        text="Upload"
                     />
                 </DialogFooter>
             </Dialog>

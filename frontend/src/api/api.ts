@@ -477,13 +477,14 @@ export async function getSourceFileFromBlob(organizationId: string) {
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     const result = await response.json();
-    console.log("Files fetched successfully:", result);
     return result;
 }
 
-export async function uploadSourceFileToBlob(file: any) {
+export async function uploadSourceFileToBlob(file: any, organizationId: string) {
     const formdata = new FormData();
     formdata.append("file", file);
+    formdata.append("organization_id", organizationId);
+    
     try {
         const response = await fetch("/api/upload-source-document", {
             method: "POST",
