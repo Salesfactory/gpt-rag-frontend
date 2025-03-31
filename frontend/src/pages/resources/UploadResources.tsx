@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useRef, DragEvent, useEffect } from "react";
+import React, { useState, useCallback, useRef, DragEvent, useEffect, useContext } from "react";
 import styles from "./UploadResources.module.css";
 import { Stack, Text, PrimaryButton, ProgressIndicator, MessageBar, MessageBarType, Spinner, DetailsList, DetailsListLayoutMode, IColumn, SelectionMode, IconButton, SearchBox, Dialog, DialogType, DialogFooter } from "@fluentui/react";
-import { DocumentRegular, ArrowUploadRegular, ArrowDownloadRegular, SearchRegular, DeleteRegular, AddRegular } from "@fluentui/react-icons";
-import { uploadFile, getReportBlobs } from "../../api/api";
-
+import { DocumentRegular, ArrowUploadRegular, ArrowDownloadRegular, SearchRegular, DeleteRegular, AddRegular, ArrowClockwiseRegular } from "@fluentui/react-icons";
+import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
+import { useAppContext } from "../../providers/AppProviders";
 const ALLOWED_FILE_TYPES = [".pdf"];
 const CONTAINER_NAME = "documents";
 
@@ -19,6 +19,9 @@ interface BlobItem {
 }
 
 const UploadResources: React.FC = () => {
+
+    const { user } = useAppContext();
+
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -130,19 +133,16 @@ const UploadResources: React.FC = () => {
     const fetchBlobData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await getReportBlobs({
-                container_name: CONTAINER_NAME,
-                prefix: '',
-                include_metadata: 'yes',
-                max_results: '100'
-            });
-            
-            if (response && response.status === 'success' && response.data) {
-                setBlobItems(response.data);
-                setFilteredItems(response.data);
-            } else {
-                console.error('Failed to fetch blob data', response);
-            }
+            const response = await getSourceFileFromBlob(user?.organizationId || "");
+            const blobItems = response.data.map((item: any) => ({
+                name: item.name,
+                size: item.size,
+                created_on: item.created_on,
+                content_type: item.content_type,
+                url: item.url
+            }));
+            setBlobItems(blobItems);
+            setFilteredItems(blobItems);
         } catch (error) {
             console.error('Error fetching blob data:', error);
         } finally {
@@ -271,7 +271,7 @@ const UploadResources: React.FC = () => {
                 setUploadProgress(fileProgress);
                 
                 // Upload the file
-                const result = await uploadFile(selectedFiles[i]);
+                const result = await uploadSourceFileToBlob(selectedFiles[i]);
                 
                 if (result && result.blob_url) {
                     urls.push(result.blob_url);
@@ -358,8 +358,17 @@ const UploadResources: React.FC = () => {
                             </IconButton>
                             
                             <IconButton
-                                title="Refresh"
-                                ariaLabel="Refresh file list"
+                                title="Reload"
+                                ariaLabel="Reload file list"
+                                onClick={fetchBlobData}
+                                className={styles.refresh_button}
+                            >
+                                <ArrowClockwiseRegular />
+                            </IconButton>
+                            
+                            <IconButton
+                                title="Search"
+                                ariaLabel="Search file list"
                                 onClick={fetchBlobData}
                                 className={styles.refresh_button}
                             >

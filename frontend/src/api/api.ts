@@ -465,6 +465,60 @@ export async function getApiKeyPayment(): Promise<string> {
     return apiKey;
 }
 
+export async function getSourceFileFromBlob(organizationId: string) {
+    const response = await fetch(`/api/get-source-documents?organization_id=${organizationId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (!response.ok) {
+        console.log("Error fetching files:", response.statusText);
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+    }
+    const result = await response.json();
+    console.log("Files fetched successfully:", result);
+    return result;
+}
+
+export async function uploadSourceFileToBlob(file: any) {
+    const formdata = new FormData();
+    formdata.append("file", file);
+    try {
+        const response = await fetch("/api/upload-source-document", {
+            method: "POST",
+            body: formdata,
+            redirect: "follow"
+        });
+        if (!response.ok) {
+            console.log("Error uploading file:", response.statusText);
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        const result = await response.json();
+        console.log("File uploaded successfully:", result);
+        return result;
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        throw error;
+    }
+}
+
+export async function deleteSourceFileFromBlob(blob_name: string) {
+    const response = await fetch(`/api/delete-source-document?blob_name=${blob_name}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (!response.ok) {
+        console.log("Error deleting file:", response.statusText);
+        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+    }
+    const result = await response.json();
+    console.log("File deleted successfully:", result);
+    return result;
+}
+
 export async function uploadFile(file: any) {
     const formdata = new FormData();
     formdata.append("file", file);

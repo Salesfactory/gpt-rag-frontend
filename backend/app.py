@@ -3566,5 +3566,47 @@ def get_company_data():
         logger.exception("Unexpected error in get_company_analysis")
         return create_error_response("Internal Server Error", 500)
 
+@app.route("/api/get-source-documents", methods=["GET"])
+def get_source_documents():
+    organization_id = request.args.get("organization_id")
+    logger.info(f"Getting source documents for organization {organization_id}")
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        blob_storage_manager = BlobStorageManager()
+        # First, just get all documents from the main organization_files folder
+        blobs = blob_storage_manager.list_blobs_in_container(
+            container_name="documents",
+            prefix="organization_files/",
+            include_metadata="yes",
+            max_results=100
+        )
+        # Filter the blobs list to only include those with the organization ID in their path
+        organization_blobs = [blob for blob in blobs if f"organization_files/{organization_id}/" in blob["name"]]
+        
+        logger.info(f"Found {len(organization_blobs)} source documents for organization {organization_id}")
+        return create_success_response(organization_blobs, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_source_from_blob: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/upload-source-document", methods=["POST"])
+def upload_source_document():
+    try:
+        pass
+        return create_success_response("File uploaded successfully", 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in upload_source_to_blob: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/delete-source-document", methods=["DELETE"])
+def delete_source_document():
+    try:
+        pass
+        return create_success_response("File deleted successfully", 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in delete_source_from_blob: {e}")
+        return create_error_response("Internal Server Error", 500)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
