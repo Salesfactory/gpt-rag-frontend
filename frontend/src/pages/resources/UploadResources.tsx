@@ -104,6 +104,13 @@ const UploadResources: React.FC = () => {
                         >
                             <ArrowDownloadRegular />
                         </IconButton>
+                        <IconButton 
+                            title="Delete"
+                            ariaLabel="Delete"
+                            onClick={() => handleDelete(item)}
+                        >
+                            <DeleteRegular />
+                        </IconButton>
                     </div>
                 );
             }
@@ -126,6 +133,27 @@ const UploadResources: React.FC = () => {
     // Handle download
     const handleDownload = (item: BlobItem) => {
         window.open(item.url, '_blank');
+    };
+
+    // Handle delete
+    const handleDelete = async (item: BlobItem) => {
+        if (window.confirm(`Are you sure you want to delete ${item.name.split('/').pop()}?`)) {
+            try {
+                await deleteSourceFileFromBlob(item.name);
+                setUploadStatus({
+                    message: `File ${item.name.split('/').pop()} deleted successfully`,
+                    type: MessageBarType.success
+                });
+                // Refresh the blob list
+                fetchBlobData();
+            } catch (error) {
+                console.error("Error deleting file:", error);
+                setUploadStatus({
+                    message: `Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`,
+                    type: MessageBarType.error
+                });
+            }
+        }
     };
 
     // Fetch blob data
