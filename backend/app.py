@@ -5,6 +5,7 @@ import logging
 import requests
 import json
 import stripe
+import tempfile
 from flask import (
     Flask,
     request,
@@ -3564,6 +3565,138 @@ def get_company_data():
         return create_error_response("Internal Server Error", 500)
     except Exception as e:
         logger.exception("Unexpected error in get_company_analysis")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/get-source-documents", methods=["GET"])
+def get_source_documents():
+    organization_id = request.args.get("organization_id")
+    logger.info(f"Getting source documents for organization {organization_id}")
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        blob_storage_manager = BlobStorageManager()
+        # First, just get all documents from the main organization_files folder
+        blobs = blob_storage_manager.list_blobs_in_container(
+            container_name="documents",
+            prefix="organization_files/",
+            include_metadata="yes",
+            max_results=100
+        )
+        
+        # Two-step filtering:
+        # 1. Filter by path (for backwards compatibility)
+        # 2. Filter by metadata organization_id
+        organization_blobs = []
+        
+        for blob in blobs:
+            # Check if the blob matches by path
+            path_match = f"organization_files/{organization_id}/" in blob["name"]
+            
+            # Check if the blob matches by metadata
+            metadata_match = False
+            if blob["metadata"] and "organization_id" in blob["metadata"]:
+                metadata_match = blob["metadata"]["organization_id"] == organization_id
+            
+            # Include blob if either condition is true
+            if path_match or metadata_match:
+                organization_blobs.append(blob)
+        
+        logger.info(f"Found {len(organization_blobs)} source documents for organization {organization_id}")
+        return create_success_response(organization_blobs, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_source_from_blob: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/upload-source-document", methods=["POST"])
+def upload_source_document():
+    try:
+        # Check if file is in the request
+        if 'file' not in request.files:
+            logger.error("No file part in the request")
+            return create_error_response("No file part in the request", 400)
+            
+        file = request.files['file']
+        
+        # Check if filename is empty
+        if file.filename == '':
+            logger.error("No file selected")
+            return create_error_response("No file selected", 400)
+            
+        # Get organization ID from form data, query parameters, or headers
+        organization_id = request.form.get('organization_id')
+        
+        if not organization_id:
+            logger.error("Organization ID not provided in request")
+            return create_error_response("Organization ID is required", 400)
+            
+        logger.info(f"Uploading file '{file.filename}' for organization '{organization_id}'")
+            
+        # Create a temporary file to save the uploaded content
+        temp_file_path = os.path.join(tempfile.gettempdir(), file.filename)
+        file.save(temp_file_path)
+        
+        # Define the folder path in blob storage
+        blob_folder = f"organization_files/{organization_id}"
+        
+        # Create metadata with organization ID
+        metadata = {
+            "organization_id": organization_id
+        }
+        
+        # Initialize blob storage manager and upload file
+        blob_storage_manager = BlobStorageManager()
+        
+        result = blob_storage_manager.upload_to_blob(
+            file_path=temp_file_path,
+            blob_folder=blob_folder,
+            metadata=metadata
+        )
+        
+        # Remove temporary file
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+            
+        if result["status"] == "success":
+            logger.info(f"Successfully uploaded file '{file.filename}' to '{blob_folder}'")
+            return create_success_response({"blob_url": result["blob_url"]}, 200)
+        else:
+            error_msg = f"Error uploading file: {result.get('error', 'Unknown error')}"
+            logger.error(error_msg)
+            return create_error_response(error_msg, 500)
+            
+    except Exception as e:
+        logger.exception(f"Unexpected error in upload_source_to_blob: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/delete-source-document", methods=["DELETE"])
+def delete_source_document():
+    try:
+        # Get blob name from query parameters
+        blob_name = request.args.get("blob_name")
+        if not blob_name:
+            return create_error_response("Blob name is required", 400)
+        
+        # Make sure blob_name starts with organization_files/ for security
+        if not blob_name.startswith("organization_files/"):
+            return create_error_response("Invalid blob path. Path must start with 'organization_files/'", 400)
+        
+        # Initialize blob storage manager and delete blob
+        blob_storage_manager = BlobStorageManager()
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+        
+        # Get the blob client
+        blob_client = container_client.get_blob_client(blob_name)
+        
+        # Check if blob exists
+        if not blob_client.exists():
+            return create_error_response(f"File not found: {blob_name}", 404)
+        
+        # Delete the blob
+        blob_client.delete_blob()
+        
+        return create_success_response({"message": "File deleted successfully"}, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in delete_source_from_blob: {e}")
         return create_error_response("Internal Server Error", 500)
 
 if __name__ == "__main__":
