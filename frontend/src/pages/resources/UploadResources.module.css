@@ -2,6 +2,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    height: 100%;
     padding: 100px 100px 100px 150px;
     gap: 30px;
 }
@@ -140,15 +141,16 @@
 }
 
 .search_box {
+    color: #80c646;
     width: 250px;
 }
 
 .refresh_button {
-    color: #74c92f;
+    color: #7ec841;
 }
 
 .upload_button {
-    color: #74c92f;
+    color: #79c23d;
     background-color: #f0f9eb;
     border-radius: 4px;
     padding: 5px;
@@ -190,10 +192,11 @@
 }
 
 .file_icon {
-    color: #74c92f;
+    color: #71b33b;
 }
 
 .actions_cell {
+    color: #71b33b;
     display: flex;
     gap: 5px;
 }
