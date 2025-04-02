@@ -3649,7 +3649,8 @@ def upload_source_document():
         result = blob_storage_manager.upload_to_blob(
             file_path=temp_file_path,
             blob_folder=blob_folder,
-            metadata=metadata
+            metadata=metadata, 
+            container = os.getenv("BLOB_CONTAINER_NAME")
         )
         
         # Remove temporary file
