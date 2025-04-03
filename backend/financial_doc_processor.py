@@ -706,6 +706,7 @@ class BlobStorageManager:
         metadata: dict = None,
         file_path: str = None,
         blob_folder: str = None,
+        container: str = None, # temp fix for the container name
     ) -> Dict:
         """
         Upload files to Azure Blob Storage. Can handle either a document_paths dictionary
@@ -760,13 +761,22 @@ class BlobStorageManager:
                     content_type = "application/octet-stream"
                 with open(file_path, "rb") as data:
                     try:
-                        self.container_client_financial.upload_blob(
-                            name=blob_path,
-                            data=data,
-                            overwrite=True,
-                            content_settings=ContentSettings(content_type=content_type),
-                            metadata=metadata,
-                        )
+                        if container == os.getenv("BLOB_CONTAINER_NAME"): # this is our marketing container, already been defined in the env
+                            self.container_client.upload_blob(
+                                name=blob_path,
+                                data=data,
+                                overwrite=True,
+                                content_settings=ContentSettings(content_type=content_type),
+                                metadata=metadata,
+                            )
+                        else:
+                            self.container_client_financial.upload_blob(
+                                name=blob_path,
+                                data=data,
+                                overwrite=True,
+                                content_settings=ContentSettings(content_type=content_type),
+                                metadata=metadata,
+                            )
                     except Exception as e:
                         raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
 
