@@ -33,7 +33,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     };
 
     const alreadyExists = (sanitizedEmail: string) => {
-        return users.some((user: any) => user.data.email === sanitizedEmail);
+        return users.some((user: any) => user.data.email === sanitizedEmail && user.data.organizationId === user.organizationId);
     };
 
     const handleSubmit = async () => {

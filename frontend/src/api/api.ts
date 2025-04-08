@@ -25,6 +25,25 @@ export async function getUsers({ user }: any): Promise<any> {
     }
 }
 
+export async function getUserOrganizations({ user }: any): Promise<any> {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_name = user ? user.name : "anonymous";
+    const user_email = user ? user.email : "example@example.com";
+    const response = await fetch("/api/get-user-organizations?email=" + user_email, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+            "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+        }
+    });
+    const parsedResponse = await response.json();
+    if (response.status > 299 || !response.ok) {
+        throw Error("Unknown error in getUserOrganizations");
+    }
+    return parsedResponse;
+}
+
 export async function deleteUser({ user, userId }: any): Promise<any> {
     try {
         const response = await fetch(`/api/deleteuser?userId=${userId}`, {
