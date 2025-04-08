@@ -571,7 +571,7 @@ def get_user_organizations(user_email):
         NotFound: If no organizations are found for the user.
         Exception: For any other unexpected error that occurs during retrieval.
     """
-    if not user_email:
+    if not user_email or not user_email.strip():
         logging.error("User email not provided.")
         raise ValueError("User email is required.")
     
