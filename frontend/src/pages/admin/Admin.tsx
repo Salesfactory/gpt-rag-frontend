@@ -13,10 +13,10 @@ import styles from "./Admin.module.css";
 
 const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: "900px" } };
 export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; users: never[] }) => {
+    const { user } = useAppContext();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
-    const { user } = useAppContext();
     const [errorMessage, setErrorMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -33,7 +33,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     };
 
     const alreadyExists = (sanitizedEmail: string) => {
-        return users.some((user: any) => user.data.email === sanitizedEmail && user.data.organizationId === user.organizationId);
+        return users.some((existingUser: any) => existingUser.data.email === sanitizedEmail);
     };
 
     const handleSubmit = async () => {
