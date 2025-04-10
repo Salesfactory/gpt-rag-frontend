@@ -1877,11 +1877,10 @@ def getOrganization():
 @app.route("/api/get-user-organizations", methods=["GET"])
 def getUserOrganizations():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    email = request.args.get("email")
     if not client_principal_id:
         return create_error_response("Missing required parameter: client_principal_id", HTTPStatus.BAD_REQUEST)
     try:
-        response = get_user_organizations(email)
+        response = get_user_organizations(client_principal_id)
         return jsonify(response)
     except Exception as e:
         logging.exception("[webbackend] exception in /get-user-organizations")
