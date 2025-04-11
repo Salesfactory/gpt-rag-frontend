@@ -43,7 +43,11 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
 
-    const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts!);
+    const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts || "");
+    // First, handle the internal content separators with subtle breaks
+    const formattedInternalContent = sanitizedThoughts.replace(/\s*==============================================\s*/g, "<br /><br />");
+    // Then, handle the main separators between thought process parts
+    const formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
 
     return (
         <>
@@ -59,7 +63,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     headerButtonProps={isDisabledThoughtProcessTab ? pivotItemDisabledStyle : undefined}
                     aria-label="Thought Process Tab"
                 >
-                    <div className={styles.thoughtProcess} dangerouslySetInnerHTML={{ __html: sanitizedThoughts }}></div>
+                    <div className={styles.thoughtProcess} dangerouslySetInnerHTML={{ __html: formattedThoughts }}></div>
                 </PivotItem>
 
                 <PivotItem

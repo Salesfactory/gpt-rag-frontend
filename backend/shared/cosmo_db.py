@@ -356,7 +356,8 @@ def get_invitation(invited_user_email):
 def set_user(client_principal):
     user = {}
     user_id = client_principal.get("id")
-    user_email = client_principal.get("email")
+    email = client_principal.get("email")
+    user_email = email.lower() if email else None
 
     if not user_id or not user_email:
         logging.error("[set_user] Missing required user information.")
