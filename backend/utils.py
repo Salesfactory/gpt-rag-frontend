@@ -947,15 +947,17 @@ def get_set_user(client_principal):
         is_new_user = True
 
         logging.info("[get_user] Checking user invitations for new user registration")
-        user_invitation = get_invitation(client_principal["email"])
-
+        
+        email = client_principal["email"]
+        user_email = email.lower() if email else None
+        user_invitation = get_invitation(user_email)
         try:
             user = container.create_item(
                 body={
                     "id": client_principal["id"],
                     "data": {
                         "name": client_principal["name"],
-                        "email": client_principal["email"],
+                        "email": user_email,
                         "role": user_invitation["role"] if user_invitation else "admin",
                         "organizationId": (
                             user_invitation["organization_id"] if user_invitation else None

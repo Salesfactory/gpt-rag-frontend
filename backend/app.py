@@ -65,6 +65,7 @@ from shared.cosmo_db import (
     create_report,
     get_report,
     get_user_container,
+    get_user_organizations,
     patch_user_data,
     update_report,
     delete_report,
@@ -1872,7 +1873,18 @@ def getOrganization():
     except Exception as e:
         logging.exception("[webbackend] exception in /get-organization")
         return jsonify({"error": str(e)}), 500
-
+    
+@app.route("/api/get-user-organizations", methods=["GET"])
+def getUserOrganizations():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return create_error_response("Missing required parameter: client_principal_id", HTTPStatus.BAD_REQUEST)
+    try:
+        response = get_user_organizations(client_principal_id)
+        return jsonify(response)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /get-user-organizations")
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @app.route("/api/create-organization", methods=["POST"])
 def createOrganization():

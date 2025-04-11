@@ -356,7 +356,8 @@ def get_invitation(invited_user_email):
 def set_user(client_principal):
     user = {}
     user_id = client_principal.get("id")
-    user_email = client_principal.get("email")
+    email = client_principal.get("email")
+    user_email = email.lower() if email else None
 
     if not user_id or not user_email:
         logging.error("[set_user] Missing required user information.")
@@ -555,7 +556,83 @@ def get_organization_subscription(organizationId):
     except Exception as e:
         logging.error(f"Unexpected error retrieving organization with id '{organizationId}': {e}")
         raise
-          
+    
+def get_user_organizations(user_id):
+    """
+    Retrieves simplified organization information for a specific user ID.
+
+    Parameters:
+        user_id (str): The ID of the user to find organizations for.
+
+    Returns:
+        list: A list of simplified organization documents associated with the user.
+
+    Raises:
+        NotFound: If no organizations are found for the user.
+        Exception: For any other unexpected error that occurs during retrieval.
+    """
+    if not user_id or not user_id.strip():
+        logging.error("User ID not provided.")
+        raise ValueError("User ID is required.")
+
+    #get the invitations container
+    invitations_container = get_cosmos_container("invitations")
+
+    try:
+        query = "SELECT * FROM c WHERE c.invited_user_id = @user_id AND c.active = true"
+        parameters = [{"name": "@user_id", "value": user_id}]
+        invitations = list(
+            invitations_container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if not invitations:
+            logging.warning(f"No invitations found for user ID '{user_id}'.")
+            return []
+
+        organization_ids = list(set(
+            inv["organization_id"] for inv in invitations if "organization_id" in inv
+        ))
+
+        if not organization_ids:
+            logging.warning(f"No organization IDs found in invitations for user ID '{user_id}'.")
+            return []
+
+        organizations_container = get_cosmos_container("organizations")
+
+        organizations = []
+        for org_id in organization_ids:
+            try:
+                org = organizations_container.read_item(item=org_id, partition_key=org_id)
+                simplified_org = {
+                    "id": org.get("id", ""),
+                    "name": org.get("name", ""),
+                    "owner": org.get("owner", ""),
+                    "sessionId": org.get("sessionId", ""),
+                    "subscriptionExpirationDate": org.get("subscriptionExpirationDate", ""),
+                    "subscriptionId": org.get("subscriptionId", ""),
+                    "subscriptionStatus": org.get("subscriptionStatus", []),
+                }
+                organizations.append(simplified_org)
+            except CosmosResourceNotFoundError:
+                logging.warning(f"Organization with ID '{org_id}' not found.")
+            except Exception as e:
+                logging.error(f"Error retrieving organization with ID '{org_id}': {e}")
+
+        logging.info(f"Successfully retrieved {len(organizations)} organizations for user ID '{user_id}'.")
+        return organizations
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No invitations found for user ID '{user_id}'.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving organizations for user ID '{user_id}': {e}")
+        raise
+
+
+
 def create_invitation(invited_user_email, organization_id, role):
     """
     Creates a new Invitation in the container.
