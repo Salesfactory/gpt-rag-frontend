@@ -556,7 +556,7 @@ def get_organization_subscription(organizationId):
     except Exception as e:
         logging.error(f"Unexpected error retrieving organization with id '{organizationId}': {e}")
         raise
-    
+
 def get_user_organizations(user_id):
     """
     Retrieves simplified organization information for a specific user ID.
@@ -575,10 +575,11 @@ def get_user_organizations(user_id):
         logging.error("User ID not provided.")
         raise ValueError("User ID is required.")
 
-    #get the invitations container
+    organizations_container = get_cosmos_container("organizations")
     invitations_container = get_cosmos_container("invitations")
 
     try:
+        # Search for active invitations for the user
         query = "SELECT * FROM c WHERE c.invited_user_id = @user_id AND c.active = true"
         parameters = [{"name": "@user_id", "value": user_id}]
         invitations = list(
@@ -587,22 +588,27 @@ def get_user_organizations(user_id):
             )
         )
 
-        if not invitations:
-            logging.warning(f"No invitations found for user ID '{user_id}'.")
-            return []
-
-        organization_ids = list(set(
+        invited_org_ids = set(
             inv["organization_id"] for inv in invitations if "organization_id" in inv
-        ))
+        )
 
-        if not organization_ids:
-            logging.warning(f"No organization IDs found in invitations for user ID '{user_id}'.")
-            return []
+        # Search for organizations where the user is the owner
+        owner_query = "SELECT * FROM c WHERE c.owner = @user_id"
+        owner_parameters = [{"name": "@user_id", "value": user_id}]
+        owned_organizations = list(
+            organizations_container.query_items(
+                query=owner_query, parameters=owner_parameters, enable_cross_partition_query=True
+            )
+        )
 
-        organizations_container = get_cosmos_container("organizations")
+        # Save IDs of organizations already included
+        returned_org_ids = set()
 
+        # Recover organizations by invitations
         organizations = []
-        for org_id in organization_ids:
+        for org_id in invited_org_ids:
+            if org_id in returned_org_ids:
+                continue
             try:
                 org = organizations_container.read_item(item=org_id, partition_key=org_id)
                 simplified_org = {
@@ -615,17 +621,31 @@ def get_user_organizations(user_id):
                     "subscriptionStatus": org.get("subscriptionStatus", []),
                 }
                 organizations.append(simplified_org)
+                returned_org_ids.add(org_id)
             except CosmosResourceNotFoundError:
                 logging.warning(f"Organization with ID '{org_id}' not found.")
             except Exception as e:
                 logging.error(f"Error retrieving organization with ID '{org_id}': {e}")
 
+        # Add organizations where the user is owner
+        for org in owned_organizations:
+            org_id = org.get("id", "")
+            if org_id in returned_org_ids:
+                continue  # Avoid duplicates
+            simplified_org = {
+                "id": org.get("id", ""),
+                "name": org.get("name", ""),
+                "owner": org.get("owner", ""),
+                "sessionId": org.get("sessionId", ""),
+                "subscriptionExpirationDate": org.get("subscriptionExpirationDate", ""),
+                "subscriptionId": org.get("subscriptionId", ""),
+                "subscriptionStatus": org.get("subscriptionStatus", []),
+            }
+            organizations.append(simplified_org)
+            returned_org_ids.add(org_id)
+
         logging.info(f"Successfully retrieved {len(organizations)} organizations for user ID '{user_id}'.")
         return organizations
-
-    except CosmosResourceNotFoundError:
-        logging.warning(f"No invitations found for user ID '{user_id}'.")
-        raise NotFound
 
     except Exception as e:
         logging.error(f"Unexpected error retrieving organizations for user ID '{user_id}': {e}")

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
-import { checkUser, getOrganizationSubscription } from "../api";
+import { checkUser, fetchUserOrganizations, getOrganizationSubscription } from "../api";
 import { toast } from "react-toastify";
 
 // Define the debug mode based on the environment
@@ -251,9 +251,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 const invitationToken = urlParams.get("invitation");
 
                 const authData = await fetchUserAuth(invitationToken);
-
+                
                 if (authData.authenticated) {
-                    setUser(authData.user);
+                    const user = authData.user;
+        
+                    // Search for previously selected organization
+                    const savedOrgId = localStorage.getItem(`selectedOrg_${user.id}`);
+                    if (savedOrgId) {
+                        debugLog(`Using organization saved for the user: ${savedOrgId}`);
+                        setUser({ ...user, organizationId: savedOrgId });
+                    } else {
+                        const organizations = await fetchUserOrganizations(user.id);
+        
+                        if (Array.isArray(organizations) && organizations.length > 1) {
+                            const orgNameList = organizations.map((org) => org.name).join("\n");
+                            const chosenName = prompt(`Select your organization:\n${orgNameList}`);
+            
+                            const selected = organizations.find((org) => org.name === chosenName);
+                            if (selected) {
+                                localStorage.setItem(`selectedOrg_${user.id}`, selected.id); // Save selection
+                                setUser({ ...user, organizationId: selected.id });
+                            } else {
+                                toast.error("Organization not properly selected.");
+                                return;
+                            }
+                        } else if (organizations.length === 1) {
+                            localStorage.setItem(`selectedOrg_${user.id}`, organizations[0].id); // Save single selection
+                            setUser({ ...user, organizationId: organizations[0].id });
+                        } else {
+                            toast.error("No organizations were found for the user.");
+                            return;
+                        }
+                    }
+        
                     setIsAuthenticated(true);
                     debugLog(`User authenticated: ${authData.user.name}`);
                 } else {
