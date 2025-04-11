@@ -1016,23 +1016,48 @@ def get_user_by_id(user_id):
         logging.info(f"[get_user] get_user: something went wrong. {str(e)}")
     return user
 
-# return all users
+def get_active_user_ids():
+    active_user_ids = set()
+    container = get_cosmos_container("invitations")
+    try:
+        result = container.query_items(
+            query="SELECT VALUE c.invited_user_id FROM c WHERE c.active = true",
+            enable_cross_partition_query=True,
+        )
+        for invited_user_id in result:
+            logging.info(f"[DEBUG] Active invited_user_id: {invited_user_id}")
+            active_user_ids.add(invited_user_id)
+    except Exception as e:
+        logging.error(f"[get_active_user_ids] Error: {str(e)}")
+    return active_user_ids
+
+
 def get_users(organization_id):
     users = []
+    filtered_users = []
     container = get_cosmos_container("users")
     try:
-        users = container.query_items(
+        users_result = container.query_items(
             query="SELECT * FROM c WHERE c.data.organizationId = @organization_id",
             parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True,
         )
-        users = list(users)
+        users = list(users_result)
+        logging.info(f"[DEBUG] Total users found: {len(users)}")
 
+        active_ids = get_active_user_ids()
+        logging.info(f"[DEBUG] Active user IDs from invitations: {active_ids}")
+
+        for user in users:
+            user_id = user.get("id")
+            logging.info(f"[DEBUG] Checking user ID: {user_id}")
+            if user_id in active_ids:
+                logging.info(f"[DEBUG] Match found: {user_id}")
+                filtered_users.append(user)
     except Exception as e:
-        logging.info(
-            f"[get_users] get_users: no users found (keyvalue store with 'users' id does not exist)."
-        )
-    return users
+        logging.exception("[get_users] Error querying users")
+
+    return filtered_users
 
 def delete_user(user_id):
     if not user_id:
@@ -1044,9 +1069,6 @@ def delete_user(user_id):
     try:
         user = container.read_item(item=user_id, partition_key=user_id)
         user_email = user["data"]["email"]
-        user["data"]["organizationId"] = None
-        user["data"]["role"] = None
-        container.replace_item(item=user_id, body=user)
         logging.info(f"[delete_user] User {user_id} deleted from its organization")
         logging.info(f"[delete_user] Deleting all {user_id} active invitations")
         container = get_cosmos_container("invitations")
@@ -1056,9 +1078,11 @@ def delete_user(user_id):
             enable_cross_partition_query=True,
         )
         for invitation in invitations:
-            container.delete_item(item=invitation["id"], partition_key=invitation["id"])
-            logging.info(f"Deleted invitation with ID: {invitation['id']}")
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(f"Changed status of Invitation for: {invitation['id']}")
 
+        return jsonify("Success")
     except CosmosResourceNotFoundError:
         logging.warning(f"[delete_user] User not Found.")
         raise NotFound
