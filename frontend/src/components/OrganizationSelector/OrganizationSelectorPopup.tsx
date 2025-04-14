@@ -1,13 +1,25 @@
 import styles from "./OrganizationSelectorPopup.module.css";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
-const mockOrganizations = [
-    { id: "org1", name: "Microsoft" },
-    { id: "org2", name: "Blizzard" },
-    { id: "org3", name: "Bethesda" },
-];
+interface Organization {
+    id: string;
+    name: string;
+}
 
-const OrganizationSelectorPopup = () => {
+interface OrganizationSelectorPopupProps {
+    organizations: Organization[];
+    userId: string;
+    onOrganizationSelected: (orgId: string) => void;
+    onCancel: () => void;
+}
+
+const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({
+    organizations,
+    userId,
+    onOrganizationSelected,
+    onCancel,
+}) => {
     const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
 
     const handleSelect = (orgId: string) => {
@@ -16,8 +28,10 @@ const OrganizationSelectorPopup = () => {
 
     const handleContinue = () => {
         if (selectedOrgId) {
-            console.log("Selected Organization:", selectedOrgId);
-            alert(`Redirecting to app with org: ${selectedOrgId}`);
+            localStorage.setItem(`selectedOrg_${userId}`, selectedOrgId); // Save selection
+            onOrganizationSelected(selectedOrgId); // Notify parent component
+        } else {
+            toast.error("Organization not properly selected.");
         }
     };
 
@@ -25,7 +39,7 @@ const OrganizationSelectorPopup = () => {
         <div className={styles.body}>
             <h2 className={styles.title}>Select an Organization</h2>
             <ul className={styles.orgList}>
-                {mockOrganizations.map((org) => (
+                {organizations.map((org) => (
                     <li
                         key={org.id}
                         className={`${styles.orgItem} ${selectedOrgId === org.id ? styles.selected : ""}`}
@@ -35,13 +49,15 @@ const OrganizationSelectorPopup = () => {
                     </li>
                 ))}
             </ul>
-            <button
-                className={styles.continueButton}
-                onClick={handleContinue}
-                disabled={!selectedOrgId}
-            >
-                Continue
-            </button>
+            <div className={styles.actions}>
+                <button
+                    className={styles.continueButton}
+                    onClick={handleContinue}
+                    disabled={!selectedOrgId}
+                >
+                    Continue
+                </button>
+            </div>
         </div>
     );
 };
