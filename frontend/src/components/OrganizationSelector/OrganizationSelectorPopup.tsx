@@ -20,35 +20,33 @@ const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({
     onOrganizationSelected,
     onCancel,
 }) => {
-    const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-
-    const handleSelect = (orgId: string) => {
-        setSelectedOrgId(orgId);
-    };
+    const [selectedOrgId, setSelectedOrgId] = useState<string>("");
 
     const handleContinue = () => {
         if (selectedOrgId) {
-            localStorage.setItem(`selectedOrg_${userId}`, selectedOrgId); // Save selection
-            onOrganizationSelected(selectedOrgId); // Notify parent component
+            localStorage.setItem(`selectedOrg_${userId}`, selectedOrgId);
+            onOrganizationSelected(selectedOrgId);
         } else {
-            toast.error("Organization not properly selected.");
+            toast.error("Please select an organization.");
         }
     };
 
     return (
         <div className={styles.body}>
             <h2 className={styles.title}>Select an Organization</h2>
-            <ul className={styles.orgList}>
-                {organizations.map((org) => (
-                    <li
-                        key={org.id}
-                        className={`${styles.orgItem} ${selectedOrgId === org.id ? styles.selected : ""}`}
-                        onClick={() => handleSelect(org.id)}
-                    >
-                        {org.name}
-                    </li>
-                ))}
-            </ul>
+            <div className={styles.dropdownWrapper}>
+                <select
+                    className={`${styles.dropdown} ${selectedOrgId ? styles.selected : ""}`}
+                    value={selectedOrgId}
+                    onChange={(e) => setSelectedOrgId(e.target.value)}
+                >
+                    {organizations.map((org) => (
+                        <option key={org.id} value={org.id}>
+                            {org.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
             <div className={styles.actions}>
                 <button
                     className={styles.continueButton}

@@ -1629,11 +1629,13 @@ def sendEmail():
         not request.json
         or "username" not in request.json
         or "email" not in request.json
+        or "organizationName" not in request.json
     ):
         return jsonify({"error": "Missing username or email"}), 400
 
     username = request.json["username"]
     email = request.json["email"]
+    organizationName = request.json["organizationName"]
 
     # Validate email format
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
@@ -1667,9 +1669,11 @@ def sendEmail():
             }
             h1, h2 {
             margin: 10px 0;
+            color: #000000;
             }
             p {
             line-height: 1.5;
+            color: #000000;
             }
             a {
             color: #337ab7;
@@ -1704,8 +1708,8 @@ def sendEmail():
         <body>
         <div class="container">
             <h1>Dear [Recipient's Name],</h1>
-            <h2>Congratulations!</h2>
-            <p>You now have exclusive access to FreddAid, your new marketing powerhouse. Get ready to transform your approach to marketing and take your strategies to the next level.</p>
+            <h2>Congratulations and Welcome to FreddAid!</h2>
+            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It’s time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
             <h2>Ready to Get Started?</h2>
             <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
             <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
@@ -1720,6 +1724,8 @@ def sendEmail():
             "[Recipient's Name]", username
         ).replace(
             "[link to activate account]", INVITATION_LINK
+        ).replace(
+            "[Recipient's Organization]", organizationName
         )
 
         # Create a multipart message and set headers

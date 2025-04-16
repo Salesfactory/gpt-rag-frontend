@@ -13,7 +13,7 @@ import styles from "./Admin.module.css";
 
 const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: "900px" } };
 export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; users: never[] }) => {
-    const { user } = useAppContext();
+    const { user, organization } = useAppContext();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
@@ -60,12 +60,14 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
         setLoading(true);
 
         try {
-            const organizationId = user.organizationId;
+            const organizationId = organization?.id;
+            const organizationName = organization?.name;
             const inviteResponse = await inviteUser({
                 username: sanitizedUsername,
                 email: sanitizedEmail,
                 role,
-                organizationId
+                organizationId,
+                organizationName
             });
 
             if (inviteResponse.error) {
@@ -379,7 +381,7 @@ export const DeleteUserDialog = ({
 };
 
 const Admin = () => {
-    const { user } = useAppContext();
+    const { user, organization } = useAppContext();
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState({
@@ -436,7 +438,7 @@ const Admin = () => {
                     user: {
                         id: user.id,
                         name: user.name,
-                        organizationId: user.organizationId
+                        organizationId: organization?.id
                     }
                 });
 
