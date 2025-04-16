@@ -1576,7 +1576,7 @@ def getUsers():
             user = get_user_by_id(user_id)
             return user
         users = get_users(organization_id)
-        return users
+        return jsonify(users)
     
     except Exception as e:
         logging.exception("[webbackend] exception in /api/checkUser")
