@@ -9,7 +9,7 @@ import { createOrganization, getOrganizationSubscription } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
 const Onboarding: React.FC = () => {
-    const { user, setUser, organization, setOrganization } = useAppContext();
+    const { user, setUser, organization, setOrganization, partialUser } = useAppContext();
     const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(0);
     const [isLoadingStep, setIsLoadingStep] = useState(false);
@@ -19,13 +19,13 @@ const Onboarding: React.FC = () => {
     };
 
     const handleCreateOrganization = async () => {
-        if (!user) {
+        if (!partialUser) {
             return null;
         }
-        const newOrganization = await createOrganization({ userId: user.id, organizationName: organizationName });
+        const newOrganization = await createOrganization({ userId: partialUser.id, organizationName: organizationName });
         if (newOrganization.id) {
             setOrganization(newOrganization);
-            setUser({ ...user, organizationId: newOrganization.id });
+            setUser({ ...partialUser, organizationId: newOrganization.id });
             return newOrganization;
         }
     };

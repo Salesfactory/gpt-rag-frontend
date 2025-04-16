@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
-import { checkUser, getOrganizationSubscription } from "../api";
+import { checkUser, fetchUserOrganizations, getOrganizationSubscription } from "../api";
 import { toast } from "react-toastify";
+import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
 
 // Define the debug mode based on the environment
 const isDebugMode = process.env.NODE_ENV === "development";
@@ -25,6 +26,15 @@ type SubscriptionTier = "Basic" | "Custom" | "Premium" | "Basic + Financial Assi
 
 // Updated UserInfo interface
 interface UserInfo {
+    id: string;
+    name: string;
+    email: string | null;
+    role?: Role;
+    organizationId?: string;
+    isReportEmailReceiver?: boolean;
+}
+
+interface PartialUserInfo {
     id: string;
     name: string;
     email: string | null;
@@ -79,6 +89,8 @@ interface AppContextType {
     setUser: Dispatch<SetStateAction<UserInfo | null>>;
     organization: OrganizationInfo | null;
     setOrganization: Dispatch<SetStateAction<OrganizationInfo | null>>;
+    partialUser: PartialUserInfo | null;
+    setPartialUser: Dispatch<SetStateAction<PartialUserInfo | null>>;
     chatSelected: string;
     setChatSelected: Dispatch<SetStateAction<string>>;
     chatId: string;
@@ -124,18 +136,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [newChatDeleted, setNewChatDeleted] = useState<boolean>(false);
     const [user, setUser] = useState<UserInfo | null>(null);
     const [organization, setOrganization] = useState<OrganizationInfo | null>(null);
+    const [organizations, setOrganizations] = useState<OrganizationInfo[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isFinancialAssistantActive, setIsFinancialAssistantActive] = useState(false);
-
+    
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
+    const [partialUser, setPartialUser] = useState<PartialUserInfo | null>(null);
 
     // New loading states
     const [isOrganizationLoading, setIsOrganizationLoading] = useState<boolean>(false);
     const [isSubscriptionTiersLoading, setIsSubscriptionTiersLoading] = useState<boolean>(false);
     const [isChatHistoryLoading, setIsChatHistoryLoading] = useState<boolean>(false);
-
+    const [showOrganizationSelection, setShowOrganizationSelection] = useState<boolean>(false);
+    
     // Setting variables for the Financial Agent URL
     const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
     const params = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
@@ -251,9 +266,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 const invitationToken = urlParams.get("invitation");
 
                 const authData = await fetchUserAuth(invitationToken);
-
+                
                 if (authData.authenticated) {
-                    setUser(authData.user);
+                    const user = authData.user;
+        
+                    // Search for previously selected organization
+                    const savedOrgId = localStorage.getItem(`selectedOrg_${user.id}`);
+                    if (savedOrgId) {
+                        debugLog(`Using organization saved for the user: ${savedOrgId}`);
+                        setUser({ ...user, organizationId: savedOrgId });
+                    } else {
+                        setPartialUser(user);
+                        // Fetch organizations if no saved org
+                        const organizations = await fetchUserOrganizations(user.id);
+                        if (Array.isArray(organizations) && organizations.length > 1) {
+                            setOrganizations(organizations as OrganizationInfo[]);
+                            setShowOrganizationSelection(true);
+                        } else if (Array.isArray(organizations) && organizations.length === 1) {
+                            const singleOrgId = organizations[0]?.id;
+                            debugLog(`Only one organization found: ${singleOrgId}`);
+                            setUser({ ...user, organizationId: singleOrgId });
+                            localStorage.setItem(`selectedOrg_${user.id}`, singleOrgId || "");
+                        } else {
+                            toast.error("No organizations were found for the user.");
+                        }
+                    }
+        
                     setIsAuthenticated(true);
                     debugLog(`User authenticated: ${authData.user.name}`);
                 } else {
@@ -427,6 +465,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setUser,
             organization,
             setOrganization,
+            partialUser,
+            setPartialUser,
             chatSelected,
             setChatSelected,
             chatId,
@@ -496,7 +536,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             </div>
         );
     }
-
+    if (showOrganizationSelection) {
+        return (
+            <>
+                {showOrganizationSelection && partialUser && (
+                    <OrganizationSelectorPopup
+                        organizations={organizations || []}
+                        userId={partialUser.id}
+                        onOrganizationSelected={(orgId) => {
+                            setUser({ ...partialUser, organizationId: orgId });
+                            setShowOrganizationSelection(false);
+                        }}
+                        onCancel={() => {
+                            setShowOrganizationSelection(false);
+                        }}
+                    />
+                )}
+            </>
+        );
+    }
     // Provide the context to child components
     return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
 };

@@ -96,8 +96,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
         debugLog("ProtectedRoute: User is authenticated with required role and tier. Rendering Outlet.");
         return <Outlet />;
     } else if (!hasRequiredRole()) {
-        debugLog("ProtectedRoute: User does not have the required role. Redirecting to /access-denied.");
-        return <Navigate to="/access-denied" replace />;
+        debugLog("ProtectedPath: ProtectedPath: User does not have the required role or does not have invitations to organizations and does not own an organization (newUser), redirect to /onboarding");
+        return <Navigate to="/onboarding" replace />;
     } else if (!isValidSubscriptionForOrganization()) {
         debugLog("ProtectedRoute: Subscription is invalid. Redirecting to /onboarding.");
         return <Navigate to="/onboarding" replace />;
