@@ -60,7 +60,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
         setLoading(true);
 
         try {
-            const organizationId = organization?.id;
+            const organizationId = user.organizationId;
             const organizationName = organization?.name;
             const inviteResponse = await inviteUser({
                 username: sanitizedUsername,
@@ -438,7 +438,7 @@ const Admin = () => {
                     user: {
                         id: user.id,
                         name: user.name,
-                        organizationId: organization?.id
+                        organizationId: user.organizationId
                     }
                 });
 
