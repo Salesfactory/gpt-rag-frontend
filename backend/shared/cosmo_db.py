@@ -338,7 +338,6 @@ def get_invitation(invited_user_email):
                 f"[get_invitation] active invitation found for user {invited_user_email}"
             )
             invitation = result[0]
-            invitation["active"] = False
             container.replace_item(item=invitation["id"], body=invitation)
             logging.info(
                 f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
@@ -389,6 +388,21 @@ def set_user(client_principal):
                 },
             }
         )
+        if user_invitation:
+                try:
+                    invitation_id = user_invitation["id"]
+                    user_invitation["invited_user_id"] = client_principal["id"]
+
+                    container_inv = get_cosmos_container("invitations")
+                    updated_invitation = container_inv.replace_item(
+                        item=invitation_id,
+                        body=user_invitation
+                    )
+                    logging.info(f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}")
+                except Exception as e:
+                    logging.error(f"[get_user] Failed to update invitation with user_id: {e}")
+        else:
+            logging.info(f"[get_user] No invitation found for user {client_principal['id']}")
     except Exception as e:
         logging.error(f"[get_user] Error creating the user: {e}")
         return {"is_new_user": None, "user_data": None}
@@ -647,6 +661,9 @@ def create_invitation(invited_user_email, organization_id, role):
         return {"error": "Role is required."}
     container = get_cosmos_container("invitations")
     invitation = {}
+
+    user_id = None
+    
     try:
         user_container = get_cosmos_container("users")
         user = user_container.query_items(
@@ -655,6 +672,7 @@ def create_invitation(invited_user_email, organization_id, role):
             enable_cross_partition_query=True,
         )
         for u in user:
+            user_id=u["id"]
             if u["data"].get("organizationId") is None:
                 u["data"]["organizationId"] = organization_id
                 u["data"]["role"] = role
@@ -669,6 +687,7 @@ def create_invitation(invited_user_email, organization_id, role):
             "organization_id": organization_id,
             "role": role,
             "active": True,
+            "invited_user_id": user_id,
         }
         result = container.create_item(body=invitation)
     except Exception as e:

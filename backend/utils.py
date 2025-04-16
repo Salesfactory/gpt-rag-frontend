@@ -910,7 +910,6 @@ def get_invitation(invited_user_email):
                 f"[get_invitation] active invitation found for user {invited_user_email}"
             )
             invitation = result[0]
-            invitation["active"] = False
             container.replace_item(item=invitation["id"], body=invitation)
             logging.info(
                 f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
@@ -965,6 +964,22 @@ def get_set_user(client_principal):
                     },
                 }
             )
+            # Update the invitation with the registered user ID
+            if user_invitation:
+                try:
+                    invitation_id = user_invitation["id"]
+                    user_invitation["invited_user_id"] = client_principal["id"]
+
+                    container_inv = get_cosmos_container("invitations")
+                    updated_invitation = container_inv.replace_item(
+                        item=invitation_id,
+                        body=user_invitation
+                    )
+                    logging.info(f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}")
+                except Exception as e:
+                    logging.error(f"[get_user] Failed to update invitation with user_id: {e}")
+            else:
+                logging.info(f"[get_user] No invitation found for user {client_principal['id']}")
         except Exception as e:
             logging.error(f"[get_user] Error creating the user: {e}")
             return {
