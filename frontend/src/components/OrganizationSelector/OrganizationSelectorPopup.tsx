@@ -1,5 +1,5 @@
 import styles from "./OrganizationSelectorPopup.module.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 interface Organization {
@@ -21,6 +21,12 @@ const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({
     onCancel,
 }) => {
     const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+
+    useEffect(() => {
+        if (organizations.length > 0 && !selectedOrgId) {
+            setSelectedOrgId(organizations[0].id);
+        }
+    }, [organizations, selectedOrgId]);
 
     const handleContinue = () => {
         if (selectedOrgId) {
