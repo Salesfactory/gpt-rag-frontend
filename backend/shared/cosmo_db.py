@@ -706,7 +706,7 @@ def create_invitation(invited_user_email, organization_id, role):
             "invited_user_email": invited_user_email,
             "organization_id": organization_id,
             "role": role,
-            "active": True,
+            "active": False,
             "invited_user_id": user_id,
         }
         result = container.create_item(body=invitation)
@@ -719,7 +719,37 @@ def create_invitation(invited_user_email, organization_id, role):
         logging.error(str(ve))
         raise ve
 
-    
+def get_invitation_by_email_and_org(invited_user_email, organizationId):
+    """
+    Look for an email invitation and organization.
+    """
+    if not invited_user_email or not organizationId:
+        return None
+
+    try:
+        container = get_cosmos_container("invitations")
+
+        query = """
+            SELECT TOP 1 * FROM c
+            WHERE c.invited_user_email = @invited_user_email AND c.organization_id = @organization_id
+        """
+        parameters = [
+            {"name": "@invited_user_email", "value": invited_user_email},
+            {"name": "@organization_id", "value": organizationId}
+        ]
+
+        result = list(container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+
+        return result[0] if result else None
+
+    except Exception as e:
+        logging.error(f"Error in get_invitation_by_email_and_org: {e}")
+        return None
+
 
 def create_organization(user_id, organization_name):
     """

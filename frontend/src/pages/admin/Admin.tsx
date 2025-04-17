@@ -13,7 +13,7 @@ import styles from "./Admin.module.css";
 
 const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: "900px" } };
 export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; users: never[] }) => {
-    const { user } = useAppContext();
+    const { user, organization } = useAppContext();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("user");
@@ -61,18 +61,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
 
         try {
             const organizationId = user.organizationId;
-            const inviteResponse = await inviteUser({
-                username: sanitizedUsername,
-                email: sanitizedEmail,
-                role,
-                organizationId
-            });
-
-            if (inviteResponse.error) {
-                setErrorMessage(inviteResponse.error);
-                setLoading(false);
-                return;
-            }
+            const organizationName = organization?.name;
 
             const invitationResponse = await createInvitation({
                 organizationId,
@@ -85,6 +74,21 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                 setErrorMessage(invitationResponse.error);
             } else {
                 setErrorMessage("");
+            }
+
+            const inviteResponse = await inviteUser({
+                username: sanitizedUsername,
+                email: sanitizedEmail,
+                role,
+                organizationId,
+                organizationName
+            });
+            
+            if (inviteResponse.error) {
+                setErrorMessage(inviteResponse.error);
+                setLoading(false);
+                return;
+            }else{
                 setSuccess(true);
             }
         } catch (error) {
@@ -379,7 +383,7 @@ export const DeleteUserDialog = ({
 };
 
 const Admin = () => {
-    const { user } = useAppContext();
+    const { user, organization } = useAppContext();
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState({

@@ -323,7 +323,7 @@ export async function postFeedbackRating({ user, conversation_id, feedback_messa
     });
 }
 
-export async function inviteUser({ username, email, organizationId }: any): Promise<any> {
+export async function inviteUser({ username, email, organizationId, organizationName }: any): Promise<any> {
     try {
         const response = await fetch("/api/inviteUser", {
             method: "POST",
@@ -333,7 +333,8 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
             body: JSON.stringify({
                 username,
                 email,
-                organizationId
+                organizationId,
+                organizationName
             })
         });
         const fetchedData = await response.json();

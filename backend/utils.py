@@ -1033,48 +1033,67 @@ def get_user_by_id(user_id):
         logging.info(f"[get_user] get_user: something went wrong. {str(e)}")
     return user
 
-def get_active_user_ids():
-    active_user_ids = set()
-    container = get_cosmos_container("invitations")
-    try:
-        result = container.query_items(
-            query="SELECT VALUE c.invited_user_id FROM c WHERE c.active = true",
-            enable_cross_partition_query=True,
-        )
-        for invited_user_id in result:
-            logging.info(f"[DEBUG] Active invited_user_id: {invited_user_id}")
-            active_user_ids.add(invited_user_id)
-    except Exception as e:
-        logging.error(f"[get_active_user_ids] Error: {str(e)}")
-    return active_user_ids
 
 
 def get_users(organization_id):
-    users = []
-    filtered_users = []
-    container = get_cosmos_container("users")
+    from azure.cosmos.exceptions import CosmosHttpResponseError
+    users_container = get_cosmos_container("users")
+    invitations_container = get_cosmos_container("invitations")
+    organizations_container = get_cosmos_container("organizations")
+    
     try:
-        users_result = container.query_items(
-            query="SELECT * FROM c WHERE c.data.organizationId = @organization_id",
+        # 1. Get IDs of active guest users
+        invitation_result = invitations_container.query_items(
+            query="""
+                SELECT VALUE c.invited_user_id 
+                FROM c 
+                WHERE c.active = true AND c.organization_id = @organization_id
+            """,
             parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True,
         )
-        users = list(users_result)
-        logging.info(f"[DEBUG] Total users found: {len(users)}")
+        active_user_ids = set(invitation_result)
 
-        active_ids = get_active_user_ids()
-        logging.info(f"[DEBUG] Active user IDs from invitations: {active_ids}")
+        # 2. Obtain organization owner
+        org_result = organizations_container.query_items(
+            query="SELECT VALUE c.owner FROM c WHERE c.id = @org_id",
+            parameters=[{"name": "@org_id", "value": organization_id}],
+            enable_cross_partition_query=True,
+        )
+        owner_list = list(org_result)
+        if owner_list:
+            active_user_ids.add(owner_list[0])
 
-        for user in users:
-            user_id = user.get("id")
-            logging.info(f"[DEBUG] Checking user ID: {user_id}")
-            if user_id in active_ids:
-                logging.info(f"[DEBUG] Match found: {user_id}")
-                filtered_users.append(user)
+        # 3. If there are no IDs, return empty.
+        if not active_user_ids:
+            return []
+
+        # Get only the necessary users (in batches of 10 per Cosmos limit).
+        filtered_users = []
+        BATCH_SIZE = 10
+        active_user_ids = list(active_user_ids)
+
+        for i in range(0, len(active_user_ids), BATCH_SIZE):
+            batch_ids = active_user_ids[i:i+BATCH_SIZE]
+            in_clause = ", ".join([f'"{uid}"' for uid in batch_ids])
+            query = f"""
+                SELECT * FROM c WHERE c.id IN ({in_clause})
+            """
+            user_batch_result = users_container.query_items(
+                query=query,
+                enable_cross_partition_query=True,
+            )
+            filtered_users.extend(user_batch_result)
+
+        return filtered_users
+
+    except CosmosHttpResponseError as e:
+        logging.exception("[get_users] Cosmos error")
     except Exception as e:
-        logging.exception("[get_users] Error querying users")
+        logging.exception("[get_users] General error")
 
-    return filtered_users
+    return []
+
 
 def delete_user(user_id):
     if not user_id:
