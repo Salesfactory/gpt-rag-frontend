@@ -62,19 +62,6 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
         try {
             const organizationId = user.organizationId;
             const organizationName = organization?.name;
-            const inviteResponse = await inviteUser({
-                username: sanitizedUsername,
-                email: sanitizedEmail,
-                role,
-                organizationId,
-                organizationName
-            });
-
-            if (inviteResponse.error) {
-                setErrorMessage(inviteResponse.error);
-                setLoading(false);
-                return;
-            }
 
             const invitationResponse = await createInvitation({
                 organizationId,
@@ -87,6 +74,21 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                 setErrorMessage(invitationResponse.error);
             } else {
                 setErrorMessage("");
+            }
+
+            const inviteResponse = await inviteUser({
+                username: sanitizedUsername,
+                email: sanitizedEmail,
+                role,
+                organizationId,
+                organizationName
+            });
+            
+            if (inviteResponse.error) {
+                setErrorMessage(inviteResponse.error);
+                setLoading(false);
+                return;
+            }else{
                 setSuccess(true);
             }
         } catch (error) {
