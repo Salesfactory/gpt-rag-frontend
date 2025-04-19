@@ -154,11 +154,9 @@ sup {
     }
 }
 
-/* Re-add the loadingdots style */
 .loadingdots::after {
     content: "";
     animation: loading 1.5s infinite;
-    /* Add a slight left margin to separate from the text */
     margin-left: 0.25em; 
 }
 
