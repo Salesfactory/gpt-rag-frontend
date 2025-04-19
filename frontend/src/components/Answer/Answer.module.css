@@ -21,7 +21,7 @@
     line-height: 1.375em;
     padding-top: 1em;
     padding-bottom: 1em;
-    background: linear-gradient(to right, #333 20%, #999 50%, #333 80%);
+    background: linear-gradient(to right, #222 10%, #ddd 50%, #222 90%);
     background-size: 200% auto;
     color: transparent;
     background-clip: text;
