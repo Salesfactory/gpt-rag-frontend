@@ -21,6 +21,12 @@
     line-height: 1.375em;
     padding-top: 1em;
     padding-bottom: 1em;
+    background: linear-gradient(to right, #222 10%, #ddd 50%, #222 90%);
+    background-size: 200% auto;
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+    animation: shimmer 2s linear infinite;
 }
 
 .answerText h1,
@@ -122,6 +128,14 @@ sup {
     width: fit-content;
 }
 
+@media (max-width: 900px) {
+    .citation,
+    .citationLearnMore {
+        font-size: 1rem;
+    }
+}
+
+/* Re-add the loading keyframes */
 @keyframes loading {
     0% {
         content: "";
@@ -142,16 +156,17 @@ sup {
 
 .loadingdots::after {
     content: "";
-    animation: loading 1s infinite;
+    animation: loading 1.5s infinite;
+    margin-left: 0.25em; 
+}
+
+/* Add shimmer keyframes */
+@keyframes shimmer {
+    to {
+        background-position: -200% center;
+    }
 }
 
 .thoughtProcessButton {
     z-index: 200;
-}
-
-@media (max-width: 900px) {
-    .citation,
-    .citationLearnMore {
-        font-size: 1rem;
-    }
 }
