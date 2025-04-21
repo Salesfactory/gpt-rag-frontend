@@ -33,6 +33,7 @@ export default defineConfig({
             "/api/checkuser": "http://127.0.0.1:8000",
             "/api/get-organization-subscription": "http://127.0.0.1:8000",
             "/api/getUser": "http://127.0.0.1:8000",
+            "/api/get-user-organizations": "http://127.0.0.1:8000",
             "/api/conversations": "http://127.0.0.1:8000",
             "/api/chat": "http://127.0.0.1:8000",
             "/api/auth/user": "http://127.0.0.1:8000",

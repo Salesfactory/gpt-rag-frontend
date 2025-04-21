@@ -63,6 +63,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlencode
 from shared.cosmo_db import (
     create_report,
+    get_invitation_by_email_and_org,
     get_report,
     get_user_container,
     get_user_organizations,
@@ -329,8 +330,24 @@ def append_script(file, query_params):
         return "HTML file not found", 404
 
 
+def activate_invitation(invitation_id: str) -> bool:
+    container = get_cosmos_container("invitations")
+    
+    try:
+        item = container.read_item(item=invitation_id, partition_key=invitation_id)
+        if item.get("active") is False:
+            item["active"] = True
+            container.upsert_item(item)
+            return True
+        return False
+    except CosmosResourceNotFoundError:
+        return False
+
+
+
 @app.route("/")
 @store_request_params_in_session(['agent','document'])
+@store_request_params_in_session(['invitation_id'])
 @auth.login_required
 def index(*, context):
     """
@@ -341,9 +358,14 @@ def index(*, context):
     # get session data if available
     agent = session.get('agent')
     document = session.get('document')
+    invitation_id = session.get('invitation_id')
 
     session.pop('agent', None)
     session.pop('document', None)
+
+    if invitation_id:
+        logger.info(f"Activando invitación con ID {invitation_id}")
+        activate_invitation(invitation_id)
 
     if not agent or not document:
         return send_from_directory("static", "index.html")
@@ -1629,11 +1651,23 @@ def sendEmail():
         not request.json
         or "username" not in request.json
         or "email" not in request.json
+        or "organizationName" not in request.json
+        or "organizationId" not in request.json
     ):
         return jsonify({"error": "Missing username or email"}), 400
 
     username = request.json["username"]
     email = request.json["email"]
+    organizationName = request.json["organizationName"]
+    organizationId = request.json["organizationId"]
+
+    invitation = get_invitation_by_email_and_org(email, organizationId)
+    if invitation:
+        unique_id = invitation["id"]
+        activation_link = INVITATION_LINK+"?invitation_id="+unique_id
+    else:
+        return jsonify({"error": "No invitation found"}), 404
+
 
     # Validate email format
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
@@ -1667,9 +1701,11 @@ def sendEmail():
             }
             h1, h2 {
             margin: 10px 0;
+            color: #000000;
             }
             p {
             line-height: 1.5;
+            color: #000000;
             }
             a {
             color: #337ab7;
@@ -1704,8 +1740,8 @@ def sendEmail():
         <body>
         <div class="container">
             <h1>Dear [Recipient's Name],</h1>
-            <h2>Congratulations!</h2>
-            <p>You now have exclusive access to FreddAid, your new marketing powerhouse. Get ready to transform your approach to marketing and take your strategies to the next level.</p>
+            <h2>Congratulations and Welcome to FreddAid!</h2>
+            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It’s time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
             <h2>Ready to Get Started?</h2>
             <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
             <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
@@ -1719,7 +1755,9 @@ def sendEmail():
         """.replace(
             "[Recipient's Name]", username
         ).replace(
-            "[link to activate account]", INVITATION_LINK
+            "[link to activate account]", activation_link
+        ).replace(
+            "[Recipient's Organization]", organizationName
         )
 
         # Create a multipart message and set headers
