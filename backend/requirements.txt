@@ -14,7 +14,7 @@ cachetools>=5.3.3,<5.6.0
 flask-sqlalchemy==2.5.1
 pyjwt==2.8.0
 python-jose==3.3.0
-ms-identity-python @ https://github.com/azure-samples/ms-identity-python/archive/refs/heads/0.9.zip#sha256=a665d05ef0ecec78a746cda9e138d795cf257f0d58827e1ebdedb5e06e9d7f19
+ms-identity-python @ https://github.com/azure-samples/ms-identity-python/archive/refs/heads/0.9.zip
 tenacity==8.5.0
 azure-functions==1.21.3
 sec-edgar-downloader==5.0.2
