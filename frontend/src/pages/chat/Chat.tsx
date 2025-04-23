@@ -129,7 +129,8 @@ const Chat = () => {
                 headers: {
                     "Content-Type": "application/json",
                     "X-MS-CLIENT-PRINCIPAL-ID": user?.id || "",
-                    "X-MS-CLIENT-PRINCIPAL-NAME": user?.name || ""
+                    "X-MS-CLIENT-PRINCIPAL-NAME": user?.name || "",
+                    "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user?.organizationId || ""
                 },
                 body: JSON.stringify({
                     question: request.query,
