@@ -25,6 +25,28 @@ export async function getUsers({ user }: any): Promise<any> {
     }
 }
 
+export async function fetchUserOrganizations(userId: string): Promise<any> {
+    try {
+        const response = await fetch(`/api/get-user-organizations`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch organizations");
+        }
+
+        const organizations = await response.json();
+        return organizations;
+    } catch (error) {
+        console.error("Error fetching user organizations", error);
+        return { error: error };
+    }
+}
+
 export async function deleteUser({ user, userId }: any): Promise<any> {
     try {
         const response = await fetch(`/api/deleteuser?userId=${userId}`, {
@@ -301,7 +323,7 @@ export async function postFeedbackRating({ user, conversation_id, feedback_messa
     });
 }
 
-export async function inviteUser({ username, email, organizationId }: any): Promise<any> {
+export async function inviteUser({ username, email, organizationId, organizationName }: any): Promise<any> {
     try {
         const response = await fetch("/api/inviteUser", {
             method: "POST",
@@ -311,7 +333,8 @@ export async function inviteUser({ username, email, organizationId }: any): Prom
             body: JSON.stringify({
                 username,
                 email,
-                organizationId
+                organizationId,
+                organizationName
             })
         });
         const fetchedData = await response.json();

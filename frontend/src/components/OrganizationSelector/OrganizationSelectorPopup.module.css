@@ -1,0 +1,97 @@
+.body {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 450px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 26px;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+    text-align: center;
+    align-items: center;
+}
+
+.title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #202020;
+    margin-bottom: 8px;
+}
+
+.selected {
+    background-color: #9fc51d;
+    color: white;
+    border-color: #9fc51d;
+}
+
+
+.continueButton {
+    padding: 10px 20px;
+    background-color: #9fc51d;
+    color: white;
+    font-weight: 500;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    width: 100%;
+}
+
+.continueButton:hover {
+    background-color: #8ab31f;
+}
+
+.continueButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.dropdownWrapper {
+    width: 100%;
+    margin: 1rem 0;
+}
+
+.dropdown {
+    
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    background-color: #f9f9f9;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.3s, background-color 0.3s;
+    color: #000000;
+}
+
+.dropdown:hover {
+    border-color: #888;
+    background-color: #f0f0f0;
+}
+
+.dropdown:focus {
+    outline: none;
+    border-color: #8ab31f;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(159, 197, 29, 0.2);
+}
+
+.selected {
+    border-color: #8ab31f;
+}
+
+
+
+@media (max-width: 768px) {
+    .body {
+        width: 90%;
+    }
+}

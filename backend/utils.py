@@ -910,7 +910,6 @@ def get_invitation(invited_user_email):
                 f"[get_invitation] active invitation found for user {invited_user_email}"
             )
             invitation = result[0]
-            invitation["active"] = False
             container.replace_item(item=invitation["id"], body=invitation)
             logging.info(
                 f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
@@ -965,6 +964,22 @@ def get_set_user(client_principal):
                     },
                 }
             )
+            # Update the invitation with the registered user ID
+            if user_invitation:
+                try:
+                    invitation_id = user_invitation["id"]
+                    user_invitation["invited_user_id"] = client_principal["id"]
+
+                    container_inv = get_cosmos_container("invitations")
+                    updated_invitation = container_inv.replace_item(
+                        item=invitation_id,
+                        body=user_invitation
+                    )
+                    logging.info(f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}")
+                except Exception as e:
+                    logging.error(f"[get_user] Failed to update invitation with user_id: {e}")
+            else:
+                logging.info(f"[get_user] No invitation found for user {client_principal['id']}")
         except Exception as e:
             logging.error(f"[get_user] Error creating the user: {e}")
             return {
@@ -1018,23 +1033,67 @@ def get_user_by_id(user_id):
         logging.info(f"[get_user] get_user: something went wrong. {str(e)}")
     return user
 
-# return all users
+
+
 def get_users(organization_id):
-    users = []
-    container = get_cosmos_container("users")
+    from azure.cosmos.exceptions import CosmosHttpResponseError
+    users_container = get_cosmos_container("users")
+    invitations_container = get_cosmos_container("invitations")
+    organizations_container = get_cosmos_container("organizations")
+    
     try:
-        users = container.query_items(
-            query="SELECT * FROM c WHERE c.data.organizationId = @organization_id",
+        # 1. Get IDs of active guest users
+        invitation_result = invitations_container.query_items(
+            query="""
+                SELECT VALUE c.invited_user_id 
+                FROM c 
+                WHERE c.active = true AND c.organization_id = @organization_id
+            """,
             parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True,
         )
-        users = list(users)
+        active_user_ids = set(invitation_result)
 
-    except Exception as e:
-        logging.info(
-            f"[get_users] get_users: no users found (keyvalue store with 'users' id does not exist)."
+        # 2. Obtain organization owner
+        org_result = organizations_container.query_items(
+            query="SELECT VALUE c.owner FROM c WHERE c.id = @org_id",
+            parameters=[{"name": "@org_id", "value": organization_id}],
+            enable_cross_partition_query=True,
         )
-    return users
+        owner_list = list(org_result)
+        if owner_list:
+            active_user_ids.add(owner_list[0])
+
+        # 3. If there are no IDs, return empty.
+        if not active_user_ids:
+            return []
+
+        # Get only the necessary users (in batches of 10 per Cosmos limit).
+        filtered_users = []
+        BATCH_SIZE = 10
+        active_user_ids = list(active_user_ids)
+
+        for i in range(0, len(active_user_ids), BATCH_SIZE):
+            batch_ids = active_user_ids[i:i+BATCH_SIZE]
+            in_clause = ", ".join([f'"{uid}"' for uid in batch_ids])
+            query = f"""
+                SELECT * FROM c WHERE c.id IN ({in_clause})
+            """
+            user_batch_result = users_container.query_items(
+                query=query,
+                enable_cross_partition_query=True,
+            )
+            filtered_users.extend(user_batch_result)
+
+        return filtered_users
+
+    except CosmosHttpResponseError as e:
+        logging.exception("[get_users] Cosmos error")
+    except Exception as e:
+        logging.exception("[get_users] General error")
+
+    return []
+
 
 def delete_user(user_id):
     if not user_id:
@@ -1046,9 +1105,6 @@ def delete_user(user_id):
     try:
         user = container.read_item(item=user_id, partition_key=user_id)
         user_email = user["data"]["email"]
-        user["data"]["organizationId"] = None
-        user["data"]["role"] = None
-        container.replace_item(item=user_id, body=user)
         logging.info(f"[delete_user] User {user_id} deleted from its organization")
         logging.info(f"[delete_user] Deleting all {user_id} active invitations")
         container = get_cosmos_container("invitations")
@@ -1058,9 +1114,11 @@ def delete_user(user_id):
             enable_cross_partition_query=True,
         )
         for invitation in invitations:
-            container.delete_item(item=invitation["id"], partition_key=invitation["id"])
-            logging.info(f"Deleted invitation with ID: {invitation['id']}")
+            invitation["active"] = False
+            container.replace_item(item=invitation["id"], body=invitation)
+            logging.info(f"Changed status of Invitation for: {invitation['id']}")
 
+        return jsonify("Success")
     except CosmosResourceNotFoundError:
         logging.warning(f"[delete_user] User not Found.")
         raise NotFound

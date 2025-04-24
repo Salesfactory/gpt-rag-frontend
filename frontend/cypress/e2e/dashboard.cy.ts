@@ -15,7 +15,6 @@ describe("Agent Section Tests", () => {
                 }
             }
         }).as("getUser"); // Alias for later reference
-
         // Intercept the /api/get-organization-subscription API call with specific query parameter
         cy.intercept("GET", "/api/get-organization-subscription*", {
             statusCode: 200,
@@ -34,7 +33,21 @@ describe("Agent Section Tests", () => {
                 _ts: 1736262436
             }
         }).as("getOrganizationSubscription");
-
+        cy.intercept("GET", "/api/get-user-organizations", {
+            statusCode: 200,
+            body: [
+              {
+                id: "0aad82ee-52ec-428e-b211-e9cc34b94457",
+                name: "Manu dev",
+                owner: "f048ece8-4730-40ca-b6e1-8db764717459",
+                sessionId: "cs_test_a1DipoQd3hJrgmGaT1Im2AydoNrK0LJ5GNJKwa13AhsV9KU9Pq1SWYrvtE",
+                subscriptionStatus: "active",
+                subscriptionExpirationDate: 1736348460,
+                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
+              }
+            ]
+          }).as("getUserOrganizations");
+          
         // Alias for later reference
 
         // Intercept the /api/subscriptions/sub_1QeeHXEpF6ccgZLwfCmANnOP/tiers API call

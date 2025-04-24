@@ -338,7 +338,6 @@ def get_invitation(invited_user_email):
                 f"[get_invitation] active invitation found for user {invited_user_email}"
             )
             invitation = result[0]
-            invitation["active"] = False
             container.replace_item(item=invitation["id"], body=invitation)
             logging.info(
                 f"[get_invitation] Successfully updated invitation status for user {invited_user_email}"
@@ -389,6 +388,21 @@ def set_user(client_principal):
                 },
             }
         )
+        if user_invitation:
+                try:
+                    invitation_id = user_invitation["id"]
+                    user_invitation["invited_user_id"] = client_principal["id"]
+
+                    container_inv = get_cosmos_container("invitations")
+                    updated_invitation = container_inv.replace_item(
+                        item=invitation_id,
+                        body=user_invitation
+                    )
+                    logging.info(f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}")
+                except Exception as e:
+                    logging.error(f"[get_user] Failed to update invitation with user_id: {e}")
+        else:
+            logging.info(f"[get_user] No invitation found for user {client_principal['id']}")
     except Exception as e:
         logging.error(f"[get_user] Error creating the user: {e}")
         return {"is_new_user": None, "user_data": None}
@@ -556,7 +570,103 @@ def get_organization_subscription(organizationId):
     except Exception as e:
         logging.error(f"Unexpected error retrieving organization with id '{organizationId}': {e}")
         raise
-          
+
+def get_user_organizations(user_id):
+    """
+    Retrieves simplified organization information for a specific user ID.
+
+    Parameters:
+        user_id (str): The ID of the user to find organizations for.
+
+    Returns:
+        list: A list of simplified organization documents associated with the user.
+
+    Raises:
+        NotFound: If no organizations are found for the user.
+        Exception: For any other unexpected error that occurs during retrieval.
+    """
+    if not user_id or not user_id.strip():
+        logging.error("User ID not provided.")
+        raise ValueError("User ID is required.")
+
+    organizations_container = get_cosmos_container("organizations")
+    invitations_container = get_cosmos_container("invitations")
+
+    try:
+        # Search for active invitations for the user
+        query = "SELECT * FROM c WHERE c.invited_user_id = @user_id AND c.active = true"
+        parameters = [{"name": "@user_id", "value": user_id}]
+        invitations = list(
+            invitations_container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        invited_org_ids = set(
+            inv["organization_id"] for inv in invitations if "organization_id" in inv
+        )
+
+        # Search for organizations where the user is the owner
+        owner_query = "SELECT * FROM c WHERE c.owner = @user_id"
+        owner_parameters = [{"name": "@user_id", "value": user_id}]
+        owned_organizations = list(
+            organizations_container.query_items(
+                query=owner_query, parameters=owner_parameters, enable_cross_partition_query=True
+            )
+        )
+
+        # Save IDs of organizations already included
+        returned_org_ids = set()
+
+        # Recover organizations by invitations
+        organizations = []
+        for org_id in invited_org_ids:
+            if org_id in returned_org_ids:
+                continue
+            try:
+                org = organizations_container.read_item(item=org_id, partition_key=org_id)
+                simplified_org = {
+                    "id": org.get("id", ""),
+                    "name": org.get("name", ""),
+                    "owner": org.get("owner", ""),
+                    "sessionId": org.get("sessionId", ""),
+                    "subscriptionExpirationDate": org.get("subscriptionExpirationDate", ""),
+                    "subscriptionId": org.get("subscriptionId", ""),
+                    "subscriptionStatus": org.get("subscriptionStatus", []),
+                }
+                organizations.append(simplified_org)
+                returned_org_ids.add(org_id)
+            except CosmosResourceNotFoundError:
+                logging.warning(f"Organization with ID '{org_id}' not found.")
+            except Exception as e:
+                logging.error(f"Error retrieving organization with ID '{org_id}': {e}")
+
+        # Add organizations where the user is owner
+        for org in owned_organizations:
+            org_id = org.get("id", "")
+            if org_id in returned_org_ids:
+                continue  # Avoid duplicates
+            simplified_org = {
+                "id": org.get("id", ""),
+                "name": org.get("name", ""),
+                "owner": org.get("owner", ""),
+                "sessionId": org.get("sessionId", ""),
+                "subscriptionExpirationDate": org.get("subscriptionExpirationDate", ""),
+                "subscriptionId": org.get("subscriptionId", ""),
+                "subscriptionStatus": org.get("subscriptionStatus", []),
+            }
+            organizations.append(simplified_org)
+            returned_org_ids.add(org_id)
+
+        logging.info(f"Successfully retrieved {len(organizations)} organizations for user ID '{user_id}'.")
+        return organizations
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving organizations for user ID '{user_id}': {e}")
+        raise
+
+
+
 def create_invitation(invited_user_email, organization_id, role):
     """
     Creates a new Invitation in the container.
@@ -571,6 +681,9 @@ def create_invitation(invited_user_email, organization_id, role):
         return {"error": "Role is required."}
     container = get_cosmos_container("invitations")
     invitation = {}
+
+    user_id = None
+    
     try:
         user_container = get_cosmos_container("users")
         user = user_container.query_items(
@@ -579,6 +692,7 @@ def create_invitation(invited_user_email, organization_id, role):
             enable_cross_partition_query=True,
         )
         for u in user:
+            user_id=u["id"]
             if u["data"].get("organizationId") is None:
                 u["data"]["organizationId"] = organization_id
                 u["data"]["role"] = role
@@ -592,7 +706,8 @@ def create_invitation(invited_user_email, organization_id, role):
             "invited_user_email": invited_user_email,
             "organization_id": organization_id,
             "role": role,
-            "active": True,
+            "active": False,
+            "invited_user_id": user_id,
         }
         result = container.create_item(body=invitation)
     except Exception as e:
@@ -604,7 +719,37 @@ def create_invitation(invited_user_email, organization_id, role):
         logging.error(str(ve))
         raise ve
 
-    
+def get_invitation_by_email_and_org(invited_user_email, organizationId):
+    """
+    Look for an email invitation and organization.
+    """
+    if not invited_user_email or not organizationId:
+        return None
+
+    try:
+        container = get_cosmos_container("invitations")
+
+        query = """
+            SELECT TOP 1 * FROM c
+            WHERE c.invited_user_email = @invited_user_email AND c.organization_id = @organization_id
+        """
+        parameters = [
+            {"name": "@invited_user_email", "value": invited_user_email},
+            {"name": "@organization_id", "value": organizationId}
+        ]
+
+        result = list(container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+
+        return result[0] if result else None
+
+    except Exception as e:
+        logging.error(f"Error in get_invitation_by_email_and_org: {e}")
+        return None
+
 
 def create_organization(user_id, organization_name):
     """
