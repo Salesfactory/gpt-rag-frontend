@@ -57,6 +57,12 @@ const Organization = () => {
                             <span className={styles.info}>{expirationDate} </span>
                         </div>
                     </div>
+                    <div className={styles.infoContainer}>
+                        <div className={styles.infoItem}>
+                            <Label>Organization Description</Label>
+                            <span className={styles.info}>{organization?.orgDescription}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
