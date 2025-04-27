@@ -124,7 +124,7 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     }
 }
 
-export async function postSettings({ user, temperature }: PostSettingsProps): Promise<any> {
+export async function postSettings({ user, temperature, model }: PostSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -136,7 +136,8 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
                 "X-MS-CLIENT-PRINCIPAL-NAME": user_name
             },
             body: JSON.stringify({
-                temperature
+                temperature,
+                model
             })
         });
         const fetchedData = await response.json();

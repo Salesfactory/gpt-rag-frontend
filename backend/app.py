@@ -1492,25 +1492,23 @@ def setSettings():
             return jsonify({"error": "Invalid request body"}), 400
 
         temperature = request_body.get("temperature", 0.0)
-        frequency_penalty = request_body.get("frequency_penalty", 0.0)
-        presence_penalty = request_body.get("presence_penalty", 0.0)
+        model = request_body.get("model", "DeepSeek-V3-0324") # Get model, default to DeepSeek
 
         set_settings(
             client_principal=client_principal,
             temperature=temperature,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty
+            model=model
         )
 
+        # Return all saved settings, including the model
         return jsonify({
             "client_principal_id": client_principal["id"],
             "client_principal_name": client_principal["name"],
             "temperature": temperature,
-            "frequency_penalty": frequency_penalty,
-            "presence_penalty": presence_penalty,
+            "model": model
         }), 200
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/settings")
+        logging.exception("[webbackend] exception in /api/settings POST")
         return jsonify({"error": str(e)}), 500
 
 

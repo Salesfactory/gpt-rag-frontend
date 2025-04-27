@@ -723,41 +723,33 @@ def set_feedback(
 # SETTINGS UTILS
 ################################################
 
-def set_settings(client_principal, temperature, frequency_penalty, presence_penalty):
+def set_settings(client_principal, temperature, model):
 
     new_setting = {}
     container = get_cosmos_container("settings")
 
     # set default values
     temperature = temperature if temperature is not None else 0.0
-    frequency_penalty = frequency_penalty if frequency_penalty is not None else 0.0
-    presence_penalty = presence_penalty if presence_penalty is not None else 0.0
+    model = model if model is not None else "DeepSeek-V3-0324"
 
-    # validate temperature, frequency_penalty, presence_penalty
+    # validate temperature
     if temperature < 0 or temperature > 1:
         logging.error(
             f"[util__module] set_settings: invalid temperature value {temperature}."
         )
         return
 
-    if frequency_penalty < 0 or frequency_penalty > 1:
-        logging.error(
-            f"[util__module] set_settings: invalid frequency_penalty value {frequency_penalty}."
-        )
+    # Add validation for model if necessary
+    allowed_models = ["gpt-4.1", "DeepSeek-V3-0324"]
+    if model not in allowed_models:
+        logging.error(f"[util__module] set_settings: invalid model value {model}.")
         return
-
-    if presence_penalty < 0 or presence_penalty > 1:
-        logging.error(
-            f"[util__module] set_settings: invalid presence_penalty value {presence_penalty}."
-        )
-        return
-
 
     if client_principal["id"]:
         query = "SELECT * FROM c WHERE c.user_id = @user_id"
         parameters = [{"name": "@user_id", "value": client_principal["id"]}]
 
-        logging.info(f"[util__module] set_settings: user_id {client_principal['id']}.")
+        logging.info(f"[util__module] set_settings: Querying settings for user_id {client_principal['id']}.")
 
         results = list(
             container.query_items(
@@ -767,13 +759,14 @@ def set_settings(client_principal, temperature, frequency_penalty, presence_pena
 
         if results:
             logging.info(
-                f"[util__module] set_settings: user_id {client_principal['id']} found, results are {results}."
+                f"[util__module] set_settings: Found existing settings for user_id {client_principal['id']}."
             )
             setting = results[0]
 
+            # Update only temperature and model
             setting["temperature"] = temperature
-            setting["frequencyPenalty"] = frequency_penalty
-            setting["presencePenalty"] = presence_penalty
+            setting["model"] = model
+
             try:
                 container.replace_item(item=setting["id"], body=setting)
                 logging.info(
@@ -784,22 +777,24 @@ def set_settings(client_principal, temperature, frequency_penalty, presence_pena
                     "message": "Settings updated successfully"
                 }
             except CosmosResourceNotFoundError:
-                logging.error(f"[util__module] No settings found for user {client_principal['id']}")
+                # This case should ideally not happen if results were found, but handle defensively
+                logging.error(f"[util__module] CosmosResourceNotFoundError during update for user {client_principal['id']}")
+                return {"status": "error", "message": "Settings not found during update."}
             except Exception as e:
                 logging.error(
                     f"[util__module] Failed to update settings document for user {client_principal['id']}. Error: {str(e)}"
                 )
+                return {"status": "error", "message": f"Failed to update settings: {str(e)}"}
         else:
             logging.info(
-                f"[util__module] set_settings: user_id {client_principal['id']} not found. creating new document."
+                f"[util__module] set_settings: No settings found for user_id {client_principal['id']}. Creating new document."
             )
 
             try:
                 new_setting["id"] = str(uuid.uuid4())
                 new_setting["user_id"] = client_principal["id"]
                 new_setting["temperature"] = temperature
-                new_setting["frequencyPenalty"] = frequency_penalty
-                new_setting["presencePenalty"] = presence_penalty
+                new_setting["model"] = model
                 container.create_item(body=new_setting)
 
                 logging.info(
@@ -807,16 +802,16 @@ def set_settings(client_principal, temperature, frequency_penalty, presence_pena
                 )
                 return{
                     "status": "success",
-                    "message": "Settings updated successfully"
+                    "message": "Settings created successfully"
                 }
-            except CosmosResourceNotFoundError:
-                logging.info(f"[util__module] get_setting: No settings found for user {client_principal['id']}")
             except Exception as e:
                 logging.error(
-                    f"Failed to create settings document for user {client_principal['id']}. Error: {str(e)}"
+                    f"[util__module] Failed to create settings document for user {client_principal['id']}. Error: {str(e)}"
                 )
+                return {"status": "error", "message": f"Failed to create settings: {str(e)}"}
     else:
-        logging.info(f"[util__module] set_settings: user_id not provided.")
+        logging.warning(f"[util__module] set_settings: user_id not provided in client_principal.")
+        return {"status": "error", "message": "User ID not provided."}
 
 def get_client_principal():
     """Util to extract the Client Principal Headers"""
@@ -831,16 +826,23 @@ def get_client_principal():
     return {"id": client_principal_id, "name": client_principal_name}, None, None
 
 def get_setting(client_principal):
-    if not client_principal["id"]:
-        return {}
+    if not client_principal or not client_principal.get("id"):
+        logging.warning("[util__module] get_setting: client_principal ID not provided.")
+        # Return defaults immediately if no user ID
+        return {
+            "temperature": 0.0,
+            "model": "DeepSeek-V3-0324" # Default model
+        }
 
-    logging.info("User ID found. Getting settings for user: " + client_principal["id"])
+    user_id = client_principal["id"]
+    logging.info(f"User ID found ({user_id}). Getting settings.")
 
     setting = {}
     container = get_cosmos_container("settings")
     try:
-        query = "SELECT c.temperature, c.frequencyPenalty, c.presencePenalty FROM c WHERE c.user_id = @user_id"
-        parameters = [{"name": "@user_id", "value": client_principal["id"]}]
+        # Update query to select only temperature and model
+        query = "SELECT c.temperature, c.model FROM c WHERE c.user_id = @user_id"
+        parameters = [{"name": "@user_id", "value": user_id}]
         result = list(
             container.query_items(
                 query=query, parameters=parameters, enable_cross_partition_query=True
@@ -848,10 +850,35 @@ def get_setting(client_principal):
         )
         if result:
             setting = result[0]
-    except Exception as e:
-        logging.info(
-            f"[util__module] get_setting: no settings found for user {client_principal['id']} (keyvalue store with '{client_principal['id']}' id does not exist)."
+            # Ensure both expected keys exist, provide defaults if missing
+            setting["temperature"] = setting.get("temperature", 0.0)
+            setting["model"] = setting.get("model", "DeepSeek-V3-0324")
+            logging.info(f"Settings found for user {user_id}: {setting}")
+        else: # If no settings found, return defaults
+            logging.info(f"No settings document found for user {user_id}. Returning defaults.")
+            setting = {
+                "temperature": 0.0,
+                "model": "DeepSeek-V3-0324" # Default model
+            }
+    except CosmosHttpResponseError as e:
+        # Handle specific Cosmos errors, like 404 Not Found if needed, otherwise log generic error
+        logging.error(
+            f"[util__module] get_setting: Cosmos DB error for user {user_id}. Status: {e.status_code}, Message: {e.message}"
         )
+        # Return defaults on error
+        setting = {
+            "temperature": 0.0,
+            "model": "DeepSeek-V3-0324" # Default model
+        }
+    except Exception as e:
+        logging.error(
+            f"[util__module] get_setting: Unexpected error for user {user_id}. {str(e)}"
+        )
+        # Return defaults on unexpected error
+        setting = {
+            "temperature": 0.0,
+            "model": "DeepSeek-V3-0324" # Default model
+        }
     return setting
 
 ################################################
