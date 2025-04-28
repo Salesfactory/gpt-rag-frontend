@@ -587,6 +587,7 @@ def proxy_orc():
     
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+    client_principal_organization = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
     
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
@@ -616,6 +617,7 @@ def proxy_orc():
             "url": file_blob_url,
             "client_principal_id": client_principal_id,
             "client_principal_name": client_principal_name,
+            "client_principal_organization": client_principal_organization,
             "documentName": documentName,
         }
     )
@@ -650,11 +652,13 @@ def chatgpt():
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+    client_principal_organization = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
     logging.info("[webbackend] conversation_id: " + conversation_id)
     logging.info("[webbackend] question: " + question)
     logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
+    logging.info(f"[webbackend] User organization: {client_principal_organization}")
     logging.info(f"[webappend] Agent: {agent}")
 
     try:
@@ -692,6 +696,7 @@ def chatgpt():
                 "url": file_blob_url,
                 "client_principal_id": client_principal_id,
                 "client_principal_name": client_principal_name,
+                "client_principal_organization": client_principal_organization,
                 "documentName": documentName,
             }
         )

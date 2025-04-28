@@ -151,12 +151,14 @@ export async function postSettings({ user, temperature, model }: PostSettingsPro
 export async function chatApiGpt(options: ChatRequestGpt, user: any): Promise<AskResponseGpt> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
+    const user_organization = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
     const response = await fetch("/chatgpt", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "X-MS-CLIENT-PRINCIPAL-ID": user_id,
-            "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            "X-MS-CLIENT-PRINCIPAL-NAME": user_name,
+            "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_organization
         },
         body: JSON.stringify({
             history: options.history,
