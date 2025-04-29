@@ -91,11 +91,7 @@ const Organization = () => {
                         <textarea
                             ref={brandRef}
                             className={styles.textArea}
-                            placeholder="To challenger brands hungry to punch above their weight and prove they belong
-Brand Sales Factory is the retail growth engine that turns underdogs into disruptors
-That makes you believe you can outsmart bigger competitors and win at shelf, not just survive
-That's because Sales Factory aligns strategy and execution through shared goals and data-driven precision — so every move is calculated for maximum impact
-Engagement when you're facing your make-or-break moment — a new product launch, a seasonal promotion, or the fight for your place on the planogram"
+                            placeholder="Describe your brand's identity, target audience, and unique value proposition. What makes your brand stand out?"
                             value={brandInformation}
                             onChange={(e) => setBrandInformation(e.target.value)}
                         />
@@ -105,16 +101,7 @@ Engagement when you're facing your make-or-break moment — a new product launch
                         <textarea
                             ref={industryRef}
                             className={styles.textArea}
-                            placeholder="Sales Factory provides services that help businesses promote their products and brands across various channels. We develop strategies, manage campaigns, create content, and leverage data to influence consumer behavior and drive sales.
-Core Services Include:
-Brand strategy & positioning
-Advertising (TV, radio, print, digital)
-Digital marketing (SEO, PPC, email, social media)
-Content creation and storytelling
-Media buying and planning
-Market research and analytics
-Influencer and experiential marketing
-Retail and shopper marketing"
+                            placeholder="Describe your business's core services, industry, and target market."
                             value={industryInformation}
                             onChange={(e) => setIndustryInformation(e.target.value)}
                         />
@@ -124,12 +111,7 @@ Retail and shopper marketing"
                         <textarea
                             ref={synonymRef}
                             className={styles.textArea}
-                            placeholder="When talking about segments, use these more strategic, emotionally resonant synonyms in your answers:
-Young Professionals > Brand Builders-in-Motion
-Budget-Conscious Shoppers > Efficiency-Driven Decision Makers
-Luxury Seekers > Premium-Positioning Pursuers
-Tech-Savvy Millennials > Digital-Native Disruptors
-New Parents  Growth Guardians"
+                            placeholder="List synonyms or alternative names for your customer segments (e.g., 'Budget-Conscious Shoppers' -> 'Efficiency-Driven Decision Makers')."
                             value={segmentSynonyms}
                             onChange={(e) => setSegmentSynonyms(e.target.value)}
                         />
