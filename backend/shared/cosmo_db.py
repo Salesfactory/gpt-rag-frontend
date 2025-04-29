@@ -472,6 +472,8 @@ def patch_organization_data(org_id, patch_data):
 
     for key in allowed_fields:
         if key in patch_data:
+            if not patch_data[key]:
+                raise ValueError(f"Field '{key}' cannot be empty")
             org[key] = patch_data[key]
 
     container.upsert_item(org)
