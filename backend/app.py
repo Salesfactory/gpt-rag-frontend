@@ -67,6 +67,7 @@ from shared.cosmo_db import (
     get_report,
     get_user_container,
     get_user_organizations,
+    patch_organization_data,
     patch_user_data,
     update_report,
     delete_report,
@@ -1015,6 +1016,34 @@ def updateUser(*, context, user_id):
             500,
         )
 
+
+@app.route("/api/organization/<org_id>", methods=["PATCH"])
+def patch_organization_info(org_id):
+    """
+    Endpoint to update 'brandInformation', 'industryInformation' and 'segmentSynonyms' in an organization document.
+    """
+    try:
+        patch_data = request.get_json()
+
+        if patch_data is None or not isinstance(patch_data, dict):
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms"}
+        if not any(field in patch_data for field in allowed_fields):
+            return jsonify({"error": "No valid fields to update"}), 400
+
+        updated_org = patch_organization_data(org_id, patch_data)
+        return jsonify({"message": "Organization data updated successfully", "data": updated_org}), 200
+
+    except NotFound:
+        return jsonify({"error": f"Organization with ID {org_id} not found."}), 404
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+
+    except Exception as e:
+        logging.exception(f"Error updating organization data for ID {org_id}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
 
 #Update User data info
 
