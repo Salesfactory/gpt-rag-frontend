@@ -2,15 +2,20 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { Label } from "@fluentui/react";
 import { Globe32Regular } from "@fluentui/react-icons";
 import { useAppContext } from "../../providers/AppProviders";
-
 import styles from "./Organization.module.css";
+import { updateOrganizationInfo } from "../../api";
+import { ToastContainer, toast } from "react-toastify";
+import { Spinner, SpinnerSize } from "@fluentui/react";
+
 
 const Organization = () => {
     const { organization } = useAppContext();
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
-    const [brandInformation, setBrandInformation] = useState("");
-    const [segmentSynonyms, setSegmentSynonyms] = useState("");
-    const [industryInformation, setIndustryInformation] = useState("");
+
+    const [brandInformation, setBrandInformation] = useState(organization?.brandInformation || "");
+    const [segmentSynonyms, setSegmentSynonyms] = useState(organization?.segmentSynonyms || "");
+    const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");   
+    const [isLoading, setIsLoading] = useState(false);
 
     const brandRef = useRef<HTMLTextAreaElement>(null);
     const industryRef = useRef<HTMLTextAreaElement>(null);
@@ -24,6 +29,24 @@ const Organization = () => {
         );
     }
 
+    const handleSaveChanges = async () => {
+        setIsLoading(true);
+    
+        const patchData: any = {};
+        if (brandInformation) patchData.brandInformation = brandInformation;
+        if (industryInformation) patchData.industryInformation = industryInformation;
+        if (segmentSynonyms) patchData.segmentSynonyms = segmentSynonyms;
+        
+        try {
+            await updateOrganizationInfo({ orgId: organization.id, patchData });
+            toast("Changes saved correctly", { type: "success" });
+        } catch (err: any) {
+            toast("Error saving changes", { type: "error" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
     const autoResize = (ref: React.RefObject<HTMLTextAreaElement>) => {
         if (ref.current) {
             ref.current.style.height = "auto";
@@ -45,6 +68,7 @@ const Organization = () => {
 
     return (
         <div className={styles.page_container}>
+            <ToastContainer />
             <div id="options-row" className={styles.row}>
                 <h1 className={styles.title}>Organization</h1>
             </div>
@@ -116,9 +140,17 @@ const Organization = () => {
                             onChange={(e) => setSegmentSynonyms(e.target.value)}
                         />
                     </div>
-                    <button className={styles.saveButton} >
-                        Save Changes
-                    </button>
+                    <button 
+                        className={styles.saveButton} 
+                        onClick={handleSaveChanges}
+                        disabled={isLoading}
+                        >
+                    {isLoading ? (
+                        <Spinner size={SpinnerSize.small} label="Saving..." labelPosition="right" />
+                        ) : (
+                        "Save Changes"
+                        )}
+                        </button>
                 </div>
                 </div>
             </div>
