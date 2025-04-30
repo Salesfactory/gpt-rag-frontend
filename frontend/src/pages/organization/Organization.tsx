@@ -33,9 +33,9 @@ const Organization = () => {
         setIsLoading(true);
     
         const patchData: any = {};
-        if (brandInformation) patchData.brandInformation = brandInformation;
-        if (industryInformation) patchData.industryInformation = industryInformation;
-        if (segmentSynonyms) patchData.segmentSynonyms = segmentSynonyms;
+        patchData.brandInformation = brandInformation;
+        patchData.industryInformation = industryInformation;
+        patchData.segmentSynonyms = segmentSynonyms;
         
         try {
             await updateOrganizationInfo({ orgId: organization.id, patchData });
