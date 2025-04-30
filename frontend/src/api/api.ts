@@ -885,6 +885,26 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
     }
 }
 
+export async function updateOrganizationInfo({ orgId, patchData }: { orgId: string; patchData: object }) {
+    const response = await fetch(`/api/organization/${encodeURIComponent(orgId)}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patchData),
+    });
+
+    if (response.status === 404) {
+        throw Error(`Organization with ID ${orgId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating organization data of ID ${orgId}`);
+    }
+
+    return response.json();
+}
+
 export async function updateUserData({ userId, patchData }: { userId: string; patchData: object }) {
     const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
         method: "PATCH",
