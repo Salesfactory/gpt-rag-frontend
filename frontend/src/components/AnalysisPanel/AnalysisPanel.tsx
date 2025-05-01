@@ -43,11 +43,43 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
 
-    const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts || "");
-    // First, handle the internal content separators with subtle breaks
-    const formattedInternalContent = sanitizedThoughts.replace(/\s*==============================================\s*/g, "<br /><br />");
-    // Then, handle the main separators between thought process parts
-    const formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
+    let formattedThoughts = "";
+    try {
+        if (answer.thoughts) {
+            // Attempt to parse the entire string as JSON
+            const thoughtData = JSON.parse(answer.thoughts);
+
+            // Check if it has the expected structure with a "thoughts" array
+            if (thoughtData && Array.isArray(thoughtData.thoughts) && thoughtData.thoughts.length > 0) {
+                // Extract the first element of the thoughts array
+                let rawThoughts = thoughtData.thoughts[0] || "";
+
+                // Sanitize the extracted thought string
+                const sanitizedThoughts = DOMPurify.sanitize(rawThoughts);
+
+                // Format the string: newlines and separators
+                const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
+                const formattedInternalContent = thoughtsWithBreaks.replace(/\s*==============================================\s*/g, "<br /><br />");
+                formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
+
+            } else {
+                // Fallback if parsing failed or structure is unexpected: treat as plain text and apply basic formatting
+                console.warn("Could not parse thoughts as JSON or structure was unexpected. Falling back to plain text formatting.");
+                const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts);
+                const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
+                const formattedInternalContent = thoughtsWithBreaks.replace(/\s*==============================================\s*/g, "<br /><br />");
+                formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
+            }
+        }
+    } catch (error) {
+        // Fallback if JSON parsing completely fails: treat as plain text and apply basic formatting
+        console.error("Error parsing thoughts JSON:", error);
+        const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts || "");
+        const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
+        const formattedInternalContent = thoughtsWithBreaks.replace(/\s*==============================================\s*/g, "<br /><br />");
+        formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
+    }
+
 
     return (
         <>
