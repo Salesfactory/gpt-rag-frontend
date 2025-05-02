@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AddFilled, SaveFilled, ErrorCircleFilled } from "@fluentui/react-icons";
-import { TooltipHost, TooltipDelay, DirectionalHint, DefaultButton, Stack, Spinner, Slider } from "@fluentui/react";
+import { TooltipHost, TooltipDelay, DirectionalHint, DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption } from "@fluentui/react";
 import styles from "./SettingsModal.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
@@ -83,6 +83,7 @@ export const SettingsPanel = () => {
     const { user, setSettingsPanel, settingsPanel } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
+    const [selectedModel, setSelectedModel] = useState<string>("DeepSeek-V3-0324");
     const [loading, setLoading] = useState(true);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
 
@@ -90,6 +91,13 @@ export const SettingsPanel = () => {
 
     const temperatureDialog =
         "It adjusts the balance between creativity and predictability in responses. Lower settings yield straightforward answers, while higher settings introduce originality and diversity, perfect for creative tasks and factual inquiries.";
+    const modelDialog = "Select the underlying language model for generating responses.";
+
+    const modelOptions: IDropdownOption[] = [
+        { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
+        { key: "gpt-4.1", text: "gpt-4.1" }
+        
+    ];
 
     useEffect(() => {
         const fetchData = async () => {
@@ -109,6 +117,7 @@ export const SettingsPanel = () => {
                     }
                 });
                 setTemperature(data.temperature);
+                setSelectedModel(data.model || "DeepSeek-V3-0324");
             } catch (error) {
                 console.error("Error fetching settings:", error);
             } finally {
@@ -123,16 +132,21 @@ export const SettingsPanel = () => {
         const parsedTemperature = parseFloat(temperature);
 
         if (parsedTemperature < 0 || parsedTemperature > 1) {
-            console.error("Invalid, settings are not submitted.");
+            console.error("Invalid temperature, settings are not submitted.");
             return;
         }
 
         postSettings({
             user,
-            temperature: parsedTemperature
+            temperature: parsedTemperature,
+            model: selectedModel
         }).then(data => {
             setTemperature(data.temperature);
+            setSelectedModel(data.model);
             setIsDialogOpen(false);
+            setIsLoadingSettings(false);
+        }).catch(error => {
+            console.error("Error saving settings:", error);
             setIsLoadingSettings(false);
         });
     };
@@ -254,6 +268,25 @@ export const SettingsPanel = () => {
                                     onChange={e => setTemperature(e.toString())}
                                     aria-labelledby="temperature-slider"
                                 />
+                            </div>
+                            <div className={styles["w-100"]} style={{ marginTop: '20px' }}>
+                                <div className={styles.item}>
+                                    <span>Model Selection</span>
+                                </div>
+                                <Dropdown
+                                    placeholder="Select a model"
+                                    options={modelOptions}
+                                    selectedKey={selectedModel}
+                                    onChange={(_event, option) => {
+                                        if (option) {
+                                            setSelectedModel(option.key as string);
+                                        }
+                                    }}
+                                    aria-labelledby="model-dropdown"
+                                    styles={{ root: { width: '100%' } }}
+                                />
+                            </div>
+                            <div className={styles["w-100"]} style={{ marginTop: '30px', textAlign: 'right' }}>
                                 <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
                                     <SaveFilled className={styles.saveIcon} />
                                     &#8202;&#8202;Save

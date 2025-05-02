@@ -51,6 +51,9 @@ interface OrganizationInfo {
     subscriptionStatus?: string;
     subscriptionExpirationDate?: number;
     subscriptionTier?: SubscriptionTier;
+    brandInformation?: string;
+    segmentSynonyms?: string;
+    industryInformation?: string;
 }
 
 // ConversationHistoryItem and ChatTurn remain unchanged
@@ -346,7 +349,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         subscriptionId: organization.subscriptionId,
                         subscriptionTier: organization.subscriptionTier as SubscriptionTier, // Type assertion
                         subscriptionExpirationDate: organization.subscriptionExpirationDate,
-                        subscriptionStatus: organization.subscriptionStatus
+                        subscriptionStatus: organization.subscriptionStatus,
+                        brandInformation: organization.brandInformation,
+                        segmentSynonyms: organization.segmentSynonyms,
+                        industryInformation: organization.industryInformation
                     });
 
                     debugLog("Organization details fetched:", organization);

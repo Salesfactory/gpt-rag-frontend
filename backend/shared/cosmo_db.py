@@ -456,6 +456,29 @@ def update_user(user_id, updated_data):
         )
         raise
 
+def patch_organization_data(org_id, patch_data):
+    """
+    Updates or adds 'brandInformation', 'industryInformation' and 'segmentSynonyms' to the organization.
+    """
+    container = get_cosmos_container("organizations")
+
+    try:
+        org = container.read_item(item=org_id, partition_key=org_id)
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Organization with id '{org_id}' not found.")
+        raise NotFound(f"Organization not found")
+
+    allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms"}
+
+    for key in allowed_fields:
+        if key in patch_data:
+            org[key] = patch_data[key]
+
+    container.upsert_item(org)
+    logging.info(f"Organization {org_id} updated successfully.")
+    return org
+
+
 
 def patch_user_data(user_id, patch_data):
     """

@@ -67,6 +67,7 @@ from shared.cosmo_db import (
     get_report,
     get_user_container,
     get_user_organizations,
+    patch_organization_data,
     patch_user_data,
     update_report,
     delete_report,
@@ -587,6 +588,7 @@ def proxy_orc():
     
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+    client_principal_organization = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
     
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
@@ -616,6 +618,7 @@ def proxy_orc():
             "url": file_blob_url,
             "client_principal_id": client_principal_id,
             "client_principal_name": client_principal_name,
+            "client_principal_organization": client_principal_organization,
             "documentName": documentName,
         }
     )
@@ -650,11 +653,13 @@ def chatgpt():
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+    client_principal_organization = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
     logging.info("[webbackend] conversation_id: " + conversation_id)
     logging.info("[webbackend] question: " + question)
     logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
+    logging.info(f"[webbackend] User organization: {client_principal_organization}")
     logging.info(f"[webappend] Agent: {agent}")
 
     try:
@@ -692,6 +697,7 @@ def chatgpt():
                 "url": file_blob_url,
                 "client_principal_id": client_principal_id,
                 "client_principal_name": client_principal_name,
+                "client_principal_organization": client_principal_organization,
                 "documentName": documentName,
             }
         )
@@ -1010,6 +1016,34 @@ def updateUser(*, context, user_id):
             500,
         )
 
+
+@app.route("/api/organization/<org_id>", methods=["PATCH"])
+def patch_organization_info(org_id):
+    """
+    Endpoint to update 'brandInformation', 'industryInformation' and 'segmentSynonyms' in an organization document.
+    """
+    try:
+        patch_data = request.get_json()
+
+        if patch_data is None or not isinstance(patch_data, dict):
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms"}
+        if not any(field in patch_data for field in allowed_fields):
+            return jsonify({"error": "No valid fields to update"}), 400
+
+        updated_org = patch_organization_data(org_id, patch_data)
+        return jsonify({"message": "Organization data updated successfully", "data": updated_org}), 200
+
+    except NotFound:
+        return jsonify({"error": f"Organization with ID {org_id} not found."}), 404
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+
+    except Exception as e:
+        logging.exception(f"Error updating organization data for ID {org_id}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
 
 #Update User data info
 
@@ -1492,25 +1526,23 @@ def setSettings():
             return jsonify({"error": "Invalid request body"}), 400
 
         temperature = request_body.get("temperature", 0.0)
-        frequency_penalty = request_body.get("frequency_penalty", 0.0)
-        presence_penalty = request_body.get("presence_penalty", 0.0)
+        model = request_body.get("model", "DeepSeek-V3-0324") # Get model, default to DeepSeek
 
         set_settings(
             client_principal=client_principal,
             temperature=temperature,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty
+            model=model
         )
 
+        # Return all saved settings, including the model
         return jsonify({
             "client_principal_id": client_principal["id"],
             "client_principal_name": client_principal["name"],
             "temperature": temperature,
-            "frequency_penalty": frequency_penalty,
-            "presence_penalty": presence_penalty,
+            "model": model
         }), 200
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/settings")
+        logging.exception("[webbackend] exception in /api/settings POST")
         return jsonify({"error": str(e)}), 500
 
 

@@ -1,13 +1,25 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Label } from "@fluentui/react";
 import { Globe32Regular } from "@fluentui/react-icons";
 import { useAppContext } from "../../providers/AppProviders";
-
 import styles from "./Organization.module.css";
+import { updateOrganizationInfo } from "../../api";
+import { ToastContainer, toast } from "react-toastify";
+import { Spinner, SpinnerSize } from "@fluentui/react";
+
 
 const Organization = () => {
     const { organization } = useAppContext();
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
+
+    const [brandInformation, setBrandInformation] = useState(organization?.brandInformation || "");
+    const [segmentSynonyms, setSegmentSynonyms] = useState(organization?.segmentSynonyms || "");
+    const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");   
+    const [isLoading, setIsLoading] = useState(false);
+
+    const brandRef = useRef<HTMLTextAreaElement>(null);
+    const industryRef = useRef<HTMLTextAreaElement>(null);
+    const synonymRef = useRef<HTMLTextAreaElement>(null);
 
     if (!organization) {
         return (
@@ -17,8 +29,46 @@ const Organization = () => {
         );
     }
 
+    const handleSaveChanges = async () => {
+        setIsLoading(true);
+    
+        const patchData: any = {};
+        patchData.brandInformation = brandInformation;
+        patchData.industryInformation = industryInformation;
+        patchData.segmentSynonyms = segmentSynonyms;
+        
+        try {
+            await updateOrganizationInfo({ orgId: organization.id, patchData });
+            toast("Changes saved correctly", { type: "success" });
+        } catch (err: any) {
+            toast("Error saving changes", { type: "error" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const autoResize = (ref: React.RefObject<HTMLTextAreaElement>) => {
+        if (ref.current) {
+            ref.current.style.height = "auto";
+            ref.current.style.height = `${ref.current.scrollHeight}px`;
+        }
+    };
+
+    useEffect(() => {
+        autoResize(brandRef);
+    }, [brandInformation]);
+
+    useEffect(() => {
+        autoResize(industryRef);
+    }, [industryInformation]);
+
+    useEffect(() => {
+        autoResize(synonymRef);
+    }, [segmentSynonyms]);
+
     return (
         <div className={styles.page_container}>
+            <ToastContainer />
             <div id="options-row" className={styles.row}>
                 <h1 className={styles.title}>Organization</h1>
             </div>
@@ -57,6 +107,51 @@ const Organization = () => {
                             <span className={styles.info}>{expirationDate} </span>
                         </div>
                     </div>
+                </div>
+                <div className={styles.card}>
+                <div className={styles.editableContainer}>
+                    <div className={styles.infoItem}>
+                        <Label>Brand Description</Label>
+                        <textarea
+                            ref={brandRef}
+                            className={styles.textArea}
+                            placeholder="Describe your brand's identity, target audience, and unique value proposition. What makes your brand stand out?"
+                            value={brandInformation}
+                            onChange={(e) => setBrandInformation(e.target.value)}
+                        />
+                    </div>
+                    <div className={styles.infoItem}>
+                        <Label>Business Description</Label>
+                        <textarea
+                            ref={industryRef}
+                            className={styles.textArea}
+                            placeholder="Describe your business's core services, industry, and target market."
+                            value={industryInformation}
+                            onChange={(e) => setIndustryInformation(e.target.value)}
+                        />
+                    </div>
+                    <div className={styles.infoItem}>
+                        <Label>Segment Synonyms</Label>
+                        <textarea
+                            ref={synonymRef}
+                            className={styles.textArea}
+                            placeholder="List synonyms or alternative names for your customer segments (e.g., 'Budget-Conscious Shoppers' -> 'Efficiency-Driven Decision Makers')."
+                            value={segmentSynonyms}
+                            onChange={(e) => setSegmentSynonyms(e.target.value)}
+                        />
+                    </div>
+                    <button 
+                        className={styles.saveButton} 
+                        onClick={handleSaveChanges}
+                        disabled={isLoading}
+                        >
+                    {isLoading ? (
+                        <Spinner size={SpinnerSize.small} label="Saving..." labelPosition="right" />
+                        ) : (
+                        "Save Changes"
+                        )}
+                        </button>
+                </div>
                 </div>
             </div>
         </div>

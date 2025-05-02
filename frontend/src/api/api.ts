@@ -124,7 +124,7 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     }
 }
 
-export async function postSettings({ user, temperature }: PostSettingsProps): Promise<any> {
+export async function postSettings({ user, temperature, model }: PostSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -136,7 +136,8 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
                 "X-MS-CLIENT-PRINCIPAL-NAME": user_name
             },
             body: JSON.stringify({
-                temperature
+                temperature,
+                model
             })
         });
         const fetchedData = await response.json();
@@ -150,12 +151,14 @@ export async function postSettings({ user, temperature }: PostSettingsProps): Pr
 export async function chatApiGpt(options: ChatRequestGpt, user: any): Promise<AskResponseGpt> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
+    const user_organization = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
     const response = await fetch("/chatgpt", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "X-MS-CLIENT-PRINCIPAL-ID": user_id,
-            "X-MS-CLIENT-PRINCIPAL-NAME": user_name
+            "X-MS-CLIENT-PRINCIPAL-NAME": user_name,
+            "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_organization
         },
         body: JSON.stringify({
             history: options.history,
@@ -880,6 +883,26 @@ export async function updateUser({ userId, updatedData }: { userId: string; upda
     if (response.status > 299 || !response.ok) {
         throw Error(`Error updating user with ID ${userId}`);
     }
+}
+
+export async function updateOrganizationInfo({ orgId, patchData }: { orgId: string; patchData: object }) {
+    const response = await fetch(`/api/organization/${encodeURIComponent(orgId)}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patchData),
+    });
+
+    if (response.status === 404) {
+        throw Error(`Organization with ID ${orgId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error updating organization data of ID ${orgId}`);
+    }
+
+    return response.json();
 }
 
 export async function updateUserData({ userId, patchData }: { userId: string; patchData: object }) {
