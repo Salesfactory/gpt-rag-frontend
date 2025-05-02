@@ -153,6 +153,7 @@ const Chat = () => {
                 answer: "",
                 thoughts: ""
             };
+            let jsonBuffer = ""; // Buffer for incomplete JSON structures
 
             while (true) {
                 if (restartChat.current) {
@@ -161,28 +162,57 @@ const Chat = () => {
                 }
                 const { done, value } = await reader.read();
                 if (done) break;
+                
                 const chunk = decoder.decode(value, { stream: true });
-                if (chunk.startsWith("{")) {
-                    const startIndex = chunk.indexOf("{");
-                    const endIndex = chunk.lastIndexOf("}");
-                    if (endIndex !== -1 && startIndex !== -1 && endIndex > startIndex) {
-                        const jsonString = chunk.substring(startIndex, endIndex + 1);
-                        resultObj = JSON.parse(jsonString);
-                        const conditionOne = answers.map(a => ({ user: a[0] }));
-                        if (conditionOne.length <= 0) {
-                            setRefreshFetchHistory(true);
-                            setChatId(resultObj.conversation_id);
-                        } else {
-                            setRefreshFetchHistory(false);
+                
+                // Check if chunk contains a JSON structure
+                if (chunk.includes("{") || jsonBuffer) {
+                    // Add chunk to buffer
+                    jsonBuffer += chunk;
+                    
+                    // Try to find complete JSON structure
+                    const startIndex = jsonBuffer.indexOf("{");
+                    const endIndex = jsonBuffer.lastIndexOf("}");
+                    
+                    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+                        try {
+                            const jsonString = jsonBuffer.substring(startIndex, endIndex + 1);
+                            const parsedObj = JSON.parse(jsonString);
+                            
+                            // Update resultObj if we have a valid conversation_id
+                            if (parsedObj.conversation_id) {
+                                resultObj = parsedObj;
+                                const conditionOne = answers.map(a => ({ user: a[0] }));
+                                if (conditionOne.length <= 0) {
+                                    setRefreshFetchHistory(true);
+                                    setChatId(resultObj.conversation_id);
+                                } else {
+                                    setRefreshFetchHistory(false);
+                                }
+                                setUserId(resultObj.conversation_id);
+                            }
+                            
+                            // Handle any text after the JSON structure
+                            const remainingText = jsonBuffer.substring(endIndex + 1);
+                            if (remainingText) {
+                                result += remainingText;
+                                setLastAnswer(result);
+                            }
+                            
+                            // Clear the buffer after successful parsing
+                            jsonBuffer = "";
+                        } catch (e) {
+                            // If parsing fails, keep the buffer for next iteration
+                            console.log("Incomplete JSON structure, waiting for more data");
                         }
-                        setUserId(resultObj.conversation_id);
                     }
-                    result += chunk.slice(endIndex + 1);
                 } else {
+                    // Regular text content
                     result += chunk;
                     setLastAnswer(result);
                 }
             }
+
             const regex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
             // Function to clean citations
             const cleanCitation = (citation: string) => {
