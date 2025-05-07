@@ -38,8 +38,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
 
     const handleSubmit = async () => {
         // Sanitize inputs
-        const sanitizedUsername = DOMPurify.sanitize(username);
-        const sanitizedEmail = DOMPurify.sanitize(email);
+        const sanitizedUsername = DOMPurify.sanitize(username).toLowerCase();
+        const sanitizedEmail = DOMPurify.sanitize(email).toLowerCase();
 
         // Validate inputs
         if (!isValidated(sanitizedUsername, sanitizedEmail)) return;
@@ -83,12 +83,12 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                 organizationId,
                 organizationName
             });
-            
+
             if (inviteResponse.error) {
                 setErrorMessage(inviteResponse.error);
                 setLoading(false);
                 return;
-            }else{
+            } else {
                 setSuccess(true);
             }
         } catch (error) {
