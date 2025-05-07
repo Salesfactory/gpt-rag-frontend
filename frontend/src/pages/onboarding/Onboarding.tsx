@@ -53,6 +53,10 @@ const Onboarding: React.FC = () => {
         }
     };
 
+    const handleLogOut = () => {
+        window.location.href = "/#/logout";
+    };
+
     const handleSubscriptionRedirect = () => {
         window.location.href = "#/payment";
     };
@@ -99,7 +103,12 @@ const Onboarding: React.FC = () => {
                         <Spinner size={3} />
                     </div>
                 )}
-                <div className={step > 0 ? styles.buttonContainer : `${styles.buttonContainer} ${styles.singleButtonContainer}`}>
+                <div className={styles.buttonContainer}>
+                    {step === 0 && (
+                        <button className={styles.buttonPrev} type="button" onClick={handleLogOut}>
+                            <ChevronLeftRegular className={styles.icon} /> Cancel
+                        </button>
+                    )}
                     {step > 0 && (
                         <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick}>
                             <ChevronLeftRegular className={styles.icon} /> Previous
