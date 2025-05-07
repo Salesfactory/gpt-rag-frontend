@@ -39,7 +39,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     const handleSubmit = async () => {
         // Sanitize inputs
         const sanitizedUsername = DOMPurify.sanitize(username);
-        const sanitizedEmail = DOMPurify.sanitize(email);
+        const sanitizedEmail = DOMPurify.sanitize(email).toLowerCase();
 
         // Validate inputs
         if (!isValidated(sanitizedUsername, sanitizedEmail)) return;
