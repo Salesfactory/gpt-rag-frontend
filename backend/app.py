@@ -64,6 +64,7 @@ from urllib.parse import urlencode
 from shared.cosmo_db import (
     create_report,
     get_invitation_by_email_and_org,
+    get_invitation_role,
     get_report,
     get_user_container,
     get_user_organizations,
@@ -1955,7 +1956,24 @@ def getUserOrganizations():
     except Exception as e:
         logging.exception("[webbackend] exception in /get-user-organizations")
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+    
+@app.route("/api/get-users-organizations-role", methods=["GET"])
+def getUserOrganizationsRole():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = request.args.get('organization_id')
 
+    if not client_principal_id or not organization_id:
+        return create_error_response("Missing required parameter: client_principal_id, organization_id", HTTPStatus.BAD_REQUEST)
+    
+    try:
+        role = get_invitation_role(client_principal_id, organization_id)
+        return jsonify({'role': role})
+    except ValueError as e:
+        # If the invitation is missing or inactive
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': f"An error occurred: {str(e)}"}), 500
+    
 @app.route("/api/create-organization", methods=["POST"])
 def createOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
