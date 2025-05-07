@@ -1967,7 +1967,7 @@ def getUserOrganizationsRole():
     
     try:
         role = get_invitation_role(client_principal_id, organization_id)
-        return jsonify({'role': role})
+        return jsonify({'role': role}), 200
     except ValueError as e:
         # If the invitation is missing or inactive
         return jsonify({'error': str(e)}), 404
