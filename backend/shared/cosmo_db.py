@@ -4,7 +4,7 @@ from azure.identity import DefaultAzureCredential
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError, CosmosHttpResponseError
 import uuid
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from werkzeug.exceptions import NotFound
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
@@ -724,6 +724,10 @@ def create_invitation(invited_user_email, organization_id, role):
                     f"[create_invitation] Updated user {invited_user_email} organizationId to {organization_id}"
                 )
 
+        token = str(uuid.uuid4())
+        expiry_time = datetime.now(timezone.utc) + timedelta(hours=24)
+        token_expiry = int(expiry_time.timestamp())
+
         invitation = {
             "id": str(uuid.uuid4()),
             "invited_user_email": invited_user_email,
@@ -731,6 +735,9 @@ def create_invitation(invited_user_email, organization_id, role):
             "role": role,
             "active": False,
             "invited_user_id": user_id,
+            "token": token,
+            "token_used": False,
+            "token_expiry": token_expiry
         }
         result = container.create_item(body=invitation)
     except Exception as e:
