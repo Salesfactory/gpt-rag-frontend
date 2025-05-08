@@ -49,7 +49,10 @@ describe("Agent Section Tests", () => {
           }).as("getUserOrganizations");
           
         // Alias for later reference
-
+        cy.intercept("GET", "/api/get-users-organizations-role*", {
+        statusCode: 200,
+        body: { role: "user" },
+        });
         // Intercept the /api/subscriptions/sub_1QeeHXEpF6ccgZLwfCmANnOP/tiers API call
         cy.intercept("GET", "/api/subscriptions/sub_1QeeHXEpF6ccgZLwfCmANnOP/tiers", {
             statusCode: 200,

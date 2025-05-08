@@ -47,6 +47,28 @@ export async function fetchUserOrganizations(userId: string): Promise<any> {
     }
 }
 
+export async function fetchUserRoleForOrganization(userId: string, organizationId: string): Promise<{ role: string } | null> {
+    try {
+        const response = await fetch(`/api/get-users-organizations-role?organization_id=${encodeURIComponent(organizationId)}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch role. Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return { role: data.role };
+    } catch (error) {
+        console.error("Error fetching user role:", error);
+        return null;
+    }
+}
+
 export async function deleteUser({ user, userId }: any): Promise<any> {
     try {
         const response = await fetch(`/api/deleteuser?userId=${userId}`, {

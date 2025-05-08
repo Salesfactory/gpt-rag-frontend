@@ -688,7 +688,53 @@ def get_user_organizations(user_id):
         logging.error(f"Unexpected error retrieving organizations for user ID '{user_id}': {e}")
         raise
 
+def get_invitation_role(user_id, organization_id):
+    """
+    Gets the role of a user in an organization based on the active invitation.
 
+    Parameters:
+        user_id (str): The ID of the user for which you want to get the role.
+        organization_id (str): The ID of the organization.
+
+    Returns:
+        str: The user's role in the organization if the invitation is active.
+        
+    Raises:
+        NotFound: If no active invitation is found for the user and organization.
+    """
+    invitations_container = get_cosmos_container('invitations')
+    organizations_container = get_cosmos_container('organizations')
+
+    # Check ownership
+    org_query = "SELECT * FROM c WHERE c.id = @organization_id"
+    org_params = [{"name": "@organization_id", "value": organization_id}]
+    org_result = list(organizations_container.query_items(
+        query=org_query, parameters=org_params, enable_cross_partition_query=True
+    ))
+
+    if org_result and org_result[0].get("owner") == user_id:
+        return "admin"
+
+    # Query to find the active invitation
+    query = """
+        SELECT * FROM c 
+        WHERE c.invited_user_id = @user_id 
+        AND c.organization_id = @organization_id 
+        AND c.active = true
+    """
+    parameters = [
+        {"name": "@user_id", "value": user_id},
+        {"name": "@organization_id", "value": organization_id}
+    ]
+
+    invitations = list(invitations_container.query_items(
+        query=query, parameters=parameters, enable_cross_partition_query=True
+    ))
+
+    if invitations:
+        return invitations[0].get('role')
+
+    raise ValueError("No role found: user is not owner nor has active invitation")
 
 def create_invitation(invited_user_email, organization_id, role):
     """
