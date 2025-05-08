@@ -9,7 +9,7 @@ import { Spinner, SpinnerSize } from "@fluentui/react";
 
 
 const Organization = () => {
-    const { organization } = useAppContext();
+    const { organization, setOrganization } = useAppContext();
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
 
     const [brandInformation, setBrandInformation] = useState(organization?.brandInformation || "");
@@ -40,6 +40,16 @@ const Organization = () => {
         try {
             await updateOrganizationInfo({ orgId: organization.id, patchData });
             toast("Changes saved correctly", { type: "success" });
+
+            // Update the organization context with the new values
+            if (organization && setOrganization) {
+                setOrganization({
+                    ...organization,
+                    brandInformation: brandInformation,
+                    industryInformation: industryInformation,
+                    segmentSynonyms: segmentSynonyms
+                });
+            }
         } catch (err: any) {
             toast("Error saving changes", { type: "error" });
         } finally {
