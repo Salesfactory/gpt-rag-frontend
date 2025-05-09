@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
-import { checkUser, fetchUserOrganizations, getOrganizationSubscription } from "../api";
+import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription } from "../api";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
 
@@ -143,7 +143,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isFinancialAssistantActive, setIsFinancialAssistantActive] = useState(false);
-    
+
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
     const [partialUser, setPartialUser] = useState<PartialUserInfo | null>(null);
@@ -153,7 +153,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [isSubscriptionTiersLoading, setIsSubscriptionTiersLoading] = useState<boolean>(false);
     const [isChatHistoryLoading, setIsChatHistoryLoading] = useState<boolean>(false);
     const [showOrganizationSelection, setShowOrganizationSelection] = useState<boolean>(false);
-    
+
     // Setting variables for the Financial Agent URL
     const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
     const params = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
@@ -269,15 +269,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 const invitationToken = urlParams.get("invitation");
 
                 const authData = await fetchUserAuth(invitationToken);
-                
+
                 if (authData.authenticated) {
                     const user = authData.user;
-        
+
                     // Search for previously selected organization
                     const savedOrgId = localStorage.getItem(`selectedOrg_${user.id}`);
                     if (savedOrgId) {
                         debugLog(`Using organization saved for the user: ${savedOrgId}`);
-                        setUser({ ...user, organizationId: savedOrgId });
+                        const userRole = await fetchUserRoleForOrganization(user.id, savedOrgId);
+                        setUser({ ...user, organizationId: savedOrgId, role: userRole?.role as Role | undefined });
                     } else {
                         setPartialUser(user);
                         // Fetch organizations if no saved org
@@ -288,13 +289,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         } else if (Array.isArray(organizations) && organizations.length === 1) {
                             const singleOrgId = organizations[0]?.id;
                             debugLog(`Only one organization found: ${singleOrgId}`);
-                            setUser({ ...user, organizationId: singleOrgId });
+                            const userRole = await fetchUserRoleForOrganization(user.id, singleOrgId);
+                            setUser({ ...user, organizationId: singleOrgId, role: userRole?.role as Role | undefined });
                             localStorage.setItem(`selectedOrg_${user.id}`, singleOrgId || "");
                         } else {
                             toast.error("No organizations were found for the user.");
                         }
                     }
-        
+
                     setIsAuthenticated(true);
                     debugLog(`User authenticated: ${authData.user.name}`);
                 } else {
@@ -549,8 +551,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     <OrganizationSelectorPopup
                         organizations={organizations || []}
                         userId={partialUser.id}
-                        onOrganizationSelected={(orgId) => {
-                            setUser({ ...partialUser, organizationId: orgId });
+                        onOrganizationSelected={async orgId => {
+                            const roleResponse = await fetchUserRoleForOrganization(partialUser.id, orgId);
+                            setUser({
+                                ...partialUser,
+                                organizationId: orgId,
+                                role: roleResponse?.role as Role | undefined
+                            });
                             setShowOrganizationSelection(false);
                         }}
                         onCancel={() => {

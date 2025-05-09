@@ -64,6 +64,7 @@ from urllib.parse import urlencode
 from shared.cosmo_db import (
     create_report,
     get_invitation_by_email_and_org,
+    get_invitation_role,
     get_report,
     get_user_container,
     get_user_organizations,
@@ -346,6 +347,47 @@ def activate_invitation(invitation_id: str) -> bool:
 
 
 
+@app.route("/api/invitations/<inviteId>/redeemed", methods=["GET"])
+def mark_invitation_as_redeemed(inviteId):
+    """
+    Validates and redeems an invitation by ID and token.
+    """
+    print(f"Marking invitation {inviteId} as redeemed")
+
+    token = request.args.get("token")
+    if not token:
+        return jsonify({"error": "Token is required"}), 400
+
+    try:
+        container = get_cosmos_container("invitations")
+        item = container.read_item(item=inviteId, partition_key=inviteId)
+
+        # Security validations
+        if item.get("token") != token:
+            return jsonify({"error": "Invalid token"}), 403
+
+        if item.get("token_used", False):
+            return jsonify({"error": "Token has already been used"}), 409
+
+        current_timestamp = int(datetime.now(timezone.utc).timestamp())
+        if current_timestamp > item.get("token_expiry", 0):
+            return jsonify({"error": "Token has expired"}), 410
+
+        # Mark as redeemed
+        item["active"] = True
+        item["token_used"] = True
+        item["redeemed_at"] = int(datetime.now(timezone.utc).timestamp())
+
+        container.upsert_item(item)
+        return redirect(url_for("index"))
+
+    except CosmosResourceNotFoundError:
+        print(f"Invitation {inviteId} not found")
+        return jsonify({"error": "Invitation not found"}), 404
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
 @app.route("/")
 @store_request_params_in_session(['agent','document'])
 @store_request_params_in_session(['invitation_id'])
@@ -375,7 +417,6 @@ def index(*, context):
     return append_script('static/index.html', query_params)
 
 # route for other static files
-
 
 @app.route("/<path:path>")
 def static_files(path):
@@ -1696,7 +1737,9 @@ def sendEmail():
     invitation = get_invitation_by_email_and_org(email, organizationId)
     if invitation:
         unique_id = invitation["id"]
-        activation_link = INVITATION_LINK+"?invitation_id="+unique_id
+        token = invitation["token"]
+        if unique_id and token:
+            activation_link = f"{INVITATION_LINK}/api/invitations/{unique_id}/redeemed?token={token}"
     else:
         return jsonify({"error": "No invitation found"}), 404
 
@@ -1955,7 +1998,24 @@ def getUserOrganizations():
     except Exception as e:
         logging.exception("[webbackend] exception in /get-user-organizations")
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+    
+@app.route("/api/get-users-organizations-role", methods=["GET"])
+def getUserOrganizationsRole():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = request.args.get('organization_id')
 
+    if not client_principal_id or not organization_id:
+        return create_error_response("Missing required parameter: client_principal_id, organization_id", HTTPStatus.BAD_REQUEST)
+    
+    try:
+        role = get_invitation_role(client_principal_id, organization_id)
+        return jsonify({'role': role}), 200
+    except ValueError as e:
+        # If the invitation is missing or inactive
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': f"An error occurred: {str(e)}"}), 500
+    
 @app.route("/api/create-organization", methods=["POST"])
 def createOrganization():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
