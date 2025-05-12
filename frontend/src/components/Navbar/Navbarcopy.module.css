@@ -1,0 +1,122 @@
+/* Icon Styles */
+.iconLarge {
+    font-size: 1.9em;
+    color: #333333ab;
+}
+
+/* En tu .module.css */
+.brandText {
+    font-size: 1.4rem;
+    font-weight: 500;
+    /* Negrita suave */
+}
+
+
+/* Profile Card Styles */
+.profileCard {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profileCircle {
+    background-color: #e6f9ed;
+    color: #157347;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.userName {
+    font-weight: 500;
+    color: #333;
+}
+
+.financialToggleText {
+    font-size: 1rem;
+    margin-right: 0.5rem;
+    color: #333;
+}
+
+.financialToggle{
+    cursor: pointer;
+    height: 1.25rem;
+    width: 2.25rem;
+    transform: scale(1.5);
+}
+
+.financialToggle[type="checkbox"]:checked {
+    background-color: #43A047; 
+    border-color: #43A047;
+}
+
+.financialToggle[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.1rem #43A047;
+}
+
+@media (max-width: 900px) {
+    .financialToggleText{
+        display: none;
+    }
+}
+
+.iconContainer {
+    justify-content: flex-end !important;
+
+    @media (max-width: 767px) {
+        justify-content: flex-end !important;
+    }
+}
+
+/* Sidebartoggler */
+.sidebartoggler {
+    /* Define styles if needed */
+}
+
+/* Message Body */
+.messageBody {
+    /* Define styles if needed */
+}
+
+.headerNavbar {
+    -ms-flex-wrap: nowrap !important; 
+    flex-wrap: nowrap  !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+@media (max-width: 991.98px) {
+    .headerNavbar {
+        -ms-flex-wrap: nowrap !important; 
+        flex-wrap: nowrap  !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+    .profileCard{
+        background-color:rgb(248, 249, 250);
+    }
+    .headerNavbarAlt{
+        -ms-flex-wrap: nowrap !important; 
+        flex-wrap: nowrap  !important;
+        display: flex;
+        gap: 68%;
+    }
+}
+
+.appHeader{
+    position: fixed;
+    z-index: 10;
+    width: 100%;
+    background-color: var(--bs-tertiary-bg);
+    padding: 0 25px;
+    top: 0;
+}

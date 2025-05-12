@@ -81,8 +81,8 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
-                    <Route path="/subscription-management" element={<SubscriptionManagement/>}/>
-                    <Route path="/manage-email-lists" element={<UserManagement/>}/>
+                    <Route path="/subscription-management" element={<SubscriptionManagement />} />
+                    <Route path="/manage-email-lists" element={<UserManagement />} />
                 </Route>
             </Route>
 
@@ -127,11 +127,11 @@ export default function App() {
             >
                 <Route element={<Layout />}>
                     <Route path="/curation-reports" element={<CurationReports />} />
-                    <Route path="/create-curation-report" element={<CurationCreation />}/>
-                    <Route path="/summarization-reports" element={<SummarizationReports />}/>
-                    <Route path="/create-summarization-report" element={<SummarizationCreation/>}/>
-                    <Route path="/report-templates" element={<TemplateReports/>}/>
-                    <Route path="/create-template-report" element={<TemplateCreation/>}/>
+                    <Route path="/create-curation-report" element={<CurationCreation />} />
+                    <Route path="/summarization-reports" element={<SummarizationReports />} />
+                    <Route path="/create-summarization-report" element={<SummarizationCreation />} />
+                    <Route path="/report-templates" element={<TemplateReports />} />
+                    <Route path="/create-template-report" element={<TemplateCreation />} />
                 </Route>
             </Route>
 
