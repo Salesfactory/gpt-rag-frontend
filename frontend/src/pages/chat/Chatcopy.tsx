@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect, useContext } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
 
-import styles from "./Chat.module.css";
+import styles from "./Chatcopy.module.css";
 
 import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
-import { QuestionInput } from "../../components/QuestionInput";
+import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { ExampleList } from "../../components/Example";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
@@ -18,7 +18,7 @@ import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import { SettingsPanel } from "../../components/SettingsPanel";
-import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButton";
+import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 
 const userLanguage = navigator.language;
@@ -162,23 +162,23 @@ const Chat = () => {
                 }
                 const { done, value } = await reader.read();
                 if (done) break;
-                
+
                 const chunk = decoder.decode(value, { stream: true });
-                
+
                 // Check if chunk contains a JSON structure
                 if (chunk.includes("{") || jsonBuffer) {
                     // Add chunk to buffer
                     jsonBuffer += chunk;
-                    
+
                     // Try to find complete JSON structure
                     const startIndex = jsonBuffer.indexOf("{");
                     const endIndex = jsonBuffer.lastIndexOf("}");
-                    
+
                     if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
                         try {
                             const jsonString = jsonBuffer.substring(startIndex, endIndex + 1);
                             const parsedObj = JSON.parse(jsonString);
-                            
+
                             // Update resultObj if we have a valid conversation_id
                             if (parsedObj.conversation_id) {
                                 resultObj = parsedObj;
@@ -191,14 +191,14 @@ const Chat = () => {
                                 }
                                 setUserId(resultObj.conversation_id);
                             }
-                            
+
                             // Handle any text after the JSON structure
                             const remainingText = jsonBuffer.substring(endIndex + 1);
                             if (remainingText) {
                                 result += remainingText;
                                 setLastAnswer(result);
                             }
-                            
+
                             // Clear the buffer after successful parsing
                             jsonBuffer = "";
                         } catch (e) {
@@ -691,19 +691,21 @@ const Chat = () => {
                                 <div ref={chatMessageStreamEnd} />
                             </div>
                         )}
-                        <div className={styles.chatInput}>
-                            <QuestionInput
-                                clearOnSend
-                                placeholder={placeholderText}
-                                disabled={isLoading}
-                                onSend={(question, fileBlobUrl) => {
-                                    streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
-                                }}
-                                extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                            />
-                        </div>
-                        <div className={styles.chatDisclaimer}>
-                            <p>This app is in beta. Responses may not be fully accurate.</p>
+                        <div className={styles.chatInputContainer}>
+                            <div className={styles.chatInput}>
+                                <QuestionInput
+                                    clearOnSend
+                                    placeholder={placeholderText}
+                                    disabled={isLoading}
+                                    onSend={(question, fileBlobUrl) => {
+                                        streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                    }}
+                                    extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
+                                />
+                            </div>
+                            <div className={styles.chatDisclaimer}>
+                                <p>This app is in beta. Responses may not be fully accurate.</p>
+                            </div>
                         </div>
                     </div>
                     {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer] && (

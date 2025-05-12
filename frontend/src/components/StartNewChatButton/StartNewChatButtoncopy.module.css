@@ -4,10 +4,9 @@
     justify-content: center;
     align-items: center;
     font-size: 24px;
-    border: 1px solid #979797;
-    border-radius: 6px;
+    border: none;
     color: #979797;
-    background-color: #f5f5f5;
+    background-color: #ffffff;
     transition: 0.3s;
     margin-right: 5px;
     position: sticky;
@@ -23,10 +22,9 @@
     justify-content: center;
     align-items: center;
     font-size: 24px;
-    border: 1px dashed #bfbfbf;
-    border-radius: 6px;
     color: #bfbfbf;
-    background-color: #f0f0f0;
+    border: none;
+    background-color: #ffffff;
     cursor: not-allowed;
     opacity: 0.5;
     transition: 0.3s;
@@ -47,13 +45,13 @@
     padding: 5px;
     border-radius: 5px;
     position: absolute;
-    bottom: 110%; 
+    bottom: 110%;
     left: 50%;
     border-radius: 6px;
-    border: 2px solid #9fc51d;
+    border: 1px solid #016630;
     transform: translateX(-50%);
     white-space: nowrap;
-    z-index: 9999; 
+    z-index: 9999;
     opacity: 0;
     transition: opacity 0.3s;
 }

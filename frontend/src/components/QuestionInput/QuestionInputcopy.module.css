@@ -1,10 +1,11 @@
 .questionInputContainer {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
     width: 100%;
-    background: transparent;
+    padding: 8px;
     position: relative;
-    max-height: 200px;
 }
 
 .attachmentContainer {
@@ -19,6 +20,7 @@
     line-height: 40px;
     resize: none;
     padding-bottom: 5px;
+    padding-right: 30px;
     flex-grow: 1;
     min-height: 40px;
     max-height: 150px;
@@ -28,19 +30,18 @@
 
 .questionInputButtonsContainer {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
     align-items: center;
-    padding: 1px;
-    position: sticky;
-    bottom: 0;
-    background-color: white;
-    width: 100%;
-    z-index: 1;
+    justify-content: flex-start;
 }
 
 .questionInputSendButton {
     cursor: pointer;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 3px;
 }
 
 .questionInputSendButtonDisabled {
@@ -55,7 +56,15 @@
 }
 
 .leftButtons {
+    position: absolute;
+    top: -10px;
+    bottom: -5px;
+    right: -5px;
+    background-color: rgb(22, 163, 74);
     display: flex;
-    flex-direction: row;
     align-items: center;
+    padding: 0 8px;
+    z-index: 1;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
 }

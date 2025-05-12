@@ -3,7 +3,7 @@
     display: flex;
     flex-direction: column;
     background-color: white;
-    margin: 0px 10px 0px 0px;
+    /* margin: 0px 10px 0px 0px; */
 }
 
 .mainContainer {
@@ -25,6 +25,7 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
+    background-color: #f9fafb;
 }
 
 .chatEmptyState {
@@ -65,11 +66,19 @@
 }
 
 .flexDescription {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 1rem;
+    max-width: 600px;
+    position: fixed;
 }
+
 
 .conversationIsLoading {
     flex-grow: 1;
@@ -114,11 +123,25 @@
     display: flex;
     align-items: start;
     border-radius: 6px;
-    border: 2px solid #9fc51d;
     width: 80%;
-    background: white;
+    background-color: rgba(255, 255, 255, 1);
+    border: 1px solid rgba(229, 231, 235, 1);
+    box-shadow:
+        var(--tw-ring-offset-shadow, 0 0 #0000),
+        var(--tw-ring-shadow, 0 0 #0000),
+        0 1px 2px 0 rgba(0, 0, 0, 0.05);
     transition: height 0.2s ease;
     margin-left: 30px;
+}
+
+.chatInputContainer {
+    width: 100%;
+    padding-top: 10px;
+    background-color: #fff;
+    border-top: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .newChatButton {
@@ -195,6 +218,7 @@
 .clearChatButton:hover {
     color: #000000;
 }
+
 .chatAnalysisPanel {
     flex: 1;
     overflow-y: auto;
@@ -207,19 +231,26 @@
     margin-top: 15px;
 }
 
-.chatDisclaimer{
+.chatDisclaimer {
     margin-top: 5px;
     color: #8d8d8d;
     font-size: 0.8em;
     text-align: center;
-    
+
 }
 
-@media only screen and (max-height: 999px)  {
-    .chatDisclaimer{
+@media only screen and (max-height: 999px) {
+    .chatDisclaimer {
         margin-left: 30px;
     }
 }
+
+@media (max-width: 650px) {
+    .flexDescription {
+        max-width: 70%;
+    }
+}
+
 
 .loadingLogo {
     font-size: 28px;

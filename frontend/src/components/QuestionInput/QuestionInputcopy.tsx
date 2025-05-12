@@ -3,11 +3,12 @@ import { useAppContext } from "../../providers/AppProviders";
 import { Stack, Spinner, TextField, IconButton } from "@fluentui/react";
 import { getTokenOrRefresh } from "./token_util";
 import { Send24Filled, Mic24Regular, AttachRegular, AddRegular, BroomRegular } from "@fluentui/react-icons";
+import { Send } from "lucide-react";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from "microsoft-cognitiveservices-speech-sdk";
 
 import { uploadFile } from "../../api";
 
-import styles from "./QuestionInput.module.css";
+import styles from "./QuestionInputcopy.module.css";
 interface Props {
     onSend: (question: string, fileBlobUrl: string | null) => void;
     disabled: boolean;
@@ -251,6 +252,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
 
     return (
         <Stack horizontal className={styles.questionInputContainer}>
+            <div className={styles.questionInputButtonsContainer}>{extraButtonNewChat}</div>
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
@@ -262,10 +264,8 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
                 onKeyDown={onEnterPress}
                 autoAdjustHeight
             />
-            <div className={styles.questionInputButtonsContainer}>
-                {extraButtonNewChat}
-                <div className={styles.leftButtons}>
-                    {/*
+            <div className={styles.leftButtons}>
+                {/*
                     <div
                         className={`${styles.questionInputSendButton}`}
                         aria-label="Button to talk"
@@ -281,20 +281,19 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
                         <Mic24Regular primaryFill="#9F9C9C" />
                     </div>
                     */}
-                    <div
-                        className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
-                        aria-label="Ask a question button"
-                        onClick={sendQuestion}
-                        onKeyDown={ev => {
-                            if (ev.key === "Enter") {
-                                ev.preventDefault();
-                                sendQuestion();
-                            }
-                        }}
-                        tabIndex={0}
-                    >
-                        <Send24Filled />
-                    </div>
+                <div
+                    className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
+                    aria-label="Ask a question button"
+                    onClick={sendQuestion}
+                    onKeyDown={ev => {
+                        if (ev.key === "Enter") {
+                            ev.preventDefault();
+                            sendQuestion();
+                        }
+                    }}
+                    tabIndex={0}
+                >
+                    <Send />
                 </div>
             </div>
         </Stack>
