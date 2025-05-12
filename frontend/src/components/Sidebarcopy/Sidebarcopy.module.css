@@ -1,0 +1,323 @@
+/*====================================
+=            Sidebar Styles          =
+====================================*/
+.submenuItem:hover {
+
+  background-color: #016630;
+  transition: ease-in-out 0.3s;
+}
+
+.sidebarLink:hover, .submenuLink:hover {
+  color: #ffffff;
+}
+
+/* Change the text for the sections */
+.submenuLink {
+  width: 100%;
+  display: inline-block;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 0.875rem;
+  padding-left: 35px;
+  transition: background-color 0.3s ease;
+}
+/* Nav Styles */
+.nav {
+    
+    width: 100%;
+  }
+  
+  .navUl {
+    list-style-type: none;
+    padding-left: 0;
+  }
+  
+  .navLink {
+    color: #333;
+    font-size: 15px;
+    text-decoration: none;
+    padding: 10px 30px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    transition: padding 0.3s ease;
+  }
+  
+  .navLinkCollapsed {
+    justify-content: center;
+    padding: 10px 0;
+    width: 85%;
+  }
+  
+  :global(.navLink:hover) {
+    background-color: #85a717;
+  }
+  
+
+  .navLinkActive {
+    background-color: #f5f5f5;
+    border-left: 6px solid #0a0b0a;
+    font-weight: 700;
+    padding: 10px 25px;
+  }
+  
+  .navLinkActiveCollapsed {
+    border-left: 6px solid #0a0b0a;
+    padding: 10px 0;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+  }
+  
+  /* Icon Styles */
+  .icon {
+    color: rgb(255, 255, 255);
+    font-size: 25px;
+    margin-right: 15px;
+    transition: margin-right 0.3s ease;
+  }
+  
+  .iconCollapsed {
+    margin-right: 0;
+  }
+  
+  /* Collapse Button */
+  .collapseButton {
+    color: rgb(63, 63, 63);
+    border-right: 2px solid #0a0b0a;
+    cursor: pointer;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    position: absolute;
+    bottom: 20px;
+    right: 10px;
+  }
+  
+  .collapseButtonCollapsed {
+    position: absolute;
+    bottom: 20px;
+    left: 10px;
+    border-left: 2px solid #0a0b0a;
+    border-right: none;
+  }
+  
+  /* Sidebar Link */
+  /* Change size of the letters*/
+    .navLi {
+      width: 100%;
+    }
+        .sidebarLink {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 17px;
+          color: white;
+          text-decoration: none;
+          padding: 9px 9px 9px 13px;
+          background-color: transparent;
+          transition: background-color 0.3s ease, padding-left 0.3s ease;
+          width: 100%;
+          position: relative;
+          overflow: hidden;
+        }
+    
+        .sidebarLink::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 4px;
+          height: 100%;
+          background-color: transparent;
+          transition: background-color 0.3s ease;
+        }
+    
+        /* Hover effect */
+        .sidebarLink:hover {
+          background-color: rgba(0, 0, 0, 0.2);
+          padding-left: 22px;
+        }
+    
+        .sidebarLink:hover::before {
+          background-color: white;   }
+
+
+  .sidebarLinkIcon {
+    font-size: 1.5rem;
+    color: white;
+    opacity: 0.8;
+  }
+  
+  :global(.sidebarLink:hover) {
+    color: #ffffff;
+  }
+
+  /* CHANGE COLOR PREMIUM TIERS BUTTON*/
+  .sidebarLinkActive{
+    background-color: #016630;
+    /* box-shadow: 0px 17px 20px -8px rgba(77, 91, 236, 0.23); */
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .sidebarLinkActive:hover{
+    color: #fff;
+    /* box-shadow: 0px 17px 20px -8px rgba(77, 91, 236, 0.23); */
+  }
+
+  .sidebarLinkActiveI {
+    color: #ffffff;
+  }
+  
+  /* Nav Small Cap */
+  .navSmallCap {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 0;
+    padding-left: 15px;
+    line-height: 26px;
+    letter-spacing: 1.5px;
+    color: #b9f8cf;
+    transition: color 0.3s ease;
+    text-transform: uppercase;
+  }
+
+  .navSmallCapIcon {
+    display: none;
+  }
+  
+  /* Submenu Styles */
+  .submenu {
+    position: relative;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    margin: 0;
+    background-color: #178842d8;
+  }
+  
+  .submenuActive {
+    max-height: 200px; /* Adjust as needed */
+  }
+  
+  .submenuArrow {
+    margin-left: auto;
+    transition: transform 0.3s ease;
+  }
+  
+  .submenuArrowActive {
+    transition: transform 0.6s;
+    transform: rotate(90deg);
+  }
+  
+  .submenuItem {
+    padding: 4px 8px;
+    margin: 0;
+  }
+  
+  /* Sidebar Divider */
+  .sidebarDivider {
+    height: 1.1px;
+    display: block;
+    margin: 20px 0;
+    background: #00c951;
+    width: 100%;
+    
+  }
+  
+  /* Left Sidebar */
+  .leftSidebar {
+    width: 280px;
+    background: linear-gradient(to bottom, #139443 1%,#16a34a 45%);
+    transition: 0.2s ease-in;
+    height: 100vh;
+    z-index: 30;
+    position: fixed;
+    top: 0;
+  }
+  
+  /* Brand Logo */
+  .brandLogo {
+    background-color: #016630;
+    min-height: 72px;
+    padding: 1.5em 50px 1.5em;
+
+  }
+  
+  .brandLogoImg {
+    max-width: 11em;
+  }
+  
+  /* Close Button */
+  .closeBtn {
+        background: none; /* Remove background */
+        border: none; /* Replace #000 with your desired border color */
+        color: none; /* Text color matching your border color or choose another */
+        padding-left: 20px; /* Adjust padding as needed */
+        border-radius: 0; /* Optional: for rounded corners */
+        cursor: pointer; /* Pointer cursor on hover */
+        transition: all 0.3s ease; /* Optional: smooth transition for hover effect */
+      }  
+  
+  /* Sidebar Toggler */
+  .sidebarToggler {
+    /* Define styles if needed */
+  }
+  
+  /* Scroll Sidebar */
+  .scrollSidebar {
+    overflow-y: auto;
+    height: calc(100vh - 128px);
+    border-radius: 12px;
+  }
+  .scrollSidebar::-webkit-scrollbar {
+    width: 4px; 
+    background-color: transparent;
+}
+
+.scrollSidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2); 
+    border-radius: 10px;
+}
+
+.scrollSidebar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.4); 
+}
+
+.simplebarTrackHorizontal {
+  visibility: hidden !important;
+}
+
+.cursorPointer {
+  cursor: pointer;
+}
+  
+  /* LG Class */
+  .lg {
+    /* Define styles if needed */
+  }
+
+  .leftSidebar {
+    left: -280px;
+  }
+
+  .showSidebar  {
+    left: 0;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+
+  
+  /* Responsive Adjustments */
+  @media (max-width: 1199px) {
+    .leftSidebar {
+      left: -270px;
+    }
+  
+    .showSidebar  {
+      left: 0;
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+  }
+  
