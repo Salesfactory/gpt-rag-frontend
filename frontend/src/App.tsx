@@ -34,6 +34,7 @@ export default function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/payment" element={<PaymentGateway />} />
             <Route path="/access-denied" element={<AccessDenied />} />
+            <Route path="/logout" element={<Logout />} />
 
             {/* Protected Routes for Authenticated Users (Regular and Admin) */}
             <Route
@@ -55,7 +56,6 @@ export default function App() {
                     <Route path="/" element={<Chat />} />
                     <Route path="/success-payment" element={<SuccessPayment />} />
                     <Route path="/help-center" element={<HelpCenter />} />
-                    <Route path="/logout" element={<Logout />} />
                     <Route path="/notification-settings" element={<Notifications />} />
                     <Route path="/access-denied" element={<AccessDenied />} />
                 </Route>
