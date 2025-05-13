@@ -51,6 +51,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     );
 
     // Define your sidebar sections and items, including roles and tiers for links
+    // Then change the route
     const sidebarSections: SidebarSection[] = [
         {
             section: "Agent",
@@ -58,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 {
                     title: "AI Chat",
                     icon: <MessageSquare className={styles.sidebarLinkIcon} />,
-                    to: "/",
+                    to: "/secondary-chat",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user", "platformAdmin"]
                 },
