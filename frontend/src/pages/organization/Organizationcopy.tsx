@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Label } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
-import styles from "./Organization.module.css";
+import styles from "./Organizationcopy.module.css";
 import { updateOrganizationInfo } from "../../api";
 import { ToastContainer, toast } from "react-toastify";
 import { Spinner, SpinnerSize } from "@fluentui/react";

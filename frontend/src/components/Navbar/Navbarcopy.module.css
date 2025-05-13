@@ -106,14 +106,17 @@
         align-items: center;
         gap: 15px;
     }
-    .profileCard{
-        background-color:rgb(248, 249, 250);
-    }
     .headerNavbarAlt{
         -ms-flex-wrap: nowrap !important; 
         flex-wrap: nowrap  !important;
         display: flex;
         gap: 68%;
+    }
+}
+
+@media (max-width: 880px){
+    .userName {
+    display: none !important; 
     }
 }
 
