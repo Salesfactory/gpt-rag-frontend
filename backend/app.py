@@ -1061,7 +1061,7 @@ def updateUser(*, context, user_id):
 @app.route("/api/organization/<org_id>", methods=["PATCH"])
 def patch_organization_info(org_id):
     """
-    Endpoint to update 'brandInformation', 'industryInformation' and 'segmentSynonyms' in an organization document.
+    Endpoint to update 'brandInformation', 'industryInformation' and 'segmentSynonyms' and 'additionalInstruccions' in an organization document.
     """
     try:
         patch_data = request.get_json()
@@ -1069,7 +1069,7 @@ def patch_organization_info(org_id):
         if patch_data is None or not isinstance(patch_data, dict):
             return jsonify({"error": "Invalid or missing JSON payload"}), 400
 
-        allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms"}
+        allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms", "additionalInstruccions"}
         if not any(field in patch_data for field in allowed_fields):
             return jsonify({"error": "No valid fields to update"}), 400
 
