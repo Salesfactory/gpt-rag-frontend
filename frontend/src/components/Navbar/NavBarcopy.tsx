@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import styles from "./Navbarcopy.module.css";
 import { Menu, Settings, History, MessageCircleQuestion } from "lucide-react";
-import { IconMenu2, IconHistory, IconSettings, IconAppsFilled, IconMessageCircleQuestion } from "@tabler/icons-react";
 import { useAppContext } from "../../providers/AppProviders";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profile";
 
 interface NavbarProps {
@@ -114,8 +113,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
             </ul>
             <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-3">
+                    {/*Then change the route*/}
                     {/* Financial Assistant Toggle */}
-                    {fastatus && location === "/" && (
+                    {fastatus && location === "/secondary-chat" && (
                         <li className="nav-item">
                             <div className="d-flex flex-column align-items-start">
                                 <div className={styles.financialToggleContainer}>
@@ -132,8 +132,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             </div>
                         </li>
                     )}
+                    {/*Then change the route*/}
                     {/* Feedback Panel Button */}
-                    {location === "/" && (
+                    {location === "/secondary-chat" && (
                         <li className="nav-item">
                             <button onClick={handleShowFeedbackRatingPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                 <MessageCircleQuestion className={styles.iconLarge} />
@@ -141,8 +142,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             </button>
                         </li>
                     )}
+                    {/*Then change the route*/}
                     {/* Hide Chat History Button */}
-                    {location === "/" && (
+                    {location === "/secondary-chat" && (
                         <li className="nav-item">
                             <button onClick={handleShowHistoryPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                 <History className={styles.iconLarge} />
@@ -150,8 +152,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             </button>
                         </li>
                     )}
+                    {/*Then change the route*/}
                     {/* Settings Button */}
-                    {location === "/" && (
+                    {location === "/secondary-chat" && (
                         <li className="nav-item">
                             <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                 <Settings className={styles.iconLarge} />

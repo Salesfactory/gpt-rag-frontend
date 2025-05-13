@@ -23,6 +23,12 @@ import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 import CurationReports from "./pages/reports/CurationReports";
 import CurationCreation from "./pages/reports/ReportCreation/CurationCreation";
 import SummarizationReports from "./pages/reports/SummarizationReports";
+
+// New Routes
+
+import Layout2 from "./pages/layout/_Layoutcopy";
+import Chat2 from "./pages/chat/Chatcopy";
+
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
 import { TemplateReports } from "./pages/reports/ReportTemplates";
@@ -58,6 +64,26 @@ export default function App() {
                     <Route path="/help-center" element={<HelpCenter />} />
                     <Route path="/notification-settings" element={<Notifications />} />
                     <Route path="/access-denied" element={<AccessDenied />} />
+                </Route>
+            </Route>
+            {/* Secondary Route for Layout2 and Chat2 */}
+            <Route
+                element={
+                    <ProtectedRoute
+                        allowedRoles={["user", "admin", "platformAdmin"]}
+                        allowedTiers={[
+                            "Basic",
+                            "Custom",
+                            "Premium",
+                            "Basic + Financial Assistant",
+                            "Custom + Financial Assistant",
+                            "Premium + Financial Assistant"
+                        ]}
+                    />
+                }
+            >
+                <Route element={<Layout2 />}>
+                    <Route path="/secondary-chat" element={<Chat2 />} />
                 </Route>
             </Route>
 
