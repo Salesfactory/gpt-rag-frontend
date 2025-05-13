@@ -115,17 +115,19 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
             <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
                 <ul className="navbar-nav flex-row align-items-center gap-3">
                     {/* Financial Assistant Toggle */}
-                    <span className={`form-check-label ${styles.financialToggleText}`}>Financial Assistant</span>
                     {fastatus && location === "/" && (
                         <li className="nav-item">
                             <div className="d-flex flex-column align-items-start">
-                                <div className="form-check form-switch">
-                                    <input
-                                        className={`form-check-input ${styles.financialToggle}`}
-                                        type="checkbox"
-                                        checked={isFinancialAssistantActive}
-                                        onChange={handleFinancialAgent}
-                                    />
+                                <div className={styles.financialToggleContainer}>
+                                    <span className={styles.financialToggleText}>Financial Assistant </span>
+                                    <div className="form-check form-switch">
+                                        <input
+                                            className={`form-check-input ${styles.financialToggle}`}
+                                            type="checkbox"
+                                            checked={isFinancialAssistantActive}
+                                            onChange={handleFinancialAgent}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </li>
@@ -133,7 +135,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     {/* Feedback Panel Button */}
                     {location === "/" && (
                         <li className="nav-item">
-                            <button onClick={handleShowFeedbackRatingPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                            <button onClick={handleShowFeedbackRatingPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                 <MessageCircleQuestion className={styles.iconLarge} />
                                 {/* <span className="d-none d-md-inline">{feedbackContent}</span> */}
                             </button>
@@ -142,7 +144,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     {/* Hide Chat History Button */}
                     {location === "/" && (
                         <li className="nav-item">
-                            <button onClick={handleShowHistoryPanel} className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                            <button onClick={handleShowHistoryPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                 <History className={styles.iconLarge} />
                                 {/* <span className="d-none d-md-inline">{historyContent}</span> */}
                             </button>
@@ -151,7 +153,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     {/* Settings Button */}
                     {location === "/" && (
                         <li className="nav-item">
-                            <button onClick={handleShowSettings} className="btn btn-light btn-sm d-flex align-items-center gap-1">
+                            <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                 <Settings className={styles.iconLarge} />
                                 {/* <span className="d-none d-md-inline">Settings</span> */}
                             </button>
