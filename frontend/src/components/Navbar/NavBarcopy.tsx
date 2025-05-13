@@ -101,7 +101,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const userInitials = getInitialsFromUserName(userName);
 
     return (
-        <nav className={`navbar navbar-expand-lg navbar-light ${location == "/" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
+        <nav className={`navbar navbar-expand-lg navbar-light ${location == "/secondary-chat" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
             {/* Sidebar Toggle (For smaller screens) */}
             <ul className="navbar-nav mr-4">
                 <li className="nav-item d-flex align-items-center">
