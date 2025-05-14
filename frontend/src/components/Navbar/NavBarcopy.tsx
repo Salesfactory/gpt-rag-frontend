@@ -108,7 +108,8 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <button onClick={handleOnClickShowSidebar} className={`nav-link d-flex align-items-center ${styles.sidebartoggler}`} id="headerCollapse">
                         <Menu className={styles.iconLarge} />
                     </button>
-                    <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>
+                    {location === "/secondary-chat" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
+                    {location === "/secondary-admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
                 </li>
             </ul>
             <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">

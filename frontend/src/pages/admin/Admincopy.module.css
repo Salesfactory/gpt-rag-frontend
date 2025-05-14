@@ -3,7 +3,7 @@
     flex-direction: column;
     width: 100%;
     padding: 50px 50px 50px 50px;
-    background-color: white;
+    background-color: #f9fafb;
 }
 
 .separator {
@@ -49,6 +49,7 @@
     background-color: rgba(214, 214, 214, 0.315);
     border-radius: 5px;
 }
+
 .questionInputContainer {
     border-radius: 8px;
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
@@ -77,11 +78,11 @@
     overflow-x: auto;
     width: 100%;
     border: 1px solid #d9d9d9;
-    margin-top: 35px;
+    margin-top: 1.5rem;
 }
 
 .table thead {
-    background-color: #9fc51d;
+    background-color: #00a63e;
     color: white;
 }
 
@@ -106,11 +107,6 @@
     margin-right: 5px;
 }
 
-.searchIcon {
-    font-size: 18px;
-    margin-right: 5px;
-    transform: scaleX(-1);
-}
 
 @media (max-width: 768px) {
     .button {
@@ -119,67 +115,76 @@
         font-size: 18px;
         justify-content: flex-start;
     }
-    .option{
+
+    .option {
         font-size: 12px;
     }
-    .title{
-            margin-bottom: 10px;
-            margin-left: 0px;
+
+    .title {
+        margin-bottom: 10px;
+        margin-left: 0px;
     }
 }
 
-.modal{
+.modal {
     position: fixed;
     top: 50%;
-    left: 50%;          
-    transform: translate(-50%, -50%);
-    width: 30em; 
+    left: 50%;
+    width: 30em;
     height: auto;
     z-index: 500;
-    padding: 50px 100px 100px 100px; 
+    padding: 50px 100px 100px 100px;
     background-color: #f5f5f5;
     border: 1px solid #e3e3e3;
     border-radius: 6px;
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
     gap: 30px;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
 }
 
-.input{
-   width: 17.5em;
-   height: 1.8em; 
+.modalHidden {
+    opacity: 0;
+    transform: translate(-50%, -45%) scale(0.97);
+    pointer-events: none;
 }
 
-.modalTitle{
+.input {
+    width: 17.5em;
+}
+
+.modalTitle {
     margin-bottom: 40px;
     text-align: center;
-    
+
 }
 
 @media (max-width: 900px) {
-    .modal{
+    .modal {
         width: 20em;
     }
 }
 
-.modalButtonContainer{
-    
+.modalButtonContainer {
+
     gap: 50px;
 }
 
-.modalError{
+.modalError {
     color: red;
     font-style: italic;
 }
 
-.modalSuccess{
+.modalSuccess {
     position: fixed;
     top: 50%;
-    left: 50%;          
+    left: 50%;
     transform: translate(-50%, -50%);
-    width: auto; 
+    width: auto;
     height: auto;
     z-index: 500;
-    padding: 100px; 
+    padding: 100px;
     background-color: #cef1a5;
     border: 1px solid #87f083;
     border-radius: 6px;
@@ -187,23 +192,29 @@
     gap: 30px;
 }
 
-.roleAdmin{
-    width: 100px;
-    background-color: #d7e9f4;
-    padding: 5px;
-    color: #064789;
-    border-radius: 15px;
+.roleAdmin {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #bfdbfe;
+    color: #1e40af;
 }
 
-.roleUser{
-    width: 100px;
-    background-color: #d7e5be;
-    padding: 5px;
-    color: #1b4332;
-    border-radius: 15px;
+.roleUser {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #d1fae5;
+    color: #065f46;
 }
 
-.rolePlatformAdmin{
+.rolePlatformAdmin {
     width: 100px;
     font-size: 0.8em;
     background-color: #d9ff98;
@@ -212,14 +223,133 @@
     border-radius: 15px;
 }
 
-@media (max-width: 900px){
-    .roleAdmin{
-        width: 50px;
+.dropdown {
+    display: inline-flex;
+    justify-content: center;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    min-width: 140px;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown:hover {
+    background-color: #f9fafb;
+}
+
+.dropdown:active {
+    border-color: #e5e7eb;
+}
+
+.dropdown:focus-within {
+    outline: none;
+    box-shadow: 0 0 0 2px #22c55e;
+}
+
+.dropdown :global(.ms-Dropdown-title) {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: #374151 !important;
+    border-color: transparent !important;
+}
+
+.dropdown:active :global(.ms-Dropdown-title),
+.dropdown:focus-within :global(.ms-Dropdown-title),
+.dropdown :global(.ms-Dropdown-title:focus),
+.dropdown :global(.ms-Dropdown-title:active) {
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.dropdown :global(.ms-Dropdown) {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.responsiveSearch {
+    max-width: 300px;
+    width: 100%;
+}
+
+
+@media (max-width: 768px) {
+    .responsiveSearch {
+        max-width: 260px;
     }
-    .roleUser{
-        width: 50px;
+}
+
+
+@media (max-width: 495px) {
+    .responsiveSearch {
+        max-width: 140px;
     }
-    .rolePlatformAdmin{
-        width: 50px;
+}
+
+.responsiveButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    min-width: 160px;
+    height: 40px;
+    font-size: 16px;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+    width: 145px;
+}
+
+
+@media (max-width: 768px) {
+    .responsiveButton {
+        font-size: 14px;
+        padding: 0.5rem 1rem;
+        min-width: 120px;
+        height: 36px;
+        width: auto;
     }
+}
+
+@media (max-width: 380px) {
+    .responsiveButton {
+        padding: 0.5rem;
+        min-width: 40px;
+        width: 40px;
+        justify-content: center;
+    }
+
+    .addIcon {
+        margin-right: 0px;
+    }
+
+    .buttonText {
+        display: none;
+    }
+}
+
+.text {
+    display: inline;
+}
+
+@media (max-width: 380px) {
+    .text {
+        display: none;
+    }
+}
+
+.bothIcons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #6B7280;
+    width: 18px;
+    height: 18px;
 }
