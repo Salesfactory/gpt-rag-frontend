@@ -96,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         },
                         {
                             title: "Workspace Governance",
-                            href: "/organization",
+                            href: "/secondary-organization",
                             tiers: [
                                 "Basic",
                                 "Custom",

@@ -7,19 +7,20 @@ import { updateOrganizationInfo } from "../../api";
 import { ToastContainer, toast } from "react-toastify";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 
-
 const Organization = () => {
     const { organization, setOrganization } = useAppContext();
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
 
     const [brandInformation, setBrandInformation] = useState(organization?.brandInformation || "");
     const [segmentSynonyms, setSegmentSynonyms] = useState(organization?.segmentSynonyms || "");
-    const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");   
+    const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");
+    const [additionalInstruccions, setAdditionalInstructions] = useState(organization?.additionalInstruccions || "");
     const [isLoading, setIsLoading] = useState(false);
 
     const brandRef = useRef<HTMLTextAreaElement>(null);
     const industryRef = useRef<HTMLTextAreaElement>(null);
     const synonymRef = useRef<HTMLTextAreaElement>(null);
+    const additionRef = useRef<HTMLTextAreaElement>(null);
 
     if (!organization) {
         return (
@@ -31,12 +32,12 @@ const Organization = () => {
 
     const handleSaveChanges = async () => {
         setIsLoading(true);
-    
+
         const patchData: any = {};
         patchData.brandInformation = brandInformation;
         patchData.industryInformation = industryInformation;
         patchData.segmentSynonyms = segmentSynonyms;
-        
+        patchData.additionalInstruccions = additionalInstruccions;
         try {
             await updateOrganizationInfo({ orgId: organization.id, patchData });
             toast("Changes saved correctly", { type: "success" });
@@ -56,7 +57,7 @@ const Organization = () => {
             setIsLoading(false);
         }
     };
-    
+
     const autoResize = (ref: React.RefObject<HTMLTextAreaElement>) => {
         if (ref.current) {
             ref.current.style.height = "auto";
@@ -119,49 +120,51 @@ const Organization = () => {
                     </div>
                 </div>
                 <div className={styles.card}>
-                <div className={styles.editableContainer}>
-                    <div className={styles.infoItem}>
-                        <Label>Brand Description</Label>
-                        <textarea
-                            ref={brandRef}
-                            className={styles.textArea}
-                            placeholder="Describe your brand's identity, target audience, and unique value proposition. What makes your brand stand out?"
-                            value={brandInformation}
-                            onChange={(e) => setBrandInformation(e.target.value)}
-                        />
-                    </div>
-                    <div className={styles.infoItem}>
-                        <Label>Business Description</Label>
-                        <textarea
-                            ref={industryRef}
-                            className={styles.textArea}
-                            placeholder="Describe your business's core services, industry, and target market."
-                            value={industryInformation}
-                            onChange={(e) => setIndustryInformation(e.target.value)}
-                        />
-                    </div>
-                    <div className={styles.infoItem}>
-                        <Label>Segment Synonyms</Label>
-                        <textarea
-                            ref={synonymRef}
-                            className={styles.textArea}
-                            placeholder="List synonyms or alternative names for your customer segments (e.g., 'Budget-Conscious Shoppers' -> 'Efficiency-Driven Decision Makers')."
-                            value={segmentSynonyms}
-                            onChange={(e) => setSegmentSynonyms(e.target.value)}
-                        />
-                    </div>
-                    <button 
-                        className={styles.saveButton} 
-                        onClick={handleSaveChanges}
-                        disabled={isLoading}
-                        >
-                    {isLoading ? (
-                        <Spinner size={SpinnerSize.small} label="Saving..." labelPosition="right" />
-                        ) : (
-                        "Save Changes"
-                        )}
+                    <div className={styles.editableContainer}>
+                        <div className={styles.infoItem}>
+                            <Label>Brand Description</Label>
+                            <textarea
+                                ref={brandRef}
+                                className={styles.textArea}
+                                placeholder="Describe your brand's identity, target audience, and unique value proposition. What makes your brand stand out?"
+                                value={brandInformation}
+                                onChange={e => setBrandInformation(e.target.value)}
+                            />
+                        </div>
+                        <div className={styles.infoItem}>
+                            <Label>Business Description</Label>
+                            <textarea
+                                ref={industryRef}
+                                className={styles.textArea}
+                                placeholder="Describe your business's core services, industry, and target market."
+                                value={industryInformation}
+                                onChange={e => setIndustryInformation(e.target.value)}
+                            />
+                        </div>
+                        <div className={styles.infoItem}>
+                            <Label>Additional Instructions</Label>
+                            <textarea
+                                ref={additionRef}
+                                className={styles.textArea}
+                                placeholder=""
+                                value={additionalInstruccions}
+                                onChange={e => setAdditionalInstructions(e.target.value)}
+                            />
+                        </div>
+                        <div className={styles.infoItem}>
+                            <Label>Segment Synonyms</Label>
+                            <textarea
+                                ref={synonymRef}
+                                className={styles.textArea}
+                                placeholder="List synonyms or alternative names for your customer segments (e.g., 'Budget-Conscious Shoppers' -> 'Efficiency-Driven Decision Makers')."
+                                value={segmentSynonyms}
+                                onChange={e => setSegmentSynonyms(e.target.value)}
+                            />
+                        </div>
+                        <button className={styles.saveButton} onClick={handleSaveChanges} disabled={isLoading}>
+                            {isLoading ? <Spinner size={SpinnerSize.small} label="Saving..." labelPosition="right" /> : "Save Changes"}
                         </button>
-                </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -110,6 +110,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     </button>
                     {location === "/secondary-chat" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
                     {location === "/secondary-admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
+                    {location === "/secondary-organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
                 </li>
             </ul>
             <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
@@ -169,7 +170,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         <button className="nav-link" onClick={handleOnClickProfileCard}>
                             <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                 <div className={styles.profileCircle}>{userInitials}</div>
-                                <span className={`${styles.userName} d-none d-md-inline`}>{userName}</span>
+                                <span className={`${styles.userName}`}>{userName}</span>
                             </div>
                         </button>
                         {isDropdownOpen && <ProfilePanel />}
