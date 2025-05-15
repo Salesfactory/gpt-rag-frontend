@@ -28,6 +28,7 @@ import SummarizationReports from "./pages/reports/SummarizationReports";
 
 import Layout2 from "./pages/layout/_Layoutcopy";
 import Chat2 from "./pages/chat/Chatcopy";
+import Organization2 from "./pages/organization/Organizationcopy";
 
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
@@ -84,6 +85,7 @@ export default function App() {
             >
                 <Route element={<Layout2 />}>
                     <Route path="/secondary-chat" element={<Chat2 />} />
+                    <Route path="/secondary-organization" element={<Organization2 />} />
                 </Route>
             </Route>
 

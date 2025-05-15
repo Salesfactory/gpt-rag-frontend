@@ -52,6 +52,7 @@ interface OrganizationInfo {
     subscriptionExpirationDate?: number;
     subscriptionTier?: SubscriptionTier;
     brandInformation?: string;
+    additionalInstruccions?: string;
     segmentSynonyms?: string;
     industryInformation?: string;
 }
