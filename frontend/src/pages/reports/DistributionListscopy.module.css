@@ -2,14 +2,23 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 100px 100px 100px 150px;
-    background-color: white;
+    padding: 20px 100px 100px 150px;
 }
 
 @media (max-width: 900px) {
-    .page_container{
-        padding: 100px 10px 100px 50px;
+    .page_container {
+        padding: 20px 10px 100px 50px;
+        width: 90%;
     }
+
+}
+
+@media (max-width: 450px) {
+    .page_container {
+        padding: 20px 10px 20px 50px;
+        width: 80%;
+    }
+
 }
 
 .table {
@@ -19,8 +28,8 @@
     width: 100%;
 }
 
-@media (max-width: 900px){
-    .table{
+@media (max-width: 900px) {
+    .table {
         font-size: 0.7em;
     }
 }
@@ -49,67 +58,84 @@
     flex-grow: 2;
 }
 
-.tableContainer{
+.tableContainer {
     border-radius: 10px;
     overflow: hidden;
     overflow-x: auto;
     width: 100%;
     border: 1px solid #d9d9d9;
-    margin-top: 35px;
+    margin-top: 24px;
 }
 
 @media (max-width: 500px) {
-    .tableContainer{
-        word-wrap: break-word;
-        word-break: break-all;
+    .tableContainer {
+        white-space: normal;
+        width: 22em;
+    }
+}
+
+@media (max-width: 400px) {
+    .tableContainer {
         white-space: normal;
         width: 18em;
     }
 }
 
-.userBackground{
-    background-color: #f8f8f8;
-}
-
-.userBackgroundAlt{
+.userBackground {
     background-color: white;
+    height: 40px;
 }
 
-.nameElement{
-    padding: 10px;
+.userBackgroundAlt {
+    background-color: #f9fafb;
+    height: 40px;
+}
+
+.nameElement {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+    padding-left: 1.5rem;
+}
+
+.text {
+    font-size: 0.875rem;
+    color: #6B7280;
     text-align: justify;
 }
 
-.text{
-    text-align: justify;
-}
-
-.roleContainer{
+.roleContainer {
     width: 100%;
-    justify-content: flex-start;
-    justify-items: center;
+    align-items: center;
     text-align: center;
     display: flex;
     text-transform: capitalize;
 }
 
-.roleAdmin{
-    width: 100px;
-    background-color: #d7e9f4;
-    padding: 5px;
-    color: #064789;
-    border-radius: 15px;
+.roleAdmin {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #bfdbfe;
+    justify-items: center;
+    color: #1e40af;
 }
 
-.roleUser{
-    width: 100px;
-    background-color: #d7e5be;
-    padding: 5px;
-    color: #1b4332;
-    border-radius: 15px;
+.roleUser {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #d1fae5;
+    color: #065f46;
 }
 
-.rolePlatformAdmin{
+.rolePlatformAdmin {
     width: 100px;
     font-size: 0.8em;
     background-color: #d9ff98;
@@ -118,35 +144,107 @@
     border-radius: 15px;
 }
 
-@media (max-width: 900px){
-    .roleAdmin{
-        width: 50px;
+.centered {
+    padding-left: 50px;
+    height: 100%;
+}
+
+@media (max-width: 900px) {
+    .roleAdmin {
+        width: 60px;
     }
-    .roleUser{
-        width: 50px;
+
+    .roleUser {
+        width: 60px;
     }
-    .rolePlatformAdmin{
-        width: 50px;
+
+    .rolePlatformAdmin {
+        width: 60px;
     }
 }
 
-.checkbox{
+.checkbox {
     width: 15px;
     height: 15px;
-    border: 2px solid #9fc51d;
+    border: 2px solid #00c951;
     background-color: #fff;
     border-radius: 4px;
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    position: relative;
 }
 
-.checkbox:checked{
-    background-color: #a7c444;
+.checkbox:checked {
+    background-color: #00c951;
 }
 
-.thead{
-    background-color: #a7c444;
+.checkbox:checked::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 4px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.thead {
+    background-color: #00a63e;
     color: white;
+}
+
+.tableHeaderCell {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    text-align: left;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+}
+
+.tableHeaderCellEmail {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+}
+
+.tableHeaderCellEmail {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+}
+
+.emailWithIcon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.icon {
+    color: #99a1af;
+}
+
+.responsiveSearch {
+    max-width: 500px;
+    width: 100%;
+}
+
+
+@media (max-width: 768px) {
+    .responsiveSearch {
+        max-width: 260px;
+    }
+}
+
+
+@media (max-width: 495px) {
+    .responsiveSearch {
+        max-width: 140px;
+    }
 }

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import styles from "./DistributionLists.module.css"
+import styles from "./DistributionListscopy.module.css";
 import { useAppContext } from "../../providers/AppProviders";
 import { getUsers, updateUser } from "../../api";
-import { Spinner } from "@fluentui/react";
+import { Mail, Search } from "lucide-react";
+import { Spinner, TextField } from "@fluentui/react";
 
 const DistributionLists: React.FC = () => {
     const { user } = useAppContext();
     const [filteredUsers, setFilteredUsers] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedUser, setSelectedUser] = useState({
         id: "",
         data: {
@@ -18,12 +20,12 @@ const DistributionLists: React.FC = () => {
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [dataLoad, setDataLoad] = useState(false)
-    const roleStyles: { [key in 'admin' | 'user' | 'platformAdmin']: string }  = {
+    const [dataLoad, setDataLoad] = useState(false);
+    const roleStyles: { [key in "admin" | "user" | "platformAdmin"]: string } = {
         admin: styles.roleAdmin,
         user: styles.roleUser,
-        platformAdmin: styles.rolePlatformAdmin,
-    }
+        platformAdmin: styles.rolePlatformAdmin
+    };
 
     useEffect(() => {
         const getUserList = async () => {
@@ -63,79 +65,137 @@ const DistributionLists: React.FC = () => {
 
         getUserList();
     }, [dataLoad]);
-    
+
     const handleCheckbox = async (userID: string, IsEmailReceiver: string | boolean) => {
         const newValue = IsEmailReceiver === "true" ? "false" : "true";
-            try{
-                await updateUser({
-                    userId: userID,
-                    updatedData: { isReportEmailReceiver: newValue }
-                });
-                setDataLoad(!dataLoad)
-            } catch (error){
-                console.error("Error trying to update the state: ", error)
-            }
-        
-    }
+        try {
+            await updateUser({
+                userId: userID,
+                updatedData: { isReportEmailReceiver: newValue }
+            });
+            setDataLoad(!dataLoad);
+        } catch (error) {
+            console.error("Error trying to update the state: ", error);
+        }
+    };
+
+    useEffect(() => {
+        const filtered = users.filter(
+            (u: any) => u.data.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.data.email.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredUsers(filtered);
+    }, [searchTerm, users]);
 
     return (
         <div className={styles.page_container}>
-            <div className={styles.title}>
-                <h1>Distribution Lists</h1>
-                <p>Manage the organization email flow</p>
+            <div style={{ position: "relative", flex: 1 }}>
+                <span
+                    style={{
+                        position: "absolute",
+                        left: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        zIndex: 1,
+                        color: "#99a1af",
+                        pointerEvents: "none",
+                        paddingBottom: "2px"
+                    }}
+                >
+                    <Search size={18} />
+                </span>
+                <TextField
+                    className={styles.responsiveSearch}
+                    placeholder="Search distribution list..."
+                    styles={{
+                        fieldGroup: {
+                            height: "40px",
+                            paddingLeft: 36,
+                            borderRadius: "0.5rem",
+                            border: "1px solid #e5e7eb",
+                            position: "relative",
+                            selectors: {
+                                "::after": {
+                                    borderRadius: "0.5rem"
+                                }
+                            }
+                        },
+                        field: {
+                            fontSize: "16px",
+                            selectors: {
+                                ":focus": {
+                                    outline: "none"
+                                },
+                                ":focus-visible": {
+                                    outline: "none"
+                                },
+                                "::placeholder": {
+                                    color: "#9ca3af"
+                                }
+                            }
+                        },
+                        root: {
+                            selectors: {
+                                ":focus-within": {
+                                    outline: "none"
+                                },
+                                "::after": {
+                                    border: "none !important",
+                                    display: "none !important"
+                                }
+                            }
+                        }
+                    }}
+                    value={searchTerm}
+                    onChange={(_, value) => setSearchTerm(value || "")}
+                />
             </div>
-            <div className={styles.card}>
-                <div className={styles.tableContainer}>
-                    {loading ? (
-                        <Spinner styles={{root: {marginTop: "50px", marginBottom: "50px"}}}/>
-                    ) : (
-                        <table className={styles.table}>
-                            <thead className={styles.thead}>
-                                <tr>
-                                    <th
-                                        style={{
-                                            padding: "10px"
-                                        }}
-                                    >
-                                        Name
-                                    </th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Email Receiver</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredUsers.map((user: any, index) => {
-                                    return (
-                                        <tr key={user.id} className={`${index % 2 === 0 ? styles.userBackground : styles.userBackgroundAlt}`}>
-                                            <td className={styles.nameElement}>
-                                                {user.data.name}
-                                            </td>
-                                            <td className={styles.text}>
-                                                {user.data.email}
-                                            </td>
-                                            <td>
-                                                <div className={styles.roleContainer}>
-                                                    <div className={roleStyles[user.data.role as 'admin' | 'user' | 'platformAdmin'] || ""}>
-                                                        {user.data.role}
-                                                    </div>
+            <div className={styles.tableContainer}>
+                {loading ? (
+                    <Spinner styles={{ root: { marginTop: "50px", marginBottom: "50px" } }} />
+                ) : (
+                    <table className={styles.table}>
+                        <thead className={styles.thead}>
+                            <tr>
+                                <th className={styles.tableHeaderCell}>Name</th>
+                                <th className={styles.tableHeaderCellEmail}>Email</th>
+                                <th className={styles.tableHeaderCellEmail}>Role</th>
+                                <th className={styles.tableHeaderCell}>Email Receiver</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredUsers.map((user: any, index) => {
+                                return (
+                                    <tr key={user.id} className={`${index % 2 === 0 ? styles.userBackground : styles.userBackgroundAlt}`}>
+                                        <td className={styles.nameElement}>{user.data.name}</td>
+                                        <td className={styles.text}>
+                                            <div className={styles.emailWithIcon}>
+                                                <Mail size={16} className={styles.icon} />
+                                                <span>{user.data.email}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className={styles.roleContainer}>
+                                                <div className={roleStyles[user.data.role as "admin" | "user" | "platformAdmin"] || ""}>{user.data.role}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {
+                                                <div className={styles.centered}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className={styles.checkbox}
+                                                        checked={user.isReportEmailReceiver === "true" ? true : false}
+                                                        onChange={() => handleCheckbox(user.id, user.isReportEmailReceiver)}
+                                                    ></input>
                                                 </div>
-                                            </td>
-                                            <td>
-                                                {
-                                                    <div>
-                                                        <input type="checkbox" className={styles.checkbox} checked={user.isReportEmailReceiver === "true" ? true : false}
-                                                        onChange={() => handleCheckbox(user.id, user.isReportEmailReceiver)}></input>
-                                                    </div>
-                                                }
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+                                            }
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );
