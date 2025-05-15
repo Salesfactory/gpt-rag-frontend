@@ -6,7 +6,7 @@ from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
-
+from azure.cosmos.exceptions import CosmosHttpResponseError
 from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
@@ -1063,7 +1063,7 @@ def get_user_by_id(user_id):
 
 
 def get_users(organization_id):
-    from azure.cosmos.exceptions import CosmosHttpResponseError
+
     users_container = get_cosmos_container("users")
     invitations_container = get_cosmos_container("invitations")
     organizations_container = get_cosmos_container("organizations")
@@ -1072,14 +1072,16 @@ def get_users(organization_id):
         # 1. Get IDs of active guest users
         invitation_result = invitations_container.query_items(
             query="""
-                SELECT VALUE c.invited_user_id 
+                SELECT c.invited_user_id, c.role
                 FROM c 
                 WHERE c.active = true AND c.organization_id = @organization_id
             """,
             parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True,
         )
-        active_user_ids = set(invitation_result)
+
+        # Map user_id and role
+        user_roles = {item["invited_user_id"]: item["role"] for item in invitation_result}
 
         # 2. Obtain organization owner
         org_result = organizations_container.query_items(
@@ -1089,19 +1091,20 @@ def get_users(organization_id):
         )
         owner_list = list(org_result)
         if owner_list:
-            active_user_ids.add(owner_list[0])
+            owner_id = owner_list[0]
+            user_roles[owner_id] = "admin"
 
         # 3. If there are no IDs, return empty.
-        if not active_user_ids:
+        if not user_roles:
             return []
 
         # Get only the necessary users (in batches of 10 per Cosmos limit).
         filtered_users = []
+        user_ids = list(user_roles.keys())
         BATCH_SIZE = 10
-        active_user_ids = list(active_user_ids)
 
-        for i in range(0, len(active_user_ids), BATCH_SIZE):
-            batch_ids = active_user_ids[i:i+BATCH_SIZE]
+        for i in range(0, len(user_ids), BATCH_SIZE):
+            batch_ids = user_ids[i:i + BATCH_SIZE]
             in_clause = ", ".join([f'"{uid}"' for uid in batch_ids])
             query = f"""
                 SELECT * FROM c WHERE c.id IN ({in_clause})
@@ -1110,13 +1113,17 @@ def get_users(organization_id):
                 query=query,
                 enable_cross_partition_query=True,
             )
-            filtered_users.extend(user_batch_result)
+
+            for user in user_batch_result:
+                uid = user["id"]
+                user["role"] = user_roles.get(uid)  # rol invitation
+                filtered_users.append(user)
 
         return filtered_users
 
-    except CosmosHttpResponseError as e:
+    except CosmosHttpResponseError:
         logging.exception("[get_users] Cosmos error")
-    except Exception as e:
+    except Exception:
         logging.exception("[get_users] General error")
 
     return []
