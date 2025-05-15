@@ -28,7 +28,7 @@ import SummarizationReports from "./pages/reports/SummarizationReports";
 
 import Layout2 from "./pages/layout/_Layoutcopy";
 import Chat2 from "./pages/chat/Chatcopy";
-import Admin2 from "./pages/admin/Admin";
+import Admin2 from "./pages/admin/Admincopy";
 
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
