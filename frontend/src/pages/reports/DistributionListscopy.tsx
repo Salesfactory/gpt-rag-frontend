@@ -2,8 +2,15 @@ import React, { useEffect, useState } from "react";
 import styles from "./DistributionListscopy.module.css";
 import { useAppContext } from "../../providers/AppProviders";
 import { getUsers, updateUser } from "../../api";
-import { Mail, Search } from "lucide-react";
+import { Mail, Search, Filter } from "lucide-react";
 import { Spinner, TextField } from "@fluentui/react";
+
+const roleOptions = [
+    { label: "All", value: "" },
+    { label: "Admin", value: "admin" },
+    { label: "User", value: "user" },
+    { label: "Platform Admin", value: "platformAdmin" }
+];
 
 const DistributionLists: React.FC = () => {
     const { user } = useAppContext();
@@ -21,6 +28,8 @@ const DistributionLists: React.FC = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dataLoad, setDataLoad] = useState(false);
+    const [roleFilter, setRoleFilter] = useState("");
+    const [showRoleDropdown, setShowRoleDropdown] = useState(false);
     const roleStyles: { [key in "admin" | "user" | "platformAdmin"]: string } = {
         admin: styles.roleAdmin,
         user: styles.roleUser,
@@ -80,74 +89,105 @@ const DistributionLists: React.FC = () => {
     };
 
     useEffect(() => {
-        const filtered = users.filter(
-            (u: any) => u.data.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.data.email.toLowerCase().includes(searchTerm.toLowerCase())
+        let filtered = users.filter(
+            (u: any) =>
+                (u.data.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.data.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
+                (roleFilter === "" || u.data.role === roleFilter)
         );
         setFilteredUsers(filtered);
-    }, [searchTerm, users]);
+    }, [searchTerm, users, roleFilter]);
 
     return (
         <div className={styles.page_container}>
-            <div style={{ position: "relative", flex: 1 }}>
-                <span
-                    style={{
-                        position: "absolute",
-                        left: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        zIndex: 1,
-                        color: "#99a1af",
-                        pointerEvents: "none",
-                        paddingBottom: "2px"
-                    }}
-                >
-                    <Search size={18} />
-                </span>
-                <TextField
-                    className={styles.responsiveSearch}
-                    placeholder="Search distribution list..."
-                    styles={{
-                        fieldGroup: {
-                            height: "40px",
-                            paddingLeft: 36,
-                            borderRadius: "0.5rem",
-                            border: "1px solid #e5e7eb",
-                            position: "relative",
-                            selectors: {
-                                "::after": {
-                                    borderRadius: "0.5rem"
+            <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                {/* Search */}
+                <div style={{ position: "relative", flex: 1 }}>
+                    <span
+                        style={{
+                            position: "absolute",
+                            left: 12,
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            zIndex: 1,
+                            color: "#99a1af",
+                            pointerEvents: "none",
+                            paddingBottom: "2px"
+                        }}
+                    >
+                        <Search size={18} />
+                    </span>
+                    <TextField
+                        className={styles.responsiveSearch}
+                        placeholder="Search distribution list..."
+                        styles={{
+                            fieldGroup: {
+                                height: "40px",
+                                paddingLeft: 36,
+                                borderRadius: "0.5rem",
+                                border: "1px solid #e5e7eb",
+                                position: "relative",
+                                selectors: {
+                                    "::after": {
+                                        borderRadius: "0.5rem"
+                                    }
+                                }
+                            },
+                            field: {
+                                fontSize: "16px",
+                                selectors: {
+                                    ":focus": {
+                                        outline: "none"
+                                    },
+                                    ":focus-visible": {
+                                        outline: "none"
+                                    },
+                                    "::placeholder": {
+                                        color: "#9ca3af"
+                                    }
+                                }
+                            },
+                            root: {
+                                selectors: {
+                                    ":focus-within": {
+                                        outline: "none"
+                                    },
+                                    "::after": {
+                                        border: "none !important",
+                                        display: "none !important"
+                                    }
                                 }
                             }
-                        },
-                        field: {
-                            fontSize: "16px",
-                            selectors: {
-                                ":focus": {
-                                    outline: "none"
-                                },
-                                ":focus-visible": {
-                                    outline: "none"
-                                },
-                                "::placeholder": {
-                                    color: "#9ca3af"
-                                }
-                            }
-                        },
-                        root: {
-                            selectors: {
-                                ":focus-within": {
-                                    outline: "none"
-                                },
-                                "::after": {
-                                    border: "none !important",
-                                    display: "none !important"
-                                }
-                            }
-                        }
-                    }}
-                    value={searchTerm}
-                    onChange={(_, value) => setSearchTerm(value || "")}
-                />
+                        }}
+                        value={searchTerm}
+                        onChange={(_, value) => setSearchTerm(value || "")}
+                    />
+                </div>
+                {/* Filter Button */}
+                <div style={{ position: "relative" }}>
+                    <button className={styles.filterButton} onClick={() => setShowRoleDropdown(v => !v)}>
+                        <Filter size={18} style={{ marginRight: 6 }} />
+                        Filter
+                    </button>
+                    {showRoleDropdown && (
+                        <div className={styles.dropdownMenu}>
+                            {roleOptions.map(option => (
+                                <div
+                                    key={option.value}
+                                    className={styles.dropdownItem}
+                                    onClick={() => {
+                                        setRoleFilter(option.value);
+                                        setShowRoleDropdown(false);
+                                    }}
+                                    style={{
+                                        fontWeight: roleFilter === option.value ? "bold" : "normal"
+                                    }}
+                                >
+                                    {option.label}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
             <div className={styles.tableContainer}>
                 {loading ? (
