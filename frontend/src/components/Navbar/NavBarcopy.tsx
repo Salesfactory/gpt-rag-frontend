@@ -109,6 +109,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         <Menu className={styles.iconLarge} />
                     </button>
                     {location === "/secondary-chat" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
+                    {location === "/secondary-admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
                     {location === "/secondary-organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
                 </li>
             </ul>

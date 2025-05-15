@@ -83,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     links: [
                         {
                             title: "Team Management",
-                            href: "/admin",
+                            href: "/secondary-admin",
                             tiers: [
                                 "Basic",
                                 "Custom",
