@@ -17,6 +17,7 @@ import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
 import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
+import SubscriptionManagementcopy from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -88,6 +89,7 @@ export default function App() {
                     <Route path="/secondary-chat" element={<Chat2 />} />
                     <Route path="/secondary-admin" element={<Admin2 />} />
                     <Route path="/secondary-organization" element={<Organization2 />} />
+                    <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} />
                 </Route>
             </Route>
 
