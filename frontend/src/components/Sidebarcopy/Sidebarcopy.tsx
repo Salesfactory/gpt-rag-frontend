@@ -109,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         },
                         {
                             title: "Subscription Plans",
-                            href: "/subscription-management",
+                            href: "/secondary-subscription-management",
                             tiers: [
                                 "Basic",
                                 "Custom",
@@ -171,7 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         },
                         {
                             title: "Sharing & Distribution",
-                            href: "/details-settings",
+                            href: "/secondary-details-settings",
                             tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                             roles: ["admin", "platformAdmin"]
                         }

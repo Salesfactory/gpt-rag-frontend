@@ -17,6 +17,7 @@ import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
 import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
+import SubscriptionManagementcopy from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -30,6 +31,7 @@ import Layout2 from "./pages/layout/_Layoutcopy";
 import Chat2 from "./pages/chat/Chatcopy";
 import Admin2 from "./pages/admin/Admincopy";
 import Organization2 from "./pages/organization/Organizationcopy";
+import DistributionLists2 from "./pages/reports/DistributionListscopy";
 
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
@@ -88,6 +90,8 @@ export default function App() {
                     <Route path="/secondary-chat" element={<Chat2 />} />
                     <Route path="/secondary-admin" element={<Admin2 />} />
                     <Route path="/secondary-organization" element={<Organization2 />} />
+                    <Route path="/secondary-details-settings" element={<DistributionLists2 />} />
+                    <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} />
                 </Route>
             </Route>
 
