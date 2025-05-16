@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar, ResponsiveMode } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
-import { CirclePlus, Search, SquarePen, Trash2 } from "lucide-react";
+import { CirclePlus, Search, SquarePen, Trash2, Filter } from "lucide-react";
 
 import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
@@ -383,10 +383,10 @@ export const DeleteUserDialog = ({
 };
 
 const roleFilterOptions = [
-    { key: "all", text: "All roles" },
-    { key: "user", text: "User" },
-    { key: "admin", text: "Admin" },
-    { key: "platformAdmin", text: "Platform Admin" }
+    { label: "All roles", value: "all" },
+    { label: "User", value: "user" },
+    { label: "Admin", value: "admin" },
+    { label: "Platform Admin", value: "platformAdmin" }
 ];
 
 const Admin = () => {
@@ -563,6 +563,7 @@ const Admin = () => {
         }
     };
     const [showModal, setShowModal] = useState(false);
+    const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
     useEffect(() => {
         if (isEditing) {
@@ -627,7 +628,8 @@ const Admin = () => {
                                                 outline: "none"
                                             },
                                             "::placeholder": {
-                                                color: "#9ca3af"
+                                                color: "#9ca3af",
+                                                fontSize: "16px"
                                             }
                                         }
                                     },
@@ -648,44 +650,47 @@ const Admin = () => {
                                 }}
                             />
                         </div>
-                        <div className={styles.dropdown}>
-                            <Dropdown
-                                options={roleFilterOptions}
-                                selectedKey={roleFilter}
-                                onChange={(_e, option) => setRoleFilter(option?.key as string)}
-                                styles={{
-                                    title: {
-                                        fontWeight: 500,
-                                        border: "none",
-                                        boxShadow: "none",
-                                        background: "transparent",
-                                        color: "#6B7280",
-                                        selectors: {
-                                            "::after": {
-                                                border: "none !important",
-                                                borderBottomWidth: 0
-                                            },
-                                            ":active": {
-                                                border: "none !important"
-                                            },
-                                            ":focus": {
-                                                border: "none !important"
-                                            }
-                                        }
-                                    },
-                                    dropdown: {
-                                        fontWeight: 500,
-                                        border: "none",
-                                        background: "transparent",
-                                        selectors: {
-                                            "::after": {
-                                                border: "none !important",
-                                                borderBottomWidth: 0
-                                            }
-                                        }
-                                    }
-                                }}
-                            />
+
+                        <div style={{ position: "relative" }}>
+                            <button className={styles.filterButton} type="button" onClick={() => setShowRoleDropdown(v => !v)}>
+                                <Filter size={18} style={{ marginRight: 6 }} />
+                                <span>{roleFilterOptions.find(opt => opt.value === roleFilter)?.label || "Filter"}</span>
+                            </button>
+                            {showRoleDropdown && (
+                                <div
+                                    className={styles.dropdownMenu}
+                                    style={{
+                                        position: "absolute",
+                                        top: "110%",
+                                        left: 0,
+                                        background: "white",
+                                        border: "1px solid #e5e7eb",
+                                        borderRadius: "0.5rem",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                        zIndex: 10,
+                                        minWidth: 140
+                                    }}
+                                >
+                                    {roleFilterOptions.map(option => (
+                                        <div
+                                            key={option.value}
+                                            className={styles.dropdownItem}
+                                            onClick={() => {
+                                                setRoleFilter(option.value);
+                                                setShowRoleDropdown(false);
+                                            }}
+                                            style={{
+                                                padding: "8px 16px",
+                                                cursor: "pointer",
+                                                fontWeight: roleFilter === option.value ? "bold" : "normal",
+                                                background: roleFilter === option.value ? "#f3f4f6" : "white"
+                                            }}
+                                        >
+                                            {option.label}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <PrimaryButton
@@ -868,8 +873,8 @@ const Admin = () => {
                                                         textTransform: "capitalize"
                                                     }}
                                                 >
-                                                    <div className={roleStyles[user.data.role as "admin" | "user" | "platformAdmin"] || ""}>
-                                                        {user.data.role}
+                                                    <div className={roleStyles[user.role as "admin" | "user" | "platformAdmin"] || ""}>
+                                                        {user.role === "platformAdmin" ? "Platform Admin" : user.role}
                                                     </div>
                                                 </div>
                                             </td>
