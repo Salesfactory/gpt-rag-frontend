@@ -109,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         },
                         {
                             title: "Subscription Plans",
-                            href: "/subscription-management",
+                            href: "/secondary-subscription-management",
                             tiers: [
                                 "Basic",
                                 "Custom",

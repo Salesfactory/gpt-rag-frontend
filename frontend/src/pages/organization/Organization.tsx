@@ -14,7 +14,7 @@ const Organization = () => {
     const [brandInformation, setBrandInformation] = useState(organization?.brandInformation || "");
     const [segmentSynonyms, setSegmentSynonyms] = useState(organization?.segmentSynonyms || "");
     const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");
-    const [additionalInstruccions, setAdditionalInstructions] = useState(organization?.additionalInstruccions || "");
+    const [additionalInstructions, setAdditionalInstructions] = useState(organization?.additionalInstructions || "");
     const [isLoading, setIsLoading] = useState(false);
 
     const brandRef = useRef<HTMLTextAreaElement>(null);
@@ -37,7 +37,7 @@ const Organization = () => {
         patchData.brandInformation = brandInformation;
         patchData.industryInformation = industryInformation;
         patchData.segmentSynonyms = segmentSynonyms;
-        patchData.additionalInstruccions = additionalInstruccions;
+        patchData.additionalInstructions = additionalInstructions;
         try {
             await updateOrganizationInfo({ orgId: organization.id, patchData });
             toast("Changes saved correctly", { type: "success" });
@@ -76,6 +76,10 @@ const Organization = () => {
     useEffect(() => {
         autoResize(synonymRef);
     }, [segmentSynonyms]);
+
+    useEffect(() => {
+        autoResize(additionRef);
+    }, [additionalInstructions]);
 
     return (
         <div className={styles.page_container}>
@@ -147,7 +151,7 @@ const Organization = () => {
                                 ref={additionRef}
                                 className={styles.textArea}
                                 placeholder=""
-                                value={additionalInstruccions}
+                                value={additionalInstructions}
                                 onChange={e => setAdditionalInstructions(e.target.value)}
                             />
                         </div>
