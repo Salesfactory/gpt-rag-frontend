@@ -79,6 +79,7 @@ const Organization = () => {
     useEffect(() => {
         autoResize(additionRef);
     }, [additionalInstructions]);
+
     return (
         <div className={styles.page_container}>
             <ToastContainer />
@@ -90,29 +91,29 @@ const Organization = () => {
                     <div className={styles.card}>
                         <div className={styles.infoContainer}>
                             <div className={styles.infoItem}>
-                                <Label>Organization ID</Label>
+                                <Label className={styles.labelStyle}>Organization ID</Label>
                                 <span className={styles.info}>{organization?.id} </span>
                             </div>
                         </div>
                         <div className={styles.infoContainer}>
                             <div className={styles.infoItem}>
-                                <Label>Organization Name</Label>
+                                <Label className={styles.labelStyle}>Organization Name</Label>
                                 <span className={styles.info}>{organization?.name} </span>
                             </div>
                             <div className={styles.infoItem}>
-                                <Label>Organization Owner</Label>
+                                <Label className={styles.labelStyle}>Organization Owner</Label>
                                 <span className={styles.info}>{organization?.owner} </span>
                             </div>
                         </div>
                         <div className={styles.infoContainer}>
                             <div className={styles.infoItem}>
-                                <Label>Subscription ID</Label>
+                                <Label className={styles.labelStyle}>Subscription ID</Label>
                                 <span className={styles.info}>{organization?.subscriptionId} </span>
                             </div>
                         </div>
                         <div className={styles.infoContainer}>
                             <div className={styles.infoItem}>
-                                <Label>Subscription Status</Label>
+                                <Label className={styles.labelStyle}>Subscription Status</Label>
                                 <span className={styles.info}>
                                     <span className={styles.statusDotWrapper}>
                                         {organization?.subscriptionStatus}
@@ -121,7 +122,7 @@ const Organization = () => {
                                 </span>
                             </div>
                             <div className={styles.infoItem}>
-                                <Label>Subscription Expiration</Label>
+                                <Label className={styles.labelStyle}>Subscription Expiration</Label>
                                 <span className={styles.info}>{expirationDate} </span>
                             </div>
                         </div>
@@ -134,7 +135,7 @@ const Organization = () => {
                         <div className={styles.card2}>
                             <div className={styles.editableContainer}>
                                 <div className={styles.infoItem}>
-                                    <Label>Brand Description</Label>
+                                    <Label className={styles.labelStyle}>Brand Description</Label>
                                     <textarea
                                         ref={brandRef}
                                         className={styles.textArea}
@@ -144,7 +145,7 @@ const Organization = () => {
                                     />
                                 </div>
                                 <div className={styles.infoItem}>
-                                    <Label>Business Description</Label>
+                                    <Label className={styles.labelStyle}>Business Description</Label>
                                     <textarea
                                         ref={industryRef}
                                         className={styles.textArea}
@@ -154,7 +155,7 @@ const Organization = () => {
                                     />
                                 </div>
                                 <div className={styles.infoItem}>
-                                    <Label>Additional Instructions</Label>
+                                    <Label className={styles.labelStyle}>Additional Instructions</Label>
                                     <textarea
                                         ref={additionRef}
                                         className={styles.textArea}
@@ -164,7 +165,7 @@ const Organization = () => {
                                     />
                                 </div>
                                 <div className={styles.infoItem}>
-                                    <Label>Segment Synonyms</Label>
+                                    <Label className={styles.labelStyle}>Segment Aliases</Label>
                                     <textarea
                                         ref={synonymRef}
                                         className={styles.textArea}
