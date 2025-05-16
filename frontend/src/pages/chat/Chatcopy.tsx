@@ -704,7 +704,7 @@ const Chat = () => {
                                 />
                             </div>
                             <div className={styles.chatDisclaimer}>
-                                <p>This app is in beta. Responses may not be fully accurate.</p>
+                                <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
                             </div>
                         </div>
                     </div>
