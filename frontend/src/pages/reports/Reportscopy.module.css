@@ -1,0 +1,444 @@
+/* Reports.module.css */
+
+/* Layout containers */
+.container {
+    background-color: #F8F8FC;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 100px 100px 150px;
+}
+
+.header {
+    background-color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.headerContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.headerTitle {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.mainContent {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    width: 100%;
+}
+
+/* Page description */
+.pageDescription {
+    margin-bottom: 24px;
+    color: #666;
+}
+
+/* Search bar and filters */
+.searchContainer {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+@media (min-width: 640px) {
+    .searchContainer {
+        flex-direction: row;
+        align-items: center;
+        gap: 16px;
+    }
+}
+
+.searchInputWrapper {
+    position: relative;
+    flex: 1;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9CA3AF;
+    display: flex;
+    align-items: center;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: #10B981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.clearSearchButton {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #9CA3AF;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clearSearchButton:hover {
+    color: #6B7280;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 12px;
+}
+
+.searchButton,
+.filterButton,
+.calendarButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.searchButton {
+    background-color: #000;
+    color: white;
+    border: none;
+}
+
+.searchButton:hover {
+    background-color: #333;
+}
+
+.filterButton,
+.calendarButton {
+    background-color: white;
+    color: #374151;
+    border: 1px solid #E5E7EB;
+    display: flex;
+    gap: 8px;
+}
+
+.filterButton:hover,
+.calendarButton:hover {
+    background-color: #F9FAFB;
+}
+
+/* Button styles */
+.createButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #10B981;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.createButton:hover {
+    background-color: #059669;
+}
+
+.plusIcon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* Table container */
+.reportsTableContainer {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 100%;
+}
+
+.tableHeader {
+    background-color: #00a63e;
+    color: white;
+    padding: 16px 24px;
+}
+
+.tableTitle {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0;
+}
+
+.tableWrapper {
+    overflow-x: auto;
+}
+
+/* Table styles */
+.reportsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tableHeaderCell {
+    padding: 12px 24px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #E5E7EB;
+    background-color: #F9FAFB;
+}
+
+.tableCellStatus {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #d1fae5;
+    margin-top: 15px;
+    margin-left: 5px;
+    color: #065f46;
+}
+
+.tableCellType {
+    padding: 16px 24px;
+    font-size: 14px;
+    color: #6a7282;
+    white-space: nowrap;
+}
+
+.tableCellTitle {
+    padding: 16px 24px;
+    font-size: 14px;
+    color: #101828;
+    white-space: nowrap;
+}
+
+.tableCellId {
+    padding: 16px 24px;
+    font-size: 14px;
+    color: #101828;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.tableCell {
+    padding: 16px 24px;
+    font-size: 14px;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.tableRowEven {
+    background-color: white;
+}
+
+.tableRowOdd {
+    background-color: #F9FAFB;
+}
+
+.actionsCell {
+    text-align: right;
+}
+
+/* Report title with icon */
+.reportTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fileIcon {
+    color: #9CA3AF;
+}
+
+/* Actions buttons */
+.viewButton {
+    background: none;
+    border: none;
+    color: #10B981;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-right: 12px;
+}
+
+.viewButton:hover {
+    color: #059669;
+}
+
+.downloadLink {
+    display: inline-flex;
+    align-items: center;
+    color: #6B7280;
+    font-size: 14px;
+    text-decoration: none;
+    gap: 4px;
+}
+
+.downloadLink:hover {
+    color: #374151;
+}
+
+.downloadIcon {
+    font-size: 16px;
+}
+
+/* Empty state */
+.emptyState {
+    padding: 40px 24px;
+    text-align: center;
+}
+
+.emptyStateIcon {
+    font-size: 48px;
+    color: #D1D5DB;
+    margin-bottom: 16px;
+}
+
+.emptyStateTitle {
+    font-size: 18px;
+    font-weight: 500;
+    color: #111827;
+    margin-bottom: 8px;
+}
+
+.emptyStateDescription {
+    color: #6B7280;
+    margin-bottom: 24px;
+}
+
+.createEmptyButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #10B981;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.createEmptyButton:hover {
+    background-color: #059669;
+}
+
+/* Loading state */
+.loadingState {
+    padding: 40px 24px;
+    text-align: center;
+    color: #6B7280; }
+
+.pageBar {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 600px;
+    padding-bottom: 12px;
+}
+
+/* Responsive styles for small screens */
+@media (max-width: 600px) {
+  .container {
+    padding: 8px !important;
+  }
+  .mainContent {
+    padding: 40px !important;
+  }
+
+  .pageBar {
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+  .responsiveSearch {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .reportsTableContainer {
+    padding: 0 !important;
+  }
+  .tableWrapper {
+    overflow-x: auto !important;
+  }
+  .reportsTable {
+    min-width: 600px !important;
+    font-size: 14px !important;
+  }
+  .tableHeaderCell,
+  .tableCell,
+  .actionsCell {
+    padding: 8px 4px !important;
+    font-size: 13px !important;
+  }
+  .tableTitle {
+    font-size: 18px !important;
+  }
+  .reportTitle {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+  .downloadLink,
+  .viewButton {
+    font-size: 13px !important;
+    padding: 4px 8px !important;
+  }
+
+  .tableCellStatus {
+      margin-top: 25px;
+      margin-left: 5px;
+  }
+}
+
+/* Extra small screens (375px) */
+@media (max-width: 400px) {
+  .reportsTable {
+    min-width: 500px !important;
+  }
+  .tableTitle {
+    font-size: 16px !important;
+  }
+}

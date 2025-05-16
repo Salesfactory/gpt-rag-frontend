@@ -268,7 +268,6 @@ const SubscriptionManagement: React.FC = () => {
         <div className={styles.pageContainer}>
             <ToastContainer />
             <div id="options-row" className={styles.row}>
-                <h1 className={styles.title}>Subscription Management</h1>
                 <button className={styles.auditButton} onClick={handleRecentChangesModal}>
                     <Clock className={styles.auditIcon} />
                     <Label className={styles.auditText}>Recent Changes</Label>
