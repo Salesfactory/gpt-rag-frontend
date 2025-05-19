@@ -32,6 +32,7 @@ import Chat2 from "./pages/chat/Chatcopy";
 import Admin2 from "./pages/admin/Admincopy";
 import Organization2 from "./pages/organization/Organizationcopy";
 import DistributionLists2 from "./pages/reports/DistributionListscopy";
+import UploadResources2 from "./pages/resources/UploadResourcescopy";
 
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
@@ -92,6 +93,7 @@ export default function App() {
                     <Route path="/secondary-organization" element={<Organization2 />} />
                     <Route path="/secondary-details-settings" element={<DistributionLists2 />} />
                     <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} />
+                    <Route path="/secondary-upload-resources" element={<UploadResources2 />} />
                 </Route>
             </Route>
 
