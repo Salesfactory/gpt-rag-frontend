@@ -47,7 +47,8 @@ const Organization = () => {
                     ...organization,
                     brandInformation: brandInformation,
                     industryInformation: industryInformation,
-                    segmentSynonyms: segmentSynonyms
+                    segmentSynonyms: segmentSynonyms,
+                    additionalInstructions: additionalInstructions
                 });
             }
         } catch (err: any) {
