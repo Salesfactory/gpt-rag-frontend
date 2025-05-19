@@ -102,6 +102,14 @@
     background-color: #e3e3e3;
 }
 
+.dialogFont {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 16px; }
+
+.addIcon2 {
+    font-size: 15px;
+}
+
 .addIcon {
     font-size: 15px;
     margin-right: 5px;
@@ -321,7 +329,7 @@
     }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 410px) {
     .responsiveButton {
         padding: 0.5rem;
         min-width: 40px;
@@ -347,6 +355,15 @@
         display: none;
     }
 }
+.hideOnMobile {
+    font-size: 16px;
+    display: inline;
+}
+
+@media (max-width: 405px) {
+    .hideOnMobile {
+        display: none !important;
+    } }
 
 .bothIcons {
     display: flex;
