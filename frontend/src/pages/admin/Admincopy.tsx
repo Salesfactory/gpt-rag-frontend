@@ -478,7 +478,7 @@ const Admin = () => {
             );
         }
         if (roleFilter !== "all") {
-            filtered = filtered.filter((user: any) => user.data.role === roleFilter);
+            filtered = filtered.filter((user: any) => user.role === roleFilter);
         }
         setFilteredUsers(filtered);
     }, [search, roleFilter, users]);

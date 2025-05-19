@@ -92,7 +92,7 @@ const DistributionLists: React.FC = () => {
         let filtered = users.filter(
             (u: any) =>
                 (u.data.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.data.email.toLowerCase().includes(searchTerm.toLowerCase())) &&
-                (roleFilter === "" || u.data.role === roleFilter)
+                (roleFilter === "" || u.role === roleFilter)
         );
         setFilteredUsers(filtered);
     }, [searchTerm, users, roleFilter]);
@@ -215,7 +215,9 @@ const DistributionLists: React.FC = () => {
                                         </td>
                                         <td>
                                             <div className={styles.roleContainer}>
-                                                <div className={roleStyles[user.data.role as "admin" | "user" | "platformAdmin"] || ""}>{user.data.role}</div>
+                                                <div className={roleStyles[user.role as "admin" | "user" | "platformAdmin"] || ""}>
+                                                    {user.role === "platformAdmin" ? "Platform Admin" : user.role}
+                                                </div>
                                             </div>
                                         </td>
                                         <td>
