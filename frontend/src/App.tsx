@@ -33,6 +33,7 @@ import Admin2 from "./pages/admin/Admincopy";
 import Organization2 from "./pages/organization/Organizationcopy";
 import DistributionLists2 from "./pages/reports/DistributionListscopy";
 import UploadResources2 from "./pages/resources/UploadResourcescopy";
+import Reports2 from "./pages/reports/Reportscopy";
 
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
@@ -94,6 +95,7 @@ export default function App() {
                     <Route path="/secondary-details-settings" element={<DistributionLists2 />} />
                     <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} />
                     <Route path="/secondary-upload-resources" element={<UploadResources2 />} />
+                    <Route path="/secondary-view-reports" element={<Reports2 />} />
                 </Route>
             </Route>
 

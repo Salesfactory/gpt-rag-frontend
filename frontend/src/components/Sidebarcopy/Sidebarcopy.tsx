@@ -159,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     links: [
                         {
                             title: "Reports Dashboard",
-                            href: "/view-reports",
+                            href: "/secondary-view-reports",
                             tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                             roles: ["admin", "platformAdmin"]
                         },
