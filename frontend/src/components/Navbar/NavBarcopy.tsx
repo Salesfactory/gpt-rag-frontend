@@ -169,9 +169,12 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {/* Chat History Button */}
                         {location === "/secondary-chat" && (
                             <li className="nav-item">
-                                <button onClick={handleShowChatHistory} className="btn btn-white btn-sm d-flex align-items-center gap-1">
-                                    <History className={styles.iconLarge} />
-                                </button>
+                                <div className={styles.tooltipWrapper}>
+                                    <button onClick={handleShowChatHistory} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                        <History className={styles.iconLarge} />
+                                    </button>
+                                    <span className={styles.tooltipText}>Chat History</span>
+                                </div>
                             </li>
                         )}
                         {/*Then change the route*/}
