@@ -147,7 +147,11 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             dialogContentProps={{
                 type: 0,
                 title: "Create a new user",
-                subText: "Invite a new user to the platform by providing their username and email."
+                subText: "Invite a new user to the platform by providing their username and email.",
+                styles: {
+                    title: { fontSize: 16 },
+                    subText: { fontSize: 16 }
+                }
             }}
             modalProps={{
                 isBlocking: true,
@@ -174,12 +178,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             marginBottom: "10px"
                         }}
                     >
-                        <div
-                            style={{
-                                width: "100%"
-                            }}
-                        >
-                            <Label>Username</Label>
+                        <div style={{ width: "100%" }}>
+                            <Label style={{ fontSize: 16 }}>Username</Label>
                             <TextField
                                 className={styles.questionInputTextArea}
                                 placeholder={"Username"}
@@ -192,19 +192,17 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                         borderRadius: "6px"
                                     },
                                     field: {
+                                        fontSize: 16,
                                         "::placeholder": {
-                                            color: "#979797"
+                                            color: "#979797",
+                                            fontSize: 16
                                         }
                                     }
                                 }}
                             />
                         </div>
-                        <div
-                            style={{
-                                width: "100%"
-                            }}
-                        >
-                            <Label>Email</Label>
+                        <div style={{ width: "100%" }}>
+                            <Label style={{ fontSize: 16 }}>Email</Label>
                             <TextField
                                 className={styles.questionInputTextArea}
                                 placeholder={"Email"}
@@ -217,23 +215,32 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                         borderRadius: "6px"
                                     },
                                     field: {
+                                        fontSize: 16,
                                         "::placeholder": {
-                                            color: "#979797"
+                                            color: "#979797",
+                                            fontSize: 16
                                         }
                                     }
                                 }}
                             />
                         </div>
                     </div>
-                    <Label>User role</Label>
+                    <Label style={{ fontSize: 16 }}>User role</Label>
                     <Dropdown
                         placeholder="Select Role"
                         options={roleOptions}
                         onChange={handleRoleChange}
                         defaultValue={role}
-                        styles={{ title: { borderRadius: "6px", color: "#979797" } }}
+                        styles={{
+                            title: { borderRadius: "6px", color: "#979797", fontSize: 16 },
+                            dropdown: { fontSize: 16 }
+                        }}
                     />
-                    {errorMessage && <MessageBar messageBarType={2}>{errorMessage}</MessageBar>}
+                    {errorMessage && (
+                        <MessageBar messageBarType={2} styles={{ root: { fontSize: 16 } }}>
+                            {errorMessage}
+                        </MessageBar>
+                    )}
                     <div
                         style={{
                             display: "flex",
@@ -241,14 +248,15 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             gap: "10px"
                         }}
                     >
-                        <DefaultButton style={{ marginTop: "20px", borderRadius: "6px" }} onClick={onDismiss} text="Cancel" />
+                        <DefaultButton style={{ marginTop: "20px", borderRadius: "6px", fontSize: 16 }} onClick={onDismiss} text="Cancel" />
                         <PrimaryButton
                             styles={{
                                 root: {
                                     backgroundColor: "#16a34a",
                                     borderColor: "#16a34a",
                                     color: "white",
-                                    borderRadius: "0.5rem"
+                                    borderRadius: "0.5rem",
+                                    fontSize: 16
                                 },
                                 rootHovered: {
                                     backgroundColor: "#15803d",
@@ -273,8 +281,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             {success && (
                 <DialogContent>
                     <div>
-                        <h3>Invitation sent</h3>
-                        <p>
+                        <h3 style={{ fontSize: 16 }}>Invitation sent</h3>
+                        <p style={{ fontSize: 16 }}>
                             An invitation has been sent to <strong>{email}</strong>. They will receive an email with a link to create an account.
                         </p>
                     </div>
@@ -285,7 +293,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             gap: "10px"
                         }}
                     >
-                        <PrimaryButton onClick={onDismiss} text="Close" />
+                        <PrimaryButton style={{ fontSize: 16 }} onClick={onDismiss} text="Close" />
                     </div>
                 </DialogContent>
             )}
@@ -383,7 +391,7 @@ export const DeleteUserDialog = ({
 };
 
 const roleFilterOptions = [
-    { label: "All roles", value: "all" },
+    { label: "All Roles", value: "all" },
     { label: "User", value: "user" },
     { label: "Admin", value: "admin" },
     { label: "Platform Admin", value: "platformAdmin" }
@@ -597,14 +605,14 @@ const Admin = () => {
                                     zIndex: 1,
                                     color: "#9ca3af",
                                     pointerEvents: "none",
-                                    paddingBottom: "12px"
+                                    paddingBottom: "1px"
                                 }}
                             >
                                 <Search />
                             </span>
                             <TextField
                                 className={styles.responsiveSearch}
-                                placeholder="Search users..."
+                                placeholder="Search Users..."
                                 styles={{
                                     fieldGroup: {
                                         height: "40px",
@@ -653,8 +661,8 @@ const Admin = () => {
 
                         <div style={{ position: "relative" }}>
                             <button className={styles.filterButton} type="button" onClick={() => setShowRoleDropdown(v => !v)}>
-                                <Filter size={18} style={{ marginRight: 6 }} />
-                                <span>{roleFilterOptions.find(opt => opt.value === roleFilter)?.label || "Filter"}</span>
+                                <Filter className={styles.addIcon2} />
+                                <span className={styles.hideOnMobile}>{roleFilterOptions.find(opt => opt.value === roleFilter)?.label || "Filter"}</span>
                             </button>
                             {showRoleDropdown && (
                                 <div
@@ -720,7 +728,7 @@ const Admin = () => {
                         }}
                     >
                         <CirclePlus className={styles.addIcon} />
-                        <span className={styles.buttonText}>Create user</span>
+                        <span className={styles.buttonText}>Create User</span>
                     </PrimaryButton>
                 </div>
 
