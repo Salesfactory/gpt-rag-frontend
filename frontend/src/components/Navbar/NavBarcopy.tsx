@@ -4,42 +4,43 @@ import { Menu, Settings, History, MessageCircleQuestion } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profile";
+import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
 
 interface NavbarProps {
     isCollapsed: boolean;
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 function persistFinancialAssistantState(userId: string | undefined, state: boolean) {
     localStorage.setItem(`financialAssistantActive_${userId}`, JSON.stringify(state));
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const {
-        showHistoryPanel,
-        setShowHistoryPanel,
-        showFeedbackRatingPanel,
         setShowFeedbackRatingPanel,
         settingsPanel,
         setSettingsPanel,
         user,
         subscriptionTiers,
         isFinancialAssistantActive,
-        setIsFinancialAssistantActive
+        setIsFinancialAssistantActive,
+        setDataConversation,
+        setChatId,
+        setNewChatDeleted
     } = useAppContext();
-    const historyContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
-    const feedbackContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     const userName = user?.name || "";
     const subscriptiontype = subscriptionTiers || " ";
     const location = useLocation().pathname;
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [showChatHistory, setShowChatHistory] = useState(false);
 
     const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
         ? true
         : false || subscriptiontype.includes("Premium + Financial Assistant") || subscriptiontype.includes("Custom + Financial Assistant");
 
-    const handleShowHistoryPanel = () => {
-        setShowHistoryPanel(!showHistoryPanel);
+    const handleShowChatHistory = () => {
+        setShowChatHistory(!showChatHistory);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
         setIsDropdownOpen(false);
@@ -47,16 +48,16 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     };
 
     const handleShowFeedbackRatingPanel = () => {
-        setShowFeedbackRatingPanel(!showFeedbackRatingPanel);
+        setShowFeedbackRatingPanel(true);
         setSettingsPanel(false);
-        setShowHistoryPanel(false);
+        setShowChatHistory(false);
         setIsDropdownOpen(false);
         setIsCollapsed(true);
     };
 
     const handleShowSettings = () => {
         setSettingsPanel(!settingsPanel);
-        setShowHistoryPanel(false);
+        setShowChatHistory(false);
         setShowFeedbackRatingPanel(false);
         setIsDropdownOpen(false);
         setIsCollapsed(true);
@@ -64,7 +65,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     const handleOnClickShowSidebar = () => {
         setIsCollapsed(!isCollapsed);
-        setShowHistoryPanel(false);
+        setShowChatHistory(false);
         setShowFeedbackRatingPanel(false);
         setIsDropdownOpen(false);
         setSettingsPanel(false);
@@ -72,7 +73,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     const handleOnClickProfileCard = () => {
         setIsDropdownOpen(!isDropdownOpen);
-        setShowHistoryPanel(false);
+        setShowChatHistory(false);
         setShowFeedbackRatingPanel(false);
         setSettingsPanel(false);
         setIsCollapsed(true);
@@ -82,6 +83,14 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         const newState = !isFinancialAssistantActive;
         setIsFinancialAssistantActive(newState);
         persistFinancialAssistantState(user?.id, newState);
+    };
+
+    const handleDeleteChat = () => {
+        setDataConversation([]);
+        setChatId("");
+        if (typeof setNewChatDeleted === "function") {
+            setNewChatDeleted(true);
+        }
     };
 
     const getInitialsFromUserName = (name: string): string => {
@@ -101,89 +110,95 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const userInitials = getInitialsFromUserName(userName);
 
     return (
-        <nav className={`navbar navbar-expand-lg navbar-light ${location == "/secondary-chat" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
-            {/* Sidebar Toggle (For smaller screens) */}
-            <ul className="navbar-nav mr-4">
-                <li className="nav-item d-flex align-items-center">
-                    <button onClick={handleOnClickShowSidebar} className={`nav-link d-flex align-items-center ${styles.sidebartoggler}`} id="headerCollapse">
-                        <Menu className={styles.iconLarge} />
-                    </button>
-                    {location === "/secondary-chat" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
-                    {location === "/secondary-admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
-                    {location === "/secondary-organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
-                    {location === "/secondary-details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution Lists</span>}
-                    {location === "/secondary-upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>File Management</span>}
-                    {location === "/secondary-subscription-management" && (
-                        <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
-                    )}
-                    {location === "/secondary-view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Management</span>}
-                </li>
-            </ul>
-            <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
-                <ul className="navbar-nav flex-row align-items-center gap-3">
-                    {/*Then change the route*/}
-                    {/* Financial Assistant Toggle */}
-                    {fastatus && location === "/secondary-chat" && (
-                        <li className="nav-item">
-                            <div className="d-flex flex-column align-items-start">
-                                <div className={styles.financialToggleContainer}>
-                                    <span className={styles.financialToggleText}>Financial Assistant </span>
-                                    <div className="form-check form-switch">
-                                        <input
-                                            className={`form-check-input ${styles.financialToggle}`}
-                                            type="checkbox"
-                                            checked={isFinancialAssistantActive}
-                                            onChange={handleFinancialAgent}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                    )}
-                    {/*Then change the route*/}
-                    {/* Feedback Panel Button */}
-                    {location === "/secondary-chat" && (
-                        <li className="nav-item">
-                            <button onClick={handleShowFeedbackRatingPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
-                                <MessageCircleQuestion className={styles.iconLarge} />
-                                {/* <span className="d-none d-md-inline">{feedbackContent}</span> */}
-                            </button>
-                        </li>
-                    )}
-                    {/*Then change the route*/}
-                    {/* Hide Chat History Button */}
-                    {location === "/secondary-chat" && (
-                        <li className="nav-item">
-                            <button onClick={handleShowHistoryPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
-                                <History className={styles.iconLarge} />
-                                {/* <span className="d-none d-md-inline">{historyContent}</span> */}
-                            </button>
-                        </li>
-                    )}
-                    {/*Then change the route*/}
-                    {/* Settings Button */}
-                    {location === "/secondary-chat" && (
-                        <li className="nav-item">
-                            <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
-                                <Settings className={styles.iconLarge} />
-                                {/* <span className="d-none d-md-inline">Settings</span> */}
-                            </button>
-                        </li>
-                    )}
-
-                    {/* User Profile Card */}
-                    <li className="nav-item dropdown">
-                        <button className="nav-link" onClick={handleOnClickProfileCard}>
-                            <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
-                                <div className={styles.profileCircle}>{userInitials}</div>
-                                <span className={`${styles.userName}`}>{userName}</span>
-                            </div>
+        <>
+            <nav className={`navbar navbar-expand-lg navbar-light ${location == "/secondary-chat" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
+                {/* Sidebar Toggle (For smaller screens) */}
+                <ul className="navbar-nav mr-4">
+                    <li className="nav-item d-flex align-items-center">
+                        <button
+                            onClick={handleOnClickShowSidebar}
+                            className={`nav-link d-flex align-items-center ${styles.sidebartoggler}`}
+                            id="headerCollapse"
+                        >
+                            <Menu className={styles.iconLarge} />
                         </button>
-                        {isDropdownOpen && <ProfilePanel />}
+                        {location === "/secondary-chat" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
+                        {location === "/secondary-admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
+                        {location === "/secondary-organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
+                        {location === "/secondary-details-settings" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution Lists</span>
+                        )}
+                        {location === "/secondary-upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>File Management</span>}
+                        {location === "/secondary-subscription-management" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
+                        )}
+                        {location === "/secondary-view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Management</span>}
                     </li>
                 </ul>
-            </div>
-        </nav>
+                <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
+                    <ul className="navbar-nav flex-row align-items-center gap-3">
+                        {/*Then change the route*/}
+                        {/* Financial Assistant Toggle */}
+                        {fastatus && location === "/secondary-chat" && (
+                            <li className="nav-item">
+                                <div className="d-flex flex-column align-items-start">
+                                    <div className={styles.financialToggleContainer}>
+                                        <span className={styles.financialToggleText}>Financial Assistant </span>
+                                        <div className="form-check form-switch">
+                                            <input
+                                                className={`form-check-input ${styles.financialToggle}`}
+                                                type="checkbox"
+                                                checked={isFinancialAssistantActive}
+                                                onChange={handleFinancialAgent}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        )}
+                        {/*Then change the route*/}
+                        {/* Feedback Panel Button */}
+                        {location === "/secondary-chat" && (
+                            <li className="nav-item">
+                                <button onClick={handleShowFeedbackRatingPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <MessageCircleQuestion className={styles.iconLarge} />
+                                </button>
+                            </li>
+                        )}
+                        {/*Then change the route*/}
+                        {/* Chat History Button */}
+                        {location === "/secondary-chat" && (
+                            <li className="nav-item">
+                                <button onClick={handleShowChatHistory} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <History className={styles.iconLarge} />
+                                </button>
+                            </li>
+                        )}
+                        {/*Then change the route*/}
+                        {/* Settings Button */}
+                        {location === "/secondary-chat" && (
+                            <li className="nav-item">
+                                <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <Settings className={styles.iconLarge} />
+                                </button>
+                            </li>
+                        )}
+
+                        {/* User Profile Card */}
+                        <li className="nav-item dropdown">
+                            <button className="nav-link" onClick={handleOnClickProfileCard}>
+                                <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
+                                    <div className={styles.profileCircle}>{userInitials}</div>
+                                    <span className={`${styles.userName}`}>{userName}</span>
+                                </div>
+                            </button>
+                            {isDropdownOpen && <ProfilePanel />}
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            {showChatHistory && <ChatHistorySidebar onClose={() => setShowChatHistory(false)} onDeleteChat={handleDeleteChat} />}
+        </>
     );
 };
 
