@@ -1,0 +1,303 @@
+.page_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 50px 50px 50px 50px;
+    gap: 30px;
+}
+
+.content_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.upload_section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 800px;
+}
+
+.dropzone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+    margin: 20px 0;
+    cursor: pointer;
+}
+
+.dropzone:hover {
+    border-color: #16a34a;
+}
+
+.dragging {
+    border-color: #78c435;
+    background-color: rgba(0, 120, 212, 0.05);
+    transform: scale(1.01);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file_input {
+    display: none;
+}
+
+.file_label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.upload_icon {
+    font-size: 32px;
+    color: #16a34a;
+}
+
+.selected_files {
+    margin: 20px 0;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.file_item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.file_text_list{
+    font-size: 0.875rem;
+    color: #6a7282;
+}
+.file_size {
+    color: #666;
+    margin-left: auto;
+}
+
+.button_row {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.progress_container {
+    margin: 15px 0;
+}
+
+.message_bar {
+    margin: 15px 0;
+}
+
+.uploaded_files {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+}
+
+.uploaded_files a {
+    color: #0078d4;
+    text-decoration: none;
+}
+
+.uploaded_files a:hover {
+    text-decoration: underline;
+}
+
+.download_icon{
+    width:2px;
+    height:2px;
+    padding: 0.5rem;
+    color: #16a34a;
+    border-radius: 0.5rem;
+}
+
+/* File List View styles */
+.file_list_section {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border-top: 1px solid #eaeaea;
+    border-right: none;
+    border-bottom: none;
+    border-left: none;
+    border-radius: 8px 8px 0 0;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.file_list_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.file_list_actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.responsiveSearch {
+    width: 100%;
+}
+
+.upload2_button{
+    background-color: #16a34a;
+}
+
+.upload2_button:hover {
+    background-color: #15803d;
+    color: white;
+}
+
+.upload_button {
+    display: flex;
+    align-items: center;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    background-color: #16a34a;
+    color: #fff;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: none;
+    font-size: 15px;
+    gap: 0.5rem;
+    min-width: 135px;
+}
+
+.upload_button:hover {
+    background-color: #15803d;
+    color: white;
+}
+
+.addIcon {
+    margin-right: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.buttonText {
+    display: inline;
+}
+
+@media (max-width: 768px) {
+    .upload_button {
+        font-size: 14px;
+        padding: 0.5rem 1rem;
+        min-width: 120px;
+        height: 36px;
+        width: auto;
+    }
+}
+
+@media (max-width: 380px) {
+    .upload_button {
+        padding: 0.5rem;
+        min-width: 40px;
+        width: 40px;
+        justify-content: center;
+    }
+
+    .addIcon {
+        margin-right: 0px;
+    }
+
+    .buttonText {
+        display: none;
+    }
+}
+
+.refresh_button {
+    color: #16a34a;
+}
+.refresh_button:hover {
+    color: #15803d;
+}
+
+.file_list_container {
+    height: 400px;
+    overflow-y: auto;
+    border-top: none;
+    border-right: none;
+    border-left: none;
+    border-radius: 0 0 4px 4px;
+}
+
+.loading_container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+}
+
+.no_files_container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+.file_name_cell {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.file_icon {
+    color: #ff6900;
+    font-size: 1.5rem;      
+}
+
+.file_text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+.actions_cell {
+    color: #71b33b;
+    display: flex;
+    gap: 5px;
+    justify-content: flex-start;
+    margin-left: 0;
+}
+
+/* Ensure the DetailsList inside the file list container looks good */
+.file_list_container > div {
+    height: 100%;
+}
+
+/* Styles for the upload dialog */
+.upload_dialog_content {
+    padding: 10px 0;
+    min-height: 300px;
+}
+
+/* Make the dialog dropzone a bit smaller */
+.upload_dialog_content .dropzone {
+    margin: 0;
+    padding: 30px;
+}
+

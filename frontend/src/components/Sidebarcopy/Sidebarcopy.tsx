@@ -134,7 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     links: [
                         {
                             title: "Upload Resources",
-                            href: "/upload-resources",
+                            href: "/secondary-upload-resources",
                             roles: ["admin", "user", "platformAdmin"],
                             tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
                         },
