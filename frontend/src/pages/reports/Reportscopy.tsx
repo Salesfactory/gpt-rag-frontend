@@ -70,9 +70,6 @@ export default function Reports() {
             {/* Main Content */}
             <main className={styles.mainContent}>
                 {/* Page Description */}
-                <div className={styles.pageDescription}>
-                    <p>Accessing and managing your stored reports</p>
-                </div>
 
                 <div className={styles.pageBar}>
                     <div style={{ position: "relative", flex: 1 }}>
