@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { AddFilled, SaveFilled, ErrorCircleFilled } from "@fluentui/react-icons";
+import { SaveFilled, ErrorCircleFilled } from "@fluentui/react-icons";
+import { X } from "lucide-react";
 import { TooltipHost, TooltipDelay, DirectionalHint, DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption } from "@fluentui/react";
-import styles from "./SettingsModal.module.css";
+import styles from "./SettingsModalcopy.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { useAppContext } from "../../providers/AppProviders";
 import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
+import { toast, ToastContainer } from "react-toastify";
 
 interface Props {
     user: {
@@ -96,8 +98,12 @@ export const SettingsPanel = () => {
     const modelOptions: IDropdownOption[] = [
         { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
         { key: "gpt-4.1", text: "gpt-4.1" }
-        
     ];
+
+    const modelTemperatureSettings: Record<string, { default: number; min: number; max: number; step: number }> = {
+        "DeepSeek-V3-0324": { default: 0, min: 0, max: 1, step: 0.1 },
+        "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -140,15 +146,19 @@ export const SettingsPanel = () => {
             user,
             temperature: parsedTemperature,
             model: selectedModel
-        }).then(data => {
-            setTemperature(data.temperature);
-            setSelectedModel(data.model);
-            setIsDialogOpen(false);
-            setIsLoadingSettings(false);
-        }).catch(error => {
-            console.error("Error saving settings:", error);
-            setIsLoadingSettings(false);
-        });
+        })
+            .then(data => {
+                setTemperature(data.temperature);
+                setSelectedModel(data.model);
+                setIsDialogOpen(false);
+                setIsLoadingSettings(false);
+                toast("Successfully saved data", { type: "success" });
+            })
+            .catch(error => {
+                console.error("Error saving settings:", error);
+                setIsLoadingSettings(false);
+                toast("Error saving data", { type: "error" });
+            });
     };
 
     const validateValue = (val: any, func: any) => {
@@ -212,9 +222,16 @@ export const SettingsPanel = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [setSettingsPanel]);
+    useEffect(() => {
+        const config = modelTemperatureSettings[selectedModel];
+        if (config) {
+            setTemperature(config.default.toString());
+        }
+    }, [selectedModel]);
 
     return (
         <div ref={panelRef} className={styles.overlay}>
+            <ToastContainer />
             <ConfirmationDialog
                 loading={isLoadingSettings}
                 isOpen={isDialogOpen}
@@ -229,12 +246,12 @@ export const SettingsPanel = () => {
             <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
                 <Stack.Item grow className={styles["w-100"]}>
                     <div className={styles.header2}>
-                        <div className={styles.title}>Configuration</div>
+                        <div className={styles.title}>Model Settings</div>
                         <div className={styles.buttons}>
                             <div></div>
                             <div className={styles.closeButtonContainer}>
                                 <button className={styles.closeButton2} aria-label="hide button" onClick={handleClosePanel}>
-                                    <AddFilled />
+                                    <X />
                                 </button>
                             </div>
                         </div>
@@ -254,23 +271,6 @@ export const SettingsPanel = () => {
                         <div className={styles.content}>
                             <div className={styles["w-100"]}>
                                 <div className={styles.item}>
-                                    <span>Creativity Scale</span>
-                                </div>
-                                <Slider
-                                    className={styles["w-100"]}
-                                    label=""
-                                    min={0}
-                                    max={1}
-                                    step={0.1}
-                                    value={parseFloat(temperature)}
-                                    showValue
-                                    snapToStep
-                                    onChange={e => setTemperature(e.toString())}
-                                    aria-labelledby="temperature-slider"
-                                />
-                            </div>
-                            <div className={styles["w-100"]} style={{ marginTop: '20px' }}>
-                                <div className={styles.item}>
                                     <span>Model Selection</span>
                                 </div>
                                 <Dropdown
@@ -283,10 +283,82 @@ export const SettingsPanel = () => {
                                         }
                                     }}
                                     aria-labelledby="model-dropdown"
-                                    styles={{ root: { width: '100%' } }}
+                                    styles={{
+                                        root: {
+                                            width: "90%"
+                                        },
+                                        dropdown: {
+                                            borderRadius: "8px",
+                                            border: "1px solid #d1d5db",
+                                            minHeight: "39px",
+                                            backgroundColor: "#ffffff",
+                                            outline: "none",
+                                            boxShadow: "none",
+                                            "&:hover": {
+                                                borderColor: "#9ca3af"
+                                            },
+                                            "&:focus": {
+                                                borderColor: "#3b82f6",
+                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
+                                                outline: "none",
+                                                borderRadius: "6px"
+                                            },
+                                            "&:focus-within": {
+                                                borderColor: "#3b82f6",
+                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
+                                                outline: "none",
+                                                borderRadius: "6px"
+                                            },
+                                            "&[aria-expanded='true']": {
+                                                borderRadius: "6px"
+                                            }
+                                        },
+                                        title: {
+                                            fontSize: "14px",
+                                            paddingLeft: "12px",
+                                            paddingRight: "12px",
+                                            lineHeight: "37px",
+                                            color: "#374151",
+                                            border: "0px",
+                                            backgroundColor: "transparent"
+                                        },
+                                        caretDown: {
+                                            color: "#6b7280",
+                                            fontSize: "12px",
+                                            right: "12px"
+                                        },
+                                        callout: {
+                                            borderRadius: "8px",
+                                            border: "1px solid #d1d5db",
+                                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                                        }
+                                    }}
                                 />
                             </div>
-                            <div className={styles["w-100"]} style={{ marginTop: '30px', textAlign: 'right' }}>
+                            <div className={styles["w-100"]}>
+                                <div className={styles.item}>
+                                    <span>Creativity Scale</span>
+                                </div>
+                                <div className={styles.sliderContainer}>
+                                    <Slider
+                                        label=""
+                                        min={modelTemperatureSettings[selectedModel]?.min ?? 0}
+                                        max={modelTemperatureSettings[selectedModel]?.max ?? 1}
+                                        step={modelTemperatureSettings[selectedModel]?.step ?? 0.1}
+                                        value={parseFloat(temperature)}
+                                        showValue
+                                        snapToStep
+                                        onChange={e => setTemperature(e.toString())}
+                                        aria-labelledby="temperature-slider"
+                                        styles={{
+                                            root: { width: "90%" }
+                                        }}
+                                        className={styles.sliderCustom}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className={styles["w-100"]} style={{ marginTop: "30px", textAlign: "center" }}>
                                 <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
                                     <SaveFilled className={styles.saveIcon} />
                                     &#8202;&#8202;Save
