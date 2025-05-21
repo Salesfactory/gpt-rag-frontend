@@ -66,7 +66,7 @@
 
 .tableText {
     text-align: justify;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 500;
     padding: 1rem 1.5rem;
 }
@@ -163,7 +163,17 @@
     }
 }
 
+@media (max-width: 390px) {
+    .pageContainer {
+            width: 100%;
+            max-width: 100%;
+            padding: 20px 15px 10px 15px;
+            box-sizing: border-box;
+            
+        }
+}
 .thead {
+    font-size: 1.02rem;
     border-radius: 0.5rem;
     background-color: #16a34a;
     color: white;
@@ -239,6 +249,7 @@
 }
 
 .button:hover {
+    padding: 0.375rem 0.75rem;
     background-color: #15803d;
     border: 2px solid rgb(32, 150, 75);
 }
@@ -318,11 +329,11 @@
 
 /* Modal Subscription Styles */
 .modalSubscription {
-    position: fixed;
-    top: 50%;
+    position: absolute;
+    top: 60%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: auto;
+    width: 90%;
     height: auto;
     display: flex;
     flex-direction: flex;
@@ -339,7 +350,7 @@
 
 @media (max-width: 1024px) {
     .modalSubscription {
-        width: 20em;
+        width: 85%;
         gap: 20px;
         flex-direction: column;
         padding: 50px;
@@ -352,11 +363,16 @@
 }
 
 .modalText {
+    font-size: 1rem;
     text-align: left;
     font-weight: 400;
     padding-bottom: 10px;
 }
-
+.titleRecent{
+    font-size: 2rem;
+    font-weight: 500;
+    padding-bottom: 10px;
+}
 /* Button Container Styles */
 .buttonContainer {
     text-align: left;
@@ -493,6 +509,7 @@
     text-align: center;
     cursor: pointer;
     color: #16a34a;
+    font-size: 1rem;
 }
 
 .auditIcon {
@@ -528,8 +545,8 @@
 }
 
 .modalAudit {
-    position: fixed;
-    top: 50%;
+    position: absolute;
+    top: 60%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 70%;
@@ -545,13 +562,14 @@
     box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
     gap: 40px;
     color: #4a5568;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 @media (max-width: 1024px) {
     .modalAudit {
-        width: 100%;
+        top:50%;
+        width: 85%;
         flex-direction: column;
-        padding: 20px;
     }
 
     .auditButton {
