@@ -164,10 +164,13 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     {/* Settings Button */}
                     {location === "/secondary-chat" && (
                         <li className="nav-item">
-                            <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
-                                <Settings className={styles.iconLarge} />
-                                {/* <span className="d-none d-md-inline">Settings</span> */}
-                            </button>
+                            <div className={styles.tooltipWrapper}>
+                                <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <Settings className={styles.iconLarge} />
+                                    <span className={styles.tooltipText}>Model Settings</span>
+                                    {/* <span className="d-none d-md-inline">Settings</span> */}
+                                </button>
+                            </div>
                         </li>
                     )}
 
