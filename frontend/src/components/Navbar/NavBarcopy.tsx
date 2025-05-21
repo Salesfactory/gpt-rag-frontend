@@ -112,7 +112,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     {location === "/secondary-admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
                     {location === "/secondary-organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
                     {location === "/secondary-details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution Lists</span>}
-                    {location === "/secondary-upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>File Management</span>}
+                    {location === "/secondary-upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Upload Resources</span>}
                     {location === "/secondary-subscription-management" && (
                         <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
                     )}
