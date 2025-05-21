@@ -116,7 +116,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     {location === "/secondary-subscription-management" && (
                         <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
                     )}
-                    {location === "/secondary-view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Management</span>}
+                    {location === "/secondary-view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Dashboard</span>}
                 </li>
             </ul>
             <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
