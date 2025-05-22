@@ -1,29 +1,37 @@
-import { IconListCheck, IconMail, IconUser } from "@tabler/icons-react";
 import React from "react";
-import styles from "./Profile.module.css"
+import styles from "./Profilecopy.module.css";
+import { User, Mail, List } from "lucide-react";
 import { Link } from "react-router-dom";
 
-export const ProfilePanel = () => {
-    
+type Props = {
+    show: boolean;
+};
+
+export const ProfilePanel = ({ show }: Props) => {
     return (
-        
-        <div className={styles.messageBody}>
-            <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
-                <IconUser className="fs-6" />
-                <p className="mb-0 fs-5">My Profile</p>
+        <div className={`${styles.profileContainer} ${show ? styles.show : styles.hide}`}>
+            <Link to={""} className={styles.menuItem}>
+                <div className={styles.menuItemContent}>
+                    <User size={18} className={styles.icon} />
+                    <span className={styles.textMenu}>My Profile</span>
+                </div>
             </Link>
-            <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
-                <IconMail className="fs-6" />
-                <p className="mb-0 fs-5">My Account</p>
+            <Link to={""} className={styles.menuItem}>
+                <div className={styles.menuItemContent}>
+                    <Mail size={18} className={styles.icon} />
+                    <span className={styles.textMenu}>My Account</span>
+                </div>
             </Link>
-            <Link to={""} className="d-flex align-items-center gap-2 dropdown-item">
-                <IconListCheck className="fs-6" />
-                <p className="mb-0 fs-5">My Task</p>
+            <Link to={""} className={styles.menuItem}>
+                <div className={styles.menuItemContent}>
+                    <List size={18} className={styles.icon} />
+                    <span className={styles.textMenu}>My Task</span>
+                </div>
             </Link>
-            <Link to={"/logout"} className="btn btn-outline-primary mx-3 mt-2 d-block">
+            <div className={styles.logoutSeparator}></div>
+            <Link to={"/logout"} className={styles.logoutButton}>
                 Logout
             </Link>
         </div>
-
     );
 };
