@@ -17,7 +17,8 @@ import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
-import { SettingsPanel } from "../../components/SettingsPanel";
+// import { SettingsPanel } from "../../components/SettingsPanel";
+import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 
