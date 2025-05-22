@@ -831,14 +831,16 @@ const Admin = () => {
                                 <tr>
                                     <th
                                         style={{
-                                            padding: "10px"
+                                            padding: "10px",
+                                            fontSize: "1rem",
+                                            fontWeight: 600
                                         }}
                                     >
                                         Name
                                     </th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Actions</th>
+                                    <th className={styles.tableTitle}>Email</th>
+                                    <th className={styles.tableTitle}>Role</th>
+                                    <th className={styles.tableTitle}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>

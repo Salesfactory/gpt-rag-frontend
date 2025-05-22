@@ -72,6 +72,12 @@
     width: 100%;
 }
 
+.tableTitle{
+    padding: 10px;
+    font-size: 1rem;
+    font-weight: 600 
+}
+
 .tableContainer {
     border-radius: 10px;
     overflow: hidden;
@@ -206,7 +212,7 @@
     padding: 0.125rem 0.75rem;
     border-radius: 9999px;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
     background-color: #bfdbfe;
     color: #1e40af;
 }
@@ -217,7 +223,7 @@
     padding: 0.125rem 0.75rem;
     border-radius: 9999px;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
     background-color: #d1fae5;
     color: #065f46;
 }
@@ -228,7 +234,7 @@
     padding: 0.125rem 0.75rem;
     border-radius: 9999px;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
     background-color: #d9ff98;
     color: #1b4332;
 }

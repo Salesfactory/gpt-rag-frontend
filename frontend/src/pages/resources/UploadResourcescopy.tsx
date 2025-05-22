@@ -20,7 +20,7 @@ import {
     mergeStyleSets
 } from "@fluentui/react";
 import { DocumentRegular, ArrowClockwiseRegular } from "@fluentui/react-icons";
-import { FileText, Download, Trash2, Plus, RefreshCw, Upload } from "lucide-react";
+import { FileText, Download, Trash2, Plus, RefreshCw, Upload, Search } from "lucide-react";
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 const ALLOWED_FILE_TYPES = [".pdf"];
@@ -63,23 +63,34 @@ const UploadResources: React.FC = () => {
     const columns: IColumn[] = [
         {
             key: "name",
-            name: "NAME",
+            name: "Name",
             fieldName: "name",
             minWidth: 200,
             maxWidth: 500,
             isResizable: true,
             onRender: (item: BlobItem) => {
+                const fileName = item.name.split("/").pop() || "";
+                const fileExtension = fileName.split(".").pop()?.toLowerCase();
+
+                let iconColorClass = "";
+
+                if (fileExtension === "pdf") {
+                    iconColorClass = styles.icon_pdf;
+                } else if (["doc", "docx", "odt", "rtf"].includes(fileExtension || "")) {
+                    iconColorClass = styles.icon_doc;
+                }
+
                 return (
                     <div className={styles.file_name_cell}>
-                        <FileText className={styles.file_icon} />
-                        <Text className={styles.file_text}>{item.name.split("/").pop()}</Text>
+                        <FileText className={`${styles.file_icon} ${iconColorClass}`} />
+                        <Text className={styles.file_text}>{fileName}</Text>
                     </div>
                 );
             }
         },
         {
             key: "size",
-            name: "SIZE",
+            name: "Size",
             fieldName: "size",
             minWidth: 70,
             maxWidth: 90,
@@ -90,7 +101,7 @@ const UploadResources: React.FC = () => {
         },
         {
             key: "created_on",
-            name: "CREATED",
+            name: "Created",
             fieldName: "created_on",
             minWidth: 100,
             maxWidth: 180,
@@ -101,7 +112,7 @@ const UploadResources: React.FC = () => {
         },
         {
             key: "content_type",
-            name: "TYPE",
+            name: "Type",
             fieldName: "content_type",
             minWidth: 100,
             maxWidth: 280,
@@ -110,7 +121,7 @@ const UploadResources: React.FC = () => {
         },
         {
             key: "actions",
-            name: "ACTIONS",
+            name: "Actions",
             minWidth: 70,
             maxWidth: 70,
             isResizable: false,
@@ -119,10 +130,10 @@ const UploadResources: React.FC = () => {
                 return (
                     <div className={styles.actions_cell}>
                         <IconButton title="Download" ariaLabel="Download" onClick={() => handleDownload(item)}>
-                            <Download size={16} color="#16a34a" />
+                            <Download className={styles.trashIcon} />
                         </IconButton>
                         <IconButton title="Delete" ariaLabel="Delete" onClick={() => handleDelete(item)}>
-                            <Trash2 size={16} color="#4a5565" />
+                            <Trash2 className={styles.trashIcon} />
                         </IconButton>
                     </div>
                 );
@@ -369,154 +380,79 @@ const UploadResources: React.FC = () => {
         subText: "Select files to upload to blob storage"
     };
 
-    const detailsListStyles = {
-        root: {
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-            borderRadius: "0 0 4px 4px",
-            overflowY: "auto",
-            borderTop: "none",
-            borderRight: "none",
-            borderBottom: "none",
-            borderLeft: "none"
-        },
-        headerWrapper: {
-            backgroundColor: "#22a86d",
-            selectors: {
-                ".ms-DetailsHeader": {
-                    paddingTop: "4px !important",
-                    paddingBottom: "4px !important",
-                    height: "42px",
-                    backgroundColor: "#00a63e",
-                    borderTop: "none !important"
-                },
-                ".ms-DetailsHeader-cell": {
-                    color: "white !important",
-                    backgroundColor: "#00a63e !important",
-                    textAlign: "left !important",
-                    fontSize: "0.875rem !important",
-                    fontWeight: "500 !important",
-                    textTransform: "uppercase !important",
-                    letterSpacing: "0.05em !important",
-                    borderTop: "none !important"
-                },
-                ".ms-DetailsHeader-cellTitle": {
-                    color: "white !important",
-                    textTransform: "uppercase !important",
-                    letterSpacing: "0.05em !important",
-                    fontWeight: "500 !important",
-                    fontSize: "0.875rem !important",
-                    borderTop: "none !important"
-                },
-                ".ms-DetailsHeader-cellName": {
-                    color: "white !important",
-                    textTransform: "uppercase !important",
-                    letterSpacing: "0.05em !important",
-                    fontWeight: "500 !important",
-                    fontSize: "0.875rem !important",
-                    borderTop: "none !important"
-                },
-                ".ms-DetailsHeader-cell:hover": {
-                    backgroundColor: "#00a63e !important",
-                    color: "white !important",
-                    borderTop: "none !important"
-                }
-            }
-        },
-        contentWrapper: {
-            selectors: {
-                ".ms-DetailsRow": {
-                    borderBottom: "1px solid #eaeaea"
-                },
-                ".ms-DetailsRow:nth-child(even)": {
-                    backgroundColor: "#f5f5f5"
-                },
-                ".ms-DetailsRow:nth-child(odd)": {
-                    backgroundColor: "#fff"
-                }
-            }
-        },
-        header: {
-            selectors: {
-                ".ms-DetailsHeader-cell": {
-                    backgroundColor: "#22a86d !important",
-                    color: "white !important",
-                    fontWeight: "bold",
-                    borderRight: "none !important",
-                    borderLeft: "none !important",
-                    borderBottom: "none !important",
-                    fontSize: "14px",
-                    paddingTop: "12px",
-                    paddingBottom: "12px",
-                    borderTop: "none !important"
-                },
-                ".ms-DetailsHeader-cellTitle": {
-                    color: "white !important"
-                },
-                ".ms-DetailsHeader-cellName": {
-                    color: "white !important"
-                }
-            }
-        }
-    };
-
     return (
         <div className={styles.page_container}>
-            <div className={styles.content_container}>
-                {/* File List View Section */}
-                <div className={styles.file_list_section}>
-                    <div className={styles.file_list_header}>
-                        <Text variant="xLarge">Uploaded Files</Text>
-                        <div className={styles.file_list_actions}>
-                            <IconButton title="Upload New Files" ariaLabel="Upload New Files" onClick={openUploadDialog} className={styles.upload_button}>
-                                <span className={styles.addIcon}>
-                                    <Plus size={16} />
-                                </span>
-                                <span className={styles.buttonText}>Upload File</span>
-                            </IconButton>
-
-                            <IconButton title="Reload" ariaLabel="Reload file list" onClick={fetchBlobData} className={styles.refresh_button}>
-                                <RefreshCw size={16} />
-                            </IconButton>
-                        </div>
-                    </div>
-                    <SearchBox
-                        placeholder="Search files..."
-                        onChange={(_, newValue) => setSearchQuery(newValue || "")}
-                        className={styles.responsiveSearch}
-                        styles={{
+            <div className={styles.file_list_header}>
+                <SearchBox
+                    placeholder="Search files..."
+                    onChange={(_, newValue) => setSearchQuery(newValue || "")}
+                    className={styles.responsiveSearch}
+                    iconProps={{
+                        iconName: undefined,
+                        styles: {
                             root: {
-                                width: "100%",
-                                height: "40px",
-                                borderRadius: "0.5rem",
-                                border: "1px solid #e5e7eb",
-                                selectors: {
-                                    ":focus-within": {
-                                        outline: "none"
-                                    },
-                                    "&:after": {
-                                        border: "none !important"
-                                    }
-                                }
-                            },
-                            field: {
-                                fontSize: "15px",
-                                borderRadius: "0.5rem",
-                                selectors: {
-                                    ":focus": {
-                                        outline: "none"
-                                    },
-                                    ":focus-visible": {
-                                        outline: "none"
-                                    },
-                                    "::placeholder": {
-                                        color: "#9ca3af",
-                                        fontSize: "15px"
-                                    }
+                                fontSize: "20px",
+                                color: "#9ca3af"
+                            }
+                        },
+                        children: (
+                            <Search
+                                size={26}
+                                color="#9ca3af"
+                                style={{
+                                    paddingBottom: "3px"
+                                }}
+                            />
+                        )
+                    }}
+                    styles={{
+                        root: {
+                            height: "40px",
+                            borderRadius: "0.5rem",
+                            border: "1px solid #e5e7eb",
+                            position: "relative",
+                            selectors: {
+                                ":focus-within": {
+                                    outline: "none"
+                                },
+                                "::after": {
+                                    border: "none !important",
+                                    display: "none !important"
                                 }
                             }
-                        }}
-                    />
+                        },
+                        field: {
+                            fontSize: "16px",
+                            selectors: {
+                                ":focus": {
+                                    outline: "none"
+                                },
+                                ":focus-visible": {
+                                    outline: "none"
+                                },
+                                "::placeholder": {
+                                    color: "#9ca3af",
+                                    fontSize: "16px"
+                                }
+                            }
+                        }
+                    }}
+                />
+                <div className={styles.file_list_actions}>
+                    <IconButton title="Upload New Files" ariaLabel="Upload New Files" onClick={openUploadDialog} className={styles.upload_button}>
+                        <span className={styles.addIcon}>
+                            <Plus size={16} />
+                        </span>
+                        <span className={styles.buttonText}>Upload File</span>
+                    </IconButton>
+
+                    <IconButton title="Reload" ariaLabel="Reload file list" onClick={fetchBlobData} className={styles.refresh_button}>
+                        <RefreshCw size={20} />
+                    </IconButton>
                 </div>
+            </div>
+            <div className={styles.content_container}>
+                {/* File List View Section */}
                 {isLoading ? (
                     <div className={styles.loading_container}>
                         <Spinner label="Loading files..." />
@@ -530,8 +466,31 @@ const UploadResources: React.FC = () => {
                             layoutMode={DetailsListLayoutMode.justified}
                             selectionMode={SelectionMode.none}
                             isHeaderVisible={true}
-                            styles={detailsListStyles}
-                            className={styles.detailsList}
+                            className={styles.detailsListContainer}
+                            styles={{
+                                root: {
+                                    borderRadius: "8px"
+                                }
+                            }}
+                            onRenderRow={(props, defaultRender) => {
+                                if (!props || !defaultRender) return null;
+
+                                const backgroundColor = props.itemIndex % 2 === 0 ? "#f8f8f8" : "#ffffff";
+
+                                const customStyles = {
+                                    root: {
+                                        backgroundColor
+                                    },
+                                    fields: {
+                                        backgroundColor
+                                    }
+                                };
+
+                                return defaultRender({
+                                    ...props,
+                                    styles: customStyles
+                                });
+                            }}
                         />
                     </div>
                 ) : (
