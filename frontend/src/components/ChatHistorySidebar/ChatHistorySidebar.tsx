@@ -1,0 +1,348 @@
+import React, { useEffect, useState, useRef } from "react";
+import styles from "./ChatHistorySidebar.module.css";
+import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } from "../../api";
+import { useAppContext } from "../../providers/AppProviders";
+import { Spinner } from "@fluentui/react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { Trash2, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+
+interface ChatHistorySidebarProps {
+    onClose: () => void;
+    onDeleteChat: () => void;
+}
+
+const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDeleteChat }) => {
+    const [visible, setVisible] = useState(false);
+    const [hoveredItemIndex, setHoveredItemIndex] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [deletingIsLoading, setDeletingIsLoading] = useState(false);
+    const [confirmationDelete, setConfirmationDelete] = useState<string | null>(null);
+    const [conversationsIds, setConversationsIds] = useState<String[]>([]);
+    const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0, 1, 2, 3]));
+
+    const sidebarRef = useRef<HTMLDivElement>(null);
+
+    const {
+        dataHistory,
+        setDataHistory,
+        user,
+        dataConversation,
+        setDataConversation,
+        setConversationIsLoading,
+        setChatId,
+        chatId,
+        refreshFetchHistory,
+        setRefreshFetchHistory,
+        chatSelected,
+        setChatSelected,
+        setShowHistoryPanel,
+        isFinancialAssistantActive
+    } = useAppContext();
+
+    useEffect(() => {
+        // Activar transición al montar
+        const timeout = setTimeout(() => setVisible(true), 10);
+        return () => clearTimeout(timeout);
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+                handleClose();
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleClose = () => {
+        setVisible(false);
+        setTimeout(onClose, 300);
+        setShowHistoryPanel(false);
+    };
+
+    const handleMouseEnter = (index: string) => {
+        setHoveredItemIndex(index);
+    };
+
+    const handleMouseLeave = () => {
+        setHoveredItemIndex(null);
+    };
+
+    const fetchData = async () => {
+        if (!user?.id) {
+            setIsLoading(false);
+            setErrorMessage("Not Valid User Id");
+        } else {
+            try {
+                const data = await getChatHistory(user?.id);
+                if (data.length > 0) {
+                    const sortedData = data.sort((a, b) => {
+                        const dateA = new Date(a.start_date);
+                        const dateB = new Date(b.start_date);
+                        return dateB.getTime() - dateA.getTime();
+                    });
+                    sortedData.splice(100);
+                    setDataHistory(sortedData);
+                    setIsLoading(false);
+                    const ids = sortedData.map(data => data.id);
+                    if (!ids.every(id => conversationsIds.includes(id))) {
+                        setConversationsIds(ids);
+                    }
+                } else {
+                    setIsLoading(false);
+                    setErrorMessage("There are not conversations yet.");
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setIsLoading(false);
+                setErrorMessage(`No history found`);
+            }
+        }
+    };
+
+    const fetchConversation = async (chatConversationId: string) => {
+        if (!user) {
+            setErrorMessage("You must be logged in to view conversations.");
+            return;
+        }
+
+        if (!chatSelected.includes(chatConversationId)) {
+            setChatSelected(chatConversationId);
+            setChatId(chatConversationId);
+            setConversationIsLoading(true);
+            handleClose();
+
+            try {
+                const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
+
+                if (data.length > 0) {
+                    setDataConversation(data);
+                } else {
+                    setDataConversation([]);
+                    setErrorMessage("No conversation data found.");
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setErrorMessage(`An error occurred while fetching data: ${error}`);
+            } finally {
+                setConversationIsLoading(false);
+            }
+        }
+    };
+
+    const handleDeleteConversation = async (chatConversationId: string) => {
+        if (!user) {
+            setErrorMessage("You must be logged in to delete a conversation.");
+            toast("Please log in to delete conversations.", { type: "warning" });
+            return;
+        }
+
+        if (!user.id) {
+            setErrorMessage("User ID is missing. Please log in again.");
+            toast("User information is incomplete.", { type: "warning" });
+            return;
+        }
+
+        setDeletingIsLoading(true);
+
+        try {
+            await deleteChatConversation(chatConversationId, user.id);
+
+            if (chatSelected === chatConversationId) {
+                setDataConversation([]);
+            }
+            if (chatId === chatConversationId) {
+                onDeleteChat();
+            }
+
+            const updatedDataHistory = dataHistory.filter(item => item.id !== chatConversationId);
+            setDataHistory(updatedDataHistory);
+
+            toast("Conversation deleted successfully", { type: "success" });
+        } catch (error) {
+            console.error("Error deleting conversation:", error);
+            setErrorMessage("We ran into an error deleting the conversation. Please try again later.");
+            toast("Conversation could not be deleted", { type: "error" });
+        } finally {
+            setDeletingIsLoading(false);
+        }
+    };
+
+    const handleRefreshHistoial = async () => {
+        if (refreshFetchHistory) {
+            await fetchData();
+            setRefreshFetchHistory(false);
+        }
+    };
+
+    useEffect(() => {
+        if (dataHistory.length <= 0) {
+            fetchData();
+        } else {
+            setIsLoading(false);
+        }
+
+        if (refreshFetchHistory) {
+            handleRefreshHistoial();
+        }
+    }, [user?.id, dataHistory, conversationsIds, refreshFetchHistory]);
+
+    const today = new Date();
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const dataDefaultOrFinancial = isFinancialAssistantActive
+        ? dataHistory.filter(item => item.type == "financial")
+        : dataHistory.filter(item => item.type != "financial");
+    const sortedDataByDate = dataDefaultOrFinancial.sort((a, b) => Number(new Date(a.start_date)) - Number(new Date(b.start_date)));
+
+    const uniqueItems = new Set();
+
+    const sortedDataListByDate = [
+        { label: "Today", filter: (itemDate: any) => itemDate.toDateString() === today.toDateString() },
+        { label: "This Week", filter: (itemDate: any) => itemDate >= startOfWeek && itemDate <= today },
+        { label: "This Month", filter: (itemDate: any) => itemDate >= startOfMonth && itemDate <= today },
+        { label: "Previous Months", filter: (itemDate: any) => itemDate < startOfMonth }
+    ].map(({ label, filter }) => {
+        const filteredData = sortedDataByDate
+            .filter(item => {
+                const itemDate = new Date(item.start_date);
+                if (!uniqueItems.has(item)) {
+                    const matches = filter(itemDate);
+                    if (matches) uniqueItems.add(item);
+                    return matches;
+                }
+                return false;
+            })
+            .reverse();
+        return { label, data: filteredData };
+    });
+
+    const isConfirmationDelete = (conversationId: string) => confirmationDelete === conversationId;
+    const isChatId = (conversationId: string) => chatId === conversationId;
+    const isChatSelected = (conversationId: string) => chatSelected === conversationId;
+
+    const toggleSection = (sectionIndex: number) => {
+        setExpandedSections(prevExpandedSections => {
+            const newExpandedSections = new Set(prevExpandedSections);
+            if (newExpandedSections.has(sectionIndex)) {
+                newExpandedSections.delete(sectionIndex);
+            } else {
+                newExpandedSections.add(sectionIndex);
+            }
+            return newExpandedSections;
+        });
+    };
+
+    return (
+        <>
+            {visible && <div className={styles.overlay} onClick={handleClose} />}
+
+            <div ref={sidebarRef} className={`${styles.sidebar} ${visible ? styles.visible : ""}`}>
+                <div className={styles.header}>
+                    <h2 className={styles.title}>Chat History</h2>
+                    <button onClick={handleClose} className={styles.closeButton} aria-label="Close sidebar">
+                        <X />
+                    </button>
+                </div>
+
+                <div className={styles.content}>
+                    <ToastContainer position="top-right" autoClose={3000} />
+
+                    {isLoading && (
+                        <div className={styles.loaderContainer}>
+                            <Spinner size={3} />
+                        </div>
+                    )}
+
+                    {errorMessage !== null ? (
+                        <p className={styles.errorMessage}>{errorMessage}</p>
+                    ) : (
+                        <div className={styles.conversationsList}>
+                            {sortedDataListByDate
+                                .filter(({ data }) => data.length > 0)
+                                .map(({ label, data }, monthIndex) => (
+                                    <div key={monthIndex} className={styles.timeSection}>
+                                        <div className={styles.timeHeader} onClick={() => toggleSection(monthIndex)}>
+                                            <span className={styles.timeLabel}>{label}</span>
+                                            {expandedSections.has(monthIndex) ? (
+                                                <ChevronUp className={styles.chevronIcon} />
+                                            ) : (
+                                                <ChevronDown className={styles.chevronIcon} />
+                                            )}
+                                        </div>
+
+                                        {expandedSections.has(monthIndex) && (
+                                            <div className={styles.conversationsGroup}>
+                                                {data.map((conversation, index) => (
+                                                    <div
+                                                        key={conversation.id}
+                                                        className={`${styles.conversationItem} ${
+                                                            isChatSelected(conversation.id) || isChatId(conversation.id) ? styles.selected : ""
+                                                        }`}
+                                                        onMouseEnter={() => handleMouseEnter(`${monthIndex}-${index}`)}
+                                                        onMouseLeave={handleMouseLeave}
+                                                    >
+                                                        <button
+                                                            className={styles.conversationButton}
+                                                            onClick={() => (isConfirmationDelete(conversation.id) ? null : fetchConversation(conversation.id))}
+                                                        >
+                                                            {isConfirmationDelete(conversation.id)
+                                                                ? "Do you want to delete this conversation?"
+                                                                : conversation.content}
+                                                        </button>
+
+                                                        {(hoveredItemIndex === `${monthIndex}-${index}` ||
+                                                            chatSelected === conversation.id ||
+                                                            chatId === conversation.id ||
+                                                            isConfirmationDelete(conversation.id)) && (
+                                                            <div className={styles.actionButtons}>
+                                                                {isConfirmationDelete(conversation.id) ? (
+                                                                    <>
+                                                                        <X
+                                                                            className={`${styles.actionButton} ${styles.cancelButton}`}
+                                                                            onClick={() => setConfirmationDelete(null)}
+                                                                        />
+                                                                        {deletingIsLoading ? (
+                                                                            <Spinner className={styles.actionSpinner} size={1} />
+                                                                        ) : (
+                                                                            <Check
+                                                                                className={`${styles.actionButton} ${styles.confirmButton}`}
+                                                                                onClick={() => handleDeleteConversation(conversation.id)}
+                                                                            />
+                                                                        )}
+                                                                    </>
+                                                                ) : (
+                                                                    <Trash2
+                                                                        className={styles.actionButton}
+                                                                        onClick={() => setConfirmationDelete(conversation.id)}
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                            {dataHistory.length === 0 && !isLoading && <p className={styles.emptyMessage}>No conversations found</p>}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default ChatHistorySidebar;

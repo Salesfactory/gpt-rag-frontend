@@ -70,9 +70,6 @@ export default function Reports() {
             {/* Main Content */}
             <main className={styles.mainContent}>
                 {/* Page Description */}
-                <div className={styles.pageDescription}>
-                    <p>Accessing and managing your stored reports</p>
-                </div>
 
                 <div className={styles.pageBar}>
                     <div style={{ position: "relative", flex: 1 }}>
@@ -138,7 +135,8 @@ export default function Reports() {
                     </div>
 
                     <div style={{ position: "relative" }}>
-                        <button
+                        {/*Disable this button for now */}
+                        {/* <button
                             className={styles.filterButton}
                             type="button"
                             onClick={() => setShowRoleDropdown(prev => !prev)}
@@ -146,7 +144,7 @@ export default function Reports() {
                         >
                             <Filter size={18} style={{ marginRight: 6 }} />
                             <span style={{ fontSize: "16px" }}>Filters</span>
-                        </button>
+                        </button> */}
                         {showRoleDropdown && (
                             <div
                                 className={styles.dropdownMenu}
@@ -169,10 +167,6 @@ export default function Reports() {
 
                 {/* Reports Table */}
                 <div className={styles.reportsTableContainer}>
-                    <div className={styles.tableHeader}>
-                        <h2 className={styles.tableTitle}>Stored Reports</h2>
-                    </div>
-
                     {loading ? (
                         <div className={styles.loadingState}>
                             <p>Loading...</p>
@@ -180,7 +174,7 @@ export default function Reports() {
                     ) : (
                         <div className={styles.tableWrapper}>
                             <table className={styles.reportsTable}>
-                                <thead>
+                                <thead className={styles.tableHeader}>
                                     <tr>
                                         <th className={styles.tableHeaderCell}>Report ID</th>
                                         <th className={styles.tableHeaderCell}>Title</th>

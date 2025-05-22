@@ -142,10 +142,10 @@
 }
 
 .file_list_header {
+    height: 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
 }
 
 .file_list_actions {
@@ -155,7 +155,7 @@
 }
 
 .responsiveSearch {
-    width: 100%;
+    width: 40%;
 }
 
 .upload2_button{
@@ -180,9 +180,11 @@
     cursor: pointer;
     transition: background-color 0.2s;
     border: none;
-    font-size: 15px;
+    font-size: 1rem;
+    font-weight: 500;
     gap: 0.5rem;
-    min-width: 135px;
+    min-width: 140px;
+    height: 40px;
 }
 
 .upload_button:hover {
@@ -197,6 +199,8 @@
 }
 
 .buttonText {
+    font-size: 1rem;
+    font-weight: 600px;
     display: inline;
 }
 
@@ -266,13 +270,20 @@
 }
 
 .file_icon {
-    color: #ff6900;
     font-size: 1.5rem;      
+}
+
+.icon_pdf{
+    color: #ff6900;
+}
+
+.icon_doc{
+    color:#0078d4;
 }
 
 .file_text {
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     color: #111827;
 }
 
@@ -301,3 +312,60 @@
     padding: 30px;
 }
 
+
+.trashIcon {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #6B7280;
+    width: 18px;
+    height: 18px;
+}
+
+.detailsListContainer :global(.ms-DetailsList) {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 0 0 8px 8px;
+    overflow: hidden;
+}
+
+.detailsListContainer :global(.ms-DetailsHeader) {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    height: 42px;
+    background-color: #00a63e;
+    border-top: none !important;
+}
+
+.detailsListContainer :global(.ms-DetailsHeader-cell) {
+    color: white !important;
+    background-color: #00a63e !important;
+    text-align: left !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    border-top: none !important;
+}
+
+.detailsListContainer :global(.ms-DetailsHeader-cellTitle),
+.detailsListContainer :global(.ms-DetailsHeader-cellName) {
+    color: white !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    border-top: none !important;
+}
+
+.detailsListContainer :global(.ms-DetailsHeader-cell:hover) {
+    background-color: #00a63e !important;
+    color: white !important;
+}
+
+.detailsListContainer :global(.ms-DetailsRow) {
+    border-bottom: 1px solid #eaeaea;
+}
+
+.detailsListContainer :global(.ms-DetailsRow:nth-child(even)) {
+    background-color: #f5f5f5;
+}
+
+.detailsListContainer :global(.ms-DetailsRow:nth-child(odd)) {
+    background-color: #fff;
+}

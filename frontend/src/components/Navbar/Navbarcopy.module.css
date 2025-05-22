@@ -152,6 +152,7 @@
     position: absolute;
     z-index: 1;
     top: 125%;
+
     left: 50%;
     transform: translateX(-50%);
     white-space: nowrap;
