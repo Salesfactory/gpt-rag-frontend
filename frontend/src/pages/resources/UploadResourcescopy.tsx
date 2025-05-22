@@ -156,7 +156,11 @@ const UploadResources: React.FC = () => {
 
     // Handle download
     const handleDownload = (item: BlobItem) => {
-        window.open(item.url, "_blank");
+        const organizationId = user?.organizationId;
+
+        const downloadUrl = `/api/download?organizationId=${organizationId}&blobName=${encodeURIComponent(item.name)}`;
+
+        window.open(downloadUrl, "_blank");
     };
 
     // Handle delete

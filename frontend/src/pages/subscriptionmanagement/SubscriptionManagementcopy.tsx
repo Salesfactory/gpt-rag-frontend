@@ -54,7 +54,7 @@ const SubscriptionManagement: React.FC = () => {
         { key: "1", text: "All Actions" },
         { key: "2", text: "Financial Assistant" },
         { key: "3", text: "Subscription Tier" },
-        { key: "4", text: "Subscription created" }
+        { key: "4", text: "Subscription Created" }
     ];
 
     const formatTimestamp = (timestamp: number) => {
@@ -363,7 +363,7 @@ const SubscriptionManagement: React.FC = () => {
                             <div className={styles.auditFilter}>
                                 <Label className={styles.modalText}>Filter by Action:</Label>
                                 <Dropdown
-                                    placeholder="Select Action to filter"
+                                    placeholder="Select action to filter"
                                     options={FilterOptions}
                                     onChange={handleFilterChange}
                                     styles={{
@@ -383,9 +383,9 @@ const SubscriptionManagement: React.FC = () => {
                                             <thead className={styles.thead}>
                                                 <tr key="types">
                                                     <th className={styles.tableName}>Date</th>
-                                                    <th>Action</th>
-                                                    <th>Modified by</th>
-                                                    <th>Details</th>
+                                                    <th className={styles.tableName}>Action</th>
+                                                    <th className={styles.tableName}>Modified by</th>
+                                                    <th className={styles.tableName}>Details</th>
                                                 </tr>
                                             </thead>
                                             <tbody className={styles.auditBody}>
@@ -394,7 +394,7 @@ const SubscriptionManagement: React.FC = () => {
                                                         {data.action === "Subscription Tier Change" && (
                                                             <React.Fragment key={index}>
                                                                 <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                                <td className={styles.tableText}>Subscription Tier change</td>
+                                                                <td className={styles.tableText}>Subscription Tier Change</td>
                                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
                                                                 <td className={styles.tableText}>
                                                                     {data.previous_plan} → {data.current_plan}
@@ -406,13 +406,13 @@ const SubscriptionManagement: React.FC = () => {
                                                                 <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
                                                                 <td className={styles.tableText}>FA Add-On Toggled</td>
                                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                                <td className={styles.tableText}>Status: {data.status_financial_assistant}</td>
+                                                                <td className={styles.tableStatus}>Status: {data.status_financial_assistant}</td>
                                                             </React.Fragment>
                                                         )}
-                                                        {data.action === "Subscription created" && (
+                                                        {data.action === "Subscription Created" && (
                                                             <React.Fragment>
                                                                 <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                                <td className={styles.tableText}>Subscription created</td>
+                                                                <td className={styles.tableText}>Subscription Created</td>
                                                                 <td className={styles.tableText}>{data.modified_by_name}</td>
                                                                 <td className={styles.tableText}>Status: Active</td>
                                                             </React.Fragment>
