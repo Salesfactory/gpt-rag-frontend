@@ -38,7 +38,6 @@ const SubscriptionManagement: React.FC = () => {
     const [filteredLogsData, setFilteredLogsData] = useState<any>();
     const [currentPage, setCurrentPage] = useState(1);
     const [paginatedLogs, setPaginatedLogs] = useState<any>();
-
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
     const organizationId = organization?.id || "";
 
@@ -191,7 +190,6 @@ const SubscriptionManagement: React.FC = () => {
         setRecentChangesLoading(true);
         try {
             const logs = await getLogs(organizationId);
-            console.log(logs);
             setLogsData(logs);
             setFilteredLogsData(logs);
             setPaginatedLogs(logs.slice(0, rowsPerPage));
@@ -357,14 +355,24 @@ const SubscriptionManagement: React.FC = () => {
                     <>
                         <div className={styles.modalAudit}>
                             <div className={styles.modalHeader}>
-                                <h1 className={styles.row}>Recent Changes</h1>
+                                <h1 className={styles.titleRecent}>Recent Changes</h1>
                                 <button className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
                                     <IconX />
                                 </button>
                             </div>
                             <div className={styles.auditFilter}>
                                 <Label className={styles.modalText}>Filter by Action:</Label>
-                                <Dropdown placeholder="Select Action to filter" options={FilterOptions} onChange={handleFilterChange} />
+                                <Dropdown
+                                    placeholder="Select Action to filter"
+                                    options={FilterOptions}
+                                    onChange={handleFilterChange}
+                                    styles={{
+                                        title: { fontSize: "1rem" },
+                                        dropdownItem: { fontSize: "1rem" },
+                                        dropdownItemSelected: { fontSize: "1rem" },
+                                        root: { fontSize: "1rem" }
+                                    }}
+                                />
                             </div>
                             {recentChangesLoading ? (
                                 <Spinner styles={{ root: { marginTop: "50px" } }} />

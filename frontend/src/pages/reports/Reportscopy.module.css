@@ -216,13 +216,11 @@
 .tableHeaderCell {
     padding: 12px 24px;
     text-align: left;
-    font-size: 12px;
+    font-size: 1rem;
     font-weight: 500;
-    color: #6B7280;
+    color: #ffffff;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #E5E7EB;
-    background-color: #F9FAFB;
 }
 
 .tableCellStatus {
@@ -234,7 +232,7 @@
     font-weight: 500;
     background-color: #d1fae5;
     margin-top: 15px;
-    margin-left: 5px;
+    margin-left: 20px;
     color: #065f46;
 }
 
