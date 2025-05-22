@@ -1,0 +1,84 @@
+.profileContainer {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    width: 14rem;
+    background-color: white;
+    border-radius: 0.375rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+        0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    z-index: 50;
+
+    /* Animation */
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 200ms ease, transform 200ms ease;
+    pointer-events: none;
+}
+
+.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.hide {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.menuItem {
+    display: block;
+    padding: 12px 16px;
+    color: #1f2937;
+    text-decoration: none;
+    transition: background-color 0.2s ease, transform 0.2s ease-in-out;
+}
+
+.menuItem:hover {
+    background-color: #f3f4f6;
+    transform: translateX(4px);
+}
+
+.menuItemContent {
+    display: flex;
+    align-items: center;
+}
+
+.icon {
+    margin-right: 12px;
+    color: #4b5563;
+}
+
+.logoutSeparator {
+    border-top: 1px solid #e5e7eb;
+}
+
+.logoutButton {
+    display: block;
+    padding: 12px 16px;
+    text-align: center;
+    color: #3b82f6;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.logoutButton:hover{
+    background-color: #e0f2fe;
+    color: #2563eb;
+}
+
+.textMenu{
+    font-size: 1.10rem;
+}

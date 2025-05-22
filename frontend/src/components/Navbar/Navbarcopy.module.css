@@ -17,6 +17,16 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 4px 4px 4px 4px;
+    border-radius: 8px;
+}
+
+.profileCard:hover {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #f3f4f6;
+    transition: background-color 0.2s ease-in-out;
 }
 
 .profileCircle {
@@ -164,4 +174,12 @@
 .tooltipWrapper:hover .tooltipText {
     visibility: visible;
     opacity: 1;
+}
+
+.chevron {
+    transition: transform 0.3s ease;
+}
+
+.rotate {
+    transform: rotate(180deg);
 }
