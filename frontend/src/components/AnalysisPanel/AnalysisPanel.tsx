@@ -7,6 +7,7 @@ import { AnalysisPanelTabs } from "./AnalysisPanelTabs";
 import { getPage } from "../../utils/functions";
 import { DismissCircleFilled } from "@fluentui/react-icons";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
+import { Brain, BookOpen } from "lucide-react";
 
 const LazyViewer = lazy(() => import("../DocView/DocView"));
 
@@ -157,12 +158,17 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
             >
                 <PivotItem
                     itemKey={AnalysisPanelTabs.ThoughtProcessTab}
-                    headerText="Thought Process"
                     headerButtonProps={{
                         className: styles.pivotItemWithBrainIcon,
                         ...(isDisabledThoughtProcessTab ? pivotItemDisabledStyle : {})
                     }}
                     aria-label="Thought Process Tab"
+                    onRenderItemLink={() => (
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <Brain size={16} style={{ marginRight: 4 }} />
+                            Thought Process
+                        </span>
+                    )}
                 >
                     <div className={styles.thoughtProcess}>
                         {thoughtItems.map((item, index) => (
@@ -210,9 +216,14 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
 
                 <PivotItem
                     itemKey={AnalysisPanelTabs.CitationTab}
-                    headerText="Doc Preview"
                     headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
                     aria-label="Source Tab"
+                    onRenderItemLink={() => (
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <BookOpen size={16} style={{ marginRight: 4 }} />
+                            Doc Preview
+                        </span>
+                    )}
                 >
                     <Suspense fallback={<p>Loading...</p>}>
                         <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
