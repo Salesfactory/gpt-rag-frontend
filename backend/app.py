@@ -1553,6 +1553,47 @@ def getSettings():
         logging.exception("[webbackend] exception in /api/settings")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/download", methods=["GET"])
+def download_document():
+
+    organization_id = request.args.get("organizationId")
+    blob_name = request.args.get("blobName")
+
+    if not organization_id or not blob_name:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    expected_prefix = f"organization_files/{organization_id}/"
+    if not blob_name.startswith(expected_prefix):
+        return jsonify({"error": "Access to this file is not allowed"}), 403
+
+    try:
+        from azure.storage.blob import (
+            BlobServiceClient,
+            generate_blob_sas,
+            BlobSasPermissions
+        )
+        from datetime import datetime, timedelta
+
+        blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+        account_name = blob_service_client.account_name
+        container_name = "documents"
+
+        sas_token = generate_blob_sas(
+            account_name=account_name,
+            container_name=container_name,
+            blob_name=blob_name,
+            account_key=blob_service_client.credential.account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.utcnow() + timedelta(minutes=10)
+        )
+
+        blob_url = f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+        return redirect(blob_url, code=302)
+
+    except Exception as e:
+        logging.exception("[webbackend] Exception in /api/download")
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/settings", methods=["POST"])
 def setSettings():

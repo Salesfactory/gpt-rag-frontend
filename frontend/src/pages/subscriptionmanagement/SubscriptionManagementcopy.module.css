@@ -71,6 +71,14 @@
     padding: 1rem 1.5rem;
 }
 
+.tableStatus{
+    text-align: justify;
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    text-transform: capitalize;
+}
+
 .tableTextView {
     text-align: justify;
     font-size: 1.25rem;
