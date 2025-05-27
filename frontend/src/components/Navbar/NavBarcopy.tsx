@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import styles from "./Navbarcopy.module.css";
-import { Menu, Settings, History, MessageCircleQuestion } from "lucide-react";
+import { Menu, Settings, History, MessageCircleQuestion, ChevronDown } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
-import { ProfilePanel } from "../ProfilePanel/Profile";
+import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
 
 interface NavbarProps {
@@ -99,11 +99,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         const uppercaseMatches = name.match(/[A-Z]/g);
 
         if (uppercaseMatches && uppercaseMatches.length >= 2) {
-            // Si hay al menos 2 letras mayúsculas, usamos las primeras dos
             return uppercaseMatches.slice(0, 2).join("");
         }
 
-        // Si no, usamos las dos primeras letras del nombre (ignorando espacios)
         const cleaned = name.replace(/\s+/g, "").slice(0, 2).toUpperCase();
         return cleaned;
     };
@@ -182,12 +180,12 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/secondary-chat" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
-                                <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
-                                    <Settings className={styles.iconLarge} />
-                                    <span className={styles.tooltipText}>Model Settings</span>
-                                    {/* <span className="d-none d-md-inline">Settings</span> */}
-                                </button>
-                            </div>
+                                    <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                        <Settings className={styles.iconLarge} />
+                                        <span className={styles.tooltipText}>Model Settings</span>
+                                        {/* <span className="d-none d-md-inline">Settings</span> */}
+                                    </button>
+                                </div>
                             </li>
                         )}
 
@@ -196,10 +194,11 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             <button className="nav-link" onClick={handleOnClickProfileCard}>
                                 <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                     <div className={styles.profileCircle}>{userInitials}</div>
-                                    <span className={`${styles.userName}`}>{userName}</span>
+                                    <span className={styles.userName}>{userName}</span>
+                                    <ChevronDown size={16} className={`${styles.chevron} ${isDropdownOpen ? styles.rotate : ""}`} />
                                 </div>
                             </button>
-                            {isDropdownOpen && <ProfilePanel />}
+                            <ProfilePanel show={isDropdownOpen} />
                         </li>
                     </ul>
                 </div>
