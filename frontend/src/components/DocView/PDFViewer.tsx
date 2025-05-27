@@ -1,7 +1,4 @@
-import { Worker, Viewer as PDFrender, SpecialZoomLevel } from "@react-pdf-viewer/core";
-
-import "@react-pdf-viewer/default-layout/lib/styles/index.css";
-import "@react-pdf-viewer/core/lib/styles/index.css";
+import React, { useEffect, useState } from "react";
 
 interface PDFRenderProps {
     file: Blob | MediaSource;
@@ -9,12 +6,39 @@ interface PDFRenderProps {
     fileType?: string;
 }
 
-const PDFViewer: React.ComponentType<PDFRenderProps> = ({ file, page }) => {
+const PDFViewer: React.FC<PDFRenderProps> = ({ file, page }) => {
+    const [pdfUrl, setPdfUrl] = useState<string>("");
+
+    useEffect(() => {
+        if (file instanceof Blob) {
+            const pdfBlob = new Blob([file], { type: "application/pdf" });
+            const url = URL.createObjectURL(pdfBlob);
+            setPdfUrl(url);
+            return () => {
+                URL.revokeObjectURL(url);
+            };
+        } else {
+            setPdfUrl("");
+            return () => {};
+        }
+    }, [file]);
+
+    const pageParam = page ? `#page=${page}` : "";
+
     return (
         <div style={{ height: "750px" }}>
-            <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <PDFrender fileUrl={URL.createObjectURL(file)} defaultScale={SpecialZoomLevel.ActualSize} initialPage={page ? page - 1 : 0} />
-            </Worker>
+            {pdfUrl ? (
+                <iframe
+                    src={`${pdfUrl}${pageParam}`}
+                    title="PDF Viewer"
+                    width="100%"
+                    height="100%"
+                    style={{ border: "none", height: "100%" }}
+                    allow="fullscreen"
+                />
+            ) : (
+                <div>Loading PDF...</div>
+            )}
         </div>
     );
 };
