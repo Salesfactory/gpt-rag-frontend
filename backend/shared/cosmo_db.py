@@ -468,7 +468,7 @@ def patch_organization_data(org_id, patch_data):
         logging.warning(f"Organization with id '{org_id}' not found.")
         raise NotFound(f"Organization not found")
 
-    allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms"}
+    allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms","additionalInstructions"}
 
     for key in allowed_fields:
         if key in patch_data:

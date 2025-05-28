@@ -27,15 +27,15 @@
 }
 
 .selected {
-    background-color: #9fc51d;
+    background-color: #00a63e;
     color: white;
-    border-color: #9fc51d;
+    border-color: #00a63e;
 }
 
 
 .continueButton {
     padding: 10px 20px;
-    background-color: #9fc51d;
+    background-color: #00a63e;
     color: white;
     font-weight: 500;
     border: none;
@@ -46,7 +46,7 @@
 }
 
 .continueButton:hover {
-    background-color: #8ab31f;
+    background-color: #008236;
 }
 
 .continueButton:disabled {
@@ -79,13 +79,13 @@
 
 .dropdown:focus {
     outline: none;
-    border-color: #8ab31f;
+    border-color: #00c951;
     background-color: #fff;
     box-shadow: 0 0 0 3px rgba(159, 197, 29, 0.2);
 }
 
 .selected {
-    border-color: #8ab31f;
+    border-color: #00c951;
 }
 
 

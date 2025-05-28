@@ -1,28 +1,41 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./router/ProtectedRoute";
-import Layout from "./pages/layout/_Layout";
+// import Layout from "./pages/layout/_Layout";
 import NoPage from "./pages/NoPage";
 import AccessDenied from "./pages/AccesDenied";
-import Chat from "./pages/chat/Chat";
-import Admin from "./pages/admin/Admin";
+// import Chat from "./pages/chat/Chat";
+// import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
-import Organization from "./pages/organization/Organization";
+// import Organization from "./pages/organization/Organization";
 import HelpCenter from "./pages/helpcenter/HelpCenter";
-import UploadResources from "./pages/resources/UploadResources";
+// import UploadResources from "./pages/resources/UploadResources";
 import RequestStudies from "./pages/studies/RequestStudies";
 import ReportManagement from "./pages/reports/ReportManagement";
-import Reports from "./pages/reports/Reports";
-import DistributionLists from "./pages/reports/DistributionLists";
+// import Reports from "./pages/reports/Reports";
+// import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
-import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
+// import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
+
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 import CurationReports from "./pages/reports/CurationReports";
 import CurationCreation from "./pages/reports/ReportCreation/CurationCreation";
 import SummarizationReports from "./pages/reports/SummarizationReports";
+
+// New Routes
+
+import Layout from "./pages/layout/_Layoutcopy";
+import Chat from "./pages/chat/Chatcopy";
+import Admin from "./pages/admin/Admincopy";
+import Organization from "./pages/organization/Organizationcopy";
+import DistributionLists from "./pages/reports/DistributionListscopy";
+import UploadResources from "./pages/resources/UploadResourcescopy";
+import Reports from "./pages/reports/Reportscopy";
+import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
+
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
 import { TemplateReports } from "./pages/reports/ReportTemplates";
@@ -34,6 +47,7 @@ export default function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/payment" element={<PaymentGateway />} />
             <Route path="/access-denied" element={<AccessDenied />} />
+            <Route path="/logout" element={<Logout />} />
 
             {/* Protected Routes for Authenticated Users (Regular and Admin) */}
             <Route
@@ -55,11 +69,35 @@ export default function App() {
                     <Route path="/" element={<Chat />} />
                     <Route path="/success-payment" element={<SuccessPayment />} />
                     <Route path="/help-center" element={<HelpCenter />} />
-                    <Route path="/logout" element={<Logout />} />
                     <Route path="/notification-settings" element={<Notifications />} />
                     <Route path="/access-denied" element={<AccessDenied />} />
                 </Route>
             </Route>
+            {/* <Route
+                element={
+                    <ProtectedRoute
+                        allowedRoles={["user", "admin", "platformAdmin"]}
+                        allowedTiers={[
+                            "Basic",
+                            "Custom",
+                            "Premium",
+                            "Basic + Financial Assistant",
+                            "Custom + Financial Assistant",
+                            "Premium + Financial Assistant"
+                        ]}
+                    />
+                }
+            >
+                <Route element={<Layout2 />}>
+                    {/* <Route path="/secondary-chat" element={<Chat2 />} /> */}
+            {/* <Route path="/secondary-admin" element={<Admin2 />} /> */}
+            {/* <Route path="/secondary-organization" element={<Organization2 />} /> */}
+            {/* <Route path="/secondary-details-settings" element={<DistributionLists2 />} /> */}
+            {/* <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} /> */}
+            {/* <Route path="/secondary-upload-resources" element={<UploadResources2 />} /> */}
+            {/* <Route path="/secondary-view-reports" element={<Reports2 />} /> 
+                </Route>
+            </Route> */}
 
             {/* Protected Routes for Admin Only */}
             <Route
@@ -81,8 +119,8 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
-                    <Route path="/subscription-management" element={<SubscriptionManagement/>}/>
-                    <Route path="/manage-email-lists" element={<UserManagement/>}/>
+                    <Route path="/subscription-management" element={<SubscriptionManagement />} />
+                    <Route path="/manage-email-lists" element={<UserManagement />} />
                 </Route>
             </Route>
 
@@ -127,11 +165,11 @@ export default function App() {
             >
                 <Route element={<Layout />}>
                     <Route path="/curation-reports" element={<CurationReports />} />
-                    <Route path="/create-curation-report" element={<CurationCreation />}/>
-                    <Route path="/summarization-reports" element={<SummarizationReports />}/>
-                    <Route path="/create-summarization-report" element={<SummarizationCreation/>}/>
-                    <Route path="/report-templates" element={<TemplateReports/>}/>
-                    <Route path="/create-template-report" element={<TemplateCreation/>}/>
+                    <Route path="/create-curation-report" element={<CurationCreation />} />
+                    <Route path="/summarization-reports" element={<SummarizationReports />} />
+                    <Route path="/create-summarization-report" element={<SummarizationCreation />} />
+                    <Route path="/report-templates" element={<TemplateReports />} />
+                    <Route path="/create-template-report" element={<TemplateCreation />} />
                 </Route>
             </Route>
 

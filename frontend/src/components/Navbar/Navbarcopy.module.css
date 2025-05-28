@@ -1,0 +1,185 @@
+/* Icon Styles */
+.iconLarge {
+    font-size: 1.9em;
+    color: #333333ab;
+}
+
+/* En tu .module.css */
+.brandText {
+    font-size: 1.4rem;
+    font-weight: 500;
+    /* Negrita suave */
+}
+
+
+/* Profile Card Styles */
+.profileCard {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4px 4px 4px 4px;
+    border-radius: 8px;
+}
+
+.profileCard:hover {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #f3f4f6;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.profileCircle {
+    background-color: #e6f9ed;
+    color: #157347;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.userName {
+    font-weight: 500;
+    color: #333;
+}
+
+.financialToggleText {
+    font-size: 1rem;
+    color: #333;
+}
+
+.financialToggle{
+    cursor: pointer;
+    height: 1.25rem;
+    width: 2.25rem;
+    transform: scale(1.5);
+}
+
+
+.financialToggle[type="checkbox"] {
+    background-color: #d1d5db;
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(255,255,255,1)'/></svg>") !important;
+}
+
+.financialToggle[type="checkbox"]:checked {
+    background-color: #43A047; 
+    border-color: #43A047;
+}
+
+.financialToggle[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.1rem #43A047;
+}
+
+@media (max-width: 900px) {
+    .financialToggleText{
+        display: none;
+    }
+}
+
+.iconContainer {
+    justify-content: flex-end !important;
+
+    @media (max-width: 767px) {
+        justify-content: flex-end !important;
+    }
+}
+
+/* Sidebartoggler */
+.sidebartoggler {
+    /* Define styles if needed */
+}
+
+/* Message Body */
+.messageBody {
+    /* Define styles if needed */
+}
+
+.headerNavbar {
+    -ms-flex-wrap: nowrap !important; 
+    flex-wrap: nowrap  !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+@media (max-width: 991.98px) {
+    .headerNavbar {
+        -ms-flex-wrap: nowrap !important; 
+        flex-wrap: nowrap  !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+    .headerNavbarAlt{
+        -ms-flex-wrap: nowrap !important; 
+        flex-wrap: nowrap  !important;
+        display: flex;
+        gap: 68%;
+    }
+}
+
+@media (max-width: 880px){
+    .userName {
+    display: none !important; 
+    }
+}
+
+.financialToggleContainer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.appHeader{
+    position: fixed;
+    z-index: 10;
+    width: 100%;
+    background-color: var(--bs-tertiary-bg);
+    padding: 0 25px;
+    top: 0;
+}
+
+.tooltipWrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltipText {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+
+    position: absolute;
+    z-index: 1;
+    top: 125%;
+
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tooltipWrapper:hover .tooltipText {
+    visibility: visible;
+    opacity: 1;
+}
+
+.chevron {
+    transition: transform 0.3s ease;
+}
+
+.rotate {
+    transform: rotate(180deg);
+}

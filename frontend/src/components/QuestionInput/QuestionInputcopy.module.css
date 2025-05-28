@@ -1,0 +1,70 @@
+.questionInputContainer {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px;
+    position: relative;
+}
+
+.attachmentContainer {
+    height: "100%";
+    justify-content: "center";
+    align-items: center;
+    display: flex;
+}
+
+.questionInputTextArea {
+    width: 100%;
+    line-height: 40px;
+    resize: none;
+    padding-bottom: 5px;
+    padding-right: 30px;
+    flex-grow: 1;
+    min-height: 40px;
+    max-height: 150px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.questionInputButtonsContainer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.questionInputSendButton {
+    cursor: pointer;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 3px;
+}
+
+.questionInputSendButtonDisabled {
+    opacity: 0.4;
+}
+
+.attachmentButton {
+    transform: rotate(-135deg) scaleX(-1) translate(-5px, 0px);
+    cursor: pointer;
+    font-size: 24px;
+    color: #9f9c9c;
+}
+
+.leftButtons {
+    position: absolute;
+    top: -10px;
+    bottom: -5px;
+    right: -5px;
+    background-color: rgb(22, 163, 74);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    z-index: 1;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+}

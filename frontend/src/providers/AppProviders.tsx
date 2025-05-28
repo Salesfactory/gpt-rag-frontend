@@ -52,6 +52,7 @@ interface OrganizationInfo {
     subscriptionExpirationDate?: number;
     subscriptionTier?: SubscriptionTier;
     brandInformation?: string;
+    additionalInstructions?: string;
     segmentSynonyms?: string;
     industryInformation?: string;
 }
@@ -354,7 +355,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         subscriptionStatus: organization.subscriptionStatus,
                         brandInformation: organization.brandInformation,
                         segmentSynonyms: organization.segmentSynonyms,
-                        industryInformation: organization.industryInformation
+                        industryInformation: organization.industryInformation,
+                        additionalInstructions: organization.additionalInstructions
                     });
 
                     debugLog("Organization details fetched:", organization);

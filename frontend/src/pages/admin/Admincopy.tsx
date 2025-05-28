@@ -2,14 +2,14 @@ import React, { useEffect, useState, useContext } from "react";
 import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar, ResponsiveMode } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
-import { AddFilled, DeleteRegular, EditRegular, SearchRegular } from "@fluentui/react-icons";
+import { CirclePlus, Search, SquarePen, Trash2, Filter } from "lucide-react";
 
 import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
 import { getUsers, inviteUser, createInvitation, deleteUser, updateUserData } from "../../api";
 
-import styles from "./Admin.module.css";
+import styles from "./Admincopy.module.css";
 
 const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: "900px" } };
 export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; users: never[] }) => {
@@ -147,7 +147,11 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             dialogContentProps={{
                 type: 0,
                 title: "Create a new user",
-                subText: "Invite a new user to the platform by providing their username and email."
+                subText: "Invite a new user to the platform by providing their username and email.",
+                styles: {
+                    title: { fontSize: 16 },
+                    subText: { fontSize: 16 }
+                }
             }}
             modalProps={{
                 isBlocking: true,
@@ -174,12 +178,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             marginBottom: "10px"
                         }}
                     >
-                        <div
-                            style={{
-                                width: "100%"
-                            }}
-                        >
-                            <Label>Username</Label>
+                        <div style={{ width: "100%" }}>
+                            <Label style={{ fontSize: 16 }}>Username</Label>
                             <TextField
                                 className={styles.questionInputTextArea}
                                 placeholder={"Username"}
@@ -192,19 +192,17 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                         borderRadius: "6px"
                                     },
                                     field: {
+                                        fontSize: 16,
                                         "::placeholder": {
-                                            color: "#979797"
+                                            color: "#979797",
+                                            fontSize: 16
                                         }
                                     }
                                 }}
                             />
                         </div>
-                        <div
-                            style={{
-                                width: "100%"
-                            }}
-                        >
-                            <Label>Email</Label>
+                        <div style={{ width: "100%" }}>
+                            <Label style={{ fontSize: 16 }}>Email</Label>
                             <TextField
                                 className={styles.questionInputTextArea}
                                 placeholder={"Email"}
@@ -217,23 +215,32 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                         borderRadius: "6px"
                                     },
                                     field: {
+                                        fontSize: 16,
                                         "::placeholder": {
-                                            color: "#979797"
+                                            color: "#979797",
+                                            fontSize: 16
                                         }
                                     }
                                 }}
                             />
                         </div>
                     </div>
-                    <Label>User role</Label>
+                    <Label style={{ fontSize: 16 }}>User Role</Label>
                     <Dropdown
                         placeholder="Select Role"
                         options={roleOptions}
                         onChange={handleRoleChange}
                         defaultValue={role}
-                        styles={{ title: { borderRadius: "6px", color: "#979797" } }}
+                        styles={{
+                            title: { borderRadius: "6px", color: "#979797", fontSize: 16 },
+                            dropdown: { fontSize: 16 }
+                        }}
                     />
-                    {errorMessage && <MessageBar messageBarType={2}>{errorMessage}</MessageBar>}
+                    {errorMessage && (
+                        <MessageBar messageBarType={2} styles={{ root: { fontSize: 16 } }}>
+                            {errorMessage}
+                        </MessageBar>
+                    )}
                     <div
                         style={{
                             display: "flex",
@@ -241,23 +248,24 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             gap: "10px"
                         }}
                     >
-                        <DefaultButton style={{ marginTop: "20px", borderRadius: "6px" }} onClick={onDismiss} text="Cancel" />
+                        <DefaultButton style={{ marginTop: "20px", borderRadius: "6px", fontSize: 16 }} onClick={onDismiss} text="Cancel" />
                         <PrimaryButton
                             styles={{
                                 root: {
-                                    backgroundColor: "#9FC51D",
-                                    borderColor: "#9FC51D",
+                                    backgroundColor: "#16a34a",
+                                    borderColor: "#16a34a",
                                     color: "white",
-                                    borderRadius: "6px"
+                                    borderRadius: "0.5rem",
+                                    fontSize: 16
                                 },
                                 rootHovered: {
-                                    backgroundColor: "#ACC41D",
-                                    borderColor: "#ACC41D",
+                                    backgroundColor: "#15803d",
+                                    borderColor: "#15803d",
                                     color: "white"
                                 },
                                 rootPressed: {
-                                    backgroundColor: "#9FC51D",
-                                    borderColor: "#9FC51D",
+                                    backgroundColor: "#15803d",
+                                    borderColor: "#15803d",
                                     color: "white"
                                 }
                             }}
@@ -265,7 +273,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             onClick={() => {
                                 onConfirm();
                             }}
-                            text="Send invitation"
+                            text="Send Invitation"
                         />
                     </div>
                 </DialogContent>
@@ -273,8 +281,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             {success && (
                 <DialogContent>
                     <div>
-                        <h3>Invitation sent</h3>
-                        <p>
+                        <h3 style={{ fontSize: 16 }}>Invitation Sent</h3>
+                        <p style={{ fontSize: 16 }}>
                             An invitation has been sent to <strong>{email}</strong>. They will receive an email with a link to create an account.
                         </p>
                     </div>
@@ -285,7 +293,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             gap: "10px"
                         }}
                     >
-                        <PrimaryButton onClick={onDismiss} text="Close" />
+                        <PrimaryButton style={{ fontSize: 16 }} onClick={onDismiss} text="Close" />
                     </div>
                 </DialogContent>
             )}
@@ -354,19 +362,19 @@ export const DeleteUserDialog = ({
                     <PrimaryButton
                         styles={{
                             root: {
-                                backgroundColor: "#9FC51D",
-                                borderColor: "#9FC51D",
+                                backgroundColor: "#16a34a",
+                                borderColor: "#16a34a",
                                 color: "white",
-                                borderRadius: "5px"
+                                borderRadius: "0.5rem"
                             },
                             rootHovered: {
-                                backgroundColor: "#ACC41D",
-                                borderColor: "#ACC41D",
+                                backgroundColor: "#15803d",
+                                borderColor: "#15803d",
                                 color: "white"
                             },
                             rootPressed: {
-                                backgroundColor: "#9FC51D",
-                                borderColor: "#9FC51D",
+                                backgroundColor: "#15803d",
+                                borderColor: "#15803d",
                                 color: "white"
                             }
                         }}
@@ -382,10 +390,18 @@ export const DeleteUserDialog = ({
     );
 };
 
+const roleFilterOptions = [
+    { label: "All Roles", value: "all" },
+    { label: "User", value: "user" },
+    { label: "Admin", value: "admin" },
+    { label: "Platform Admin", value: "platformAdmin" }
+];
+
 const Admin = () => {
     const { user, organization } = useAppContext();
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState([]);
+    const [roleFilter, setRoleFilter] = useState("all");
     const [selectedUser, setSelectedUser] = useState({
         id: "",
         data: {
@@ -463,15 +479,17 @@ const Admin = () => {
     }, [dataLoad]);
 
     useEffect(() => {
-        if (!search) {
-            setFilteredUsers(users);
-        } else {
-            const filtered = users.filter((user: any) => {
-                return user.data.name.toLowerCase().includes(search.toLowerCase()) || user.data.email.toLowerCase().includes(search.toLowerCase());
-            });
-            setFilteredUsers(filtered);
+        let filtered = users;
+        if (search) {
+            filtered = filtered.filter(
+                (user: any) => user.data.name.toLowerCase().includes(search.toLowerCase()) || user.data.email.toLowerCase().includes(search.toLowerCase())
+            );
         }
-    }, [search]);
+        if (roleFilter !== "all") {
+            filtered = filtered.filter((user: any) => user.role === roleFilter);
+        }
+        setFilteredUsers(filtered);
+    }, [search, roleFilter, users]);
 
     const handleDeleteClick = (user: any) => {
         setSelectedUser(user);
@@ -552,14 +570,22 @@ const Admin = () => {
             setDataLoad(!dataLoad);
         }
     };
+    const [showModal, setShowModal] = useState(false);
+    const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+
+    useEffect(() => {
+        if (isEditing) {
+            setShowModal(true);
+        } else {
+            const timer = setTimeout(() => setShowModal(false), 200);
+            return () => clearTimeout(timer);
+        }
+    }, [isEditing]);
 
     return (
         <div className={styles.page_container}>
             <ToastContainer />
             <>
-                <div id="options-row" className={styles.row}>
-                    <h1 className={styles.title}>Roles and access</h1>
-                </div>
                 <div
                     style={{
                         display: "flex",
@@ -568,24 +594,132 @@ const Admin = () => {
                         alignItems: "center"
                     }}
                 >
+                    <div style={{ display: "flex", gap: "12px", width: "100%", maxWidth: 600 }}>
+                        <div style={{ position: "relative", flex: 1 }}>
+                            <span
+                                style={{
+                                    position: "absolute",
+                                    left: 12,
+                                    top: "50%",
+                                    transform: "translateY(-50%)",
+                                    zIndex: 1,
+                                    color: "#9ca3af",
+                                    pointerEvents: "none",
+                                    paddingBottom: "1px"
+                                }}
+                            >
+                                <Search />
+                            </span>
+                            <TextField
+                                className={styles.responsiveSearch}
+                                placeholder="Search Users..."
+                                styles={{
+                                    fieldGroup: {
+                                        height: "40px",
+                                        paddingLeft: 36,
+                                        borderRadius: "0.5rem",
+                                        border: "1px solid #e5e7eb",
+                                        position: "relative",
+                                        selectors: {
+                                            "::after": {
+                                                borderRadius: "0.5rem"
+                                            }
+                                        }
+                                    },
+                                    field: {
+                                        fontSize: "16px",
+                                        selectors: {
+                                            ":focus": {
+                                                outline: "none"
+                                            },
+                                            ":focus-visible": {
+                                                outline: "none"
+                                            },
+                                            "::placeholder": {
+                                                color: "#9ca3af",
+                                                fontSize: "16px"
+                                            }
+                                        }
+                                    },
+                                    root: {
+                                        selectors: {
+                                            ":focus-within": {
+                                                outline: "none"
+                                            },
+                                            "::after": {
+                                                border: "none !important",
+                                                display: "none !important"
+                                            }
+                                        }
+                                    }
+                                }}
+                                onChange={(_ev, newValue) => {
+                                    setSearch(newValue || "");
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ position: "relative" }}>
+                            <button className={styles.filterButton} type="button" onClick={() => setShowRoleDropdown(v => !v)}>
+                                <Filter className={styles.addIcon2} />
+                                <span className={styles.hideOnMobile}>{roleFilterOptions.find(opt => opt.value === roleFilter)?.label || "Filter"}</span>
+                            </button>
+                            {showRoleDropdown && (
+                                <div
+                                    className={styles.dropdownMenu}
+                                    style={{
+                                        position: "absolute",
+                                        top: "110%",
+                                        left: 0,
+                                        background: "white",
+                                        border: "1px solid #e5e7eb",
+                                        borderRadius: "0.5rem",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                        zIndex: 10,
+                                        minWidth: 140
+                                    }}
+                                >
+                                    {roleFilterOptions.map(option => (
+                                        <div
+                                            key={option.value}
+                                            className={styles.dropdownItem}
+                                            onClick={() => {
+                                                setRoleFilter(option.value);
+                                                setShowRoleDropdown(false);
+                                            }}
+                                            style={{
+                                                padding: "8px 16px",
+                                                cursor: "pointer",
+                                                fontWeight: roleFilter === option.value ? "bold" : "normal",
+                                                background: roleFilter === option.value ? "#f3f4f6" : "white"
+                                            }}
+                                        >
+                                            {option.label}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                     <PrimaryButton
-                        className={styles.option}
+                        className={`${styles.option} ${styles.responsiveButton}`}
                         disabled={loading}
                         styles={{
                             root: {
-                                backgroundColor: "#9FC51D",
-                                borderColor: "#9FC51D",
+                                backgroundColor: "#16a34a",
                                 color: "white",
-                                borderRadius: "6px"
+                                border: "none"
                             },
                             rootHovered: {
-                                backgroundColor: "#ACC41D",
-                                borderColor: "#ACC41D",
+                                backgroundColor: "#15803d",
                                 color: "white"
                             },
+                            rootFocused: {
+                                outline: "none",
+                                boxShadow: "0 0 0 2px white, 0 0 0 4px #22c55e"
+                            },
                             rootPressed: {
-                                backgroundColor: "#9FC51D",
-                                borderColor: "#9FC51D",
+                                backgroundColor: "#15803d",
                                 color: "white"
                             }
                         }}
@@ -593,39 +727,9 @@ const Admin = () => {
                             setIsOpen(true);
                         }}
                     >
-                        <AddFilled className={styles.addIcon} />
-                        Create user
+                        <CirclePlus className={styles.addIcon} />
+                        <span className={styles.buttonText}>Create User</span>
                     </PrimaryButton>
-                    <TextField
-                        placeholder="Search..."
-                        style={{
-                            width: "240px",
-                            borderRadius: "6px",
-                            border: "1px solid #9F9C9C",
-                            padding: "0px 15px"
-                        }}
-                        styles={{
-                            fieldGroup: {
-                                border: "none",
-                                borderRadius: "6px"
-                            },
-                            root: {
-                                border: "none"
-                            },
-                            field: {
-                                "::placeholder": {
-                                    color: "#979797"
-                                }
-                            }
-                        }}
-                        onChange={(_ev, newValue) => {
-                            setSearch(newValue || "");
-                        }}
-                        iconProps={{
-                            iconName: "Search",
-                            children: <SearchRegular className={styles.searchIcon} />
-                        }}
-                    />
                 </div>
 
                 {loading ? null : <CreateUserForm isOpen={isOpen} setIsOpen={setIsOpen} users={users} />}
@@ -639,64 +743,73 @@ const Admin = () => {
                     }}
                     isDeletingUser={isDeletingUser}
                 />
-                {isEditing && (
-                    <div className={styles.modal}>
-                        <Label className={styles.modalTitle}>Edit User</Label>
-                        <form>
-                            <Label>User Name</Label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                onChange={handleInputName}
-                                placeholder={selectedUser.data.name}
-                                value={inputUserName}
-                            ></input>
-                            <Label>User Email</Label>
-                            <input
-                                type="text"
-                                className={styles.input}
-                                onChange={handleInputEmail}
-                                placeholder={selectedUser.data.email}
-                                value={inputEmailName}
-                            ></input>
-                            <Label>Curation Report Category</Label>
-                            <Dropdown
-                                placeholder="Select a Role"
-                                options={roleOptions}
-                                onChange={handleTypeDropdownChange}
-                                defaultValue={categorySelection}
-                                responsiveMode={ResponsiveMode.unknown}
-                            />
-                            {isError && <span className={styles.modalError}>{errorMessage}</span>}
+                {showModal && (
+                    <>
+                        <div className={styles.modalOverlay} onClick={() => setIsEditing(false)}></div>
+                        <div className={`${styles.modal} ${!isEditing ? styles.modalHidden : ""}`}>
+                            <Label className={styles.modalTitle}>Edit User</Label>
+                            <form>
+                                <Label
+                                    styles={{
+                                        root: { padding: "0px 0px 10px 0px" }
+                                    }}
+                                >
+                                    User Name
+                                </Label>
+                                <input
+                                    type="text"
+                                    className={styles.input}
+                                    onChange={handleInputName}
+                                    placeholder={selectedUser.data.name}
+                                    value={inputUserName}
+                                ></input>
+                                <Label>User Email</Label>
+                                <input
+                                    type="text"
+                                    className={styles.input}
+                                    onChange={handleInputEmail}
+                                    placeholder={selectedUser.data.email}
+                                    value={inputEmailName}
+                                ></input>
+                                <Label>Role</Label>
+                                <Dropdown
+                                    placeholder="Select a Role"
+                                    options={roleOptions}
+                                    onChange={handleTypeDropdownChange}
+                                    defaultValue={categorySelection}
+                                    responsiveMode={ResponsiveMode.unknown}
+                                />
+                                {isError && <span className={styles.modalError}>{errorMessage}</span>}
 
-                            <DefaultButton style={{ marginTop: "50px", marginRight: "95px" }} onClick={() => setIsEditing(false)} text="Cancel" />
-                            <PrimaryButton
-                                styles={{
-                                    root: {
-                                        backgroundColor: "#9FC51D",
-                                        borderColor: "#9FC51D",
-                                        color: "white",
-                                        borderRadius: "5px"
-                                    },
-                                    rootHovered: {
-                                        backgroundColor: "#ACC41D",
-                                        borderColor: "#ACC41D",
-                                        color: "white"
-                                    },
-                                    rootPressed: {
-                                        backgroundColor: "#9FC51D",
-                                        borderColor: "#9FC51D",
-                                        color: "white"
-                                    }
-                                }}
-                                style={{ marginTop: "20px" }}
-                                onClick={() => {
-                                    editUser(selectedUser.id);
-                                }}
-                                text="Edit User"
-                            />
-                        </form>
-                    </div>
+                                <DefaultButton style={{ marginTop: "50px", marginRight: "95px" }} onClick={() => setIsEditing(false)} text="Cancel" />
+                                <PrimaryButton
+                                    styles={{
+                                        root: {
+                                            backgroundColor: "#16a34a",
+                                            borderColor: "#16a34a",
+                                            color: "white",
+                                            borderRadius: "0.5rem"
+                                        },
+                                        rootHovered: {
+                                            backgroundColor: "#15803d",
+                                            borderColor: "#15803d",
+                                            color: "white"
+                                        },
+                                        rootPressed: {
+                                            backgroundColor: "#15803d",
+                                            borderColor: "#15803d",
+                                            color: "white"
+                                        }
+                                    }}
+                                    style={{ marginTop: "20px" }}
+                                    onClick={() => {
+                                        editUser(selectedUser.id);
+                                    }}
+                                    text="Edit User"
+                                />
+                            </form>
+                        </div>
+                    </>
                 )}
                 {isEditSuccess && (
                     <div className={styles.modalSuccess}>
@@ -718,14 +831,16 @@ const Admin = () => {
                                 <tr>
                                     <th
                                         style={{
-                                            padding: "10px"
+                                            padding: "10px",
+                                            fontSize: "1rem",
+                                            fontWeight: 600
                                         }}
                                     >
                                         Name
                                     </th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Actions</th>
+                                    <th className={styles.tableTitle}>Email</th>
+                                    <th className={styles.tableTitle}>Role</th>
+                                    <th className={styles.tableTitle}>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -739,6 +854,9 @@ const Admin = () => {
                                         >
                                             <td
                                                 style={{
+                                                    fontSize: "14px",
+                                                    fontWeight: 500,
+                                                    color: "#111827",
                                                     padding: "10px",
                                                     textAlign: "justify"
                                                 }}
@@ -747,6 +865,8 @@ const Admin = () => {
                                             </td>
                                             <td
                                                 style={{
+                                                    fontSize: "14px",
+                                                    color: "#6B7280",
                                                     textAlign: "justify"
                                                 }}
                                             >
@@ -763,8 +883,8 @@ const Admin = () => {
                                                         textTransform: "capitalize"
                                                     }}
                                                 >
-                                                    <div className={roleStyles[user.data.role as "admin" | "user" | "platformAdmin"] || ""}>
-                                                        {user.data.role}
+                                                    <div className={roleStyles[user.role as "admin" | "user" | "platformAdmin"] || ""}>
+                                                        {user.role === "platformAdmin" ? "Platform Admin" : user.role}
                                                     </div>
                                                 </div>
                                             </td>
@@ -779,7 +899,7 @@ const Admin = () => {
                                                                 handleEditClick(user);
                                                             }}
                                                         >
-                                                            <EditRegular />
+                                                            <SquarePen className={styles.bothIcons} />
                                                         </button>
                                                         <button
                                                             className={styles.button}
@@ -789,7 +909,7 @@ const Admin = () => {
                                                                 handleDeleteClick(user);
                                                             }}
                                                         >
-                                                            <DeleteRegular />
+                                                            <Trash2 className={styles.bothIcons} />
                                                         </button>
                                                     </div>
                                                 }

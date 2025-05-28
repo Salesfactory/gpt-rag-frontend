@@ -1,13 +1,13 @@
-import React, { Suspense, lazy, useState, useEffect } from "react";
+import React, { Suspense, lazy } from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import DOMPurify from "dompurify";
 import styles from "./AnalysisPanel.module.css";
-import { SupportingContent } from "../SupportingContent";
 import { AskResponse } from "../../api";
 import { AnalysisPanelTabs } from "./AnalysisPanelTabs";
-import { getPage, getFileType } from "../../utils/functions";
+import { getPage } from "../../utils/functions";
 import { DismissCircleFilled } from "@fluentui/react-icons";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
+import { Brain, BookOpen } from "lucide-react";
 
 const LazyViewer = lazy(() => import("../DocView/DocView"));
 
@@ -37,6 +37,52 @@ const closeButtonStyle = {
     }
 };
 
+interface ThoughtItem {
+    title: string;
+    value: string;
+}
+
+function parseFormattedThoughts(html: string): ThoughtItem[] {
+    if (!html || html.trim() === "") {
+        return [];
+    }
+
+    const sections = html
+        .split(/<hr \/><br \/><br \/>|<br \/><hr \/><br \/>/)
+        .map(section => section.trim())
+        .filter(section => section.length > 0);
+
+    const items: ThoughtItem[] = [];
+
+    sections.forEach(section => {
+        let cleanSection = section
+            .replace(/<hr \/>/g, "")
+            .replace(/<br \/>/g, "\n")
+            .replace(/(\d+)\\\./g, "$1.")
+            .trim();
+
+        if (cleanSection) {
+            const colonIndex = cleanSection.indexOf(":");
+
+            if (colonIndex > -1 && colonIndex < 100) {
+                const potentialTitle = cleanSection.slice(0, colonIndex).trim();
+
+                if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.?\s/.test(potentialTitle)) {
+                    const title = potentialTitle;
+                    const value = cleanSection.slice(colonIndex + 1).trim();
+                    items.push({ title, value });
+                } else {
+                    items.push({ title: "", value: cleanSection });
+                }
+            } else {
+                items.push({ title: "", value: cleanSection });
+            }
+        }
+    });
+
+    return items;
+}
+
 export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
@@ -59,15 +105,18 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
 
                 // Format the string: newlines and separators
                 const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-                const formattedInternalContent = thoughtsWithBreaks.replace(/\s*==============================================\s*/g, "<br /><br />");
+                const formattedInternalContent = thoughtsWithBreaks
+                    .replace(/\s*==============================================\s*/g, "<hr />")
+                    .replace(/\s*#\s*/g, "<hr /><br />");
                 formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
-
             } else {
                 // Fallback if parsing failed or structure is unexpected: treat as plain text and apply basic formatting
                 console.warn("Could not parse thoughts as JSON or structure was unexpected. Falling back to plain text formatting.");
                 const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts);
                 const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-                const formattedInternalContent = thoughtsWithBreaks.replace(/\s*==============================================\s*/g, "<br /><br />");
+                const formattedInternalContent = thoughtsWithBreaks
+                    .replace(/\s*==============================================\s*/g, "<hr />")
+                    .replace(/\s*#\s*/g, "<hr /><br />");
                 formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
             }
         }
@@ -76,11 +125,14 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
         console.error("Error parsing thoughts JSON:", error);
         const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts || "");
         const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-        const formattedInternalContent = thoughtsWithBreaks.replace(/\s*==============================================\s*/g, "<br /><br />");
+        const formattedInternalContent = thoughtsWithBreaks
+            .replace(/\s*==============================================\s*/g, "<hr />")
+            .replace(/\s*#\s*/g, "<hr /><br />");
         formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
     }
-
-
+    console.log("formattedThoughts", formattedThoughts);
+    const thoughtItems = parseFormattedThoughts(formattedThoughts);
+    console.log("texto formateado mi funcion para imprimirlo: ", thoughtItems);
     return (
         <>
             <Pivot
@@ -88,21 +140,90 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                 selectedKey={activeTab}
                 onLinkClick={pivotItem => pivotItem && onActiveTabChanged(pivotItem.props.itemKey! as AnalysisPanelTabs)}
                 aria-label="Analysis Panel"
+                styles={{
+                    linkIsSelected: {
+                        color: "#159244",
+                        fontSize: "15px",
+                        selectors: {
+                            ":before": {
+                                backgroundColor: "#008236"
+                            },
+                            ":hover": {
+                                color: "#159244",
+                                backgroundColor: "#f0fdf4"
+                            }
+                        }
+                    }
+                }}
             >
                 <PivotItem
                     itemKey={AnalysisPanelTabs.ThoughtProcessTab}
-                    headerText="Thought process"
-                    headerButtonProps={isDisabledThoughtProcessTab ? pivotItemDisabledStyle : undefined}
+                    headerButtonProps={{
+                        className: styles.pivotItemWithBrainIcon,
+                        ...(isDisabledThoughtProcessTab ? pivotItemDisabledStyle : {})
+                    }}
                     aria-label="Thought Process Tab"
+                    onRenderItemLink={() => (
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <Brain size={16} style={{ marginRight: 4 }} />
+                            Thought Process
+                        </span>
+                    )}
                 >
-                    <div className={styles.thoughtProcess} dangerouslySetInnerHTML={{ __html: formattedThoughts }}></div>
+                    <div className={styles.thoughtProcess}>
+                        {thoughtItems.map((item, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    backgroundColor: "#f9fafb",
+                                    padding: "12px",
+                                    marginBottom: "10px",
+                                    borderRadius: "6px"
+                                }}
+                            >
+                                {item.title && (
+                                    <h3
+                                        style={{
+                                            margin: "0 0 6px 0",
+                                            color: "#333",
+                                            fontWeight: "600",
+                                            fontSize: "1rem"
+                                        }}
+                                    >
+                                        {item.title}
+                                    </h3>
+                                )}
+                                <p
+                                    style={{
+                                        margin: 0,
+                                        color: "#555",
+                                        whiteSpace: "pre-wrap",
+                                        fontSize: "14px",
+                                        lineHeight: "1.4"
+                                    }}
+                                >
+                                    {item.value.split("<br />").map((line, i) => (
+                                        <React.Fragment key={i}>
+                                            {line}
+                                            <br />
+                                        </React.Fragment>
+                                    ))}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
                 </PivotItem>
 
                 <PivotItem
                     itemKey={AnalysisPanelTabs.CitationTab}
-                    headerText="Source"
                     headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
-                     aria-label="Source Tab"
+                    aria-label="Source Tab"
+                    onRenderItemLink={() => (
+                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <BookOpen size={16} style={{ marginRight: 4 }} />
+                            Doc Preview
+                        </span>
+                    )}
                 >
                     <Suspense fallback={<p>Loading...</p>}>
                         <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
@@ -122,7 +243,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                             }}
                             aria-label="Close Panel Button"
                         >
-                            <DismissCircleFilled                               
+                            <DismissCircleFilled
                                 className={mergeStyles({
                                     fontSize: 35,
                                     padding: 0,

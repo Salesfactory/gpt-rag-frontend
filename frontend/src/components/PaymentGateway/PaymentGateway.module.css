@@ -4,7 +4,117 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 100px 100px 100px 150px;
+    padding: 40px 40px 40px 40px;
+}
+
+
+/* New styles */
+.containerStep3 {
+    border-radius: 12px 12px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    justify-content: space-evenly;
+    flex-grow: 1;
+    gap: 1rem;
+    background-color: #65af81;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    color: white;
+}
+
+.title3 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    color: white;
+    z-index: 2;
+    padding: 20px;
+}
+
+.text3 {
+    color: rgb(55, 65, 81);
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 1rem;
+}
+
+.optionContainer{
+    display: flex;
+    border-bottom: 1px solid rgb(229, 231, 235);
+    width: 100%;
+}
+
+.optionSelector {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    flex: 1 1 0%;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+    color: rgb(107, 114, 128);
+}
+
+.optionSelectorActive {
+    color: rgb(22, 163, 74);
+    border-bottom: 2px solid rgb(22, 163, 74); }
+
+
+.namepriceContainer{
+    width: 100%;
+    border-bottom: 1px solid rgb(229, 231, 235);
+}
+
+.featureList {
+    padding-left: 1rem;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.featureItem {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
+    color: rgb(31, 41, 55);
+    line-height: 1.4;
+    gap: 0.5rem;
+}
+
+.checkIcon {
+    color: rgb(22, 163, 74);
+    width: 1rem;
+    height: 1rem;
+}
+
+.faqList {
+    list-style: none;
+    padding-left: 0;
+    padding-right: 10px;
+    padding-top: 10px;
+}
+
+.faqQuestion {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgb(31, 41, 55);
+    margin-bottom: 0.25rem; }
+
+.faqAnswer {
+    font-size: 12px;
+    color: rgb(75, 85, 99);
+    line-height: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.faqQuestion,
+.faqAnswer {
+    text-align: left;
+    padding: 0px 0px 0px 20px;
 }
 
 .row {
@@ -24,42 +134,45 @@
 
 .planContainer {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     text-align: center;
     gap: 20px;
     flex-wrap: wrap;
     margin-top: 20px;
+    background-color: white;
+    padding: 20px 20px 20px 20px;
+    width: 100%;
+    z-index: 2;
+    border-radius: 11px 11px 11px 11px;
 }
 
 .plan {
-    border: 2px solid #a2e700;
-    border-radius: 8px;
-    padding: 20px;
-    width: 300px;
-    height: 400px;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgb(229, 231, 235);
+    border-radius: 0.5rem;
+    padding: 20px 0px 0px 0px;
+    width: 32%;
     background: white;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     position: relative;
     align-items: center;
 }
 
+.planIntro {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 1rem; 
+}
 .planName {
-  margin: 0;
-  font-size: 1.8em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 600;
-  color: #333;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: rgb(31, 41, 55);
 }
 
 .planPrice {
-  font-size: 1.5em;
-  color: #666;
-  margin: 20px 0;
+    font-size: 1.125rem;
+    color: rgb(75, 85, 99);
 }
 
 .planInterval {
@@ -80,23 +193,29 @@
 }
 
 .planButton {
-    background-color: #9fc51d;
+    padding: 0.75rem 1rem;
+    background-color: rgb(22, 163, 74);
     color: white;
-    border: 1px solid #9fc51d;
-    padding: 12px 25px;
-    border-radius: 6px;
+    border: none;
+    border-radius: 0.375rem;
     cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s;
-    font-family: "Poppins", sans-serif;
+    width: 100%;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: 0.3s;
+}
+
+.planButtonContainer {
+    margin-top: auto; 
+    padding-bottom: 1rem;
 }
 
 .planButton:hover {
-    background-color: #acc41d;
+    background-color: rgb(21, 128, 61);
 }
 
 .planButton:focus {
-    background-color: #9fc51d;
+    background-color: rgb(21, 128, 61);
 }
 
 .spinnerContainer {
@@ -115,4 +234,25 @@
 
 .planIcon {
     margin: 10px 0;
+}
+
+.green-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: color-mix(in oklab, #15803d 35%, transparent);
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 1;
+}
+
+@media (max-width: 1024px) {
+    .plan {
+        width: 48%;
+    }
+}
+
+@media (max-width: 768px) {
+    .plan {
+        width: 100%;
+    }
 }

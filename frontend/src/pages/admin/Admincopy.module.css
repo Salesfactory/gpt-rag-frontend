@@ -1,0 +1,426 @@
+.page_container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 50px 50px 50px 50px;
+    background-color: #f9fafb;
+}
+
+.separator {
+    font-size: "24px";
+    height: "24px";
+    width: "24px";
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    justify-items: center;
+    border-bottom: 2px solid #d9d9d9;
+    margin-bottom: 10px;
+}
+
+.title {
+    margin-bottom: 10px;
+    margin-left: 20px;
+}
+
+
+
+.closeButton {
+    position: fixed;
+    top: 0;
+    right: 0px;
+    border: none;
+    font-size: 25px;
+    color: black;
+    background-color: transparent;
+    cursor: pointer;
+    transform: rotate(45deg);
+    margin-bottom: -5px;
+    padding-top: 6px;
+}
+
+.closeButtonContainer:active {
+    background-color: rgba(214, 214, 214, 0.315);
+    border-radius: 5px;
+}
+
+.questionInputContainer {
+    border-radius: 8px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+    height: 90px;
+    width: 100%;
+    padding: 15px;
+    background: white;
+    border-bottom: 5px solid #a2e700;
+}
+
+.questionInputTextArea {
+    width: 100%;
+    line-height: 40px;
+}
+
+.table {
+    text-align: left;
+    background-color: white;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.tableTitle{
+    padding: 10px;
+    font-size: 1rem;
+    font-weight: 600 
+}
+
+.tableContainer {
+    border-radius: 10px;
+    overflow: hidden;
+    overflow-x: auto;
+    width: 100%;
+    border: 1px solid #d9d9d9;
+    margin-top: 1.5rem;
+}
+
+.table thead {
+    background-color: #00a63e;
+    color: white;
+}
+
+.button {
+    background: none;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 5px 2px 5px;
+    cursor: pointer;
+    font-size: 20px;
+    margin-top: 5px;
+}
+
+.button:hover {
+    background-color: #e3e3e3;
+}
+
+.dialogFont {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 16px; }
+
+.addIcon2 {
+    font-size: 15px;
+}
+
+.addIcon {
+    font-size: 15px;
+    margin-right: 5px;
+}
+
+
+@media (max-width: 768px) {
+    .button {
+        width: 100%;
+        padding: 0px 0px 0px 0px;
+        font-size: 18px;
+        justify-content: flex-start;
+    }
+
+    .option {
+        font-size: 12px;
+    }
+
+    .title {
+        margin-bottom: 10px;
+        margin-left: 0px;
+    }
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 30em;
+    height: auto;
+    z-index: 500;
+    padding: 50px 100px 100px 100px;
+    background-color: #f5f5f5;
+    border: 1px solid #e3e3e3;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    gap: 30px;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.modalHidden {
+    opacity: 0;
+    transform: translate(-50%, -45%) scale(0.97);
+    pointer-events: none;
+}
+
+.input {
+    width: 17.5em;
+}
+
+.modalTitle {
+    margin-bottom: 40px;
+    text-align: center;
+
+}
+
+@media (max-width: 900px) {
+    .modal {
+        width: 20em;
+    }
+}
+
+.modalButtonContainer {
+
+    gap: 50px;
+}
+
+.modalError {
+    color: red;
+    font-style: italic;
+}
+
+.modalSuccess {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: auto;
+    height: auto;
+    z-index: 500;
+    padding: 100px;
+    background-color: #cef1a5;
+    border: 1px solid #87f083;
+    border-radius: 6px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 30px;
+}
+
+.roleAdmin {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: #bfdbfe;
+    color: #1e40af;
+}
+
+.roleUser {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.rolePlatformAdmin {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background-color: #d9ff98;
+    color: #1b4332;
+}
+
+
+.dropdown {
+    display: inline-flex;
+    justify-content: center;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    min-width: 140px;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown:hover {
+    background-color: #f9fafb;
+}
+
+.dropdown:active {
+    border-color: #e5e7eb;
+}
+
+.dropdown:focus-within {
+    outline: none;
+    box-shadow: 0 0 0 2px #22c55e;
+}
+
+.dropdown :global(.ms-Dropdown-title) {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: #374151 !important;
+    border-color: transparent !important;
+}
+
+.dropdown:active :global(.ms-Dropdown-title),
+.dropdown:focus-within :global(.ms-Dropdown-title),
+.dropdown :global(.ms-Dropdown-title:focus),
+.dropdown :global(.ms-Dropdown-title:active) {
+    border: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+.dropdown :global(.ms-Dropdown) {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.responsiveSearch {
+    max-width: 300px;
+    width: 100%;
+}
+
+
+@media (max-width: 768px) {
+    .responsiveSearch {
+        max-width: 260px;
+    }
+}
+
+
+@media (max-width: 495px) {
+    .responsiveSearch {
+        max-width: 140px;
+    }
+}
+
+.responsiveButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    min-width: 160px;
+    height: 40px;
+    font-size: 16px;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+    width: 145px;
+}
+
+
+@media (max-width: 768px) {
+    .responsiveButton {
+        font-size: 14px;
+        padding: 0.5rem 1rem;
+        min-width: 120px;
+        height: 36px;
+        width: auto;
+    }
+}
+
+@media (max-width: 410px) {
+    .responsiveButton {
+        padding: 0.5rem;
+        min-width: 40px;
+        width: 40px;
+        justify-content: center;
+    }
+
+    .addIcon {
+        margin-right: 0px;
+    }
+
+    .buttonText {
+        display: none;
+    }
+}
+
+.text {
+    display: inline;
+}
+
+@media (max-width: 380px) {
+    .text {
+        display: none;
+    }
+}
+.hideOnMobile {
+    font-size: 16px;
+    display: inline;
+}
+
+@media (max-width: 405px) {
+    .hideOnMobile {
+        display: none !important;
+    } }
+
+.bothIcons {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #6B7280;
+    width: 18px;
+    height: 18px;
+}
+
+.buttonText{
+    font-size: 16px;
+    font-weight: 400;
+}
+
+
+.filterButton {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 7px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    gap: 6px;
+    transition: background 0.2s;
+}
+
+.filterButton:hover {
+    background: #f3f4f6;
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+    min-width: 140px;
+}
+
+.dropdownItem {
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.dropdownItem:hover {
+    background: #f3f4f6;
+}

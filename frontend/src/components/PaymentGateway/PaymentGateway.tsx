@@ -5,7 +5,8 @@ import styles from "./PaymentGateway.module.css";
 import { getApiKeyPayment, createCheckoutSession, getProductPrices } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
-import { ChartPerson48Regular } from "@fluentui/react-icons";
+import { Check } from "lucide-react";
+import subscription from "../../img/subscription_image.png";
 
 const fetchApiKey = async () => {
     const apiKey = await getApiKeyPayment();
@@ -17,13 +18,17 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
 
     const [prices, setPrices] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
-
+    const [selectedTabs, setSelectedTabs] = useState<{ [priceId: string]: "features" | "faq" }>({});
     useEffect(() => {
         // Fetch product prices when the component mounts
         async function fetchPrices() {
             try {
                 const data = await getProductPrices({ user });
-                setPrices(data.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount));
+                const sortedPrices = data.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount);
+                setPrices(sortedPrices);
+
+                const initialTabs = Object.fromEntries(sortedPrices.map((price: any) => [price.id, "features"]));
+                setSelectedTabs(initialTabs);
             } catch (err) {
                 console.error("Failed to fetch product prices:", err);
                 setError("Unable to fetch product prices. Please try again later.");
@@ -60,21 +65,74 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
 
     return (
         <div className={styles.subscriptionPlan} aria-labelledby="subscription-plans-title">
-            <div id="options-row" className={styles.row}>
-                <h1 className={styles.subscriptionPlanTitle}>Subscription Plans</h1>
-            </div>
-            <div className={styles.planContainer}>
-                {prices.map((price, index) => {
-                    return (
-                        <>
+            <div
+                className={styles.containerStep3}
+                style={{
+                    backgroundImage: `url(${subscription})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                    position: "relative"
+                }}
+            >
+                <div className={styles["green-overlay"]} />
+                <h1 className={styles.title3}>Subscription Plans</h1>
+                <div className={styles.planContainer}>
+                    <div className={styles.planIntro}>
+                        <p className={styles.text3}>Select the perfect subscription plan to supercharge your experiences:</p>
+                    </div>
+                    {prices.map((price, index) => {
+                        return (
                             <div key={price.id} className={styles.plan}>
-                                <ChartPerson48Regular className={styles.planIcon} />
-                                <h2 className={styles.planName}>{price.nickname}</h2>
-                                <p className={styles.planPrice}>
-                                    ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
-                                </p>
-                                <p className={styles.planDescription}>{price.description}</p>
-                                {price.id !== "free_plan" && (
+                                <div className={styles.namepriceContainer}>
+                                    <h2 className={styles.planName}>{price.nickname}</h2>
+                                    <p className={styles.planPrice}>
+                                        ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()}
+                                    </p>
+                                </div>
+                                <div className={styles.optionContainer}>
+                                    <div
+                                        className={`${styles.optionSelector} ${selectedTabs[price.id] === "features" ? styles.optionSelectorActive : ""}`}
+                                        onClick={() => setSelectedTabs(prev => ({ ...prev, [price.id]: "features" }))}
+                                    >
+                                        Features
+                                    </div>
+                                    <div
+                                        className={`${styles.optionSelector} ${selectedTabs[price.id] === "faq" ? styles.optionSelectorActive : ""}`}
+                                        onClick={() => setSelectedTabs(prev => ({ ...prev, [price.id]: "faq" }))}
+                                    >
+                                        FAQ
+                                    </div>
+                                </div>
+
+                                {/* Contenido dinámico */}
+                                {selectedTabs[price.id] === "features" && (
+                                    <ul className={styles.featureList}>
+                                        {price.metadata.features?.split(",").map((feature: string, idx: number) => (
+                                            <li key={idx} className={styles.featureItem}>
+                                                <Check className={styles.checkIcon} />
+                                                {feature.trim()}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+
+                                {selectedTabs[price.id] === "faq" && (
+                                    <ul className={styles.faqList}>
+                                        {price.metadata.FAQ?.split("*")
+                                            .filter(Boolean)
+                                            .map((entry: string, idx: number) => {
+                                                const isQuestion = idx % 2 === 0;
+                                                return (
+                                                    <li key={idx} className={isQuestion ? styles.faqQuestion : styles.faqAnswer}>
+                                                        {isQuestion ? <p>{entry.trim()}</p> : entry.trim()}
+                                                    </li>
+                                                );
+                                            })}
+                                    </ul>
+                                )}
+
+                                <div className={styles.planButtonContainer}>
                                     <button
                                         className={styles.planButton}
                                         onClick={() => handleCheckout(price.id)}
@@ -87,11 +145,11 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                                             ? "Edit payment information"
                                             : "Subscribe"}
                                     </button>
-                                )}
+                                </div>
                             </div>
-                        </>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
