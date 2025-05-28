@@ -5,46 +5,35 @@
     justify-content: center;
     height: 100vh;
     background-color: #f5f5f5;
+    padding: 1rem;
+    text-align: center;
 }
 
 .card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     width: 100%;
-    max-width: 400px;
-    height: 45%;
-    padding: 20px;
+    max-width: 420px;
+    min-height: 380px;
+    padding: 2rem;
     background-color: white;
-    border-radius: 6px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    gap: 1rem;
 }
 
+
+
 .logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
     width: 100%;
+    z-index: 2;
 }
 
 .logo img {
-    max-width: 50%;
+    max-width: 180px;
     height: auto;
-    transition: max-width 0.3s ease;
-}
-
-.carousel {
-    transition: transform 0.5s ease-in-out;
-}
-
-.carousel-enter {
-    transform: translateX(100%);
-}
-
-.carousel-exit {
-    transform: translateX(-100%);
 }
 
 .containerStep {
@@ -52,42 +41,119 @@
     flex-direction: column;
     align-items: center;
     justify-content: space-evenly;
-    height: 80%;
-    text-align: center;
+    flex-grow: 1;
+    gap: 1rem;
 }
 
-.input {
-    display: flex;
-    padding: 5px 10px;
-    border: 2px solid #9fc51d;
-    border-radius: 6px;
-}
-
-.buttonContainer {
-    width: 90%;
-    justify-content: space-between;
-    display: flex;
-}
-
-.singleButtonContainer {
-    justify-content: flex-end;
-}
-
-.button {
-    display: flex;
-    background-color: #9fc51d;
-    border-color: #9fc51d;
+.iconMoney {
     color: white;
-    border-radius: 6px;
-    padding: 5px 0px;
+    font-size: 48px;
+    z-index: 2;
+}
+
+.loaderContainer {
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 30%;
+    height: 100%;
+}
+
+
+
+/* Step 0 */
+.card1 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 420px;
+    min-height: 380px;
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.title1{
+    font-size: 1.875rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3); 
+    color: white;
+    z-index: 2;    
+}
+
+.text1{
+    color: rgb(55, 65, 81);
+    text-align: center;
+    background-color: white;
+    margin: 0;
+    padding: 20px;
+}
+
+.containerStep1 {
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    justify-content: space-evenly;
+    flex-grow: 1;
+    gap: 1rem;
+    /* background-color: #65af81 */
+}
+
+.green-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: color-mix(in oklab, #15803d 35%, transparent);
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 1; }
+
+/* Buttons container */
+.buttonContainer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 0px 0px 12px 12px;
+}
+
+.button,
+.buttonPrev {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+
+
+    min-width: 120px;
+    height: 40px;
+
+    font-size: 1rem;
+    font-weight: 500;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+
+.button {
+    background-color: rgb(22, 163, 74);
+    color: white;
+    border: none;
 }
 
 .button:hover {
-    background-color: #8ab31f;
-    border-color: #8ab31f;
+    background-color: rgb(21, 128, 61);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .button:active {
@@ -95,26 +161,159 @@
     border-color: #7ea91f;
 }
 
-.icon {
-    font-size: 20px;
-}
 
 .buttonPrev {
-    display: flex;
-    background-color: #f5f5f5;
-    border-color: #e3e3e3;
-    color: black;
-    border-radius: 6px;
-    padding: 5px 0px;
-    align-items: center;
-    justify-content: center;
-    width: 30%;
+    background-color: transparent;
+    border: 1px solid #d1d5db;
+    color: rgb(55, 65, 81);
 }
 
 .buttonPrev:hover {
-    background-color: #e3e3e3;
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
 }
 
-.iconMoney {
-    font-size: 48px;
+.icon {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
+}
+
+
+.iconRight:hover {
+    transform: translateX(4px);
+}
+
+
+.iconLeft:hover {
+    transform: translateX(-4px); }
+
+
+/* Step 1 */
+
+.card2 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 420px;
+    min-height: 380px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.title2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    color: white;
+    z-index: 2;
+}
+
+.text2 {
+    color: rgb(55, 65, 81);
+    text-align: center;
+    background-color: white;
+    margin: 0;
+    padding: 20px;
+    width: 100%;
+    font-size: 1rem;
+}
+
+.containerStep2 {
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    justify-content: space-evenly;
+    flex-grow: 1;
+    gap: 1rem;
+    background-color: #65af81
+}
+
+.input {
+    width: 88.7%;
+    padding: 0.75rem;
+    border: 1px solid rgb(22, 163, 74);
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+
+/* Process Bar */
+ .progressContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    z-index: 2;
+}
+
+.progressDot {
+    height: 8px;
+    width: 8px;
+    border-radius: 9999px;
+    background-color: rgba(255, 255, 255, 0.5);
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.activeDot {
+    width: 32px;
+    background-color: white; 
+    transform: scale(1.3);} 
+
+
+/* Step 2 */
+.card3{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 420px;
+    min-height: 380px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.title3{
+    font-size: 1.875rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    color: white;
+    z-index: 2;
+    padding: 20px;
+}
+
+.text3{
+    color: rgb(55, 65, 81);
+    text-align: center;
+    background-color: white;
+    margin: 0;
+    padding: 20px;
+    width: 100%;
+    font-size: 1rem;
+}
+
+.containerStep3{
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    justify-content: space-evenly;
+    flex-grow: 1;
+    gap: 1rem;
+    background-color: #65af81
 }
