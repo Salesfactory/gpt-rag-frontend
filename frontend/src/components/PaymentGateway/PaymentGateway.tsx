@@ -78,9 +78,9 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                 <div className={styles["green-overlay"]} />
                 <h1 className={styles.title3}>Subscription Plans</h1>
                 <div className={styles.planContainer}>
-                    {/* <p className={styles.text3}>
-                        Select the perfect subscription plan to supercharge your experiences:
-                    </p> */}
+                    <div className={styles.planIntro}>
+                        <p className={styles.text3}>Select the perfect subscription plan to supercharge your experiences:</p>
+                    </div>
                     {prices.map((price, index) => {
                         return (
                             <div key={price.id} className={styles.plan}>

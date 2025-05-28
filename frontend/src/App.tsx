@@ -1,23 +1,23 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./router/ProtectedRoute";
-import Layout from "./pages/layout/_Layout";
+// import Layout from "./pages/layout/_Layout";
 import NoPage from "./pages/NoPage";
 import AccessDenied from "./pages/AccesDenied";
-import Chat from "./pages/chat/Chat";
-import Admin from "./pages/admin/Admin";
+// import Chat from "./pages/chat/Chat";
+// import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
 import Invitations from "./pages/invitations/Invitations";
-import Organization from "./pages/organization/Organization";
+// import Organization from "./pages/organization/Organization";
 import HelpCenter from "./pages/helpcenter/HelpCenter";
-import UploadResources from "./pages/resources/UploadResources";
+// import UploadResources from "./pages/resources/UploadResources";
 import RequestStudies from "./pages/studies/RequestStudies";
 import ReportManagement from "./pages/reports/ReportManagement";
-import Reports from "./pages/reports/Reports";
-import DistributionLists from "./pages/reports/DistributionLists";
+// import Reports from "./pages/reports/Reports";
+// import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
-import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
-import SubscriptionManagementcopy from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
+// import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
+
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -27,13 +27,14 @@ import SummarizationReports from "./pages/reports/SummarizationReports";
 
 // New Routes
 
-import Layout2 from "./pages/layout/_Layoutcopy";
-import Chat2 from "./pages/chat/Chatcopy";
-import Admin2 from "./pages/admin/Admincopy";
-import Organization2 from "./pages/organization/Organizationcopy";
-import DistributionLists2 from "./pages/reports/DistributionListscopy";
-import UploadResources2 from "./pages/resources/UploadResourcescopy";
-import Reports2 from "./pages/reports/Reportscopy";
+import Layout from "./pages/layout/_Layoutcopy";
+import Chat from "./pages/chat/Chatcopy";
+import Admin from "./pages/admin/Admincopy";
+import Organization from "./pages/organization/Organizationcopy";
+import DistributionLists from "./pages/reports/DistributionListscopy";
+import UploadResources from "./pages/resources/UploadResourcescopy";
+import Reports from "./pages/reports/Reportscopy";
+import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
 
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
@@ -72,8 +73,7 @@ export default function App() {
                     <Route path="/access-denied" element={<AccessDenied />} />
                 </Route>
             </Route>
-            {/* Secondary Route for Layout2 and Chat2 */}
-            <Route
+            {/* <Route
                 element={
                     <ProtectedRoute
                         allowedRoles={["user", "admin", "platformAdmin"]}
@@ -89,15 +89,15 @@ export default function App() {
                 }
             >
                 <Route element={<Layout2 />}>
-                    <Route path="/secondary-chat" element={<Chat2 />} />
-                    <Route path="/secondary-admin" element={<Admin2 />} />
-                    <Route path="/secondary-organization" element={<Organization2 />} />
-                    <Route path="/secondary-details-settings" element={<DistributionLists2 />} />
-                    <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} />
-                    <Route path="/secondary-upload-resources" element={<UploadResources2 />} />
-                    <Route path="/secondary-view-reports" element={<Reports2 />} />
+                    {/* <Route path="/secondary-chat" element={<Chat2 />} /> */}
+            {/* <Route path="/secondary-admin" element={<Admin2 />} /> */}
+            {/* <Route path="/secondary-organization" element={<Organization2 />} /> */}
+            {/* <Route path="/secondary-details-settings" element={<DistributionLists2 />} /> */}
+            {/* <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} /> */}
+            {/* <Route path="/secondary-upload-resources" element={<UploadResources2 />} /> */}
+            {/* <Route path="/secondary-view-reports" element={<Reports2 />} /> 
                 </Route>
-            </Route>
+            </Route> */}
 
             {/* Protected Routes for Admin Only */}
             <Route

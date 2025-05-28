@@ -15,7 +15,7 @@ import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "micr
 import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
-import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
+// import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 // import { SettingsPanel } from "../../components/SettingsPanel";
 import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
@@ -557,11 +557,6 @@ const Chat = () => {
 
     return (
         <div className={styles.mainContainer}>
-            <div>
-                <div className={showHistoryPanel ? styles.commandsContainer : styles.hidden}>
-                    {showHistoryPanel && <ChatHistoryPanel functionDeleteChat={handleNewChat} />}
-                </div>
-            </div>
             <div>
                 <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
             </div>

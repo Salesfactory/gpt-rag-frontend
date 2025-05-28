@@ -59,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 {
                     title: "AI Chat",
                     icon: <MessageSquare className={styles.sidebarLinkIcon} />,
-                    to: "/secondary-chat",
+                    to: "/",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user", "platformAdmin"]
                 },
@@ -83,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     links: [
                         {
                             title: "Team Management",
-                            href: "/secondary-admin",
+                            href: "/admin",
                             tiers: [
                                 "Basic",
                                 "Custom",
@@ -96,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         },
                         {
                             title: "Workspace Governance",
-                            href: "/secondary-organization",
+                            href: "/organization",
                             tiers: [
                                 "Basic",
                                 "Custom",
@@ -109,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         },
                         {
                             title: "Subscription Plans",
-                            href: "/secondary-subscription-management",
+                            href: "/subscription-management",
                             tiers: [
                                 "Basic",
                                 "Custom",
@@ -134,7 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     links: [
                         {
                             title: "Upload Resources",
-                            href: "/secondary-upload-resources",
+                            href: "/upload-resources",
                             roles: ["admin", "user", "platformAdmin"],
                             tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
                         },
@@ -159,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     links: [
                         {
                             title: "Reports Dashboard",
-                            href: "/secondary-view-reports",
+                            href: "/view-reports",
                             tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                             roles: ["admin", "platformAdmin"]
                         },
@@ -171,7 +171,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         },
                         {
                             title: "Sharing & Distribution",
-                            href: "/secondary-details-settings",
+                            href: "/details-settings",
                             tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                             roles: ["admin", "platformAdmin"]
                         }

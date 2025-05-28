@@ -109,7 +109,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     return (
         <>
-            <nav className={`navbar navbar-expand-lg navbar-light ${location == "/secondary-chat" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
+            <nav className={`navbar navbar-expand-lg navbar-light ${location == "/" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
                 {/* Sidebar Toggle (For smaller screens) */}
                 <ul className="navbar-nav mr-4">
                     <li className="nav-item d-flex align-items-center">
@@ -120,24 +120,22 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         >
                             <Menu className={styles.iconLarge} />
                         </button>
-                        {location === "/secondary-chat" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
-                        {location === "/secondary-admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
-                        {location === "/secondary-organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
-                        {location === "/secondary-details-settings" && (
-                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution Lists</span>
-                        )}
-                        {location === "/secondary-upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Upload Resources</span>}
-                        {location === "/secondary-subscription-management" && (
+                        {location === "/" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
+                        {location === "/admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
+                        {location === "/organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
+                        {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution Lists</span>}
+                        {location === "/upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Upload Resources</span>}
+                        {location === "/subscription-management" && (
                             <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
                         )}
-                        {location === "/secondary-view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Dashboard</span>}
+                        {location === "/view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Dashboard</span>}
                     </li>
                 </ul>
                 <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
                     <ul className="navbar-nav flex-row align-items-center gap-3">
                         {/*Then change the route*/}
                         {/* Financial Assistant Toggle */}
-                        {fastatus && location === "/secondary-chat" && (
+                        {fastatus && location === "/" && (
                             <li className="nav-item">
                                 <div className="d-flex flex-column align-items-start">
                                     <div className={styles.financialToggleContainer}>
@@ -156,7 +154,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
                         {/*Then change the route*/}
                         {/* Feedback Panel Button */}
-                        {location === "/secondary-chat" && (
+                        {location === "/" && (
                             <li className="nav-item">
                                 <button onClick={handleShowFeedbackRatingPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                     <MessageCircleQuestion className={styles.iconLarge} />
@@ -165,7 +163,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
                         {/*Then change the route*/}
                         {/* Chat History Button */}
-                        {location === "/secondary-chat" && (
+                        {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
                                     <button onClick={handleShowChatHistory} className="btn btn-white btn-sm d-flex align-items-center gap-1">
@@ -177,7 +175,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
                         {/*Then change the route*/}
                         {/* Settings Button */}
-                        {location === "/secondary-chat" && (
+                        {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
                                     <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
