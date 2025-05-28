@@ -72,7 +72,6 @@ const Onboarding: React.FC = () => {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            console.log("xddddd");
             setAnimatedStep(step);
         }, 100);
 
