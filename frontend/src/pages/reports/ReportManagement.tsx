@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { DocumentData24Regular, DocumentText24Regular, DocumentTable24Regular } from "@fluentui/react-icons";
-
+import styles from "./ReportManagement.module.css";
 interface ReportCardProps {
     title: string;
     description: string;
@@ -70,7 +70,7 @@ const ReportManagement: React.FC = () => {
         <div className="min-vh-50 bg-light">
             <div className="bg-white shadow-sm mb-4">
                 <div className="container py-4">
-                    <h1 className="h3 mb-0">Report Management</h1>
+                    <h1 className={styles.header}>Report Management</h1>
                 </div>
             </div>
 
