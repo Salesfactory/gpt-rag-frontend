@@ -51,7 +51,8 @@ const styles = mergeStyleSets({
     title: {
         fontSize: "24px",
         fontWeight: FontWeights.semibold,
-        color: "#333"
+        color: "#333",
+        letterSpacing: "0px"
     },
     subtitle: {
         fontSize: "14px",
@@ -200,7 +201,7 @@ export default function Reports() {
         } else {
             setReports(allReports);
         }
-    }
+    };
 
     return (
         <div className={styles.container}>
@@ -212,10 +213,10 @@ export default function Reports() {
                 </div>
 
                 <div className={styles.searchContainer}>
-                    <SearchBox 
-                        placeholder="Search reports..." 
-                        className={styles.searchBox} 
-                        onChange={(_, newValue) => setSearchText(newValue || "")} 
+                    <SearchBox
+                        placeholder="Search reports..."
+                        className={styles.searchBox}
+                        onChange={(_, newValue) => setSearchText(newValue || "")}
                         onSearch={() => handleSearch(searchText)}
                     />
                     <DefaultButton

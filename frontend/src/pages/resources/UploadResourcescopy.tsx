@@ -19,8 +19,8 @@ import {
     DialogFooter,
     mergeStyleSets
 } from "@fluentui/react";
-import { DocumentRegular, ArrowClockwiseRegular } from "@fluentui/react-icons";
-import { FileText, Download, Trash2, Plus, RefreshCw, Upload, Search } from "lucide-react";
+import { DocumentRegular } from "@fluentui/react-icons";
+import { FileText, Download, Trash2, RefreshCw, Upload, Search, CirclePlus } from "lucide-react";
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 const ALLOWED_FILE_TYPES = [".pdf"];
@@ -445,7 +445,7 @@ const UploadResources: React.FC = () => {
                 <div className={styles.file_list_actions}>
                     <IconButton title="Upload New Files" ariaLabel="Upload New Files" onClick={openUploadDialog} className={styles.upload_button}>
                         <span className={styles.addIcon}>
-                            <Plus size={16} />
+                            <CirclePlus />
                         </span>
                         <span className={styles.buttonText}>Upload File</span>
                     </IconButton>

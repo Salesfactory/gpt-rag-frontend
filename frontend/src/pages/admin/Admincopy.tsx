@@ -144,15 +144,19 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             isClickableOutsideFocusTrap={true}
             hidden={!isOpen}
             onDismiss={onDismiss}
-            dialogContentProps={{
-                type: 0,
-                title: "Create a new user",
-                subText: "Invite a new user to the platform by providing their username and email.",
-                styles: {
-                    title: { fontSize: 16 },
-                    subText: { fontSize: 16 }
-                }
-            }}
+            dialogContentProps={
+                !success
+                    ? {
+                          type: 0,
+                          title: "Create a new user",
+                          subText: "Invite a new user to the platform by providing their username and email.",
+                          styles: {
+                              title: { fontSize: 16 },
+                              subText: { fontSize: 16 }
+                          }
+                      }
+                    : undefined
+            }
             modalProps={{
                 isBlocking: true,
                 onDismiss: onDismiss,
