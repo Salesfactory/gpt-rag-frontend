@@ -101,7 +101,7 @@ export const SettingsPanel = () => {
     ];
 
     const modelTemperatureSettings: Record<string, { default: number; min: number; max: number; step: number }> = {
-        "DeepSeek-V3-0324": { default: 0, min: 0, max: 1, step: 0.1 },
+        "DeepSeek-V3-0324": { default: 0, min: 0, max: 1.5, step: 0.1 },
         "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 }
     };
 
@@ -122,10 +122,22 @@ export const SettingsPanel = () => {
                         name: user.name
                     }
                 });
-                setTemperature(data.temperature);
+                
+                // Only use model-specific default if no temperature is saved at all (undefined/null)
+                if (data.temperature === undefined || data.temperature === null) {
+                    const modelConfig = modelTemperatureSettings[data.model || "DeepSeek-V3-0324"];
+                    setTemperature(modelConfig.default.toString());
+                } else {
+                    // Use saved temperature even if it's "0" (user explicitly set it)
+                    setTemperature(data.temperature);
+                }
+                
                 setSelectedModel(data.model || "DeepSeek-V3-0324");
             } catch (error) {
                 console.error("Error fetching settings:", error);
+                // Set default values when there's an error fetching settings
+                const modelConfig = modelTemperatureSettings[selectedModel];
+                setTemperature(modelConfig.default.toString());
             } finally {
                 setLoading(false);
             }
@@ -136,9 +148,10 @@ export const SettingsPanel = () => {
 
     const handleSubmit = () => {
         const parsedTemperature = parseFloat(temperature);
+        const modelConfig = modelTemperatureSettings[selectedModel];
 
-        if (parsedTemperature < 0 || parsedTemperature > 1) {
-            console.error("Invalid temperature, settings are not submitted.");
+        if (parsedTemperature < modelConfig.min || parsedTemperature > modelConfig.max) {
+            console.error(`Invalid temperature for ${selectedModel}. Must be between ${modelConfig.min} and ${modelConfig.max}.`);
             return;
         }
 
@@ -222,12 +235,6 @@ export const SettingsPanel = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [setSettingsPanel]);
-    useEffect(() => {
-        const config = modelTemperatureSettings[selectedModel];
-        if (config) {
-            setTemperature(config.default.toString());
-        }
-    }, [selectedModel]);
 
     return (
         <div ref={panelRef} className={styles.overlay}>
@@ -342,9 +349,9 @@ export const SettingsPanel = () => {
                                 <div className={styles.sliderContainer}>
                                     <Slider
                                         label=""
-                                        min={modelTemperatureSettings[selectedModel]?.min ?? 0}
-                                        max={modelTemperatureSettings[selectedModel]?.max ?? 1}
-                                        step={modelTemperatureSettings[selectedModel]?.step ?? 0.1}
+                                        min={modelTemperatureSettings[selectedModel].min}
+                                        max={modelTemperatureSettings[selectedModel].max}
+                                        step={modelTemperatureSettings[selectedModel].step}
                                         value={parseFloat(temperature)}
                                         showValue
                                         snapToStep
