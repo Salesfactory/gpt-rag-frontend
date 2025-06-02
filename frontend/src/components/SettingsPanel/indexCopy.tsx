@@ -97,12 +97,14 @@ export const SettingsPanel = () => {
 
     const modelOptions: IDropdownOption[] = [
         { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
-        { key: "gpt-4.1", text: "gpt-4.1" }
+        { key: "gpt-4.1", text: "gpt-4.1" },
+        { key: "Claude-4-Sonnet", text: "Claude-4-Sonnet" }
     ];
 
     const modelTemperatureSettings: Record<string, { default: number; min: number; max: number; step: number }> = {
         "DeepSeek-V3-0324": { default: 0, min: 0, max: 1.5, step: 0.1 },
-        "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 }
+        "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 },
+        "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
     };
 
     useEffect(() => {
