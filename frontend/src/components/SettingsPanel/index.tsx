@@ -95,7 +95,8 @@ export const SettingsPanel = () => {
 
     const modelOptions: IDropdownOption[] = [
         { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
-        { key: "gpt-4.1", text: "gpt-4.1" }
+        { key: "gpt-4.1", text: "gpt-4.1" },
+        { key: "Claude-4-Sonnet", text: "Claude-4-Sonnet" }
         
     ];
 

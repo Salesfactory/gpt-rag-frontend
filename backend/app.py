@@ -1608,7 +1608,7 @@ def setSettings():
             return jsonify({"error": "Invalid request body"}), 400
 
         temperature = request_body.get("temperature", 0.0)
-        model = request_body.get("model", "DeepSeek-V3-0324") # Get model, default to DeepSeek
+        model = request_body.get("model", "DeepSeek-V3-0324") # address later since we're adding more models 
 
         set_settings(
             client_principal=client_principal,
