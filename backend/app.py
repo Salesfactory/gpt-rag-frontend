@@ -15,6 +15,7 @@ from flask import (
     redirect,
     url_for,
     session,
+    render_template
 )
 import markdown
 from flask_cors import CORS
@@ -356,7 +357,7 @@ def mark_invitation_as_redeemed(inviteId):
 
     token = request.args.get("token")
     if not token:
-        return jsonify({"error": "Token is required"}), 400
+        return render_template("token_error.html", title="Token required", message="You must provide a valid token."), 400
 
     try:
         container = get_cosmos_container("invitations")
@@ -364,14 +365,14 @@ def mark_invitation_as_redeemed(inviteId):
 
         # Security validations
         if item.get("token") != token:
-            return jsonify({"error": "Invalid token"}), 403
+            return render_template("token_error.html", title="Invalid token", message="The token does not match the invitation."), 403
 
         if item.get("token_used", False):
-            return jsonify({"error": "Token has already been used"}), 409
+            return render_template("token_error.html", title="Invitation already used", message="This invitation has already been used."), 409
 
         current_timestamp = int(datetime.now(timezone.utc).timestamp())
         if current_timestamp > item.get("token_expiry", 0):
-            return jsonify({"error": "Token has expired"}), 410
+            return render_template("token_error.html", title="Expired Invitation", message="Please contact your organization admin to request a new invitation."), 410
 
         # Mark as redeemed
         item["active"] = True
@@ -379,14 +380,19 @@ def mark_invitation_as_redeemed(inviteId):
         item["redeemed_at"] = int(datetime.now(timezone.utc).timestamp())
 
         container.upsert_item(item)
-        return redirect(url_for("index"))
+        return render_template("token_status.html", 
+                             title="Invitation Activated!",
+                             message="Your invitation has been successfully activated. You can now register on the platform or login if you already have an account on the platform.",
+                             button_link=url_for("index"),
+                             button_text="Go to Login")
 
     except CosmosResourceNotFoundError:
         print(f"Invitation {inviteId} not found")
-        return jsonify({"error": "Invitation not found"}), 404
+        return render_template("token_error.html", title="Your invitation was not found.", message="Please ask your organization admin to send you a new one."), 404
+
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return render_template("token_error.html", title="Unexpected error", message="An unexpected error occurred."), 500
 
 @app.route("/")
 @store_request_params_in_session(['agent','document'])
