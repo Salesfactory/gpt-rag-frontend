@@ -68,13 +68,7 @@ const ReportManagement: React.FC = () => {
 
     return (
         <div className="min-vh-50 bg-light">
-            <div className="bg-white shadow-sm mb-4">
-                <div className="container py-4">
-                    <h1 className={styles.header}>Report Management</h1>
-                </div>
-            </div>
-
-            <div className="container py-4">
+            <div className={styles.container}>
                 <div className="row g-4">
                     {cards.map((card, index) => (
                         <div key={index} className="col-12 col-md-4">
