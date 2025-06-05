@@ -334,15 +334,15 @@
     gap: 30px;
 }
 
-/* Media Queries para Responsividad */
+
 @media (max-width: 768px) {
 
-    /* Ocultar tabla de escritorio */
+
     .desktopTable {
         display: none;
     }
 
-    /* Mostrar tarjetas móviles */
+
     .mobileCards {
         display: block;
     }
@@ -373,7 +373,7 @@
     }
 }
 
-/* Para pantallas muy pequeñas */
+
 @media (max-width: 480px) {
     .mobileCard {
         padding: 12px;

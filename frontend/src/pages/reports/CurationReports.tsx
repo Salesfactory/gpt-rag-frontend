@@ -140,8 +140,6 @@ const CurationReports = () => {
                             )}
                         </tbody>
                     </table>
-
-                    {/* Vista mobile - cards */}
                     <div className={styles.mobileCards}>
                         {filteredReports.length > 0 ? (
                             filteredReports.map((report, index) => (
