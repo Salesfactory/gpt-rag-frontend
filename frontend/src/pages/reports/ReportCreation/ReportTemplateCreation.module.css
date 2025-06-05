@@ -7,7 +7,7 @@
 }
 
 @media (max-width: 900px) {
-    .page_container{
+    .page_container {
         padding: 100px 10px 100px 50px;
     }
 }
@@ -27,7 +27,7 @@
     margin-left: 20px;
 }
 
-.labelContainer{
+.labelContainer {
     display: flex;
     justify-content: flex-start;
     width: 100%;
@@ -48,7 +48,7 @@
 }
 
 @media (max-width: 768px) {
-    .title{
+    .title {
         margin-bottom: 10px;
         margin-left: 0px;
     }
@@ -57,38 +57,38 @@
         margin-left: 20px;
     }
 
-    .info{
+    .info {
         overflow-x: auto;
     }
 }
 
-.button{
+.button {
     display: flex;
     padding: 5px 10px;
-    border: 2px solid #9fc51d;
+    border: none;
     border-radius: 6px;
     height: auto;
     width: auto;
     align-items: center;
+    color: white;
     justify-content: center;
-    background-color: #ffffff;
+    background-color: #16a34a;
 }
 
-.textButton{
+.textButton {
     text-align: center;
     cursor: pointer;
     margin-left: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
 }
 
-.button:hover{
-    box-shadow: 0 0 8px rgba(139, 195, 74, 0.5);
+.button:hover {
+    background-color: #15803d;
 }
 
-.button:active{
-    background-color: rgba(139, 195, 74, 0.5);
-}
-
-.buttonContainer{
+.buttonContainer {
     text-align: left;
     border-collapse: collapse;
     width: 100%;
@@ -97,14 +97,15 @@
     gap: 40px;
 }
 
-.iconColor{
-    color: #a7c444;
+.iconColor {
+    font-size: 15px;
+    color: white;
 }
 
-.input{
+.input {
     display: flex;
     padding: 5px 10px;
-    border: 2px solid #9fc51d;
+    border: 2px solid #16a34a;
     border-radius: 6px;
     height: auto;
     width: 25em;
@@ -113,15 +114,28 @@
     background-color: #ffffff;
 }
 
-.input:focus{
-    border: 2px solid #8eb11a;
+.input:focus {
+    border: 2px solid #16a34a;
     outline: none;
-    box-shadow: 0 0 8px rgba(139, 195, 74, 0.5);
 }
 
 @media (max-width: 900px) {
-    .input{
+    .input {
         width: 16em;
+    }
+}
+
+@media (max-width: 370px) {
+    .input {
+        width: 14em;
+    }
+
+    .dropdown-container {
+        width: 1em;
+    }
+
+    .dropdown-container .ms-Dropdown {
+        width: 1em;
     }
 }
 
@@ -132,19 +146,19 @@
     color: #ff3333;
 }
 
-.modal{
+.modal {
     position: fixed;
     top: 50%;
-    left: 50%;          
+    left: 50%;
     transform: translate(-50%, -50%);
-    width: auto; 
+    width: auto;
     height: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center; 
+    align-items: center;
     z-index: 500;
-    padding: 100px; 
+    padding: 100px;
     background-color: #f5f5f5;
     border: 1px solid #e3e3e3;
     border-radius: 6px;
@@ -152,19 +166,19 @@
     gap: 30px;
 }
 
-.modalPopup{
+.modalPopup {
     position: fixed;
-    top: 10%;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    width: auto; 
+    transform: translate(-50%, -50%);
+    width: auto;
     height: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center; 
+    align-items: center;
     z-index: 9999;
-    padding: 100px; 
+    padding: 100px;
     background-color: #cef1a5;
     border: 1px solid #87f083;
     border-radius: 6px;
@@ -172,18 +186,19 @@
     gap: 30px;
 }
 
-@media (max-width: 900px){
-    .modal{
+@media (max-width: 900px) {
+    .modal {
         width: 20em;
         height: 10em;
         padding: 20px;
     }
-    .modalPopup{
-        width: 20em; 
+
+    .modalPopup {
+        width: 20em;
     }
 }
 
-.buttonModalContainer{
+.buttonModalContainer {
     text-align: left;
     border-collapse: collapse;
     width: 100%;
@@ -192,7 +207,7 @@
     gap: 40px;
 }
 
-.text{
+.text {
     text-align: center;
 }
 
@@ -210,7 +225,21 @@
     padding-top: 6px;
 }
 
-.closeButtonContainer:active{
+.closeButtonContainer:active {
     background-color: rgba(214, 214, 214, 0.315);
     border-radius: 5px;
+}
+
+.fieldDisclaimer {
+    color: red;
+}
+
+.responsiveDropdown {
+    width: 25em;
+}
+
+@media (max-width: 900px) {
+    .responsiveDropdown {
+        width: 16em;
+    }
 }

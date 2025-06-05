@@ -1,91 +1,103 @@
 import React, { useState } from "react";
-import styles from "./CurationCreation.module.css"
+import styles from "./CurationCreation.module.css";
 import { IconArrowBack, IconX } from "@tabler/icons-react";
 import { Dropdown, Label, ResponsiveMode } from "@fluentui/react";
 import { useNavigate } from "react-router-dom";
 import { createReport } from "../../../api";
+import { CornerDownLeft } from "lucide-react";
 
 const CurationCreation: React.FC = () => {
     const navigate = useNavigate();
-     const [inputReportName, setinputReportName] = useState('')
+    const [inputReportName, setinputReportName] = useState("");
     const curationReportOptions = [
         { key: "1", text: "Ecommerce" },
         { key: "2", text: "Weekly Economic" },
-        { key: "3", text: "Monthly Economic" },
+        { key: "3", text: "Monthly Economic" }
     ];
-    const [categorySelection, setCategorySelection] = useState('')
+    const [categorySelection, setCategorySelection] = useState("");
     const [errorMessage, setErrorMessage] = useState<string | null>("");
     const [isConfirm, setIsConfirm] = useState(false);
-    const [isPopupActive, setIsPopupActive] = useState(false)
+    const [isPopupActive, setIsPopupActive] = useState(false);
 
     const handleTypeDropdownChange = (event: any, selectedOption: any) => {
-        setCategorySelection(selectedOption.text)
-    }
-    
+        setCategorySelection(selectedOption.text);
+    };
+
     const handleInputName = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setinputReportName(event.target.value)
-    }
+        setinputReportName(event.target.value);
+    };
 
     const handleConfirmButton = () => {
-
-        if(inputReportName == ('')){
-            setErrorMessage('Please type the Name of the Report')
+        if (inputReportName == "") {
+            setErrorMessage("Please type the Name of the Report");
             return;
         }
-        if(categorySelection == ('')){
-            setErrorMessage('Please select the Report Category')
+        if (categorySelection == "") {
+            setErrorMessage("Please select the Report Category");
             return;
         }
         setIsConfirm(!isConfirm);
-    }
+    };
 
     const handleCancelButton = () => {
-        setIsConfirm(false)
-        setinputReportName('')
-        setErrorMessage(null)
-    }
+        setIsConfirm(false);
+        setinputReportName("");
+        setErrorMessage(null);
+    };
 
     const handleCreateReport = async () => {
-            setIsConfirm(false)
-            let timer: NodeJS.Timeout;
-    
-            try{
-                await createReport({ 
-                    type: "curation",
-                    name: inputReportName,
-                    category: categorySelection,
-                    status: "archived"
-                });
-    
-                setIsPopupActive(true)
-                timer = setTimeout(() => {
-                    setIsPopupActive(false);
-                    navigate('/curation-reports')
-                }, 3000);
-                
-            } catch (error){
-                console.error("Error trying to create the report: ", error);
-            } 
-    }
+        setIsConfirm(false);
+        let timer: NodeJS.Timeout;
+
+        try {
+            await createReport({
+                type: "curation",
+                name: inputReportName,
+                category: categorySelection,
+                status: "archived"
+            });
+
+            setIsPopupActive(true);
+            timer = setTimeout(() => {
+                setIsPopupActive(false);
+                navigate("/curation-reports");
+            }, 3000);
+        } catch (error) {
+            console.error("Error trying to create the report: ", error);
+        }
+    };
 
     return (
         <div className={styles.page_container}>
             <div className={styles.labelContainer}>
-                <button className={styles.button} title="Return to Curation Reports" aria-label="Return to Curation Reports" onClick={() => navigate('/curation-reports')}>
-                    <IconArrowBack className={styles.iconColor}/>
+                <button
+                    className={styles.button}
+                    title="Return to Curation Reports"
+                    aria-label="Return to Curation Reports"
+                    onClick={() => navigate("/curation-reports")}
+                >
+                    <CornerDownLeft className={styles.iconColor} />
                     <Label className={styles.textButton}>Return to Curation Reports</Label>
                 </button>
-            </div>
-            <div id="options-row" className={styles.row}>
-                <h1 className={styles.title}>Curation Report Creation</h1>
             </div>
             <div className={styles.card}>
                 <div>
                     <form>
-                        <Label>Report Name<span className={styles.fieldDisclaimer}> *</span></Label>
+                        <Label>
+                            Report Name<span className={styles.fieldDisclaimer}> *</span>
+                        </Label>
                         <input type="text" className={styles.input} onChange={handleInputName} value={inputReportName}></input>
-                        <Label>Curation Report Category<span className={styles.fieldDisclaimer}> *</span></Label>
-                        <Dropdown placeholder="Select a Curation Report Category" options={curationReportOptions} onChange={handleTypeDropdownChange} defaultValue={categorySelection} responsiveMode={ResponsiveMode.unknown}/>
+                        <Label>
+                            Curation Report Category<span className={styles.fieldDisclaimer}> *</span>
+                        </Label>
+                        <Dropdown
+                            className={styles.responsiveDropdown}
+                            placeholder="Select a Curation Report Category"
+                            options={curationReportOptions}
+                            onChange={handleTypeDropdownChange}
+                            defaultValue={categorySelection}
+                            responsiveMode={ResponsiveMode.unknown}
+                        />
                         <span className={styles.fieldDisclaimer}>All fields are required (*)</span>
                     </form>
                 </div>
@@ -103,7 +115,9 @@ const CurationCreation: React.FC = () => {
             </div>
             {isConfirm && (
                 <div className={styles.modal}>
-                    <button className={styles.closeButton} onClick={handleCancelButton}><IconX/></button>
+                    <button className={styles.closeButton} onClick={handleCancelButton}>
+                        <IconX />
+                    </button>
                     <Label className={styles.text}>Are you sure you want to create the report "{inputReportName}" ?</Label>
                     <div className={styles.buttonModalContainer}>
                         <button className={styles.button} title="Cancel" aria-label="Cancel" onClick={handleCancelButton}>
@@ -117,8 +131,10 @@ const CurationCreation: React.FC = () => {
             )}
             {isPopupActive && (
                 <div className={styles.modalPopup}>
-                    <Label className={styles.text}>The report has been added. It needs to be implemented for generation. <br /> 
-                    If not implemented, it will not be generated.</Label>
+                    <Label className={styles.text}>
+                        The report has been added. It needs to be implemented for generation. <br />
+                        If not implemented, it will not be generated.
+                    </Label>
                 </div>
             )}
         </div>

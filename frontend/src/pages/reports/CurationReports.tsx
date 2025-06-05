@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import styles from "./CurationReports.module.css";
 import { Label, Spinner } from "@fluentui/react";
-import { IconArrowBack, IconFilePlus, IconTrash, IconX } from "@tabler/icons-react";
+import { IconTrash, IconX } from "@tabler/icons-react";
+import { CornerDownLeft, FilePlus } from "lucide-react";
 import { deleteReport, getFilteredReports } from "../../api";
 import { useNavigate } from "react-router-dom";
 
@@ -71,43 +72,34 @@ const CurationReports = () => {
                     aria-label="Return to Report Management"
                     onClick={() => navigate("/view-manage-reports")}
                 >
-                    <IconArrowBack className={styles.iconColor} />
+                    <CornerDownLeft className={styles.iconColor} />
                     <Label className={styles.textButton}>Return to Report Management</Label>
                 </button>
+
+                <button className={styles.button} title="Add a New Report" aria-label="Add a New Report" onClick={() => navigate("/create-curation-report")}>
+                    <FilePlus className={styles.iconColor} />
+                    <Label className={styles.textButton}>Add a New Curation Report</Label>
+                </button>
             </div>
-            <div id="options-row" className={styles.row}>
-                <h1 className={styles.title}>Curation Reports</h1>
-            </div>
-            <div className={styles.card}>
-                <div className={styles.labelContainer}>
-                    <button
-                        className={styles.button}
-                        title="Add a New Report"
-                        aria-label="Add a New Report"
-                        onClick={() => navigate("/create-curation-report")}
-                    >
-                        <IconFilePlus className={styles.iconColor} />
-                        <Label className={styles.textButton}>Add a New Curation Report</Label>
-                    </button>
-                </div>
-                {loading ? (
-                    <Spinner styles={{ root: { marginTop: "50px" } }} />
-                ) : (
-                    <table className={styles.table}>
+            {loading ? (
+                <Spinner styles={{ root: { marginTop: "50px" } }} />
+            ) : (
+                <div className={styles.tableContainer}>
+                    <table className={`${styles.table} ${styles.desktopTable}`}>
                         <thead className={styles.thead}>
                             <tr>
                                 <th className={styles.tableName}>Name</th>
-                                <th>Category</th>
-                                <th>Created At</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th className={styles.tableName}>Category</th>
+                                <th className={styles.tableName}>Created At</th>
+                                <th className={styles.tableName}>Status</th>
+                                <th className={styles.tableName}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredReports.length > 0 ? (
                                 filteredReports.map((report, index) => (
                                     <tr key={index} className={`${index % 2 === 0 ? styles.tableBackgroundAlt : styles.tableBackground}`}>
-                                        <td className={styles.tableName}>{report.name}</td>
+                                        <td className={styles.tableText2}>{report.name}</td>
                                         <td className={styles.tableText}>{report.category}</td>
                                         <td>
                                             <div className={styles.tableTypeContainer}>
@@ -116,7 +108,11 @@ const CurationReports = () => {
                                         </td>
                                         <td>
                                             <div className={styles.tableStatusContainer}>
-                                                <div className={`${report.status === "active" ? styles.tableStatusActive : styles.tableStatusArchived}`}>
+                                                <div
+                                                    className={`${report.status === "active" ? styles.tableStatusActive : styles.tableStatusArchived} ${
+                                                        styles.extraClass
+                                                    }`}
+                                                >
                                                     {report.status}
                                                 </div>
                                             </div>
@@ -137,15 +133,60 @@ const CurationReports = () => {
                                 ))
                             ) : (
                                 <tr key="error">
-                                    <td>
+                                    <td colSpan={5}>
                                         <Label className={styles.tableName}>No Reports available.</Label>
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
-                )}
-            </div>
+                    <div className={styles.mobileCards}>
+                        {filteredReports.length > 0 ? (
+                            filteredReports.map((report, index) => (
+                                <div key={index} className={styles.mobileCard}>
+                                    <div className={styles.cardHeader}>
+                                        <h3 className={styles.cardTitle}>{report.name}</h3>
+                                        <div className={styles.cardActions}>
+                                            <button
+                                                className={styles.button}
+                                                title="Delete Report"
+                                                aria-label="Delete Report"
+                                                onClick={() => handleDeleteButton(report.id, report.name)}
+                                            >
+                                                <IconTrash className={styles.iconColor} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.cardRow}>
+                                            <span className={styles.cardLabel}>Category:</span>
+                                            <span className={styles.cardValue}>{report.category}</span>
+                                        </div>
+                                        <div className={styles.cardRow}>
+                                            <span className={styles.cardLabel}>Created:</span>
+                                            <span className={styles.cardValue}>{new Date(report.createAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className={styles.cardRow}>
+                                            <span className={styles.cardLabel}>Status:</span>
+                                            <div
+                                                className={`${report.status === "active" ? styles.tableStatusActive : styles.tableStatusArchived} ${
+                                                    styles.extraClass
+                                                }`}
+                                            >
+                                                {report.status}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className={styles.noReports}>
+                                <Label className={styles.tableName}>No Reports available.</Label>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             {isDeleteActive && (
                 <div className={styles.modal}>
                     <button className={styles.closeButton} onClick={handleCancelDelete}>
