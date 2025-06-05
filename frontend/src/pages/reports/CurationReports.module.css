@@ -54,7 +54,8 @@
 }
 
 .iconColor{
-    color: #a7c444;
+    font-size: 15px;
+    color: white;
 }
 
 .iconLarge{
@@ -72,8 +73,9 @@
 
 .labelContainer{
     display: flex;
-    justify-content: flex-start;
-    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .text{
@@ -84,6 +86,9 @@
     text-align: center;
     cursor: pointer;
     margin-left: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
 }
 
 .textPanel{
@@ -94,22 +99,21 @@
 .button{
     display: flex;
     padding: 5px 10px;
-    border: 2px solid #9fc51d;
+    border: none;
     border-radius: 6px;
     height: auto;
     width: auto;
     align-items: center;
     justify-content: center;
-    background-color: #ffffff;
+    color: white;
+    background-color: #16a34a;
 }
 
 .button:hover{
-    box-shadow: 0 0 8px rgba(139, 195, 74, 0.5);
+    background-color: #15803d;
 }
 
-.button:active{
-    background-color: rgba(139, 195, 74, 0.5);
-}
+
 
 .buttonPanel{
     display: flex;
@@ -150,6 +154,11 @@
     background-color: white;
     border-collapse: collapse;
     width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 0.5rem;
+    border: 1px solid #d9d9d9;
+    overflow: hidden;
 }
 
 @media (max-width: 900px){
@@ -223,16 +232,21 @@
 }
 
 .thead{
-    background-color: #a7c444;
+    background-color: #00a63e;
     color: white;
 }
 
 .tableName{
+    font-size: 1rem;
+    font-weight: 600;
     padding: 10px;
 }
 
 .tableText{
-    text-align: justify;
+    font-size: 14px;
+    color: rgb(107, 114, 128);
+    padding-left: 10px;
+    text-align: left;
 }
 
 .tableBackground{
@@ -240,7 +254,7 @@
 }
 
 .tableBackgroundAlt{
-    background-color: #e9e9e9;
+    background-color: rgb(248, 248, 248);
 }
 
 .tableStatusContainer{
@@ -252,18 +266,184 @@
     text-transform: capitalize;
 }
 
-.tableStatusActive{
-    width: 100px;
-    background-color: #d2ffd2;
-    padding: 5px;
-    color: #a0df2c;
-    border-radius: 15px;
+.tableStatusActive {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    background-color: #d1fae5;
+    color: #065f46;
+    border-radius: 9999px;
 }
 
 .tableStatusArchived{
-    width: 100px;
-    background-color: #c6f0ee;
-    padding: 5px;
-    color: #2ca6df;
-    border-radius: 15px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.75rem;
+    background-color: #bfdbfe;
+    color: #1e40af;
+    border-radius: 9999px;
+}
+
+.tableText2{
+    font-size: 14px;
+    font-weight: 500;
+    color: rgb(17, 24, 39);
+    padding: 10px;
+    text-align: justify;
+}
+
+.extraClass{
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+
+
+.tableContainer {
+    width: 100%;
+    overflow-x: auto;
+}
+
+
+.desktopTable {
+    display: table;
+}
+
+
+.mobileCards {
+    display: none;
+}
+
+
+.mobileCard {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.cardTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    color: #333;
+}
+
+.cardActions {
+    display: flex;
+    gap: 8px;
+}
+
+.cardBody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.cardLabel {
+    font-weight: 500;
+    color: #666;
+    font-size: 14px;
+}
+
+.cardValue {
+    font-size: 14px;
+    color: rgb(107, 114, 128);
+}
+
+.noReports {
+    text-align: center;
+    padding: 32px;
+    color: #666;
+}
+
+@media (max-width: 768px) {
+
+    .desktopTable {
+        display: none;
+    }
+    .mobileCards {
+        display: block;
+    }
+
+    .tableContainer {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .button {
+        max-width: 250px;
+    }
+    
+    .textButton{
+        font-size: 14px;
+    }
+}
+@media (max-width: 540px) {
+    .textButton {
+        font-size: 11px;
+    }
+}
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .mobileCard {
+        padding: 12px;
+    }
+
+    .cardRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .cardLabel {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .cardValue {
+        font-size: 14px;
+    }
+
+    .textButton {
+        display: none;
+    }
+
+}
+
+@media (max-width: 768px) {
+    .tableContainer {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        min-width: 600px;
+    }
+
+    .tableName,
+    .tableText,
+    .tableText2 {
+        white-space: nowrap;
+        padding: 8px 4px;
+    }
 }

@@ -130,6 +130,20 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
                         {location === "/view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Dashboard</span>}
                         {location === "/view-manage-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Management</span>}
+                        {location === "/curation-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Curation Reports</span>}
+                        {location === "/create-curation-report" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Curation Report Creation</span>
+                        )}
+                        {location === "/create-summarization-report" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Report Creation</span>
+                        )}
+                        {location === "/create-template-report" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Report Template Creation</span>
+                        )}
+                        {location === "/summarization-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Reports</span>}
+                        {location === "/report-templates" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Report Templates</span>
+                        )}
                     </li>
                 </ul>
                 <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
