@@ -73,6 +73,20 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
                                 onConfirm();
                             }}
                             text="Save"
+                            styles={{
+                                root: {
+                                    backgroundColor: '#16a34a',
+                                    borderColor: '#16a34a'
+                                },
+                                rootHovered: {
+                                    backgroundColor: '#15803d',
+                                    borderColor: '#15803d'
+                                },
+                                rootPressed: {
+                                    backgroundColor: '#15803d',
+                                    borderColor: '#15803d'
+                                }
+                            }}
                         />
                     </div>
                 </DialogContent>
