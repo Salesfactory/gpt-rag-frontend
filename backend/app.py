@@ -3889,5 +3889,21 @@ def delete_source_document():
         logger.exception(f"Unexpected error in delete_source_from_blob: {e}")
         return create_error_response("Internal Server Error", 500)
 
+@app.route("/api/get-password-reset-url", methods=["GET"])
+def get_password_reset_url():
+    tenant = os.getenv("AAD_TENANT_NAME")
+    policy = os.getenv("AAD_PASSWORD_RESET_POLICY")
+    client_id = os.getenv("AAD_CLIENT_ID")
+    redirect_uri = os.getenv("AAD_REDIRECT_URI")
+    nonce = "defaultNonce"
+    scope = "openid"
+    response_type = "code"
+
+    url = f"https://{tenant}.b2clogin.com/{tenant}.onmicrosoft.com/{policy}/oauth2/v2.0/authorize"
+    url += f"?client_id={client_id}&redirect_uri={redirect_uri}&response_type={response_type}&scope={scope}&nonce={nonce}"
+
+    return jsonify({"resetUrl": url})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
