@@ -173,6 +173,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     }, [agentParam, agentType]);
 
+    function setCookie(name: any, value: string | number | boolean, days: number) {
+        const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    }
+
+    function getCookie(name: string) {
+        const cookies = document.cookie.split("; ");
+        for (const c of cookies) {
+            const [key, val] = c.split("=");
+            if (key === name) return decodeURIComponent(val);
+        }
+        return null;
+    }
     // Handle keyboard shortcuts (unchanged)
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
@@ -275,7 +288,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     const user = authData.user;
 
                     // Search for previously selected organization
-                    const savedOrgId = localStorage.getItem(`selectedOrg_${user.id}`);
+                    const savedOrgId = getCookie(`selectedOrg_${user.id}`);
                     if (savedOrgId) {
                         debugLog(`Using organization saved for the user: ${savedOrgId}`);
                         const userRole = await fetchUserRoleForOrganization(user.id, savedOrgId);
@@ -292,7 +305,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                             debugLog(`Only one organization found: ${singleOrgId}`);
                             const userRole = await fetchUserRoleForOrganization(user.id, singleOrgId);
                             setUser({ ...user, organizationId: singleOrgId, role: userRole?.role as Role | undefined });
-                            localStorage.setItem(`selectedOrg_${user.id}`, singleOrgId || "");
+                            setCookie(`selectedOrg_${user.id}`, singleOrgId || "", 1);
                         } else {
                             toast.error("No organizations were found for the user.");
                         }

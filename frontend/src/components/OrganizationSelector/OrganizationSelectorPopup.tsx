@@ -14,12 +14,7 @@ interface OrganizationSelectorPopupProps {
     onCancel: () => void;
 }
 
-const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({
-    organizations,
-    userId,
-    onOrganizationSelected,
-    onCancel,
-}) => {
+const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({ organizations, userId, onOrganizationSelected, onCancel }) => {
     const [selectedOrgId, setSelectedOrgId] = useState<string>("");
 
     useEffect(() => {
@@ -28,9 +23,15 @@ const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({
         }
     }, [organizations, selectedOrgId]);
 
+    function setCookie(name: any, value: string | number | boolean, days: number) {
+        const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    }
+
     const handleContinue = () => {
         if (selectedOrgId) {
-            localStorage.setItem(`selectedOrg_${userId}`, selectedOrgId);
+            setCookie(`selectedOrg_${userId}`, selectedOrgId || "", 1);
+            sessionStorage.setItem(`selectedOrg_${userId}`, selectedOrgId);
             onOrganizationSelected(selectedOrgId);
         } else {
             toast.error("Please select an organization.");
@@ -44,9 +45,9 @@ const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({
                 <select
                     className={`${styles.dropdown} ${selectedOrgId ? styles.selected : ""}`}
                     value={selectedOrgId}
-                    onChange={(e) => setSelectedOrgId(e.target.value)}
+                    onChange={e => setSelectedOrgId(e.target.value)}
                 >
-                    {organizations.map((org) => (
+                    {organizations.map(org => (
                         <option key={org.id} value={org.id}>
                             {org.name}
                         </option>
@@ -54,11 +55,7 @@ const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({
                 </select>
             </div>
             <div className={styles.actions}>
-                <button
-                    className={styles.continueButton}
-                    onClick={handleContinue}
-                    disabled={!selectedOrgId}
-                >
+                <button className={styles.continueButton} onClick={handleContinue} disabled={!selectedOrgId}>
                     Continue
                 </button>
             </div>

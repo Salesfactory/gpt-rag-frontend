@@ -496,7 +496,26 @@ const SubscriptionManagement: React.FC = () => {
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton onClick={() => handleCreateCustomerPortal()} text="Confirm change" />
+
+                                    <PrimaryButton 
+                                        onClick={() => handleCreateCustomerPortal()} 
+                                        text="Confirm change" 
+                                        styles={{
+                                            root: {
+                                                backgroundColor: '#16a34a',
+                                                borderColor: '#16a34a'
+                                            },
+                                            rootHovered: {
+                                                backgroundColor: '#15803d',
+                                                borderColor: '#15803d'
+                                            },
+                                            rootPressed: {
+                                                backgroundColor: '#15803d',
+                                                borderColor: '#15803d'
+                                            }
+                                        }}
+                                    />
+
                                 </div>
                             </div>
                         ) : (
@@ -508,7 +527,26 @@ const SubscriptionManagement: React.FC = () => {
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton onClick={() => handleChangeSubscription(selectedSubscriptionID)} text="Confirm Subscription" />
+
+                                    <PrimaryButton 
+                                        onClick={() => handleChangeSubscription(selectedSubscriptionID)} 
+                                        text="Confirm Subscription" 
+                                        styles={{
+                                            root: {
+                                                backgroundColor: '#16a34a',
+                                                borderColor: '#16a34a'
+                                            },
+                                            rootHovered: {
+                                                backgroundColor: '#15803d',
+                                                borderColor: '#15803d'
+                                            },
+                                            rootPressed: {
+                                                backgroundColor: '#15803d',
+                                                borderColor: '#15803d'
+                                            }
+                                        }}
+                                    />
+
                                 </div>
                             </div>
                         )}
@@ -523,7 +561,26 @@ const SubscriptionManagement: React.FC = () => {
                         <Label className={styles.modalText}>Subscribing to the Financial Assistant feature will cost $29.99 per month.</Label>
                         <div className={styles.buttonContainer}>
                             <DefaultButton onClick={() => setIsSubscriptionModal(false)} text="Cancel" />
-                            <PrimaryButton onClick={handleSubscribe} text="Confirm Subscription" />
+
+                            <PrimaryButton 
+                                onClick={handleSubscribe} 
+                                text="Confirm Subscription" 
+                                styles={{
+                                    root: {
+                                        backgroundColor: '#16a34a',
+                                        borderColor: '#16a34a'
+                                    },
+                                    rootHovered: {
+                                        backgroundColor: '#15803d',
+                                        borderColor: '#15803d'
+                                    },
+                                    rootPressed: {
+                                        backgroundColor: '#15803d',
+                                        borderColor: '#15803d'
+                                    }
+                                }}
+                            />
+
                         </div>
                     </div>
                 )}
@@ -536,7 +593,26 @@ const SubscriptionManagement: React.FC = () => {
                         <Label className={styles.modalText}>Are you sure you want to remove the Financial Assistant from your subscription?</Label>
                         <div className={styles.buttonContainer}>
                             <DefaultButton onClick={() => setIsUnsubscriptionModal(false)} text="Cancel" />
-                            <PrimaryButton onClick={handleUnsubscribe} text="Yes, Unsubscribe" />
+
+                            <PrimaryButton 
+                                onClick={handleUnsubscribe} 
+                                text="Yes, Unsubscribe" 
+                                styles={{
+                                    root: {
+                                        backgroundColor: '#16a34a',
+                                        borderColor: '#16a34a'
+                                    },
+                                    rootHovered: {
+                                        backgroundColor: '#15803d',
+                                        borderColor: '#15803d'
+                                    },
+                                    rootPressed: {
+                                        backgroundColor: '#15803d',
+                                        borderColor: '#15803d'
+                                    }
+                                }}
+                            />
+
                         </div>
                     </div>
                 )}

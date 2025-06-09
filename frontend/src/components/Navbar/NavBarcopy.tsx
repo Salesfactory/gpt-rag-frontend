@@ -1,10 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
 import styles from "./Navbarcopy.module.css";
 import { Menu, Settings, History, MessageCircleQuestion, ChevronDown } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
+
+import { getUserById } from "../../api";
+
 
 interface NavbarProps {
     isCollapsed: boolean;
@@ -16,6 +20,9 @@ function persistFinancialAssistantState(userId: string | undefined, state: boole
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
+
+    const [userName, setUserName] = useState<string>("");
+
     const {
         setShowFeedbackRatingPanel,
         settingsPanel,
@@ -28,7 +35,22 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setChatId,
         setNewChatDeleted
     } = useAppContext();
-    const userName = user?.name || "";
+
+
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUser = async () => {
+            const result = await getUserById({ user });
+            if (result?.data?.name) {
+                setUserName(result.data.name);
+            } else {
+                setUserName("anonymous");
+            }
+        };
+
+        fetchUser();
+    }, [user]);
     const subscriptiontype = subscriptionTiers || " ";
     const location = useLocation().pathname;
 
@@ -123,12 +145,31 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
                         {location === "/admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
                         {location === "/organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
-                        {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution Lists</span>}
+
+                        {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution List</span>}
+
                         {location === "/upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Upload Resources</span>}
                         {location === "/subscription-management" && (
                             <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
                         )}
                         {location === "/view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Dashboard</span>}
+
+                        {location === "/view-manage-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Management</span>}
+                        {location === "/curation-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Curation Reports</span>}
+                        {location === "/create-curation-report" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Curation Report Creation</span>
+                        )}
+                        {location === "/create-summarization-report" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Report Creation</span>
+                        )}
+                        {location === "/create-template-report" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Report Template Creation</span>
+                        )}
+                        {location === "/summarization-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Reports</span>}
+                        {location === "/report-templates" && (
+                            <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Report Templates</span>
+                        )}
+
                     </li>
                 </ul>
                 <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">

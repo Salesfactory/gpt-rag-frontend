@@ -15,6 +15,7 @@ from flask import (
     redirect,
     url_for,
     session,
+    render_template
 )
 import markdown
 from flask_cors import CORS
@@ -356,7 +357,7 @@ def mark_invitation_as_redeemed(inviteId):
 
     token = request.args.get("token")
     if not token:
-        return jsonify({"error": "Token is required"}), 400
+        return render_template("token_error.html", title="Token required", message="You must provide a valid token."), 400
 
     try:
         container = get_cosmos_container("invitations")
@@ -364,14 +365,14 @@ def mark_invitation_as_redeemed(inviteId):
 
         # Security validations
         if item.get("token") != token:
-            return jsonify({"error": "Invalid token"}), 403
+            return render_template("token_error.html", title="Invalid token", message="The token does not match the invitation."), 403
 
         if item.get("token_used", False):
-            return jsonify({"error": "Token has already been used"}), 409
+            return render_template("token_error.html", title="Invitation already used", message="This invitation has already been used."), 409
 
         current_timestamp = int(datetime.now(timezone.utc).timestamp())
         if current_timestamp > item.get("token_expiry", 0):
-            return jsonify({"error": "Token has expired"}), 410
+            return render_template("token_error.html", title="Expired Invitation", message="Please contact your organization admin to request a new invitation."), 410
 
         # Mark as redeemed
         item["active"] = True
@@ -379,14 +380,19 @@ def mark_invitation_as_redeemed(inviteId):
         item["redeemed_at"] = int(datetime.now(timezone.utc).timestamp())
 
         container.upsert_item(item)
-        return redirect(url_for("index"))
+        return render_template("token_status.html", 
+                             title="Invitation Activated!",
+                             message="Your invitation has been successfully activated. You can now register on the platform or login if you already have an account on the platform.",
+                             button_link=url_for("index"),
+                             button_text="Go to Login")
 
     except CosmosResourceNotFoundError:
         print(f"Invitation {inviteId} not found")
-        return jsonify({"error": "Invitation not found"}), 404
+        return render_template("token_error.html", title="Your invitation was not found.", message="Please ask your organization admin to send you a new one."), 404
+
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return render_template("token_error.html", title="Unexpected error", message="An unexpected error occurred."), 500
 
 @app.route("/")
 @store_request_params_in_session(['agent','document'])
@@ -1608,7 +1614,7 @@ def setSettings():
             return jsonify({"error": "Invalid request body"}), 400
 
         temperature = request_body.get("temperature", 0.0)
-        model = request_body.get("model", "DeepSeek-V3-0324") # Get model, default to DeepSeek
+        model = request_body.get("model", "DeepSeek-V3-0324") # address later since we're adding more models 
 
         set_settings(
             client_principal=client_principal,
@@ -3882,6 +3888,22 @@ def delete_source_document():
     except Exception as e:
         logger.exception(f"Unexpected error in delete_source_from_blob: {e}")
         return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/get-password-reset-url", methods=["GET"])
+def get_password_reset_url():
+    tenant = os.getenv("AAD_TENANT_NAME")
+    policy = os.getenv("AAD_PASSWORD_RESET_POLICY")
+    client_id = os.getenv("AAD_CLIENT_ID")
+    redirect_uri = os.getenv("AAD_REDIRECT_URI")
+    nonce = "defaultNonce"
+    scope = "openid"
+    response_type = "code"
+
+    url = f"https://{tenant}.b2clogin.com/{tenant}.onmicrosoft.com/{policy}/oauth2/v2.0/authorize"
+    url += f"?client_id={client_id}&redirect_uri={redirect_uri}&response_type={response_type}&scope={scope}&nonce={nonce}"
+
+    return jsonify({"resetUrl": url})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
