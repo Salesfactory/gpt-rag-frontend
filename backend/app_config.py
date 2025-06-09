@@ -26,6 +26,11 @@ REDIRECT_PATH = "/"  # The absolute URL must match your app's redirect_uri
 # B2C policy configuration
 B2C_POLICY = SIGNUPSIGNIN_USER_FLOW  # Default policy
 
+# Web scraping configuration
+WEB_SCRAPING_ENDPOINT = os.getenv(
+    "WEB_SCRAPING_ENDPOINT"
+)
+
 # financial ingestion config.py
 ALLOWED_FILING_TYPES = ["10-Q", "10-K", "8-K", "DEF 14A"]
 FILING_TYPES = ["10-Q", "10-K", "8-K", "DEF 14A"]
