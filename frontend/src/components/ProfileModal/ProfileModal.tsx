@@ -1,7 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import styles from "./ProfileModal.module.css";
 import { useAppContext } from "../../providers/AppProviders";
+import { toast, ToastContainer } from "react-toastify";
+import { getUserById, updateUserData } from "../../api";
+import { Spinner, SpinnerSize } from "@fluentui/react";
 
 interface UserProfileModalProps {
     isOpen: boolean;
@@ -10,53 +13,87 @@ interface UserProfileModalProps {
 
 const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
     const { user } = useAppContext();
-    const [profileData, setProfileData] = useState({
-        email: user?.email || "",
-        username: user?.name || "",
-        newPassword: "",
-        confirmPassword: ""
-    });
+    const [userName, setUserName] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
+    const [isSaving, setIsSaving] = useState(false);
 
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [passwordStrength, setPasswordStrength] = useState("");
+    const handleSave = async (): Promise<void> => {
+        setIsSaving(true);
 
-    const calculatePasswordStrength = (password: string): string => {
-        if (password.length < 6) return "Weak";
+        try {
+            if (!user?.id || !user?.role || !user?.email) {
+                toast("Invalid user data", { type: "error" });
+                return;
+            }
 
-        const hasUppercase = /[A-Z]/.test(password);
-        const hasLowercase = /[a-z]/.test(password);
-        const hasNumbers = /\d/.test(password);
-        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+            await updateUserData({
+                userId: user.id,
+                patchData: {
+                    name: userName,
+                    email: user.email,
+                    role: user.role
+                }
+            });
+            toast("User data updated successfully. The page will reload in 2 seconds.", { type: "success" });
 
-        const strengthPoints = [hasUppercase, hasLowercase, hasNumbers, hasSpecialChar].filter(Boolean).length;
-
-        if (password.length >= 8 && strengthPoints >= 3) return "Strong";
-        if (password.length >= 6 && strengthPoints >= 2) return "Medium";
-        return "Weak";
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } catch (error) {
+            console.error("Error updating user data", error);
+            toast("Failed to update user data", { type: "error" });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
-    const handlePasswordChange = (password: string): void => {
-        setProfileData(prev => ({ ...prev, newPassword: password }));
-        setPasswordStrength(calculatePasswordStrength(password));
+    const handleChangePassword = async () => {
+        try {
+            const res = await fetch("/api/get-password-reset-url");
+            const data = await res.json();
+            if (data.resetUrl) {
+                window.location.href = data.resetUrl;
+            } else {
+                toast("Reset URL not received", { type: "error" });
+            }
+        } catch (err) {
+            toast("Error getting URL", { type: "error" });
+        }
     };
 
-    const handleSave = (): void => {
-        // Aquí puedes agregar la lógica para guardar los cambios
-        console.log("Saving profile data:", profileData);
-        onClose();
-    };
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUser = async () => {
+            try {
+                const result = await getUserById({ user });
+                if (result?.data) {
+                    setEmail(result.data.email);
+                    setUserName(result.data.name);
+                } else {
+                    setEmail("unknown");
+                    setUserName("anonymous");
+                }
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                toast("Failed to load user data", { type: "error" });
+            }
+        };
+
+        fetchUser();
+    }, [user]);
 
     if (!isOpen) return null;
 
     return (
         <div className={styles.overlay} onClick={onClose}>
+            <ToastContainer />
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 {/* Modal Header */}
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <h2 className={styles.title}>User Profile</h2>
-                        <button onClick={onClose} className={styles.closeButton}>
+                        <button onClick={onClose} className={styles.closeButton} disabled={isSaving}>
                             <X size={20} />
                         </button>
                     </div>
@@ -67,110 +104,41 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     {/* Email Address */}
                     <div className={styles.field}>
                         <label className={styles.label}>Email Address</label>
-                        <input type="email" value={profileData.email} disabled className={`${styles.input} ${styles.inputDisabled}`} />
+                        <input type="email" value={email} disabled className={`${styles.input} ${styles.inputDisabled}`} />
                         <p className={styles.helpText}>Email address cannot be changed</p>
                     </div>
 
                     {/* Username */}
                     <div className={styles.field}>
                         <label className={styles.label}>Username</label>
-                        <input
-                            type="text"
-                            value={profileData.username}
-                            onChange={e => setProfileData(prev => ({ ...prev, username: e.target.value }))}
-                            className={styles.input}
-                        />
+                        <input type="text" value={userName} onChange={e => setUserName(e.target.value)} className={styles.input} disabled={isSaving} />
                         <p className={styles.helpText}>This name will be displayed to other users</p>
                     </div>
 
-                    {/* Change Password Section */}
-                    <div className={styles.passwordSection}>
-                        <h3 className={styles.sectionTitle}>Change password</h3>
-
-                        <div className={styles.passwordFields}>
-                            {/* New Password */}
-                            <div className={styles.field}>
-                                <label className={styles.label}>New Password</label>
-                                <div className={styles.inputContainer}>
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        value={profileData.newPassword}
-                                        onChange={e => handlePasswordChange(e.target.value)}
-                                        placeholder="Enter new password"
-                                        className={styles.input}
-                                    />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className={styles.eyeButton}>
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-
-                                {/* Password Strength Indicator */}
-                                {profileData.newPassword && (
-                                    <div className={styles.strengthIndicator}>
-                                        <div className={styles.strengthBar}>
-                                            <div className={styles.strengthBarBackground}>
-                                                <div
-                                                    className={`${styles.strengthBarFill} ${
-                                                        passwordStrength === "Weak"
-                                                            ? styles.strengthWeak
-                                                            : passwordStrength === "Medium"
-                                                            ? styles.strengthMedium
-                                                            : passwordStrength === "Strong"
-                                                            ? styles.strengthStrong
-                                                            : ""
-                                                    }`}
-                                                />
-                                            </div>
-                                            <span
-                                                className={`${styles.strengthText} ${
-                                                    passwordStrength === "Weak"
-                                                        ? styles.strengthWeakText
-                                                        : passwordStrength === "Medium"
-                                                        ? styles.strengthMediumText
-                                                        : passwordStrength === "Strong"
-                                                        ? styles.strengthStrongText
-                                                        : ""
-                                                }`}
-                                            >
-                                                {passwordStrength}
-                                            </span>
-                                        </div>
-                                        <p className={styles.passwordHint}>Use at least 8 characters with uppercase letters, lowercase letters, and numbers</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Confirm Password */}
-                            <div className={styles.field}>
-                                <label className={styles.label}>Confirm Password</label>
-                                <div className={styles.inputContainer}>
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        value={profileData.confirmPassword}
-                                        onChange={e => setProfileData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                                        placeholder="Confirm new password"
-                                        className={styles.input}
-                                    />
-                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className={styles.eyeButton}>
-                                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-                                {profileData.confirmPassword && profileData.newPassword !== profileData.confirmPassword && (
-                                    <p className={styles.errorText}>Passwords do not match</p>
-                                )}
-                            </div>
-                        </div>
+                    {/* Reset Password Button */}
+                    <div className={styles.field}>
+                        <label className={styles.label}>Change Password</label>
+                        <button className={styles.saveButton} onClick={handleChangePassword} disabled={isSaving}>
+                            Change Password
+                        </button>
                     </div>
                 </div>
 
                 {/* Modal Footer */}
                 <div className={styles.footer}>
-                    <button onClick={onClose} className={styles.cancelButton}>
+                    <button onClick={onClose} className={styles.cancelButton} disabled={isSaving}>
                         Cancel
                     </button>
-                    <button onClick={handleSave} className={styles.saveButton}>
-                        Save Changes
-                    </button>
+
+                    {isSaving ? (
+                        <button className={styles.saveButton} disabled>
+                            <Spinner size={SpinnerSize.small} />
+                        </button>
+                    ) : (
+                        <button onClick={handleSave} className={styles.saveButton} disabled={!userName.trim()}>
+                            Save Changes
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./Navbarcopy.module.css";
 import { Menu, Settings, History, MessageCircleQuestion, ChevronDown } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
+import { getUserById } from "../../api";
 
 interface NavbarProps {
     isCollapsed: boolean;
@@ -16,6 +17,7 @@ function persistFinancialAssistantState(userId: string | undefined, state: boole
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
+    const [userName, setUserName] = useState<string>("");
     const {
         setShowFeedbackRatingPanel,
         settingsPanel,
@@ -28,7 +30,22 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setChatId,
         setNewChatDeleted
     } = useAppContext();
-    const userName = user?.name || "";
+
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUser = async () => {
+            const result = await getUserById({ user });
+            if (result?.data?.name) {
+                setUserName(result.data.name);
+            } else {
+                setUserName("anonymous");
+            }
+        };
+
+        fetchUser();
+    }, [user]);
+
     const subscriptiontype = subscriptionTiers || " ";
     const location = useLocation().pathname;
 
