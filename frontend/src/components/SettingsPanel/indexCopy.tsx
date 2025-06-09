@@ -73,6 +73,7 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
                                 onConfirm();
                             }}
                             text="Save"
+
                             styles={{
                                 root: {
                                     backgroundColor: '#16a34a',
@@ -87,6 +88,7 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
                                     borderColor: '#15803d'
                                 }
                             }}
+
                         />
                     </div>
                 </DialogContent>
@@ -119,6 +121,7 @@ export const SettingsPanel = () => {
         "DeepSeek-V3-0324": { default: 0, min: 0, max: 1.5, step: 0.1 },
         "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 },
         "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
+
     };
 
     useEffect(() => {
@@ -138,6 +141,7 @@ export const SettingsPanel = () => {
                         name: user.name
                     }
                 });
+
                 
                 // Only use model-specific default if no temperature is saved at all (undefined/null)
                 if (data.temperature === undefined || data.temperature === null) {
@@ -164,10 +168,12 @@ export const SettingsPanel = () => {
 
     const handleSubmit = () => {
         const parsedTemperature = parseFloat(temperature);
+
         const modelConfig = modelTemperatureSettings[selectedModel];
 
         if (parsedTemperature < modelConfig.min || parsedTemperature > modelConfig.max) {
             console.error(`Invalid temperature for ${selectedModel}. Must be between ${modelConfig.min} and ${modelConfig.max}.`);
+
             return;
         }
 
@@ -365,9 +371,11 @@ export const SettingsPanel = () => {
                                 <div className={styles.sliderContainer}>
                                     <Slider
                                         label=""
+
                                         min={modelTemperatureSettings[selectedModel].min}
                                         max={modelTemperatureSettings[selectedModel].max}
                                         step={modelTemperatureSettings[selectedModel].step}
+
                                         value={parseFloat(temperature)}
                                         showValue
                                         snapToStep
