@@ -5,7 +5,8 @@ import styles from "./Organizationcopy.module.css";
 import { updateOrganizationInfo } from "../../api";
 import { ToastContainer, toast } from "react-toastify";
 import { Spinner, SpinnerSize } from "@fluentui/react";
-import { Globe, Save } from "lucide-react";
+import { Globe, Save, Search, X, Plus } from "lucide-react";
+import { scrapeUrls } from "../../api";
 
 const Organization = () => {
     const { organization, setOrganization } = useAppContext();
@@ -15,6 +16,11 @@ const Organization = () => {
     const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");
     const [additionalInstructions, setAdditionalInstructions] = useState(organization?.additionalInstructions || "");
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Web Indexing state
+    const [urlsToScrape, setUrlsToScrape] = useState<string[]>([]);
+    const [currentUrl, setCurrentUrl] = useState("");
+    const [isScraping, setIsScraping] = useState(false);
 
     const brandRef = useRef<HTMLTextAreaElement>(null);
     const industryRef = useRef<HTMLTextAreaElement>(null);
@@ -55,6 +61,66 @@ const Organization = () => {
             toast("Error saving changes", { type: "error" });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const addUrl = () => {
+        const trimmedUrl = currentUrl.trim();
+        
+        if (!trimmedUrl) {
+            toast("Please enter a URL", { type: "warning" });
+            return;
+        }
+
+        // Validate URL format
+        try {
+            new URL(trimmedUrl);
+        } catch {
+            toast("Please enter a valid URL", { type: "error" });
+            return;
+        }
+
+        // Check for duplicates
+        if (urlsToScrape.includes(trimmedUrl)) {
+            toast("URL already added", { type: "warning" });
+            return;
+        }
+
+        setUrlsToScrape([...urlsToScrape, trimmedUrl]);
+        setCurrentUrl("");
+    };
+
+    const removeUrl = (urlToRemove: string) => {
+        setUrlsToScrape(urlsToScrape.filter(url => url !== urlToRemove));
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addUrl();
+        }
+    };
+
+    const handleScrapeUrls = async () => {
+        if (urlsToScrape.length === 0) {
+            toast("Please add at least one URL to scrape", { type: "warning" });
+            return;
+        }
+
+        setIsScraping(true);
+
+        try {
+            const result = await scrapeUrls(urlsToScrape);
+            toast(`Successfully scraped ${urlsToScrape.length} URL(s)`, { type: "success" });
+            
+            // Clear the URLs after successful scraping
+            setUrlsToScrape([]);
+            
+        } catch (err: any) {
+            console.error('Scraping error:', err);
+            toast(`Error scraping URLs: ${err.message}`, { type: "error" });
+        } finally {
+            setIsScraping(false);
         }
     };
 
@@ -182,6 +248,63 @@ const Organization = () => {
                                         <>
                                             <Save className={styles.icon} />
                                             Save Changes
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div className={styles.cardContainer2}>
+                        <div className={styles.title}>
+                            <span>Web Indexing</span>
+                        </div>
+                        <div className={styles.card2}>
+                            <div className={styles.editableContainer}>
+                                <div className={styles.infoItem}>
+                                    <Label className={styles.labelStyle}>URLs to Scrape</Label>
+                                    <div className={styles.urlInputContainer}>
+                                        <div className={styles.urlInputWrapper}>
+                                            <input
+                                                type="text"
+                                                className={styles.urlInput}
+                                                placeholder="Enter URLs to scrape, one per line. Example: https://example.com"
+                                                value={currentUrl}
+                                                onChange={e => setCurrentUrl(e.target.value)}
+                                                onKeyDown={handleKeyDown}
+                                            />
+                                            <button 
+                                                className={styles.addUrlButton} 
+                                                onClick={addUrl}
+                                                type="button"
+                                            >
+                                                <Plus size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {urlsToScrape.length > 0 && (
+                                        <div className={styles.urlTagsContainer}>
+                                            {urlsToScrape.map((url, index) => (
+                                                <div key={index} className={styles.urlTag}>
+                                                    <span className={styles.urlText}>{url}</span>
+                                                    <button 
+                                                        className={styles.removeUrlButton}
+                                                        onClick={() => removeUrl(url)}
+                                                        type="button"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button className={styles.saveButton} onClick={handleScrapeUrls} disabled={isScraping || urlsToScrape.length === 0}>
+                                    {isScraping ? (
+                                        <Spinner size={SpinnerSize.small} label="Scraping..." labelPosition="right" />
+                                    ) : (
+                                        <>
+                                            <Search className={styles.icon} />
+                                            Scrape URLs
                                         </>
                                     )}
                                 </button>
