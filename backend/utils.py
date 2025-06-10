@@ -800,7 +800,7 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
                 new_setting["user_id"] = client_principal["id"]
                 new_setting["temperature"] = temperature
                 new_setting["model"] = model
-                new_setting["font_family"]=font_family or "",
+                new_setting["font_family"]=font_family or ""
                 new_setting["font_size"]=font_size or ""
                 container.create_item(body=new_setting)
 
