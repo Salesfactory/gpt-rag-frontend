@@ -4,6 +4,7 @@ from azure.identity import DefaultAzureCredential
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError, CosmosHttpResponseError
 import uuid
 import logging
+import time
 from datetime import datetime, timezone, timedelta
 from werkzeug.exceptions import NotFound
 
@@ -771,7 +772,7 @@ def create_invitation(invited_user_email, organization_id, role):
                 )
 
         token = str(uuid.uuid4())
-        expiry_time = datetime.now(timezone.utc) + timedelta(hours=24)
+        expiry_time = datetime.now(timezone.utc) + timedelta(days=7)  # Token valid for 7 days
         token_expiry = int(expiry_time.timestamp())
 
         invitation = {
@@ -797,7 +798,7 @@ def create_invitation(invited_user_email, organization_id, role):
 
 def get_invitation_by_email_and_org(invited_user_email, organizationId):
     """
-    Look for an email invitation and organization.
+    Get the most recent, non-expired, unused invitation for a given email and organization.
     """
     if not invited_user_email or not organizationId:
         return None
@@ -805,13 +806,20 @@ def get_invitation_by_email_and_org(invited_user_email, organizationId):
     try:
         container = get_cosmos_container("invitations")
 
+        current_ts = int(time.time())
+
         query = """
-            SELECT TOP 1 * FROM c
-            WHERE c.invited_user_email = @invited_user_email AND c.organization_id = @organization_id
+            SELECT * FROM c
+            WHERE c.invited_user_email = @invited_user_email
+              AND c.organization_id = @organization_id
+              AND c.token_used = false
+              AND c.token_expiry > @current_ts
+            ORDER BY c._ts DESC
         """
         parameters = [
             {"name": "@invited_user_email", "value": invited_user_email},
-            {"name": "@organization_id", "value": organizationId}
+            {"name": "@organization_id", "value": organizationId},
+            {"name": "@current_ts", "value": current_ts}
         ]
 
         result = list(container.query_items(
