@@ -17,7 +17,7 @@ const Organization = () => {
     const [additionalInstructions, setAdditionalInstructions] = useState(organization?.additionalInstructions || "");
     const [isLoading, setIsLoading] = useState(false);
     
-    // Web Indexing state
+    // Web Indexing state 
     const [urlsToScrape, setUrlsToScrape] = useState<string[]>([]);
     const [currentUrl, setCurrentUrl] = useState("");
     const [isScraping, setIsScraping] = useState(false);
@@ -111,10 +111,109 @@ const Organization = () => {
 
         try {
             const result = await scrapeUrls(urlsToScrape);
-            toast(`Successfully scraped ${urlsToScrape.length} URL(s)`, { type: "success" });
             
-            // Clear the URLs after successful scraping
-            setUrlsToScrape([]);
+            // Debug: Log the entire result to understand the structure
+            console.log('Full scraping result:', result);
+            
+            // Extract the actual data from the API response wrapper
+            const scrapingData = result.data?.result || result.data || result;
+            
+            // Initialize counters
+            let successCount = 0;
+            let failureCount = 0;
+            const failedUrls: string[] = [];
+
+            // First, use the summary data if available (most reliable)
+            if (scrapingData?.summary) {
+                successCount = scrapingData.summary.successful_scrapes || 0;
+                failureCount = scrapingData.summary.failed_scrapes || 0;
+                
+                console.log('Scraping Summary:', {
+                    total: scrapingData.summary.total_urls,
+                    successful: successCount,
+                    failed: failureCount,
+                    summaryObject: scrapingData.summary
+                });
+            } else {
+                console.log('No summary data available in result');
+            }
+
+            // Process individual results for detailed error reporting and failed URL tracking
+            if (scrapingData?.results && Array.isArray(scrapingData.results)) {
+                console.log('Processing individual results:', scrapingData.results);
+                scrapingData.results.forEach((urlResult: any, index: number) => {
+                    const url = urlResult.url;
+                    console.log(`Result ${index + 1}:`, urlResult);
+                    
+                    if (urlResult.status === "error") {
+                        // Add to failed URLs list for retry
+                        if (!failedUrls.includes(url)) {
+                            failedUrls.push(url);
+                        }
+                        
+                        // Show individual error message
+                        const errorMessage = urlResult.error || 'Unknown error';
+                        toast(`Failed to scrape: ${url} - ${errorMessage}`, { 
+                            type: "error",
+                            autoClose: 8000,
+                            position: "top-right"
+                        });
+                    }
+                });
+            } else {
+                console.log('No individual results available or not an array');
+            }
+
+            // Fallback: if no summary data available, count from individual results
+            if (!scrapingData?.summary && scrapingData?.results) {
+                console.log('Using fallback counting from individual results');
+                successCount = 0;
+                failureCount = 0;
+                
+                scrapingData.results.forEach((urlResult: any) => {
+                    if (urlResult.status === "success" || urlResult.status === "completed") {
+                        successCount++;
+                    } else if (urlResult.status === "error") {
+                        failureCount++;
+                    }
+                });
+                
+                console.log('Fallback counts - Success:', successCount, 'Failed:', failureCount);
+            }
+
+            // Debug: Log final counts before deciding on message
+            console.log('Final counts before message decision:', {
+                successCount,
+                failureCount,
+                failedUrls,
+                totalOriginalUrls: urlsToScrape.length
+            });
+
+            // Show overall summary based on actual results
+            if (successCount > 0 && failureCount === 0) {
+                console.log('Case: All successful');
+                toast(`Successfully scraped all ${successCount} URL(s)`, { type: "success" });
+                // Clear the URLs after successful scraping
+                setUrlsToScrape([]);
+            } else if (successCount > 0 && failureCount > 0) {
+                console.log('Case: Mixed results');
+                toast(`Scraped ${successCount} URL(s) successfully, ${failureCount} failed`, { 
+                    type: "warning",
+                    autoClose: 6000
+                });
+                // Keep only the failed URLs for retry
+                setUrlsToScrape(failedUrls);
+            } else if (failureCount > 0) {
+                console.log('Case: All failed');
+                toast(`All ${failureCount} URL(s) failed to scrape`, { type: "error" });
+                // Keep failed URLs in the list for retry
+                setUrlsToScrape(failedUrls);
+            } else {
+                console.log('Case: Unexpected - no clear success or failure');
+                // Edge case: no clear success or failure data
+                toast("Scraping completed, but unable to determine results", { type: "warning" });
+                console.warn('Unexpected scraping result:', result);
+            }
             
         } catch (err: any) {
             console.error('Scraping error:', err);

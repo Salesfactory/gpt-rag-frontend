@@ -1100,6 +1100,8 @@ export async function scrapeUrls(urls: string[]): Promise<any> {
         }
 
         const result = await response.json();
+        
+        // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
         console.error("Error scraping URLs:", error);
