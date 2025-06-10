@@ -23,6 +23,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         settingsPanel,
         setSettingsPanel,
         user,
+        organization,
         subscriptionTiers,
         isFinancialAssistantActive,
         setIsFinancialAssistantActive,
@@ -137,7 +138,13 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         >
                             <Menu className={styles.iconLarge} />
                         </button>
-                        {location === "/" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
+                        {location === "/" && (
+                            <div className={`ms-2 d-none d-sm-flex align-items-center ${styles.brandContainer}`}>
+                                <span className={styles.brandText}>FreddAid</span>
+                                <span className={styles.greenBar}></span>
+                                <span className={styles.brandText2}>{organization?.name}</span>
+                            </div>
+                        )}
                         {location === "/admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
                         {location === "/organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
                         {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution List</span>}
@@ -186,13 +193,13 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
                         {/*Then change the route*/}
                         {/* Feedback Panel Button */}
-                        {location === "/" && (
+                        {/* {location === "/" && (
                             <li className="nav-item">
                                 <button onClick={handleShowFeedbackRatingPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                     <MessageCircleQuestion className={styles.iconLarge} />
                                 </button>
                             </li>
-                        )}
+                        )} */}
                         {/*Then change the route*/}
                         {/* Chat History Button */}
                         {location === "/" && (
