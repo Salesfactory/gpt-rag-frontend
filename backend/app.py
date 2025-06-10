@@ -3905,5 +3905,66 @@ def get_password_reset_url():
     return jsonify({"resetUrl": url})
 
 
+@app.route("/api/scrape-urls", methods=["POST"])
+def scrape_urls():
+    """
+    Endpoint to scrape URLs using the external web scraping service.
+    Expects a JSON payload with a 'urls' array.
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+        
+        # Validate required fields
+        urls = data.get("urls", [])
+        if not urls or not isinstance(urls, list):
+            return create_error_response("URLs must be provided as a list", 400)
+        
+        if len(urls) == 0:
+            return create_error_response("At least one URL is required", 400)
+        
+        
+        # Prepare payload for external scraping service
+        payload = {"urls": urls}
+        
+        # Make request to external scraping service
+        response = requests.post(
+            os.getenv("WEB_SCRAPING_ENDPOINT"),
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=120  
+        )
+        
+        # Check if request was successful
+        if not response.ok:
+            logger.error(f"Scraping service returned error: {response.status_code} - {response.text}")
+            return create_error_response(f"Scraping service error: {response.status_code}", 502)
+        
+        # Parse response from scraping service
+        try:
+            scraping_result = response.json()
+        except ValueError:
+            logger.error("Invalid JSON response from scraping service")
+            return create_error_response("Invalid response from scraping service", 502)
+        
+        logger.info(f"Successfully scraped {len(urls)} URLs")
+        return create_success_response({
+            "message": f"Successfully scraped {len(urls)} URL(s)",
+            "scraped_urls": urls,
+            "result": scraping_result
+        }, 200)
+        
+    except requests.Timeout:
+        logger.error("Timeout while calling scraping service")
+        return create_error_response("Scraping service timeout", 504)
+    except requests.RequestException as e:
+        logger.error(f"Request error while calling scraping service: {str(e)}")
+        return create_error_response("Failed to connect to scraping service", 502)
+    except Exception as e:
+        logger.exception(f"Unexpected error in scrape_urls: {e}")
+        return create_error_response("Internal Server Error", 500)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

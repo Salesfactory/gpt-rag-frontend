@@ -1084,3 +1084,27 @@ export async function getCompanyData() {
         console.error("API request failed")
     }
 }
+
+export async function scrapeUrls(urls: string[]): Promise<any> {
+    try {
+        const response = await fetch("/api/scrape-urls", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ urls })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        // Return the detailed result which should include success/failure info for each URL
+        return result;
+    } catch (error) {
+        console.error("Error scraping URLs:", error);
+        throw error;
+    }
+}
