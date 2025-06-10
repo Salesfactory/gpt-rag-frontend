@@ -3925,18 +3925,16 @@ def scrape_urls():
         if len(urls) == 0:
             return create_error_response("At least one URL is required", 400)
         
-        # Import WEB_SCRAPING_ENDPOINT from app_config
-        from app_config import WEB_SCRAPING_ENDPOINT
         
         # Prepare payload for external scraping service
         payload = {"urls": urls}
         
         # Make request to external scraping service
         response = requests.post(
-            WEB_SCRAPING_ENDPOINT,
+            os.getenv("WEB_SCRAPING_ENDPOINT"),
             json=payload,
             headers={"Content-Type": "application/json"},
-            timeout=120  # 120 second timeout
+            timeout=120  
         )
         
         # Check if request was successful
