@@ -71,6 +71,12 @@
     margin-bottom: 0;
 }
 
+.field2{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .label {
     display: block;
     font-size: 1rem;

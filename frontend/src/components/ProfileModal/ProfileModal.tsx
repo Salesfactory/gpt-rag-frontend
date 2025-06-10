@@ -116,8 +116,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     </div>
 
                     {/* Reset Password Button */}
-                    <div className={styles.field}>
-                        <label className={styles.label}>Change Password</label>
+                    <div className={styles.field2}>
                         <button className={styles.saveButton} onClick={handleChangePassword} disabled={isSaving}>
                             Change Password
                         </button>
