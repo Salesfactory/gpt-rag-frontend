@@ -212,7 +212,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                 <div className={styles.tooltipWrapper}>
                                     <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                         <Settings className={styles.iconLarge} />
-                                        <span className={styles.tooltipText}>Model Settings</span>
+                                        <span className={styles.tooltipText}>Chat Settings</span>
                                         {/* <span className="d-none d-md-inline">Settings</span> */}
                                     </button>
                                 </div>

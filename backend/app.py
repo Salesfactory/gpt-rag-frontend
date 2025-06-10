@@ -1614,12 +1614,16 @@ def setSettings():
             return jsonify({"error": "Invalid request body"}), 400
 
         temperature = request_body.get("temperature", 0.0)
-        model = request_body.get("model", "DeepSeek-V3-0324") # address later since we're adding more models 
+        model = request_body.get("model", "DeepSeek-V3-0324") # address later since we're adding more models
+        font_family = request_body.get("font_family")
+        font_size = request_body.get("font_size")
 
         set_settings(
             client_principal=client_principal,
             temperature=temperature,
-            model=model
+            model=model,
+            font_family=font_family,
+            font_size=font_size,
         )
 
         # Return all saved settings, including the model
@@ -1627,7 +1631,9 @@ def setSettings():
             "client_principal_id": client_principal["id"],
             "client_principal_name": client_principal["name"],
             "temperature": temperature,
-            "model": model
+            "model": model,
+            "font_family": font_family,
+            "font_size":font_size
         }), 200
     except Exception as e:
         logging.exception("[webbackend] exception in /api/settings POST")
