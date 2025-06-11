@@ -47,7 +47,7 @@
 
 .dividerText {
     text-align: justify;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 500;
     padding: 1rem 1.5rem;
     margin-top: 10px;
@@ -81,7 +81,7 @@
 
 .tableTextView {
     text-align: justify;
-    font-size: 1.25rem;
+    font-size: 1rem;
     font-weight: 500;
     padding-left: 1.4rem;
 }
@@ -122,7 +122,7 @@
 
 .tableExpirationText {
     text-align: justify;
-    font-size: 1.25rem;
+    font-size: 1rem;
     padding: 1rem 1.5rem;
     padding-bottom: 0;
 }

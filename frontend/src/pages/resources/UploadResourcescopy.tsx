@@ -19,10 +19,8 @@ import {
     DialogFooter,
     mergeStyleSets
 } from "@fluentui/react";
-
 import { DocumentRegular } from "@fluentui/react-icons";
 import { FileText, Download, Trash2, RefreshCw, Upload, Search, CirclePlus } from "lucide-react";
-
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 const ALLOWED_FILE_TYPES = [".pdf"];
