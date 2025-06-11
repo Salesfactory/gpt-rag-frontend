@@ -144,6 +144,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
             isClickableOutsideFocusTrap={true}
             hidden={!isOpen}
             onDismiss={onDismiss}
+
             dialogContentProps={
                 !success
                     ? {

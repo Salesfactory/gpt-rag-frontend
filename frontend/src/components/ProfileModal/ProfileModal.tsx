@@ -12,7 +12,9 @@ interface UserProfileModalProps {
 }
 
 const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) => {
-    const { user, userName, setUserName } = useAppContext();
+    const { user } = useAppContext();
+    const [userName, setUserName] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = async (): Promise<void> => {
@@ -32,7 +34,11 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     role: user.role
                 }
             });
-            toast("User data updated successfully", { type: "success" });
+            toast("User data updated successfully. The page will reload in 2 seconds.", { type: "success" });
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         } catch (error) {
             console.error("Error updating user data", error);
             toast("Failed to update user data", { type: "error" });
@@ -55,6 +61,27 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
         }
     };
 
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUser = async () => {
+            try {
+                const result = await getUserById({ user });
+                if (result?.data) {
+                    setEmail(result.data.email);
+                    setUserName(result.data.name);
+                } else {
+                    setEmail("unknown");
+                    setUserName("anonymous");
+                }
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                toast("Failed to load user data", { type: "error" });
+            }
+        };
+
+        fetchUser();
+    }, [user]);
 
     if (!isOpen) return null;
 
@@ -77,7 +104,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     {/* Email Address */}
                     <div className={styles.field}>
                         <label className={styles.label}>Email Address</label>
-                        <input type="email" value={user?.email ?? ""} disabled className={`${styles.input} ${styles.inputDisabled}`} />
+                        <input type="email" value={email} disabled className={`${styles.input} ${styles.inputDisabled}`} />
                         <p className={styles.helpText}>Email address cannot be changed</p>
                     </div>
 
@@ -89,7 +116,8 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     </div>
 
                     {/* Reset Password Button */}
-                    <div className={styles.field2}>
+                    <div className={styles.field}>
+                        <label className={styles.label}>Change Password</label>
                         <button className={styles.saveButton} onClick={handleChangePassword} disabled={isSaving}>
                             Change Password
                         </button>

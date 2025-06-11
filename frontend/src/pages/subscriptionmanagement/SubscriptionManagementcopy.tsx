@@ -496,6 +496,7 @@ const SubscriptionManagement: React.FC = () => {
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
+
                                     <PrimaryButton 
                                         onClick={() => handleCreateCustomerPortal()} 
                                         text="Confirm change" 
@@ -514,6 +515,7 @@ const SubscriptionManagement: React.FC = () => {
                                             }
                                         }}
                                     />
+
                                 </div>
                             </div>
                         ) : (
@@ -525,6 +527,7 @@ const SubscriptionManagement: React.FC = () => {
                                 </Label>
                                 <div className={styles.buttonContainer}>
                                     <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
+
                                     <PrimaryButton 
                                         onClick={() => handleChangeSubscription(selectedSubscriptionID)} 
                                         text="Confirm Subscription" 
@@ -543,6 +546,7 @@ const SubscriptionManagement: React.FC = () => {
                                             }
                                         }}
                                     />
+
                                 </div>
                             </div>
                         )}
@@ -557,6 +561,7 @@ const SubscriptionManagement: React.FC = () => {
                         <Label className={styles.modalText}>Subscribing to the Financial Assistant feature will cost $29.99 per month.</Label>
                         <div className={styles.buttonContainer}>
                             <DefaultButton onClick={() => setIsSubscriptionModal(false)} text="Cancel" />
+
                             <PrimaryButton 
                                 onClick={handleSubscribe} 
                                 text="Confirm Subscription" 
@@ -575,6 +580,7 @@ const SubscriptionManagement: React.FC = () => {
                                     }
                                 }}
                             />
+
                         </div>
                     </div>
                 )}
@@ -587,6 +593,7 @@ const SubscriptionManagement: React.FC = () => {
                         <Label className={styles.modalText}>Are you sure you want to remove the Financial Assistant from your subscription?</Label>
                         <div className={styles.buttonContainer}>
                             <DefaultButton onClick={() => setIsUnsubscriptionModal(false)} text="Cancel" />
+
                             <PrimaryButton 
                                 onClick={handleUnsubscribe} 
                                 text="Yes, Unsubscribe" 
@@ -605,6 +612,7 @@ const SubscriptionManagement: React.FC = () => {
                                     }
                                 }}
                             />
+
                         </div>
                     </div>
                 )}

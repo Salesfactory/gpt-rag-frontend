@@ -723,7 +723,7 @@ def set_feedback(
 # SETTINGS UTILS
 ################################################
 
-def set_settings(client_principal, temperature, model, font_family, font_size):
+def set_settings(client_principal, temperature, model):
 
     new_setting = {}
     container = get_cosmos_container("settings")
@@ -767,11 +767,6 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
             setting["temperature"] = temperature
             setting["model"] = model
 
-            if font_family is not None:
-                setting["font_family"] = font_family
-            if font_size is not None:
-                setting["font_size"] = font_size
-
             try:
                 container.replace_item(item=setting["id"], body=setting)
                 logging.info(
@@ -800,8 +795,6 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
                 new_setting["user_id"] = client_principal["id"]
                 new_setting["temperature"] = temperature
                 new_setting["model"] = model
-                new_setting["font_family"]=font_family or ""
-                new_setting["font_size"]=font_size or ""
                 container.create_item(body=new_setting)
 
                 logging.info(
@@ -838,9 +831,7 @@ def get_setting(client_principal):
         # Return defaults immediately if no user ID
         return {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324",# Default model
-            "font_family":"",
-            "font_size":""
+            "model": "DeepSeek-V3-0324" # Default model
         }
 
     user_id = client_principal["id"]
@@ -850,7 +841,7 @@ def get_setting(client_principal):
     container = get_cosmos_container("settings")
     try:
         # Update query to select only temperature and model
-        query = "SELECT c.temperature, c.model, c.font_family, c.font_size FROM c WHERE c.user_id = @user_id"
+        query = "SELECT c.temperature, c.model FROM c WHERE c.user_id = @user_id"
         parameters = [{"name": "@user_id", "value": user_id}]
         result = list(
             container.query_items(
@@ -862,16 +853,12 @@ def get_setting(client_principal):
             # Ensure both expected keys exist, provide defaults if missing
             setting["temperature"] = setting.get("temperature", 0.0)
             setting["model"] = setting.get("model", "DeepSeek-V3-0324")
-            setting["font_family"] = setting.get("font_family","")
-            setting["font_size"]= setting.get("font_size","")
             logging.info(f"Settings found for user {user_id}: {setting}")
         else: # If no settings found, return defaults
             logging.info(f"No settings document found for user {user_id}. Returning defaults.")
             setting = {
                 "temperature": 0.0,
-                "model": "DeepSeek-V3-0324", # Default model
-                "font_family": "",
-                "font_size": ""
+                "model": "DeepSeek-V3-0324" # Default model
             }
     except CosmosHttpResponseError as e:
         # Handle specific Cosmos errors, like 404 Not Found if needed, otherwise log generic error
@@ -881,9 +868,7 @@ def get_setting(client_principal):
         # Return defaults on error
         setting = {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324", # Default model
-            "font_family": "",
-            "font_size": ""
+            "model": "DeepSeek-V3-0324" # Default model
         }
     except Exception as e:
         logging.error(
@@ -892,9 +877,7 @@ def get_setting(client_principal):
         # Return defaults on unexpected error
         setting = {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324", # Default model
-            "font_family": "",
-            "font_size": ""
+            "model": "DeepSeek-V3-0324" # Default model
         }
     return setting
 

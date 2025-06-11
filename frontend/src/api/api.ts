@@ -171,7 +171,7 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     }
 }
 
-export async function postSettings({ user, temperature, model, font_family, font_size }: PostSettingsProps): Promise<any> {
+export async function postSettings({ user, temperature, model }: PostSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -184,9 +184,7 @@ export async function postSettings({ user, temperature, model, font_family, font
             },
             body: JSON.stringify({
                 temperature,
-                model,
-                font_family,
-                font_size
+                model
             })
         });
         const fetchedData = await response.json();
@@ -1084,29 +1082,5 @@ export async function getCompanyData() {
         return companydata.data
     } catch {
         console.error("API request failed")
-    }
-}
-
-export async function scrapeUrls(urls: string[]): Promise<any> {
-    try {
-        const response = await fetch("/api/scrape-urls", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ urls })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        
-        // Return the detailed result which should include success/failure info for each URL
-        return result;
-    } catch (error) {
-        console.error("Error scraping URLs:", error);
-        throw error;
     }
 }

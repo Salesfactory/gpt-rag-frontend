@@ -105,8 +105,6 @@ export type PostSettingsProps = {
     } | null;
     temperature: number;
     model: string;
-    font_family:string;
-    font_size:string;
 };
 
 export type SummarizationReportProps = {
