@@ -17,12 +17,12 @@ function persistFinancialAssistantState(userId: string | undefined, state: boole
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
-    const [userName, setUserName] = useState<string>("");
     const {
         setShowFeedbackRatingPanel,
         settingsPanel,
         setSettingsPanel,
         user,
+        userName,
         organization,
         subscriptionTiers,
         isFinancialAssistantActive,
@@ -31,21 +31,6 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setChatId,
         setNewChatDeleted
     } = useAppContext();
-
-    useEffect(() => {
-        if (!user) return;
-
-        const fetchUser = async () => {
-            const result = await getUserById({ user });
-            if (result?.data?.name) {
-                setUserName(result.data.name);
-            } else {
-                setUserName("anonymous");
-            }
-        };
-
-        fetchUser();
-    }, [user]);
 
     const subscriptiontype = subscriptionTiers || " ";
     const location = useLocation().pathname;
@@ -228,10 +213,26 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
                         {/* User Profile Card */}
                         <li className="nav-item dropdown">
-                            <button className="nav-link" onClick={handleOnClickProfileCard}>
+                            <button
+                                className={`nav-link ${styles.profileButton} ${isDropdownOpen ? styles.dropdownOpen : ""}`}
+                                onClick={handleOnClickProfileCard}
+                            >
                                 <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
-                                    <div className={styles.profileCircle}>{userInitials}</div>
-                                    <span className={styles.userName}>{userName}</span>
+                                    <div className={styles.profileWrapper}>
+                                        <div className={`${styles.profileCircle} ${user?.role === "admin" ? styles.adminBorder : styles.userBorder}`}>
+                                            {userInitials}
+
+                                            {/* Hover Tooltip */}
+                                            <div className={styles.tooltip}>
+                                                <div className={styles.tooltipContent}>
+                                                    <div className={styles.userName}>{userName}</div>
+                                                    <div className={styles.userRole}>{user?.role === "admin" ? "Administrator" : "User"}</div>
+                                                </div>
+                                                {/* Tooltip Arrow */}
+                                                <div className={styles.tooltipArrow}></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <ChevronDown size={16} className={`${styles.chevron} ${isDropdownOpen ? styles.rotate : ""}`} />
                                 </div>
                             </button>

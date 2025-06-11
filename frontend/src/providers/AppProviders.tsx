@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
-import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getSettings } from "../api";
+import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getSettings, getUserById } from "../api";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
 
@@ -129,6 +129,8 @@ interface AppContextType {
             font_size?: number;
         }>
     >;
+    userName: string;
+    setUserName: Dispatch<SetStateAction<string>>;
 }
 
 // Create the context with a default value
@@ -143,6 +145,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [refreshFetchHistory, setRefreshFetchHistory] = useState<boolean>(false);
     const [chatIsCleaned, setChatIsCleaned] = useState<boolean>(false);
     const [settings, setSettings] = useState<{ font_family?: string; font_size?: number }>({});
+    const [userName, setUserName] = useState<string>("anonymous");
     const [dataHistory, setDataHistory] = useState<ConversationHistoryItem[]>([]);
     const [dataConversation, setDataConversation] = useState<ChatTurn[]>([]);
     const [chatSelected, setChatSelected] = useState<string>("");
@@ -525,7 +528,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isSubscriptionTiersLoading, // New loading state
             isChatHistoryLoading, // New loading state
             settings,
-            setSettings
+            setSettings,
+            userName,
+            setUserName
         }),
         [
             showHistoryPanel,
@@ -550,7 +555,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isOrganizationLoading,
             isSubscriptionTiersLoading,
             isChatHistoryLoading,
-            settings
+            settings,
+            userName
         ]
     );
     useEffect(() => {
@@ -563,6 +569,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             .catch(error => {
                 console.error("Error obtaining settings:", error);
             });
+    }, [user]);
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUser = async () => {
+            const result = await getUserById({ user });
+            if (result?.data?.name) {
+                setUserName(result.data.name);
+            } else {
+                setUserName("anonymous");
+            }
+        };
+
+        fetchUser();
     }, [user]);
     // Render loading spinner if data is still loading (initial authentication or other loading states)
     if (isLoading || isOrganizationLoading || isSubscriptionTiersLoading || isChatHistoryLoading) {
