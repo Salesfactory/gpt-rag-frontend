@@ -73,20 +73,22 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
                                 onConfirm();
                             }}
                             text="Save"
+
                             styles={{
                                 root: {
-                                    backgroundColor: "#16a34a",
-                                    borderColor: "#16a34a"
+                                    backgroundColor: '#16a34a',
+                                    borderColor: '#16a34a'
                                 },
                                 rootHovered: {
-                                    backgroundColor: "#15803d",
-                                    borderColor: "#15803d"
+                                    backgroundColor: '#15803d',
+                                    borderColor: '#15803d'
                                 },
                                 rootPressed: {
-                                    backgroundColor: "#15803d",
-                                    borderColor: "#15803d"
+                                    backgroundColor: '#15803d',
+                                    borderColor: '#15803d'
                                 }
                             }}
+
                         />
                     </div>
                 </DialogContent>
@@ -102,9 +104,6 @@ export const SettingsPanel = () => {
     const [selectedModel, setSelectedModel] = useState<string>("DeepSeek-V3-0324");
     const [loading, setLoading] = useState(true);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
-    const [selectedFontSize, setSelectedFontSize] = useState<string>("16");
-    const [selectedFont, setSelectedFont] = useState<string>("Arial");
-
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -122,42 +121,13 @@ export const SettingsPanel = () => {
         "DeepSeek-V3-0324": { default: 0, min: 0, max: 1.5, step: 0.1 },
         "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 },
         "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
+
     };
-
-    const fontSizeOptions = [
-        { key: "10", text: "10" },
-        { key: "10.5", text: "10.5" },
-        { key: "11", text: "11" },
-        { key: "12", text: "12" },
-        { key: "14", text: "14" },
-        { key: "16", text: "16" },
-        { key: "18", text: "18" },
-        { key: "20", text: "20" },
-        { key: "22", text: "22" },
-        { key: "24", text: "24" },
-        { key: "26", text: "26" },
-        { key: "28", text: "28" },
-        { key: "36", text: "36" }
-    ];
-
-    const fontOptions: IDropdownOption[] = [
-        { key: "Arial", text: "Arial" },
-        { key: "Helvetica", text: "Helvetica" },
-        { key: "Georgia", text: "Georgia" },
-        { key: "Times New Roman", text: "Times New Roman" },
-        { key: "Verdana", text: "Verdana" },
-        { key: "Trebuchet MS", text: "Trebuchet MS" },
-        { key: "Courier New", text: "Courier New" },
-        { key: "Impact", text: "Impact" },
-        { key: "Comic Sans MS", text: "Comic Sans MS" },
-        { key: "Tahoma", text: "Tahoma" },
-        { key: "Palatino", text: "Palatino" },
-        { key: "Lucida Console", text: "Lucida Console" }
-    ];
 
     useEffect(() => {
         const fetchData = async () => {
             if (!user) {
+                // User is not logged in; handle accordingly
                 setLoading(false);
                 return;
             }
@@ -172,27 +142,20 @@ export const SettingsPanel = () => {
                     }
                 });
 
+                
+                // Only use model-specific default if no temperature is saved at all (undefined/null)
                 if (data.temperature === undefined || data.temperature === null) {
                     const modelConfig = modelTemperatureSettings[data.model || "DeepSeek-V3-0324"];
                     setTemperature(modelConfig.default.toString());
                 } else {
-
+                    // Use saved temperature even if it's "0" (user explicitly set it)
                     setTemperature(data.temperature);
                 }
-
-                // Model
+                
                 setSelectedModel(data.model || "DeepSeek-V3-0324");
-
-                // Font Size
-                if (typeof data.font_size === "string" && data.font_family.trim() !== "") {
-                    setSelectedFontSize(data.font_size.toString());
-                }
-                // Font Family
-                if (typeof data.font_family === "string" && data.font_family.trim() !== "") {
-                    setSelectedFont(data.font_family.trim());
-                }
             } catch (error) {
                 console.error("Error fetching settings:", error);
+                // Set default values when there's an error fetching settings
                 const modelConfig = modelTemperatureSettings[selectedModel];
                 setTemperature(modelConfig.default.toString());
             } finally {
@@ -205,33 +168,26 @@ export const SettingsPanel = () => {
 
     const handleSubmit = () => {
         const parsedTemperature = parseFloat(temperature);
+
         const modelConfig = modelTemperatureSettings[selectedModel];
-        const parsedFontSize = selectedFontSize;
-        const parsedFontSeleted = selectedFont;
 
         if (parsedTemperature < modelConfig.min || parsedTemperature > modelConfig.max) {
             console.error(`Invalid temperature for ${selectedModel}. Must be between ${modelConfig.min} and ${modelConfig.max}.`);
+
             return;
         }
 
         postSettings({
             user,
             temperature: parsedTemperature,
-            model: selectedModel,
-            font_family: parsedFontSeleted,
-            font_size: parsedFontSize
+            model: selectedModel
         })
             .then(data => {
                 setTemperature(data.temperature);
                 setSelectedModel(data.model);
-                setSelectedFont(data.font_family);
-                setSelectedFontSize(data.font_size);
                 setIsDialogOpen(false);
                 setIsLoadingSettings(false);
-                toast("Successfully saved data. The page will reload in 2 seconds.", { type: "success" });
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                toast("Successfully saved data", { type: "success" });
             })
             .catch(error => {
                 console.error("Error saving settings:", error);
@@ -319,8 +275,7 @@ export const SettingsPanel = () => {
             <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
                 <Stack.Item grow className={styles["w-100"]}>
                     <div className={styles.header2}>
-                        <div className={styles.title}>Chat Settings</div>
-
+                        <div className={styles.title}>Model Settings</div>
                         <div className={styles.buttons}>
                             <div></div>
                             <div className={styles.closeButtonContainer}>
@@ -345,143 +300,6 @@ export const SettingsPanel = () => {
                         <div className={styles.content}>
                             <div className={styles["w-100"]}>
                                 <div className={styles.item}>
-
-                                    <span>Font Type</span>
-                                </div>
-                                <Dropdown
-                                    placeholder="Select font"
-                                    options={fontOptions}
-                                    selectedKey={selectedFont}
-                                    onChange={(_event, option) => {
-                                        if (option) {
-                                            setSelectedFont(option.key as string);
-                                        }
-                                    }}
-                                    aria-labelledby="font-dropdown"
-                                    onRenderOption={option => <span style={{ fontFamily: option!.text }}>{option!.text}</span>}
-                                    onRenderTitle={options => {
-                                        if (!options || options.length === 0) return null;
-                                        return <span style={{ fontFamily: options[0].text }}>{options[0].text}</span>;
-                                    }}
-                                    calloutProps={{
-                                        directionalHint: 4,
-                                        isBeakVisible: false,
-                                        styles: {
-                                            root: {
-                                                maxHeight: 200,
-                                                overflowY: "auto"
-                                            }
-                                        }
-                                    }}
-                                    styles={{
-                                        root: {
-                                            width: "90%"
-                                        },
-                                        dropdown: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            minHeight: "39px",
-                                            backgroundColor: "#ffffff",
-                                            outline: "none",
-                                            boxShadow: "none"
-                                        },
-                                        title: {
-                                            fontSize: "14px",
-                                            paddingLeft: "12px",
-                                            paddingRight: "12px",
-                                            lineHeight: "37px",
-                                            color: "#374151",
-                                            border: "0px",
-                                            backgroundColor: "transparent"
-                                        },
-                                        caretDown: {
-                                            color: "#6b7280",
-                                            fontSize: "12px",
-                                            right: "12px"
-                                        },
-                                        callout: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
-                                        }
-                                    }}
-                                />
-                                <div className={styles.item}>
-                                    <span>Font Size</span>
-                                </div>
-                                <Dropdown
-                                    placeholder="Select font size"
-                                    options={fontSizeOptions}
-                                    selectedKey={selectedFontSize}
-                                    onChange={(_event, option) => {
-                                        if (option) {
-                                            setSelectedFontSize(option.key as string);
-                                        }
-                                    }}
-                                    aria-labelledby="font-size-dropdown"
-                                    calloutProps={{
-                                        directionalHint: 4,
-                                        isBeakVisible: false,
-                                        styles: {
-                                            root: {
-                                                maxHeight: 200,
-                                                overflowY: "auto"
-                                            }
-                                        }
-                                    }}
-                                    styles={{
-                                        root: {
-                                            width: "90%"
-                                        },
-                                        dropdown: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            minHeight: "39px",
-                                            backgroundColor: "#ffffff",
-                                            outline: "none",
-                                            boxShadow: "none",
-                                            "&:hover": {
-                                                borderColor: "#9ca3af"
-                                            },
-                                            "&:focus": {
-                                                borderColor: "#3b82f6",
-                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
-                                                outline: "none",
-                                                borderRadius: "6px"
-                                            },
-                                            "&:focus-within": {
-                                                borderColor: "#3b82f6",
-                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
-                                                outline: "none",
-                                                borderRadius: "6px"
-                                            },
-                                            "&[aria-expanded='true']": {
-                                                borderRadius: "6px"
-                                            }
-                                        },
-                                        title: {
-                                            fontSize: "14px",
-                                            paddingLeft: "12px",
-                                            paddingRight: "12px",
-                                            lineHeight: "37px",
-                                            color: "#374151",
-                                            border: "0px",
-                                            backgroundColor: "transparent"
-                                        },
-                                        caretDown: {
-                                            color: "#6b7280",
-                                            fontSize: "12px",
-                                            right: "12px"
-                                        },
-                                        callout: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
-                                        }
-                                    }}
-                                />
-                                <div className={styles.item}>
-
                                     <span>Model Selection</span>
                                 </div>
                                 <Dropdown
@@ -553,6 +371,7 @@ export const SettingsPanel = () => {
                                 <div className={styles.sliderContainer}>
                                     <Slider
                                         label=""
+
                                         min={modelTemperatureSettings[selectedModel].min}
                                         max={modelTemperatureSettings[selectedModel].max}
                                         step={modelTemperatureSettings[selectedModel].step}

@@ -8,14 +8,13 @@
 
 .message {
     padding: 1.25em;
-    font-size: 1rem;
+    font-size: 0.95rem;
     background: #e8ebfa;
     border-radius: 0.5em;
     box-shadow:
         0px 0.125em 0.25em rgba(0, 0, 0, 0.14),
         0px 0px 0.125em rgba(0, 0, 0, 0.12);
     outline: transparent solid 0.0625em;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 @media (max-width: 680px) {
