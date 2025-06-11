@@ -28,6 +28,7 @@
 .header {
     padding: 1.5rem;
     border-bottom: 1px solid #e5e7eb;
+    background-color: #16a34a;
 }
 
 .headerContent {
@@ -39,12 +40,12 @@
 .title {
     font-size: 1.2rem;
     font-weight: 600;
-    color: #1f2937;
+    color: white;
     margin: 0;
 }
 
 .closeButton {
-    color: #9ca3af;
+    color: #ffffff;
     background: none;
     border: none;
     cursor: pointer;
@@ -69,6 +70,13 @@
 
 .field:last-child {
     margin-bottom: 0;
+}
+
+
+.field2{
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .label {

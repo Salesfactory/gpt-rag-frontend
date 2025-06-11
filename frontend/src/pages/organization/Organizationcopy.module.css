@@ -193,6 +193,118 @@
     margin-bottom: 0.375rem;
 }
 
+
+/* URL Input Styles */
+.urlInputContainer {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.urlInputWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.urlInput {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    background-color: #ffffff;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    outline: none;
+}
+
+.urlInput:focus {
+    border-color: #8ec5ff;
+    box-shadow: 0 0 0 3px rgba(142, 197, 255, 0.1);
+}
+
+.urlInput::placeholder {
+    color: #9ca3af;
+}
+
+.addUrlButton {
+    padding: 12px;
+    background-color: #00a63e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    min-width: 44px;
+    height: 44px;
+}
+
+.addUrlButton:hover {
+    background-color: #008236;
+    transform: translateY(-1px);
+}
+
+.addUrlButton:active {
+    transform: translateY(0);
+}
+
+.urlTagsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 8px 0;
+}
+
+.urlTag {
+    display: flex;
+    align-items: center;
+    background-color: #e8f5e8;
+    border: 1px solid #c3e6c3;
+    border-radius: 20px;
+    padding: 6px 12px;
+    gap: 8px;
+    max-width: 100%;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.urlTag:hover {
+    background-color: #d1f2d1;
+}
+
+.urlText {
+    font-size: 0.875rem;
+    color: #166534;
+    word-break: break-all;
+    flex: 1;
+    min-width: 0;
+}
+
+.removeUrlButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #059669;
+    padding: 2px;
+    border-radius: 50%;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    min-width: 18px;
+    height: 18px;
+}
+
+.removeUrlButton:hover {
+    background-color: #b91c1c;
+    color: white;
+}
+
+
 @media (max-width: 768px) {
     .center {
         margin-left: 20px;
@@ -200,5 +312,29 @@
 
     .info {
         overflow-x: auto;
+    }
+
+
+    .urlInputWrapper {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .urlInput {
+        width: 100%;
+    }
+
+    .addUrlButton {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .urlTag {
+        border-radius: 16px;
+        padding: 8px 12px;
+    }
+
+    .urlText {
+        font-size: 0.8rem;
     }
 }
