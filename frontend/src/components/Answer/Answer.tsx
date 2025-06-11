@@ -12,6 +12,7 @@ import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 
 import { animated, useSpring } from "@react-spring/web";
+import { useAppContext } from "../../providers/AppProviders";
 
 const userLanguage = navigator.language;
 let citation_label_text = "";
@@ -23,13 +24,13 @@ if (userLanguage.startsWith("pt")) {
     citation_label_text = "Sources";
 }
 
-let generating_answer_text = '';
-if (userLanguage.startsWith('pt')) {
-  generating_answer_text = 'Gerando resposta';
-} else if (userLanguage.startsWith('es')) {
-  generating_answer_text = 'Generando respuesta';
+let generating_answer_text = "";
+if (userLanguage.startsWith("pt")) {
+    generating_answer_text = "Gerando resposta";
+} else if (userLanguage.startsWith("es")) {
+    generating_answer_text = "Generando respuesta";
 } else {
-  generating_answer_text = 'Generating response';
+    generating_answer_text = "Generating response";
 }
 interface Props {
     answer: AskResponse;
@@ -67,8 +68,12 @@ export const Answer = ({
     });
 
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
-
+    const { settings } = useAppContext();
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
+    const Heading = ({ node, ...props }: any) => {
+        const Tag = node.tagName as keyof JSX.IntrinsicElements;
+        return <Tag style={headingStyle}>{props.children}</Tag>;
+    };
 
     if (answer.answer === "") {
         return (
@@ -85,6 +90,21 @@ export const Answer = ({
             </animated.div>
         );
     }
+
+    const fontFamily = settings.font_family?.trim() || "Arial";
+    const fontSize = settings.font_size || 16;
+
+    const baseTextStyle = {
+        fontFamily,
+        fontSize: `${fontSize}px`
+    };
+
+    const headingStyle = {
+        ...baseTextStyle,
+        fontWeight: "bold",
+        marginTop: "12px",
+        marginBottom: "8px"
+    };
 
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
@@ -104,15 +124,71 @@ export const Answer = ({
                 </Stack>
             </Stack.Item>
 
-            <Stack.Item grow className={styles.markdownContent}>
+            <Stack.Item grow>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw]}
                     components={{
+                        h1: props => <Heading {...props} />,
+                        h2: props => <Heading {...props} />,
+                        h3: props => <Heading {...props} />,
+                        h4: props => <Heading {...props} />,
+                        h5: props => <Heading {...props} />,
+                        h6: props => <Heading {...props} />,
+                        p: ({ node, ...props }) => <p style={{ ...baseTextStyle, marginBottom: "8px" }}>{props.children}</p>,
+                        li: ({ node, ...props }) => <li style={{ ...baseTextStyle, marginBottom: "4px" }}>{props.children}</li>,
                         a: ({ node, ...props }) => (
-                            <a {...props} target="_blank" rel="noopener noreferrer" style={{ color: "#85a717", textDecoration: "none" }}>
+                            <a
+                                {...props}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    ...baseTextStyle,
+                                    color: "#85a717",
+                                    textDecoration: "none"
+                                }}
+                            >
                                 {props.children}
                             </a>
+                        ),
+                        table: ({ node, ...props }) => (
+                            <table
+                                style={{
+                                    ...baseTextStyle,
+                                    width: "100%",
+                                    borderCollapse: "collapse",
+                                    marginBottom: "16px"
+                                }}
+                            >
+                                {props.children}
+                            </table>
+                        ),
+                        thead: ({ node, ...props }) => <thead style={{ ...baseTextStyle, backgroundColor: "#f3f4f6" }}>{props.children}</thead>,
+                        th: ({ node, ...props }) => (
+                            <th
+                                style={{
+                                    ...baseTextStyle,
+                                    padding: "8px",
+                                    border: "1px solid #d1d5db",
+                                    fontWeight: "bold",
+                                    textAlign: "left"
+                                }}
+                            >
+                                {props.children}
+                            </th>
+                        ),
+                        tbody: ({ node, ...props }) => <tbody style={baseTextStyle}>{props.children}</tbody>,
+                        tr: ({ node, ...props }) => <tr style={{ ...baseTextStyle, borderBottom: "1px solid #e5e7eb" }}>{props.children}</tr>,
+                        td: ({ node, ...props }) => (
+                            <td
+                                style={{
+                                    ...baseTextStyle,
+                                    padding: "8px",
+                                    border: "1px solid #d1d5db"
+                                }}
+                            >
+                                {props.children}
+                            </td>
                         )
                     }}
                 >

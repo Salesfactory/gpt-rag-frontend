@@ -16,7 +16,7 @@ import { getFileType } from "../../utils/functions";
 import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 // import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
-import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
+//import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 // import { SettingsPanel } from "../../components/SettingsPanel";
 import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
@@ -558,7 +558,7 @@ const Chat = () => {
     return (
         <div className={styles.mainContainer}>
             <div>
-                <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div>
+                {/* <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div> */}
             </div>
             <div>
                 <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>{settingsPanel && <SettingsPanel />}</div>
