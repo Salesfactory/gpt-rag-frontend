@@ -14,6 +14,7 @@ const roleOptions = [
 
 const DistributionLists: React.FC = () => {
     const { user } = useAppContext();
+
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedUser, setSelectedUser] = useState({
         id: "",
@@ -24,8 +25,10 @@ const DistributionLists: React.FC = () => {
         }
     });
 
+
     const [users, setUsers] = useState<any[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [dataLoad, setDataLoad] = useState(false);
     const [roleFilter, setRoleFilter] = useState("");
@@ -75,6 +78,7 @@ const DistributionLists: React.FC = () => {
         getUserList();
     }, [dataLoad]);
 
+
     const handleCheckboxSimple = async (userID: string, IsEmailReceiver: string | boolean) => {
         const newValue = IsEmailReceiver === "true" ? "false" : "true";
         try {
@@ -84,9 +88,11 @@ const DistributionLists: React.FC = () => {
                 userId: userID,
                 updatedData: { isReportEmailReceiver: newValue }
             });
+
         } catch (error) {
             console.error("Error trying to update the state: ", error);
             setDataLoad(!dataLoad);
+
         }
     };
 
@@ -229,7 +235,9 @@ const DistributionLists: React.FC = () => {
                                                         type="checkbox"
                                                         className={styles.checkbox}
                                                         checked={user.isReportEmailReceiver === "true" ? true : false}
+
                                                         onChange={() => handleCheckboxSimple(user.id, user.isReportEmailReceiver)}
+
                                                     ></input>
                                                 </div>
                                             }

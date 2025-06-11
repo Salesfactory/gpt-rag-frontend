@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
+
 import styles from "./Navbarcopy.module.css";
 import { Menu, Settings, History, MessageCircleQuestion, ChevronDown } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
+
 import { getUserById } from "../../api";
+
 
 interface NavbarProps {
     isCollapsed: boolean;
@@ -17,13 +20,14 @@ function persistFinancialAssistantState(userId: string | undefined, state: boole
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
+
+    const [userName, setUserName] = useState<string>("");
+
     const {
         setShowFeedbackRatingPanel,
         settingsPanel,
         setSettingsPanel,
         user,
-        userName,
-        organization,
         subscriptionTiers,
         isFinancialAssistantActive,
         setIsFinancialAssistantActive,
@@ -32,6 +36,21 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setNewChatDeleted
     } = useAppContext();
 
+
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUser = async () => {
+            const result = await getUserById({ user });
+            if (result?.data?.name) {
+                setUserName(result.data.name);
+            } else {
+                setUserName("anonymous");
+            }
+        };
+
+        fetchUser();
+    }, [user]);
     const subscriptiontype = subscriptionTiers || " ";
     const location = useLocation().pathname;
 
@@ -123,21 +142,18 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         >
                             <Menu className={styles.iconLarge} />
                         </button>
-                        {location === "/" && (
-                            <div className={`ms-2 d-none d-sm-flex align-items-center ${styles.brandContainer}`}>
-                                <span className={styles.brandText}>FreddAid</span>
-                                <span className={styles.greenBar}></span>
-                                <span className={styles.brandText2}>{organization?.name}</span>
-                            </div>
-                        )}
+                        {location === "/" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>FreddAid</span>}
                         {location === "/admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
                         {location === "/organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
+
                         {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution List</span>}
+
                         {location === "/upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Upload Resources</span>}
                         {location === "/subscription-management" && (
                             <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
                         )}
                         {location === "/view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Dashboard</span>}
+
                         {location === "/view-manage-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Management</span>}
                         {location === "/curation-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Curation Reports</span>}
                         {location === "/create-curation-report" && (
@@ -153,6 +169,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/report-templates" && (
                             <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Summarization Report Templates</span>
                         )}
+
                     </li>
                 </ul>
                 <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
@@ -178,13 +195,13 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
                         {/*Then change the route*/}
                         {/* Feedback Panel Button */}
-                        {/* {location === "/" && (
+                        {location === "/" && (
                             <li className="nav-item">
                                 <button onClick={handleShowFeedbackRatingPanel} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                     <MessageCircleQuestion className={styles.iconLarge} />
                                 </button>
                             </li>
-                        )} */}
+                        )}
                         {/*Then change the route*/}
                         {/* Chat History Button */}
                         {location === "/" && (
@@ -204,7 +221,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                 <div className={styles.tooltipWrapper}>
                                     <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                         <Settings className={styles.iconLarge} />
-                                        <span className={styles.tooltipText}>Chat Settings</span>
+                                        <span className={styles.tooltipText}>Model Settings</span>
                                         {/* <span className="d-none d-md-inline">Settings</span> */}
                                     </button>
                                 </div>
@@ -213,26 +230,10 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
                         {/* User Profile Card */}
                         <li className="nav-item dropdown">
-                            <button
-                                className={`nav-link ${styles.profileButton} ${isDropdownOpen ? styles.dropdownOpen : ""}`}
-                                onClick={handleOnClickProfileCard}
-                            >
+                            <button className="nav-link" onClick={handleOnClickProfileCard}>
                                 <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
-                                    <div className={styles.profileWrapper}>
-                                        <div className={`${styles.profileCircle} ${user?.role === "admin" ? styles.adminBorder : styles.userBorder}`}>
-                                            {userInitials}
-
-                                            {/* Hover Tooltip */}
-                                            <div className={styles.tooltip}>
-                                                <div className={styles.tooltipContent}>
-                                                    <div className={styles.userName}>{userName}</div>
-                                                    <div className={styles.userRole}>{user?.role === "admin" ? "Administrator" : "User"}</div>
-                                                </div>
-                                                {/* Tooltip Arrow */}
-                                                <div className={styles.tooltipArrow}></div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div className={styles.profileCircle}>{userInitials}</div>
+                                    <span className={styles.userName}>{userName}</span>
                                     <ChevronDown size={16} className={`${styles.chevron} ${isDropdownOpen ? styles.rotate : ""}`} />
                                 </div>
                             </button>

@@ -97,6 +97,7 @@ export const SettingsPanel = () => {
         { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
         { key: "gpt-4.1", text: "gpt-4.1" },
         { key: "Claude-4-Sonnet", text: "Claude-4-Sonnet" }
+        
     ];
 
     useEffect(() => {
@@ -139,20 +140,16 @@ export const SettingsPanel = () => {
         postSettings({
             user,
             temperature: parsedTemperature,
-            model: selectedModel,
-            font_family: "",
-            font_size: ""
-        })
-            .then(data => {
-                setTemperature(data.temperature);
-                setSelectedModel(data.model);
-                setIsDialogOpen(false);
-                setIsLoadingSettings(false);
-            })
-            .catch(error => {
-                console.error("Error saving settings:", error);
-                setIsLoadingSettings(false);
-            });
+            model: selectedModel
+        }).then(data => {
+            setTemperature(data.temperature);
+            setSelectedModel(data.model);
+            setIsDialogOpen(false);
+            setIsLoadingSettings(false);
+        }).catch(error => {
+            console.error("Error saving settings:", error);
+            setIsLoadingSettings(false);
+        });
     };
 
     const validateValue = (val: any, func: any) => {
@@ -273,7 +270,7 @@ export const SettingsPanel = () => {
                                     aria-labelledby="temperature-slider"
                                 />
                             </div>
-                            <div className={styles["w-100"]} style={{ marginTop: "20px" }}>
+                            <div className={styles["w-100"]} style={{ marginTop: '20px' }}>
                                 <div className={styles.item}>
                                     <span>Model Selection</span>
                                 </div>
@@ -287,10 +284,10 @@ export const SettingsPanel = () => {
                                         }
                                     }}
                                     aria-labelledby="model-dropdown"
-                                    styles={{ root: { width: "100%" } }}
+                                    styles={{ root: { width: '100%' } }}
                                 />
                             </div>
-                            <div className={styles["w-100"]} style={{ marginTop: "30px", textAlign: "right" }}>
+                            <div className={styles["w-100"]} style={{ marginTop: '30px', textAlign: 'right' }}>
                                 <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
                                     <SaveFilled className={styles.saveIcon} />
                                     &#8202;&#8202;Save
