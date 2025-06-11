@@ -5,6 +5,7 @@ import styles from "./Organizationcopy.module.css";
 import { updateOrganizationInfo } from "../../api";
 import { ToastContainer, toast } from "react-toastify";
 import { Spinner, SpinnerSize } from "@fluentui/react";
+
 import { Globe, Save, Search, X, Plus } from "lucide-react";
 import { scrapeUrls } from "../../api";
 
@@ -16,6 +17,7 @@ const Organization = () => {
     const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");
     const [additionalInstructions, setAdditionalInstructions] = useState(organization?.additionalInstructions || "");
     const [isLoading, setIsLoading] = useState(false);
+
     
     // Web Indexing state 
     const [urlsToScrape, setUrlsToScrape] = useState<string[]>([]);
@@ -63,6 +65,7 @@ const Organization = () => {
             setIsLoading(false);
         }
     };
+
 
     const addUrl = () => {
         const trimmedUrl = currentUrl.trim();
@@ -223,6 +226,7 @@ const Organization = () => {
         }
     };
 
+
     const autoResize = (ref: React.RefObject<HTMLTextAreaElement>) => {
         if (ref.current) {
             ref.current.style.height = "auto";
@@ -353,6 +357,7 @@ const Organization = () => {
                             </div>
                         </div>
                     </div>
+
                     <div className={styles.cardContainer2}>
                         <div className={styles.title}>
                             <span>Web Indexing</span>
@@ -410,6 +415,7 @@ const Organization = () => {
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>

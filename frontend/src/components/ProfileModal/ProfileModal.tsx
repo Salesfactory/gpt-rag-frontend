@@ -55,6 +55,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
         }
     };
 
+
     if (!isOpen) return null;
 
     return (

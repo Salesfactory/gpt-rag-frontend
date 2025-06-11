@@ -1614,6 +1614,7 @@ def setSettings():
             return jsonify({"error": "Invalid request body"}), 400
 
         temperature = request_body.get("temperature", 0.0)
+
         model = request_body.get("model", "DeepSeek-V3-0324") # address later since we're adding more models
         font_family = request_body.get("font_family")
         font_size = request_body.get("font_size")
@@ -3911,6 +3912,7 @@ def get_password_reset_url():
     return jsonify({"resetUrl": url})
 
 
+
 @app.route("/api/scrape-urls", methods=["POST"])
 def scrape_urls():
     """
@@ -3971,6 +3973,7 @@ def scrape_urls():
     except Exception as e:
         logger.exception(f"Unexpected error in scrape_urls: {e}")
         return create_error_response("Internal Server Error", 500)
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

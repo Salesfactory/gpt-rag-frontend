@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+
 import styles from "./Navbarcopy.module.css";
 import { Menu, Settings, History, MessageCircleQuestion, ChevronDown } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
+
 import { getUserById } from "../../api";
 
 interface NavbarProps {
@@ -17,6 +19,7 @@ function persistFinancialAssistantState(userId: string | undefined, state: boole
 }
 
 const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
+
     const {
         setShowFeedbackRatingPanel,
         settingsPanel,
@@ -123,6 +126,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         >
                             <Menu className={styles.iconLarge} />
                         </button>
+
                         {location === "/" && (
                             <div className={`ms-2 d-none d-sm-flex align-items-center ${styles.brandContainer}`}>
                                 <span className={styles.brandText}>FreddAid</span>
@@ -185,6 +189,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                 </button>
                             </li>
                         )} */}
+
                         {/*Then change the route*/}
                         {/* Chat History Button */}
                         {location === "/" && (

@@ -105,6 +105,7 @@ export const SettingsPanel = () => {
     const [selectedFontSize, setSelectedFontSize] = useState<string>("16");
     const [selectedFont, setSelectedFont] = useState<string>("Arial");
 
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const temperatureDialog =
@@ -171,11 +172,11 @@ export const SettingsPanel = () => {
                     }
                 });
 
-                // Temperature
                 if (data.temperature === undefined || data.temperature === null) {
                     const modelConfig = modelTemperatureSettings[data.model || "DeepSeek-V3-0324"];
                     setTemperature(modelConfig.default.toString());
                 } else {
+
                     setTemperature(data.temperature);
                 }
 
@@ -300,6 +301,7 @@ export const SettingsPanel = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [setSettingsPanel]);
+
     return (
         <div ref={panelRef} className={styles.overlay}>
             <ToastContainer />
@@ -318,6 +320,7 @@ export const SettingsPanel = () => {
                 <Stack.Item grow className={styles["w-100"]}>
                     <div className={styles.header2}>
                         <div className={styles.title}>Chat Settings</div>
+
                         <div className={styles.buttons}>
                             <div></div>
                             <div className={styles.closeButtonContainer}>
@@ -342,6 +345,7 @@ export const SettingsPanel = () => {
                         <div className={styles.content}>
                             <div className={styles["w-100"]}>
                                 <div className={styles.item}>
+
                                     <span>Font Type</span>
                                 </div>
                                 <Dropdown
@@ -477,6 +481,7 @@ export const SettingsPanel = () => {
                                     }}
                                 />
                                 <div className={styles.item}>
+
                                     <span>Model Selection</span>
                                 </div>
                                 <Dropdown
@@ -551,6 +556,7 @@ export const SettingsPanel = () => {
                                         min={modelTemperatureSettings[selectedModel].min}
                                         max={modelTemperatureSettings[selectedModel].max}
                                         step={modelTemperatureSettings[selectedModel].step}
+
                                         value={parseFloat(temperature)}
                                         showValue
                                         snapToStep
