@@ -3937,7 +3937,7 @@ def scrape_urls():
         
         # Make request to external scraping service
         response = requests.post(
-            os.getenv("WEB_SCRAPING_ENDPOINT"),
+            os.getenv("WEB_SCRAPING_ENDPOINT", ""), # this is subject to change soon. Leave it "" for prod for now.
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=120  
