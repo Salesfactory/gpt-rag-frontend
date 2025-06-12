@@ -7,6 +7,8 @@ import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
 import { getUserById } from "../../api";
 
+type Role = "user" | "admin" | "platformAdmin";
+
 interface NavbarProps {
     isCollapsed: boolean;
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
@@ -219,14 +221,28 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             >
                                 <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                     <div className={styles.profileWrapper}>
-                                        <div className={`${styles.profileCircle} ${user?.role === "admin" ? styles.adminBorder : styles.userBorder}`}>
+                                        <div
+                                            className={`${styles.profileCircle} ${
+                                                (user?.role as Role) === "platformAdmin"
+                                                    ? styles.platformAdminBorder
+                                                    : user?.role === "admin"
+                                                    ? styles.adminBorder
+                                                    : styles.userBorder
+                                            }`}
+                                        >
                                             {userInitials}
 
                                             {/* Hover Tooltip */}
                                             <div className={styles.tooltip}>
                                                 <div className={styles.tooltipContent}>
                                                     <div className={styles.userName}>{userName}</div>
-                                                    <div className={styles.userRole}>{user?.role === "admin" ? "Administrator" : "User"}</div>
+                                                    <div className={styles.userRole}>
+                                                        {(user?.role as Role) === "platformAdmin"
+                                                            ? "Platform Administrator"
+                                                            : (user?.role as Role) === "admin"
+                                                            ? "Administrator"
+                                                            : "User"}
+                                                    </div>
                                                 </div>
                                                 {/* Tooltip Arrow */}
                                                 <div className={styles.tooltipArrow}></div>
