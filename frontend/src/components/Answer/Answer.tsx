@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { Stack, IconButton } from "@fluentui/react";
 import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
@@ -124,7 +124,7 @@ export const Answer = ({
                 </Stack>
             </Stack.Item>
 
-            <Stack.Item grow>
+            <Stack.Item>
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw]}
@@ -135,8 +135,16 @@ export const Answer = ({
                         h4: props => <Heading {...props} />,
                         h5: props => <Heading {...props} />,
                         h6: props => <Heading {...props} />,
-                        p: ({ node, ...props }) => <p style={{ ...baseTextStyle, marginBottom: "8px" }}>{props.children}</p>,
-                        li: ({ node, ...props }) => <li style={{ ...baseTextStyle, marginBottom: "4px" }}>{props.children}</li>,
+                        p: ({ node, ...props }) => (
+                            <p style={{ ...baseTextStyle, marginBottom: "8px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>
+                                {props.children}
+                            </p>
+                        ),
+                        li: ({ node, ...props }) => (
+                            <li style={{ ...baseTextStyle, marginBottom: "4px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>
+                                {props.children}
+                            </li>
+                        ),
                         a: ({ node, ...props }) => (
                             <a
                                 {...props}
@@ -145,7 +153,10 @@ export const Answer = ({
                                 style={{
                                     ...baseTextStyle,
                                     color: "#85a717",
-                                    textDecoration: "none"
+                                    textDecoration: "none",
+                                    overflowWrap: "break-word",
+                                    wordBreak: "break-word",
+                                    maxWidth: "100%"
                                 }}
                             >
                                 {props.children}
@@ -171,7 +182,10 @@ export const Answer = ({
                                     padding: "8px",
                                     border: "1px solid #d1d5db",
                                     fontWeight: "bold",
-                                    textAlign: "left"
+                                    textAlign: "left",
+                                    overflowWrap: "break-word",
+                                    wordBreak: "break-word",
+                                    maxWidth: "100%"
                                 }}
                             >
                                 {props.children}
@@ -184,7 +198,10 @@ export const Answer = ({
                                 style={{
                                     ...baseTextStyle,
                                     padding: "8px",
-                                    border: "1px solid #d1d5db"
+                                    border: "1px solid #d1d5db",
+                                    overflowWrap: "break-word",
+                                    wordBreak: "break-word",
+                                    maxWidth: "100%"
                                 }}
                             >
                                 {props.children}
@@ -202,27 +219,27 @@ export const Answer = ({
                         <span className={styles.citationLearnMore}>{citation_label_text}:</span>
                         {parsedAnswer.citations.map((url, i) => {
                             const path = getFilePath(url);
-                            if (!url.startsWith("https://") && !url.endsWith(".pdf") && !url.endsWith(".docx") && !url.endsWith(".doc")) {
-                                url = "https://" + url;
-                            }
+                            const fullUrl =
+                                !url.startsWith("https://") && !url.endsWith(".pdf") && !url.endsWith(".docx") && !url.endsWith(".doc")
+                                    ? "https://" + url
+                                    : url;
                             return (
-                                <>
-                                    <div className={styles.citationContainer}>{`[${++i}]`}</div>
+                                <React.Fragment key={i}>
+                                    <div className={styles.citationContainer}>{`[${i + 1}]`}</div>
                                     <a
                                         onKeyDown={event => {
                                             if (event.key === "Enter") {
-                                                onCitationClicked(url, path);
+                                                onCitationClicked(fullUrl, path);
                                             }
                                         }}
                                         tabIndex={0}
-                                        key={i}
                                         className={styles.citation}
                                         title={path}
-                                        onClick={() => onCitationClicked(url, path)}
+                                        onClick={() => onCitationClicked(fullUrl, path)}
                                     >
-                                        {`${truncateString(path, 15)}`}
+                                        {truncateString(path, 15)}
                                     </a>
-                                </>
+                                </React.Fragment>
                             );
                         })}
                     </Stack>
@@ -231,15 +248,13 @@ export const Answer = ({
 
             {!!parsedAnswer.followupQuestions.length && showFollowupQuestions && onFollowupQuestionClicked && (
                 <Stack.Item>
-                    <Stack horizontal wrap className={`${!!parsedAnswer.citations.length ? styles.followupQuestionsList : ""}`} tokens={{ childrenGap: 6 }}>
+                    <Stack horizontal wrap className={parsedAnswer.citations.length ? styles.followupQuestionsList : ""} tokens={{ childrenGap: 6 }}>
                         <span className={styles.followupQuestionLearnMore}>Follow-up questions:</span>
-                        {parsedAnswer.followupQuestions.map((x, i) => {
-                            return (
-                                <a key={i} className={styles.followupQuestion} title={x} onClick={() => onFollowupQuestionClicked(x)}>
-                                    {`${x}`}
-                                </a>
-                            );
-                        })}
+                        {parsedAnswer.followupQuestions.map((x, i) => (
+                            <a key={i} className={styles.followupQuestion} title={x} onClick={() => onFollowupQuestionClicked(x)}>
+                                {x}
+                            </a>
+                        ))}
                     </Stack>
                 </Stack.Item>
             )}
