@@ -250,6 +250,7 @@
   
   .brandLogoImg {
     max-width: 11em;
+    transform: translate(-8px, -8px);
   }
   
   /* Close Button */
