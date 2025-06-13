@@ -818,6 +818,75 @@ def deleteChatConversation(chat_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/conversations/export", methods=["POST"])
+def exportConversation():
+    """
+    Export a conversation by calling the orchestrator endpoint with proper authentication.
+    
+    Expected JSON payload:
+    {
+        "id": "conversation_id",
+        "user_id": "user_id"
+    }
+    """
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    
+    if not client_principal_id:
+        return jsonify({"error": "Missing client principal ID"}), 400
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing request data"}), 400
+        
+        conversation_id = data.get("id")
+        user_id = data.get("user_id")
+        
+        if not conversation_id or not user_id:
+            return jsonify({"error": "Missing conversation ID or user ID"}), 400
+        
+        # Get the function key from Azure Key Vault
+        try:
+            keySecretName = "orchestrator-host--functionKey"  
+            functionKey = get_azure_key_vault_secret(keySecretName)
+            if not functionKey:
+                raise ValueError(f"Function key {keySecretName} is empty")
+        except Exception as e:
+            logging.exception("[webbackend] exception getting orchestrator function key")
+            return jsonify({
+                "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+            }), 500
+        
+        # Prepare the payload for the orchestrator
+        payload = json.dumps({
+            "id": conversation_id,
+            "user_id": user_id
+        })
+        
+        # Set up headers with the function key
+        headers = {
+            "Content-Type": "application/json",
+            "x-functions-key": functionKey
+        }
+        
+        # Call the orchestrator export endpoint
+        orchestrator_export_url = ORCHESTRATOR_URI + "/api/conversations"
+        response = requests.post(orchestrator_export_url, headers=headers, data=payload)
+        
+        logging.info(f"[webbackend] Export response status: {response.status_code}")
+        
+        if response.status_code != 200:
+            logging.error(f"[webbackend] Error from orchestrator: {response.text}")
+            return jsonify({"error": "Error contacting orchestrator for export"}), response.status_code
+        
+        # Return the response from the orchestrator
+        return response.json(), 200
+        
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/conversations/export")
+        return jsonify({"error": str(e)}), 500
+
+
 # get report by id argument from Container Reports
 @app.route("/api/reports/<report_id>", methods=["GET"])
 @auth.login_required()
