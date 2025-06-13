@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import styles from "./Navbarcopy.module.css";
-import { Menu, Settings, History, MessageCircleQuestion, ChevronDown } from "lucide-react";
+import { Menu, Settings, History, MessageCircleQuestion, ChevronDown, Upload, Copy, ExternalLink } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
-import { getUserById } from "../../api";
+import { getUserById, exportConversation } from "../../api";
+import { toast } from "react-toastify";
+import { Spinner } from "@fluentui/react";
 
 type Role = "user" | "admin" | "platformAdmin";
 
@@ -31,7 +33,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setIsFinancialAssistantActive,
         setDataConversation,
         setChatId,
-        setNewChatDeleted
+        setNewChatDeleted,
+        chatId,
+        dataConversation
     } = useAppContext();
 
     const subscriptiontype = subscriptionTiers || " ";
@@ -39,6 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [showChatHistory, setShowChatHistory] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
         ? true
@@ -95,6 +100,93 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setChatId("");
         if (typeof setNewChatDeleted === "function") {
             setNewChatDeleted(true);
+        }
+    };
+
+    const handleExportConversation = async () => {
+        const currentConversationId = chatId;
+        
+        if (!currentConversationId) {
+            toast("No active conversation to export.", { type: "warning" });
+            return;
+        }
+
+        if (!user) {
+            toast("Please log in to export conversations.", { type: "warning" });
+            return;
+        }
+
+        if (!user.id) {
+            toast("User information is incomplete.", { type: "warning" });
+            return;
+        }
+
+        setIsExporting(true);
+
+        try {
+            const result = await exportConversation(currentConversationId, user.id);
+            
+            // Show success toast with copy and open options
+            const exportToast = (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div>Conversation exported successfully!</div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(result.share_url);
+                                toast("Link copied to clipboard!", { type: "success" });
+                            }}
+                            style={{
+                                padding: '4px 8px',
+                                background: '#0078d4',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            <Copy size={12} />
+                            Copy Link
+                        </button>
+                        <button
+                            onClick={() => {
+                                window.open(result.share_url, '_blank');
+                            }}
+                            style={{
+                                padding: '4px 8px',
+                                background: '#107c10',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            <ExternalLink size={12} />
+                            Open
+                        </button>
+                    </div>
+                </div>
+            );
+
+            toast(exportToast, { 
+                type: "success", 
+                autoClose: 8000,
+                closeOnClick: false
+            });
+
+        } catch (error) {
+            console.error("Error exporting conversation:", error);
+            toast("Failed to export conversation. Please try again.", { type: "error" });
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -189,6 +281,29 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )} */}
                         {/*Then change the route*/}
                         {/* Chat History Button */}
+                        {/*Then change the route*/}
+                        {/* Share Button - only show when there's an active conversation */}
+                        {location === "/" && (chatId || dataConversation.length > 0) && (
+                            <li className="nav-item">
+                                <button 
+                                    onClick={handleExportConversation} 
+                                    disabled={isExporting}
+                                    className={styles.shareButton}
+                                >
+                                    {isExporting ? (
+                                        <>
+                                            <Spinner size={1} />
+                                            <span>Sharing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload size={16} />
+                                            <span>Share</span>
+                                        </>
+                                    )}
+                                </button>
+                            </li>
+                        )}
                         {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>

@@ -1110,3 +1110,43 @@ export async function scrapeUrls(urls: string[]): Promise<any> {
         throw error;
     }
 }
+
+export interface ConversationExportResponse {
+    success: boolean;
+    share_url: string;
+    filename: string;
+    format: string;
+    message_count: number;
+    export_date: string;
+}
+
+export async function exportConversation(conversationId: string, userId: string): Promise<ConversationExportResponse> {
+    try {
+        const response = await fetch("/api/conversations/export", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            },
+            body: JSON.stringify({
+                id: conversationId,
+                user_id: userId
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+        }
+
+        const result: ConversationExportResponse = await response.json();
+        
+        if (!result.success) {
+            throw new Error("Export failed: Server returned unsuccessful response");
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Error exporting conversation:", error);
+        throw error;
+    }
+}

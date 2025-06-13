@@ -21,6 +21,8 @@ import { useAppContext } from "../../providers/AppProviders";
 import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -556,6 +558,7 @@ const Chat = () => {
     const isButtonEnabled = !!(lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned);
 
     return (
+        <>
         <div className={styles.mainContainer}>
             <div>
                 {/* <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div> */}
@@ -688,20 +691,20 @@ const Chat = () => {
                             </div>
                         )}
                         <div className={styles.chatInputContainer}>
-                            <div className={styles.chatInput}>
-                                <QuestionInput
-                                    clearOnSend
-                                    placeholder={placeholderText}
-                                    disabled={isLoading}
-                                    onSend={(question, fileBlobUrl) => {
-                                        streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
-                                    }}
-                                    extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                                />
-                            </div>
-                            <div className={styles.chatDisclaimer}>
-                                <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
-                            </div>
+                                                    <div className={styles.chatInput}>
+                            <QuestionInput
+                                clearOnSend
+                                placeholder={placeholderText}
+                                disabled={isLoading}
+                                onSend={(question, fileBlobUrl) => {
+                                    streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                }}
+                                extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
+                            />
+                        </div>
+                        <div className={styles.chatDisclaimer}>
+                            <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
+                        </div>
                         </div>
                     </div>
                     {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer] && (
@@ -793,6 +796,8 @@ const Chat = () => {
                 </div>
             </div>
         </div>
+        <ToastContainer position="top-right" autoClose={3000} />
+        </>
     );
 };
 
