@@ -3,7 +3,7 @@ import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "
 
 import styles from "./Chatcopy.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { ExampleList } from "../../components/Example";
@@ -75,6 +75,7 @@ const Chat = () => {
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isDownloading, setIsDownloading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
 
     const [activeCitation, setActiveCitation] = useState<string>();
@@ -384,9 +385,44 @@ const Chat = () => {
         }
     };
 
-    const handleDownloadConversation = () => {
-        // Placeholder function - functionality to be implemented later
-        console.log("Download button clicked - functionality pending");
+    const handleDownloadConversation = async () => {
+        // Check if there's a conversation to export
+        if (!chatId || !user?.id) {
+            console.error("Cannot export: No conversation ID or user ID available");
+            return;
+        }
+
+        // Check if there's actually conversation data to export
+        if (dataConversation.length === 0 && answers.length === 0) {
+            console.error("Cannot export: No conversation data available");
+            return;
+        }
+
+        setIsDownloading(true);
+        try {
+            // Call the export API with DOCX format
+            const result = await exportConversation(chatId, user.id, "docx");
+            
+            if (result.success && result.share_url) {
+                if (result.format.toLowerCase() !== "docx") {
+                    console.warn(`Warning: Expected DOCX format but received ${result.format}`);
+                }
+                
+                // Try to trigger download directly instead of opening in new tab
+                const link = document.createElement('a');
+                link.href = result.share_url;
+                link.download = result.filename || `conversation_export.${result.format}`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                throw new Error("Export failed: No download URL received");
+            }
+        } catch (error) {
+            console.error("Error exporting conversation:", error);
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     /**Get Pdf */
@@ -706,7 +742,7 @@ const Chat = () => {
                                     streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
                                 }}
                                 extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                                extraButtonDownload={<DownloadButton isEnabled={dataConversation.length > 0 || answers.length > 0} onClick={handleDownloadConversation} />}
+                                extraButtonDownload={<DownloadButton isEnabled={dataConversation.length > 0 || answers.length > 0} isLoading={isDownloading} onClick={handleDownloadConversation} />}
                             />
                         </div>
                         <div className={styles.chatDisclaimer}>

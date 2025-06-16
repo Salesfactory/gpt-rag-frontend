@@ -826,7 +826,8 @@ def exportConversation():
     Expected JSON payload:
     {
         "id": "conversation_id",
-        "user_id": "user_id"
+        "user_id": "user_id",
+        "format": "html" #default is html
     }
     """
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -841,7 +842,8 @@ def exportConversation():
         
         conversation_id = data.get("id")
         user_id = data.get("user_id")
-        
+        format = data.get("format", "html")
+
         if not conversation_id or not user_id:
             return jsonify({"error": "Missing conversation ID or user ID"}), 400
         
@@ -860,7 +862,8 @@ def exportConversation():
         # Prepare the payload for the orchestrator
         payload = json.dumps({
             "id": conversation_id,
-            "user_id": user_id
+            "user_id": user_id,
+            "format": format
         })
         
         # Set up headers with the function key

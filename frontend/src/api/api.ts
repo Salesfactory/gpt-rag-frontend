@@ -1120,18 +1120,23 @@ export interface ConversationExportResponse {
     export_date: string;
 }
 
-export async function exportConversation(conversationId: string, userId: string): Promise<ConversationExportResponse> {
+export async function exportConversation(conversationId: string, userId: string, format: string = "html"): Promise<ConversationExportResponse> {
     try {
+        const requestBody = {
+            id: conversationId,
+            user_id: userId,
+            format: format
+        };
+        
+        console.log("Exporting conversation with payload:", requestBody);
+        
         const response = await fetch("/api/conversations/export", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "X-MS-CLIENT-PRINCIPAL-ID": userId,
             },
-            body: JSON.stringify({
-                id: conversationId,
-                user_id: userId
-            })
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
@@ -1139,6 +1144,8 @@ export async function exportConversation(conversationId: string, userId: string)
         }
 
         const result: ConversationExportResponse = await response.json();
+        
+        console.log("Export response from server:", result);
         
         if (!result.success) {
             throw new Error("Export failed: Server returned unsuccessful response");
