@@ -1,8 +1,10 @@
+// Profilecopy.tsx
 import React, { useState } from "react";
 import styles from "./Profilecopy.module.css";
-import { User, Mail, List } from "lucide-react";
+import { User, Building, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
 import UserProfileModal from "../ProfileModal/ProfileModal";
+import OrganizationModal from "../OrganizationModal/OrganizationModal";
 
 type Props = {
     show: boolean;
@@ -10,9 +12,16 @@ type Props = {
 
 export const ProfilePanel = ({ show }: Props) => {
     const [showProfileModal, setShowProfileModal] = useState(false);
+    const [showOrgModal, setShowOrgModal] = useState(false);
+
     const handleProfileClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         setShowProfileModal(true);
+    };
+
+    const handleOrgClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        setShowOrgModal(true);
     };
 
     return (
@@ -24,24 +33,21 @@ export const ProfilePanel = ({ show }: Props) => {
                         <span className={styles.textMenu}>My Profile</span>
                     </div>
                 </button>
-                <Link to={""} className={styles.menuItem}>
+                <button onClick={handleOrgClick} className={styles.menuButton} role="button">
                     <div className={styles.menuItemContent}>
-                        <Mail size={18} className={styles.icon} />
-                        <span className={styles.textMenu}>My Account</span>
+                        <Building size={18} className={styles.icon} />
+                        <span className={styles.textMenu}>My Organization</span>
                     </div>
-                </Link>
-                <Link to={""} className={styles.menuItem}>
-                    <div className={styles.menuItemContent}>
-                        <List size={18} className={styles.icon} />
-                        <span className={styles.textMenu}>My Task</span>
-                    </div>
-                </Link>
+                </button>
                 <div className={styles.logoutSeparator}></div>
                 <Link to={"/logout"} className={styles.logoutButton}>
-                    Logout
+                    <LogOut size={18} className={styles.icon2} />
+                    <span className={styles.textMenu2}>Logout</span>
                 </Link>
             </div>
+
             <UserProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+            <OrganizationModal isOpen={showOrgModal} onClose={() => setShowOrgModal(false)} />
         </>
     );
 };
