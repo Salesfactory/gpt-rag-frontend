@@ -20,6 +20,7 @@ import { useAppContext } from "../../providers/AppProviders";
 // import { SettingsPanel } from "../../components/SettingsPanel";
 import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
+import DownloadButton from "../../components/DownloadButton/DownloadButton";
 import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -383,6 +384,11 @@ const Chat = () => {
         }
     };
 
+    const handleDownloadConversation = () => {
+        // Placeholder function - functionality to be implemented later
+        console.log("Download button clicked - functionality pending");
+    };
+
     /**Get Pdf */
     const getPdf = async (pdfName: string) => {
         /** get file type */
@@ -700,6 +706,7 @@ const Chat = () => {
                                     streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
                                 }}
                                 extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
+                                extraButtonDownload={<DownloadButton isEnabled={dataConversation.length > 0 || answers.length > 0} onClick={handleDownloadConversation} />}
                             />
                         </div>
                         <div className={styles.chatDisclaimer}>
