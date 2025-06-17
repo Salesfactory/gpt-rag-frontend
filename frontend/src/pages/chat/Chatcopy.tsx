@@ -24,6 +24,8 @@ import DownloadButton from "../../components/DownloadButton/DownloadButton";
 import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import newLogo from "../../img/SFAiLogo.png";
+
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -617,7 +619,7 @@ const Chat = () => {
                                 {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                 {!isFinancialAssistantActive && (
                                     <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                        <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
+                                        <img height="60px"  src={newLogo} alt="Sales Factory logo"  className={styles.logoShiftLeft} ></img> 
                                         <h1>FreddAid</h1>
 
                                         <p style={{ width: "80%", textAlign: "center" }}>
@@ -628,7 +630,7 @@ const Chat = () => {
                                 )}
                                 {isFinancialAssistantActive && (
                                     <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                        <img height="40px" src={salesLogo} alt="Sales Factory logo"></img>
+                                        <img height="60px" src={newLogo} alt="Sales Factory logo"></img>
                                         <h1>FinlAI</h1>
 
                                         <p style={{ width: "80%", textAlign: "center" }}>
