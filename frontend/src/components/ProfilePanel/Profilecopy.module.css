@@ -3,7 +3,7 @@
     top: 100%;
     right: 0;
     margin-top: 4px;
-    width: 14rem;
+    width: 13rem;
     background-color: white;
     border-radius: 0.375rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
@@ -81,7 +81,11 @@
 
 .icon {
     margin-right: 12px;
-    color: #4b5563;
+    color: #99a1af;
+}
+
+.icon2{
+    margin-right: 12px;
 }
 
 .logoutSeparator {
@@ -91,7 +95,7 @@
 .logoutButton {
     display: block;
     padding: 12px 16px;
-    text-align: center;
+    text-align: left;
     color: #3b82f6;
     font-weight: 600;
     text-decoration: none;
@@ -104,5 +108,17 @@
 }
 
 .textMenu{
-    font-size: 1.10rem;
+    width: 100%;
+        text-align: left;
+        font-size: 0.95rem;
+        color: #374151;
+        display: flex;
+        align-items: center;
+}
+
+.textMenu2{
+    width: 100%;
+    text-align: left;
+    font-size: 0.95rem;
+    align-items: center;
 }
