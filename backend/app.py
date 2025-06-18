@@ -4045,7 +4045,7 @@ def scrape_urls():
         return create_error_response("Internal Server Error", 500)
 
 
-@app.route("/api/delete-url", methods=["DELETE"])
+@app.route("/api/webscraping/delete-url", methods=["DELETE"])
 def delete_url_by_id():
     try:
         url_id = request.args.get("url_id")
