@@ -1177,3 +1177,26 @@ def delete_user(user_id):
         logging.warning(f"[delete_user] Unexpected Error in the CosmosDB Database")
     except Exception as e:
         logging.error(f"[delete_user] delete_user: something went wrong. {str(e)}")
+
+################################################
+# WEB SCRAPING UTILS
+################################################
+
+def delete_url_by_id(url_id, organization_id):
+    if not url_id or not organization_id:
+        return {"error": "URL ID and Organization ID are required."}
+
+    logging.info(f"Deleting URL: {url_id} from organization: {organization_id}")
+
+    container = get_cosmos_container("OrganizationWebsites")
+    try:
+        container.delete_item(item=url_id, partition_key=organization_id)
+        logging.info(f"[delete_url] URL {url_id} deleted successfully")
+        return jsonify("Success")
+    except CosmosResourceNotFoundError:
+        logging.warning(f"[delete_url] URL not Found.")
+        raise NotFound
+    except CosmosHttpResponseError:
+        logging.warning(f"[delete_url] Unexpected Error in the CosmosDB Database")
+    except Exception as e:
+        logging.error(f"[delete_url] delete_url: something went wrong. {str(e)}")
