@@ -1941,7 +1941,7 @@ def sendEmail():
         <div class="container">
             <h1>Dear [Recipient's Name],</h1>
             <h2>Congratulations and Welcome to FreddAid!</h2>
-            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It’s time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
+            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
             <h2>Ready to Get Started?</h2>
             <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
             <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
@@ -4076,7 +4076,73 @@ def filter_urls():
         logger.exception(f"Unexpected error in search_urls: {e}")
         return create_error_response("Internal Server Error", 500)
     
-
+@app.route("/api/webscraping/modify-url", methods=["PUT"])
+def update_url():
+    """
+    Update a URL for web scraping in an organization.
+    
+    Request Body:
+    {
+        "url_id": "string",
+        "organization_id": "string", 
+        "new_url": "string"
+    }
+    
+    Example Usage:
+    PUT /api/webscraping/modify-url
+    Content-Type: application/json
+    Authorization: Bearer <token>
+    
+    {
+        "url_id": "123e4567-e89b-12d3-a456-426614174000",
+        "organization_id": "org-456",
+        "new_url": "https://newexample.com"
+    }
+    
+    Returns:
+        JSON response with success message or error details
+    """
+    try:
+        # Parse and validate request body
+        data = request.get_json()
+        if not data:
+            return create_error_response("Invalid or missing JSON payload", 400)
+        
+        # Validate required fields
+        required_fields = ["url_id", "organization_id", "new_url"]
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return create_error_response(
+                f"Missing required fields: {', '.join(missing_fields)}", 
+                400
+            )
+        
+        url_id = data["url_id"]
+        organization_id = data["organization_id"] 
+        new_url = data["new_url"]
+        
+        # Validate data types and content
+        if not isinstance(new_url, str) or not new_url.strip():
+            return create_error_response("new_url must be a non-empty string", 400)
+        
+        # Validate URL format
+        is_valid, error_msg = validate_url(new_url)
+        if not is_valid:
+            return create_error_response(f"Invalid URL: {error_msg}", 400)
+        
+        
+        modify_url(url_id, organization_id, new_url)
+        return create_success_response({"message": "URL modified successfully"}, 200)
+        
+    except NotFound:
+        return create_error_response("URL not found", 404)
+    except CosmosHttpResponseError as e:
+        logger.exception(f"Database error in modify_url: {e}")
+        return create_error_response("Database error", 500)
+    except Exception as e:
+        logger.exception(f"Unexpected error in modify_url: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

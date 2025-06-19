@@ -13,6 +13,7 @@ from azure.cosmos import CosmosClient
 import urllib.parse
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 from werkzeug.exceptions import NotFound
+from urllib.parse import urlparse
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
@@ -1391,3 +1392,61 @@ def search_urls(search_term, organization_id):
     except Exception as e:
         logging.error(f"[search_urls] search_urls: something went wrong. {str(e)}")
     return []
+
+def modify_url(url_id, organization_id, new_url):
+    if not url_id or not organization_id or not new_url:
+        return {"error": "URL ID, Organization ID and new URL are required."}
+    
+    logging.info(f"[modify_url] Modifying URL: {url_id} in organization: {organization_id} to {new_url}")
+
+    container = get_cosmos_container("OrganizationWebsites")
+    try:
+        # Step 1: Get existing document using correct partition key
+        existing_doc = container.read_item(item=url_id, partition_key=organization_id)
+        
+        # Step 2: Update the URL field and timestamp
+        existing_doc["url"] = new_url
+        existing_doc["lastModified"] = datetime.now(timezone.utc).isoformat() 
+        
+        # Step 3: Replace item with the new url 
+        container.replace_item(item=url_id, body=existing_doc)
+        
+        logging.info(f"[modify_url] URL {url_id} modified successfully")
+        return {"message": "URL modified successfully"}
+        
+    except CosmosResourceNotFoundError:
+        logging.warning(f"[modify_url] URL not Found.")
+        raise NotFound
+    except CosmosHttpResponseError as e:
+        logging.warning(f"[modify_url] Cosmos HTTP Error: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"[modify_url] modify_url: something went wrong. {str(e)}")
+        raise
+
+def validate_url(url: str) -> Tuple[bool, str]:
+    """
+    Validate URL format and scheme.
+    
+    Args:
+        url (str): URL to validate
+        
+    Returns:
+        Tuple[bool, str]: (is_valid, error_message)
+    """
+    if not url or not isinstance(url, str):
+        return False, "URL must be a non-empty string"
+    
+    url = url.strip()
+    if not url:
+        return False, "URL cannot be empty"
+    
+    try:
+        parsed = urlparse(url)
+        if not parsed.scheme or not parsed.netloc:
+            return False, "URL must include scheme (e.g., https://) and hostname"
+        if parsed.scheme not in ['http', 'https']:
+            return False, "URL must use http or https scheme"
+        return True, ""
+    except Exception:
+        return False, "Invalid URL format"
