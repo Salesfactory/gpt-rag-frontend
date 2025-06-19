@@ -4045,5 +4045,21 @@ def scrape_urls():
         logger.exception(f"Unexpected error in scrape_urls: {e}")
         return create_error_response("Internal Server Error", 500)
 
+
+@app.route("/api/webscraping/delete-url", methods=["DELETE"])
+def delete_url_by_id():
+    try:
+        url_id = request.args.get("url_id")
+        organization_id = request.args.get("organization_id")
+        if not url_id:
+            return create_error_response("URL ID is required", 400)
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        delete_url_by_id(url_id, organization_id)
+        return create_success_response({"message": "URL deleted successfully"}, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in delete_url: {e}")
+        return create_error_response("Internal Server Error", 500)
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
