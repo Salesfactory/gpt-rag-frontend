@@ -10,7 +10,7 @@ from azure.cosmos.exceptions import CosmosHttpResponseError
 from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
-
+import urllib.parse
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 from werkzeug.exceptions import NotFound
 
@@ -52,7 +52,9 @@ def create_error_response(message: str, status_code: int) -> JsonResponse:
 
 
 # Response Formatting: Standardized success response creation
-def create_success_response(data: Dict[str, Any], optionalCode=HTTPStatus.OK) -> JsonResponse:
+def create_success_response(
+    data: Dict[str, Any], optionalCode=HTTPStatus.OK
+) -> JsonResponse:
     """
     Create a standardized success response.
     Response Formatting: Ensures consistent success response structure.
@@ -66,30 +68,36 @@ class SubscriptionError(Exception):
 
     pass
 
+
 class InvalidFinancialPriceError(SubscriptionError):
     """Raised when subscription modification fails"""
 
     pass
+
 
 class InvalidSubscriptionError(SubscriptionError):
     """Raised when subscription modification fails"""
 
     pass
 
+
 class MissingJSONPayloadError(Exception):
     """Raised when JSON payload is missing"""
 
     pass
+
 
 class MissingRequiredFieldError(Exception):
     """Raised when a required field is missing"""
 
     pass
 
+
 class InvalidParameterError(Exception):
     """Raised when an invalid parameter is provided"""
 
     pass
+
 
 class MissingParameterError(Exception):
     """Raised when a required parameter is missing"""
@@ -110,9 +118,13 @@ def require_client_principal(f):
         if not client_principal_id:
             # Logging: Warning for security-related events
             logging.warning("Attempted access without client principal ID")
-            return create_error_response("Missing required client principal ID", HTTPStatus.UNAUTHORIZED)
+            return create_error_response(
+                "Missing required client principal ID", HTTPStatus.UNAUTHORIZED
+            )
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 ################################################
 # Financial Doc Ingestion Utils
@@ -124,15 +136,14 @@ import logging
 from pathlib import Path
 import pdfkit
 from typing import Dict, Any, Tuple, Optional, Union
-import logging 
+import logging
 import shutil
 from app_config import ALLOWED_FILING_TYPES
 
 
 # configure logging
 logging.basicConfig(
-    level = logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger(__name__)
@@ -141,43 +152,47 @@ logger = logging.getLogger(__name__)
 # financialDocument (EDGAR) Ingestion
 ################################################
 
+
 def validate_payload(data: Dict[str, Any]) -> Tuple[bool, str]:
     """
     Validate the request payload for Edgar financialDocument endpoint
-    
+
     Args:
         data (dict): The request payload
-        
+
     Returns:
         tuple: (is_valid: bool, error_message: str)
     """
     # Check if equity_ids exists and is not empty
-    if not data.get('equity_id'):
+    if not data.get("equity_id"):
         return False, "equity_id is required"
-    
-    # check if date is provided 
-    if not data.get('after_date'):
+
+    # check if date is provided
+    if not data.get("after_date"):
         logger.warning("No after_date provided, retrieving most recent filings")
-    
+
     # Check if equity_ids is not empty
-    if data['equity_id'].strip() == "":
+    if data["equity_id"].strip() == "":
         return False, "equity_id cannot be empty"
-    
+
     # Validate filing_types if provided
-    if not data.get('filing_type'):
+    if not data.get("filing_type"):
         return False, "filing_type is required"
-    
+
     # Check if all filing types are valid
-    if data['filing_type'] not in ALLOWED_FILING_TYPES:
-        return False, f"Invalid filing type(s): {data['filing_type']}. Allowed types are: {', '.join(ALLOWED_FILING_TYPES)}"
-    
+    if data["filing_type"] not in ALLOWED_FILING_TYPES:
+        return (
+            False,
+            f"Invalid filing type(s): {data['filing_type']}. Allowed types are: {', '.join(ALLOWED_FILING_TYPES)}",
+        )
+
     return True, ""
 
 
 def convert_html_to_pdf(
     input_path: Union[str, Path],
     output_path: Union[str, Path],
-    options: Optional[Dict] = None
+    options: Optional[Dict] = None,
 ) -> bool:
     """
     Convert HTML file to PDF using wkhtmltopdf.
@@ -212,21 +227,17 @@ def convert_html_to_pdf(
         # Default options if none provided
         if options is None:
             options = {
-                'quiet': '',
-                'enable-local-file-access': '',
-                'encoding': 'UTF-8',
-                'no-stop-slow-scripts': '',
-                'disable-smart-shrinking': ''
+                "quiet": "",
+                "enable-local-file-access": "",
+                "encoding": "UTF-8",
+                "no-stop-slow-scripts": "",
+                "disable-smart-shrinking": "",
             }
 
         logger.info(f"Converting {input_path} to PDF...")
-        
+
         # Perform conversion
-        pdfkit.from_file(
-            str(input_path),
-            str(output_path),
-            options=options
-        )
+        pdfkit.from_file(str(input_path), str(output_path), options=options)
 
         # Verify the output file was created
         if not output_path.exists():
@@ -254,38 +265,39 @@ def convert_html_to_pdf(
         raise
 
 
-
 def check_and_install_wkhtmltopdf():
     """Check if wkhtmltopdf is installed and configured properly"""
     import subprocess
     import sys
     import os
-    
+
     try:
         # For Windows, add wkhtmltopdf to PATH if not already present
-        if sys.platform == 'win32':
-            wkhtmltopdf_path = r'C:\Program Files\wkhtmltopdf\bin'
+        if sys.platform == "win32":
+            wkhtmltopdf_path = r"C:\Program Files\wkhtmltopdf\bin"
             logger.info(f"Windows detected")
             if os.path.exists(wkhtmltopdf_path):
                 logger.info(f"wkhtmltopdf directory found at {wkhtmltopdf_path}")
-                if wkhtmltopdf_path not in os.environ['PATH']:
+                if wkhtmltopdf_path not in os.environ["PATH"]:
                     logger.info(f"Adding wkhtmltopdf to PATH: {wkhtmltopdf_path}")
-                    os.environ['PATH'] += os.pathsep + wkhtmltopdf_path
+                    os.environ["PATH"] += os.pathsep + wkhtmltopdf_path
             else:
                 logger.warning(f"wkhtmltopdf directory not found at {wkhtmltopdf_path}")
                 return install_wkhtmltopdf()
 
         # Try to run wkhtmltopdf --version
         result = subprocess.run(
-            ['wkhtmltopdf', '--version'],
+            ["wkhtmltopdf", "--version"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             check=True,
-            text=True
+            text=True,
         )
-        logger.info(f"wkhtmltopdf is installed and configured. Version: {result.stdout.strip()}")
+        logger.info(
+            f"wkhtmltopdf is installed and configured. Version: {result.stdout.strip()}"
+        )
         return True
-        
+
     except (subprocess.SubprocessError, FileNotFoundError):
         logger.warning("wkhtmltopdf not found or not properly configured")
         return install_wkhtmltopdf()
@@ -293,13 +305,14 @@ def check_and_install_wkhtmltopdf():
         logger.error(f"Unexpected error checking wkhtmltopdf: {str(e)}")
         return False
 
+
 def install_wkhtmltopdf():
     """Attempt to install wkhtmltopdf based on the operating system"""
     import subprocess
     import sys
     import platform
-    
-    if sys.platform == 'win32':
+
+    if sys.platform == "win32":
         # Windows installation code remains the same
         download_url = "https://wkhtmltopdf.org/downloads.html"
         logger.error(
@@ -310,20 +323,32 @@ def install_wkhtmltopdf():
             "3. Add C:\\Program Files\\wkhtmltopdf\\bin to your system PATH"
         )
         return False
-        
-    elif sys.platform.startswith('linux'):
+
+    elif sys.platform.startswith("linux"):
         try:
             logger.info("Installing wkhtmltopdf on Linux...")
-            
+
             # Try to determine the package manager
-            if subprocess.run(['which', 'apt-get'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+            if (
+                subprocess.run(
+                    ["which", "apt-get"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                ).returncode
+                == 0
+            ):
                 # Debian/Ubuntu
-                install_cmd = ['apt-get', 'install', '-y', 'wkhtmltopdf']
-            elif subprocess.run(['which', 'yum'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
+                install_cmd = ["apt-get", "install", "-y", "wkhtmltopdf"]
+            elif (
+                subprocess.run(
+                    ["which", "yum"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                ).returncode
+                == 0
+            ):
                 # CentOS/RHEL
-                install_cmd = ['yum', 'install', '-y', 'wkhtmltopdf']
+                install_cmd = ["yum", "install", "-y", "wkhtmltopdf"]
             else:
-                logger.error("Could not determine package manager. Please install wkhtmltopdf manually.")
+                logger.error(
+                    "Could not determine package manager. Please install wkhtmltopdf manually."
+                )
                 return False
 
             # Try to install without sudo first
@@ -331,16 +356,25 @@ def install_wkhtmltopdf():
                 subprocess.run(install_cmd, check=True)
             except subprocess.CalledProcessError:
                 # If that fails, try with sudo if available
-                if subprocess.run(['which', 'sudo'], stdout=subprocess.PIPE, stderr=subprocess.PIPE).returncode == 0:
-                    install_cmd.insert(0, 'sudo')
+                if (
+                    subprocess.run(
+                        ["which", "sudo"],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    ).returncode
+                    == 0
+                ):
+                    install_cmd.insert(0, "sudo")
                     subprocess.run(install_cmd, check=True)
                 else:
-                    logger.error("Installation requires root privileges. Please install wkhtmltopdf manually.")
+                    logger.error(
+                        "Installation requires root privileges. Please install wkhtmltopdf manually."
+                    )
                     return False
 
             logger.info("wkhtmltopdf installed successfully")
             return True
-            
+
         except subprocess.SubprocessError as e:
             logger.error(f"Failed to install wkhtmltopdf: {str(e)}")
             return False
@@ -351,9 +385,10 @@ def install_wkhtmltopdf():
         logger.error(f"Unsupported operating system: {sys.platform}")
         return False
 
+
 def cleanup_resources() -> bool:
     # Delete all files in the sec-edgar-filings directory
-    try: 
+    try:
         filings_dir = os.path.join(os.getcwd(), "sec-edgar-filings")
         if os.path.exists(filings_dir):
             logger.info(f"Deleting all files in {filings_dir}")
@@ -361,17 +396,21 @@ def cleanup_resources() -> bool:
             logger.info(f"Deleted all files in {filings_dir}")
             return True
         else:
-            logger.info(f"No files to delete in {filings_dir} - directory does not exist")
+            logger.info(
+                f"No files to delete in {filings_dir} - directory does not exist"
+            )
             return True
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
         return False
+
 
 def _extract_response_data(response):
     """Helper function to extract JSON data from response objects"""
     if isinstance(response, tuple):
         return response[0].get_json()
     return response.get_json()
+
 
 ################################################
 # Email distribution Utils
@@ -380,10 +419,14 @@ from typing import List
 from email.message import EmailMessage
 import smtplib
 
-EMAIL_CONTAINER_NAME = 'emails'
+EMAIL_CONTAINER_NAME = "emails"
+
+
 class EmailServiceError(Exception):
     """Base exception for email service errors"""
+
     pass
+
 
 class EmailService:
     def __init__(self, smtp_server, smtp_port, username, password):
@@ -410,14 +453,14 @@ class EmailService:
         max_retries = 3
         retry_delay = 2  # seconds
         import time
-        
+
         for attempt in range(max_retries):
             try:
                 msg = EmailMessage()
-                msg['Subject'] = subject
-                msg['From'] = self.username
-                msg['To'] = ','.join(recipients)
-                msg.add_alternative(html_content, subtype='html')
+                msg["Subject"] = subject
+                msg["From"] = self.username
+                msg["To"] = ",".join(recipients)
+                msg.add_alternative(html_content, subtype="html")
 
                 if attachment_path:
                     self._add_attachment(msg, attachment_path)
@@ -425,48 +468,57 @@ class EmailService:
                 server = self._get_server()
                 server.send_message(msg)
                 return  # Success, exit the function
-                
+
             except smtplib.SMTPServerDisconnected:
-                logger.warning(f"SMTP server disconnected (attempt {attempt + 1}/{max_retries})")
+                logger.warning(
+                    f"SMTP server disconnected (attempt {attempt + 1}/{max_retries})"
+                )
                 self._server = None  # Reset the connection
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                     continue
-                raise EmailServiceError("Failed to maintain SMTP connection after multiple attempts")
-                
+                raise EmailServiceError(
+                    "Failed to maintain SMTP connection after multiple attempts"
+                )
+
             except Exception as e:
-                logger.error(f"Error sending email (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                logger.error(
+                    f"Error sending email (attempt {attempt + 1}/{max_retries}): {str(e)}"
+                )
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
                     continue
                 raise EmailServiceError(f"Failed to send email: {str(e)}")
-    
+
     def _add_attachment(self, msg, attachment_path):
         """Add an attachment to the email message"""
-        try: 
+        try:
             # convert to path object and resolve to absolute path
             file_path = Path(attachment_path).resolve()
             # validate file exists and is accessible
             if not file_path.exists():
                 raise EmailServiceError(f"File not found: {attachment_path}")
 
-            with open(file_path, 'rb') as file:
+            with open(file_path, "rb") as file:
                 file_data = file.read()
                 file_name = file_path.name
-                msg.add_attachment(file_data, 
-                                maintype='application', 
-                                subtype='octet-stream', 
-                                filename=file_name)
+                msg.add_attachment(
+                    file_data,
+                    maintype="application",
+                    subtype="octet-stream",
+                    filename=file_name,
+                )
         except (OSError, EmailServiceError) as e:
             logger.error(f"Error adding attachment: {str(e)}")
             raise EmailServiceError(f"Error adding attachment: {str(e)}")
-        
 
-    def _save_email_to_blob(self, 
-                            html_content: str,
-                            subject: str,
-                            recipients: List[str],
-                            attachment_path: Optional[str] = None) -> str:
+    def _save_email_to_blob(
+        self,
+        html_content: str,
+        subject: str,
+        recipients: List[str],
+        attachment_path: Optional[str] = None,
+    ) -> str:
         """
         Save the email content to a blob storage container
         """
@@ -477,21 +529,23 @@ class EmailService:
         from financial_doc_processor import BlobUploadError
         import uuid
 
-
         credential = DefaultAzureCredential()
-        BLOB_STORAGE_URL = f"https://{os.getenv('STORAGE_ACCOUNT')}.blob.core.windows.net"
-        blob_service_client = BlobServiceClient(
-            account_url=BLOB_STORAGE_URL,
-            credential=credential
+        BLOB_STORAGE_URL = (
+            f"https://{os.getenv('STORAGE_ACCOUNT')}.blob.core.windows.net"
         )
-        blob_container_client = blob_service_client.get_container_client(EMAIL_CONTAINER_NAME)
-        # create an id for the email 
+        blob_service_client = BlobServiceClient(
+            account_url=BLOB_STORAGE_URL, credential=credential
+        )
+        blob_container_client = blob_service_client.get_container_client(
+            EMAIL_CONTAINER_NAME
+        )
+        # create an id for the email
         email_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc).isoformat()
         # get date only from timestamp
-        date_only = timestamp.split('T')[0]
-        
-        # create a blob name for the email 
+        date_only = timestamp.split("T")[0]
+
+        # create a blob name for the email
         blob_name = f"{date_only}/{email_id}/content.html"
 
         # add metadata to the blob
@@ -499,13 +553,18 @@ class EmailService:
             "email_id": email_id,
             "subject": subject,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "recipients": ', '.join(recipients),
-            "has_attachment": str(bool(attachment_path))
+            "recipients": ", ".join(recipients),
+            "has_attachment": str(bool(attachment_path)),
         }
 
         # upload the email content to the blob
         try:
-            blob_container_client.upload_blob(blob_name, html_content, metadata=metadata, content_settings=ContentSettings(content_type='text/html'))
+            blob_container_client.upload_blob(
+                blob_name,
+                html_content,
+                metadata=metadata,
+                content_settings=ContentSettings(content_type="text/html"),
+            )
         except BlobUploadError as e:
             logger.error(f"Error uploading email to blob: {str(e)}")
             raise BlobUploadError(f"Error uploading email to blob: {str(e)}")
@@ -517,6 +576,7 @@ class EmailService:
 ################################################
 # Chat History show a previous chat of the user
 ################################################
+
 
 def get_conversation(conversation_id, user_id):
     try:
@@ -581,9 +641,11 @@ def delete_conversation(conversation_id, user_id):
         logging.error(f"Error deleting conversation '{conversation_id}': {str(e)}")
         return False
 
+
 ################################################
 # Chat History Get All Chats From User
 ################################################
+
 
 def get_conversations(user_id):
     try:
@@ -592,18 +654,26 @@ def get_conversations(user_id):
         db = db_client.get_database_client(database=AZURE_DB_NAME)
         container = db.get_container_client("conversations")
 
-        query = (
-            "SELECT c.id, c.conversation_data.start_date, c.conversation_data.history[0].content AS first_message, c.conversation_data.type FROM c WHERE c.conversation_data.interaction.user_id = @user_id"
-        )
+        query = "SELECT c.id, c.conversation_data.start_date, c.conversation_data.history[0].content AS first_message, c.conversation_data.type FROM c WHERE c.conversation_data.interaction.user_id = @user_id"
         parameters = [dict(name="@user_id", value=user_id)]
 
         try:
-            conversations = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+            conversations = list(
+                container.query_items(
+                    query=query,
+                    parameters=parameters,
+                    enable_cross_partition_query=True,
+                )
+            )
         except CosmosHttpResponseError as e:
-            logging.error(f"CosmosDB error retrieving conversations for user '{user_id}': {e}")
+            logging.error(
+                f"CosmosDB error retrieving conversations for user '{user_id}': {e}"
+            )
             return []
         except Exception as e:
-            logging.exception(f"Unexpected error retrieving conversations for user '{user_id}': {e}")
+            logging.exception(
+                f"Unexpected error retrieving conversations for user '{user_id}': {e}"
+            )
             return []
 
         # DEFAULT DATE 1 YEAR AGO in case start_date is not present
@@ -628,6 +698,7 @@ def get_conversations(user_id):
         )
         return []
 
+
 ################################################
 # AZURE GET SECRET
 ################################################
@@ -646,6 +717,7 @@ def get_azure_key_vault_secret(secret_name):
     """
     from azure.keyvault.secrets import SecretClient
     from azure.identity import DefaultAzureCredential
+
     try:
         keyVaultName = os.getenv("AZURE_KEY_VAULT_NAME")
         if not keyVaultName:
@@ -719,9 +791,12 @@ def set_feedback(
     except Exception as e:
         logging.info(f"[util__module] set_feedback: something went wrong. {str(e)}")
     return feedback
+
+
 ################################################
 # SETTINGS UTILS
 ################################################
+
 
 def set_settings(client_principal, temperature, model, font_family, font_size):
 
@@ -749,7 +824,9 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
         query = "SELECT * FROM c WHERE c.user_id = @user_id"
         parameters = [{"name": "@user_id", "value": client_principal["id"]}]
 
-        logging.info(f"[util__module] set_settings: Querying settings for user_id {client_principal['id']}.")
+        logging.info(
+            f"[util__module] set_settings: Querying settings for user_id {client_principal['id']}."
+        )
 
         results = list(
             container.query_items(
@@ -777,19 +854,24 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
                 logging.info(
                     f"Successfully updated settings document for user {client_principal['id']}"
                 )
-                return{
-                    "status": "success",
-                    "message": "Settings updated successfully"
-                }
+                return {"status": "success", "message": "Settings updated successfully"}
             except CosmosResourceNotFoundError:
                 # This case should ideally not happen if results were found, but handle defensively
-                logging.error(f"[util__module] CosmosResourceNotFoundError during update for user {client_principal['id']}")
-                return {"status": "error", "message": "Settings not found during update."}
+                logging.error(
+                    f"[util__module] CosmosResourceNotFoundError during update for user {client_principal['id']}"
+                )
+                return {
+                    "status": "error",
+                    "message": "Settings not found during update.",
+                }
             except Exception as e:
                 logging.error(
                     f"[util__module] Failed to update settings document for user {client_principal['id']}. Error: {str(e)}"
                 )
-                return {"status": "error", "message": f"Failed to update settings: {str(e)}"}
+                return {
+                    "status": "error",
+                    "message": f"Failed to update settings: {str(e)}",
+                }
         else:
             logging.info(
                 f"[util__module] set_settings: No settings found for user_id {client_principal['id']}. Creating new document."
@@ -800,25 +882,28 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
                 new_setting["user_id"] = client_principal["id"]
                 new_setting["temperature"] = temperature
                 new_setting["model"] = model
-                new_setting["font_family"]=font_family or ""
-                new_setting["font_size"]=font_size or ""
+                new_setting["font_family"] = font_family or ""
+                new_setting["font_size"] = font_size or ""
                 container.create_item(body=new_setting)
 
                 logging.info(
                     f"Successfully created new settings document for user {client_principal['id']}"
                 )
-                return{
-                    "status": "success",
-                    "message": "Settings created successfully"
-                }
+                return {"status": "success", "message": "Settings created successfully"}
             except Exception as e:
                 logging.error(
                     f"[util__module] Failed to create settings document for user {client_principal['id']}. Error: {str(e)}"
                 )
-                return {"status": "error", "message": f"Failed to create settings: {str(e)}"}
+                return {
+                    "status": "error",
+                    "message": f"Failed to create settings: {str(e)}",
+                }
     else:
-        logging.warning(f"[util__module] set_settings: user_id not provided in client_principal.")
+        logging.warning(
+            f"[util__module] set_settings: user_id not provided in client_principal."
+        )
         return {"status": "error", "message": "User ID not provided."}
+
 
 def get_client_principal():
     """Util to extract the Client Principal Headers"""
@@ -826,11 +911,18 @@ def get_client_principal():
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
 
     if not client_principal_id or not client_principal_name:
-        return None, jsonify({
-            "error": "Missing required parameters, client_principal_id or client_principal_name"
-        }), 400
+        return (
+            None,
+            jsonify(
+                {
+                    "error": "Missing required parameters, client_principal_id or client_principal_name"
+                }
+            ),
+            400,
+        )
 
     return {"id": client_principal_id, "name": client_principal_name}, None, None
+
 
 def get_setting(client_principal):
     if not client_principal or not client_principal.get("id"):
@@ -838,9 +930,9 @@ def get_setting(client_principal):
         # Return defaults immediately if no user ID
         return {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324",# Default model
-            "font_family":"",
-            "font_size":""
+            "model": "DeepSeek-V3-0324",  # Default model
+            "font_family": "",
+            "font_size": "",
         }
 
     user_id = client_principal["id"]
@@ -862,16 +954,18 @@ def get_setting(client_principal):
             # Ensure both expected keys exist, provide defaults if missing
             setting["temperature"] = setting.get("temperature", 0.0)
             setting["model"] = setting.get("model", "DeepSeek-V3-0324")
-            setting["font_family"] = setting.get("font_family","")
-            setting["font_size"]= setting.get("font_size","")
+            setting["font_family"] = setting.get("font_family", "")
+            setting["font_size"] = setting.get("font_size", "")
             logging.info(f"Settings found for user {user_id}: {setting}")
-        else: # If no settings found, return defaults
-            logging.info(f"No settings document found for user {user_id}. Returning defaults.")
+        else:  # If no settings found, return defaults
+            logging.info(
+                f"No settings document found for user {user_id}. Returning defaults."
+            )
             setting = {
                 "temperature": 0.0,
-                "model": "DeepSeek-V3-0324", # Default model
+                "model": "DeepSeek-V3-0324",  # Default model
                 "font_family": "",
-                "font_size": ""
+                "font_size": "",
             }
     except CosmosHttpResponseError as e:
         # Handle specific Cosmos errors, like 404 Not Found if needed, otherwise log generic error
@@ -881,9 +975,9 @@ def get_setting(client_principal):
         # Return defaults on error
         setting = {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324", # Default model
+            "model": "DeepSeek-V3-0324",  # Default model
             "font_family": "",
-            "font_size": ""
+            "font_size": "",
         }
     except Exception as e:
         logging.error(
@@ -892,22 +986,25 @@ def get_setting(client_principal):
         # Return defaults on unexpected error
         setting = {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324", # Default model
+            "model": "DeepSeek-V3-0324",  # Default model
             "font_family": "",
-            "font_size": ""
+            "font_size": "",
         }
     return setting
+
 
 ################################################
 # INVITATION UTILS
 ################################################
+
 
 def get_invitations(organization_id):
     if not organization_id:
         return {"error": "Organization ID not found."}
 
     logging.info(
-        "Organization ID found. Getting invitations for organization: " + organization_id
+        "Organization ID found. Getting invitations for organization: "
+        + organization_id
     )
 
     invitations = []
@@ -921,7 +1018,9 @@ def get_invitations(organization_id):
             )
         )
         if not result:
-            logging.info(f"[get_invitation] No active invitations found for organization {organization_id}")
+            logging.info(
+                f"[get_invitation] No active invitations found for organization {organization_id}"
+            )
             invitations = result[0]
             return {}
         if result:
@@ -931,6 +1030,7 @@ def get_invitations(organization_id):
             f"[get_invitations] get_invitations: something went wrong. {str(e)}"
         )
     return invitations
+
 
 def get_invitation(invited_user_email):
     if not invited_user_email:
@@ -966,6 +1066,7 @@ def get_invitation(invited_user_email):
         logging.error(f"[get_invitation] something went wrong. {str(e)}")
     return invitation
 
+
 ################################################
 # CHECK USERS UTILS
 ################################################
@@ -986,11 +1087,13 @@ def get_set_user(client_principal):
         )
         logging.info(f"[get_user] user_id {client_principal['id']} found.")
     except CosmosHttpResponseError:
-        logging.info(f"[get_user] User {client_principal['id']} not found. Creating new user.")
+        logging.info(
+            f"[get_user] User {client_principal['id']} not found. Creating new user."
+        )
         is_new_user = True
 
         logging.info("[get_user] Checking user invitations for new user registration")
-        
+
         email = client_principal["email"]
         user_email = email.lower() if email else None
         user_invitation = get_invitation(user_email)
@@ -1003,7 +1106,9 @@ def get_set_user(client_principal):
                         "email": user_email,
                         "role": user_invitation["role"] if user_invitation else "admin",
                         "organizationId": (
-                            user_invitation["organization_id"] if user_invitation else None
+                            user_invitation["organization_id"]
+                            if user_invitation
+                            else None
                         ),
                     },
                 }
@@ -1016,14 +1121,19 @@ def get_set_user(client_principal):
 
                     container_inv = get_cosmos_container("invitations")
                     updated_invitation = container_inv.replace_item(
-                        item=invitation_id,
-                        body=user_invitation
+                        item=invitation_id, body=user_invitation
                     )
-                    logging.info(f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}")
+                    logging.info(
+                        f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}"
+                    )
                 except Exception as e:
-                    logging.error(f"[get_user] Failed to update invitation with user_id: {e}")
+                    logging.error(
+                        f"[get_user] Failed to update invitation with user_id: {e}"
+                    )
             else:
-                logging.info(f"[get_user] No invitation found for user {client_principal['id']}")
+                logging.info(
+                    f"[get_user] No invitation found for user {client_principal['id']}"
+                )
         except Exception as e:
             logging.error(f"[get_user] Error creating the user: {e}")
             return {
@@ -1054,6 +1164,7 @@ def check_users_existance():
         logging.info(f"[util__module] get_user: something went wrong. {str(e)}")
     return _user
 
+
 def get_user_by_id(user_id):
     if not user_id:
         return {"error": "User ID not found."}
@@ -1078,13 +1189,12 @@ def get_user_by_id(user_id):
     return user
 
 
-
 def get_users(organization_id):
 
     users_container = get_cosmos_container("users")
     invitations_container = get_cosmos_container("invitations")
     organizations_container = get_cosmos_container("organizations")
-    
+
     try:
         # 1. Get IDs of active guest users
         invitation_result = invitations_container.query_items(
@@ -1098,7 +1208,9 @@ def get_users(organization_id):
         )
 
         # Map user_id and role
-        user_roles = {item["invited_user_id"]: item["role"] for item in invitation_result}
+        user_roles = {
+            item["invited_user_id"]: item["role"] for item in invitation_result
+        }
 
         # 2. Obtain organization owner
         org_result = organizations_container.query_items(
@@ -1121,7 +1233,7 @@ def get_users(organization_id):
         BATCH_SIZE = 10
 
         for i in range(0, len(user_ids), BATCH_SIZE):
-            batch_ids = user_ids[i:i + BATCH_SIZE]
+            batch_ids = user_ids[i : i + BATCH_SIZE]
             in_clause = ", ".join([f'"{uid}"' for uid in batch_ids])
             query = f"""
                 SELECT * FROM c WHERE c.id IN ({in_clause})
@@ -1178,10 +1290,13 @@ def delete_user(user_id):
     except Exception as e:
         logging.error(f"[delete_user] delete_user: something went wrong. {str(e)}")
 
+
 ################################################
 # WEB SCRAPING UTILS
 ################################################
 
+
+# delete an url by id and organization id from the container OrganizationWebsites
 def delete_url_by_id(url_id, organization_id):
     if not url_id or not organization_id:
         return {"error": "URL ID and Organization ID are required."}
@@ -1200,3 +1315,79 @@ def delete_url_by_id(url_id, organization_id):
         logging.warning(f"[delete_url] Unexpected Error in the CosmosDB Database")
     except Exception as e:
         logging.error(f"[delete_url] delete_url: something went wrong. {str(e)}")
+
+
+# search urls
+def search_urls(search_term, organization_id):
+    if not search_term or not organization_id:
+        return {"error": "Search term and Organization ID are required."}
+
+    # Clean and validate input
+    cleaned_search_term = search_term.strip()
+    if not cleaned_search_term:
+        return {"error": "Search term cannot be empty after removing whitespace."}
+
+    # Normalize internal whitespace
+    cleaned_search_term = " ".join(cleaned_search_term.split())
+
+    if len(cleaned_search_term) < 2:
+        return {"error": "Search term must be at least 2 characters long."}
+
+    logging.info(
+        f"[search_urls] Searching for URLs in organization: {organization_id} with search term: '{cleaned_search_term}'"
+    )
+
+    try:
+        container = get_cosmos_container("OrganizationWebsites")
+
+        # Split into words
+        words = cleaned_search_term.split()
+
+        if len(words) == 1:
+            # Single word search
+            word = words[0]
+            url_encoded_word = urllib.parse.quote(word)
+
+            query = """
+                SELECT * FROM c 
+                WHERE c.organizationId = @organization_id 
+                AND (
+                    CONTAINS(LOWER(c.url), LOWER(@word)) 
+                    OR CONTAINS(LOWER(c.url), LOWER(@encoded_word))
+                )
+            """
+            parameters = [
+                {"name": "@organization_id", "value": organization_id},
+                {"name": "@word", "value": word},
+                {"name": "@encoded_word", "value": url_encoded_word},
+            ]
+        else:
+            # Multi-word search with OR logic
+            word_conditions = []
+            parameters = [{"name": "@organization_id", "value": organization_id}]
+
+            for i, word in enumerate(words):
+                # Add both regular and URL-encoded versions for each word
+                word_conditions.append(
+                    f"(CONTAINS(LOWER(c.url), LOWER(@word{i})) OR CONTAINS(LOWER(c.url), LOWER(@encoded_word{i})))"
+                )
+                parameters.append({"name": f"@word{i}", "value": word})
+                parameters.append(
+                    {"name": f"@encoded_word{i}", "value": urllib.parse.quote(word)}
+                )
+
+            # Join with OR - any word match is enough
+            query = f"SELECT * FROM c WHERE c.organizationId = @organization_id AND ({' OR '.join(word_conditions)})"
+
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=False
+            )
+        )
+
+        logging.info(f"[search_urls] Found {len(result)} URLs matching the search term")
+        return result
+
+    except Exception as e:
+        logging.error(f"[search_urls] search_urls: something went wrong. {str(e)}")
+    return []

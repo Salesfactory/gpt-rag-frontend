@@ -4061,5 +4061,22 @@ def delete_url_by_id():
         logger.exception(f"Unexpected error in delete_url: {e}")
         return create_error_response("Internal Server Error", 500)
 
+@app.route("/api/webscraping/search-urls", methods=["GET"])
+def filter_urls():
+    try:
+        search_term = request.args.get("search_term")
+        organization_id = request.args.get("organization_id")
+        if not search_term:
+            return create_error_response("Search term is required", 400)
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        urls = search_urls(search_term, organization_id)
+        return create_success_response(urls, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in search_urls: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
