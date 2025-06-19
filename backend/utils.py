@@ -10,7 +10,7 @@ from azure.cosmos.exceptions import CosmosHttpResponseError
 from datetime import datetime, timezone, timedelta
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
-
+import urllib.parse
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 from werkzeug.exceptions import NotFound
 
@@ -1182,6 +1182,7 @@ def delete_user(user_id):
 # WEB SCRAPING UTILS
 ################################################
 
+# delete an url by id and organization id from the container OrganizationWebsites
 def delete_url_by_id(url_id, organization_id):
     if not url_id or not organization_id:
         return {"error": "URL ID and Organization ID are required."}
@@ -1200,3 +1201,72 @@ def delete_url_by_id(url_id, organization_id):
         logging.warning(f"[delete_url] Unexpected Error in the CosmosDB Database")
     except Exception as e:
         logging.error(f"[delete_url] delete_url: something went wrong. {str(e)}")
+
+# search urls 
+def search_urls(search_term, organization_id):
+    if not search_term or not organization_id:
+        return {"error": "Search term and Organization ID are required."}
+
+    # Clean and validate input
+    cleaned_search_term = search_term.strip()
+    if not cleaned_search_term:
+        return {"error": "Search term cannot be empty after removing whitespace."}
+    
+    # Normalize internal whitespace
+    cleaned_search_term = " ".join(cleaned_search_term.split())
+    
+    if len(cleaned_search_term) < 2:
+        return {"error": "Search term must be at least 2 characters long."}
+
+    logging.info(f"[search_urls] Searching for URLs in organization: {organization_id} with search term: '{cleaned_search_term}'")
+
+    try:
+        container = get_cosmos_container("OrganizationWebsites")
+        
+        # Split into words
+        words = cleaned_search_term.split()
+        
+        if len(words) == 1:
+            # Single word search
+            word = words[0]
+            url_encoded_word = urllib.parse.quote(word)
+            
+            query = """
+                SELECT * FROM c 
+                WHERE c.organizationId = @organization_id 
+                AND (
+                    CONTAINS(LOWER(c.url), LOWER(@word)) 
+                    OR CONTAINS(LOWER(c.url), LOWER(@encoded_word))
+                )
+            """
+            parameters = [
+                {"name": "@organization_id", "value": organization_id},
+                {"name": "@word", "value": word},
+                {"name": "@encoded_word", "value": url_encoded_word}
+            ]
+        else:
+            # Multi-word search with OR logic
+            word_conditions = []
+            parameters = [{"name": "@organization_id", "value": organization_id}]
+            
+            for i, word in enumerate(words):
+                # Add both regular and URL-encoded versions for each word
+                word_conditions.append(f"(CONTAINS(LOWER(c.url), LOWER(@word{i})) OR CONTAINS(LOWER(c.url), LOWER(@encoded_word{i})))")
+                parameters.append({"name": f"@word{i}", "value": word})
+                parameters.append({"name": f"@encoded_word{i}", "value": urllib.parse.quote(word)})
+            
+            # Join with OR - any word match is enough
+            query = f"SELECT * FROM c WHERE c.organizationId = @organization_id AND ({' OR '.join(word_conditions)})"
+        
+        result = list(container.query_items(
+            query=query, 
+            parameters=parameters,
+            enable_cross_partition_query=False
+        ))
+        
+        logging.info(f"[search_urls] Found {len(result)} URLs matching the search term")
+        return result
+        
+    except Exception as e:
+        logging.error(f"[search_urls] search_urls: something went wrong. {str(e)}")
+    return []
