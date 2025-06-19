@@ -3944,10 +3944,11 @@ def delete_source_document():
         if not blob_name:
             return create_error_response("Blob name is required", 400)
         
-        # Make sure blob_name starts with organization_files/ for security
-        if not blob_name.startswith("organization_files/"):
-            return create_error_response("Invalid blob path. Path must start with 'organization_files/'", 400)
-        
+        # # Make sure blob_name starts with organization_files/ for security
+        # if not blob_name.startswith("organization_files/"):
+        #     return create_error_response("Invalid blob path. Path must start with 'organization_files/'", 400)
+        # NOTE: commented out to allow deletion of results from web scraping folder as well
+
         # Initialize blob storage manager and delete blob
         blob_storage_manager = BlobStorageManager()
         container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
