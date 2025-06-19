@@ -39,6 +39,7 @@ import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionM
 import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
 import { TemplateReports } from "./pages/reports/ReportTemplates";
+import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
 
 export default function App() {
     return (
@@ -119,6 +120,7 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
+                    <Route path="/knowledge-sources" element={<KnowledgeSources />} />
                     <Route path="/subscription-management" element={<SubscriptionManagement />} />
                     <Route path="/manage-email-lists" element={<UserManagement />} />
                 </Route>
