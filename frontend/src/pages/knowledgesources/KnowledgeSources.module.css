@@ -1,1 +1,391 @@
-/* Empty CSS file - styles to be added later */ 
+/* Container and Layout */
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 100px 40px 100px 80px;
+  background-color: #f9fafb;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .pageContainer {
+    padding: 100px 16px 100px 50px;
+  }
+}
+
+/* Add URL Section */
+.addUrlSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.inputContainer {
+  flex: 1;
+}
+
+.urlInput {
+  width: 100%;
+  padding: 10px 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.urlInput:focus {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.inputError {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.errorText {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #ef4444;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background-color: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.addButton:hover:not(:disabled) {
+  background-color: #15803d;
+}
+
+.addButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3);
+}
+
+.addButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Search and Filter Bar */
+.searchFilterBar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.searchContainer {
+  position: relative;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 16px 8px 40px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.filterContainer {
+  position: relative;
+  display: inline-block;
+}
+
+.filterButton {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  border: 2px solid #d1d5db;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  padding: 8px 16px;
+  background-color: white;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.filterButton:hover {
+  background-color: #f9fafb;
+}
+
+.filterButton:focus {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.filterDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 160px;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 10;
+}
+
+.dropdownContent {
+  padding: 4px 0;
+}
+
+.dropdownItem {
+  display: block;
+  padding: 8px 16px;
+  font-size: 14px;
+  text-align: left;
+  width: 100%;
+  border: none;
+  background: none;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdownItem:hover {
+  background-color: #f3f4f6;
+}
+
+.dropdownItemActive {
+  background-color: #f3f4f6;
+  font-weight: 500;
+}
+
+/* Table Styles */
+.tableContainer {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHead {
+  background-color: #16a34a;
+}
+
+.tableHeader {
+  padding: 16px 24px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  border: none;
+}
+
+.tableRow {
+  transition: background-color 0.2s ease;
+}
+
+.tableRow:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.evenRow {
+  background-color: white;
+}
+
+.oddRow {
+  background-color: #f9fafb;
+}
+
+.tableCell {
+  padding: 16px 24px;
+  border: none;
+}
+
+.urlText {
+  font-size: 14px;
+  color: #111827;
+  max-width: 450px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dateText {
+  font-size: 14px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.statusContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusIcon {
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statusText {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Status Colors */
+.successText {
+  color: #059669;
+}
+
+.successBg {
+  background-color: #dcfce7;
+}
+
+.errorText {
+  color: #dc2626;
+}
+
+.errorBg {
+  background-color: #fee2e2;
+}
+
+.pendingText {
+  color: #d97706;
+}
+
+.pendingBg {
+  background-color: #fef3c7;
+}
+
+.defaultText {
+  color: #6b7280;
+}
+
+.defaultBg {
+  background-color: #f3f4f6;
+}
+
+/* Actions */
+.actionsContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionButton:hover {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
+.actionButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+}
+
+.deleteButton:hover {
+  color: #dc2626;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 32px;
+  color: #6b7280;
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (min-width: 640px) {
+  .addUrlSection {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .searchFilterBar {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 16px 12px;
+  }
+  
+  .headerContent {
+    padding: 12px;
+  }
+  
+  .tableHeader,
+  .tableCell {
+    padding: 12px 16px;
+  }
+  
+  .urlText {
+    max-width: 200px;
+  }
+  
+  .title {
+    font-size: 20px;
+  }
+  
+  .actionsContainer {
+    gap: 8px;
+  }
+} 
