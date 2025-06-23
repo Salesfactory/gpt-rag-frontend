@@ -256,7 +256,7 @@
   font-weight: bold;
 }
 
-/* Table Styles */
+/* Card-Based Design */
 .tableContainer {
   background-color: white;
   border-radius: 8px;
@@ -264,61 +264,66 @@
   overflow: hidden;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.tableHead {
+/* Card Header */
+.cardHeader {
   background-color: #16a34a;
-}
-
-.tableHeader {
+  color: white;
+  border-radius: 8px 8px 0 0;
   padding: 16px 24px;
-  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 14px;
   font-weight: 500;
-  color: white;
-  border: none;
 }
 
-.tableRow {
+/* Cards Container */
+.cardsContainer {
+  background-color: white;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Individual Card */
+.card {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s ease;
 }
 
-.tableRow:hover {
-  background-color: #f3f4f6 !important;
+.card:last-child {
+  border-bottom: none;
 }
 
-.evenRow {
-  background-color: white;
-}
-
-.oddRow {
+.card:hover {
   background-color: #f9fafb;
 }
 
-.tableCell {
-  padding: 16px 24px;
-  border: none;
+.cardContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.urlText {
+.cardLeft {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.cardUrl {
   font-size: 14px;
   color: #111827;
-  max-width: 450px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 8px;
+  word-break: break-all;
 }
 
-.dateText {
+.cardDetails {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 14px;
-  color: #6b7280;
-  white-space: nowrap;
 }
 
-.statusContainer {
+.cardStatus {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -335,6 +340,16 @@
 .statusText {
   font-size: 14px;
   font-weight: 500;
+}
+
+.cardDate {
+  color: #6b7280;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Status Colors */
@@ -427,6 +442,8 @@
   }
 }
 
+/* Card Design is used for all screen sizes */
+
 @media (max-width: 768px) {
   .pageContainer {
     padding: 100px 16px 100px 16px;
@@ -461,13 +478,20 @@
     width: 100%;
   }
   
-  .tableHeader,
-  .tableCell {
+  .cardHeader {
     padding: 12px 16px;
   }
   
-  .urlText {
-    max-width: 200px;
+  .card {
+    padding: 12px 16px;
+  }
+  
+  .cardLeft {
+    margin-right: 12px;
+  }
+  
+  .cardActions {
+    gap: 8px;
   }
   
   .actionsContainer {
@@ -500,25 +524,33 @@
     height: 40px;
   }
   
-  .tableHeader,
-  .tableCell {
+  .cardHeader {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .card {
     padding: 8px 12px;
   }
   
-  .tableHeader {
+  .cardUrl {
     font-size: 12px;
   }
   
-  .urlText {
-    max-width: 150px;
-    font-size: 12px;
-  }
-  
-  .dateText {
+  .cardDate {
     font-size: 12px;
   }
   
   .statusText {
     font-size: 12px;
+  }
+  
+  .cardDetails {
+    gap: 8px;
+    font-size: 12px;
+  }
+  
+  .cardActions {
+    gap: 6px;
   }
 } 
