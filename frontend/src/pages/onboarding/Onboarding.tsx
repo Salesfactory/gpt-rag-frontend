@@ -14,7 +14,10 @@ import subscription from "../../img/subscription_image.png";
 const Onboarding: React.FC = () => {
     const { user, setUser, organization, setOrganization, partialUser } = useAppContext();
     const [organizationName, setOrganizationName] = useState("");
-    const [step, setStep] = useState(0);
+    const [step, setStep] = useState(() => {
+        const savedStep = localStorage.getItem("onboardingStep");
+        return savedStep ? Number(savedStep) : 0;
+    });
     const [isLoadingStep, setIsLoadingStep] = useState(false);
     const maxSteps = 2;
     const [animatedStep, setAnimatedStep] = useState(0);
@@ -45,8 +48,11 @@ const Onboarding: React.FC = () => {
             let organization = null;
             if (step === 1) {
                 organization = await handleCreateOrganization();
+                if (!organization) {
+                    setIsLoadingStep(false);
+                    return;
+                }
             }
-
             setStep(prevStep => prevStep + 1);
             setIsLoadingStep(false);
         }
@@ -67,6 +73,8 @@ const Onboarding: React.FC = () => {
     };
 
     if (user?.organizationId && organization?.subscriptionId) {
+        // Clears the saved step at the end of onboarding
+        localStorage.removeItem("onboardingStep");
         return <Navigate to="/" replace />;
     }
 
@@ -77,6 +85,13 @@ const Onboarding: React.FC = () => {
 
         return () => clearTimeout(timer);
     }, [step]);
+
+    useEffect(() => {
+        // Saves the step only if the user has not finished onboarding.
+        if (!(user?.organizationId && organization?.subscriptionId)) {
+            localStorage.setItem("onboardingStep", step.toString());
+        }
+    }, [step, user?.organizationId, organization?.subscriptionId]);
 
     const renderProgressBar = () => (
         <div className={styles.progressContainer}>

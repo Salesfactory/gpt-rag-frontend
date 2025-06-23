@@ -7,7 +7,7 @@ import rehypeRaw from "rehype-raw";
 
 import styles from "./Answer.module.css";
 
-import { AskResponse, getCitationFilePath, getFilePath } from "../../api";
+import { AskResponse, getFilePath } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 

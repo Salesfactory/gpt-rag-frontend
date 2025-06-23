@@ -434,7 +434,6 @@ const Chat = () => {
 
         // Clear prefix ‘documents/’ if present
         const cleanedPdfName = pdfName.startsWith("documents/") ? pdfName.slice("documents/".length) : pdfName;
-        console.log("cleanedPdfName", cleanedPdfName);
         try {
             const response = await fetch("/api/get-blob", {
                 method: "POST",
