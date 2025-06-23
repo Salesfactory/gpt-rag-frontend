@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./SubscriptionManagementcopy.module.css";
-import { DefaultButton, Label, MessageBar, MessageBarType, PrimaryButton, Spinner, Dropdown, IconButton, Stack } from "@fluentui/react";
+import { Label, Spinner, Dropdown, IconButton, SpinnerSize } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
 import {
     createCustomerPortalSession,
@@ -16,7 +16,7 @@ import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Bell, Clock, CreditCard, Eye, Info } from "lucide-react";
+import { Bell, Clock, CreditCard, Eye, Info, Loader2 } from "lucide-react";
 
 const SubscriptionManagement: React.FC = () => {
     const { user, organization, subscriptionTiers, setIsFinancialAssistantActive } = useAppContext();
@@ -77,6 +77,7 @@ const SubscriptionManagement: React.FC = () => {
     const actualDate = new Date();
     const remainingTime = msExpirationDate.getTime() - actualDate.getTime();
     const daysRemaining = Math.ceil(remainingTime / (1000 * 3600 * 24));
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -240,7 +241,7 @@ const SubscriptionManagement: React.FC = () => {
 
     const handleChangeSubscription = async (priceId: string) => {
         let timer: NodeJS.Timeout;
-
+        setIsLoading(true);
         try {
             await changeSubscription({
                 subscriptionId: organization?.subscriptionId ?? "",
@@ -257,7 +258,6 @@ const SubscriptionManagement: React.FC = () => {
             timer = setTimeout(() => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
-
             window.location.reload();
         }
     };
@@ -483,144 +483,126 @@ const SubscriptionManagement: React.FC = () => {
                     </div>
                 )}
                 {isConfirmationModal && (
-                    <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsConfirmationModal(false)}>
-                            <IconX />
-                        </button>
-                        {selectedSubscriptionName === subscriptionName ? (
-                            <div>
-                                <Label className={styles.modalTitle}>Payment Detail change</Label>
-                                <Label className={styles.modalText}>
-                                    You are already subscribed to the {selectedSubscriptionName} plan. Confirming this action will change your payment
-                                    information.
-                                </Label>
-                                <div className={styles.buttonContainer}>
-                                    <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton 
-                                        onClick={() => handleCreateCustomerPortal()} 
-                                        text="Confirm change" 
-                                        styles={{
-                                            root: {
-                                                backgroundColor: '#16a34a',
-                                                borderColor: '#16a34a'
-                                            },
-                                            rootHovered: {
-                                                backgroundColor: '#15803d',
-                                                borderColor: '#15803d'
-                                            },
-                                            rootPressed: {
-                                                backgroundColor: '#15803d',
-                                                borderColor: '#15803d'
-                                            }
-                                        }}
-                                    />
-                                </div>
+                    <div className={styles.modalOverlay}>
+                        <div className={styles.modalContainer}>
+                            <div className={styles.modalContent}>
+                                {selectedSubscriptionName === subscriptionName ? (
+                                    <>
+                                        <button className={styles.closeButtonNew} onClick={() => setIsConfirmationModal(false)}>
+                                            <IconX />
+                                        </button>
+                                        <span className={styles.modalTitle}>Payment Detail Change</span>
+                                        <Label className={styles.modalText}>
+                                            You are already subscribed to the {selectedSubscriptionName} plan. Confirming this action will change your payment
+                                            information.
+                                        </Label>
+                                        <div className={styles.buttonContainerNew}>
+                                            <button onClick={() => setIsConfirmationModal(false)} className={styles.cancelButton}>
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => handleCreateCustomerPortal()}
+                                                className={`${styles.confirmButton} ${styles.subscribeButton}`}
+                                            >
+                                                Confirm Change
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button className={styles.closeButtonNew} onClick={() => setIsConfirmationModal(false)}>
+                                            <IconX />
+                                        </button>
+                                        <Label className={styles.modalTitle}>Subscription Confirmation</Label>
+                                        <Label className={styles.modalText}>
+                                            Are you sure you want to subscribe to the {selectedSubscriptionName} plan? The subscription change will charge the
+                                            new subscription fee.
+                                        </Label>
+                                        <div className={styles.buttonContainerNew}>
+                                            <button onClick={() => setIsConfirmationModal(false)} className={styles.cancelButton}>
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => handleChangeSubscription(selectedSubscriptionID)}
+                                                className={`${styles.confirmButton} ${styles.subscribeButton}`}
+                                                disabled={isLoading}
+                                            >
+                                                {isLoading ? <Spinner size={SpinnerSize.small} labelPosition="right" /> : "Confirm Subscription"}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
-                        ) : (
-                            <div>
-                                <Label className={styles.modalTitle}>Subscription Confirmation</Label>
-                                <Label className={styles.modalText}>
-                                    Are you sure you want to subscribe to the {selectedSubscriptionName} plan? The subscription change will charge the new
-                                    subscription fee
-                                </Label>
-                                <div className={styles.buttonContainer}>
-                                    <DefaultButton onClick={() => setIsConfirmationModal(false)} text="Cancel" />
-                                    <PrimaryButton 
-                                        onClick={() => handleChangeSubscription(selectedSubscriptionID)} 
-                                        text="Confirm Subscription" 
-                                        styles={{
-                                            root: {
-                                                backgroundColor: '#16a34a',
-                                                borderColor: '#16a34a'
-                                            },
-                                            rootHovered: {
-                                                backgroundColor: '#15803d',
-                                                borderColor: '#15803d'
-                                            },
-                                            rootPressed: {
-                                                backgroundColor: '#15803d',
-                                                borderColor: '#15803d'
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )}
+                        </div>
                     </div>
                 )}
                 {isSubscriptionModal && (
-                    <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsSubscriptionModal(false)}>
-                            <IconX />
-                        </button>
-                        <Label className={styles.modalTitle}>Subscribe to Financial Assistant</Label>
-                        <Label className={styles.modalText}>Subscribing to the Financial Assistant feature will cost $29.99 per month.</Label>
-                        <div className={styles.buttonContainer}>
-                            <DefaultButton onClick={() => setIsSubscriptionModal(false)} text="Cancel" />
-                            <PrimaryButton 
-                                onClick={handleSubscribe} 
-                                text="Confirm Subscription" 
-                                styles={{
-                                    root: {
-                                        backgroundColor: '#16a34a',
-                                        borderColor: '#16a34a'
-                                    },
-                                    rootHovered: {
-                                        backgroundColor: '#15803d',
-                                        borderColor: '#15803d'
-                                    },
-                                    rootPressed: {
-                                        backgroundColor: '#15803d',
-                                        borderColor: '#15803d'
-                                    }
-                                }}
-                            />
+                    <div className={styles.modalOverlay}>
+                        <div className={styles.modalContainer}>
+                            <div className={styles.modalContent}>
+                                <div className={styles.modalHeader}>
+                                    <button className={styles.closeButtonNew} onClick={() => setIsSubscriptionModal(false)}>
+                                        <IconX />
+                                    </button>
+                                    <span className={styles.modalTitle}>Subscribe to Financial Assistant</span>
+                                </div>
+                                <Label className={styles.modalText}>Subscribing to the Financial Assistant feature will cost $29.99 per month.</Label>
+                                <div className={styles.buttonContainerNew}>
+                                    <button onClick={() => setIsSubscriptionModal(false)} className={styles.cancelButton}>
+                                        Cancel
+                                    </button>
+                                    <button onClick={handleSubscribe} className={`${styles.confirmButton} ${styles.subscribeButton}`}>
+                                        Confirm Subscription
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
                 {isUnsubscriptionModal && (
-                    <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsUnsubscriptionModal(false)}>
-                            <IconX />
-                        </button>
-                        <Label className={styles.modalTitle}>Unsubscribe from Financial Assistant</Label>
-                        <Label className={styles.modalText}>Are you sure you want to remove the Financial Assistant from your subscription?</Label>
-                        <div className={styles.buttonContainer}>
-                            <DefaultButton onClick={() => setIsUnsubscriptionModal(false)} text="Cancel" />
-                            <PrimaryButton 
-                                onClick={handleUnsubscribe} 
-                                text="Yes, Unsubscribe" 
-                                styles={{
-                                    root: {
-                                        backgroundColor: '#16a34a',
-                                        borderColor: '#16a34a'
-                                    },
-                                    rootHovered: {
-                                        backgroundColor: '#15803d',
-                                        borderColor: '#15803d'
-                                    },
-                                    rootPressed: {
-                                        backgroundColor: '#15803d',
-                                        borderColor: '#15803d'
-                                    }
-                                }}
-                            />
+                    <div className={styles.modalOverlay}>
+                        <div className={styles.modalContainer}>
+                            <div className={styles.modalContent}>
+                                <div className={styles.modalHeader}>
+                                    <button className={styles.closeButtonNew} onClick={() => setIsUnsubscriptionModal(false)}>
+                                        <IconX />
+                                    </button>
+                                    <span className={styles.modalTitle}>Unsubscribe from Financial Assistant</span>
+                                </div>
+                                <Label className={styles.modalText}>Are you sure you want to remove the Financial Assistant from your subscription?</Label>
+                                <div className={styles.buttonContainerNew}>
+                                    <button onClick={() => setIsUnsubscriptionModal(false)} className={styles.cancelButton}>
+                                        Cancel
+                                    </button>
+                                    <button onClick={handleUnsubscribe} className={`${styles.confirmButton} ${styles.unsubscribeButton}`}>
+                                        <span>Yes, Unsubscribe</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
                 {isErrorModal && (
-                    <div className={styles.modal}>
-                        <button className={styles.closeButton} onClick={() => setIsErrorModal(false)}>
-                            <IconX />
-                        </button>
-                        <Label className={styles.modalTitle}>Error</Label>
-                        <Label className={styles.modalText}>{error}</Label>
+                    <div className={styles.modalOverlay}>
+                        <div className={`${styles.modalContainer} ${styles.errorModal}`}>
+                            <button className={styles.closeButtonNew} onClick={() => setIsErrorModal(false)}>
+                                <IconX />
+                            </button>
+                            <div className={styles.modalContent}>
+                                <Label className={styles.modalTitle}>Error</Label>
+                                <Label className={styles.modalText}>{error}</Label>
+                            </div>
+                        </div>
                     </div>
                 )}
                 {isSubscriptionChangeModal && (
-                    <div className={styles.modalSubscriptionChange}>
-                        <Label className={styles.modalTitle}>Subscription Changed</Label>
-                        <Label className={styles.modalSubscriptionChangeText}>Your subscription has been successfully changed</Label>
+                    <div className={styles.successModalOverlay}>
+                        <div className={styles.successModalContainer}>
+                            <div className={styles.successModalContent}>
+                                <Label className={styles.successModalTitle}>Subscription Changed</Label>
+                                <Label className={styles.successModalText}>Your subscription has been successfully changed</Label>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
