@@ -40,6 +40,7 @@
   font-size: 14px;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  height: 44px;
 }
 
 .urlInput:focus {
@@ -73,7 +74,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
+  width: 150px;
   height: 44px;
 }
 
@@ -203,7 +204,7 @@
   cursor: pointer;
   gap: 8px;
   transition: background 0.2s;
-  min-width: 120px;
+  width: 150px;
   height: 44px;
 }
 
