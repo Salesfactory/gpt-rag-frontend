@@ -16,7 +16,7 @@ import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Bell, Clock, CreditCard, Eye, Info, Loader2 } from "lucide-react";
+import { Bell, Clock, CreditCard, Eye, Info } from "lucide-react";
 
 const SubscriptionManagement: React.FC = () => {
     const { user, organization, subscriptionTiers, setIsFinancialAssistantActive } = useAppContext();
