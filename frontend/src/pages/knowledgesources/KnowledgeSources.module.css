@@ -26,14 +26,21 @@
   flex: 1;
 }
 
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .urlInput {
   width: 100%;
-  padding: 10px 16px;
-  border: 2px solid #d1d5db;
+  padding: 10px 40px 10px 16px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  height: 44px;
 }
 
 .urlInput:focus {
@@ -63,10 +70,12 @@
   color: white;
   border: none;
   border-radius: 8px;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
+  width: 150px;
+  height: 44px;
 }
 
 .addButton:hover:not(:disabled) {
@@ -83,6 +92,33 @@
   cursor: not-allowed;
 }
 
+.clearButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clearButton:hover {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.clearButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+}
+
 /* Search and Filter Bar */
 .searchFilterBar {
   display: flex;
@@ -94,6 +130,8 @@
 .searchContainer {
   position: relative;
   flex: 1;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .searchIcon {
@@ -107,8 +145,8 @@
 
 .searchInput {
   width: 100%;
-  padding: 8px 16px 8px 40px;
-  border: 2px solid #d1d5db;
+  padding: 8px 40px 8px 40px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
   transition: all 0.2s ease;
@@ -121,38 +159,64 @@
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
+.clearSearchButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clearSearchButton:hover {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.clearSearchButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+}
+
 .filterContainer {
   position: relative;
   display: inline-block;
 }
 
 .filterButton {
-  display: inline-flex;
-  justify-content: center;
+  display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  border: 1px solid #e5e7eb;
+  background: #fff;
   border-radius: 8px;
-  border: 2px solid #d1d5db;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  padding: 8px 16px;
-  background-color: white;
-  font-size: 14px;
+  padding: 10px 24px;
+  font-size: 16px;
   font-weight: 500;
-  color: #374151;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 120px;
+  gap: 8px;
+  transition: background 0.2s;
+  width: 150px;
+  height: 44px;
 }
 
 .filterButton:hover {
-  background-color: #f9fafb;
+  background: #f3f4f6;
 }
 
-.filterButton:focus {
-  outline: none;
-  border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+.filterIcon {
+  color: #1f2937;
 }
+
+
 
 .filterDropdown {
   position: absolute;
@@ -189,10 +253,10 @@
 
 .dropdownItemActive {
   background-color: #f3f4f6;
-  font-weight: 500;
+  font-weight: bold;
 }
 
-/* Table Styles */
+/* Card-Based Design */
 .tableContainer {
   background-color: white;
   border-radius: 8px;
@@ -200,61 +264,66 @@
   overflow: hidden;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.tableHead {
+/* Card Header */
+.cardHeader {
   background-color: #16a34a;
-}
-
-.tableHeader {
+  color: white;
+  border-radius: 8px 8px 0 0;
   padding: 16px 24px;
-  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 14px;
   font-weight: 500;
-  color: white;
-  border: none;
 }
 
-.tableRow {
+/* Cards Container */
+.cardsContainer {
+  background-color: white;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Individual Card */
+.card {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s ease;
 }
 
-.tableRow:hover {
-  background-color: #f3f4f6 !important;
+.card:last-child {
+  border-bottom: none;
 }
 
-.evenRow {
-  background-color: white;
-}
-
-.oddRow {
+.card:hover {
   background-color: #f9fafb;
 }
 
-.tableCell {
-  padding: 16px 24px;
-  border: none;
+.cardContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.urlText {
+.cardLeft {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.cardUrl {
   font-size: 14px;
   color: #111827;
-  max-width: 450px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 8px;
+  word-break: break-all;
 }
 
-.dateText {
+.cardDetails {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 14px;
-  color: #6b7280;
-  white-space: nowrap;
 }
 
-.statusContainer {
+.cardStatus {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -271,6 +340,16 @@
 .statusText {
   font-size: 14px;
   font-weight: 500;
+}
+
+.cardDate {
+  color: #6b7280;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Status Colors */
@@ -363,29 +442,115 @@
   }
 }
 
+/* Card Design is used for all screen sizes */
+
 @media (max-width: 768px) {
-  .main {
-    padding: 16px 12px;
+  .pageContainer {
+    padding: 100px 16px 100px 16px;
   }
   
-  .headerContent {
-    padding: 12px;
+  .addUrlSection {
+    gap: 12px;
   }
   
-  .tableHeader,
-  .tableCell {
+  .addButton {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .searchFilterBar {
+    gap: 12px;
+  }
+  
+  .filterContainer {
+    width: 100%;
+  }
+  
+  .filterButton {
+    width: 100%;
+    min-width: unset;
+    justify-content: center;
+  }
+  
+  .filterDropdown {
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+  
+  .cardHeader {
     padding: 12px 16px;
   }
   
-  .urlText {
-    max-width: 200px;
+  .card {
+    padding: 12px 16px;
   }
   
-  .title {
-    font-size: 20px;
+  .cardLeft {
+    margin-right: 12px;
+  }
+  
+  .cardActions {
+    gap: 8px;
   }
   
   .actionsContainer {
     gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageContainer {
+    padding: 80px 12px 80px 12px;
+  }
+  
+  .addUrlSection {
+    gap: 8px;
+  }
+  
+  .searchFilterBar {
+    gap: 8px;
+  }
+  
+  .filterButton {
+    padding: 8px 16px;
+    font-size: 14px;
+    height: 40px;
+  }
+  
+  .addButton {
+    padding: 8px 16px;
+    font-size: 14px;
+    height: 40px;
+  }
+  
+  .cardHeader {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .card {
+    padding: 8px 12px;
+  }
+  
+  .cardUrl {
+    font-size: 12px;
+  }
+  
+  .cardDate {
+    font-size: 12px;
+  }
+  
+  .statusText {
+    font-size: 12px;
+  }
+  
+  .cardDetails {
+    gap: 8px;
+    font-size: 12px;
+  }
+  
+  .cardActions {
+    gap: 6px;
   }
 } 

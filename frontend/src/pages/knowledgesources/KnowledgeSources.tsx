@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
-import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2, Filter, X } from 'lucide-react';
 import styles from './KnowledgeSources.module.css';
+
+const statusFilterOptions = [
+  { label: "All Status", value: "all" },
+  { label: "Active", value: "Active" },
+  { label: "Processing", value: "Processing" },
+  { label: "Error", value: "Error" }
+];
 
 const KnowledgeSources: React.FC = () => {
   // State for search functionality - stores the current search query
@@ -8,7 +15,7 @@ const KnowledgeSources: React.FC = () => {
   
   // State for status filter dropdown - controls visibility and selected value
   const [showStatusFilter, setShowStatusFilter] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('All Status');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   
   // State for adding new URLs - stores input value and validation errors
   const [newUrl, setNewUrl] = useState('');
@@ -162,7 +169,7 @@ const KnowledgeSources: React.FC = () => {
   // This enables real-time filtering without API calls
   const filteredSources = knowledgeSources.filter(source => {
     const matchesSearch = source.url.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'All Status' || source.status === selectedStatus;
+    const matchesStatus = selectedStatus === 'all' || source.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
   
@@ -202,13 +209,28 @@ const KnowledgeSources: React.FC = () => {
         {/* Add URL Section */}
         <div className={styles.addUrlSection}>
           <div className={styles.inputContainer}>
-            <input
-              type="url"
-              placeholder="Enter website URL (e.g., https://example.com)"
-              value={newUrl}
-              onChange={handleUrlChange}
-              className={`${styles.urlInput} ${urlError ? styles.inputError : ''}`}
-            />
+            <div className={styles.inputWrapper}>
+              <input
+                type="url"
+                placeholder="Enter website URL (e.g., https://example.com)"
+                value={newUrl}
+                onChange={handleUrlChange}
+                className={`${styles.urlInput} ${urlError ? styles.inputError : ''}`}
+              />
+              {newUrl && (
+                <button
+                  type="button"
+                  className={styles.clearButton}
+                  onClick={() => {
+                    setNewUrl('');
+                    setUrlError('');
+                  }}
+                  title="Clear URL"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
             {urlError && (
               <p className={styles.errorText}>{urlError}</p>
             )}
@@ -237,6 +259,16 @@ const KnowledgeSources: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                className={styles.clearSearchButton}
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
           
           {/* Status Filter Dropdown */}
@@ -246,25 +278,25 @@ const KnowledgeSources: React.FC = () => {
               className={styles.filterButton}
               onClick={() => setShowStatusFilter(!showStatusFilter)}
             >
-              {selectedStatus}
-              <ChevronDown size={18} />
+              <Filter size={16} className={styles.filterIcon} />
+              {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Filter"}
             </button>
 
             {showStatusFilter && (
               <div className={styles.filterDropdown}>
                 <div className={styles.dropdownContent}>
-                  {['All Status', 'Active', 'Processing', 'Error'].map(status => (
+                  {statusFilterOptions.map(option => (
                     <button
-                      key={status}
+                      key={option.value}
                       className={`${styles.dropdownItem} ${
-                        selectedStatus === status ? styles.dropdownItemActive : ''
+                        selectedStatus === option.value ? styles.dropdownItemActive : ''
                       }`}
                       onClick={() => {
-                        setSelectedStatus(status);
+                        setSelectedStatus(option.value);
                         setShowStatusFilter(false);
                       }}
                     >
-                      {status}
+                      {option.label}
                     </button>
                   ))}
                 </div>
@@ -273,80 +305,75 @@ const KnowledgeSources: React.FC = () => {
           </div>
         </div>
         
-        {/* Knowledge Sources Table */}
+        {/* Knowledge Sources */}
         <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead className={styles.tableHead}>
-              <tr>
-                <th className={styles.tableHeader}>URL</th>
-                <th className={styles.tableHeader}>Last Update</th>
-                <th className={styles.tableHeader}>Result</th>
-                <th className={styles.tableHeader}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSources.map((source, index) => {
+          {/* Header */}
+          <div className={styles.cardHeader}>
+            <span>URL</span>
+            <span>Actions</span>
+          </div>
+          
+          {/* Cards Container */}
+          <div className={styles.cardsContainer}>
+            {filteredSources.length === 0 ? (
+              <div className={styles.emptyState}>
+                No knowledge sources found. Add your first URL above to get started.
+              </div>
+            ) : (
+              filteredSources.map((source, index) => {
                 const statusInfo = getStatusInfo(source.result, source.status);
                 const StatusIcon = statusInfo.icon;
                 
                 return (
-                  <tr 
-                    key={source.id} 
-                    className={`${styles.tableRow} ${index % 2 === 0 ? styles.evenRow : styles.oddRow}`}
-                  >
-                    <td className={styles.tableCell}>
-                      <div className={styles.urlText} title={source.url}>
-                        {source.url}
-                      </div>
-                    </td>
-                    <td className={styles.tableCell}>
-                      <div className={styles.dateText}>{source.lastUpdate}</div>
-                    </td>
-                    <td className={styles.tableCell}>
-                      <div className={styles.statusContainer}>
-                        <div className={`${styles.statusIcon} ${statusInfo.bgColor}`}>
-                          <StatusIcon />
+                  <div key={source.id} className={styles.card}>
+                    <div className={styles.cardContent}>
+                      <div className={styles.cardLeft}>
+                        <div className={styles.cardUrl} title={source.url}>
+                          {source.url}
                         </div>
-                        <span className={`${styles.statusText} ${statusInfo.color}`}>
-                          {source.result}
-                        </span>
+                        <div className={styles.cardDetails}>
+                          <div className={styles.cardStatus}>
+                            <div className={`${styles.statusIcon} ${statusInfo.bgColor}`}>
+                              <StatusIcon size={14} />
+                            </div>
+                            <span className={`${styles.statusText} ${statusInfo.color}`}>
+                              {source.result}
+                            </span>
+                          </div>
+                          <div className={styles.cardDate}>
+                            {source.lastUpdate}
+                          </div>
+                        </div>
                       </div>
-                    </td>
-                    <td className={styles.tableCell}>
-                      <div className={styles.actionsContainer}>
+                      
+                      <div className={styles.cardActions}>
                         <button 
                           onClick={() => handleRefresh(source.id)}
                           className={styles.actionButton}
                           title="Refresh source"
                         >
-                          <RefreshCw size={18} />
+                          <RefreshCw size={16} />
                         </button>
                         <button 
                           className={styles.actionButton}
                           title="Edit source"
                         >
-                          <Edit size={18} />
+                          <Edit size={16} />
                         </button>
                         <button 
                           onClick={() => handleDelete(source.id)}
                           className={`${styles.actionButton} ${styles.deleteButton}`}
                           title="Delete source"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
-          
-          {filteredSources.length === 0 && (
-            <div className={styles.emptyState}>
-              No knowledge sources found. Add your first URL above to get started.
-            </div>
-          )}
+              })
+            )}
+          </div>
         </div>
     </div>
   );
