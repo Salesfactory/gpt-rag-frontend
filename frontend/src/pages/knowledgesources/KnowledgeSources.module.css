@@ -26,9 +26,15 @@
   flex: 1;
 }
 
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .urlInput {
   width: 100%;
-  padding: 10px 16px;
+  padding: 10px 40px 10px 16px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
@@ -63,10 +69,12 @@
   color: white;
   border: none;
   border-radius: 8px;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: 120px;
+  height: 44px;
 }
 
 .addButton:hover:not(:disabled) {
@@ -83,6 +91,33 @@
   cursor: not-allowed;
 }
 
+.clearButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clearButton:hover {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.clearButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+}
+
 /* Search and Filter Bar */
 .searchFilterBar {
   display: flex;
@@ -94,6 +129,8 @@
 .searchContainer {
   position: relative;
   flex: 1;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .searchIcon {
@@ -107,7 +144,7 @@
 
 .searchInput {
   width: 100%;
-  padding: 8px 16px 8px 40px;
+  padding: 8px 40px 8px 40px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
@@ -121,6 +158,33 @@
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
+.clearSearchButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clearSearchButton:hover {
+  color: #6b7280;
+  background-color: #f3f4f6;
+}
+
+.clearSearchButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
+}
+
 .filterContainer {
   position: relative;
   display: inline-block;
@@ -129,14 +193,18 @@
 .filterButton {
   display: flex;
   align-items: center;
+  justify-content: center;
   border: 1px solid #e5e7eb;
   background: #fff;
-  border-radius: 0.5rem;
-  padding: 7px 16px;
+  border-radius: 8px;
+  padding: 10px 24px;
   font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
-  gap: 6px;
+  gap: 8px;
   transition: background 0.2s;
+  min-width: 120px;
+  height: 44px;
 }
 
 .filterButton:hover {
@@ -359,12 +427,37 @@
 }
 
 @media (max-width: 768px) {
-  .main {
-    padding: 16px 12px;
+  .pageContainer {
+    padding: 100px 16px 100px 16px;
   }
   
-  .headerContent {
-    padding: 12px;
+  .addUrlSection {
+    gap: 12px;
+  }
+  
+  .addButton {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .searchFilterBar {
+    gap: 12px;
+  }
+  
+  .filterContainer {
+    width: 100%;
+  }
+  
+  .filterButton {
+    width: 100%;
+    min-width: unset;
+    justify-content: center;
+  }
+  
+  .filterDropdown {
+    left: 0;
+    right: 0;
+    width: 100%;
   }
   
   .tableHeader,
@@ -376,11 +469,55 @@
     max-width: 200px;
   }
   
-  .title {
-    font-size: 20px;
-  }
-  
   .actionsContainer {
     gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pageContainer {
+    padding: 80px 12px 80px 12px;
+  }
+  
+  .addUrlSection {
+    gap: 8px;
+  }
+  
+  .searchFilterBar {
+    gap: 8px;
+  }
+  
+  .filterButton {
+    padding: 8px 16px;
+    font-size: 14px;
+    height: 40px;
+  }
+  
+  .addButton {
+    padding: 8px 16px;
+    font-size: 14px;
+    height: 40px;
+  }
+  
+  .tableHeader,
+  .tableCell {
+    padding: 8px 12px;
+  }
+  
+  .tableHeader {
+    font-size: 12px;
+  }
+  
+  .urlText {
+    max-width: 150px;
+    font-size: 12px;
+  }
+  
+  .dateText {
+    font-size: 12px;
+  }
+  
+  .statusText {
+    font-size: 12px;
   }
 } 

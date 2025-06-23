@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2, Filter } from 'lucide-react';
+import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2, Filter, X } from 'lucide-react';
 import styles from './KnowledgeSources.module.css';
 
 const statusFilterOptions = [
@@ -209,13 +209,28 @@ const KnowledgeSources: React.FC = () => {
         {/* Add URL Section */}
         <div className={styles.addUrlSection}>
           <div className={styles.inputContainer}>
-            <input
-              type="url"
-              placeholder="Enter website URL (e.g., https://example.com)"
-              value={newUrl}
-              onChange={handleUrlChange}
-              className={`${styles.urlInput} ${urlError ? styles.inputError : ''}`}
-            />
+            <div className={styles.inputWrapper}>
+              <input
+                type="url"
+                placeholder="Enter website URL (e.g., https://example.com)"
+                value={newUrl}
+                onChange={handleUrlChange}
+                className={`${styles.urlInput} ${urlError ? styles.inputError : ''}`}
+              />
+              {newUrl && (
+                <button
+                  type="button"
+                  className={styles.clearButton}
+                  onClick={() => {
+                    setNewUrl('');
+                    setUrlError('');
+                  }}
+                  title="Clear URL"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
             {urlError && (
               <p className={styles.errorText}>{urlError}</p>
             )}
@@ -244,6 +259,16 @@ const KnowledgeSources: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                className={styles.clearSearchButton}
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
           
           {/* Status Filter Dropdown */}
