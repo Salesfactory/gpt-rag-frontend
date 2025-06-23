@@ -567,6 +567,8 @@ const Admin = () => {
             setIsEditSuccess(true);
             timer = setTimeout(() => {
                 setIsEditSuccess(false);
+                setInputEmailName("");
+                setInputUserName("");
             }, 3000);
         } catch (error) {
             console.error("Error trying to update the state: ", error);
@@ -785,7 +787,15 @@ const Admin = () => {
                                 />
                                 {isError && <span className={styles.modalError}>{errorMessage}</span>}
 
-                                <DefaultButton style={{ marginTop: "50px", marginRight: "95px" }} onClick={() => setIsEditing(false)} text="Cancel" />
+                                <DefaultButton
+                                    style={{ marginTop: "50px", marginRight: "95px" }}
+                                    onClick={() => {
+                                        setInputEmailName("");
+                                        setInputUserName("");
+                                        setIsEditing(false);
+                                    }}
+                                    text="Cancel"
+                                />
                                 <PrimaryButton
                                     styles={{
                                         root: {
