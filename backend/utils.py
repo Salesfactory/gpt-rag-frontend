@@ -1331,8 +1331,8 @@ def search_urls(search_term, organization_id):
     # Normalize internal whitespace
     cleaned_search_term = " ".join(cleaned_search_term.split())
 
-    if len(cleaned_search_term) < 2:
-        return {"error": "Search term must be at least 2 characters long."}
+    # if len(cleaned_search_term) < 2:
+    #     return {"error": "Search term must be at least 2 characters long."} # not that important
 
     logging.info(
         f"[search_urls] Searching for URLs in organization: {organization_id} with search term: '{cleaned_search_term}'"
@@ -1450,3 +1450,73 @@ def validate_url(url: str) -> Tuple[bool, str]:
         return True, ""
     except Exception:
         return False, "Invalid URL format"
+
+# get all urls for an organization from the container OrganizationWebsites
+def get_organization_urls(organization_id):
+    if not organization_id:
+        return {"error": "Organization ID is required."}
+    
+    logging.info(f"[get_organization_urls] Getting all URLs for organization: {organization_id}")
+    
+    try:
+        container = get_cosmos_container("OrganizationWebsites")
+        
+        query = "SELECT * FROM c WHERE c.organizationId = @organization_id ORDER BY c.lastModified DESC"
+        parameters = [{"name": "@organization_id", "value": organization_id}]
+        
+        result = list(
+            container.query_items(
+                query=query, 
+                parameters=parameters, 
+                enable_cross_partition_query=False
+            )
+        )
+        
+        logging.info(f"[get_organization_urls] Found {len(result)} URLs for organization {organization_id}")
+        return result
+        
+    except Exception as e:
+        logging.error(f"[get_organization_urls] get_organization_urls: something went wrong. {str(e)}")
+        return []
+
+# add a new url to the container OrganizationWebsites
+def add_organization_url(organization_id, url, scraping_result=None, added_by_id=None, added_by_name=None):
+    if not organization_id or not url:
+        return {"error": "Organization ID and URL are required."}
+    
+    logging.info(f"[add_organization_url] Adding URL: {url} to organization: {organization_id} by user: {added_by_name or 'Unknown'}")
+    
+    try:
+        container = get_cosmos_container("OrganizationWebsites")
+        
+        # Generate a unique ID for the URL entry
+        url_id = str(uuid.uuid4())
+        
+        # Create the document
+        url_document = {
+            "id": url_id,
+            "organizationId": organization_id,
+            "url": url,
+            "dateAdded": datetime.now(timezone.utc).isoformat(),
+            "lastModified": datetime.now(timezone.utc).isoformat(),
+            "status": "Processing" if not scraping_result else ("Active" if scraping_result.get("status") == "success" else "Error"),
+            "result": "Pending" if not scraping_result else ("Success" if scraping_result.get("status") == "success" else "Failed"),
+            "error": scraping_result.get("error") if scraping_result and scraping_result.get("error") else None,
+            "contentLength": scraping_result.get("content_length") if scraping_result else None,
+            "title": scraping_result.get("title") if scraping_result else None,
+            "addedBy": {
+                "userId": added_by_id,
+                "userName": added_by_name,
+                "dateAdded": datetime.now(timezone.utc).isoformat()
+            } if added_by_id else None
+        }
+        
+        # Insert the document
+        container.create_item(body=url_document)
+        
+        logging.info(f"[add_organization_url] URL {url_id} added successfully by {added_by_name or 'Unknown'}")
+        return {"message": "URL added successfully", "id": url_id}
+        
+    except Exception as e:
+        logging.error(f"[add_organization_url] add_organization_url: something went wrong. {str(e)}")
+        raise
