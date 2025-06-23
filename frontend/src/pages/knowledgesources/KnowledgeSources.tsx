@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
-import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2, Filter } from 'lucide-react';
 import styles from './KnowledgeSources.module.css';
+
+const statusFilterOptions = [
+  { label: "All Status", value: "all" },
+  { label: "Active", value: "Active" },
+  { label: "Processing", value: "Processing" },
+  { label: "Error", value: "Error" }
+];
 
 const KnowledgeSources: React.FC = () => {
   // State for search functionality - stores the current search query
@@ -8,7 +15,7 @@ const KnowledgeSources: React.FC = () => {
   
   // State for status filter dropdown - controls visibility and selected value
   const [showStatusFilter, setShowStatusFilter] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState('All Status');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   
   // State for adding new URLs - stores input value and validation errors
   const [newUrl, setNewUrl] = useState('');
@@ -162,7 +169,7 @@ const KnowledgeSources: React.FC = () => {
   // This enables real-time filtering without API calls
   const filteredSources = knowledgeSources.filter(source => {
     const matchesSearch = source.url.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'All Status' || source.status === selectedStatus;
+    const matchesStatus = selectedStatus === 'all' || source.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
   
@@ -246,25 +253,25 @@ const KnowledgeSources: React.FC = () => {
               className={styles.filterButton}
               onClick={() => setShowStatusFilter(!showStatusFilter)}
             >
-              {selectedStatus}
-              <ChevronDown size={18} />
+              <Filter size={16} className={styles.filterIcon} />
+              {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Filter"}
             </button>
 
             {showStatusFilter && (
               <div className={styles.filterDropdown}>
                 <div className={styles.dropdownContent}>
-                  {['All Status', 'Active', 'Processing', 'Error'].map(status => (
+                  {statusFilterOptions.map(option => (
                     <button
-                      key={status}
+                      key={option.value}
                       className={`${styles.dropdownItem} ${
-                        selectedStatus === status ? styles.dropdownItemActive : ''
+                        selectedStatus === option.value ? styles.dropdownItemActive : ''
                       }`}
                       onClick={() => {
-                        setSelectedStatus(status);
+                        setSelectedStatus(option.value);
                         setShowStatusFilter(false);
                       }}
                     >
-                      {status}
+                      {option.label}
                     </button>
                   ))}
                 </div>
