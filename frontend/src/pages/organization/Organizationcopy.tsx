@@ -9,7 +9,7 @@ import { Globe, Save, Search, X, Plus } from "lucide-react";
 import { scrapeUrls } from "../../api";
 
 const Organization = () => {
-    const { organization, setOrganization } = useAppContext();
+    const { organization, setOrganization, user } = useAppContext();
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
     const [brandInformation, setBrandInformation] = useState(organization?.brandInformation || "");
     const [segmentSynonyms, setSegmentSynonyms] = useState(organization?.segmentSynonyms || "");
@@ -110,7 +110,7 @@ const Organization = () => {
         setIsScraping(true);
 
         try {
-            const result = await scrapeUrls(urlsToScrape);
+            const result = await scrapeUrls(urlsToScrape, organization?.id, user);
             
             // Debug: Log the entire result to understand the structure
             console.log('Full scraping result:', result);
