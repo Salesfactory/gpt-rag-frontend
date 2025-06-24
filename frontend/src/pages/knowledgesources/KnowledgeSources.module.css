@@ -216,8 +216,6 @@
   color: #1f2937;
 }
 
-
-
 .filterDropdown {
   position: absolute;
   right: 0;
@@ -344,6 +342,12 @@
 
 .cardDate {
   color: #6b7280;
+}
+
+.cardAddedBy {
+  font-size: 0.75rem;
+  color: #666;
+  font-style: italic;
 }
 
 .cardActions {
@@ -553,4 +557,80 @@
   .cardActions {
     gap: 6px;
   }
+}
+
+/* Edit form styles */
+.editForm {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.editInputWrapper {
+  margin-bottom: 12px;
+}
+
+.editInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.editInput:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
+}
+
+.editInput.inputError {
+  border-color: #d32f2f;
+}
+
+.editActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.saveButton {
+  background-color: #007acc;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #005a9e;
+}
+
+.saveButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #e8e8e8;
+}
+
+.cancelButton:disabled {
+  background-color: #f8f8f8;
+  color: #999;
+  cursor: not-allowed;
 } 

@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2, Filter, X } from 'lucide-react';
 import styles from './KnowledgeSources.module.css';
+import { useAppContext } from '../../providers/AppProviders';
+import { 
+  getOrganizationUrls, 
+  deleteOrganizationUrl, 
+  updateOrganizationUrl, 
+  searchOrganizationUrls,
+  scrapeUrls 
+} from '../../api';
+import { toast, ToastContainer } from 'react-toastify';
 
 const statusFilterOptions = [
   { label: "All Status", value: "all" },
@@ -9,7 +18,26 @@ const statusFilterOptions = [
   { label: "Error", value: "Error" }
 ];
 
+interface KnowledgeSource {
+  id: string;
+  url: string;
+  lastModified: string;
+  result: string;
+  status: string;
+  error?: string;
+  contentLength?: number;
+  title?: string;
+  blobPath?: string;
+  addedBy?: {
+    userId: string;
+    userName: string;
+    dateAdded: string;
+  };
+}
+
 const KnowledgeSources: React.FC = () => {
+  const { organization, user } = useAppContext();
+  
   // State for search functionality - stores the current search query
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -21,38 +49,63 @@ const KnowledgeSources: React.FC = () => {
   const [newUrl, setNewUrl] = useState('');
   const [urlError, setUrlError] = useState('');
   
-  // Mock data representing knowledge sources with different statuses
-  // In a real app, this would come from an API or global state management
-  const [knowledgeSources, setKnowledgeSources] = useState([
-    { 
-      id: 1, 
-      url: 'https://docs.anthropic.com/claude/docs', 
-      lastUpdate: '2025-06-18 09:30', 
-      result: 'Success',
-      status: 'Active'
-    },
-    { 
-      id: 2, 
-      url: 'https://react.dev/learn', 
-      lastUpdate: '2025-06-18 08:15', 
-      result: 'Success',
-      status: 'Active'
-    },
-    { 
-      id: 3, 
-      url: 'https://tailwindcss.com/docs', 
-      lastUpdate: '2025-06-17 14:22', 
-      result: 'Failed',
-      status: 'Error'
-    },
-    { 
-      id: 4, 
-      url: 'https://nextjs.org/docs', 
-      lastUpdate: '2025-06-17 11:45', 
-      result: 'Success',
-      status: 'Active'
+  // Loading states
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  
+  // Knowledge sources from the backend
+  const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
+  
+  // State for editing URLs
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingUrl, setEditingUrl] = useState('');
+  const [editingError, setEditingError] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Load data on component mount and when organization changes
+  useEffect(() => {
+    if (organization?.id) {
+      loadKnowledgeSources();
     }
-  ]);
+  }, [organization?.id]);
+  
+  // Function to load knowledge sources from the backend
+  const loadKnowledgeSources = async () => {
+    if (!organization?.id) return;
+    
+    try {
+      setIsLoading(true);
+      const response = await getOrganizationUrls(organization.id);
+      
+              // Transform backend data to match frontend interface
+        const transformedData = response.data.map((item: any) => ({
+          id: item.id,
+          url: item.url,
+          lastModified: new Date(item.lastModified).toLocaleString('sv-SE', { 
+            timeZone: 'UTC',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          }).replace('T', ' '),
+          result: item.result || 'Pending',
+          status: item.status || 'Processing',
+          error: item.error,
+          contentLength: item.contentLength,
+          title: item.title,
+          blobPath: item.blobPath,
+          addedBy: item.addedBy
+        }));
+      
+      setKnowledgeSources(transformedData);
+    } catch (error) {
+      console.error('Error loading knowledge sources:', error);
+      toast.error('Failed to load knowledge sources');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // URL validation function using native URL constructor
   // This ensures the URL is properly formatted and uses http/https protocol
@@ -78,9 +131,9 @@ const KnowledgeSources: React.FC = () => {
     }
   };
   
-  // Add new URL to the knowledge sources list
-  // Includes validation and duplicate checking
-  const handleAddUrl = () => {
+  // Add new URL to the knowledge sources list with web scraping
+  // This will trigger web scraping and automatically save the results with blob links to Cosmos
+  const handleAddUrl = async () => {
     if (!newUrl.trim()) {
       setUrlError('URL is required');
       return;
@@ -91,6 +144,11 @@ const KnowledgeSources: React.FC = () => {
       return;
     }
     
+    if (!organization?.id) {
+      toast.error('No organization selected');
+      return;
+    }
+    
     // Check if URL already exists to prevent duplicates
     const urlExists = knowledgeSources.some(source => source.url === newUrl);
     if (urlExists) {
@@ -98,79 +156,107 @@ const KnowledgeSources: React.FC = () => {
       return;
     }
     
-    // Create new source object with current timestamp
-    const newSource = {
-      id: Date.now(), // Simple ID generation using timestamp
-      url: newUrl,
-      lastUpdate: new Date().toLocaleString('sv-SE', { 
-        timeZone: 'UTC',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).replace('T', ' '),
-      result: 'Pending',
-      status: 'Processing'
-    };
-    
-    // Add to beginning of array and clear form
-    setKnowledgeSources([newSource, ...knowledgeSources]);
-    setNewUrl('');
-    setUrlError('');
+    try {
+      setIsAdding(true);
+      
+      // Use the scraping endpoint instead of the simple add URL endpoint
+      // This will automatically trigger web scraping and save results with blob links to Cosmos
+      await scrapeUrls([newUrl], organization.id, user);
+      
+      // Clear form and reload data
+      setNewUrl('');
+      setUrlError('');
+      toast.success('URL added successfully');
+      
+      // Reload the data to get the new entry with scraping results
+      await loadKnowledgeSources();
+      // TODO: differentiate between adding and scraping
+    } catch (error) {
+      console.error('Error adding and scraping URL:', error);
+      toast.error('Failed to add URL and initiate scraping');
+    } finally {
+      setIsAdding(false);
+    }
   };
   
   // Simulate refreshing a knowledge source
   // In a real app, this would trigger an API call to re-crawl the URL
-  const handleRefresh = (id: number) => {
-    // First, set status to processing
-    setKnowledgeSources(prevSources => 
-      prevSources.map(source => 
-        source.id === id 
-          ? {
-              ...source,
-              lastUpdate: new Date().toLocaleString('sv-SE', { 
-                timeZone: 'UTC',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-              }).replace('T', ' '),
-              result: 'Pending',
-              status: 'Processing'
-            }
-          : source
-      )
-    );
+  const handleRefresh = async (id: string) => {
+    // For now, just reload all data - in future could implement specific refresh endpoint
+    toast.info('Refreshing URL...');
+    await loadKnowledgeSources();
+  };
+  
+  // Delete a knowledge source
+  const handleDelete = async (id: string) => {
+    if (!organization?.id) {
+      toast.error('No organization selected');
+      return;
+    }
     
-    // Simulate processing time with random result
-    setTimeout(() => {
-      setKnowledgeSources(prevSources => 
-        prevSources.map(source => 
-          source.id === id 
-            ? {
-                ...source,
-                result: Math.random() > 0.2 ? 'Success' : 'Failed',
-                status: Math.random() > 0.2 ? 'Active' : 'Error'
-              }
-            : source
-        )
-      );
-    }, 2000);
+    try {
+      await deleteOrganizationUrl(id, organization.id);
+      toast.success('URL deleted successfully');
+      
+      // Remove from local state immediately
+      setKnowledgeSources(knowledgeSources.filter(source => source.id !== id));
+    } catch (error) {
+      console.error('Error deleting URL:', error);
+      toast.error('Failed to delete URL');
+    }
   };
   
-  // Delete a knowledge source by filtering it out of the array
-  const handleDelete = (id: number) => {
-    setKnowledgeSources(knowledgeSources.filter(source => source.id !== id));
+  // Handle search functionality
+  const handleSearch = async (query: string) => {
+    if (!organization?.id) return;
+    
+    try {
+      if (query.trim()) {
+        const response = await searchOrganizationUrls(organization.id, query);
+        
+                  // Transform search results
+          const transformedData = response.data.map((item: any) => ({
+            id: item.id,
+            url: item.url,
+            lastModified: new Date(item.lastModified).toLocaleString('sv-SE', { 
+              timeZone: 'UTC',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace('T', ' '),
+            result: item.result || 'Pending',
+            status: item.status || 'Processing',
+            error: item.error,
+            contentLength: item.contentLength,
+            title: item.title,
+            blobPath: item.blobPath,
+            addedBy: item.addedBy
+          }));
+        
+        setKnowledgeSources(transformedData);
+      } else {
+        // If search is cleared, reload all data
+        await loadKnowledgeSources();
+      }
+    } catch (error) {
+      console.error('Error searching URLs:', error);
+      toast.error('Failed to search URLs');
+    }
   };
   
-  // Filter knowledge sources based on search query and selected status
+  // Update search query and trigger search
+  const updateSearchQuery = (query: string) => {
+    setSearchQuery(query);
+    handleSearch(query);
+  };
+  
+  // Filter knowledge sources based on selected status
   // This enables real-time filtering without API calls
   const filteredSources = knowledgeSources.filter(source => {
-    const matchesSearch = source.url.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || source.status === selectedStatus;
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
   
   // Get appropriate icon and styling based on result status
@@ -204,18 +290,113 @@ const KnowledgeSources: React.FC = () => {
     }
   };
 
+  // Start editing a URL
+  const handleStartEdit = (source: KnowledgeSource) => {
+    setEditingId(source.id);
+    setEditingUrl(source.url);
+    setEditingError('');
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingUrl('');
+    setEditingError('');
+  };
+
+  // Handle editing URL input changes
+  const handleEditingUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setEditingUrl(url);
+    
+    if (url && !validateUrl(url)) {
+      setEditingError('Please enter a valid URL (must start with http:// or https://)');
+    } else {
+      setEditingError('');
+    }
+  };
+
+  // Save edited URL
+  const handleSaveEdit = async () => {
+    if (!editingUrl.trim()) {
+      setEditingError('URL is required');
+      return;
+    }
+    
+    if (!validateUrl(editingUrl)) {
+      setEditingError('Please enter a valid URL');
+      return;
+    }
+    
+    if (!organization?.id || !editingId) {
+      toast.error('Missing required information');
+      return;
+    }
+    
+    // Check if URL already exists (excluding the current one being edited)
+    const urlExists = knowledgeSources.some(source => 
+      source.url === editingUrl && source.id !== editingId
+    );
+    if (urlExists) {
+      setEditingError('This URL is already in your knowledge sources');
+      return;
+    }
+    
+    try {
+      setIsUpdating(true);
+      await updateOrganizationUrl(editingId, organization.id, editingUrl);
+      
+      toast.success('URL updated successfully');
+      
+      // Update local state
+      setKnowledgeSources(knowledgeSources.map(source => 
+        source.id === editingId 
+          ? { ...source, url: editingUrl, lastModified: new Date().toLocaleString('sv-SE', { 
+              timeZone: 'UTC',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }).replace('T', ' ') }
+          : source
+      ));
+      
+      // Clear editing state
+      handleCancelEdit();
+    } catch (error) {
+      console.error('Error updating URL:', error);
+      toast.error('Failed to update URL');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  if (!organization) {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={styles.emptyState}>
+          Please select an organization to manage knowledge sources.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.pageContainer}>
+      <ToastContainer position="top-right" autoClose={3000} />
+      
         {/* Add URL Section */}
         <div className={styles.addUrlSection}>
           <div className={styles.inputContainer}>
             <div className={styles.inputWrapper}>
               <input
                 type="url"
-                placeholder="Enter website URL (e.g., https://example.com)"
+                placeholder="Enter website URL to scrape (e.g., https://example.com)"
                 value={newUrl}
                 onChange={handleUrlChange}
                 className={`${styles.urlInput} ${urlError ? styles.inputError : ''}`}
+                disabled={isAdding}
               />
               {newUrl && (
                 <button
@@ -226,6 +407,7 @@ const KnowledgeSources: React.FC = () => {
                     setUrlError('');
                   }}
                   title="Clear URL"
+                  disabled={isAdding}
                 >
                   <X size={16} />
                 </button>
@@ -237,11 +419,11 @@ const KnowledgeSources: React.FC = () => {
           </div>
           <button
             onClick={handleAddUrl}
-            disabled={!newUrl.trim() || !!urlError}
+            disabled={!newUrl.trim() || !!urlError || isAdding}
             className={styles.addButton}
           >
             <Plus size={18} />
-            <span>Add URL</span>
+            <span>{isAdding ? 'Adding...' : 'Add URL'}</span>
           </button>
         </div>
         
@@ -256,14 +438,14 @@ const KnowledgeSources: React.FC = () => {
               type="text"
               placeholder="Search knowledge sources..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => updateSearchQuery(e.target.value)}
               className={styles.searchInput}
             />
             {searchQuery && (
               <button
                 type="button"
                 className={styles.clearSearchButton}
-                onClick={() => setSearchQuery('')}
+                onClick={() => updateSearchQuery('')}
                 title="Clear search"
               >
                 <X size={16} />
@@ -315,9 +497,13 @@ const KnowledgeSources: React.FC = () => {
           
           {/* Cards Container */}
           <div className={styles.cardsContainer}>
-            {filteredSources.length === 0 ? (
+            {isLoading ? (
               <div className={styles.emptyState}>
-                No knowledge sources found. Add your first URL above to get started.
+                Loading knowledge sources...
+              </div>
+            ) : filteredSources.length === 0 ? (
+              <div className={styles.emptyState}>
+                {searchQuery ? 'No knowledge sources found matching your search.' : 'No knowledge sources found. Add your first URL above to get started.'}
               </div>
             ) : (
               filteredSources.map((source, index) => {
@@ -328,22 +514,65 @@ const KnowledgeSources: React.FC = () => {
                   <div key={source.id} className={styles.card}>
                     <div className={styles.cardContent}>
                       <div className={styles.cardLeft}>
-                        <div className={styles.cardUrl} title={source.url}>
-                          {source.url}
-                        </div>
-                        <div className={styles.cardDetails}>
-                          <div className={styles.cardStatus}>
-                            <div className={`${styles.statusIcon} ${statusInfo.bgColor}`}>
-                              <StatusIcon size={14} />
+                        {editingId === source.id ? (
+                          <div className={styles.editForm}>
+                            <div className={styles.editInputWrapper}>
+                              <input
+                                type="url"
+                                value={editingUrl}
+                                onChange={handleEditingUrlChange}
+                                className={`${styles.editInput} ${editingError ? styles.inputError : ''}`}
+                                placeholder="Enter URL"
+                                disabled={isUpdating}
+                                autoFocus
+                              />
+                              {editingError && (
+                                <p className={styles.errorText}>{editingError}</p>
+                              )}
                             </div>
-                            <span className={`${styles.statusText} ${statusInfo.color}`}>
-                              {source.result}
-                            </span>
+                            <div className={styles.editActions}>
+                              <button
+                                onClick={handleSaveEdit}
+                                disabled={!editingUrl.trim() || !!editingError || isUpdating}
+                                className={styles.saveButton}
+                              >
+                                {/* // TODO:Save and Re-Scrape*/}
+                                {isUpdating ? 'Saving...' : 'Save'} 
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                disabled={isUpdating}
+                                className={styles.cancelButton}
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                          <div className={styles.cardDate}>
-                            {source.lastUpdate}
-                          </div>
-                        </div>
+                        ) : (
+                          <>
+                            <div className={styles.cardUrl} title={source.url}>
+                              {source.url}
+                            </div>
+                            <div className={styles.cardDetails}>
+                              <div className={styles.cardStatus}>
+                                <div className={`${styles.statusIcon} ${statusInfo.bgColor}`}>
+                                  <StatusIcon size={14} />
+                                </div>
+                                <span className={`${styles.statusText} ${statusInfo.color}`}>
+                                  {source.result}
+                                </span>
+                              </div>
+                              <div className={styles.cardDate}>
+                                {source.lastModified}
+                              </div>
+                              {source.addedBy && (
+                                <div className={styles.cardAddedBy}>
+                                  Added by: {source.addedBy.userName || 'Unknown User'}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                       
                       <div className={styles.cardActions}>
@@ -351,12 +580,15 @@ const KnowledgeSources: React.FC = () => {
                           onClick={() => handleRefresh(source.id)}
                           className={styles.actionButton}
                           title="Refresh source"
+                          disabled={editingId === source.id}
                         >
                           <RefreshCw size={16} />
                         </button>
                         <button 
+                          onClick={() => handleStartEdit(source)}
                           className={styles.actionButton}
                           title="Edit source"
+                          disabled={editingId !== null}
                         >
                           <Edit size={16} />
                         </button>
@@ -364,6 +596,7 @@ const KnowledgeSources: React.FC = () => {
                           onClick={() => handleDelete(source.id)}
                           className={`${styles.actionButton} ${styles.deleteButton}`}
                           title="Delete source"
+                          disabled={editingId === source.id}
                         >
                           <Trash2 size={16} />
                         </button>

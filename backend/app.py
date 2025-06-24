@@ -58,6 +58,9 @@ from utils import (
     get_conversations,
     get_conversation,
     delete_conversation,
+    get_organization_urls,
+    add_organization_url,
+    validate_url,
 )
 import stripe.error
 from bs4 import BeautifulSoup
@@ -3984,11 +3987,11 @@ def get_password_reset_url():
     return jsonify({"resetUrl": url})
 
 
-@app.route("/api/scrape-urls", methods=["POST"])
+@app.route("/api/webscraping/scrape-urls", methods=["POST"])
 def scrape_urls():
     """
     Endpoint to scrape URLs using the external web scraping service.
-    Expects a JSON payload with a 'urls' array.
+    Expects a JSON payload with a 'urls' array and optionally 'organization_id'.
     """
     try:
         # Get JSON data from request
@@ -3998,6 +4001,8 @@ def scrape_urls():
         
         # Validate required fields
         urls = data.get("urls", [])
+        organization_id = data.get("organization_id")  # Optional for backwards compatibility
+        
         if not urls or not isinstance(urls, list):
             return create_error_response("URLs must be provided as a list", 400)
         
@@ -4028,6 +4033,36 @@ def scrape_urls():
             logger.error("Invalid JSON response from scraping service")
             return create_error_response("Invalid response from scraping service", 502)
         
+        # If organization_id is provided, save the scraped URLs to the database
+        if organization_id and scraping_result.get("results"):
+            logger.info(f"Saving scraped URLs to organization {organization_id}")
+            
+            # Extract user information from request headers
+            added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+            added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+            
+            # Create a mapping of URLs to blob storage results for easy lookup
+            blob_storage_results = scraping_result.get("blob_storage_results", [])
+            blob_mapping = {blob_result["url"]: blob_result for blob_result in blob_storage_results}
+            
+            for url_result in scraping_result["results"]:
+                try:
+                    # Get the corresponding blob storage result for this URL
+                    blob_result = blob_mapping.get(url_result["url"], {})
+                    
+                    # Combine scraping result with blob storage information
+                    combined_result = {
+                        **url_result,
+                        "blob_path": blob_result.get("blob_path")
+                    }
+                    
+                    # Add each URL to the organization's knowledge sources
+                    add_organization_url(organization_id, url_result["url"], combined_result, added_by_id, added_by_name)
+                    logger.info(f"Added URL {url_result['url']} to organization {organization_id} by {added_by_name or 'Unknown'}")
+                except Exception as e:
+                    logger.error(f"Failed to save URL {url_result['url']} to database: {str(e)}")
+                    # Continue with other URLs even if one fails
+        
         logger.info(f"Successfully scraped {len(urls)} URLs")
         return create_success_response({
             "message": f"Successfully scraped {len(urls)} URL(s)",
@@ -4046,8 +4081,50 @@ def scrape_urls():
         return create_error_response("Internal Server Error", 500)
 
 
+@app.route("/api/webscraping/get-urls", methods=["GET"])
+def get_organization_urls_endpoint():
+    try:
+        organization_id = request.args.get("organization_id")
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        urls = get_organization_urls(organization_id)
+        return create_success_response(urls, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_organization_urls: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/webscraping/add-url", methods=["POST"])
+def add_organization_url_endpoint():
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+        
+        organization_id = data.get("organization_id")
+        url = data.get("url")
+        
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        if not url:
+            return create_error_response("URL is required", 400)
+            
+        # Validate URL format
+        is_valid, error_msg = validate_url(url)
+        if not is_valid:
+            return create_error_response(f"Invalid URL: {error_msg}", 400)
+        
+        # Extract user information from request headers
+        added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+        
+        result = add_organization_url(organization_id, url, None, added_by_id, added_by_name)
+        return create_success_response(result, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in add_organization_url: {e}")
+        return create_error_response("Internal Server Error", 500)
+
 @app.route("/api/webscraping/delete-url", methods=["DELETE"])
-def delete_url_by_id():
+def delete_url_endpoint():
     try:
         url_id = request.args.get("url_id")
         organization_id = request.args.get("organization_id")
