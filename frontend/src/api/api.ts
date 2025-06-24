@@ -1087,14 +1087,29 @@ export async function getCompanyData() {
     }
 }
 
-export async function scrapeUrls(urls: string[]): Promise<any> {
+export async function scrapeUrls(urls: string[], organizationId?: string, user?: any): Promise<any> {
     try {
-        const response = await fetch("/api/scrape-urls", {
+        const payload: any = { urls };
+        
+        // Include organization_id if provided to save URLs to database
+        if (organizationId) {
+            payload.organization_id = organizationId;
+        }
+        
+        const headers: any = {
+            "Content-Type": "application/json",
+        };
+        
+        // Add user authentication headers if user is provided
+        if (user) {
+            headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
+            headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
+        }
+        
+        const response = await fetch("/api/webscraping/scrape-urls", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ urls })
+            headers,
+            body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
@@ -1107,6 +1122,176 @@ export async function scrapeUrls(urls: string[]): Promise<any> {
         return result;
     } catch (error) {
         console.error("Error scraping URLs:", error);
+        throw error;
+    }
+}
+
+// Knowledge Sources API functions
+export async function getOrganizationUrls(organizationId: string): Promise<any> {
+    try {
+        const response = await fetch(`/api/webscraping/get-urls?organization_id=${encodeURIComponent(organizationId)}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error("Error fetching organization URLs:", error);
+        throw error;
+    }
+}
+
+export async function addOrganizationUrl(organizationId: string, url: string, user?: any): Promise<any> {
+    try {
+        const headers: any = {
+            "Content-Type": "application/json",
+        };
+        
+        // Add user authentication headers if user is provided
+        if (user) {
+            headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
+            headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
+        }
+        
+        const response = await fetch("/api/webscraping/add-url", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+                organization_id: organizationId,
+                url: url
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error("Error adding organization URL:", error);
+        throw error;
+    }
+}
+
+export async function deleteOrganizationUrl(urlId: string, organizationId: string): Promise<any> {
+    try {
+        const response = await fetch(`/api/webscraping/delete-url?url_id=${encodeURIComponent(urlId)}&organization_id=${encodeURIComponent(organizationId)}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error("Error deleting organization URL:", error);
+        throw error;
+    }
+}
+
+export async function updateOrganizationUrl(urlId: string, organizationId: string, newUrl: string): Promise<any> {
+    try {
+        const response = await fetch("/api/webscraping/modify-url", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                url_id: urlId,
+                organization_id: organizationId,
+                new_url: newUrl
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error("Error updating organization URL:", error);
+        throw error;
+    }
+}
+
+export async function searchOrganizationUrls(organizationId: string, searchTerm: string): Promise<any> {
+    try {
+        const response = await fetch(`/api/webscraping/search-urls?organization_id=${encodeURIComponent(organizationId)}&search_term=${encodeURIComponent(searchTerm)}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error("Error searching organization URLs:", error);
+        throw error;
+    }
+}
+
+export interface ConversationExportResponse {
+    success: boolean;
+    share_url: string;
+    filename: string;
+    format: string;
+    message_count: number;
+    export_date: string;
+}
+
+export async function exportConversation(conversationId: string, userId: string, format: string = "html"): Promise<ConversationExportResponse> {
+    try {
+        const requestBody = {
+            id: conversationId,
+            user_id: userId,
+            format: format
+        };
+        
+        console.log("Exporting conversation with payload:", requestBody);
+        
+        const response = await fetch("/api/conversations/export", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+        }
+
+        const result: ConversationExportResponse = await response.json();
+        
+        console.log("Export response from server:", result);
+        
+        if (!result.success) {
+            throw new Error("Export failed: Server returned unsuccessful response");
+        }
+
+        return result;
+    } catch (error) {
+        console.error("Error exporting conversation:", error);
         throw error;
     }
 }

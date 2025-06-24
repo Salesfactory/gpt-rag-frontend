@@ -65,10 +65,13 @@ export function parseAnswerToHtml(
     if (showSources) {
         const parts = answer.split(/\[\[([^\]]+)\]\]\(([^)]+)\)/gm);
 
+        // Move citationPaths to this scope so it's accessible below
+        const citationPaths: Record<string, string> = {};
+
         const fragments = parts.map((part, index) => {
             if (index % 3 === 0) {
                 return part;
-            } else if (index % 3 == 2){
+            } else if (index % 3 == 2) {
                 // Check if the part string contains multiple citations
                 const citationParts = part.split(/,\s*/);
 
@@ -81,7 +84,11 @@ export function parseAnswerToHtml(
                         citationIndex = citations.length;
                     }
 
-                    const path = getCitationFilePath(citationPart);
+                    if (!citationPaths[citationPart]) {
+                        citationPaths[citationPart] = getCitationFilePath(citationPart);
+                    }
+                    const path = citationPaths[citationPart];
+
                     return {
                         index: citationIndex,
                         part: citationPart,
@@ -110,19 +117,22 @@ export function parseAnswerToHtml(
 
         for (let i = 0; i < citations.length; i++) {
             const citation = citations[i];
-            answerHtml = answerHtml.replace(new RegExp(`\\[${i + 1}\\]`, "g"), renderToStaticMarkup(
-                <>
-                    <a
-                        key={`citation-${i+1}`}
-                        className="supContainer"
-                        title={citation}
-                        onClick={() => onCitationClicked(citation, citation)}
-                        tabIndex={0}
-                    >
-                        <sup>{i+1}</sup>
-                    </a>
-                </>
-            ));
+            answerHtml = answerHtml.replace(
+                new RegExp(`\\[${i + 1}\\]`, "g"),
+                renderToStaticMarkup(
+                    <>
+                        <a
+                            key={`citation-${i + 1}`}
+                            className="supContainer"
+                            title={citation}
+                            onClick={() => onCitationClicked(citation, citationPaths[citation])}
+                            tabIndex={0}
+                        >
+                            <sup>{i + 1}</sup>
+                        </a>
+                    </>
+                )
+            );
         }
         answerHtml = answerHtml.split("Sources:")[0];
     } else {

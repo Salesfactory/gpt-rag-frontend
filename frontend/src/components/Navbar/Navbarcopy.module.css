@@ -267,3 +267,46 @@
 .rotate {
     transform: rotate(180deg);
 }
+
+/* ChatGPT-style Share Button */
+.shareButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: transparent;
+    color: #374151;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.shareButton:hover:not(:disabled) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.shareButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #6b7280;
+}
+
+.shareButton span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Responsive - hide text on smaller screens */
+@media (max-width: 768px) {
+    .shareButton span {
+        display: none;
+    }
+    
+    .shareButton {
+        padding: 8px;
+    }
+}

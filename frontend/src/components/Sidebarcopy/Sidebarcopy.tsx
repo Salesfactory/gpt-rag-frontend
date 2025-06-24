@@ -9,6 +9,8 @@ import SidebarItem from "./SidebarItemcopy";
 import { useAppContext } from "../../providers/AppProviders";
 import { SidebarSection } from "./SidebarSectionTypescopy";
 import { SidebarItem as SidebarItemType, Role, SubscriptionTier } from "./SidebarItemTypescopy";
+import newSFLogo from "../../img/NewSFLogo.png";
+
 interface SidebarProps {
     isCollapsed: boolean;
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
@@ -97,6 +99,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {
                             title: "Workspace Governance",
                             href: "/organization",
+                            tiers: [
+                                "Basic",
+                                "Custom",
+                                "Premium",
+                                "Basic + Financial Assistant",
+                                "Custom + Financial Assistant",
+                                "Premium + Financial Assistant"
+                            ],
+                            roles: ["admin", "platformAdmin"]
+                        },
+                        {
+                            title: "Knowledge Sources",
+                            href: "/knowledge-sources",
                             tiers: [
                                 "Basic",
                                 "Custom",
@@ -243,7 +258,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             <div>
                 <div className={`d-flex align-items-center justify-content-between ${styles.brandLogo}`}>
                     <Link to="/">
-                        <img src={salesLogo} alt="Sales Factory logo" className={styles.brandLogoImg} />
+                        <img src={newSFLogo} alt="Sales Factory logo" className={styles.brandLogoImg} />
                     </Link>
                     <button
                         onClick={handleOnClickCloseSideBar}

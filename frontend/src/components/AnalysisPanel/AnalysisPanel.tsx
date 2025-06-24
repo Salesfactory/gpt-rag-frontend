@@ -130,9 +130,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
             .replace(/\s*#\s*/g, "<hr /><br />");
         formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
     }
-    console.log("formattedThoughts", formattedThoughts);
     const thoughtItems = parseFormattedThoughts(formattedThoughts);
-    console.log("texto formateado mi funcion para imprimirlo: ", thoughtItems);
     return (
         <>
             <Pivot

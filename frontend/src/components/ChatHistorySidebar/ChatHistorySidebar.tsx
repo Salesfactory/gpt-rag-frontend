@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import styles from "./ChatHistorySidebar.module.css";
-import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } from "../../api";
+import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation, exportConversation } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Trash2, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Check, X, ChevronDown, ChevronUp, Upload, ExternalLink, Copy } from "lucide-react";
 
 interface ChatHistorySidebarProps {
     onClose: () => void;
@@ -21,6 +21,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
     const [confirmationDelete, setConfirmationDelete] = useState<string | null>(null);
     const [conversationsIds, setConversationsIds] = useState<String[]>([]);
     const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0, 1, 2, 3]));
+    const [exportingConversations, setExportingConversations] = useState<Set<string>>(new Set());
 
     const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -174,6 +175,92 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
         }
     };
 
+    const handleExportConversation = async (conversationId: string) => {
+        if (!user) {
+            toast("Please log in to export conversations.", { type: "warning" });
+            return;
+        }
+
+        if (!user.id) {
+            toast("User information is incomplete.", { type: "warning" });
+            return;
+        }
+
+        // Add to exporting set
+        setExportingConversations(prev => new Set(prev).add(conversationId));
+
+        try {
+            const result = await exportConversation(conversationId, user.id);
+            
+            // Show success toast with copy and open options
+            const exportToast = (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div>Conversation exported successfully!</div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(result.share_url);
+                                toast("Link copied to clipboard!", { type: "success" });
+                            }}
+                            style={{
+                                padding: '4px 8px',
+                                background: '#0078d4',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            <Copy size={12} />
+                            Copy Link
+                        </button>
+                        <button
+                            onClick={() => {
+                                window.open(result.share_url, '_blank');
+                            }}
+                            style={{
+                                padding: '4px 8px',
+                                background: '#107c10',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            <ExternalLink size={12} />
+                            Open
+                        </button>
+                    </div>
+                </div>
+            );
+
+            toast(exportToast, { 
+                type: "success", 
+                autoClose: 8000,
+                closeOnClick: false
+            });
+
+        } catch (error) {
+            console.error("Error exporting conversation:", error);
+            toast("Failed to export conversation. Please try again.", { type: "error" });
+        } finally {
+            // Remove from exporting set
+            setExportingConversations(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(conversationId);
+                return newSet;
+            });
+        }
+    };
+
     const handleRefreshHistoial = async () => {
         if (refreshFetchHistory) {
             await fetchData();
@@ -256,7 +343,6 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                 </div>
 
                 <div className={styles.content}>
-                    <ToastContainer position="top-right" autoClose={3000} />
 
                     {isLoading && (
                         <div className={styles.loaderContainer}>
@@ -322,10 +408,20 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                                                         )}
                                                                     </>
                                                                 ) : (
-                                                                    <Trash2
-                                                                        className={styles.actionButton}
-                                                                        onClick={() => setConfirmationDelete(conversation.id)}
-                                                                    />
+                                                                    <>
+                                                                        {exportingConversations.has(conversation.id) ? (
+                                                                            <Spinner className={styles.actionSpinner} size={1} />
+                                                                        ) : (
+                                                                            <Upload
+                                                                                className={`${styles.actionButton} ${styles.exportButton}`}
+                                                                                onClick={() => handleExportConversation(conversation.id)}
+                                                                            />
+                                                                        )}
+                                                                        <Trash2
+                                                                            className={styles.actionButton}
+                                                                            onClick={() => setConfirmationDelete(conversation.id)}
+                                                                        />
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         )}

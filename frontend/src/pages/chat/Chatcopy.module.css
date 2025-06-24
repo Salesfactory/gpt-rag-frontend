@@ -303,4 +303,10 @@
 }
 .noMargin {
     margin-top: 0;
-    margin-bottom: 0; }
+    margin-bottom: 0;
+}
+
+
+.logoShiftLeft {
+    transform: translateX(-5px);
+}

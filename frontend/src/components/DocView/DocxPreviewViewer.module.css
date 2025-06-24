@@ -1,0 +1,100 @@
+.docxContainer {
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.docxContent {
+    flex: 1;
+    overflow: auto;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+
+.loadingOverlay,
+.errorOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.92);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    text-align: center;
+    z-index: 10;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 4px solid #ccc;
+    border-top: 4px solid #555;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loadingText,
+.errorText {
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+}
+
+.errorText {
+    color: #b00020;
+}
+
+.retryButton {
+    background-color: #b00020;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.retryButton:hover {
+    background-color: #d32f2f;
+}
+
+/* 📱 Responsive ajustes para móviles */
+@media (max-width: 600px) {
+
+    .loadingText,
+    .errorText {
+        font-size: 0.9rem;
+    }
+
+    .retryButton {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+
+    .docxContent {
+        padding: 0.25rem;
+    }
+
+    .spinner {
+        width: 24px;
+        height: 24px;
+        border-width: 3px;
+    }
+}

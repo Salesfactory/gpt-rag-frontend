@@ -58,6 +58,9 @@ from utils import (
     get_conversations,
     get_conversation,
     delete_conversation,
+    get_organization_urls,
+    add_organization_url,
+    validate_url,
 )
 import stripe.error
 from bs4 import BeautifulSoup
@@ -815,6 +818,78 @@ def deleteChatConversation(chat_id):
             return jsonify({"error": "Missing conversation ID"}), 400
     except Exception as e:
         logging.exception("[webbackend] exception in /delete-chat-conversation")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/conversations/export", methods=["POST"])
+def exportConversation():
+    """
+    Export a conversation by calling the orchestrator endpoint with proper authentication.
+    
+    Expected JSON payload:
+    {
+        "id": "conversation_id",
+        "user_id": "user_id",
+        "format": "html" #default is html
+    }
+    """
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    
+    if not client_principal_id:
+        return jsonify({"error": "Missing client principal ID"}), 400
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing request data"}), 400
+        
+        conversation_id = data.get("id")
+        user_id = data.get("user_id")
+        format = data.get("format", "html")
+
+        if not conversation_id or not user_id:
+            return jsonify({"error": "Missing conversation ID or user ID"}), 400
+        
+        # Get the function key from Azure Key Vault
+        try:
+            keySecretName = "orchestrator-host--functionKey"  
+            functionKey = get_azure_key_vault_secret(keySecretName)
+            if not functionKey:
+                raise ValueError(f"Function key {keySecretName} is empty")
+        except Exception as e:
+            logging.exception("[webbackend] exception getting orchestrator function key")
+            return jsonify({
+                "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
+            }), 500
+        
+        # Prepare the payload for the orchestrator
+        payload = json.dumps({
+            "id": conversation_id,
+            "user_id": user_id,
+            "format": format
+        })
+        
+        # Set up headers with the function key
+        headers = {
+            "Content-Type": "application/json",
+            "x-functions-key": functionKey
+        }
+        
+        # Call the orchestrator export endpoint
+        orchestrator_export_url = ORCHESTRATOR_URI + "/api/conversations"
+        response = requests.post(orchestrator_export_url, headers=headers, data=payload)
+        
+        logging.info(f"[webbackend] Export response status: {response.status_code}")
+        
+        if response.status_code != 200:
+            logging.error(f"[webbackend] Error from orchestrator: {response.text}")
+            return jsonify({"error": "Error contacting orchestrator for export"}), response.status_code
+        
+        # Return the response from the orchestrator
+        return response.json(), 200
+        
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/conversations/export")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1869,7 +1944,7 @@ def sendEmail():
         <div class="container">
             <h1>Dear [Recipient's Name],</h1>
             <h2>Congratulations and Welcome to FreddAid!</h2>
-            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It’s time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
+            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
             <h2>Ready to Get Started?</h2>
             <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
             <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
@@ -3872,10 +3947,11 @@ def delete_source_document():
         if not blob_name:
             return create_error_response("Blob name is required", 400)
         
-        # Make sure blob_name starts with organization_files/ for security
-        if not blob_name.startswith("organization_files/"):
-            return create_error_response("Invalid blob path. Path must start with 'organization_files/'", 400)
-        
+        # # Make sure blob_name starts with organization_files/ for security
+        # if not blob_name.startswith("organization_files/"):
+        #     return create_error_response("Invalid blob path. Path must start with 'organization_files/'", 400)
+        # NOTE: commented out to allow deletion of results from web scraping folder as well
+
         # Initialize blob storage manager and delete blob
         blob_storage_manager = BlobStorageManager()
         container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
@@ -3911,11 +3987,11 @@ def get_password_reset_url():
     return jsonify({"resetUrl": url})
 
 
-@app.route("/api/scrape-urls", methods=["POST"])
+@app.route("/api/webscraping/scrape-urls", methods=["POST"])
 def scrape_urls():
     """
     Endpoint to scrape URLs using the external web scraping service.
-    Expects a JSON payload with a 'urls' array.
+    Expects a JSON payload with a 'urls' array and optionally 'organization_id'.
     """
     try:
         # Get JSON data from request
@@ -3925,6 +4001,8 @@ def scrape_urls():
         
         # Validate required fields
         urls = data.get("urls", [])
+        organization_id = data.get("organization_id")  # Optional for backwards compatibility
+        
         if not urls or not isinstance(urls, list):
             return create_error_response("URLs must be provided as a list", 400)
         
@@ -3955,6 +4033,36 @@ def scrape_urls():
             logger.error("Invalid JSON response from scraping service")
             return create_error_response("Invalid response from scraping service", 502)
         
+        # If organization_id is provided, save the scraped URLs to the database
+        if organization_id and scraping_result.get("results"):
+            logger.info(f"Saving scraped URLs to organization {organization_id}")
+            
+            # Extract user information from request headers
+            added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+            added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+            
+            # Create a mapping of URLs to blob storage results for easy lookup
+            blob_storage_results = scraping_result.get("blob_storage_results", [])
+            blob_mapping = {blob_result["url"]: blob_result for blob_result in blob_storage_results}
+            
+            for url_result in scraping_result["results"]:
+                try:
+                    # Get the corresponding blob storage result for this URL
+                    blob_result = blob_mapping.get(url_result["url"], {})
+                    
+                    # Combine scraping result with blob storage information
+                    combined_result = {
+                        **url_result,
+                        "blob_path": blob_result.get("blob_path")
+                    }
+                    
+                    # Add each URL to the organization's knowledge sources
+                    add_organization_url(organization_id, url_result["url"], combined_result, added_by_id, added_by_name)
+                    logger.info(f"Added URL {url_result['url']} to organization {organization_id} by {added_by_name or 'Unknown'}")
+                except Exception as e:
+                    logger.error(f"Failed to save URL {url_result['url']} to database: {str(e)}")
+                    # Continue with other URLs even if one fails
+        
         logger.info(f"Successfully scraped {len(urls)} URLs")
         return create_success_response({
             "message": f"Successfully scraped {len(urls)} URL(s)",
@@ -3971,6 +4079,147 @@ def scrape_urls():
     except Exception as e:
         logger.exception(f"Unexpected error in scrape_urls: {e}")
         return create_error_response("Internal Server Error", 500)
+
+
+@app.route("/api/webscraping/get-urls", methods=["GET"])
+def get_organization_urls_endpoint():
+    try:
+        organization_id = request.args.get("organization_id")
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        urls = get_organization_urls(organization_id)
+        return create_success_response(urls, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_organization_urls: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/webscraping/add-url", methods=["POST"])
+def add_organization_url_endpoint():
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+        
+        organization_id = data.get("organization_id")
+        url = data.get("url")
+        
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        if not url:
+            return create_error_response("URL is required", 400)
+            
+        # Validate URL format
+        is_valid, error_msg = validate_url(url)
+        if not is_valid:
+            return create_error_response(f"Invalid URL: {error_msg}", 400)
+        
+        # Extract user information from request headers
+        added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+        
+        result = add_organization_url(organization_id, url, None, added_by_id, added_by_name)
+        return create_success_response(result, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in add_organization_url: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/webscraping/delete-url", methods=["DELETE"])
+def delete_url_endpoint():
+    try:
+        url_id = request.args.get("url_id")
+        organization_id = request.args.get("organization_id")
+        if not url_id:
+            return create_error_response("URL ID is required", 400)
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        delete_url_by_id(url_id, organization_id)
+        return create_success_response({"message": "URL deleted successfully"}, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in delete_url: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/webscraping/search-urls", methods=["GET"])
+def filter_urls():
+    try:
+        search_term = request.args.get("search_term")
+        organization_id = request.args.get("organization_id")
+        if not search_term:
+            return create_error_response("Search term is required", 400)
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        urls = search_urls(search_term, organization_id)
+        return create_success_response(urls, 200)
+    except Exception as e:
+        logger.exception(f"Unexpected error in search_urls: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
+@app.route("/api/webscraping/modify-url", methods=["PUT"])
+def update_url():
+    """
+    Update a URL for web scraping in an organization.
+    
+    Request Body:
+    {
+        "url_id": "string",
+        "organization_id": "string", 
+        "new_url": "string"
+    }
+    
+    Example Usage:
+    PUT /api/webscraping/modify-url
+    Content-Type: application/json
+    Authorization: Bearer <token>
+    
+    {
+        "url_id": "123e4567-e89b-12d3-a456-426614174000",
+        "organization_id": "org-456",
+        "new_url": "https://newexample.com"
+    }
+    
+    Returns:
+        JSON response with success message or error details
+    """
+    try:
+        # Parse and validate request body
+        data = request.get_json()
+        if not data:
+            return create_error_response("Invalid or missing JSON payload", 400)
+        
+        # Validate required fields
+        required_fields = ["url_id", "organization_id", "new_url"]
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return create_error_response(
+                f"Missing required fields: {', '.join(missing_fields)}", 
+                400
+            )
+        
+        url_id = data["url_id"]
+        organization_id = data["organization_id"] 
+        new_url = data["new_url"]
+        
+        # Validate data types and content
+        if not isinstance(new_url, str) or not new_url.strip():
+            return create_error_response("new_url must be a non-empty string", 400)
+        
+        # Validate URL format
+        is_valid, error_msg = validate_url(new_url)
+        if not is_valid:
+            return create_error_response(f"Invalid URL: {error_msg}", 400)
+        
+        
+        modify_url(url_id, organization_id, new_url)
+        return create_success_response({"message": "URL modified successfully"}, 200)
+        
+    except NotFound:
+        return create_error_response("URL not found", 404)
+    except CosmosHttpResponseError as e:
+        logger.exception(f"Database error in modify_url: {e}")
+        return create_error_response("Database error", 500)
+    except Exception as e:
+        logger.exception(f"Unexpected error in modify_url: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

@@ -13,6 +13,15 @@
     }
 }
 
+@media (max-width: 390px) {
+    .pageContainer {
+        width: 100%;
+        max-width: 100%;
+        padding: 20px 15px 10px 15px;
+        box-sizing: border-box;
+    }
+}
+
 /* Row Styles */
 .row {
     display: flex;
@@ -26,19 +35,13 @@
 }
 
 /* Title Styles */
-.title {
-    margin-bottom: 10px;
-    margin-left: 20px;
+.titleRecent {
+    font-size: 2rem;
+    font-weight: 500;
+    padding-bottom: 10px;
 }
 
-@media (max-width: 768px) {
-    .title {
-        margin-bottom: 10px;
-        margin-left: 0px;
-        font-size: 1rem;
-    }
-}
-
+/* Divider Styles */
 .divider {
     border-top: 1px solid rgb(206, 206, 206);
     margin-bottom: 10px;
@@ -64,19 +67,33 @@
     overflow: hidden;
 }
 
-.tableText {
+@media (max-width: 900px) {
+    .table {
+        font-size: 0.7em;
+    }
+}
+
+.thead {
+    font-size: 1.02rem;
+    border-radius: 0.5rem;
+    background-color: #16a34a;
+    color: white;
+}
+
+.tableText,
+.tableStatus {
     text-align: justify;
     font-size: 1rem;
     font-weight: 500;
     padding: 1rem 1.5rem;
 }
 
-.tableStatus{
-    text-align: justify;
-    font-size: 1rem;
-    font-weight: 500;
-    padding: 1rem 1.5rem;
-    text-transform: capitalize;
+@media (max-width: 900px) {
+
+    .tableText,
+    .tableStatus {
+        font-size: 0.7rem;
+    }
 }
 
 .tableTextView {
@@ -84,6 +101,12 @@
     font-size: 1rem;
     font-weight: 500;
     padding-left: 1.4rem;
+}
+
+@media (max-width: 900px) {
+    .tableTextView {
+        font-size: 0.7rem;
+    }
 }
 
 .tableSubscriptionInfo {
@@ -103,15 +126,36 @@
     justify-content: center;
 }
 
+@media (max-width: 900px) {
+    .iconCreditWrapper {
+        height: 1.5rem;
+        width: 1.5rem;
+    }
+}
+
 .tableCreditIcon {
     width: 1.5rem;
     height: 1.5rem;
     color: #43a047;
 }
 
+@media (max-width: 900px) {
+    .tableCreditIcon {
+        width: 0.7rem;
+        height: 0.7rem;
+    }
+}
+
 .tableViewIcon {
     width: 1.5rem;
     height: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .tableViewIcon {
+        width: 0.7rem;
+        height: 0.7rem;
+    }
 }
 
 .tableExpirationWrapper {
@@ -127,6 +171,12 @@
     padding-bottom: 0;
 }
 
+@media (max-width: 900px) {
+    .tableExpirationText {
+        font-size: 0.7rem;
+    }
+}
+
 .tableDaysText {
     font-size: 0.75rem;
     color: #16a34a;
@@ -135,398 +185,19 @@
 }
 
 @media (max-width: 900px) {
-    .table {
-        font-size: 0.7em;
-    }
-
-    .tableText {
-        font-size: 0.7rem;
-    }
-
-    .iconCreditWrapper {
-        height: 1.5rem;
-        width: 1.5rem;
-    }
-
-    .tableTextView {
-        font-size: 0.7rem;
-    }
-
-    .tableViewIcon {
-        width: 0.7rem;
-        height: 0.7rem;
-    }
-
-    .tableCreditIcon {
-        width: 0.7rem;
-        height: 0.7rem;
-    }
-
-    .tableExpirationText {
-        font-size: 0.7rem;
-    }
-
     .tableDaysText {
         font-size: 0.7rem;
     }
 }
 
-@media (max-width: 390px) {
-    .pageContainer {
-            width: 100%;
-            max-width: 100%;
-            padding: 20px 15px 10px 15px;
-            box-sizing: border-box;
-            
-        }
-}
-.thead {
-    font-size: 1.02rem;
-    border-radius: 0.5rem;
-    background-color: #16a34a;
-    color: white;
-}
-
-.tableName {
-    padding: 10px;
-}
-
+.tableName,
 .tableDate {
     padding: 10px;
 }
 
-.auditRow {
-    border-bottom: 1px solid #e9e9e9;
-}
+.tableBody {}
 
-.auditRow td {
-    padding: 10px;
-    vertical-align: middle;
-}
-
-/* Group Styles */
-.group {
-    margin-top: 2em;
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 3rem;
-}
-
-/* Financial Toggle Styles */
-
-.financialToggle {
-    cursor: pointer;
-    height: 1.25rem;
-    width: 2.25rem;
-    transform: scale(1.5);
-}
-
-.financialToggle[type="checkbox"] {
-    background-color: #d1d5db;
-    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(255,255,255,1)'/></svg>") !important;
-}
-
-.financialToggle[type="checkbox"]:checked {
-    background-color: #43a047;
-    border-color: #43a047;
-}
-
-.financialToggle[type="checkbox"]:focus {
-    outline: none;
-    box-shadow: 0 0 0 0.1rem #43a047;
-}
-/* Message Bar Styles */
-.messageBar {
-    font-size: 16px;
-    flex-grow: auto;
-}
-
-/* Button Styles */
-.button {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.375rem 0.75rem;
-    background-color: #16a34a;
-    color: white;
-    border-radius: 0.375rem;
-    transition: background-color 0.2s;
-    outline: none;
-    border: none;
-    gap: 0.5rem;
-}
-
-.button:hover {
-    padding: 0.375rem 0.75rem;
-    background-color: #15803d;
-    border: 2px solid rgb(32, 150, 75);
-}
-
-.button:active {
-    background-color: rgb(81, 209, 128);
-}
-
-/* Modal Styles */
-.modal {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 30em;
-    height: 15em;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 500;
-    padding: 100px;
-    background-color: rgb(255, 255, 255);
-    border: 1px solid #e3e3e3;
-    border-radius: 10px;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
-    gap: 30px;
-}
-
-@media (max-width: 1024px) {
-    .modal {
-        width: 20em;
-        padding: 50px;
-    }
-}
-
-/* Modal Audit Styles */
-.modalSubscriptionChange {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 30em;
-    height: 15em;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 500;
-    padding: 100px;
-    background-color: rgb(255, 255, 255);
-    border: 1px solid #87f083;
-    border-radius: 6px;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
-    gap: 30px;
-}
-
-.modalSubscriptionChangeText {
-    text-align: center;
-    font-weight: 400;
-}
-
-@media (max-width: 1024px) {
-    .modalAudit {
-        width: 100%;
-        flex-direction: column;
-        padding: 20px;
-    }
-}
-
-.modalAuditHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-
-/* Modal Subscription Styles */
-.modalSubscription {
-    position: absolute;
-    top: 60%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    height: auto;
-    display: flex;
-    flex-direction: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 500;
-    padding: 100px;
-    background-color: rgb(255, 255, 255);
-    border: 1px solid #e3e3e3;
-    border-radius: 0.5rem;
-    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
-    gap: 40px;
-}
-
-@media (max-width: 1024px) {
-    .modalSubscription {
-        width: 85%;
-        gap: 20px;
-        flex-direction: column;
-        padding: 50px;
-    }
-}
-
-/* Modal Title and Text Styles */
-.modalTitle {
-    text-align: center;
-}
-
-.modalText {
-    font-size: 1rem;
-    text-align: left;
-    font-weight: 400;
-    padding-bottom: 10px;
-}
-.titleRecent{
-    font-size: 2rem;
-    font-weight: 500;
-    padding-bottom: 10px;
-}
-/* Button Container Styles */
-.buttonContainer {
-    text-align: left;
-    border-collapse: collapse;
-    width: 100%;
-    justify-content: center;
-    display: flex;
-    gap: 40px;
-}
-
-/* Close Button Styles */
-.closeButton {
-    position: fixed;
-    top: 0;
-    right: 0px;
-    border: none;
-    font-size: 25px;
-    color: black;
-    background-color: transparent;
-    cursor: pointer;
-    transform: rotate(45deg);
-    margin-bottom: -5px;
-    padding-top: 6px;
-    transform: translate(-10%, 10%);
-}
-
-.closeButton:active {
-    background-color: rgba(214, 214, 214, 0.315);
-    border-radius: 5px;
-}
-
-/* Plan Styles */
-.plan {
-    border: 2px solid #16a34a;
-    border-radius: 8px;
-    padding: 20px;
-    width: 300px;
-    height: 300px;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
-    background: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-    align-items: center;
-}
-
-.activePlan {
-    border: 2px solid rgb(67, 228, 126);
-    border-radius: 8px;
-    padding: 20px;
-    width: 300px;
-    height: 300px;
-    box-shadow: 0px 8px 25px rgb(117, 233, 160), 0px 0px 25px rgb(81, 207, 128);
-    background: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-    align-items: center;
-}
-
-@media (max-width: 1024px) {
-    .plan,
-    .activePlan {
-        width: 200px;
-        height: 150px;
-        padding: 10px;
-    }
-}
-
-.planName {
-    margin: 0;
-    font-size: 1.5em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: 600;
-    color: #333;
-}
-
-.planPrice {
-    font-size: 1em;
-    color: #666;
-    margin: 20px 0;
-}
-
-@media (max-width: 1024px) {
-    .planPrice {
-        margin: 5px 0;
-        font-size: 0.7em;
-    }
-}
-
-.planButton {
-    background-color: #16a34a;
-    color: white;
-    border: 1px solid #16a34a;
-    padding: 12px 25px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.3s;
-}
-
-@media (max-width: 1024px) {
-    .planButton {
-        font-size: 0.6em;
-        height: 40px;
-    }
-}
-
-.planButton:hover {
-    background-color: #15803d;
-}
-
-.planButton:focus {
-    background-color: #15803d;
-}
-
-.planIcon {
-    margin: 10px 0;
-}
-
-@media (max-width: 1024px) {
-    .planIcon {
-        width: 0;
-        height: 0;
-    }
-}
-
-/* Audit Button Styles */
-.auditText {
-    text-align: center;
-    cursor: pointer;
-    color: #16a34a;
-    font-size: 1rem;
-}
-
-.auditIcon {
-    color: #16a34a;
-    height: 1.5rem;
-    width: 1.5rem;
-    padding-right: 5px;
-}
-
+/* Audit Styles */
 .auditButton {
     display: flex;
     padding: 5px 10px;
@@ -540,10 +211,41 @@
     margin-left: auto;
 }
 
-.auditBody {
-    height: auto;
-    gap: 10px;
+.auditIcon {
+    color: #16a34a;
+    height: 1.5rem;
+    width: 1.5rem;
+    padding-right: 5px;
 }
+
+.auditText {
+    text-align: center;
+    cursor: pointer;
+    color: #16a34a;
+    font-size: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .auditButton {
+        width: 30%;
+        height: 60%;
+    }
+
+    .auditText {
+        font-size: 0.8rem;
+    }
+}
+
+.auditRow {
+    border-bottom: 1px solid #e9e9e9;
+}
+
+.auditRow td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+.auditBody {}
 
 .auditFilter {
     margin-top: 20px;
@@ -552,6 +254,7 @@
     width: auto;
 }
 
+/* Modal Styles */
 .modalAudit {
     position: absolute;
     top: 60%;
@@ -575,36 +278,23 @@
 
 @media (max-width: 1024px) {
     .modalAudit {
-        top:50%;
+        top: 50%;
         width: 85%;
         flex-direction: column;
-    }
-
-    .auditButton {
-        width: 30%;
-        height: 60%;
-    }
-
-    .auditText {
-        font-size: 0.8rem;
+        padding: 20px;
     }
 }
-.modalAuditHeader {
+
+.modalHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
 }
 
+/* Addon Styles */
 .addonWrapper {
     padding: 1.5rem;
-}
-
-.addonTitle {
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: #1f2937;
-    margin-bottom: 1rem;
 }
 
 .addonCard {
@@ -675,36 +365,428 @@
     display: none;
 }
 
-.toggle {
-    position: relative;
+/* Toggle Styles */
+.financialToggle {
+    cursor: pointer;
+    height: 1.25rem;
+    width: 2.25rem;
+    transform: scale(1.5);
+}
+
+.financialToggle[type="checkbox"] {
+    background-color: #d1d5db;
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(255,255,255,1)'/></svg>") !important;
+}
+
+.financialToggle[type="checkbox"]:checked {
+    background-color: #43a047;
+    border-color: #43a047;
+}
+
+.financialToggle[type="checkbox"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.1rem #43a047;
+}
+
+/* Button Styles */
+.button {
     display: inline-flex;
-    height: 1.5rem;
-    width: 2.75rem;
     align-items: center;
-    border-radius: 9999px;
+    padding: 0.375rem 0.75rem;
+    background-color: #16a34a;
+    color: white;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+    outline: none;
+    border: none;
+    gap: 0.5rem;
+}
+
+.button:hover {
+    padding: 0.375rem 0.75rem;
+    background-color: #15803d;
+    border: 2px solid rgb(32, 150, 75);
+}
+
+.button:active {
+    background-color: rgb(81, 209, 128);
+}
+
+/* Modal Overlay & Container */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+}
+
+.modalContainer {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    max-width: 30rem;
+    width: 90%;
+    margin: 0 1rem;
+    border: 1px solid #e3e3e3;
+    position: relative;
+}
+
+@media (max-width: 1024px) {
+    .modalContainer {
+        max-width: 30rem;
+        width: 85%;
+    }
+}
+
+.modalContent {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .modalContent {
+        padding: 1.5rem;
+        gap: 1rem;
+    }
+}
+
+/* Modal Title and Text Styles */
+.modalTitle {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+.modalText {
+    font-size: 1rem;
+    text-align: left;
+    font-weight: 400;
+    padding-bottom: 10px;
+    color: rgba(75, 85, 99, 1);
+}
+
+/* Button Container Styles */
+.buttonContainerNew {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    width: 100%;
+}
+
+.cancelButton {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    border-radius: 0.375rem;
+    background-color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.cancelButton:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.5);
+}
+
+.confirmButton {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    color: white;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.confirmButton:focus {
+    outline: none;
+}
+
+.subscribeButton {
+    background-color: #16a34a;
+    border: 1px solid #16a34a;
+}
+
+.subscribeButton:hover {
+    background-color: #15803d;
+    border-color: #15803d;
+}
+
+.subscribeButton:focus {
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.5);
+}
+
+.unsubscribeButton {
+    background-color: #dc2626;
+    border: 1px solid #dc2626;
+}
+
+.unsubscribeButton:hover {
+    background-color: #b91c1c;
+    border-color: #b91c1c;
+}
+
+.unsubscribeButton:focus {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+}
+
+/* Close Button Styles */
+.closeButton {
+    position: fixed;
+    top: 0;
+    right: 0px;
+    border: none;
+    font-size: 25px;
+    color: black;
+    background-color: transparent;
+    cursor: pointer;
+    transform: rotate(45deg);
+    margin-bottom: -5px;
+    padding-top: 6px;
+    transform: translate(-10%, 10%);
+}
+
+.closeButton:active {
+    background-color: rgba(214, 214, 214, 0.315);
+    border-radius: 5px;
+}
+
+.closeButtonNew {
+    position: absolute;
+    right: 1rem;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    background-color: transparent;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    z-index: 10;
+}
+
+.closeButtonNew:hover {
+    color: #333;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.closeButtonNew:active {
+    background-color: rgba(214, 214, 214, 0.315);
+}
+
+/* Plan Styles */
+.plan {
+    border: 2px solid #16a34a;
+    border-radius: 8px;
+    padding: 20px;
+    width: 300px;
+    height: 300px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.14), 0px 0px 2px rgba(0, 0, 0, 0.12);
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    align-items: center;
+}
+
+.activePlan {
+    border: 2px solid rgb(67, 228, 126);
+    border-radius: 8px;
+    padding: 20px;
+    width: 300px;
+    height: 300px;
+    box-shadow: 0px 8px 25px rgb(117, 233, 160), 0px 0px 25px rgb(81, 207, 128);
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    align-items: center;
+}
+
+@media (max-width: 1024px) {
+
+    .plan,
+    .activePlan {
+        width: 200px;
+        height: 150px;
+        padding: 10px;
+    }
+}
+
+.planName {
+    margin: 0;
+    font-size: 1.5em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+    color: #333;
+}
+
+.planPrice {
+    font-size: 1em;
+    color: #666;
+    margin: 20px 0;
+}
+
+@media (max-width: 1024px) {
+    .planPrice {
+        margin: 5px 0;
+        font-size: 0.7em;
+    }
+}
+
+.planButton {
+    background-color: #16a34a;
+    color: white;
+    border: 1px solid #16a34a;
+    padding: 12px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
     transition: background-color 0.3s;
 }
 
-.toggleOn {
-    background-color: #16a34a;
+@media (max-width: 1024px) {
+    .planButton {
+        font-size: 0.6em;
+        height: 40px;
+    }
 }
 
-.toggleOff {
-    background-color: #e5e7eb;
+.planButton:hover {
+    background-color: #15803d;
 }
 
-.toggleThumb {
-    height: 1rem;
-    width: 1rem;
+.planButton:focus {
+    background-color: #15803d;
+}
+
+.planIcon {
+    margin: 10px 0;
+}
+
+@media (max-width: 1024px) {
+    .planIcon {
+        width: 0;
+        height: 0;
+    }
+}
+
+/* Modal Subscription Styles */
+.modalSubscription {
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    height: auto;
+    display: flex;
+    flex-direction: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+    padding: 100px;
+    background-color: rgb(255, 255, 255);
+    border: 1px solid #e3e3e3;
+    border-radius: 0.5rem;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 40px;
+}
+
+@media (max-width: 1024px) {
+    .modalSubscription {
+        width: 85%;
+        gap: 20px;
+        flex-direction: column;
+        padding: 50px;
+    }
+
+    .modalTitle {
+        font-size: 1rem;
+    }
+}
+
+/* Error Modal */
+.errorModal {
+    border-left: 4px solid #dc2626;
+}
+
+.errorModal .modalText {
+    color: #dc2626;
+    font-weight: 500;
+}
+
+/* Success Modal */
+.successModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+}
+
+.successModalContainer {
     background-color: white;
-    border-radius: 9999px;
-    transition: transform 0.3s;
+    border-radius: 0.5rem;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.07), 0px 2px 4px rgba(0, 0, 0, 0.05);
+    max-width: 24rem;
+    width: 90%;
+    margin: 0 1rem;
+    border: 1px solid #87f083;
 }
 
-.thumbOn {
-    transform: translateX(1.5rem);
+.successModalContent {
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.thumbOff {
-    transform: translateX(0.25rem); /* translate-x-1 */
+.successModalTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #16a34a;
+    margin: 0;
+}
+
+.successModalText {
+    color: #4b5563;
+    line-height: 1.5;
+    margin: 0;
+    font-weight: 400;
+}
+
+.confirmButton,
+.subscribeButton {
+    white-space: nowrap;
 }
