@@ -4014,13 +4014,22 @@ def scrape_urls():
         if len(urls) == 0:
             return create_error_response("At least one URL is required", 400)
         
+        # Extract user information from request headers
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
         
         # Prepare payload for external scraping service
-        payload = {"urls": urls}
+        payload = {
+            "urls": urls,
+            "client_principal_id": client_principal_id
+        }
         
         # Make request to external scraping service
+        WEB_SCRAPING_ENDPOINT = os.getenv("ORCHESTRATOR_URI") + "/api/scrape-pages"
+        if not WEB_SCRAPING_ENDPOINT:
+            return create_error_response("Scraping service endpoint is not set", 500)
         response = requests.post(
-            os.getenv("WEB_SCRAPING_ENDPOINT", ""), # this is subject to change soon. Leave it "" for prod for now.
+            WEB_SCRAPING_ENDPOINT,
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=120  
@@ -4042,9 +4051,9 @@ def scrape_urls():
         if organization_id and scraping_result.get("results"):
             logger.info(f"Saving scraped URLs to organization {organization_id}")
             
-            # Extract user information from request headers
-            added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-            added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+            # Use the user information already extracted earlier
+            added_by_id = client_principal_id
+            added_by_name = client_principal_name
             
             # Create a mapping of URLs to blob storage results for easy lookup
             blob_storage_results = scraping_result.get("blob_storage_results", [])
