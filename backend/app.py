@@ -300,12 +300,17 @@ def store_request_params_in_session(keys=None):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if keys is not None:
+                stored_params = []
                 for key in keys:
                     if key in request.args:
                         session[key] = request.args[key]
+                        stored_params.append(key)
                     elif key in request.form:
                         session[key] = request.form[key]
-                logger.info(f"Stored request parameters in session: {session}")
+                        stored_params.append(key)
+                # Only log the parameter names, not the session content
+                if stored_params:
+                    logger.info(f"Stored request parameters in session: {stored_params}")
             return f(*args, **kwargs)
         return decorated_function
     return decorator
