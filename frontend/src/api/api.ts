@@ -1106,7 +1106,7 @@ export async function scrapeUrls(urls: string[], organizationId?: string, user?:
             headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
         }
         
-        const response = await fetch("/api/scrape-urls", {
+        const response = await fetch("/api/webscraping/scrape-urls", {
             method: "POST",
             headers,
             body: JSON.stringify(payload)
