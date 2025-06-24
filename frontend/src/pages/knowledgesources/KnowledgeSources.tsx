@@ -179,12 +179,39 @@ const KnowledgeSources: React.FC = () => {
     }
   };
   
-  // Simulate refreshing a knowledge source
-  // In a real app, this would trigger an API call to re-crawl the URL
+  // Refresh a knowledge source by re-scraping its URL
   const handleRefresh = async (id: string) => {
-    // For now, just reload all data - in future could implement specific refresh endpoint
-    toast.info('Refreshing URL...');
-    await loadKnowledgeSources();
+    if (!organization?.id) {
+      toast.error('No organization selected');
+      return;
+    }
+
+    // Find the knowledge source to get its URL
+    const sourceToRefresh = knowledgeSources.find(source => source.id === id);
+    if (!sourceToRefresh) {
+      toast.error('Knowledge source not found');
+      return;
+    }
+
+    try {
+      // Update local state to show processing status immediately
+      setKnowledgeSources(knowledgeSources.map(source => 
+        source.id === id 
+          ? { ...source, status: 'Processing', result: 'Pending' }
+          : source
+      ));
+      
+      // Use existing scrapeUrls endpoint - backend should detect existing URL and update rather than create new
+      await scrapeUrls([sourceToRefresh.url], organization.id, user);
+      
+      // Reload the data to get the updated scraping results
+      await loadKnowledgeSources();
+    } catch (error) {
+      toast.error('Failed to refresh URL');
+      
+      // Reload data to restore original state if scraping failed
+      await loadKnowledgeSources();
+    }
   };
   
   // Delete a knowledge source

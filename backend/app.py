@@ -59,7 +59,7 @@ from utils import (
     get_conversation,
     delete_conversation,
     get_organization_urls,
-    add_organization_url,
+    add_or_update_organization_url,
     validate_url,
 )
 import stripe.error
@@ -4061,9 +4061,11 @@ def scrape_urls():
                         "blob_path": blob_result.get("blob_path")
                     }
                     
-                    # Add each URL to the organization's knowledge sources
-                    add_organization_url(organization_id, url_result["url"], combined_result, added_by_id, added_by_name)
-                    logger.info(f"Added URL {url_result['url']} to organization {organization_id} by {added_by_name or 'Unknown'}")
+                    # Add or update each URL in the organization's knowledge sources
+                    # This will update existing URLs instead of creating duplicates
+                    result = add_or_update_organization_url(organization_id, url_result["url"], combined_result, added_by_id, added_by_name)
+                    action = result.get("action", "processed")
+                    logger.info(f"{action.capitalize()} URL {url_result['url']} for organization {organization_id} by {added_by_name or 'Unknown'}")
                 except Exception as e:
                     logger.error(f"Failed to save URL {url_result['url']} to database: {str(e)}")
                     # Continue with other URLs even if one fails
@@ -4122,7 +4124,7 @@ def add_organization_url_endpoint():
         added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
         added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
         
-        result = add_organization_url(organization_id, url, None, added_by_id, added_by_name)
+        result = add_or_update_organization_url(organization_id, url, None, added_by_id, added_by_name)
         return create_success_response(result, 200)
     except Exception as e:
         logger.exception(f"Unexpected error in add_organization_url: {e}")
