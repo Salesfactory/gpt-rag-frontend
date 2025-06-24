@@ -1306,6 +1306,27 @@ def delete_url_by_id(url_id, organization_id):
 
     container = get_cosmos_container("OrganizationWebsites")
     try:
+        # get the blob path from the url document 
+        url_document = container.read_item(item = url_id, partition_key = organization_id)
+        blob_path = url_document.get("blobPath")
+
+        # delete the blob from storage if exists 
+        if blob_path: 
+            try:
+                from financial_doc_processor import BlobStorageManager
+                blob_storage_manager = BlobStorageManager()
+                container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+                blob_client = container_client.get_blob_client(blob_path)
+                
+                if blob_client.exists():
+                    blob_client.delete_blob()
+                    logging.info(f"[delete_url] Blob {blob_path} deleted successfully")
+                else:
+                    logging.warning(f"[delete_url] Blob {blob_path} not found in storage")
+            except Exception as blob_error:
+                logging.error(f"[delete_url] Error deleting blob {blob_path}: {str(blob_error)}")
+
+        # Delete the URL document from Cosmos DB
         container.delete_item(item=url_id, partition_key=organization_id)
         logging.info(f"[delete_url] URL {url_id} deleted successfully")
         return jsonify("Success")
