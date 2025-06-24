@@ -4,10 +4,10 @@ import styles from './KnowledgeSources.module.css';
 import { useAppContext } from '../../providers/AppProviders';
 import { 
   getOrganizationUrls, 
-  addOrganizationUrl, 
   deleteOrganizationUrl, 
   updateOrganizationUrl, 
-  searchOrganizationUrls 
+  searchOrganizationUrls,
+  scrapeUrls 
 } from '../../api';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -27,6 +27,7 @@ interface KnowledgeSource {
   error?: string;
   contentLength?: number;
   title?: string;
+  blobPath?: string;
   addedBy?: {
     userId: string;
     userName: string;
@@ -93,6 +94,7 @@ const KnowledgeSources: React.FC = () => {
           error: item.error,
           contentLength: item.contentLength,
           title: item.title,
+          blobPath: item.blobPath,
           addedBy: item.addedBy
         }));
       
@@ -129,8 +131,8 @@ const KnowledgeSources: React.FC = () => {
     }
   };
   
-  // Add new URL to the knowledge sources list
-  // Includes validation and duplicate checking
+  // Add new URL to the knowledge sources list with web scraping
+  // This will trigger web scraping and automatically save the results with blob links to Cosmos
   const handleAddUrl = async () => {
     if (!newUrl.trim()) {
       setUrlError('URL is required');
@@ -156,18 +158,22 @@ const KnowledgeSources: React.FC = () => {
     
     try {
       setIsAdding(true);
-      await addOrganizationUrl(organization.id, newUrl, user);
+      
+      // Use the scraping endpoint instead of the simple add URL endpoint
+      // This will automatically trigger web scraping and save results with blob links to Cosmos
+      await scrapeUrls([newUrl], organization.id, user);
       
       // Clear form and reload data
       setNewUrl('');
       setUrlError('');
       toast.success('URL added successfully');
       
-      // Reload the data to get the new entry
+      // Reload the data to get the new entry with scraping results
       await loadKnowledgeSources();
+      // TODO: differentiate between adding and scraping
     } catch (error) {
-      console.error('Error adding URL:', error);
-      toast.error('Failed to add URL');
+      console.error('Error adding and scraping URL:', error);
+      toast.error('Failed to add URL and initiate scraping');
     } finally {
       setIsAdding(false);
     }
@@ -225,6 +231,7 @@ const KnowledgeSources: React.FC = () => {
             error: item.error,
             contentLength: item.contentLength,
             title: item.title,
+            blobPath: item.blobPath,
             addedBy: item.addedBy
           }));
         
@@ -385,7 +392,7 @@ const KnowledgeSources: React.FC = () => {
             <div className={styles.inputWrapper}>
               <input
                 type="url"
-                placeholder="Enter website URL (e.g., https://example.com)"
+                placeholder="Enter website URL to scrape (e.g., https://example.com)"
                 value={newUrl}
                 onChange={handleUrlChange}
                 className={`${styles.urlInput} ${urlError ? styles.inputError : ''}`}
