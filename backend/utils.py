@@ -1500,45 +1500,120 @@ def get_organization_urls(organization_id):
         logging.error(f"[get_organization_urls] get_organization_urls: something went wrong. {str(e)}")
         return []
 
-# add a new url to the container OrganizationWebsites
-def add_organization_url(organization_id, url, scraping_result=None, added_by_id=None, added_by_name=None):
-    if not organization_id or not url:
-        return {"error": "Organization ID and URL are required."}
+# Helper function to find existing URL for an organization
+def find_existing_url(organization_id, url):
+    """
+    Check if a URL already exists for the given organization.
     
-    logging.info(f"[add_organization_url] Adding URL: {url} to organization: {organization_id} by user: {added_by_name or 'Unknown'}")
+    Args:
+        organization_id (str): The organization ID
+        url (str): The URL to check
+        
+    Returns:
+        dict or None: The existing document if found, None otherwise
+    """
+    if not organization_id or not url:
+        return None
     
     try:
         container = get_cosmos_container("OrganizationWebsites")
         
-        # Generate a unique ID for the URL entry
-        url_id = str(uuid.uuid4())
+        query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.url = @url"
+        parameters = [
+            {"name": "@organization_id", "value": organization_id},
+            {"name": "@url", "value": url}
+        ]
         
-        # Create the document
-        url_document = {
-            "id": url_id,
-            "organizationId": organization_id,
-            "url": url,
-            "dateAdded": datetime.now(timezone.utc).isoformat(),
-            "lastModified": datetime.now(timezone.utc).isoformat(),
-            "status": "Processing" if not scraping_result else ("Active" if scraping_result.get("status") == "success" else "Error"),
-            "result": "Pending" if not scraping_result else ("Success" if scraping_result.get("status") == "success" else "Failed"),
-            "error": scraping_result.get("error") if scraping_result and scraping_result.get("error") else None,
-            "contentLength": scraping_result.get("content_length") if scraping_result else None,
-            "title": scraping_result.get("title") if scraping_result else None,
-            "blobPath": scraping_result.get("blob_path") if scraping_result else None,
-            "addedBy": {
-                "userId": added_by_id,
-                "userName": added_by_name,
-                "dateAdded": datetime.now(timezone.utc).isoformat()
-            } if added_by_id else None
-        }
+        result = list(
+            container.query_items(
+                query=query, 
+                parameters=parameters, 
+                enable_cross_partition_query=False
+            )
+        )
         
-        # Insert the document
-        container.create_item(body=url_document)
-        
-        logging.info(f"[add_organization_url] URL {url_id} added successfully by {added_by_name or 'Unknown'}")
-        return {"message": "URL added successfully", "id": url_id}
+        return result[0] if result else None
         
     except Exception as e:
-        logging.error(f"[add_organization_url] add_organization_url: something went wrong. {str(e)}")
+        logging.error(f"[find_existing_url] Error checking existing URL: {str(e)}")
+        return None
+
+# Add or update a URL in the container OrganizationWebsites
+def add_or_update_organization_url(organization_id, url, scraping_result=None, added_by_id=None, added_by_name=None):
+    """
+    Add a new URL or update an existing one with scraping results.
+    
+    Args:
+        organization_id (str): The organization ID
+        url (str): The URL to add or update
+        scraping_result (dict): The scraping result data
+        added_by_id (str): User ID who added/updated the URL
+        added_by_name (str): User name who added/updated the URL
+        
+    Returns:
+        dict: Result with message and document ID
+    """
+    if not organization_id or not url:
+        return {"error": "Organization ID and URL are required."}
+    
+    try:
+        container = get_cosmos_container("OrganizationWebsites")
+        
+        # Check if URL already exists
+        existing_doc = find_existing_url(organization_id, url)
+        
+        if existing_doc:
+            # Update existing document
+            logging.info(f"[add_or_update_organization_url] Updating existing URL: {url} in organization: {organization_id} by user: {added_by_name or 'Unknown'}")
+            
+            # Update fields with new scraping results
+            existing_doc["lastModified"] = datetime.now(timezone.utc).isoformat()
+            existing_doc["status"] = "Processing" if not scraping_result else ("Active" if scraping_result.get("status") == "success" else "Error")
+            existing_doc["result"] = "Pending" if not scraping_result else ("Success" if scraping_result.get("status") == "success" else "Failed")
+            existing_doc["error"] = scraping_result.get("error") if scraping_result and scraping_result.get("error") else None
+            existing_doc["contentLength"] = scraping_result.get("content_length") if scraping_result else None
+            existing_doc["title"] = scraping_result.get("title") if scraping_result else None
+            existing_doc["blobPath"] = scraping_result.get("blob_path") if scraping_result else None
+            
+            # Replace the document
+            container.replace_item(item=existing_doc["id"], body=existing_doc)
+            
+            logging.info(f"[add_or_update_organization_url] URL {existing_doc['id']} updated successfully by {added_by_name or 'Unknown'}")
+            return {"message": "URL updated successfully", "id": existing_doc["id"], "action": "updated"}
+            
+        else:
+            # Create new document
+            logging.info(f"[add_or_update_organization_url] Adding new URL: {url} to organization: {organization_id} by user: {added_by_name or 'Unknown'}")
+            
+            # Generate a unique ID for the URL entry
+            url_id = str(uuid.uuid4())
+            
+            # Create the document
+            url_document = {
+                "id": url_id,
+                "organizationId": organization_id,
+                "url": url,
+                "dateAdded": datetime.now(timezone.utc).isoformat(),
+                "lastModified": datetime.now(timezone.utc).isoformat(),
+                "status": "Processing" if not scraping_result else ("Active" if scraping_result.get("status") == "success" else "Error"),
+                "result": "Pending" if not scraping_result else ("Success" if scraping_result.get("status") == "success" else "Failed"),
+                "error": scraping_result.get("error") if scraping_result and scraping_result.get("error") else None,
+                "contentLength": scraping_result.get("content_length") if scraping_result else None,
+                "title": scraping_result.get("title") if scraping_result else None,
+                "blobPath": scraping_result.get("blob_path") if scraping_result else None,
+                "addedBy": {
+                    "userId": added_by_id,
+                    "userName": added_by_name,
+                    "dateAdded": datetime.now(timezone.utc).isoformat()
+                } if added_by_id else None
+            }
+            
+            # Insert the document
+            container.create_item(body=url_document)
+            
+            logging.info(f"[add_or_update_organization_url] URL {url_id} added successfully by {added_by_name or 'Unknown'}")
+            return {"message": "URL added successfully", "id": url_id, "action": "added"}
+        
+    except Exception as e:
+        logging.error(f"[add_or_update_organization_url] add_or_update_organization_url: something went wrong. {str(e)}")
         raise
