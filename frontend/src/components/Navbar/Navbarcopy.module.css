@@ -7,8 +7,10 @@
 .brandText {
     font-size: 1.4rem;
     font-weight: 500;
-    white-space: nowrap;
-    }
+    white-space: normal;
+    max-width: 60vw;
+    display: block;
+}
 
 
 .profileButton {
