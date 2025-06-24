@@ -3987,7 +3987,7 @@ def get_password_reset_url():
     return jsonify({"resetUrl": url})
 
 
-@app.route("/api/scrape-urls", methods=["POST"])
+@app.route("/api/webscraping/scrape-urls", methods=["POST"])
 def scrape_urls():
     """
     Endpoint to scrape URLs using the external web scraping service.
@@ -4041,10 +4041,23 @@ def scrape_urls():
             added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
             added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
             
+            # Create a mapping of URLs to blob storage results for easy lookup
+            blob_storage_results = scraping_result.get("blob_storage_results", [])
+            blob_mapping = {blob_result["url"]: blob_result for blob_result in blob_storage_results}
+            
             for url_result in scraping_result["results"]:
                 try:
+                    # Get the corresponding blob storage result for this URL
+                    blob_result = blob_mapping.get(url_result["url"], {})
+                    
+                    # Combine scraping result with blob storage information
+                    combined_result = {
+                        **url_result,
+                        "blob_path": blob_result.get("blob_path")
+                    }
+                    
                     # Add each URL to the organization's knowledge sources
-                    add_organization_url(organization_id, url_result["url"], url_result, added_by_id, added_by_name)
+                    add_organization_url(organization_id, url_result["url"], combined_result, added_by_id, added_by_name)
                     logger.info(f"Added URL {url_result['url']} to organization {organization_id} by {added_by_name or 'Unknown'}")
                 except Exception as e:
                     logger.error(f"Failed to save URL {url_result['url']} to database: {str(e)}")

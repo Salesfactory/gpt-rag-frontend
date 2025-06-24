@@ -1504,6 +1504,7 @@ def add_organization_url(organization_id, url, scraping_result=None, added_by_id
             "error": scraping_result.get("error") if scraping_result and scraping_result.get("error") else None,
             "contentLength": scraping_result.get("content_length") if scraping_result else None,
             "title": scraping_result.get("title") if scraping_result else None,
+            "blobPath": scraping_result.get("blob_path") if scraping_result else None,
             "addedBy": {
                 "userId": added_by_id,
                 "userName": added_by_name,
