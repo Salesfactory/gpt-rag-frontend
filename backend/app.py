@@ -4081,7 +4081,7 @@ def scrape_urls():
         
         logger.info(f"Successfully scraped {len(urls)} URLs")
         return create_success_response({
-            "message": f"Successfully scraped {len(urls)} URL(s)",
+            "message": f"Attempted to scrape {len(urls)} URL(s)",
             "scraped_urls": urls,
             "result": scraping_result
         }, 200)
