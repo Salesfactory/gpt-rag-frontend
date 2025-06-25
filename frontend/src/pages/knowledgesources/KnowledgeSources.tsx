@@ -159,18 +159,33 @@ const KnowledgeSources: React.FC = () => {
     try {
       setIsAdding(true);
       
-      // Use the scraping endpoint instead of the simple add URL endpoint
-      // This will automatically trigger web scraping and save results with blob links to Cosmos
-      await scrapeUrls([newUrl], organization.id, user);
+      // Use the scraping endpoint to scrape and save the URL
+      const scrapingResult = await scrapeUrls([newUrl], organization.id, user);
       
-      // Clear form and reload data
+      // Extract results array for easier access
+      const results = scrapingResult?.data?.result?.results || [];
+      const urlResult = results.find((result: any) => result.url === newUrl);
+      
+      if (urlResult?.status === 'error') {
+        // Scraping failed, show error and keep form
+        toast.error('⚠️ Scraping is disabled for this site due to its content policy');
+        setUrlError(urlResult.error || 'Scraping failed');
+        loadKnowledgeSources(); // still reload the data to show the record on the URL table
+        return;
+      } else if (urlResult?.status === 'success') {
+        // Scraping was successful
+        toast.success('URL added and scraped successfully');
+      } else {
+        // No specific result found, show generic success
+        toast.success('URL added successfully');
+      }
+      
+      // Clear form and reload data (only reached if no error occurred)
       setNewUrl('');
       setUrlError('');
-      toast.success('URL added successfully');
       
       // Reload the data to get the new entry with scraping results
       await loadKnowledgeSources();
-      // TODO: differentiate between adding and scraping
     } catch (error) {
       console.error('Error adding and scraping URL:', error);
       toast.error('Failed to add URL and initiate scraping');
@@ -201,8 +216,23 @@ const KnowledgeSources: React.FC = () => {
           : source
       ));
       
-      // Use existing scrapeUrls endpoint - backend should detect existing URL and update rather than create new
-      await scrapeUrls([sourceToRefresh.url], organization.id, user);
+      // Re-scrape the URL and update the existing record
+      const scrapingResult = await scrapeUrls([sourceToRefresh.url], organization.id, user);
+      
+      // Extract results array for easier access
+      const results = scrapingResult?.data?.result?.results || [];
+      const urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
+      
+      if (urlResult?.status === 'error') {
+        // Scraping failed, show error message
+        toast.error('⚠️ Scraping is disabled for this site due to its content policy');
+      } else if (urlResult?.status === 'success') {
+        // Scraping was successful
+        toast.success('URL refreshed successfully');
+      } else {
+        // No specific result found, show generic success
+        toast.success('URL refresh completed');
+      }
       
       // Reload the data to get the updated scraping results
       await loadKnowledgeSources();
