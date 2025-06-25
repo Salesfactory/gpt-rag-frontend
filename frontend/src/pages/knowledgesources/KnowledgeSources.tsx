@@ -403,19 +403,30 @@ const KnowledgeSources: React.FC = () => {
       setIsUpdating(true);
       await updateOrganizationUrl(editingId, organization.id, editingUrl);
       
-      toast.success('URL updated successfully');
+      toast.success('URL updated successfully. Previous scraped data has been removed. Please refresh source to scrape the new page.');
       
-      // Update local state
+      // Update local state - reset scraping-related fields since URL changed
       setKnowledgeSources(knowledgeSources.map(source => 
         source.id === editingId 
-          ? { ...source, url: editingUrl, lastModified: new Date().toLocaleString('sv-SE', { 
-              timeZone: 'UTC',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit'
-            }).replace('T', ' ') }
+          ? { 
+              ...source, 
+              url: editingUrl, 
+              lastModified: new Date().toLocaleString('sv-SE', { 
+                timeZone: 'UTC',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              }).replace('T', ' '),
+              // Reset scraping-related fields since the URL has changed
+              status: 'Processing',
+              result: 'Pending',
+              error: undefined,
+              contentLength: undefined,
+              title: undefined,
+              blobPath: undefined
+            }
           : source
       ));
       
@@ -599,8 +610,8 @@ const KnowledgeSources: React.FC = () => {
                                 onClick={handleSaveEdit}
                                 disabled={!editingUrl.trim() || !!editingError || isUpdating}
                                 className={styles.saveButton}
+                                title="Save URL changes. Previous scraped data will be removed."
                               >
-                                {/* // TODO:Save and Re-Scrape*/}
                                 {isUpdating ? 'Saving...' : 'Save'} 
                               </button>
                               <button
