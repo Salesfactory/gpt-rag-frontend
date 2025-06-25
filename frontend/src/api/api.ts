@@ -117,6 +117,28 @@ export async function deleteUser({ user, userId }: any): Promise<any> {
     }
 }
 
+export async function deleteInvitation({user, invitationId }: any): Promise<any> {
+    try {
+        const response = await fetch(`/api/deleteInvitation?invitationId=${invitationId}`, {
+            method: "DELETE",
+            headers: {
+                "X-MS-CLIENT-PRINCIPAL-ID": user.id,
+                "Content-Type": "application/json",
+            }
+        });
+        
+        if (response.status === 200 || response.status === 204) {
+            return { success: true };
+        }
+
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error deleting user", error);
+        return { error: error };
+    }
+}
+
 export async function checkUser({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
@@ -503,7 +525,7 @@ export async function removeFinancialAssistant({ user, subscriptionId }: { user?
     }
 }
 
-export async function createInvitation({ organizationId, invitedUserEmail, userId, role }: any): Promise<any> {
+export async function createInvitation({ organizationId, invitedUserEmail, userId, role, nickname }: any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
             method: "POST",
@@ -514,6 +536,7 @@ export async function createInvitation({ organizationId, invitedUserEmail, userI
             body: JSON.stringify({
                 organizationId,
                 invitedUserEmail,
+                nickname,
                 role
             })
         });

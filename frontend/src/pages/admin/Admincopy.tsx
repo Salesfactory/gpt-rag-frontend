@@ -2,14 +2,15 @@ import React, { useEffect, useState, useContext } from "react";
 import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar, ResponsiveMode } from "@fluentui/react";
 import { ToastContainer, toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
-import { CirclePlus, Search, SquarePen, Trash2, Filter } from "lucide-react";
+import { CirclePlus, Search, SquarePen, Trash2, Filter, X } from "lucide-react";
 
 import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
 
-import { getUsers, inviteUser, createInvitation, deleteUser, updateUserData } from "../../api";
+import { getUsers, inviteUser, createInvitation, deleteUser, updateUserData, deleteInvitation } from "../../api";
 
 import styles from "./Admincopy.module.css";
+import { Toast } from "react-toastify/dist/components";
 
 const textFieldStyles: Partial<ITextFieldStyles> = { root: { maxWidth: "900px" } };
 export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; setIsOpen: React.Dispatch<React.SetStateAction<boolean>>; users: never[] }) => {
@@ -65,6 +66,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
 
             const invitationResponse = await createInvitation({
                 organizationId,
+                nickname: sanitizedUsername,
                 invitedUserEmail: sanitizedEmail,
                 userId: user.id,
                 role
@@ -115,8 +117,8 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
     };
 
     const roleOptions = [
-        { key: "1", text: "user" },
-        { key: "2", text: "admin" }
+        { key: "user", text: "user" },
+        { key: "admin", text: "admin" }
     ];
 
     const handleRoleChange = (event: any, selectedOption: any) => {
@@ -309,88 +311,217 @@ export const DeleteUserDialog = ({
     isOpen,
     onDismiss,
     onConfirm,
-    isDeletingUser
+    isDeletingUser,
+    userName
 }: {
     isOpen: boolean;
     onDismiss: any;
     onConfirm: any;
     isDeletingUser: boolean;
+    userName?: string;
 }) => {
+    if (!isOpen) return null;
+
     return (
-        <Dialog
-            minWidth={800}
-            closeButtonAriaLabel="Close"
-            isClickableOutsideFocusTrap={true}
-            hidden={!isOpen}
-            onDismiss={onDismiss}
-            dialogContentProps={{
-                type: 0,
-                title: "Delete user",
-                subText: "Are you sure you want to delete this user from your organization?"
-            }}
-            modalProps={{
-                isBlocking: true,
-                onDismiss: onDismiss,
-                styles: { main: { maxWidth: 450 } }
-            }}
-        >
-            {isDeletingUser && (
-                <div
-                    style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        zIndex: 9999
-                    }}
-                >
-                    <Spinner
-                        styles={{
-                            root: {
-                                width: "50px",
-                                height: "50px"
-                            }
-                        }}
-                    />
+        <div className={styles.overlayD} onClick={onDismiss}>
+            <div className={styles.dialogD} onClick={e => e.stopPropagation()}>
+                {/* Loading Spinner */}
+                {isDeletingUser && (
+                    <div className={styles.spinnerOverlayD}>
+                        <div className={styles.spinnerD}></div>
+                    </div>
+                )}
+
+                {/* Header */}
+                <div className={styles.headerD}>
+                    <h2 className={styles.titleD}>Delete User</h2>
+                    <button onClick={onDismiss} className={styles.closeButtonD} aria-label="Close">
+                        <X />
+                    </button>
                 </div>
-            )}
-            <DialogContent>
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "end",
-                        gap: "10px"
-                    }}
-                >
-                    <DefaultButton style={{ marginTop: "20px" }} onClick={onDismiss} text="Cancel" />
-                    <PrimaryButton
-                        styles={{
-                            root: {
-                                backgroundColor: "#16a34a",
-                                borderColor: "#16a34a",
-                                color: "white",
-                                borderRadius: "0.5rem"
-                            },
-                            rootHovered: {
-                                backgroundColor: "#15803d",
-                                borderColor: "#15803d",
-                                color: "white"
-                            },
-                            rootPressed: {
-                                backgroundColor: "#15803d",
-                                borderColor: "#15803d",
-                                color: "white"
-                            }
-                        }}
-                        style={{ marginTop: "20px" }}
-                        onClick={() => {
-                            onConfirm();
-                        }}
-                        text="Delete user"
-                    />
+
+                {/* Content */}
+                <div className={styles.contentD}>
+                    <p className={styles.messageD}>
+                        Are you sure you want to remove <strong>{userName}</strong> from the team?
+                    </p>
+
+                    {/* Buttons */}
+                    <div className={styles.buttonContainerD}>
+                        <button onClick={onDismiss} className={styles.cancelButtonD} disabled={isDeletingUser}>
+                            Cancel
+                        </button>
+                        <button onClick={onConfirm} className={styles.deleteButtonD} disabled={isDeletingUser}>
+                            Yes, Delete
+                        </button>
+                    </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </div>
+    );
+};
+export const DeleteInvitationDialog = ({
+    isOpen,
+    onDismiss,
+    onConfirm,
+    selectedInvitation
+}: {
+    isOpen: boolean;
+    onDismiss: () => void;
+    onConfirm: (invitationId: string) => void;
+    selectedInvitation?: { invitation_id: string; id: string };
+}) => {
+    if (!isOpen) return null;
+
+    const handleConfirm = () => {
+        if (selectedInvitation) {
+            onConfirm(selectedInvitation.invitation_id);
+            console.log(selectedInvitation.id);
+        }
+        onDismiss();
+    };
+
+    return (
+        <div className={styles.overlayD} onClick={onDismiss}>
+            <div className={styles.dialogD} onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className={styles.headerD}>
+                    <h2 className={styles.titleD}>Delete Invitation</h2>
+                    <button onClick={onDismiss} className={styles.closeButtonD} aria-label="Close">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className={styles.contentD}>
+                    <p className={styles.messageD}>Are you sure you want to delete this invitation? This action cannot be undone.</p>
+
+                    {/* Buttons */}
+                    <div className={styles.buttonContainerD}>
+                        <button onClick={onDismiss} className={styles.cancelButtonD}>
+                            Cancel
+                        </button>
+                        <button onClick={handleConfirm} className={styles.deleteButtonD}>
+                            Delete invitation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const EditUserDialog = ({
+    isOpen,
+    onDismiss,
+    onConfirm,
+    selectedUser,
+    inputUserName,
+    categorySelection,
+    roleOptions,
+    errorMessage,
+    handleInputName,
+    handleTypeDropdownChange
+}: {
+    isOpen: boolean;
+    onDismiss: () => void;
+    onConfirm: (userId: string) => void;
+    selectedUser?: { id: string; data: { name: string; email: string } };
+    inputUserName: string;
+    inputEmailName: string;
+    categorySelection: string;
+    roleOptions: Array<{ key: string; text: string }>;
+    errorMessage: string;
+    handleInputName: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleTypeDropdownChange: (event: any, option: any) => void;
+}) => {
+    if (!isOpen || !selectedUser) return null;
+
+    const handleCancel = () => {
+        onDismiss();
+    };
+
+    const handleConfirm = () => {
+        onConfirm(selectedUser.id);
+    };
+
+    return (
+        <div className={styles.overlayE} onClick={handleCancel}>
+            <div className={styles.dialogE} onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className={styles.headerE}>
+                    <h2 className={styles.titleE}>Edit User</h2>
+                    <button onClick={handleCancel} className={styles.closeButtonE} aria-label="Close">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className={styles.contentE}>
+                    <div>
+                        {/* Email Address */}
+                        <div className={styles.fieldGroupE}>
+                            <label className={styles.labelE}>Email Address</label>
+                            <input type="email" className={styles.inputE} value={selectedUser.data.email} disabled readOnly />
+                            <span className={styles.helpTextE}>Email address cannot be changed</span>
+                        </div>
+
+                        {/* Username */}
+                        <div className={styles.fieldGroupE}>
+                            <label className={styles.labelE}>Username</label>
+                            <input
+                                type="text"
+                                className={styles.inputE}
+                                onChange={handleInputName}
+                                placeholder={selectedUser.data.name}
+                                value={inputUserName}
+                            />
+                            <span className={styles.helpTextE}>This name will be displayed to other users</span>
+                        </div>
+
+                        {/* Role Dropdown */}
+                        <div className={styles.fieldGroupE}>
+                            <label className={styles.labelE}>Role</label>
+                            <select
+                                className={styles.dropdownE}
+                                value={categorySelection}
+                                onChange={e => {
+                                    const selectedKey = e.target.value;
+                                    const selectedOption = roleOptions.find(opt => opt.key === selectedKey);
+                                    if (selectedOption) {
+                                        handleTypeDropdownChange(null, selectedOption);
+                                    }
+                                }}
+                            >
+                                <option value="">Select a Role</option>
+                                {roleOptions.map(option => (
+                                    <option key={option.key} value={option.key}>
+                                        {option.text}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Change Password Button */}
+                        <div className={styles.passwordSectionE}>
+                            <button type="button" className={styles.changePasswordButtonE}>
+                                Reset Password
+                            </button>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className={styles.buttonContainerE}>
+                            <button type="button" onClick={handleCancel} className={styles.cancelButtonE}>
+                                Cancel
+                            </button>
+                            <button type="button" onClick={handleConfirm} className={styles.saveButtonE}>
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -414,6 +545,12 @@ const Admin = () => {
             role: ""
         }
     });
+    const [selectedInvitation, setSelectedInvitation] = useState({
+        id: "",
+        nickname: "",
+        role: "",
+        invitation_id: ""
+    });
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -425,13 +562,13 @@ const Admin = () => {
     const [inputUserName, setInputUserName] = useState("");
     const [inputEmailName, setInputEmailName] = useState("");
     const roleOptions = [
-        { key: "1", text: "user" },
-        { key: "2", text: "admin" }
+        { key: "user", text: "user" },
+        { key: "admin", text: "admin" }
     ];
     const [categorySelection, setCategorySelection] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
-    const [isError, setIsError] = useState(false);
     const [dataLoad, setDataLoad] = useState(false);
+    const [showDeleteInvitationModal, setShowDeleteInvitationModal] = useState(false);
     const [isEditSuccess, setIsEditSuccess] = useState(false);
     const roleStyles: { [key in "admin" | "user" | "platformAdmin"]: string } = {
         admin: styles.roleAdmin,
@@ -518,6 +655,24 @@ const Admin = () => {
         });
     };
 
+    const deleteInvitationFromOrganization = (id: string) => {
+        setIsDeletingUser(true);
+        deleteInvitation({ user, invitationId: id }).then(res => {
+            if (res.error) {
+                console.log("error", res.error);
+                toast("There was an error deleting the invitation", { type: "error" });
+                setIsDeleting(false);
+            } else {
+                const updatedUsers = users.filter((user: any) => user.id !== id);
+                setUsers(updatedUsers);
+                setFilteredUsers(updatedUsers);
+                setIsDeleting(false);
+                toast("Invitation deleted successfully", { type: "success" });
+            }
+            setIsDeletingUser(false);
+        });
+    };
+
     const handleEditClick = (user: any) => {
         setSelectedUser(user);
         setIsEditing(true);
@@ -537,18 +692,7 @@ const Admin = () => {
 
     const editUser = async (userID: string) => {
         if (inputUserName == "") {
-            setErrorMessage("Please type the Username");
-            setIsError(true);
-            return;
-        }
-        if (inputEmailName == "") {
-            setErrorMessage("Please type the Email");
-            setIsError(true);
-            return;
-        }
-        if (categorySelection == "") {
-            setErrorMessage("Please select the Report Category");
-            setIsError(true);
+            toast("Please type the Username", { type: "error" });
             return;
         }
 
@@ -559,15 +703,14 @@ const Admin = () => {
                 userId: userID,
                 patchData: {
                     name: inputUserName,
-                    email: inputEmailName,
-                    role: categorySelection
+                    role: categorySelection,
+                    organizationId: user.organizationId
                 }
             });
             setIsEditing(false);
             setIsEditSuccess(true);
             timer = setTimeout(() => {
                 setIsEditSuccess(false);
-                setInputEmailName("");
                 setInputUserName("");
             }, 3000);
         } catch (error) {
@@ -597,7 +740,8 @@ const Admin = () => {
                         display: "flex",
                         flexDirection: "row",
                         justifyContent: "space-between",
-                        alignItems: "center"
+                        alignItems: "center",
+                        marginBottom: "1.5rem"
                     }}
                 >
                     <div style={{ display: "flex", gap: "12px", width: "100%", maxWidth: 600 }}>
@@ -748,88 +892,31 @@ const Admin = () => {
                         deleteUserFromOrganization(selectedUser?.id);
                     }}
                     isDeletingUser={isDeletingUser}
+                    userName={selectedUser?.data?.name}
                 />
-                {showModal && (
-                    <>
-                        <div className={styles.modalOverlay} onClick={() => setIsEditing(false)}></div>
-                        <div className={`${styles.modal} ${!isEditing ? styles.modalHidden : ""}`}>
-                            <Label className={styles.modalTitle}>Edit User</Label>
-                            <form>
-                                <Label
-                                    styles={{
-                                        root: { padding: "0px 0px 10px 0px" }
-                                    }}
-                                >
-                                    User Name
-                                </Label>
-                                <input
-                                    type="text"
-                                    className={styles.input}
-                                    onChange={handleInputName}
-                                    placeholder={selectedUser.data.name}
-                                    value={inputUserName}
-                                ></input>
-                                <Label>User Email</Label>
-                                <input
-                                    type="text"
-                                    className={styles.input}
-                                    onChange={handleInputEmail}
-                                    placeholder={selectedUser.data.email}
-                                    value={inputEmailName}
-                                ></input>
-                                <Label>Role</Label>
-                                <Dropdown
-                                    placeholder="Select a Role"
-                                    options={roleOptions}
-                                    onChange={handleTypeDropdownChange}
-                                    defaultValue={categorySelection}
-                                    responsiveMode={ResponsiveMode.unknown}
-                                />
-                                {isError && <span className={styles.modalError}>{errorMessage}</span>}
-
-                                <DefaultButton
-                                    style={{ marginTop: "50px", marginRight: "95px" }}
-                                    onClick={() => {
-                                        setInputEmailName("");
-                                        setInputUserName("");
-                                        setIsEditing(false);
-                                    }}
-                                    text="Cancel"
-                                />
-                                <PrimaryButton
-                                    styles={{
-                                        root: {
-                                            backgroundColor: "#16a34a",
-                                            borderColor: "#16a34a",
-                                            color: "white",
-                                            borderRadius: "0.5rem"
-                                        },
-                                        rootHovered: {
-                                            backgroundColor: "#15803d",
-                                            borderColor: "#15803d",
-                                            color: "white"
-                                        },
-                                        rootPressed: {
-                                            backgroundColor: "#15803d",
-                                            borderColor: "#15803d",
-                                            color: "white"
-                                        }
-                                    }}
-                                    style={{ marginTop: "20px" }}
-                                    onClick={() => {
-                                        editUser(selectedUser.id);
-                                    }}
-                                    text="Edit User"
-                                />
-                            </form>
-                        </div>
-                    </>
-                )}
-                {isEditSuccess && (
-                    <div className={styles.modalSuccess}>
-                        <Label>User Edited successfully!</Label>
-                    </div>
-                )}
+                <EditUserDialog
+                    isOpen={showModal && isEditing}
+                    onDismiss={() => {
+                        setInputEmailName("");
+                        setInputUserName("");
+                        setIsEditing(false);
+                    }}
+                    onConfirm={userId => editUser(userId)}
+                    selectedUser={selectedUser}
+                    inputUserName={inputUserName}
+                    inputEmailName={inputEmailName}
+                    categorySelection={categorySelection}
+                    roleOptions={roleOptions}
+                    errorMessage={errorMessage}
+                    handleInputName={handleInputName}
+                    handleTypeDropdownChange={handleTypeDropdownChange}
+                />
+                <DeleteInvitationDialog
+                    isOpen={showDeleteInvitationModal}
+                    onDismiss={() => setShowDeleteInvitationModal(false)}
+                    onConfirm={invitationId => deleteInvitationFromOrganization(invitationId)}
+                    selectedInvitation={selectedInvitation}
+                />
                 {loading ? (
                     <Spinner
                         styles={{
@@ -839,101 +926,103 @@ const Admin = () => {
                         }}
                     />
                 ) : (
-                    <div className={styles.tableContainer}>
-                        <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th
-                                        style={{
-                                            padding: "10px",
-                                            fontSize: "1rem",
-                                            fontWeight: 600
-                                        }}
-                                    >
-                                        Name
-                                    </th>
-                                    <th className={styles.tableTitle}>Email</th>
-                                    <th className={styles.tableTitle}>Role</th>
-                                    <th className={styles.tableTitle}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredUsers.map((user: any, index) => {
-                                    return (
-                                        <tr
-                                            key={user.id}
-                                            style={{
-                                                backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
-                                            }}
-                                        >
-                                            <td
+                    <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                        <li
+                            style={{
+                                background: "#00a63e",
+                                color: "white",
+                                fontWeight: 600,
+                                fontSize: 16,
+                                borderTopLeftRadius: 8,
+                                borderTopRightRadius: 8,
+                                padding: "12px 16px",
+                                marginBottom: 0
+                            }}
+                        >
+                            Team Members
+                        </li>
+                        {filteredUsers.map((user: any, index) => {
+                            const isNew = user.user_new;
+                            const userName = isNew ? user.nickname : user.data.name;
+                            const userEmail = isNew ? user.data.email : user.data.email;
+                            const userRole = user.role;
+                            const userStatus = isNew ? "Invited" : "Active";
+                            return (
+                                <li
+                                    key={user.id || userEmail}
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        padding: "1rem 1rem 1rem 1rem",
+                                        borderBottom: "1px solid #e5e7eb",
+                                        backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
+                                    }}
+                                >
+                                    {/* Info: name, email, role */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <span style={{ fontWeight: 600, color: "#111827", fontSize: "14px" }}>{userName}</span>
+                                            <span className={roleStyles[userRole as "admin" | "user" | "platformAdmin"] || ""}>
+                                                {userRole === "platformAdmin" ? "Platform Admin" : userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                            </span>
+                                            <span
                                                 style={{
-                                                    fontSize: "14px",
-                                                    fontWeight: 500,
-                                                    color: "#111827",
-                                                    padding: "10px",
-                                                    textAlign: "justify"
+                                                    fontSize: "0.75rem",
+                                                    background: userStatus === "Invited" ? "#fef9c2" : "#e5e7eb",
+                                                    color: userStatus === "Invited" ? "#894b00" : "#1e2939",
+                                                    borderRadius: 8,
+                                                    padding: "2px 10px",
+                                                    marginLeft: 4,
+                                                    fontWeight: 600
                                                 }}
                                             >
-                                                {user.data.name}
-                                            </td>
-                                            <td
-                                                style={{
-                                                    fontSize: "14px",
-                                                    color: "#6B7280",
-                                                    textAlign: "justify"
-                                                }}
-                                            >
-                                                {user.data.email}
-                                            </td>
-                                            <td>
-                                                <div
-                                                    style={{
-                                                        width: "100%",
-                                                        justifyContent: "flex-start",
-                                                        justifyItems: "center",
-                                                        textAlign: "center",
-                                                        display: "flex",
-                                                        textTransform: "capitalize"
+                                                {userStatus}
+                                            </span>
+                                        </div>
+                                        <span style={{ color: "#6B7280", fontSize: "14px" }}>{userEmail}</span>
+                                    </div>
+                                    {/* Actions */}
+                                    <div style={{ display: "flex", gap: "8px" }}>
+                                        {!isNew ? (
+                                            <>
+                                                <button
+                                                    className={styles.button}
+                                                    title="Edit user"
+                                                    aria-label="Edit user"
+                                                    onClick={() => handleEditClick(user)}
+                                                >
+                                                    <SquarePen className={styles.bothIcons} />
+                                                </button>
+                                                <button
+                                                    className={styles.button}
+                                                    title="Delete user"
+                                                    aria-label="Delete user"
+                                                    onClick={() => handleDeleteClick(user)}
+                                                >
+                                                    <Trash2 className={styles.bothIcons} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    className={styles.button}
+                                                    title="Delete invitation"
+                                                    aria-label="Delete invitation"
+                                                    onClick={() => {
+                                                        setSelectedInvitation(user);
+                                                        setShowDeleteInvitationModal(true);
                                                     }}
                                                 >
-                                                    <div className={roleStyles[user.role as "admin" | "user" | "platformAdmin"] || ""}>
-                                                        {user.role === "platformAdmin" ? "Platform Admin" : user.role}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {
-                                                    <div>
-                                                        <button
-                                                            className={styles.button}
-                                                            title="Edit user"
-                                                            aria-label="Edit user"
-                                                            onClick={() => {
-                                                                handleEditClick(user);
-                                                            }}
-                                                        >
-                                                            <SquarePen className={styles.bothIcons} />
-                                                        </button>
-                                                        <button
-                                                            className={styles.button}
-                                                            title="Delete user"
-                                                            aria-label="Delete user"
-                                                            onClick={() => {
-                                                                handleDeleteClick(user);
-                                                            }}
-                                                        >
-                                                            <Trash2 className={styles.bothIcons} />
-                                                        </button>
-                                                    </div>
-                                                }
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                                    <Trash2 className={styles.bothIcons} />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 )}
             </>
         </div>

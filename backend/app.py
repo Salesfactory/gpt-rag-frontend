@@ -61,6 +61,7 @@ from utils import (
     get_organization_urls,
     add_or_update_organization_url,
     validate_url,
+    delete_invitation,
 )
 import stripe.error
 from bs4 import BeautifulSoup
@@ -2033,17 +2034,36 @@ def createInvitation():
             raise MissingRequiredFieldError("organizationId")
         if not "role" in data:
             raise MissingRequiredFieldError("role")
+        if not "nickname" in data:
+            raise MissingRequiredFieldError("nickname")
         invitedUserEmail = data["invitedUserEmail"]
         organizationId = data["organizationId"]
         role = data["role"]
-        response = create_invitation(invitedUserEmail, organizationId, role)
-        return jsonify(response), HTTPStatus.CREATED 
+        nickname = data["nickname"]
+        response = create_invitation(invitedUserEmail, organizationId, role, nickname)
+        return jsonify(response), HTTPStatus.CREATED
     except MissingRequiredFieldError as field:
         return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
     except Exception as e:
         logging.exception(str(e))
         return create_error_response(f'An unexpected error occurred. Please try again later. {e}', HTTPStatus.INTERNAL_SERVER_ERROR)
 
+@app.route("/api/deleteInvitation",methods=["DELETE"])
+def deleteInvitation():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return create_error_response("Missing required parameters, client_principal_id"), 400
+
+    invitation_id = request.args.get("invitationId")
+    if not invitation_id:
+        return create_error_response("Missing required parameters, invitationId"), 400
+
+    try:
+        response = delete_invitation(invitation_id)
+        return jsonify(response), HTTPStatus.OK
+    except Exception as e:
+        logging.exception("[webbackend] exception in /deleteInvitation")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/checkuser", methods=["POST"])
 def checkUser():

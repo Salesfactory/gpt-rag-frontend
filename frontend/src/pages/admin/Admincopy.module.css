@@ -84,13 +84,8 @@
     overflow-x: auto;
     width: 100%;
     border: 1px solid #d9d9d9;
-    margin-top: 1.5rem;
 }
 
-.table thead {
-    background-color: #00a63e;
-    color: white;
-}
 
 .button {
     background: none;
@@ -375,9 +370,13 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: #6B7280;
+    color: #99a1af;
     width: 18px;
     height: 18px;
+}
+
+.bothIcons:hover{
+    color: #364153;
 }
 
 .buttonText{
@@ -424,3 +423,325 @@
 .dropdownItem:hover {
     background: #f3f4f6;
 }
+
+.overlayD{
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 50;
+}
+
+.dialogD {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    max-width: 450px;
+    width: 100%;
+    margin: 0 1rem;
+    position: relative;
+}
+
+.spinnerOverlayD{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+}
+
+.spinnerD{
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.headerD{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+}
+
+.titleD{
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.closeButtonD{
+    color: #9ca3af;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s ease;
+}
+
+.closeButton:hover {
+    color: #4b5563;
+}
+
+.contentD{
+    padding: 1.5rem;
+}
+
+.messageD{
+    color: #6b7280;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.5;
+    font-size: 1rem;
+}
+
+.buttonContainerD{
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.cancelButtonD{
+    padding: 0.5rem 1.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    color: #374151;
+    background-color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.cancelButtonD:hover:not(:disabled) {
+    background-color: #f9fafb;
+}
+
+.cancelButtonD:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.deleteButtonD {
+    padding: 0.5rem 1.5rem;
+    background-color: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.deleteButtonD:hover:not(:disabled) {
+    background-color: #b91c1c;
+}
+
+.deleteButtonD:disabled {
+    opacity: 0.5;
+    cursor: not-allowed; }
+
+
+        .overlayE{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 50;
+        }
+    
+        .dialogE{
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 500px;
+            width: 100%;
+            margin: 0 1rem;
+            position: relative;
+        }
+    
+        .headerE{
+            background-color: #16a34a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+    
+        .titleE{
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+    
+        .closeButtonE{
+            color: white;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: opacity 0.2s ease;
+        }
+    
+        .closeButtonE:hover {
+            opacity: 0.8;
+        }
+    
+        .contentE{
+            padding: 2rem;
+        }
+    
+        .fieldGroupE{
+            margin-bottom: 1.5rem;
+        }
+    
+        .labelE{
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+    
+        .inputE{
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background-color: white;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+    
+        .inputE:focus {
+            outline: none;
+            border-color: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+        }
+    
+        .inputE:disabled {
+            background-color: #f9fafb;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+    
+        .dropdownE{
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+            box-sizing: border-box;
+        }
+    
+        .dropdownE:focus {
+            outline: none;
+            border-color: #16a34a;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+        }
+    
+        .helpTextE{
+            display: block;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+    
+        .passwordSectionE{
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+    
+        .changePasswordButtonE{
+            background-color: #16a34a;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+    
+        .changePasswordButtonE:hover {
+            background-color: #15803d;
+        }
+    
+        .errorMessageE{
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+        }
+    
+        .buttonContainerE{
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+    
+        .cancelButtonE{
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            color: #374151;
+            background-color: white;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+    
+        .cancelButtonE:hover {
+            background-color: #f9fafb;
+        }
+    
+        .saveButtonE{
+            padding: 0.5rem 1rem;
+            background-color: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+    
+        .saveButtonE:hover {
+            background-color: #15803d;     }
