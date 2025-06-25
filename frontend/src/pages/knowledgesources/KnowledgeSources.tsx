@@ -516,9 +516,16 @@ const KnowledgeSources: React.FC = () => {
         
         {/* Knowledge Sources */}
         <div className={styles.tableContainer}>
-          {/* Header */}
+          {/* Header with Results Count */}
           <div className={styles.cardHeader}>
-            <span>URL</span>
+            <span>
+              URL 
+              {!isLoading && (
+                <span className={styles.resultsCount}>
+                  ({filteredSources.length} {filteredSources.length === 1 ? 'result' : 'results'})
+                </span>
+              )}
+            </span>
             <span>Actions</span>
           </div>
           
