@@ -25,6 +25,8 @@ import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAs
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import newLogo from "../../img/SFAiLogo.png";
+import FreddaidLogo from "../../img/FreddaidLogo.png";
+
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -605,24 +607,23 @@ const Chat = () => {
 
     return (
         <>
-            <div className={styles.mainContainer}>
-                <div>
-                    {/* <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div> */}
-                </div>
-                <div>
-                    <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>{settingsPanel && <SettingsPanel />}</div>
-                </div>
-                <FinancialPopup />
-                <div className={styles.container}>
-                    <div className={styles.chatRoot}>
-                        <div className={styles.chatContainer}>
-                            {!lastQuestionRef.current && dataConversation.length <= 0 ? (
-                                <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>
-                                    {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
-                                    {!isFinancialAssistantActive && (
-                                        <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                            <img height="60px" src={newLogo} alt="Sales Factory logo" className={styles.logoShiftLeft}></img>
-                                            <h1>FreddAid</h1>
+        <div className={styles.mainContainer}>
+            <div>
+                {/* <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div> */}
+            </div>
+            <div>
+                <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>{settingsPanel && <SettingsPanel />}</div>
+            </div>
+            <FinancialPopup />
+            <div className={styles.container}>
+                <div className={styles.chatRoot}>
+                    <div className={styles.chatContainer}>
+                        {!lastQuestionRef.current && dataConversation.length <= 0 ? (
+                            <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>
+                                {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
+                                {!isFinancialAssistantActive && (
+                                    <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
+                                        <h1><img height= "100px" src={FreddaidLogo} alt="FreddAid 4.1" ></img></h1>
 
                                             <p style={{ width: "80%", textAlign: "center" }}>
                                                 Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to
