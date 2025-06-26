@@ -1425,11 +1425,35 @@ def modify_url(url_id, organization_id, new_url):
         # Step 1: Get existing document using correct partition key
         existing_doc = container.read_item(item=url_id, partition_key=organization_id)
         
-        # Step 2: Update the URL field and timestamp
-        existing_doc["url"] = new_url
-        existing_doc["lastModified"] = datetime.now(timezone.utc).isoformat() 
+        # Step 2: Delete the previous scraped data from blob storage if it exists
+        old_blob_path = existing_doc.get("blobPath")
+        if old_blob_path:
+            try:
+                from financial_doc_processor import BlobStorageManager
+                blob_storage_manager = BlobStorageManager()
+                container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+                blob_client = container_client.get_blob_client(old_blob_path)
+                
+                if blob_client.exists():
+                    blob_client.delete_blob()
+                    logging.info(f"[modify_url] Previous scraped data blob {old_blob_path} deleted successfully")
+                else:
+                    logging.warning(f"[modify_url] Previous scraped data blob {old_blob_path} not found in storage")
+            except Exception as blob_error:
+                logging.error(f"[modify_url] Error deleting previous scraped data blob {old_blob_path}: {str(blob_error)}")
         
-        # Step 3: Replace item with the new url 
+        # Step 3: Update the URL field, timestamp, and reset scraping-related fields
+        existing_doc["url"] = new_url
+        existing_doc["lastModified"] = datetime.now(timezone.utc).isoformat()
+        # Reset scraping-related fields since the URL has changed
+        existing_doc["status"] = "Processing"
+        existing_doc["result"] = "Pending"
+        existing_doc["error"] = None
+        existing_doc["contentLength"] = None
+        existing_doc["title"] = None
+        existing_doc["blobPath"] = None
+        
+        # Step 4: Replace item with the updated data
         container.replace_item(item=url_id, body=existing_doc)
         
         logging.info(f"[modify_url] URL {url_id} modified successfully")
