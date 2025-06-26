@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "./Navbarcopy.module.css";
 import { Menu, Settings, History, MessageCircleQuestion, ChevronDown, Upload, Copy, ExternalLink } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
@@ -45,6 +45,22 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [showChatHistory, setShowChatHistory] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const profileRef = useRef<HTMLLIElement>(null);
+
+    useEffect(() => {
+        if (!isDropdownOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isDropdownOpen]);
 
     const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
         ? true
@@ -331,7 +347,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
 
                         {/* User Profile Card */}
-                        <li className="nav-item dropdown">
+                        <li className="nav-item dropdown" ref={profileRef}>
                             <button
                                 className={`nav-link ${styles.profileButton} ${isDropdownOpen ? styles.dropdownOpen : ""}`}
                                 onClick={handleOnClickProfileCard}
