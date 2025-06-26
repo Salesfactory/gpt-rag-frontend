@@ -534,11 +534,15 @@ def patch_user_data(user_id, patch_data):
 
 
 def get_audit_logs(organization_id):
-    """Get all the audit logs in a cosmosDB container"""
+    """Get the 10 most recent audit logs in a cosmosDB container"""
     container = get_cosmos_container("auditLogs")
     try:
         items = list(container.query_items(
-            query="SELECT * FROM c WHERE c.organization_id = @organization_id",
+            query="""
+                SELECT TOP 10 * FROM c 
+                WHERE c.organization_id = @organization_id 
+                ORDER BY c._ts DESC
+            """,
             parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True
         ))

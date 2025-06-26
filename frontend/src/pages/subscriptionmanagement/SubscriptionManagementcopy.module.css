@@ -3,8 +3,19 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-height: 100vh;
     padding: 50px 50px 50px 50px;
     background-color: #f9fafb;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+@media (min-width: 576px) and (max-width: 990px) {
+    .pageContainer {
+        padding: 30px 20px;
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
 @media (max-width: 900px) {
@@ -21,6 +32,7 @@
         box-sizing: border-box;
     }
 }
+
 
 /* Row Styles */
 .row {
@@ -276,12 +288,41 @@
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 700px) {
     .modalAudit {
-        top: 50%;
-        width: 85%;
+        width: 98vw;
+        min-width: unset;
+        left: 50%;
+        top: 55%;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+    }
+
+    .modalHeader {
         flex-direction: column;
-        padding: 20px;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .auditFilter {
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .table {
+        font-size: 0.8rem;
+        min-width: 320px;
+    }
+
+    .tableName,
+    .tableDate,
+    .tableText,
+    .tableStatus {
+        padding: 0.5rem 0.5rem;
+        font-size: 0.8rem;
     }
 }
 
