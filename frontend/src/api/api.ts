@@ -995,6 +995,26 @@ export async function updateUserData({ userId, patchData }: { userId: string; pa
     }
 }
 
+export async function resetUserPassword({ userId, newPassword }: { userId: string; newPassword: string }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}/reset-password`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ "new_password":newPassword })
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error resetting password for user with ID ${userId}`);
+    }
+
+    return response.json();
+}
+
 export async function changeSubscription({ subscriptionId, newPlanId, user}: {subscriptionId: string;newPlanId: string; user:any;}): Promise<any> {
     const userId = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const userName = user ? user.name : "anonymous";

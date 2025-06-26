@@ -2,6 +2,8 @@ from functools import wraps
 import logging
 import uuid
 import os
+
+import requests
 from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
@@ -1295,20 +1297,20 @@ def get_users(organization_id):
                 and not item.get("redeemed_at")
             ):
                 token_expiry = item.get("token_expiry")
-                if token_expiry and token_expiry * 1000 > int(time() * 1000):
-                    filtered_users.append({
-                        "id": None,
-                        "invitation_id": item.get("id"),
-                        "data": {
-                            "name": "",
-                            "email": item.get("invited_user_email", "")
-                        },
-                        "role": item.get("role"),
-                        "active": item.get("active", False),
-                        "user_new": True,
-                        "token_expiry": token_expiry,
-                        "nickname": item.get("nickname", "")
-                    })
+                
+                filtered_users.append({
+                    "id": None,
+                    "invitation_id": item.get("id"),
+                    "data": {
+                        "name": "",
+                        "email": item.get("invited_user_email", "")
+                    },
+                    "role": item.get("role"),
+                    "active": item.get("active", False),
+                    "user_new": True,
+                    "token_expiry": token_expiry,
+                    "nickname": item.get("nickname", "")
+                })
 
         return filtered_users
 
@@ -1371,6 +1373,56 @@ def delete_invitation(invitation_id):
         logging.warning(f"[delete_invitation] Unexpected Error in the CosmosDB Database")
     except Exception as e:
         logging.error(f"[delete_invitation] delete_invitation: something went wrong. {str(e)}")
+
+def get_graph_api_token():
+    tenant_id = os.getenv("AAD_TENANT_ID")
+    client_id = os.getenv("AAD_CLIENT_ID")
+    client_secret = os.getenv("AAD_CLIENT_SECRET")
+
+    url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    headers = { "Content-Type": "application/x-www-form-urlencoded" }
+    data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "https://graph.microsoft.com/.default"
+    }
+
+    response = requests.post(url, headers=headers, data=data)
+
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    else:
+        logging.error(f"Could not get token: {response.text}")
+        return None
+    
+def reset_password(user_id, new_password):
+    token = get_graph_api_token()
+    GRAPH_API_URL = "https://graph.microsoft.com/v1.0"
+    if not token:
+        raise Exception("Could not obtain Graph API token.")
+
+    url = f"{GRAPH_API_URL}/users/{user_id}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    body = {
+        "passwordProfile": {
+            "password": new_password,
+            "forceChangePasswordNextSignIn": False
+        }
+    }
+
+    response = requests.patch(url, headers=headers, json=body)
+
+    if response.status_code == 204:
+        logging.info(f"[reset_password] Password reset for user {user_id}")
+    elif response.status_code == 404:
+        raise NotFound(f"User {user_id} not found.")
+    else:
+        logging.error(f"Failed to reset password: {response.text}")
+        raise Exception("Failed to reset password")
 
 ################################################
 # WEB SCRAPING UTILS
