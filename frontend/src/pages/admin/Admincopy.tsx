@@ -357,12 +357,11 @@ export const EditUserDialog = ({
         }
         return password;
     }
-    // Función para resetear la contraseña
+
     const handleResetPassword = async () => {
         if (!selectedUser?.id) return;
         setIsResettingPassword(true);
         try {
-            // Genera una contraseña aleatoria
             const newPassword = generateRandomPassword();
             const res = await resetUserPassword({ userId: selectedUser.id, newPassword });
             if (res.error) {
@@ -536,7 +535,6 @@ const Admin = () => {
                 if (!Array.isArray(usersList)) {
                     usersList = [];
                 }
-                console.log("userlist:", usersList);
                 setUsers(usersList);
                 setFilteredUsers(usersList);
             } catch (error) {
