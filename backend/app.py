@@ -61,6 +61,7 @@ from utils import (
     get_organization_urls,
     add_or_update_organization_url,
     validate_url,
+    delete_invitation,
 )
 import stripe.error
 from bs4 import BeautifulSoup
@@ -1200,6 +1201,266 @@ def patchUserData(user_id):
         logging.exception(f"Error updating user data for user ID {user_id}")
         return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
+# Reset Password
+
+@app.route("/api/user/<user_id>/reset-password", methods=["PATCH"])
+def reset_user_password(user_id):
+    """
+    Endpoint to reset a user's password and send a notification email.
+    """
+    try:
+        data = request.get_json()
+        if not data or "new_password" not in data:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        reset_password(user_id, data["new_password"])
+        user = get_user_container(user_id)
+        user_email = user["data"]["email"]
+        user_name = user["data"].get("name", "User")
+
+        # Email details
+        subject = "Your FreddAid password has been changed"
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Password Changed - FreddAid</title>
+            <style>
+                body {{
+                    margin: 0;
+                    padding: 0;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                    background-color: #F9FAFB;
+                    line-height: 1.6;
+                }}
+                .email-container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background-color: #FFFFFF;
+                    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+                }}
+                .header {{
+                    background-color: #FFFFFF;
+                    padding: 24px 32px;
+                    border-bottom: 1px solid #E5E7EB;
+                }}
+                .logo-section {{
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }}
+                .logo {{
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }}
+                .header-image {{
+                    max-width: 200px;
+                    max-height: 60px;
+                    height: auto;
+                }}
+                .logo-text {{
+                    font-size: 28px;
+                    font-weight: bold;
+                    color: #1F2937;
+                }}
+                .logo-sparkle {{
+                    color: #10B981;
+                    font-size: 32px;
+                }}
+                .version {{
+                    font-size: 14px;
+                    color: #6B7280;
+                    font-weight: 500;
+                }}
+                .timestamp {{
+                    font-size: 12px;
+                    color: #9CA3AF;
+                }}
+                .content {{
+                    padding: 40px 32px;
+                }}
+                .greeting {{
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: #1F2937;
+                    margin-bottom: 24px;
+                }}
+                .main-title {{
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: #1F2937;
+                    margin-bottom: 16px;
+                }}
+                .description {{
+                    font-size: 16px;
+                    color: #4B5563;
+                    margin-bottom: 24px;
+                }}
+                .password-label {{
+                    font-size: 16px;
+                    font-weight: 500;
+                    color: #1F2937;
+                    margin-bottom: 12px;
+                }}
+                .password-box {{
+                    background-color: #F3F4F6;
+                    border: 2px solid #E5E7EB;
+                    border-radius: 8px;
+                    padding: 16px 20px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1F2937;
+                    letter-spacing: 1px;
+                    margin-bottom: 32px;
+                    text-align: center;
+                }}
+                .security-notice {{
+                    background-color: #ECFDF5;
+                    border: 1px solid #D1FAE5;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 24px;
+                }}
+                .security-notice-title {{
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #059669;
+                    margin-bottom: 4px;
+                }}
+                .security-notice-text {{
+                    font-size: 14px;
+                    color: #065F46;
+                }}
+                .footer {{
+                    background-color: #F9FAFB;
+                    padding: 24px 32px;
+                    border-top: 1px solid #E5E7EB;
+                    text-align: center;
+                }}
+                .footer-text {{
+                    font-size: 14px;
+                    color: #6B7280;
+                    margin-bottom: 8px;
+                }}
+                .footer-link {{
+                    color: #10B981;
+                    text-decoration: none;
+                }}
+                .footer-link:hover {{
+                    text-decoration: underline;
+                }}
+                @media (max-width: 640px) {{
+                    .email-container {{
+                        margin: 0;
+                        box-shadow: none;
+                    }}
+                    .header,
+                    .content,
+                    .footer {{
+                        padding-left: 20px;
+                        padding-right: 20px;
+                    }}
+                    .logo-section {{
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 8px;
+                    }}
+                    .greeting {{
+                        font-size: 20px;
+                    }}
+                    .main-title {{
+                        font-size: 18px;
+                    }}
+                    .password-box {{
+                        font-size: 16px;
+                        padding: 14px 16px;
+                    }}
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <!-- Header -->
+                <div class="header" style="text-align:center;">
+                    <img src="https://clewcsvstorage.blob.core.windows.net/images/header_logo.png.png" 
+                    alt="Sales Factory Logo"
+                    style="max-width:220px; height:auto; margin:0 auto; display:block;" />
+                </div>
+                <!-- Main Content -->
+                <div class="content">
+                    <div class="greeting">Hello {user_name},</div>
+                    <div class="main-title">Your password has been changed</div>
+                    <div class="description">
+                        This is a confirmation that the password for your FreddAid account has been successfully changed.
+                    </div>
+                    <div class="password-label">Your new password is:</div>
+                    <div class="password-box">
+                        {data["new_password"]}
+                    </div>
+                    <div class="security-notice">
+                        <div class="security-notice-title">🔒 Security Reminder</div>
+                        <div class="security-notice-text">
+                            Please store this password securely and consider changing it to something more memorable after your first login.
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="font-size: 16px; color: #4B5563; margin-bottom: 16px;">
+                            We recommend logging in to change your password to something more memorable.
+                        </div>
+                        <a href="{INVITATION_LINK}"
+                            style="display: inline-block; background-color: #10B981; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.2s;">
+                            Login to FreddAid
+                        </a>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <div class="footer">
+                    <div class="footer-text">
+                        This email was sent from Sales Factory's app FreddAid
+                    </div>
+                    <div class="footer-text">
+                        Need help? <a href="#" class="footer-link">Contact Support</a>
+                    </div>
+                    <div class="footer-text" style="margin-top: 16px; font-size: 12px;">
+                        © {datetime.now().year} Sales Factory AI. All rights reserved.
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        email_config = {
+            "smtp_server": EMAIL_HOST,
+            "smtp_port": EMAIL_PORT,
+            "username": EMAIL_USER,
+            "password": EMAIL_PASS,
+        }
+
+        email_service = EmailService(**email_config)
+        try:
+            email_service.send_email(
+                subject=subject,
+                html_content=html_content,
+                recipients=[user_email]
+            )
+            logging.info(f"Password reset email sent to {user_email}")
+        except EmailServiceError as e:
+            logging.error(f"Failed to send password reset email: {str(e)}")
+
+        return jsonify({"message": "Password reset successfully and email sent"}), 200
+
+    except NotFound as e:
+        logging.warning(f"User with id {user_id} not found.")
+        return jsonify({"error": f"User with id {user_id} not found."}), 404
+
+    except Exception as e:
+        logging.exception(f"Error resetting password for user with id {user_id}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route("/api/reports", methods=["GET"])
 @auth.login_required()
@@ -2033,17 +2294,36 @@ def createInvitation():
             raise MissingRequiredFieldError("organizationId")
         if not "role" in data:
             raise MissingRequiredFieldError("role")
+        if not "nickname" in data:
+            raise MissingRequiredFieldError("nickname")
         invitedUserEmail = data["invitedUserEmail"]
         organizationId = data["organizationId"]
         role = data["role"]
-        response = create_invitation(invitedUserEmail, organizationId, role)
-        return jsonify(response), HTTPStatus.CREATED 
+        nickname = data["nickname"]
+        response = create_invitation(invitedUserEmail, organizationId, role, nickname)
+        return jsonify(response), HTTPStatus.CREATED
     except MissingRequiredFieldError as field:
         return create_error_response(f"Field '{field}' is required", HTTPStatus.BAD_REQUEST)
     except Exception as e:
         logging.exception(str(e))
         return create_error_response(f'An unexpected error occurred. Please try again later. {e}', HTTPStatus.INTERNAL_SERVER_ERROR)
 
+@app.route("/api/deleteInvitation",methods=["DELETE"])
+def deleteInvitation():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return create_error_response("Missing required parameters, client_principal_id"), 400
+
+    invitation_id = request.args.get("invitationId")
+    if not invitation_id:
+        return create_error_response("Missing required parameters, invitationId"), 400
+
+    try:
+        response = delete_invitation(invitation_id)
+        return jsonify(response), HTTPStatus.OK
+    except Exception as e:
+        logging.exception("[webbackend] exception in /deleteInvitation")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/checkuser", methods=["POST"])
 def checkUser():

@@ -2,12 +2,15 @@ from functools import wraps
 import logging
 import uuid
 import os
+
+import requests
 from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any
 from azure.cosmos.exceptions import CosmosHttpResponseError
 from datetime import datetime, timezone, timedelta
+from time import time
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
 import urllib.parse
@@ -1191,26 +1194,26 @@ def get_user_by_id(user_id):
 
 
 def get_users(organization_id):
-
     users_container = get_cosmos_container("users")
     invitations_container = get_cosmos_container("invitations")
     organizations_container = get_cosmos_container("organizations")
 
     try:
-        # 1. Get IDs of active guest users
-        invitation_result = invitations_container.query_items(
+        # 1. Get all invitations for the organization
+        invitation_result = list(invitations_container.query_items(
             query="""
-                SELECT c.invited_user_id, c.role
+                SELECT c.invited_user_id, c.role, c.active, c.invited_user_email, c.nickname, c.token_expiry, c.id, c.redeemed_at
                 FROM c 
-                WHERE c.active = true AND c.organization_id = @organization_id
+                WHERE c.organization_id = @organization_id
             """,
             parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True,
-        )
+        ))
 
-        # Map user_id and role
+        # Map user_id to role and active for invitations with invited_user_id
         user_roles = {
-            item["invited_user_id"]: item["role"] for item in invitation_result
+            item["invited_user_id"]: {"role": item["role"], "active": item.get("active", False)}
+            for item in invitation_result if item.get("invited_user_id")
         }
 
         # 2. Obtain organization owner
@@ -1222,17 +1225,13 @@ def get_users(organization_id):
         owner_list = list(org_result)
         if owner_list:
             owner_id = owner_list[0]
-            user_roles[owner_id] = "admin"
+            user_roles[owner_id] = {"role": "admin", "active": True}
 
-        # 3. If there are no IDs, return empty.
-        if not user_roles:
-            return []
-
-        # Get only the necessary users (in batches of 10 per Cosmos limit).
         filtered_users = []
         user_ids = list(user_roles.keys())
         BATCH_SIZE = 10
 
+        # 3. Bring active users
         for i in range(0, len(user_ids), BATCH_SIZE):
             batch_ids = user_ids[i : i + BATCH_SIZE]
             in_clause = ", ".join([f'"{uid}"' for uid in batch_ids])
@@ -1246,8 +1245,72 @@ def get_users(organization_id):
 
             for user in user_batch_result:
                 uid = user["id"]
-                user["role"] = user_roles.get(uid)  # rol invitation
-                filtered_users.append(user)
+                # Look for inactive and NOT redeemed invitation for this user
+                invitation = next(
+                    (
+                        item for item in invitation_result
+                        if item.get("invited_user_id") == uid
+                        and item.get("active") == False
+                        and not item.get("redeemed_at")
+                    ),
+                    None
+                )
+                # Search for inactive and YES redeemed invitation for this user
+                invitation_redeemed = next(
+                    (
+                        item for item in invitation_result
+                        if item.get("invited_user_id") == uid
+                        and item.get("active") == False
+                        and item.get("redeemed_at")
+                    ),
+                    None
+                )
+                # If there is an inactive invitation and NOT redeemed, display as a guest.
+                if invitation:
+                    filtered_users.append({
+                        "id": None,
+                        "invitation_id": invitation.get("id"),
+                        "data": {
+                            "name": invitation.get("nickname", ""),
+                            "email": invitation.get("invited_user_email", "")
+                        },
+                        "role": invitation.get("role"),
+                        "active": invitation.get("active", False),
+                        "user_new": True,
+                        "token_expiry": invitation.get("token_expiry"),
+                        "nickname": invitation.get("nickname", "")
+                    })
+                # If there is inactive invitation and YES redeemed, DO NOT add anything (skip this user)
+                elif invitation_redeemed:
+                    continue
+                # If active and no redeemed invitation, display as active user
+                elif user_roles.get(uid, {}).get("active"):
+                    user["role"] = user_roles.get(uid, {}).get("role")
+                    user["active"] = user_roles.get(uid, {}).get("active")
+                    user["user_new"] = False
+                    filtered_users.append(user)
+
+        # 4. Add invitations without invited_user_id as "new" users
+        for item in invitation_result:
+            if (
+                not item.get("invited_user_id")
+                and not item.get("redeemed_at")
+            ):
+                token_expiry = item.get("token_expiry")
+                
+                filtered_users.append({
+                    "id": None,
+                    "invitation_id": item.get("id"),
+                    "data": {
+                        "name": "",
+                        "email": item.get("invited_user_email", "")
+                    },
+                    "role": item.get("role"),
+                    "active": item.get("active", False),
+                    "user_new": True,
+                    "token_expiry": token_expiry,
+                    "nickname": item.get("nickname", "")
+                })
 
         return filtered_users
 
@@ -1291,6 +1354,75 @@ def delete_user(user_id):
     except Exception as e:
         logging.error(f"[delete_user] delete_user: something went wrong. {str(e)}")
 
+def delete_invitation(invitation_id):
+    if not invitation_id:
+        return {"error": "Invitation ID not found."}
+
+    logging.info("Invitation ID found. Deleting invitation: " + invitation_id)
+
+    container = get_cosmos_container("invitations")
+    try:
+        invitation = container.read_item(item=invitation_id, partition_key=invitation_id)
+        container.delete_item(item=invitation_id, partition_key=invitation_id)
+        logging.info(f"[delete_invitation] Invitation {invitation_id} deleted successfully")
+        return {"status": "success"}
+    except CosmosResourceNotFoundError:
+        logging.warning(f"[delete_invitation] Invitation not Found.")
+        raise NotFound
+    except CosmosHttpResponseError:
+        logging.warning(f"[delete_invitation] Unexpected Error in the CosmosDB Database")
+    except Exception as e:
+        logging.error(f"[delete_invitation] delete_invitation: something went wrong. {str(e)}")
+
+def get_graph_api_token():
+    tenant_id = os.getenv("AAD_TENANT_ID")
+    client_id = os.getenv("AAD_CLIENT_ID")
+    client_secret = os.getenv("AAD_CLIENT_SECRET")
+
+    url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    headers = { "Content-Type": "application/x-www-form-urlencoded" }
+    data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "https://graph.microsoft.com/.default"
+    }
+
+    response = requests.post(url, headers=headers, data=data)
+
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    else:
+        logging.error(f"Could not get token: {response.text}")
+        return None
+    
+def reset_password(user_id, new_password):
+    token = get_graph_api_token()
+    GRAPH_API_URL = "https://graph.microsoft.com/v1.0"
+    if not token:
+        raise Exception("Could not obtain Graph API token.")
+
+    url = f"{GRAPH_API_URL}/users/{user_id}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    body = {
+        "passwordProfile": {
+            "password": new_password,
+            "forceChangePasswordNextSignIn": False
+        }
+    }
+
+    response = requests.patch(url, headers=headers, json=body)
+
+    if response.status_code == 204:
+        logging.info(f"[reset_password] Password reset for user {user_id}")
+    elif response.status_code == 404:
+        raise NotFound(f"User {user_id} not found.")
+    else:
+        logging.error(f"Failed to reset password: {response.text}")
+        raise Exception("Failed to reset password")
 
 ################################################
 # WEB SCRAPING UTILS
