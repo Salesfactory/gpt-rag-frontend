@@ -174,7 +174,7 @@ const KnowledgeSources: React.FC = () => {
         return;
       } else if (urlResult?.status === 'success') {
         // Scraping was successful
-        toast.success('URL added and scraped successfully');
+        toast.success('URL added and content successfully scraped. Please allow 2–5 minutes for the data to become searchable.');
       } else {
         // No specific result found, show generic success
         toast.success('URL added successfully');
@@ -183,6 +183,7 @@ const KnowledgeSources: React.FC = () => {
       // Clear form and reload data (only reached if no error occurred)
       setNewUrl('');
       setUrlError('');
+      
       
       // Reload the data to get the new entry with scraping results
       await loadKnowledgeSources();
@@ -228,7 +229,7 @@ const KnowledgeSources: React.FC = () => {
         toast.error('⚠️ Scraping is disabled for this site due to its content policy');
       } else if (urlResult?.status === 'success') {
         // Scraping was successful
-        toast.success('URL refreshed successfully');
+        toast.success('URL refreshed and content successfully scraped. Please allow 2–5 minutes for the data to become searchable.');
       } else {
         // No specific result found, show generic success
         toast.success('URL refresh completed');
@@ -236,6 +237,7 @@ const KnowledgeSources: React.FC = () => {
       
       // Reload the data to get the updated scraping results
       await loadKnowledgeSources();
+      
     } catch (error) {
       toast.error('Failed to refresh URL');
       
