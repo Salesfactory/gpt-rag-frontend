@@ -684,11 +684,12 @@ const Admin = () => {
                             flexDirection: "row",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            marginBottom: "1.5rem"
+                            marginBottom: "1.5rem",
+                            gap: "5px"
                         }}
                     >
-                        <div style={{ display: "flex", gap: "12px", width: "100%", maxWidth: 600 }}>
-                            <div style={{ position: "relative", flex: 1, maxWidth: 600 }}>
+                        <div style={{ display: "flex", flex: 1 }}>
+                            <div style={{ position: "relative", flex: 1 }}>
                                 <span
                                     style={{
                                         position: "absolute",
@@ -701,7 +702,7 @@ const Admin = () => {
                                         paddingBottom: "1px"
                                     }}
                                 >
-                                    <Search />
+                                    <Search size={16} />
                                 </span>
                                 <TextField
                                     className={styles.responsiveSearch}
@@ -773,7 +774,7 @@ const Admin = () => {
                                                     justifyContent: "center"
                                                 }}
                                             >
-                                                <X size={18} />
+                                                <X size={16} />
                                             </button>
                                         ) : null
                                     }
