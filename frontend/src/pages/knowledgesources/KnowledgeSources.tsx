@@ -159,18 +159,34 @@ const KnowledgeSources: React.FC = () => {
     try {
       setIsAdding(true);
       
-      // Use the scraping endpoint instead of the simple add URL endpoint
-      // This will automatically trigger web scraping and save results with blob links to Cosmos
-      await scrapeUrls([newUrl], organization.id, user);
+      // Use the scraping endpoint to scrape and save the URL
+      const scrapingResult = await scrapeUrls([newUrl], organization.id, user);
       
-      // Clear form and reload data
+      // Extract results array for easier access
+      const results = scrapingResult?.data?.result?.results || [];
+      const urlResult = results.find((result: any) => result.url === newUrl);
+      
+      if (urlResult?.status === 'error') {
+        // Scraping failed, show error and keep form
+        toast.error('⚠️ Scraping is disabled for this site due to its content policy');
+        setUrlError(urlResult.error || 'Scraping failed');
+        loadKnowledgeSources(); // still reload the data to show the record on the URL table
+        return;
+      } else if (urlResult?.status === 'success') {
+        // Scraping was successful
+        toast.success('URL added and content successfully scraped. Please allow 2–5 minutes for the data to become searchable.');
+      } else {
+        // No specific result found, show generic success
+        toast.success('URL added successfully');
+      }
+      
+      // Clear form and reload data (only reached if no error occurred)
       setNewUrl('');
       setUrlError('');
-      toast.success('URL added successfully');
+      
       
       // Reload the data to get the new entry with scraping results
       await loadKnowledgeSources();
-      // TODO: differentiate between adding and scraping
     } catch (error) {
       console.error('Error adding and scraping URL:', error);
       toast.error('Failed to add URL and initiate scraping');
@@ -179,12 +195,55 @@ const KnowledgeSources: React.FC = () => {
     }
   };
   
-  // Simulate refreshing a knowledge source
-  // In a real app, this would trigger an API call to re-crawl the URL
+  // Refresh a knowledge source by re-scraping its URL
   const handleRefresh = async (id: string) => {
-    // For now, just reload all data - in future could implement specific refresh endpoint
-    toast.info('Refreshing URL...');
-    await loadKnowledgeSources();
+    if (!organization?.id) {
+      toast.error('No organization selected');
+      return;
+    }
+
+    // Find the knowledge source to get its URL
+    const sourceToRefresh = knowledgeSources.find(source => source.id === id);
+    if (!sourceToRefresh) {
+      toast.error('Knowledge source not found');
+      return;
+    }
+
+    try {
+      // Update local state to show processing status immediately
+      setKnowledgeSources(knowledgeSources.map(source => 
+        source.id === id 
+          ? { ...source, status: 'Processing', result: 'Pending' }
+          : source
+      ));
+      
+      // Re-scrape the URL and update the existing record
+      const scrapingResult = await scrapeUrls([sourceToRefresh.url], organization.id, user);
+      
+      // Extract results array for easier access
+      const results = scrapingResult?.data?.result?.results || [];
+      const urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
+      
+      if (urlResult?.status === 'error') {
+        // Scraping failed, show error message
+        toast.error('⚠️ Scraping is disabled for this site due to its content policy');
+      } else if (urlResult?.status === 'success') {
+        // Scraping was successful
+        toast.success('URL refreshed and content successfully scraped. Please allow 2–5 minutes for the data to become searchable.');
+      } else {
+        // No specific result found, show generic success
+        toast.success('URL refresh completed');
+      }
+      
+      // Reload the data to get the updated scraping results
+      await loadKnowledgeSources();
+      
+    } catch (error) {
+      toast.error('Failed to refresh URL');
+      
+      // Reload data to restore original state if scraping failed
+      await loadKnowledgeSources();
+    }
   };
   
   // Delete a knowledge source
@@ -346,19 +405,30 @@ const KnowledgeSources: React.FC = () => {
       setIsUpdating(true);
       await updateOrganizationUrl(editingId, organization.id, editingUrl);
       
-      toast.success('URL updated successfully');
+      toast.success('URL updated successfully. Previous scraped data has been removed. Please refresh source to scrape the new page.');
       
-      // Update local state
+      // Update local state - reset scraping-related fields since URL changed
       setKnowledgeSources(knowledgeSources.map(source => 
         source.id === editingId 
-          ? { ...source, url: editingUrl, lastModified: new Date().toLocaleString('sv-SE', { 
-              timeZone: 'UTC',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit'
-            }).replace('T', ' ') }
+          ? { 
+              ...source, 
+              url: editingUrl, 
+              lastModified: new Date().toLocaleString('sv-SE', { 
+                timeZone: 'UTC',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              }).replace('T', ' '),
+              // Reset scraping-related fields since the URL has changed
+              status: 'Processing',
+              result: 'Pending',
+              error: undefined,
+              contentLength: undefined,
+              title: undefined,
+              blobPath: undefined
+            }
           : source
       ));
       
@@ -489,9 +559,16 @@ const KnowledgeSources: React.FC = () => {
         
         {/* Knowledge Sources */}
         <div className={styles.tableContainer}>
-          {/* Header */}
+          {/* Header with Results Count */}
           <div className={styles.cardHeader}>
-            <span>URL</span>
+            <span>
+              URL 
+              {!isLoading && (
+                <span className={styles.resultsCount}>
+                  ({filteredSources.length} {filteredSources.length === 1 ? 'result' : 'results'})
+                </span>
+              )}
+            </span>
             <span>Actions</span>
           </div>
           
@@ -535,8 +612,8 @@ const KnowledgeSources: React.FC = () => {
                                 onClick={handleSaveEdit}
                                 disabled={!editingUrl.trim() || !!editingError || isUpdating}
                                 className={styles.saveButton}
+                                title="Save URL changes. Previous scraped data will be removed."
                               >
-                                {/* // TODO:Save and Re-Scrape*/}
                                 {isUpdating ? 'Saving...' : 'Save'} 
                               </button>
                               <button

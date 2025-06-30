@@ -12,6 +12,12 @@
     display: block;
 }
 
+ .brandImage {
+     height: 50px;     
+     width: auto;
+     object-fit: contain;
+     white-space: nowrap; 
+    }
 
 .profileButton {
     position: relative;
