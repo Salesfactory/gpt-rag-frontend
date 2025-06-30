@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "./Navbarcopy.module.css";
 import { Menu, Settings, History, MessageCircleQuestion, ChevronDown, Upload, Copy, ExternalLink } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
@@ -8,6 +8,7 @@ import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
 import { getUserById, exportConversation } from "../../api";
 import { toast } from "react-toastify";
 import { Spinner } from "@fluentui/react";
+import FreddaidLogo from "../../img/FreddaidLogo.png";
 
 type Role = "user" | "admin" | "platformAdmin";
 
@@ -44,6 +45,22 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [showChatHistory, setShowChatHistory] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const profileRef = useRef<HTMLLIElement>(null);
+
+    useEffect(() => {
+        if (!isDropdownOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isDropdownOpen]);
 
     const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
         ? true
@@ -105,7 +122,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     const handleExportConversation = async () => {
         const currentConversationId = chatId;
-        
+
         if (!currentConversationId) {
             toast("No active conversation to export.", { type: "warning" });
             return;
@@ -125,28 +142,28 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
         try {
             const result = await exportConversation(currentConversationId, user.id);
-            
+
             // Show success toast with copy and open options
             const exportToast = (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     <div>Conversation exported successfully!</div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(result.share_url);
                                 toast("Link copied to clipboard!", { type: "success" });
                             }}
                             style={{
-                                padding: '4px 8px',
-                                background: '#0078d4',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
+                                padding: "4px 8px",
+                                background: "#0078d4",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px"
                             }}
                         >
                             <Copy size={12} />
@@ -154,19 +171,19 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         </button>
                         <button
                             onClick={() => {
-                                window.open(result.share_url, '_blank');
+                                window.open(result.share_url, "_blank");
                             }}
                             style={{
-                                padding: '4px 8px',
-                                background: '#107c10',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
+                                padding: "4px 8px",
+                                background: "#107c10",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px"
                             }}
                         >
                             <ExternalLink size={12} />
@@ -176,12 +193,11 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 </div>
             );
 
-            toast(exportToast, { 
-                type: "success", 
+            toast(exportToast, {
+                type: "success",
                 autoClose: 8000,
                 closeOnClick: false
             });
-
         } catch (error) {
             console.error("Error exporting conversation:", error);
             toast("Failed to export conversation. Please try again.", { type: "error" });
@@ -219,7 +235,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         </button>
                         {location === "/" && (
                             <div className={`ms-2 d-none d-sm-flex align-items-center ${styles.brandContainer}`}>
-                                <span className={styles.brandText}>FreddAid</span>
+                                <img src={FreddaidLogo} alt="FreddAid Logo" className={styles.brandImage} />
                                 <span className={styles.greenBar}></span>
                                 <span className={styles.brandText2}>{organization?.name}</span>
                             </div>
@@ -286,11 +302,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {/* Share Button - only show when there's an active conversation */}
                         {location === "/" && (chatId || dataConversation.length > 0) && (
                             <li className="nav-item">
-                                <button 
-                                    onClick={handleExportConversation} 
-                                    disabled={isExporting}
-                                    className={styles.shareButton}
-                                >
+                                <button onClick={handleExportConversation} disabled={isExporting} className={styles.shareButton}>
                                     {isExporting ? (
                                         <>
                                             <Spinner size={1} />
@@ -330,7 +342,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
 
                         {/* User Profile Card */}
-                        <li className="nav-item dropdown">
+                        <li className="nav-item dropdown" ref={profileRef}>
                             <button
                                 className={`nav-link ${styles.profileButton} ${isDropdownOpen ? styles.dropdownOpen : ""}`}
                                 onClick={handleOnClickProfileCard}

@@ -47,7 +47,7 @@ const SubscriptionManagement: React.FC = () => {
         "All actions": null,
         "Financial Assistant": "Financial Assistant Change",
         "Subscription Tier": "Subscription Tier Change",
-        "Subscription created": "Subscription created"
+        "Subscription Created": "Subscription Created"
     };
 
     const FilterOptions = [
@@ -78,6 +78,8 @@ const SubscriptionManagement: React.FC = () => {
     const remainingTime = msExpirationDate.getTime() - actualDate.getTime();
     const daysRemaining = Math.ceil(remainingTime / (1000 * 3600 * 24));
     const [isLoading, setIsLoading] = useState(false);
+    const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 700);
+    const [mobilePage, setMobilePage] = useState(1);
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -262,6 +264,27 @@ const SubscriptionManagement: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 700);
+            setMobilePage(1);
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    // Pagination logic for mobile
+    const logsToShow = React.useMemo(() => {
+        if (!filteredLogsData) return [];
+        if (isMobile) {
+            const start = (mobilePage - 1) * 5;
+            return filteredLogsData.slice(start, start + 5);
+        }
+        return filteredLogsData.slice(0, 10);
+    }, [filteredLogsData, isMobile, mobilePage]);
+
+    const totalMobilePages = filteredLogsData ? Math.ceil(filteredLogsData.length / 5) : 1;
+
     return (
         <div className={styles.pageContainer}>
             <ToastContainer />
@@ -352,105 +375,103 @@ const SubscriptionManagement: React.FC = () => {
                     </table>
                 )}
                 {isRecentChangesModal && (
-                    <>
-                        <div className={styles.modalAudit}>
-                            <div className={styles.modalHeader}>
-                                <h1 className={styles.titleRecent}>Recent Changes</h1>
-                                <button className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
-                                    <IconX />
-                                </button>
-                            </div>
-                            <div className={styles.auditFilter}>
-                                <Label className={styles.modalText}>Filter by Action:</Label>
-                                <Dropdown
-                                    placeholder="Select action to filter"
-                                    options={FilterOptions}
-                                    onChange={handleFilterChange}
-                                    styles={{
-                                        title: { fontSize: "1rem" },
-                                        dropdownItem: { fontSize: "1rem" },
-                                        dropdownItemSelected: { fontSize: "1rem" },
-                                        root: { fontSize: "1rem" }
-                                    }}
-                                />
-                            </div>
-                            {recentChangesLoading ? (
-                                <Spinner styles={{ root: { marginTop: "50px" } }} />
-                            ) : (
-                                <>
-                                    <div className={styles.row}>
-                                        <table className={styles.table}>
-                                            <thead className={styles.thead}>
-                                                <tr key="types">
-                                                    <th className={styles.tableName}>Date</th>
-                                                    <th className={styles.tableName}>Action</th>
-                                                    <th className={styles.tableName}>Modified by</th>
-                                                    <th className={styles.tableName}>Details</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className={styles.auditBody}>
-                                                {paginatedLogs.map((data: any, index: number) => (
-                                                    <tr className={styles.auditRow} key={index}>
-                                                        {data.action === "Subscription Tier Change" && (
-                                                            <React.Fragment key={index}>
-                                                                <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                                <td className={styles.tableText}>Subscription Tier Change</td>
-                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                                <td className={styles.tableText}>
-                                                                    {data.previous_plan} → {data.current_plan}
-                                                                </td>
-                                                            </React.Fragment>
-                                                        )}
-                                                        {data.action === "Financial Assistant Change" && (
-                                                            <React.Fragment>
-                                                                <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                                <td className={styles.tableText}>FA Add-On Toggled</td>
-                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                                <td className={styles.tableStatus}>Status: {data.status_financial_assistant}</td>
-                                                            </React.Fragment>
-                                                        )}
-                                                        {data.action === "Subscription Created" && (
-                                                            <React.Fragment>
-                                                                <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                                <td className={styles.tableText}>Subscription Created</td>
-                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                                <td className={styles.tableText}>Status: Active</td>
-                                                            </React.Fragment>
-                                                        )}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div style={{ display: "flex", marginTop: "20px" }}>
-                                        {paginatedLogs.length === 0 ? (
-                                            <p>No logs found</p>
-                                        ) : (
-                                            <p>
-                                                Page {currentPage} of {Math.ceil((filteredLogsData?.length || 0) / rowsPerPage)}
-                                            </p>
-                                        )}
-                                        <div style={{ marginLeft: "auto" }}>
-                                            <IconButton
-                                                iconProps={{ iconName: "ChevronLeft" }}
-                                                ariaLabel="Previous page"
-                                                onClick={() => handlePagination(currentPage - 1)}
-                                                disabled={currentPage == 1}
-                                            />
-                                            <IconButton
-                                                iconProps={{ iconName: "ChevronRight" }}
-                                                disabled={currentPage === Math.ceil((filteredLogsData?.length || 0) / rowsPerPage)}
-                                                ariaLabel="Next page"
-                                                onClick={() => {
-                                                    handlePagination(currentPage + 1);
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                    <div className={styles.modalAudit}>
+                        <div className={styles.modalHeader}>
+                            <h1 className={styles.titleRecent}>Recent Changes</h1>
+                            <button className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
+                                <IconX />
+                            </button>
                         </div>
-                    </>
+                        <div className={styles.auditFilter}>
+                            <Label className={styles.modalText}>Filter by Action:</Label>
+                            <Dropdown
+                                placeholder="Select action to filter"
+                                options={FilterOptions}
+                                onChange={handleFilterChange}
+                                styles={{
+                                    title: { fontSize: "1rem" },
+                                    dropdownItem: { fontSize: "1rem" },
+                                    dropdownItemSelected: { fontSize: "1rem" },
+                                    root: { fontSize: "1rem" }
+                                }}
+                            />
+                        </div>
+                        {recentChangesLoading ? (
+                            <Spinner styles={{ root: { marginTop: "50px" } }} />
+                        ) : (
+                            <div className={styles.row} style={{ overflowX: "auto", width: "100%" }}>
+                                <div style={{ width: "100%", minWidth: 320 }}>
+                                    <table className={styles.table} style={{ width: "100%", minWidth: 320 }}>
+                                        <thead className={styles.thead}>
+                                            <tr key="types">
+                                                <th className={styles.tableName}>Date</th>
+                                                <th className={styles.tableName}>Action</th>
+                                                <th className={styles.tableName}>Modified by</th>
+                                                <th className={styles.tableName}>Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className={styles.auditBody}>
+                                            {(logsToShow || []).map((data: any, index: number) => (
+                                                <tr className={styles.auditRow} key={index}>
+                                                    {data.action === "Subscription Tier Change" && (
+                                                        <>
+                                                            <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
+                                                            <td className={styles.tableText}>Subscription Tier Change</td>
+                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                            <td className={styles.tableText}>
+                                                                {data.previous_plan} → {data.current_plan}
+                                                            </td>
+                                                        </>
+                                                    )}
+                                                    {data.action === "Financial Assistant Change" && (
+                                                        <>
+                                                            <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
+                                                            <td className={styles.tableText}>FA Add-On Toggled</td>
+                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                            <td className={styles.tableStatus}>Status: {data.status_financial_assistant}</td>
+                                                        </>
+                                                    )}
+                                                    {data.action === "Subscription Created" && (
+                                                        <>
+                                                            <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
+                                                            <td className={styles.tableText}>Subscription Created</td>
+                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                            <td className={styles.tableText}>Status: Active</td>
+                                                        </>
+                                                    )}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    {(filteredLogsData?.length === 0 || !filteredLogsData) && (
+                                        <p style={{ textAlign: "center", marginTop: 16 }}>No logs found</p>
+                                    )}
+                                    {/* Mobile Pagination Controls */}
+                                    {isMobile && filteredLogsData && filteredLogsData.length > 5 && (
+                                        <div style={{ display: "flex", justifyContent: "center", marginTop: 12, gap: 8 }}>
+                                            <button
+                                                className={styles.button}
+                                                onClick={() => setMobilePage(p => Math.max(1, p - 1))}
+                                                disabled={mobilePage === 1}
+                                            >
+                                                Prev
+                                            </button>
+                                            <span style={{ alignSelf: "center" }}>
+                                                {mobilePage} / {totalMobilePages}
+                                            </span>
+                                            <button
+                                                className={styles.button}
+                                                onClick={() => setMobilePage(p => Math.min(totalMobilePages, p + 1))}
+                                                disabled={mobilePage === totalMobilePages}
+                                            >
+                                                Next
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 )}
                 {isViewModal && (
                     <div className={styles.modalSubscription}>
@@ -546,7 +567,7 @@ const SubscriptionManagement: React.FC = () => {
                                     </button>
                                     <span className={styles.modalTitle}>Subscribe to Financial Assistant</span>
                                 </div>
-                                <Label className={styles.modalText}>Subscribing to the Financial Assistant feature will cost $29.99 per month.</Label>
+                                <Label className={styles.modalText}>Are you sure you want to add the Financial Assistant to your subscription?</Label>
                                 <div className={styles.buttonContainerNew}>
                                     <button onClick={() => setIsSubscriptionModal(false)} className={styles.cancelButton}>
                                         Cancel

@@ -117,6 +117,28 @@ export async function deleteUser({ user, userId }: any): Promise<any> {
     }
 }
 
+export async function deleteInvitation({user, invitationId }: any): Promise<any> {
+    try {
+        const response = await fetch(`/api/deleteInvitation?invitationId=${invitationId}`, {
+            method: "DELETE",
+            headers: {
+                "X-MS-CLIENT-PRINCIPAL-ID": user.id,
+                "Content-Type": "application/json",
+            }
+        });
+        
+        if (response.status === 200 || response.status === 204) {
+            return { success: true };
+        }
+
+        const fetchedData = await response.json();
+        return fetchedData;
+    } catch (error) {
+        console.error("Error deleting user", error);
+        return { error: error };
+    }
+}
+
 export async function checkUser({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
@@ -503,7 +525,7 @@ export async function removeFinancialAssistant({ user, subscriptionId }: { user?
     }
 }
 
-export async function createInvitation({ organizationId, invitedUserEmail, userId, role }: any): Promise<any> {
+export async function createInvitation({ organizationId, invitedUserEmail, userId, role, nickname }: any): Promise<any> {
     try {
         const response = await fetch("/api/createInvitation", {
             method: "POST",
@@ -514,6 +536,7 @@ export async function createInvitation({ organizationId, invitedUserEmail, userI
             body: JSON.stringify({
                 organizationId,
                 invitedUserEmail,
+                nickname,
                 role
             })
         });
@@ -970,6 +993,26 @@ export async function updateUserData({ userId, patchData }: { userId: string; pa
     if (response.status > 299 || !response.ok) {
         throw Error(`Error updating user data of ID ${userId}`);
     }
+}
+
+export async function resetUserPassword({ userId, newPassword }: { userId: string; newPassword: string }) {
+    const response = await fetch(`/api/user/${encodeURIComponent(userId)}/reset-password`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ "new_password":newPassword })
+    });
+
+    if (response.status === 404) {
+        throw Error(`User with ID ${userId} not found`);
+    }
+
+    if (response.status > 299 || !response.ok) {
+        throw Error(`Error resetting password for user with ID ${userId}`);
+    }
+
+    return response.json();
 }
 
 export async function changeSubscription({ subscriptionId, newPlanId, user}: {subscriptionId: string;newPlanId: string; user:any;}): Promise<any> {

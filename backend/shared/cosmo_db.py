@@ -479,7 +479,28 @@ def patch_organization_data(org_id, patch_data):
     logging.info(f"Organization {org_id} updated successfully.")
     return org
 
-
+def update_invitation_role(invited_user_id, organization_id, new_role):
+    """
+    Updates the 'role' field in the invitations container for a given invited_user_id and organization_id.
+    """
+    container = get_cosmos_container("invitations")
+    query = """
+        SELECT * FROM c
+        WHERE c.invited_user_id = @invited_user_id AND c.organization_id = @organization_id
+    """
+    parameters = [
+        {"name": "@invited_user_id", "value": invited_user_id},
+        {"name": "@organization_id", "value": organization_id}
+    ]
+    items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+    if not items:
+        logging.warning(f"No invitation found for user {invited_user_id} in org {organization_id}")
+        return None
+    invitation = items[0]
+    invitation["role"] = new_role
+    container.replace_item(item=invitation["id"], body=invitation)
+    logging.info(f"Invitation {invitation['id']} updated with new role: {new_role}")
+    return invitation
 
 def patch_user_data(user_id, patch_data):
     """
@@ -514,7 +535,14 @@ def patch_user_data(user_id, patch_data):
 
         container.upsert_item(current_user)
         logging.info(f"User data updated successfully: {current_user}")
+        
+        organization_id = patch_data.get("organizationId") or user_data.get("organizationId")
+        new_role = patch_data.get("role")
+        if organization_id and new_role:
+            update_invitation_role(user_id, organization_id, new_role)
+
         return current_user
+
 
     except CosmosResourceNotFoundError as nf:
         logging.error(f"User with id '{user_id}' not found during upsert.")
@@ -534,11 +562,15 @@ def patch_user_data(user_id, patch_data):
 
 
 def get_audit_logs(organization_id):
-    """Get all the audit logs in a cosmosDB container"""
+    """Get the 10 most recent audit logs in a cosmosDB container"""
     container = get_cosmos_container("auditLogs")
     try:
         items = list(container.query_items(
-            query="SELECT * FROM c WHERE c.organization_id = @organization_id",
+            query="""
+                SELECT TOP 10 * FROM c 
+                WHERE c.organization_id = @organization_id 
+                ORDER BY c._ts DESC
+            """,
             parameters=[{"name": "@organization_id", "value": organization_id}],
             enable_cross_partition_query=True
         ))
@@ -737,7 +769,7 @@ def get_invitation_role(user_id, organization_id):
 
     raise ValueError("No role found: user is not owner nor has active invitation")
 
-def create_invitation(invited_user_email, organization_id, role):
+def create_invitation(invited_user_email, organization_id, role, nickname):
     """
     Creates a new Invitation in the container.
     """
@@ -778,6 +810,7 @@ def create_invitation(invited_user_email, organization_id, role):
         invitation = {
             "id": str(uuid.uuid4()),
             "invited_user_email": invited_user_email,
+            "nickname": nickname,
             "organization_id": organization_id,
             "role": role,
             "active": False,
