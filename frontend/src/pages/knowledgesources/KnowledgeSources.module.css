@@ -3,14 +3,14 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 100px 40px 100px 80px;
+  padding: 100px 40px 200px 80px;
   background-color: #f9fafb;
   min-height: 100vh;
 }
 
 @media (max-width: 900px) {
   .pageContainer {
-    padding: 100px 16px 100px 50px;
+    padding: 100px 16px 200px 50px;
   }
 }
 
@@ -284,10 +284,10 @@
 .cardsContainer {
   background-color: white;
   border-radius: 0 0 8px 8px;
-  max-height: min(600px, 60vh); /* Responsive height: smaller of 600px or 60% of viewport height */
+  max-height: min(400px, 40vh); /* Responsive height: smaller of 600px or 60% of viewport height */
   overflow-y: auto; /* Enable vertical scrolling */
   scroll-behavior: smooth; /* Smooth scrolling animation */
-  padding-bottom: 16px; /* Add bottom padding to ensure last item is fully visible */
+   /* Add bottom padding to ensure last item is fully visible */
 }
 
 /* Custom scrollbar styling */
@@ -319,7 +319,7 @@
 
 .card:last-child {
   border-bottom: none;
-  margin-bottom: 42px; /* More space for desktop */
+  margin-bottom: 16px; /* More space for desktop */
 }
 
 .card:hover {
@@ -480,7 +480,7 @@
 
 @media (max-width: 768px) {
   .pageContainer {
-    padding: 100px 16px 100px 16px;
+    padding: 100px 16px 200px 16px;
   }
   
   .addUrlSection {
@@ -536,14 +536,12 @@
     gap: 8px;
   }
 
-  .card:last-child {
-    margin-bottom: 24px; /* Medium space for tablets */
-  }
+  
 }
 
 @media (max-width: 480px) {
   .pageContainer {
-    padding: 80px 12px 80px 12px;
+    padding: 80px 12px 180px 12px;
   }
   
   .addUrlSection {
@@ -600,9 +598,7 @@
     gap: 6px;
   }
 
-  .card:last-child {
-    margin-bottom: 16px; /* Less space for small mobile devices */
-  }
+  
 }
 
 /* Edit form styles */
