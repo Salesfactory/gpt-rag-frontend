@@ -25,6 +25,12 @@ from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
 
+# Suppress Azure SDK logs (including Key Vault calls)
+logging.getLogger('azure').setLevel(logging.WARNING)
+logging.getLogger('azure.identity').setLevel(logging.WARNING)
+logging.getLogger('azure.keyvault').setLevel(logging.WARNING)
+logging.getLogger('azure.core').setLevel(logging.WARNING)
+
 from identity.flask import Auth
 from datetime import timedelta, datetime
 
