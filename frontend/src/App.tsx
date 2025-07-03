@@ -1,23 +1,13 @@
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./router/ProtectedRoute";
-// import Layout from "./pages/layout/_Layout";
 import NoPage from "./pages/NoPage";
 import AccessDenied from "./pages/AccesDenied";
-// import Chat from "./pages/chat/Chat";
-// import Admin from "./pages/admin/Admin";
 import Onboarding from "./pages/onboarding/Onboarding";
-import Invitations from "./pages/invitations/Invitations";
-// import Organization from "./pages/organization/Organization";
 import HelpCenter from "./pages/helpcenter/HelpCenter";
-// import UploadResources from "./pages/resources/UploadResources";
 import RequestStudies from "./pages/studies/RequestStudies";
 import ReportManagement from "./pages/reports/ReportManagement";
-// import Reports from "./pages/reports/Reports";
-// import DistributionLists from "./pages/reports/DistributionLists";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
-// import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagement";
-
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
@@ -118,7 +108,6 @@ export default function App() {
             >
                 <Route element={<Layout />}>
                     <Route path="/admin" element={<Admin />} />
-                    <Route path="/invitations" element={<Invitations />} />
                     <Route path="/organization" element={<Organization />} />
                     <Route path="/knowledge-sources" element={<KnowledgeSources />} />
                     <Route path="/subscription-management" element={<SubscriptionManagement />} />
