@@ -131,6 +131,8 @@ interface AppContextType {
     >;
     userName: string;
     setUserName: Dispatch<SetStateAction<string>>;
+    isResizingAnalysisPanel: boolean;
+    setisResizingAnalysisPanel: Dispatch<SetStateAction<boolean>>;
 }
 
 // Create the context with a default value
@@ -178,6 +180,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const [documentName, setDocumentName] = useState<string>(documentParam || "defaultDocument");
     const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
+    const [isResizingAnalysisPanel, setisResizingAnalysisPanel] = useState<boolean>(false);
 
     // Move agentType update into useEffect to prevent state updates on every render
     useEffect(() => {
@@ -530,7 +533,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             settings,
             setSettings,
             userName,
-            setUserName
+            setUserName,
+            isResizingAnalysisPanel,
+            setisResizingAnalysisPanel
         }),
         [
             showHistoryPanel,
@@ -556,7 +561,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isSubscriptionTiersLoading,
             isChatHistoryLoading,
             settings,
-            userName
+            userName,
+            isResizingAnalysisPanel
         ]
     );
     useEffect(() => {

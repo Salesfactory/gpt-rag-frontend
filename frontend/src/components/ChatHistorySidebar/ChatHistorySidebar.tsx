@@ -10,9 +10,14 @@ import { Trash2, Check, X, ChevronDown, ChevronUp, Upload, ExternalLink, Copy } 
 interface ChatHistorySidebarProps {
     onClose: () => void;
     onDeleteChat: () => void;
+    width: number;
+    minWidth: number;
+    maxWidth: number;
+    onResizeMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
+    isResizing: boolean;
 }
 
-const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDeleteChat }) => {
+const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDeleteChat, width, minWidth, maxWidth, onResizeMouseDown, isResizing }) => {
     const [visible, setVisible] = useState(false);
     const [hoveredItemIndex, setHoveredItemIndex] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -191,28 +196,28 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
 
         try {
             const result = await exportConversation(conversationId, user.id);
-            
+
             // Show success toast with copy and open options
             const exportToast = (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     <div>Conversation exported successfully!</div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(result.share_url);
                                 toast("Link copied to clipboard!", { type: "success" });
                             }}
                             style={{
-                                padding: '4px 8px',
-                                background: '#0078d4',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
+                                padding: "4px 8px",
+                                background: "#0078d4",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px"
                             }}
                         >
                             <Copy size={12} />
@@ -220,19 +225,19 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                         </button>
                         <button
                             onClick={() => {
-                                window.open(result.share_url, '_blank');
+                                window.open(result.share_url, "_blank");
                             }}
                             style={{
-                                padding: '4px 8px',
-                                background: '#107c10',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
+                                padding: "4px 8px",
+                                background: "#107c10",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px"
                             }}
                         >
                             <ExternalLink size={12} />
@@ -242,12 +247,11 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                 </div>
             );
 
-            toast(exportToast, { 
-                type: "success", 
+            toast(exportToast, {
+                type: "success",
                 autoClose: 8000,
                 closeOnClick: false
             });
-
         } catch (error) {
             console.error("Error exporting conversation:", error);
             toast("Failed to export conversation. Please try again.", { type: "error" });
@@ -334,7 +338,27 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
         <>
             {visible && <div className={styles.overlay} onClick={handleClose} />}
 
-            <div ref={sidebarRef} className={`${styles.sidebar} ${visible ? styles.visible : ""}`}>
+            <div
+                ref={sidebarRef}
+                className={`${styles.sidebar} ${visible ? styles.visible : ""}`}
+                style={{
+                    width,
+                    minWidth,
+                    maxWidth,
+                    transition: isResizing ? "none" : "width 0.1s",
+                    background: "#fff"
+                }}
+            >
+                {/* Resize Sidebar */}
+                <div
+                    className={styles.chatResizeHandle}
+                    onMouseDown={onResizeMouseDown}
+                    style={{
+                        position: "absolute",
+                        cursor: "col-resize",
+                        zIndex: 10
+                    }}
+                />
                 <div className={styles.header}>
                     <h2 className={styles.title}>Chat History</h2>
                     <button onClick={handleClose} className={styles.closeButton} aria-label="Close sidebar">
@@ -343,7 +367,6 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                 </div>
 
                 <div className={styles.content}>
-
                     {isLoading && (
                         <div className={styles.loaderContainer}>
                             <Spinner size={3} />
