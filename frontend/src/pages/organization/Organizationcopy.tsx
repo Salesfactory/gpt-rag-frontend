@@ -353,63 +353,6 @@ const Organization = () => {
                             </div>
                         </div>
                     </div>
-                    <div className={styles.cardContainer2}>
-                        <div className={styles.title}>
-                            <span>Web Indexing</span>
-                        </div>
-                        <div className={styles.card2}>
-                            <div className={styles.editableContainer}>
-                                <div className={styles.infoItem}>
-                                    <Label className={styles.labelStyle}>URLs to Scrape</Label>
-                                    <div className={styles.urlInputContainer}>
-                                        <div className={styles.urlInputWrapper}>
-                                            <input
-                                                type="text"
-                                                className={styles.urlInput}
-                                                placeholder="Enter URLs to scrape, one per line. Example: https://example.com"
-                                                value={currentUrl}
-                                                onChange={e => setCurrentUrl(e.target.value)}
-                                                onKeyDown={handleKeyDown}
-                                            />
-                                            <button 
-                                                className={styles.addUrlButton} 
-                                                onClick={addUrl}
-                                                type="button"
-                                            >
-                                                <Plus size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {urlsToScrape.length > 0 && (
-                                        <div className={styles.urlTagsContainer}>
-                                            {urlsToScrape.map((url, index) => (
-                                                <div key={index} className={styles.urlTag}>
-                                                    <span className={styles.urlText}>{url}</span>
-                                                    <button 
-                                                        className={styles.removeUrlButton}
-                                                        onClick={() => removeUrl(url)}
-                                                        type="button"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <button className={styles.saveButton} onClick={handleScrapeUrls} disabled={isScraping || urlsToScrape.length === 0}>
-                                    {isScraping ? (
-                                        <Spinner size={SpinnerSize.small} label="Scraping..." labelPosition="right" />
-                                    ) : (
-                                        <>
-                                            <Search className={styles.icon} />
-                                            Scrape URLs
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

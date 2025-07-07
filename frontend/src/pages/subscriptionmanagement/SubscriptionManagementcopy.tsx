@@ -266,7 +266,8 @@ const SubscriptionManagement: React.FC = () => {
 
     useEffect(() => {
         const handleResize = () => {
-            setIsMobile(window.innerWidth <= 700);
+            setIsMobile(window.innerWidth <= 957);
+            setIsMobile(window.innerHeight <= 700);
             setMobilePage(1);
         };
         window.addEventListener("resize", handleResize);
@@ -416,9 +417,9 @@ const SubscriptionManagement: React.FC = () => {
                                                     {data.action === "Subscription Tier Change" && (
                                                         <>
                                                             <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                            <td className={styles.tableText}>Subscription Tier Change</td>
-                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                            <td className={styles.tableText}>
+                                                            <td className={styles.tableText2}>Subscription Tier Change</td>
+                                                            <td className={styles.tableText2}>{data.modified_by_name}</td>
+                                                            <td className={styles.tableText2}>
                                                                 {data.previous_plan} → {data.current_plan}
                                                             </td>
                                                         </>
@@ -426,15 +427,15 @@ const SubscriptionManagement: React.FC = () => {
                                                     {data.action === "Financial Assistant Change" && (
                                                         <>
                                                             <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                            <td className={styles.tableText}>FA Add-On Toggled</td>
-                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                            <td className={styles.tableText2}>FA Add-On Toggled</td>
+                                                            <td className={styles.tableText2}>{data.modified_by_name}</td>
                                                             <td className={styles.tableStatus}>Status: {data.status_financial_assistant}</td>
                                                         </>
                                                     )}
                                                     {data.action === "Subscription Created" && (
                                                         <>
                                                             <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                            <td className={styles.tableText}>Subscription Created</td>
+                                                            <td className={styles.tableText2}>Subscription Created</td>
                                                             <td className={styles.tableText}>{data.modified_by_name}</td>
                                                             <td className={styles.tableText}>Status: Active</td>
                                                         </>

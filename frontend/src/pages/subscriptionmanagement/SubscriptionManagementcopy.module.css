@@ -93,8 +93,9 @@
 }
 
 .tableText,
+.tableText2,
 .tableStatus {
-    text-align: justify;
+    text-align: left;
     font-size: 1rem;
     font-weight: 500;
     padding: 1rem 1.5rem;
@@ -103,7 +104,8 @@
 @media (max-width: 900px) {
 
     .tableText,
-    .tableStatus {
+    .tableStatus,
+    .tableText2 {
         font-size: 0.7rem;
     }
 }
@@ -260,10 +262,23 @@
 .auditBody {}
 
 .auditFilter {
-    margin-top: 20px;
     display: flex;
     gap: 10px;
     width: auto;
+}
+
+@media (max-width: 1133px) {
+
+    .thead,
+    .tableDate,
+    .tableText2,
+    .tableStatus {
+        font-size: 0.8rem;
+    }
+
+    .titleRecent {
+        font-size: 1rem;
+    }
 }
 
 /* Modal Styles */
@@ -290,11 +305,10 @@
 
 @media (max-width: 700px) {
     .modalAudit {
-        width: 98vw;
         min-width: unset;
         left: 50%;
         top: 55%;
-        padding: 10px;
+        padding: 40px;
         border-radius: 8px;
         font-size: 0.95rem;
         box-sizing: border-box;
