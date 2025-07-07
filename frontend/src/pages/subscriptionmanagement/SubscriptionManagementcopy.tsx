@@ -267,6 +267,7 @@ const SubscriptionManagement: React.FC = () => {
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth <= 957);
+            setIsMobile(window.innerHeight <= 700);
             setMobilePage(1);
         };
         window.addEventListener("resize", handleResize);
