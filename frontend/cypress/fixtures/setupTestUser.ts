@@ -1,3 +1,5 @@
+/// <reference types="cypress" />
+
 export function setupTestUserAndOrg() {
     cy.intercept("GET", "/api/auth/user", {
         statusCode: 200,
