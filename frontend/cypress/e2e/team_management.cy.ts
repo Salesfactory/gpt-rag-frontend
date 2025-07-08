@@ -39,7 +39,7 @@ describe("Agent Section Tests", () => {
         cy.get("button#headerCollapse").click();
     });    
 
-   it('Should verify the visibility and functionality of the "Notifications" link', () => {
+   it('Should verify the visibility and functionality of the "Team Management" link', () => {
 
         cy.get('span').contains("Control Center").click();
         cy.get('a[href="#/admin"]').contains("Team Management").should("be.visible");
