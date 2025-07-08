@@ -13,6 +13,14 @@
     padding: 1rem;
 }
 
+.orgList {
+    max-height: 50vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-right: 0.5rem;
+}
 
 .modal {
     background-color: white;
