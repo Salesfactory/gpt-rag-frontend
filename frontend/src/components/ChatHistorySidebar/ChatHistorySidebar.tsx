@@ -379,6 +379,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                                         onMouseLeave={handleMouseLeave}
                                                     >
                                                         <button
+                                                            aria-label={`Select conversation ${conversation.id}`}
                                                             className={styles.conversationButton}
                                                             onClick={() => (isConfirmationDelete(conversation.id) ? null : fetchConversation(conversation.id))}
                                                         >
