@@ -39,4 +39,34 @@ describe("Main Page (Chat) Test Suite", () => {
         cy.get('._message_1nwfo_9').first().should("contain.text", "Hello, how can I improve my home?");
     });
 
+    it("Should verify the visibility and functionality of the Settings page", () => {
+        cy.get(':nth-child(3) > ._tooltipWrapper_16w4s_240 > .btn').should("be.visible")
+        cy.get(':nth-child(3) > ._tooltipWrapper_16w4s_240 > .btn').click();
+
+        cy.contains("Chat Settings").should("be.visible");
+        cy.contains("Font Type").should("be.visible");
+        cy.contains("Font Size").should("be.visible");
+        cy.contains("Model Selection").should("be.visible");
+        cy.contains("Creativity Scale").should("be.visible");
+        
+    })
+
+    it("Should verify the functionality of the Save Settings button", () => {
+        cy.get(':nth-child(3) > ._tooltipWrapper_16w4s_240 > .btn').should("be.visible")
+        cy.get(':nth-child(3) > ._tooltipWrapper_16w4s_240 > .btn').click();
+
+        // Verify the Save Settings button is visible
+        cy.get('[aria-label="Save settings"]').should("be.visible");
+
+        // Click the Save Settings button
+        cy.get('[aria-label="Save settings"]').click();
+
+        cy.get('.ms-Button--primary').should("be.visible");
+        cy.get('.ms-Button--primary').contains("Save").should("be.visible");
+        cy.get('.ms-Button--primary').click();
+
+        // Verify a success message appears
+        cy.contains("Successfully saved data. The page will reload in 2 seconds.").should("be.visible");
+    })
+
 })
