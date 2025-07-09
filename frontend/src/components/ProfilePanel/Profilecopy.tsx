@@ -27,7 +27,7 @@ export const ProfilePanel = ({ show }: Props) => {
     return (
         <>
             <div className={`${styles.profileContainer} ${show ? styles.show : styles.hide}`}>
-                <button onClick={handleProfileClick} className={styles.menuButton} role="button">
+                <button onClick={handleProfileClick} className={styles.menuButton} role="button" aria-label="User profile Button">
                     <div className={styles.menuItemContent}>
                         <User size={18} className={styles.icon} />
                         <span className={styles.textMenu}>My Profile</span>

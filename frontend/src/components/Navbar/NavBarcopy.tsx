@@ -346,6 +346,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             <button
                                 className={`nav-link ${styles.profileButton} ${isDropdownOpen ? styles.dropdownOpen : ""}`}
                                 onClick={handleOnClickProfileCard}
+                                aria-label="Profile Card"
                             >
                                 <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                     <div className={styles.profileWrapper}>
