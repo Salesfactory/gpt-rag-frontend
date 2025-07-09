@@ -51,8 +51,10 @@ describe("Modals Test Suite", ()=> {
     })
 
     it("should verify the visibility of the Organization Modal", () => {
-
         
+        cy.get("button[aria-label='Profile Card']").should("be.visible")
+        cy.get("button[aria-label='Profile Card']").click()
+
         cy.intercept("GET", "/api/get-user-organizations", {
         statusCode: 200,
         body: [
@@ -76,5 +78,9 @@ describe("Modals Test Suite", ()=> {
             }
         ]
     }).as("getUserOrganizations2");
+
+    cy.get("button[aria-label='Organization Button']").should("be.visible")
+    cy.get("button[aria-label='Organization Button']").click()
+
     })
 })

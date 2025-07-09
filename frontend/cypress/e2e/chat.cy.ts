@@ -106,7 +106,4 @@ describe("Main Page (Chat) Test Suite", () => {
         cy.contains("What is the customer pulse segment?").should("be.visible");
         cy.contains("What Is the Customer Pulse…").should("be.visible");
     })
-
-
-
 })

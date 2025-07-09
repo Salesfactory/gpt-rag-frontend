@@ -33,7 +33,7 @@ export const ProfilePanel = ({ show }: Props) => {
                         <span className={styles.textMenu}>My Profile</span>
                     </div>
                 </button>
-                <button onClick={handleOrgClick} className={styles.menuButton} role="button">
+                <button onClick={handleOrgClick} className={styles.menuButton} aria-label="Organization Button" role="button">
                     <div className={styles.menuItemContent}>
                         <Building size={18} className={styles.icon} />
                         <span className={styles.textMenu}>My Organization</span>
