@@ -36,22 +36,22 @@ describe("Agent Section Tests", () => {
         cy.intercept("GET", "/api/get-user-organizations", {
             statusCode: 200,
             body: [
-              {
-                id: "0aad82ee-52ec-428e-b211-e9cc34b94457",
-                name: "Manu dev",
-                owner: "f048ece8-4730-40ca-b6e1-8db764717459",
-                sessionId: "cs_test_a1DipoQd3hJrgmGaT1Im2AydoNrK0LJ5GNJKwa13AhsV9KU9Pq1SWYrvtE",
-                subscriptionStatus: "active",
-                subscriptionExpirationDate: 1736348460,
-                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
-              }
+                {
+                    id: "0aad82ee-52ec-428e-b211-e9cc34b94457",
+                    name: "Manu dev",
+                    owner: "f048ece8-4730-40ca-b6e1-8db764717459",
+                    sessionId: "cs_test_a1DipoQd3hJrgmGaT1Im2AydoNrK0LJ5GNJKwa13AhsV9KU9Pq1SWYrvtE",
+                    subscriptionStatus: "active",
+                    subscriptionExpirationDate: 1736348460,
+                    subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP"
+                }
             ]
-          }).as("getUserOrganizations");
-          
+        }).as("getUserOrganizations");
+
         // Alias for later reference
         cy.intercept("GET", "/api/get-users-organizations-role*", {
-        statusCode: 200,
-        body: { role: "user" },
+            statusCode: 200,
+            body: { role: "user" }
         });
         // Intercept the /api/subscriptions/sub_1QeeHXEpF6ccgZLwfCmANnOP/tiers API call
         cy.intercept("GET", "/api/subscriptions/sub_1QeeHXEpF6ccgZLwfCmANnOP/tiers", {
@@ -104,6 +104,37 @@ describe("Agent Section Tests", () => {
                 }
             ]
         }).as("getChatHistory"); // Alias for later reference
+        cy.intercept("GET", "/api/getusers*", {
+            statusCode: 200,
+            body: [
+                {
+                    id: "1",
+                    data: { name: "Albert Wesker", email: "albertumbrella@example.com" },
+                    role: "admin"
+                },
+                {
+                    id: "2",
+                    data: { name: "Alyx Vance", email: "halflife3isreal@example.com" },
+                    role: "user"
+                },
+                {
+                    id: "3",
+                    user_new: true,
+                    nickname: "Carl Johnson",
+                    data: { email: "grovestreet4life@invited.com" },
+                    role: "platformAdmin",
+                    token_expiry: Math.floor(Date.now() / 1000) + 3600
+                },
+                {
+                    id: "4",
+                    user_new: true,
+                    nickname: "Geralt of Rivia",
+                    data: { email: "imawitcher@expired.com" },
+                    role: "user",
+                    token_expiry: Math.floor(Date.now() / 1000) - 3600
+                }
+            ]
+        }).as("getUsers");
         // Start from the web app that triggers the B2C sign-in
         cy.visit("/"); // Use the retrieved URL        // Verify the button is visible
         cy.get("button#headerCollapse").should("be.visible");
