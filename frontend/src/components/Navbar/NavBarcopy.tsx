@@ -369,7 +369,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
-                                    <button onClick={handleShowChatHistory} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <button onClick={handleShowChatHistory} aria-label="Chat History Button" className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                         <History className={styles.iconLarge} />
                                     </button>
                                     <span className={styles.tooltipText}>Chat History</span>
@@ -395,6 +395,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             <button
                                 className={`nav-link ${styles.profileButton} ${isDropdownOpen ? styles.dropdownOpen : ""}`}
                                 onClick={handleOnClickProfileCard}
+                                aria-label="Profile Card"
                             >
                                 <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                     <div className={styles.profileWrapper}>

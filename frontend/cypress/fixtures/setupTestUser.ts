@@ -92,16 +92,34 @@ export function setupTestUserAndOrg() {
             {
                 id: "2d3afddf-8b77-4b53-a415-dcfff81bdb4d",
                 start_date: "2025-01-21 09:09:55",
-                content: "hello",
+                content: "What is the customer pulse segment?",
                 type: "default"
             },
             {
                 id: "04ec0c95-8d2d-451e-a192-94541dbd5496",
                 start_date: "2025-01-21 13:12:14",
-                content: "hello",
+                content: "how the customer pulse segment can help to sell a chopping cart?",
                 type: "default"
             }
         ]
     }).as("getChatHistory");
 
+    cy.intercept("GET", '/api/settings', {
+        statusCode: 400,
+        body: { font_family: "Arial", font_size: "16", model: "gpt-4.1", temperature: 0 }
+    })
+
+    cy.intercept("POST", "/api/settings", {
+        statusCode: 200,
+        body: {
+            client_principal_id: "b808ad31-2df1-41f8-b077-6f0e28b84f46",
+            client_principal_name: "Victor Maldonado",
+            font_family: "Arial",
+            font_size: "16",
+            model: "gpt-4.1",
+            temperature: 0
+
+        }
+
+    })
 }
