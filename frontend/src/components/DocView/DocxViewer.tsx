@@ -14,37 +14,12 @@ const DocxPreviewViewer: React.FC<DocxPreviewViewerProps> = ({ file, className =
 
     const applyResponsiveStyles = () => {
         const wrapper = containerRef.current?.querySelector(".docx-wrapper") as HTMLElement | null;
-        if (!wrapper) return;
+        if (!wrapper || !containerRef.current) return;
 
-        const sections = wrapper.querySelectorAll("section");
-        const elList = [wrapper, ...Array.from(sections)] as HTMLElement[];
-
-        const vw = window.innerWidth;
-
-        let padding = "72pt";
-        let width = "612pt";
-        const minHeight = "792pt";
-
-        if (vw <= 1000) {
-            padding = "40pt";
-            width = "242pt";
-        } else if (vw <= 1270) {
-            padding = "40pt";
-            width = "342pt";
-        } else if (vw <= 1530) {
-            padding = "72pt";
-            width = "442pt";
-        } else if (vw <= 1725) {
-            padding = "72pt";
-            width = "542pt";
-        }
-
-        elList.forEach(el => {
-            el.style.padding = padding;
-            el.style.width = width;
-            el.style.minHeight = minHeight;
-            el.style.boxSizing = "border-box";
-        });
+        wrapper.style.width = "100%";
+        wrapper.style.minWidth = "0";
+        wrapper.style.boxSizing = "border-box";
+        wrapper.style.padding = "42px";
     };
 
     useEffect(() => {
@@ -87,8 +62,6 @@ const DocxPreviewViewer: React.FC<DocxPreviewViewerProps> = ({ file, className =
 
             try {
                 containerRef.current.innerHTML = "";
-                const startTime = performance.now();
-
                 await renderAsync(correctedFile, containerRef.current, undefined, {
                     className: "docx-wrapper",
                     inWrapper: true,
@@ -103,7 +76,6 @@ const DocxPreviewViewer: React.FC<DocxPreviewViewerProps> = ({ file, className =
                     debug: true
                 });
 
-                const endTime = performance.now();
                 applyResponsiveStyles();
                 setLoading(false);
             } catch (err) {
@@ -120,9 +92,17 @@ const DocxPreviewViewer: React.FC<DocxPreviewViewerProps> = ({ file, className =
     }, [file]);
 
     useEffect(() => {
-        const onResize = () => applyResponsiveStyles();
-        window.addEventListener("resize", onResize);
-        return () => window.removeEventListener("resize", onResize);
+        if (!containerRef.current) return;
+
+        const observer = new (window as any).ResizeObserver(() => {
+            applyResponsiveStyles();
+        });
+
+        observer.observe(containerRef.current);
+
+        return () => {
+            observer.disconnect();
+        };
     }, []);
 
     return (

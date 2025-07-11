@@ -4,29 +4,36 @@ import DocxViewer from "./DocxViewer";
 import IMGViewer from "./IMGViewer";
 import PptxViewer from "./PPTXViewer";
 import HTMLViewer from "./HTMLViewer";
+import { useAppContext } from "../../providers/AppProviders";
 
 interface FileViewerProps {
-    file: (string|Blob);
+    file: string | Blob;
     fileType: string;
     page?: number;
 }
 
 const FileViewer: React.FC<FileViewerProps> = ({ file, fileType, page }) => {
+    const { isResizingAnalysisPanel } = useAppContext();
+
+    if (isResizingAnalysisPanel) {
+        return <div style={{ textAlign: "center", color: "rgb(21, 146, 68)", padding: "2rem" }}>Resizing...</div>;
+    }
+
     switch (fileType.toLowerCase()) {
-        case 'pdf':
+        case "pdf":
             return <PDFViewer file={file as Blob} page={page} />;
-        case 'docx':
-        case 'doc':
+        case "docx":
+        case "doc":
             return <DocxViewer file={file as Blob} />;
-        case 'html':
+        case "html":
             return <HTMLViewer file={file as Blob} />;
-        case 'txt':
-        case 'cvs':
+        case "txt":
+        case "cvs":
             return <TextViewer file={file as Blob} />;
-        case 'pptx':
+        case "pptx":
             return <PptxViewer file={file as Blob} />;
-        case 'jpg':
-        case 'png':
+        case "jpg":
+        case "png":
             return <IMGViewer file={file as Blob} />;
         default:
             return <div>Unsupported file type: {fileType}</div>;
