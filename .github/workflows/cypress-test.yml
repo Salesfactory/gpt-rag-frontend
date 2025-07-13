@@ -6,10 +6,6 @@ on:
     branches:
       - develop
       - main
-      - HOTFIX-chat-test
-  push:
-    branches:
-      - HOTFIX-chat-test
 
 jobs:
   cypress-test:
