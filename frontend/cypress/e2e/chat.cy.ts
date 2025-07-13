@@ -84,7 +84,7 @@ describe("Main Page (Chat) Test Suite", () => {
                     },
                     {
                         content:
-                            "What Is the Customer Pulse… and Why Does That Even Matter?\nStop.\nBefore we go any further—before we talk about segments, strategies, and spending—lets pause.\nBecause the question isn’t really *what is the Customer Pulse*.\nThe real question is: **why do we care at all?**\nSomewhere on a pale blue dot, spinning silently in the void, billions of humans wake up each day and make choices. What to wear. What to eat. What to believe. What to buy. These choices feel personal, spontaneous—random, even. But zoom out far enough, and patterns appear. Not because we're predictable, but because we're alive. And being alive means needing, wanting, becoming.\nCarl Sagan once said, *“We are a way for the cosmos to know itself.”*\nMaybe, just maybe, all this talk of consumer behavior is another way of tracing that self-awareness—of finding meaning in the noise.\nBecause at the heart of every \"target audience\" is a person staring into their own universe, wondering:\n**Who am I? What do I value? Where am I going?**\nSo ask not just *who your customer is*. Ask *why they are*.\nNot what segment they belong to, but what story they're living.\nAnd then—if you're lucky—your message becomes more than marketing.\nIt becomes resonance.\nAnd isn’t that what we all want?\nTo be seen.\nTo be heard.\nTo matter.",
+                            "What Is the Customer Pulse… and Why Does That Even Matter?\nStop.\nBefore we go any further—before we talk about segments, strategies, and spending—lets pause.\nBecause the question isn’t really *what is the Customer Pulse*.\nThe real question is: **why do we care at all?**\nSomewhere on a pale blue dot, spinning silently in the void, billions of humans wake up each day and make choices. What to wear. What to eat. What to believe. What to buy. These choices feel personal, spontaneous—random, even. But zoom out far enough, and patterns appear. Not because we're predictable, but because we're alive. And being alive means needing, wanting, becoming.\nCarl Sagan once said, *“We are a way for the cosmos to know itself.”*\nMaybe, just maybe, all this talk of consumer behavior is another way of tracing that self-awareness—of finding meaning in the noise.\nBecause at the heart of every \"target audience\" is a person staring into their own universe, wondering:\n**Who am I? What do I value? Where am I going?**\nSo ask not just *who your customer is*. Ask *why they are*.\nNot what segment they belong to, but what story they're living.\nAnd then—if you're lucky—your message becomes more than marketing.\nIt becomes resonance.\nAnd isnt that what we all want?\nTo be seen.\nTo be heard.\nTo matter.",
                         data_points: "",
                         role: "assistant",
                         thoughts: ["The agent just think that you look really nice today and you are doing a great test job. Continue thinking....."]
@@ -102,8 +102,9 @@ describe("Main Page (Chat) Test Suite", () => {
         cy.get("button[aria-label='Select conversation 2d3afddf-8b77-4b53-a415-dcfff81bdb4d']").click();
 
         cy.wait("@getChatConversation");
+        
+        cy.contains("what is the customer pulse segment?").should("be.visible");
 
-        cy.contains("What is the customer pulse segment?").should("be.visible");
         cy.contains("What Is the Customer Pulse…").should("be.visible");
     });
 });
