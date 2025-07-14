@@ -379,7 +379,7 @@ const SubscriptionManagement: React.FC = () => {
                     <div className={styles.modalAudit}>
                         <div className={styles.modalHeader}>
                             <h1 className={styles.titleRecent}>Recent Changes</h1>
-                            <button className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
+                            <button aria-label="Close" className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
                                 <IconX />
                             </button>
                         </div>
@@ -476,7 +476,7 @@ const SubscriptionManagement: React.FC = () => {
                 )}
                 {isViewModal && (
                     <div className={styles.modalSubscription}>
-                        <button className={styles.closeButton} onClick={() => setIsViewModal(false)}>
+                        <button aria-label="Close" className={styles.closeButton} onClick={() => setIsViewModal(false)}>
                             <IconX />
                         </button>
                         {prices.map((price, index) => (

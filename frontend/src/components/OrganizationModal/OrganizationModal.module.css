@@ -13,6 +13,14 @@
     padding: 1rem;
 }
 
+.orgList {
+    max-height: 50vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-right: 0.5rem;
+}
 
 .modal {
     background-color: white;
@@ -20,6 +28,7 @@
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     width: 100%;
     max-width: 28rem;
+    z-index: 501;
 }
 
 

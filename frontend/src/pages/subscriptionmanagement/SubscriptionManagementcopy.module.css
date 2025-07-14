@@ -292,7 +292,6 @@
     flex-direction: flex;
     justify-content: center;
     align-items: center;
-    z-index: 500;
     padding: 40px;
     background-color: rgb(255, 255, 255);
     border: 1px solid #e3e3e3;

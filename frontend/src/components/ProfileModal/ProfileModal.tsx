@@ -83,7 +83,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     {/* Username */}
                     <div className={styles.field}>
                         <label className={styles.label}>Username</label>
-                        <input type="text" value={userName} onChange={e => setUserName(e.target.value)} className={styles.input} disabled={isSaving} />
+                        <input type="text" aria-label="Username Input" value={userName} onChange={e => setUserName(e.target.value)} className={styles.input} disabled={isSaving} />
                         <p className={styles.helpText}>This name will be displayed to other users</p>
                     </div>
 

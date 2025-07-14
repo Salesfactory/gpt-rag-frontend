@@ -4265,7 +4265,7 @@ def delete_source_document():
 @app.route("/api/get-password-reset-url", methods=["GET"])
 def get_password_reset_url():
     tenant = os.getenv("AAD_TENANT_NAME")
-    policy = os.getenv("RESETPASSSWORD_USER_FLOW")
+    policy = os.getenv("ADD_CHANGE_PASSWORD")
     client_id = os.getenv("AAD_CLIENT_ID")
     redirect_uri = os.getenv("AAD_REDIRECT_URI")
     nonce = "defaultNonce"

@@ -95,7 +95,11 @@ const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading
     );
 };
 
-export const SettingsPanel = () => {
+interface ChatSettingsProps {
+    onClose: () => void;
+}
+
+export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const { user, setSettingsPanel, settingsPanel } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
@@ -278,7 +282,7 @@ export const SettingsPanel = () => {
     );
 
     const handleClosePanel = () => {
-        setSettingsPanel(false);
+        onClose();
     };
 
     if (!user) {
@@ -291,7 +295,7 @@ export const SettingsPanel = () => {
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-                setSettingsPanel(false);
+                onClose();
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -301,279 +305,281 @@ export const SettingsPanel = () => {
         };
     }, [setSettingsPanel]);
     return (
-        <div ref={panelRef} className={styles.overlay}>
-            <ToastContainer />
-            <ConfirmationDialog
-                loading={isLoadingSettings}
-                isOpen={isDialogOpen}
-                onDismiss={() => {
-                    setIsDialogOpen(false);
-                }}
-                onConfirm={() => {
-                    setIsLoadingSettings(true);
-                    handleSubmit();
-                }}
-            />
-            <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
-                <Stack.Item grow className={styles["w-100"]}>
-                    <div className={styles.header2}>
-                        <div className={styles.title}>Chat Settings</div>
-                        <div className={styles.buttons}>
-                            <div></div>
-                            <div className={styles.closeButtonContainer}>
-                                <button className={styles.closeButton2} aria-label="hide button" onClick={handleClosePanel}>
-                                    <X />
-                                </button>
+        <div className={styles.overlay}>
+            <div ref={panelRef} className={styles.panel} onClick={e => e.stopPropagation()}>
+                <ToastContainer />
+                <ConfirmationDialog
+                    loading={isLoadingSettings}
+                    isOpen={isDialogOpen}
+                    onDismiss={() => {
+                        setIsDialogOpen(false);
+                    }}
+                    onConfirm={() => {
+                        setIsLoadingSettings(true);
+                        handleSubmit();
+                    }}
+                />
+                <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
+                    <Stack.Item grow className={styles["w-100"]}>
+                        <div className={styles.header2}>
+                            <div className={styles.title}>Chat Settings</div>
+                            <div className={styles.buttons}>
+                                <div></div>
+                                <div className={styles.closeButtonContainer}>
+                                    <button className={styles.closeButton2} aria-label="hide button" onClick={handleClosePanel}>
+                                        <X />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    {loading ? (
-                        <div>
-                            <h3 style={{ textAlign: "center", fontSize: "16px", marginTop: "20px" }}>Loading your settings</h3>
-                            <Spinner
-                                styles={{
-                                    root: {
-                                        marginBottom: "30px"
-                                    }
-                                }}
-                            />
-                        </div>
-                    ) : (
-                        <div className={styles.content}>
-                            <div className={styles["w-100"]}>
-                                <div className={styles.item}>
-                                    <span>Font Type</span>
-                                </div>
-                                <Dropdown
-                                    placeholder="Select font"
-                                    options={fontOptions}
-                                    selectedKey={selectedFont}
-                                    onChange={(_event, option) => {
-                                        if (option) {
-                                            setSelectedFont(option.key as string);
-                                        }
-                                    }}
-                                    aria-labelledby="font-dropdown"
-                                    onRenderOption={option => <span style={{ fontFamily: option!.text }}>{option!.text}</span>}
-                                    onRenderTitle={options => {
-                                        if (!options || options.length === 0) return null;
-                                        return <span style={{ fontFamily: options[0].text }}>{options[0].text}</span>;
-                                    }}
-                                    calloutProps={{
-                                        directionalHint: 4,
-                                        isBeakVisible: false,
-                                        styles: {
-                                            root: {
-                                                maxHeight: 200,
-                                                overflowY: "auto"
-                                            }
-                                        }
-                                    }}
+                        {loading ? (
+                            <div>
+                                <h3 style={{ textAlign: "center", fontSize: "16px", marginTop: "20px" }}>Loading your settings</h3>
+                                <Spinner
                                     styles={{
                                         root: {
-                                            width: "90%"
-                                        },
-                                        dropdown: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            minHeight: "39px",
-                                            backgroundColor: "#ffffff",
-                                            outline: "none",
-                                            boxShadow: "none"
-                                        },
-                                        title: {
-                                            fontSize: "14px",
-                                            paddingLeft: "12px",
-                                            paddingRight: "12px",
-                                            lineHeight: "37px",
-                                            color: "#374151",
-                                            border: "0px",
-                                            backgroundColor: "transparent"
-                                        },
-                                        caretDown: {
-                                            color: "#6b7280",
-                                            fontSize: "12px",
-                                            right: "12px"
-                                        },
-                                        callout: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
-                                        }
-                                    }}
-                                />
-                                <div className={styles.item}>
-                                    <span>Font Size</span>
-                                </div>
-                                <Dropdown
-                                    placeholder="Select font size"
-                                    options={fontSizeOptions}
-                                    selectedKey={selectedFontSize}
-                                    onChange={(_event, option) => {
-                                        if (option) {
-                                            setSelectedFontSize(option.key as string);
-                                        }
-                                    }}
-                                    aria-labelledby="font-size-dropdown"
-                                    calloutProps={{
-                                        directionalHint: 4,
-                                        isBeakVisible: false,
-                                        styles: {
-                                            root: {
-                                                maxHeight: 200,
-                                                overflowY: "auto"
-                                            }
-                                        }
-                                    }}
-                                    styles={{
-                                        root: {
-                                            width: "90%"
-                                        },
-                                        dropdown: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            minHeight: "39px",
-                                            backgroundColor: "#ffffff",
-                                            outline: "none",
-                                            boxShadow: "none",
-                                            "&:hover": {
-                                                borderColor: "#9ca3af"
-                                            },
-                                            "&:focus": {
-                                                borderColor: "#3b82f6",
-                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
-                                                outline: "none",
-                                                borderRadius: "6px"
-                                            },
-                                            "&:focus-within": {
-                                                borderColor: "#3b82f6",
-                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
-                                                outline: "none",
-                                                borderRadius: "6px"
-                                            },
-                                            "&[aria-expanded='true']": {
-                                                borderRadius: "6px"
-                                            }
-                                        },
-                                        title: {
-                                            fontSize: "14px",
-                                            paddingLeft: "12px",
-                                            paddingRight: "12px",
-                                            lineHeight: "37px",
-                                            color: "#374151",
-                                            border: "0px",
-                                            backgroundColor: "transparent"
-                                        },
-                                        caretDown: {
-                                            color: "#6b7280",
-                                            fontSize: "12px",
-                                            right: "12px"
-                                        },
-                                        callout: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
-                                        }
-                                    }}
-                                />
-                                <div className={styles.item}>
-                                    <span>Model Selection</span>
-                                </div>
-                                <Dropdown
-                                    placeholder="Select a model"
-                                    options={modelOptions}
-                                    selectedKey={selectedModel}
-                                    onChange={(_event, option) => {
-                                        if (option) {
-                                            setSelectedModel(option.key as string);
-                                        }
-                                    }}
-                                    aria-labelledby="model-dropdown"
-                                    styles={{
-                                        root: {
-                                            width: "90%"
-                                        },
-                                        dropdown: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            minHeight: "39px",
-                                            backgroundColor: "#ffffff",
-                                            outline: "none",
-                                            boxShadow: "none",
-                                            "&:hover": {
-                                                borderColor: "#9ca3af"
-                                            },
-                                            "&:focus": {
-                                                borderColor: "#3b82f6",
-                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
-                                                outline: "none",
-                                                borderRadius: "6px"
-                                            },
-                                            "&:focus-within": {
-                                                borderColor: "#3b82f6",
-                                                boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
-                                                outline: "none",
-                                                borderRadius: "6px"
-                                            },
-                                            "&[aria-expanded='true']": {
-                                                borderRadius: "6px"
-                                            }
-                                        },
-                                        title: {
-                                            fontSize: "14px",
-                                            paddingLeft: "12px",
-                                            paddingRight: "12px",
-                                            lineHeight: "37px",
-                                            color: "#374151",
-                                            border: "0px",
-                                            backgroundColor: "transparent"
-                                        },
-                                        caretDown: {
-                                            color: "#6b7280",
-                                            fontSize: "12px",
-                                            right: "12px"
-                                        },
-                                        callout: {
-                                            borderRadius: "8px",
-                                            border: "1px solid #d1d5db",
-                                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                                            marginBottom: "30px"
                                         }
                                     }}
                                 />
                             </div>
-                            <div className={styles["w-100"]}>
-                                <div className={styles.item}>
-                                    <span>Creativity Scale</span>
-                                </div>
-                                <div className={styles.sliderContainer}>
-                                    <Slider
-                                        label=""
-                                        min={modelTemperatureSettings[selectedModel].min}
-                                        max={modelTemperatureSettings[selectedModel].max}
-                                        step={modelTemperatureSettings[selectedModel].step}
-                                        value={parseFloat(temperature)}
-                                        showValue
-                                        snapToStep
-                                        onChange={e => setTemperature(e.toString())}
-                                        aria-labelledby="temperature-slider"
-                                        styles={{
-                                            root: { width: "90%" }
+                        ) : (
+                            <div className={styles.content}>
+                                <div className={styles["w-100"]}>
+                                    <div className={styles.item}>
+                                        <span>Font Type</span>
+                                    </div>
+                                    <Dropdown
+                                        placeholder="Select font"
+                                        options={fontOptions}
+                                        selectedKey={selectedFont}
+                                        onChange={(_event, option) => {
+                                            if (option) {
+                                                setSelectedFont(option.key as string);
+                                            }
                                         }}
-                                        className={styles.sliderCustom}
+                                        aria-labelledby="font-dropdown"
+                                        onRenderOption={option => <span style={{ fontFamily: option!.text }}>{option!.text}</span>}
+                                        onRenderTitle={options => {
+                                            if (!options || options.length === 0) return null;
+                                            return <span style={{ fontFamily: options[0].text }}>{options[0].text}</span>;
+                                        }}
+                                        calloutProps={{
+                                            directionalHint: 4,
+                                            isBeakVisible: false,
+                                            styles: {
+                                                root: {
+                                                    maxHeight: 200,
+                                                    overflowY: "auto"
+                                                }
+                                            }
+                                        }}
+                                        styles={{
+                                            root: {
+                                                width: "90%"
+                                            },
+                                            dropdown: {
+                                                borderRadius: "8px",
+                                                border: "1px solid #d1d5db",
+                                                minHeight: "39px",
+                                                backgroundColor: "#ffffff",
+                                                outline: "none",
+                                                boxShadow: "none"
+                                            },
+                                            title: {
+                                                fontSize: "14px",
+                                                paddingLeft: "12px",
+                                                paddingRight: "12px",
+                                                lineHeight: "37px",
+                                                color: "#374151",
+                                                border: "0px",
+                                                backgroundColor: "transparent"
+                                            },
+                                            caretDown: {
+                                                color: "#6b7280",
+                                                fontSize: "12px",
+                                                right: "12px"
+                                            },
+                                            callout: {
+                                                borderRadius: "8px",
+                                                border: "1px solid #d1d5db",
+                                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                                            }
+                                        }}
+                                    />
+                                    <div className={styles.item}>
+                                        <span>Font Size</span>
+                                    </div>
+                                    <Dropdown
+                                        placeholder="Select font size"
+                                        options={fontSizeOptions}
+                                        selectedKey={selectedFontSize}
+                                        onChange={(_event, option) => {
+                                            if (option) {
+                                                setSelectedFontSize(option.key as string);
+                                            }
+                                        }}
+                                        aria-labelledby="font-size-dropdown"
+                                        calloutProps={{
+                                            directionalHint: 4,
+                                            isBeakVisible: false,
+                                            styles: {
+                                                root: {
+                                                    maxHeight: 200,
+                                                    overflowY: "auto"
+                                                }
+                                            }
+                                        }}
+                                        styles={{
+                                            root: {
+                                                width: "90%"
+                                            },
+                                            dropdown: {
+                                                borderRadius: "8px",
+                                                border: "1px solid #d1d5db",
+                                                minHeight: "39px",
+                                                backgroundColor: "#ffffff",
+                                                outline: "none",
+                                                boxShadow: "none",
+                                                "&:hover": {
+                                                    borderColor: "#9ca3af"
+                                                },
+                                                "&:focus": {
+                                                    borderColor: "#3b82f6",
+                                                    boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
+                                                    outline: "none",
+                                                    borderRadius: "6px"
+                                                },
+                                                "&:focus-within": {
+                                                    borderColor: "#3b82f6",
+                                                    boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
+                                                    outline: "none",
+                                                    borderRadius: "6px"
+                                                },
+                                                "&[aria-expanded='true']": {
+                                                    borderRadius: "6px"
+                                                }
+                                            },
+                                            title: {
+                                                fontSize: "14px",
+                                                paddingLeft: "12px",
+                                                paddingRight: "12px",
+                                                lineHeight: "37px",
+                                                color: "#374151",
+                                                border: "0px",
+                                                backgroundColor: "transparent"
+                                            },
+                                            caretDown: {
+                                                color: "#6b7280",
+                                                fontSize: "12px",
+                                                right: "12px"
+                                            },
+                                            callout: {
+                                                borderRadius: "8px",
+                                                border: "1px solid #d1d5db",
+                                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                                            }
+                                        }}
+                                    />
+                                    <div className={styles.item}>
+                                        <span>Model Selection</span>
+                                    </div>
+                                    <Dropdown
+                                        placeholder="Select a model"
+                                        options={modelOptions}
+                                        selectedKey={selectedModel}
+                                        onChange={(_event, option) => {
+                                            if (option) {
+                                                setSelectedModel(option.key as string);
+                                            }
+                                        }}
+                                        aria-labelledby="model-dropdown"
+                                        styles={{
+                                            root: {
+                                                width: "90%"
+                                            },
+                                            dropdown: {
+                                                borderRadius: "8px",
+                                                border: "1px solid #d1d5db",
+                                                minHeight: "39px",
+                                                backgroundColor: "#ffffff",
+                                                outline: "none",
+                                                boxShadow: "none",
+                                                "&:hover": {
+                                                    borderColor: "#9ca3af"
+                                                },
+                                                "&:focus": {
+                                                    borderColor: "#3b82f6",
+                                                    boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
+                                                    outline: "none",
+                                                    borderRadius: "6px"
+                                                },
+                                                "&:focus-within": {
+                                                    borderColor: "#3b82f6",
+                                                    boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.2)",
+                                                    outline: "none",
+                                                    borderRadius: "6px"
+                                                },
+                                                "&[aria-expanded='true']": {
+                                                    borderRadius: "6px"
+                                                }
+                                            },
+                                            title: {
+                                                fontSize: "14px",
+                                                paddingLeft: "12px",
+                                                paddingRight: "12px",
+                                                lineHeight: "37px",
+                                                color: "#374151",
+                                                border: "0px",
+                                                backgroundColor: "transparent"
+                                            },
+                                            caretDown: {
+                                                color: "#6b7280",
+                                                fontSize: "12px",
+                                                right: "12px"
+                                            },
+                                            callout: {
+                                                borderRadius: "8px",
+                                                border: "1px solid #d1d5db",
+                                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                                            }
+                                        }}
                                     />
                                 </div>
-                            </div>
+                                <div className={styles["w-100"]}>
+                                    <div className={styles.item}>
+                                        <span>Creativity Scale</span>
+                                    </div>
+                                    <div className={styles.sliderContainer}>
+                                        <Slider
+                                            label=""
+                                            min={modelTemperatureSettings[selectedModel].min}
+                                            max={modelTemperatureSettings[selectedModel].max}
+                                            step={modelTemperatureSettings[selectedModel].step}
+                                            value={parseFloat(temperature)}
+                                            showValue
+                                            snapToStep
+                                            onChange={e => setTemperature(e.toString())}
+                                            aria-labelledby="temperature-slider"
+                                            styles={{
+                                                root: { width: "90%" }
+                                            }}
+                                            className={styles.sliderCustom}
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className={styles["w-100"]} style={{ marginTop: "30px", textAlign: "center" }}>
-                                <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
-                                    <SaveFilled className={styles.saveIcon} />
-                                    &#8202;&#8202;Save
-                                </DefaultButton>
+                                <div className={styles["w-100"]} style={{ marginTop: "30px", textAlign: "center" }}>
+                                    <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
+                                        <SaveFilled className={styles.saveIcon} />
+                                        &#8202;&#8202;Save
+                                    </DefaultButton>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </Stack.Item>
-            </Stack>
+                        )}
+                    </Stack.Item>
+                </Stack>
+            </div>
         </div>
     );
 };

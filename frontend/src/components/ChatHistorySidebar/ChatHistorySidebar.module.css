@@ -29,7 +29,8 @@
 }
 
 .hidden {
-    display: none; }
+    display: none;
+}
 
 .header {
     display: flex;
@@ -129,7 +130,6 @@
 .conversationsGroup {
     display: flex;
     flex-direction: column;
-    
 }
 
 .conversationItem {
@@ -146,13 +146,13 @@
 
 .conversationItem:hover {
     transform: translateX(4px);
-    border-left-color: #10B981;
+    border-left-color: #10b981;
     background-color: #f0fdf4;
 }
 
 .conversationItem.selected {
     background-color: #f0fdf4;
-    border-left-color: #10B981;
+    border-left-color: #10b981;
 }
 
 .conversationButton {
@@ -213,14 +213,14 @@
 }
 
 .actionSpinner {
-    padding: 4px; }
+    padding: 4px;
+}
 
 @media (max-width: 768px) {
     .sidebar {
         width: 55%;
         right: -100%;
     }
-    
 }
 
 @media (max-width: 400px) {
@@ -228,5 +228,50 @@
         width: 50%;
         right: -100%;
     }
+}
 
+.chatResizeHandle {
+    width: 6px;
+    height: 80px;
+    background: rgb(183, 183, 183);
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    transition: background 0.2s;
+    top: 50%;
+    border-radius: 3px;
+    user-select: none;
+}
+.chatResizeHandle:hover {
+    background: #e0e0e0;
+}
+@media (max-width: 900px) {
+    .chatResizeHandle {
+        display: none;
+    }
+}
+
+.chatResizeHandle::before,
+.chatResizeHandle::after {
+    content: "";
+    display: block;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: rgb(255, 255, 255);
+    opacity: 0.8;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.chatResizeHandle::before {
+    top: 45%;
+}
+
+.chatResizeHandle::after {
+    top: 55%;
 }

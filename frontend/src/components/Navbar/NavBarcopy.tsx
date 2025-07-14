@@ -9,6 +9,7 @@ import { getUserById, exportConversation } from "../../api";
 import { toast } from "react-toastify";
 import { Spinner } from "@fluentui/react";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
+import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
 
 type Role = "user" | "admin" | "platformAdmin";
 
@@ -24,8 +25,6 @@ function persistFinancialAssistantState(userId: string | undefined, state: boole
 const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const {
         setShowFeedbackRatingPanel,
-        settingsPanel,
-        setSettingsPanel,
         user,
         userName,
         organization,
@@ -65,6 +64,8 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
         ? true
         : false || subscriptiontype.includes("Premium + Financial Assistant") || subscriptiontype.includes("Custom + Financial Assistant");
+
+    const [settingsPanel, setSettingsPanel] = useState(false);
 
     const handleShowChatHistory = () => {
         setShowChatHistory(!showChatHistory);
@@ -220,6 +221,54 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
     };
     const userInitials = getInitialsFromUserName(userName);
 
+    const [chatPanelMinWidth, setChatPanelMinWidth] = useState(260);
+    const [chatPanelMaxWidth, setChatPanelMaxWidth] = useState(500);
+    const [chatPanelWidth, setChatPanelWidth] = useState(320);
+    const [isResizing, setIsResizing] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 750) {
+                setChatPanelMinWidth(120); // o el valor que prefieras para móvil
+                setChatPanelMaxWidth(window.innerWidth * 0.95); // 95% del ancho de pantalla
+                if (chatPanelWidth > window.innerWidth * 0.95) {
+                    setChatPanelWidth(window.innerWidth * 0.95);
+                }
+            } else {
+                setChatPanelMinWidth(260);
+                setChatPanelMaxWidth(500);
+                if (chatPanelWidth > 500) {
+                    setChatPanelWidth(500);
+                }
+            }
+        };
+        window.addEventListener("resize", handleResize);
+        handleResize();
+        return () => window.removeEventListener("resize", handleResize);
+    }, [chatPanelWidth]);
+
+    const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        setIsResizing(true);
+        const startX = e.clientX;
+        const startWidth = chatPanelWidth;
+
+        const onMouseMove = (moveEvent: MouseEvent) => {
+            const newWidth = Math.max(chatPanelMinWidth, Math.min(chatPanelMaxWidth, startWidth - (moveEvent.clientX - startX)));
+            setChatPanelWidth(newWidth);
+        };
+
+        const onMouseUp = () => {
+            setIsResizing(false);
+            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mouseup", onMouseUp);
+            document.body.style.userSelect = "";
+        };
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+        document.body.style.userSelect = "none";
+    };
+
     return (
         <>
             <nav className={`navbar navbar-expand-lg navbar-light ${location == "/" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
@@ -320,7 +369,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
-                                    <button onClick={handleShowChatHistory} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <button onClick={handleShowChatHistory} aria-label="Chat History Button" className="btn btn-white btn-sm d-flex align-items-center gap-1">
                                         <History className={styles.iconLarge} />
                                     </button>
                                     <span className={styles.tooltipText}>Chat History</span>
@@ -346,6 +395,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             <button
                                 className={`nav-link ${styles.profileButton} ${isDropdownOpen ? styles.dropdownOpen : ""}`}
                                 onClick={handleOnClickProfileCard}
+                                aria-label="Profile Card"
                             >
                                 <div className={`d-flex align-items-center gap-2 ${styles.profileCard}`}>
                                     <div className={styles.profileWrapper}>
@@ -383,9 +433,26 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             <ProfilePanel show={isDropdownOpen} />
                         </li>
                     </ul>
+                    <div>
+                        <div className={settingsPanel ? styles.commandsContainer : styles.hidden}>
+                            {settingsPanel && <SettingsPanel onClose={() => setSettingsPanel(false)} />}
+                        </div>
+                    </div>
                 </div>
             </nav>
-            {showChatHistory && <ChatHistorySidebar onClose={() => setShowChatHistory(false)} onDeleteChat={handleDeleteChat} />}
+            <>
+                {showChatHistory && (
+                    <ChatHistorySidebar
+                        onClose={() => setShowChatHistory(false)}
+                        onDeleteChat={handleDeleteChat}
+                        width={chatPanelWidth}
+                        minWidth={chatPanelMinWidth}
+                        maxWidth={chatPanelMaxWidth}
+                        onResizeMouseDown={handleResizeMouseDown}
+                        isResizing={isResizing}
+                    />
+                )}
+            </>
         </>
     );
 };

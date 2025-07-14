@@ -11,8 +11,8 @@ SIGNUPSIGNIN_USER_FLOW = os.getenv("AAD_POLICY_NAME")  # e.g. "B2C_1_signupsigni
 EDITPROFILE_USER_FLOW = os.getenv(
     "EDITPROFILE_USER_FLOW"
 )  # e.g. "B2C_1_profileediting1"
-RESETPASSSWORD_USER_FLOW = os.getenv(
-    "RESETPASSSWORD_USER_FLOW"
+ADD_CHANGE_PASSWORD = os.getenv(
+    "ADD_CHANGE_PASSWORD"
 )  # e.g. "B2C_1_passwordreset1"
 
 # Application (client) registration details
