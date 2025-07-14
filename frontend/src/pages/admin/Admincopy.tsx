@@ -322,12 +322,18 @@ export const EditUserDialog = ({
     errorMessage,
     handleInputName,
     handleTypeDropdownChange,
-    isSavingUser
+    isSavingUser,
+    setInputUserName,
+    setCategorySelection
 }: {
     isOpen: boolean;
     onDismiss: () => void;
     onConfirm: (userId: string) => void;
-    selectedUser?: { id: string; data: { name: string; email: string } };
+    selectedUser?: {
+        role: string;
+        id: string;
+        data: { name: string; email: string; role?: string };
+    };
     inputUserName: string;
     inputEmailName: string;
     categorySelection: string;
@@ -336,7 +342,18 @@ export const EditUserDialog = ({
     handleInputName: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleTypeDropdownChange: (event: any, option: any) => void;
     isSavingUser?: boolean;
+    setInputUserName: React.Dispatch<React.SetStateAction<string>>;
+    setCategorySelection: React.Dispatch<React.SetStateAction<string>>;
 }) => {
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && selectedUser) {
+            setInputUserName(selectedUser.data.name || "");
+            setCategorySelection(selectedUser.role || "");
+        }
+    }, [isOpen, selectedUser, setInputUserName, setCategorySelection]);
+
     if (!isOpen || !selectedUser) return null;
 
     const handleCancel = () => {
@@ -344,10 +361,13 @@ export const EditUserDialog = ({
     };
 
     const handleConfirm = () => {
+        // Check if values are unchanged
+        if (inputUserName === (selectedUser.data.name || "") && categorySelection === (selectedUser.role || "")) {
+            toast("You must edit at least one field before saving changes.", { type: "warning" });
+            return;
+        }
         onConfirm(selectedUser.id);
     };
-
-    const [isResettingPassword, setIsResettingPassword] = useState(false);
 
     function generateRandomPassword(length = 12) {
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -375,6 +395,7 @@ export const EditUserDialog = ({
             setIsResettingPassword(false);
         }
     };
+
     return (
         <div className={styles.overlayE} onClick={handleCancel}>
             <div className={styles.dialogE} onClick={e => e.stopPropagation()}>
@@ -399,13 +420,7 @@ export const EditUserDialog = ({
                         {/* Username */}
                         <div className={styles.fieldGroupE}>
                             <label className={styles.labelE}>Username</label>
-                            <input
-                                type="text"
-                                className={styles.inputE}
-                                onChange={handleInputName}
-                                placeholder={selectedUser.data.name}
-                                value={inputUserName}
-                            />
+                            <input type="text" className={styles.inputE} onChange={handleInputName} value={inputUserName} placeholder="Username" />
                             <span className={styles.helpTextE}>This name will be displayed to other users</span>
                         </div>
 
@@ -444,7 +459,16 @@ export const EditUserDialog = ({
                             <button type="button" onClick={handleCancel} className={styles.cancelButtonE}>
                                 Cancel
                             </button>
-                            <button type="button" onClick={handleConfirm} className={styles.saveButtonE} disabled={isSavingUser}>
+                            <button
+                                type="button"
+                                onClick={handleConfirm}
+                                className={styles.saveButtonE}
+                                disabled={
+                                    isSavingUser ||
+                                    (inputUserName === (selectedUser.data.name || "") && categorySelection === (selectedUser.role || "")) ||
+                                    inputUserName.trim() === ""
+                                }
+                            >
                                 {isSavingUser ? <Spinner size={SpinnerSize.small} /> : "Save Changes"}
                             </button>
                         </div>
@@ -473,7 +497,8 @@ const Admin = () => {
             name: "",
             email: "",
             role: ""
-        }
+        },
+        role: ""
     });
     const [selectedInvitation, setSelectedInvitation] = useState({
         id: "",
@@ -883,6 +908,8 @@ const Admin = () => {
                         handleInputName={handleInputName}
                         handleTypeDropdownChange={handleTypeDropdownChange}
                         isSavingUser={isSavingUser}
+                        setInputUserName={setInputUserName}
+                        setCategorySelection={setCategorySelection}
                     />
                     <DeleteInvitationDialog
                         isOpen={showDeleteInvitationModal}
