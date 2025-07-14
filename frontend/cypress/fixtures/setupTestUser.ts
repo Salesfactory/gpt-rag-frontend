@@ -44,14 +44,14 @@ export function setupTestUserAndOrg() {
                 sessionId: "cs_test_a1DipoQd3hJrgmGaT1Im2AydoNrK0LJ5GNJKwa13AhsV9KU9Pq1SWYrvtE",
                 subscriptionStatus: "active",
                 subscriptionExpirationDate: 1736348460,
-                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
+                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP"
             }
         ]
     }).as("getUserOrganizations");
 
     cy.intercept("GET", "/api/get-users-organizations-role*", {
         statusCode: 200,
-        body: { role: "admin" },
+        body: { role: "admin" }
     });
 
     cy.intercept("GET", "/api/subscriptions/sub_1QeeHXEpF6ccgZLwfCmANnOP/tiers", {
@@ -104,10 +104,10 @@ export function setupTestUserAndOrg() {
         ]
     }).as("getChatHistory");
 
-    cy.intercept("GET", '/api/settings', {
+    cy.intercept("GET", "/api/settings", {
         statusCode: 400,
         body: { font_family: "Arial", font_size: "16", model: "gpt-4.1", temperature: 0 }
-    })
+    });
 
     cy.intercept("POST", "/api/settings", {
         statusCode: 200,
@@ -118,8 +118,38 @@ export function setupTestUserAndOrg() {
             font_size: "16",
             model: "gpt-4.1",
             temperature: 0
-
         }
+    });
 
-    })
+    cy.intercept("GET", "/api/getusers*", {
+        statusCode: 200,
+        body: [
+            {
+                id: "1",
+                data: { name: "Albert Wesker", email: "albertumbrella@example.com" },
+                role: "admin"
+            },
+            {
+                id: "2",
+                data: { name: "Alyx Vance", email: "halflife3isreal@example.com" },
+                role: "user"
+            },
+            {
+                id: "3",
+                user_new: true,
+                nickname: "Carl Johnson",
+                data: { email: "grovestreet4life@invited.com" },
+                role: "platformAdmin",
+                token_expiry: Math.floor(Date.now() / 1000) + 3600
+            },
+            {
+                id: "4",
+                user_new: true,
+                nickname: "Geralt of Rivia",
+                data: { email: "imawitcher@expired.com" },
+                role: "user",
+                token_expiry: Math.floor(Date.now() / 1000) - 3600
+            }
+        ]
+    });
 }
