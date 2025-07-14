@@ -105,9 +105,9 @@ export function setupTestUserAndOrg() {
     }).as("getChatHistory");
 
     cy.intercept("GET", "/api/settings", {
-        statusCode: 400,
+        statusCode: 200,
         body: { font_family: "Arial", font_size: "16", model: "gpt-4.1", temperature: 0 }
-    });
+    }).as("getSettings");
 
     cy.intercept("POST", "/api/settings", {
         statusCode: 200,
@@ -116,10 +116,10 @@ export function setupTestUserAndOrg() {
             client_principal_name: "Victor Maldonado",
             font_family: "Arial",
             font_size: "16",
-            model: "gpt-4.1",
+            model: "Claude-4-Sonnet",
             temperature: 0
         }
-    });
+    }).as("updateSettings");
 
     cy.intercept("GET", "/api/getusers*", {
         statusCode: 200,
