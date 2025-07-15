@@ -578,7 +578,7 @@ const Admin = () => {
 
     const deleteUserFromOrganization = (id: string) => {
         setIsDeletingUser(true);
-        deleteUser({ user, userId: id }).then(res => {
+        deleteUser({ user, userId: id, organizationId: organization?.id }).then(res => {
             if (res.error) {
                 console.log("error", res.error);
                 toast("There was an error deleting the user", { type: "error" });
