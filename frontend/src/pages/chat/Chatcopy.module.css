@@ -92,14 +92,15 @@
 .chatMessageStream {
     flex-grow: 1;
     max-height: 1024px;
-    max-width: 80.5%;
-    width: 90%;
+    width: 80%;
+    max-width: 80%;
     overflow-y: auto;
-    padding-left: 24px;
-    padding-right: 24px;
     padding-top: 15px;
     display: flex;
     flex-direction: column;
+    margin: 0 auto;
+    padding-left: 2px;
+    padding-right: 2px;
 }
 
 .chatMessageGpt {
@@ -123,11 +124,12 @@
     align-items: start;
     border-radius: 6px;
     width: 80%;
+    max-width: 80%;
     background-color: rgba(255, 255, 255, 1);
     border: 1px solid rgba(229, 231, 235, 1);
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     transition: height 0.2s ease;
-    margin-left: 30px;
+    margin: 0 auto;
 }
 
 .chatInputContainer {
