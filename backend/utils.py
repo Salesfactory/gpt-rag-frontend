@@ -1322,11 +1322,13 @@ def get_users(organization_id):
     return []
 
 
-def delete_user(user_id):
+def delete_user(user_id, organization_id):
     if not user_id:
         return {"error": "User ID not found."}
+    if not organization_id:
+        return {"error": "Organization ID not found."}
 
-    logging.info("User ID found. Deleting user: " + user_id)
+    logging.info("User ID found. Deleting user: " + user_id+"for this organization: "+ organization_id)
 
     container = get_cosmos_container("users")
     try:
@@ -1334,16 +1336,18 @@ def delete_user(user_id):
         user_email = user["data"]["email"]
         logging.info(f"[delete_user] User {user_id} deleted from its organization")
         logging.info(f"[delete_user] Deleting all {user_id} active invitations")
-        container = get_cosmos_container("invitations")
-        invitations = container.query_items(
-            query="SELECT * FROM c WHERE c.invited_user_email = @user_email",
-            parameters=[{"name": "@user_email", "value": user_email}],
+        inv_container = get_cosmos_container("invitations")
+        invitations = inv_container.query_items(
+            query="SELECT * FROM c WHERE c.invited_user_email = @user_email AND c.organization_id = @org_id",
+            parameters=[
+                {"name": "@user_email", "value": user_email}
+                , {"name": "@org_id", "value": organization_id}
+                ],
             enable_cross_partition_query=True,
         )
         for invitation in invitations:
-            invitation["active"] = False
-            container.replace_item(item=invitation["id"], body=invitation)
-            logging.info(f"Changed status of Invitation for: {invitation['id']}")
+            inv_container.delete_item(item=invitation["id"], partition_key=invitation["id"])
+            logging.info(f"[delete_user] Invitation {invitation['id']} deleted for user {user_id} for this organization {organization_id}")
 
         return jsonify("Success")
     except CosmosResourceNotFoundError:
@@ -1356,23 +1360,55 @@ def delete_user(user_id):
 
 def delete_invitation(invitation_id):
     if not invitation_id:
-        return {"error": "Invitation ID not found."}
-
-    logging.info("Invitation ID found. Deleting invitation: " + invitation_id)
+        return {"error": "Invitation ID not provided."}
 
     container = get_cosmos_container("invitations")
+
     try:
-        invitation = container.read_item(item=invitation_id, partition_key=invitation_id)
-        container.delete_item(item=invitation_id, partition_key=invitation_id)
-        logging.info(f"[delete_invitation] Invitation {invitation_id} deleted successfully")
-        return {"status": "success"}
+        original_invitation = container.read_item(item=invitation_id, partition_key=invitation_id)
+        invited_user_email = original_invitation.get("invited_user_email")
+        organization_id = original_invitation.get("organization_id")
+
+        if not invited_user_email or not organization_id:
+            logging.warning("[delete_invitation] Missing invited_user_email or organization_id.")
+            return {"error": "Invalid invitation data."}
+
+        logging.info(f"[delete_invitation] Deleting all invitations for user {invited_user_email} in organization {organization_id}")
+
+        query = """
+        SELECT c.id FROM c 
+        WHERE c.invited_user_email = @user_email AND c.organization_id = @org_id
+        """
+        parameters = [
+            {"name": "@user_email", "value": invited_user_email},
+            {"name": "@org_id", "value": organization_id}
+        ]
+
+        items = list(container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+
+        if not items:
+            logging.info("[delete_invitation] No matching invitations found.")
+            return {"status": "no_invitations_found"}
+
+        for item in items:
+            container.delete_item(item=item["id"], partition_key=item["id"])
+            logging.info(f"[delete_invitation] Deleted invitation {item['id']}")
+
+        return {"status": "success", "deleted_count": len(items)}
+
     except CosmosResourceNotFoundError:
-        logging.warning(f"[delete_invitation] Invitation not Found.")
+        logging.warning("[delete_invitation] Original invitation not found.")
         raise NotFound
-    except CosmosHttpResponseError:
-        logging.warning(f"[delete_invitation] Unexpected Error in the CosmosDB Database")
+    except CosmosHttpResponseError as e:
+        logging.error(f"[delete_invitation] Cosmos DB error: {e}")
+        return {"error": "Cosmos DB error."}
     except Exception as e:
-        logging.error(f"[delete_invitation] delete_invitation: something went wrong. {str(e)}")
+        logging.error(f"[delete_invitation] Unexpected error: {str(e)}")
+        return {"error": "Unexpected error."}
 
 def get_graph_api_token():
     tenant_id = os.getenv("AAD_TENANT_ID")

@@ -94,9 +94,9 @@ export async function fetchUserRoleForOrganization(userId: string, organizationI
     }
 }
 
-export async function deleteUser({ user, userId }: any): Promise<any> {
+export async function deleteUser({ user, userId, organizationId }: any): Promise<any> {
     try {
-        const response = await fetch(`/api/deleteuser?userId=${userId}`, {
+        const response = await fetch(`/api/deleteuser?userId=${userId}&organizationId=${organizationId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",

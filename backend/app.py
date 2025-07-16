@@ -2089,11 +2089,12 @@ def deleteUser():
         )
 
     user_id = request.args.get("userId")
-    if not user_id:
-        return jsonify({"error": "Missing required parameter: user_id"}), 400
+    organization_id = request.args.get("organizationId")
+    if not user_id or not organization_id:
+        return jsonify({"error": "Missing required parameter: user_id or organization_id"}), 400
 
     try:
-        success = delete_user(user_id)
+        success = delete_user(user_id, organization_id)
         if not success:
             return jsonify({"error": "User not found or already deleted"}), 404
         return "", 204
