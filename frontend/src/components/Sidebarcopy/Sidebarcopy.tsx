@@ -123,6 +123,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             roles: ["admin", "platformAdmin"]
                         },
                         {
+                            title: "Voice of Customer",
+                            href: "/voice-customer",
+                            tiers: [
+                                "Basic",
+                                "Custom",
+                                "Premium",
+                                "Basic + Financial Assistant",
+                                "Custom + Financial Assistant",
+                                "Premium + Financial Assistant"
+                            ],
+                            roles: ["admin", "platformAdmin"]
+                        },
+                        {
                             title: "Subscription Plans",
                             href: "/subscription-management",
                             tiers: [
