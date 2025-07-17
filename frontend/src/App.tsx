@@ -30,6 +30,7 @@ import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationC
 import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
 import { TemplateReports } from "./pages/reports/ReportTemplates";
 import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
+import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
 
 export default function App() {
     return (
@@ -110,6 +111,7 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/organization" element={<Organization />} />
                     <Route path="/knowledge-sources" element={<KnowledgeSources />} />
+                    <Route path="/voice-customer" element={<VoiceCustomer />} />
                     <Route path="/subscription-management" element={<SubscriptionManagement />} />
                     <Route path="/manage-email-lists" element={<UserManagement />} />
                 </Route>
