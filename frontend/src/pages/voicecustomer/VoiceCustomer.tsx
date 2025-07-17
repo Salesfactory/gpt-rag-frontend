@@ -38,7 +38,26 @@ interface DeleteConfirmState {
     type: "brand" | "product" | "competitor" | "";
 }
 
-export default function VoiceOfCustomerPage() {
+function generateNextId<T extends { id: number }>(items: T[]): number {
+    return items.length > 0 ? Math.max(...items.map(item => item.id)) + 1 : 1;
+}
+
+function getStatusClass(status: string): string {
+    switch (status) {
+        case "Completed":
+            return styles.Completed;
+        case "In Progress":
+            return styles.InProgress;
+        case "Pending":
+            return styles.Pending;
+        case "Failed":
+            return styles.Failed;
+        default:
+            return styles.Unknown || "";
+    }
+}
+
+export default function VoiceCustomerPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("All Status");
@@ -97,7 +116,7 @@ export default function VoiceOfCustomerPage() {
             setBrands(brands.map(brand => (brand.id === editingBrand.id ? { ...brand, name: newBrand.name, description: newBrand.description } : brand)));
         } else {
             const brand: Brand = {
-                id: (brands.length > 0 ? Math.max(...brands.map(b => b.id)) : 0) + 1,
+                id: generateNextId(brands),
                 name: newBrand.name,
                 description: newBrand.description
             };
@@ -122,13 +141,18 @@ export default function VoiceOfCustomerPage() {
             setProducts(
                 products.map(product =>
                     product.id === editingProduct.id
-                        ? { ...product, name: newProduct.name, category: newProduct.category, description: newProduct.description }
+                        ? {
+                              ...product,
+                              name: newProduct.name,
+                              category: newProduct.category,
+                              description: newProduct.description
+                          }
                         : product
                 )
             );
         } else {
             const product: Product = {
-                id: (products.length > 0 ? Math.max(...products.map(p => p.id)) : 0) + 1,
+                id: generateNextId(products),
                 name: newProduct.name,
                 category: newProduct.category,
                 description: newProduct.description
@@ -152,15 +176,20 @@ export default function VoiceOfCustomerPage() {
         }
         if (editingCompetitor) {
             setCompetitors(
-                competitors.map(c =>
-                    c.id === editingCompetitor.id
-                        ? { ...c, name: newCompetitor.name, industry: newCompetitor.industry, description: newCompetitor.description }
-                        : c
+                competitors.map(competitor =>
+                    competitor.id === editingCompetitor.id
+                        ? {
+                              ...competitor,
+                              name: newCompetitor.name,
+                              industry: newCompetitor.industry,
+                              description: newCompetitor.description
+                          }
+                        : competitor
                 )
             );
         } else {
             const competitor: Competitor = {
-                id: (competitors.length > 0 ? Math.max(...competitors.map(c => c.id)) : 0) + 1,
+                id: generateNextId(competitors),
                 name: newCompetitor.name,
                 industry: newCompetitor.industry,
                 description: newCompetitor.description
@@ -422,7 +451,7 @@ export default function VoiceOfCustomerPage() {
                                             <div className={styles.statusCell}>
                                                 {getStatusIcon(job.status)}
                                                 <span className={styles.jobType}>{job.type}</span>
-                                                <span className={`${styles.statusBadge} ${styles[job.status.replace(" ", "")]}`}>{job.status}</span>
+                                                <span className={`${styles.statusBadge} ${getStatusClass(job.status)}`}>{job.status}</span>
                                             </div>
                                         </td>
                                         <td className={styles.tableCell}>{job.endDate || "-"}</td>
