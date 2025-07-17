@@ -1,5 +1,5 @@
 ## Backend preferences (Python)
-- Use Quart(or Flask) as the backend web framework.
+- Use Quart (or Flask) as the backend web framework.
 - For Quart, prefer `async` route handlers and use `await` for I/O operations.
 - Follow PEP8 style conventions in Python code.
 
