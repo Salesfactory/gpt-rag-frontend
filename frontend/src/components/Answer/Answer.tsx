@@ -102,8 +102,8 @@ export const Answer = ({
     const headingStyle = {
         ...baseTextStyle,
         fontWeight: "bold",
-        marginTop: "12px",
-        marginBottom: "8px"
+        marginTop: "20px",
+        marginBottom: "16px"
     };
 
     return (
