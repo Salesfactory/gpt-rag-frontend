@@ -10,6 +10,6 @@
 - Use React Hooks.
 - Code formatting should follow Prettier conventions: (e.g., 2 spaces for indentation, single quotes).
 
-## General project notes/ API Design
+## General project notes / API Design
 - Our REST API follows RESTful naming conventions (/api/v1/...).
 - When giving examples, assume our app is served from /.
