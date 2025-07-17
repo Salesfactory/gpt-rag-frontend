@@ -28,7 +28,7 @@ However, if you also want your editor’s Copilot suggestions to follow the same
 
 In VS Code: 
 1. Go to `Settings`.
-2. Navigate to `Github › Copilot › Chat › Code Generation: Use Instruction Files`
+2. Navigate to `GitHub › Copilot › Chat › Code Generation: Use Instruction Files`
 3. Enable: `Use Instruction Files`.
 
 In Visual Studio: 
