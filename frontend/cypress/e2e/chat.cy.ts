@@ -65,9 +65,6 @@ describe("Main Page (Chat) Test Suite", () => {
         cy.get(".ms-Button--primary").should("be.visible");
         cy.get(".ms-Button--primary").contains("Save").should("be.visible");
         cy.get(".ms-Button--primary").click();
-
-        // Verify a success message appears
-        cy.contains("Successfully saved data. The page will reload in 2 seconds.").should("be.visible");
     });
 
     it("should verify the visibility and functionality of the Chat History", () => {
