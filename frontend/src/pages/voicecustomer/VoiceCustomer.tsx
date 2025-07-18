@@ -53,7 +53,7 @@ function getStatusClass(status: string): string {
         case "Failed":
             return styles.Failed;
         default:
-            return styles.Unknown || "";
+            return styles.Unknown;
     }
 }
 
@@ -242,12 +242,17 @@ export default function VoiceCustomerPage() {
         return matchesSearch && matchesStatus;
     });
 
-    const jobsWithEndDate = filteredJobs.filter(job => job.endDate !== null).sort((a, b) => new Date(b.endDate!).getTime() - new Date(a.endDate!).getTime());
+    const jobsWithEndDate = filteredJobs.filter(job => job.endDate !== null);
+
+    const sortedJobsWithEndDate = jobsWithEndDate.sort((a, b) => {
+        const endDateA = new Date(a.endDate!).getTime();
+        const endDateB = new Date(b.endDate!).getTime();
+        return endDateB - endDateA;
+    });
 
     const jobsWithoutEndDate = filteredJobs.filter(job => job.endDate === null);
 
-    const jobsToDisplay = [...jobsWithEndDate, ...jobsWithoutEndDate].slice(0, 10);
-
+    const jobsToDisplay = [...sortedJobsWithEndDate, ...jobsWithoutEndDate].slice(0, 10);
     const getStatusIcon = (status: ReportJob["status"]) => {
         if (status === "Completed") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
         if (status === "In Progress") return <Clock size={16} style={{ color: "#2563eb" }} />;
