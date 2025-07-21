@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import styles from "./VoiceCustomer.module.css";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface Brand {
     id: number;
@@ -70,7 +72,7 @@ export default function VoiceCustomerPage() {
     const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null);
 
     const [newBrand, setNewBrand] = useState({ name: "", description: "" });
-    const [newProduct, setNewProduct] = useState({ name: "", category: "", description: "" });
+    const [newProduct, setNewProduct] = useState({ name: "", category: "", description: "", brandId: "" });
     const [newCompetitor, setNewCompetitor] = useState({ name: "", industry: "", description: "" });
 
     const [brandError, setBrandError] = useState("");
@@ -99,14 +101,54 @@ export default function VoiceCustomerPage() {
         { id: 5, type: "Product Analysis", target: "MacBook Pro", status: "Completed", progress: 100, startDate: "2024-07-13", endDate: "2024-07-15" }
     ]);
 
-    const validateBrand = (name: string) => name.trim().length > 0;
-    const validateProduct = (name: string, category: string) => name.trim().length > 0 && category.trim().length > 0;
-    const validateCompetitor = (name: string, industry: string) => name.trim().length > 0 && industry.trim().length > 0;
+    // Uniqueness validation helpers
+    const validateBrand = (name: string) => {
+        if (name.trim().length === 0) return false;
+        // If editing, allow the same name for the current brand
+        const normalized = name.trim().toLowerCase();
+        if (editingBrand) {
+            return !brands.some(b => b.name.trim().toLowerCase() === normalized && b.id !== editingBrand.id);
+        }
+        return !brands.some(b => b.name.trim().toLowerCase() === normalized);
+    };
+
+    const validateProduct = (name: string, category: string) => {
+        if (name.trim().length === 0 || category.trim().length === 0) return false;
+        const normalized = name.trim().toLowerCase();
+        if (editingProduct) {
+            return !products.some(p => p.name.trim().toLowerCase() === normalized && p.id !== editingProduct.id);
+        }
+        return !products.some(p => p.name.trim().toLowerCase() === normalized);
+    };
+
+    const validateCompetitor = (name: string, industry: string) => {
+        if (name.trim().length === 0 || industry.trim().length === 0) return false;
+        const normalized = name.trim().toLowerCase();
+        if (editingCompetitor) {
+            return !competitors.some(c => c.name.trim().toLowerCase() === normalized && c.id !== editingCompetitor.id);
+        }
+        return !competitors.some(c => c.name.trim().toLowerCase() === normalized);
+    };
 
     const handleAddBrand = () => {
-        if (!validateBrand(newBrand.name)) {
+        if (newBrand.name.trim().length === 0) {
             setBrandError("Brand name is required");
             return;
+        }
+        // Uniqueness check
+        const normalized = newBrand.name.trim().toLowerCase();
+        if (editingBrand) {
+            if (brands.some(b => b.name.trim().toLowerCase() === normalized && b.id !== editingBrand.id)) {
+                setBrandError("Brand name must be unique");
+                toast("Brand name already exists", { type: "error" });
+                return;
+            }
+        } else {
+            if (brands.some(b => b.name.trim().toLowerCase() === normalized)) {
+                setBrandError("Brand name must be unique");
+                toast("Brand name already exists", { type: "error" });
+                return;
+            }
         }
         if (!editingBrand && brands.length >= 3) {
             setBrandError("Maximum 3 brands allowed");
@@ -129,9 +171,24 @@ export default function VoiceCustomerPage() {
     };
 
     const handleAddProduct = () => {
-        if (!validateProduct(newProduct.name, newProduct.category)) {
-            setProductError("Product name and category are required");
+        if (newProduct.name.trim().length === 0 || newProduct.category.trim().length === 0 || !newProduct.brandId) {
+            setProductError("Product name, category, and brand are required");
             return;
+        }
+        // Uniqueness check
+        const normalized = newProduct.name.trim().toLowerCase();
+        if (editingProduct) {
+            if (products.some(p => p.name.trim().toLowerCase() === normalized && p.id !== editingProduct.id)) {
+                setProductError("Product name must be unique");
+                toast("Product name already exists", { type: "error" });
+                return;
+            }
+        } else {
+            if (products.some(p => p.name.trim().toLowerCase() === normalized)) {
+                setProductError("Product name must be unique");
+                toast("Product name already exists", { type: "error" });
+                return;
+            }
         }
         if (!editingProduct && products.length >= 10) {
             setProductError("Maximum 10 products allowed");
@@ -145,30 +202,47 @@ export default function VoiceCustomerPage() {
                               ...product,
                               name: newProduct.name,
                               category: newProduct.category,
-                              description: newProduct.description
+                              description: newProduct.description,
+                              brandId: newProduct.brandId
                           }
                         : product
                 )
             );
         } else {
-            const product: Product = {
+            const product: Product & { brandId?: string } = {
                 id: generateNextId(products),
                 name: newProduct.name,
                 category: newProduct.category,
-                description: newProduct.description
+                description: newProduct.description,
+                brandId: newProduct.brandId
             };
             setProducts([...products, product]);
         }
-        setNewProduct({ name: "", category: "", description: "" });
+        setNewProduct({ name: "", category: "", description: "", brandId: "" });
         setProductError("");
         setEditingProduct(null);
         setShowProductModal(false);
     };
 
     const handleAddCompetitor = () => {
-        if (!validateCompetitor(newCompetitor.name, newCompetitor.industry)) {
+        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
             setCompetitorError("Competitor name and industry are required");
             return;
+        }
+        // Uniqueness check
+        const normalized = newCompetitor.name.trim().toLowerCase();
+        if (editingCompetitor) {
+            if (competitors.some(c => c.name.trim().toLowerCase() === normalized && c.id !== editingCompetitor.id)) {
+                setCompetitorError("Competitor name must be unique");
+                toast("Competitor name already exists", { type: "error" });
+                return;
+            }
+        } else {
+            if (competitors.some(c => c.name.trim().toLowerCase() === normalized)) {
+                setCompetitorError("Competitor name must be unique");
+                toast("Competitor name already exists", { type: "error" });
+                return;
+            }
         }
         if (!editingCompetitor && competitors.length >= 5) {
             setCompetitorError("Maximum 5 competitors allowed");
@@ -208,7 +282,12 @@ export default function VoiceCustomerPage() {
             setEditingBrand(item as Brand);
             setShowBrandModal(true);
         } else if (type === "product") {
-            setNewProduct({ name: (item as Product).name, category: (item as Product).category, description: item.description });
+            setNewProduct({
+                name: (item as any).name,
+                category: (item as any).category,
+                description: item.description,
+                brandId: (item as any).brandId || (brands[0]?.id ? String(brands[0].id) : "")
+            });
             setEditingProduct(item as Product);
             setShowProductModal(true);
         } else if (type === "competitor") {
@@ -262,6 +341,7 @@ export default function VoiceCustomerPage() {
 
     return (
         <div className={styles.pageContainer}>
+            <ToastContainer />
             <main className={styles.mainContainer}>
                 <div className={styles.cardsGrid}>
                     <div className={styles.card}>
@@ -306,7 +386,11 @@ export default function VoiceCustomerPage() {
                                 <Package size={20} />
                                 <h3 className={styles.cardTitle}>Products ({products.length}/10)</h3>
                             </div>
-                            <button onClick={() => setShowProductModal(true)} disabled={products.length >= 10} className={styles.headerAddButton}>
+                            <button
+                                onClick={() => setShowProductModal(true)}
+                                disabled={products.length >= 10 || brands.length === 0}
+                                className={styles.headerAddButton}
+                            >
                                 <PlusCircle size={16} />
                             </button>
                         </div>
@@ -315,28 +399,36 @@ export default function VoiceCustomerPage() {
                                 <p className={styles.emptyStateText}>No products added yet</p>
                             ) : (
                                 <div className={styles.itemsList}>
-                                    {products.map(product => (
-                                        <div key={product.id} className={styles.listItem}>
-                                            <div className={styles.itemContent}>
-                                                <div className={styles.itemHeader}>
-                                                    <h4 className={styles.itemName}>{product.name}</h4>
-                                                    <span className={styles.itemCategory}>{product.category}</span>
+                                    {products.map(product => {
+                                        const brandName = (product as any).brandId
+                                            ? brands.find(b => String(b.id) === String((product as any).brandId))?.name
+                                            : undefined;
+                                        return (
+                                            <div key={product.id} className={styles.listItem}>
+                                                <div className={styles.itemContent}>
+                                                    <div className={styles.itemHeader}>
+                                                        <h4 className={styles.itemName} style={{ display: "inline", marginRight: 8 }}>
+                                                            {product.name}
+                                                        </h4>
+                                                        <span className={styles.itemCategory}>{product.category}</span>
+                                                        {brandName && <span className={styles.itemBrand}>{brandName}</span>}
+                                                    </div>
+                                                    {product.description && <p className={styles.itemDescription}>{product.description}</p>}
                                                 </div>
-                                                {product.description && <p className={styles.itemDescription}>{product.description}</p>}
+                                                <div className={styles.itemActions}>
+                                                    <button onClick={() => handleEdit(product, "product")} className={styles.iconButton}>
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(product, "product")}
+                                                        className={`${styles.iconButton} ${styles.deleteButton}`}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className={styles.itemActions}>
-                                                <button onClick={() => handleEdit(product, "product")} className={styles.iconButton}>
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(product, "product")}
-                                                    className={`${styles.iconButton} ${styles.deleteButton}`}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -348,7 +440,11 @@ export default function VoiceCustomerPage() {
                                 <Users size={20} />
                                 <h3 className={styles.cardTitle}>Competitors ({competitors.length}/5)</h3>
                             </div>
-                            <button onClick={() => setShowCompetitorModal(true)} disabled={competitors.length >= 5} className={styles.headerAddButton}>
+                            <button
+                                onClick={() => setShowCompetitorModal(true)}
+                                disabled={competitors.length >= 5 || brands.length === 0}
+                                className={styles.headerAddButton}
+                            >
                                 <PlusCircle size={16} />
                             </button>
                         </div>
@@ -548,7 +644,7 @@ export default function VoiceCustomerPage() {
                         className={styles.modalOverlay}
                         onClick={() => {
                             setShowProductModal(false);
-                            setNewProduct({ name: "", category: "", description: "" });
+                            setNewProduct({ name: "", category: "", description: "", brandId: "" });
                             setProductError("");
                             setEditingProduct(null);
                         }}
@@ -559,7 +655,7 @@ export default function VoiceCustomerPage() {
                             <button
                                 onClick={() => {
                                     setShowProductModal(false);
-                                    setNewProduct({ name: "", category: "", description: "" });
+                                    setNewProduct({ name: "", category: "", description: "", brandId: "" });
                                     setProductError("");
                                     setEditingProduct(null);
                                 }}
@@ -597,6 +693,29 @@ export default function VoiceCustomerPage() {
                                     />
                                 </div>
                                 <div>
+                                    <label className={styles.formLabel}>Brand</label>
+                                    <select
+                                        value={newProduct.brandId}
+                                        onChange={e => {
+                                            setNewProduct({ ...newProduct, brandId: e.target.value });
+                                            if (productError) setProductError("");
+                                        }}
+                                        className={styles.formInput}
+                                        style={{ color: !newProduct.brandId ? "#9ca3af" : undefined }}
+                                    >
+                                        {!newProduct.brandId && (
+                                            <option value="" disabled style={{ color: "#9ca3af" }}>
+                                                Select a brand
+                                            </option>
+                                        )}
+                                        {brands.map(brand => (
+                                            <option key={brand.id} value={brand.id} style={{ color: "#111827" }}>
+                                                {brand.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
                                     <label className={styles.formLabel}>Description (Optional)</label>
                                     <textarea
                                         value={newProduct.description}
@@ -612,7 +731,7 @@ export default function VoiceCustomerPage() {
                                 <button
                                     onClick={() => {
                                         setShowProductModal(false);
-                                        setNewProduct({ name: "", category: "", description: "" });
+                                        setNewProduct({ name: "", category: "", description: "", brandId: "" });
                                         setProductError("");
                                         setEditingProduct(null);
                                     }}
@@ -622,7 +741,7 @@ export default function VoiceCustomerPage() {
                                 </button>
                                 <button
                                     onClick={handleAddProduct}
-                                    disabled={!newProduct.name || !newProduct.category}
+                                    disabled={!newProduct.name || !newProduct.category || !newProduct.brandId}
                                     className={`${styles.button} ${styles.buttonConfirm}`}
                                 >
                                     {editingProduct ? "Update" : "Add"}
