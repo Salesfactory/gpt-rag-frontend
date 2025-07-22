@@ -73,17 +73,25 @@ const UploadResources: React.FC = () => {
                 const fileExtension = fileName.split(".").pop()?.toLowerCase();
 
                 let iconColorClass = "";
-
                 if (fileExtension === "pdf") {
                     iconColorClass = styles.icon_pdf;
                 } else if (["doc", "docx", "odt", "rtf"].includes(fileExtension || "")) {
                     iconColorClass = styles.icon_doc;
                 }
 
+                const maxLength = 48;
+                let displayName = fileName;
+                if (fileName.length > maxLength) {
+                    const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
+                    displayName = fileName.substring(0, maxLength - ext.length - 3) + "..." + ext;
+                }
+
                 return (
                     <div className={styles.file_name_cell}>
                         <FileText className={`${styles.file_icon} ${iconColorClass}`} />
-                        <Text className={styles.file_text}>{fileName}</Text>
+                        <Text className={styles.file_text} title={fileName}>
+                            {displayName}
+                        </Text>
                     </div>
                 );
             }
@@ -455,14 +463,14 @@ const UploadResources: React.FC = () => {
                     </IconButton>
                 </div>
             </div>
-            <div className={styles.content_container}>
+            <div className={styles.content_container} style={{ minHeight: "60vh", height: "65vh", maxHeight: "75vh", overflowY: "auto" }}>
                 {/* File List View Section */}
                 {isLoading ? (
                     <div className={styles.loading_container}>
                         <Spinner label="Loading files..." />
                     </div>
                 ) : filteredItems.length > 0 ? (
-                    <div className={styles.file_list_container}>
+                    <div className={styles.file_list_container} style={{ minHeight: "50vh", height: "55vh", maxHeight: "70vh", overflowY: "auto" }}>
                         <DetailsList
                             items={filteredItems}
                             columns={columns}

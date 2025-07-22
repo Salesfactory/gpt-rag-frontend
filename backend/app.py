@@ -4131,42 +4131,37 @@ def get_company_data():
 
 @app.route("/api/get-source-documents", methods=["GET"])
 def get_source_documents():
-    organization_id = request.args.get("organization_id")
+    organization_id = request.args.get("organization_id", "").strip()
+
     logger.info(f"Getting source documents for organization {organization_id}")
+
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
+
     try:
         blob_storage_manager = BlobStorageManager()
-        # First, just get all documents from the main organization_files folder
-        blobs = blob_storage_manager.list_blobs_in_container(
+        
+        # Search only the blobs under that organization's specific folder
+        prefix = f"organization_files/{organization_id}/"
+        blobs = blob_storage_manager.list_blobs_in_container_for_upload_files(
             container_name="documents",
-            prefix="organization_files/",
-            include_metadata="yes",
-            max_results=100
+            prefix=prefix,
+            include_metadata="yes"
         )
-        
-        # Two-step filtering:
-        # 1. Filter by path (for backwards compatibility)
-        # 2. Filter by metadata organization_id
+
+
+        # Return the original blob dicts so all fields (including created_on) are preserved
         organization_blobs = []
-        
         for blob in blobs:
-            # Check if the blob matches by path
-            path_match = f"organization_files/{organization_id}/" in blob["name"]
-            
-            # Check if the blob matches by metadata
-            metadata_match = False
-            if blob["metadata"] and "organization_id" in blob["metadata"]:
-                metadata_match = blob["metadata"]["organization_id"] == organization_id
-            
-            # Include blob if either condition is true
-            if path_match or metadata_match:
+            blob_name = blob.get("name", "")
+            if blob_name.startswith(prefix):
                 organization_blobs.append(blob)
-        
+
         logger.info(f"Found {len(organization_blobs)} source documents for organization {organization_id}")
         return create_success_response(organization_blobs, 200)
+
     except Exception as e:
-        logger.exception(f"Unexpected error in get_source_from_blob: {e}")
+        logger.exception(f"Unexpected error in get_source_documents: {e}")
         return create_error_response("Internal Server Error", 500)
 
 @app.route("/api/upload-source-document", methods=["POST"])
