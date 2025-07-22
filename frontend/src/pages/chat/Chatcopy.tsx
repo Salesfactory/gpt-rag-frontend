@@ -24,7 +24,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import newLogo from "../../img/SFAiLogo.png";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
-import FreddaidLogoFinlAi from "/Users/jonnykateharron/Desktop/Sales Fact Git/gpt-rag-frontend/frontend/src/img/FreddAidFinlAi.png";
+import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
 
 const userLanguage = navigator.language;
