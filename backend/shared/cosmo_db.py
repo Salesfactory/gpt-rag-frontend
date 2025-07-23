@@ -1181,11 +1181,11 @@ def update_prod_by_id(product_id, name, category, brand_id, description):
     try: 
         current_product = container.read_item(item=product_id, partition_key=product_id)
     except CosmosResourceNotFoundError as e:
-        logging.warning(f"Product with id '{brand_id}' not found in Cosmos DB.")
+        logging.warning(f"Product with id '{product_id}' not found in Cosmos DB.")
         raise NotFound
     except Exception as e:
-        logging.error(f"Unexpected error while retrieving product with id '{brand_id}': {e}")
-        raise Exception(f"Unexpected error while retrieving product with id '{brand_id}': {e}") from e
+        logging.error(f"Unexpected error while retrieving product with id '{product_id}': {e}")
+        raise Exception(f"Unexpected error while retrieving product with id '{product_id}': {e}") from e
     
     try:
         current_product.update(
