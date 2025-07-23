@@ -4552,7 +4552,7 @@ def delete_brand(brand_id):
         return create_error_response("Brand ID is required", 400)
     try:
         response = delete_brand_by_id(brand_id)
-        return create_success_response(response, 201)
+        return create_success_response(response, 200)
     except Exception as e:
         return create_error_response(f"Error deleting brand: {str(e)}", 500)
 
