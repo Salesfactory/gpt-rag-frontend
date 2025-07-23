@@ -1167,7 +1167,7 @@ def delete_prod_by_id(product_id):
         return {"message": f"Product with id {product_id} deleted successfully."}
     
     except CosmosHttpResponseError as e:
-        logging.error(f"CosmosDB HTTP error while creating product: {e}")
+        logging.error(f"CosmosDB HTTP error while deleting product: {e}")
         raise Exception("Error with Cosmos DB HTTP operation.") from e
     except Exception as e:
         logging.error(f"Error inserting data into Cosmos DB: {e}")
