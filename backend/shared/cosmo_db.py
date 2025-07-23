@@ -1170,7 +1170,7 @@ def delete_prod_by_id(product_id):
         logging.error(f"CosmosDB HTTP error while deleting product: {e}")
         raise Exception("Error with Cosmos DB HTTP operation.") from e
     except Exception as e:
-        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        logging.error(f"Error deleting data from Cosmos DB: {e}")
         raise e
     
 def update_prod_by_id(product_id, name, category, brand_id, description ):
