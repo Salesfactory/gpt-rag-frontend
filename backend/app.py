@@ -94,7 +94,12 @@ from shared.cosmo_db import (
     create_invitation,
     set_user,
     create_organization,
-    get_company_list
+    get_company_list,
+    create_new_brand,
+    delete_brand_by_id,
+    get_brands_by_organization,
+    update_brand_by_id,
+    create_prod
 )
 
 load_dotenv(override=True)
@@ -2201,7 +2206,7 @@ def sendEmail():
             .cta-button a {
             color: #fff !important;
             }
-            .cta-button a:visited {
+                       .cta-button a:visited {
             color: #fff !important;
             }
             .ii a[href] {
@@ -2379,8 +2384,12 @@ def checkUser():
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return jsonify(response), 200
 
+        if response.status_code != 200:
+            logging.error(f"[webbackend] Error from orchestrator: {response.text}")
+            return jsonify({"error": "Error contacting orchestrator"}), 500
+
+        return response.text
     except Exception as e:
         logging.exception("[webbackend] Unexpected exception in /api/checkUser")
         return jsonify({"error": "An unexpected error occurred"}), 500
@@ -2871,10 +2880,6 @@ def get_subscription_details(subscription_id):
     except stripe.error.APIConnectionError:
         logging.exception("Network communication with Stripe failed")
         return jsonify({"error": "Network communication with Stripe failed."}), 502
-    except stripe.error.StripeError as e:
-        logging.exception("Stripe error occurred")
-        return jsonify({"error": "An error occurred with Stripe."}), 500
-    except Exception as e:
         logging.exception("Exception in /api/subscription/<subscription_id>/tiers")
         return jsonify({"error": str(e)}), 500
 
@@ -4518,6 +4523,103 @@ def update_url():
         logger.exception(f"Unexpected error in modify_url: {e}")
         return create_error_response("Internal Server Error", 500)
     
+@app.route("/api/voice-customer/brands", methods=["POST"])
+def create_brand():
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    required_fields = ["brand_name","brand_description", "organization_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    try:
+        brand_name = data["brand_name"]
+        brand_description = data["brand_description"]
+        organization_id = data["organization_id"]
+
+        result = create_new_brand(
+            brand_name=brand_name,
+            brand_description=brand_description,
+            organization_id=organization_id
+        )
+        return create_success_response(result, 201)
+    except Exception as e:
+        return create_error_response(f"Error creating brand: {str(e)}", 500)
+
+@app.route("/api/voice-customer/brands/<brand_id>", methods=["DELETE"])
+def delete_brand(brand_id):
+    if not brand_id:
+        return create_error_response("Brand ID is required", 400)
+    try:
+        response = delete_brand_by_id(brand_id)
+        return create_success_response(response, 201)
+    except Exception as e:
+        return create_error_response(f"Error creating brand: {str(e)}", 500)
+
+@app.route("/api/voice-customer/brands/<organization_id>", methods=["GET"])
+def get_brands(organization_id):
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        brands = get_brands_by_organization(organization_id)
+        return create_success_response(brands, 200)
+    except Exception as e:
+        return create_error_response(f"Error retrieving brands: {str(e)}", 500)
+
+@app.route("/api/voice-customer/brands/<brand_id>", methods=["PATCH"])
+def update_brand(brand_id):
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    
+    required_fields = ["brand_name", "brand_description"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        brand_name = data["brand_name"]
+        brand_description = data["brand_description"]
+
+        result = update_brand_by_id(
+            brand_id=brand_id,
+            brand_name=brand_name,
+            brand_description=brand_description
+        )
+        return create_success_response(result, 200)
+    except Exception as e:
+        return create_error_response(f"Error updating brand: {str(e)}", 500)
+    
+@app.route("/api/voice-customer/products", methods=["POST"])
+def create_product():
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    
+    required_fields = ["product_name", "product_description", "brand_id", "organization_id","category"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        name = data["product_name"]
+        description = data["product_description"]
+        brand_id = data["brand_id"]
+        organization_id = data["organization_id"]
+        category = data["category"]
+
+        result = create_prod(
+            name,
+            description,
+            category,
+            brand_id,
+            organization_id
+        )
+        return create_success_response(result, 201)
+    except Exception as e:
+        return create_error_response(f"Error creating product: {str(e)}", 500)
+
+# @app.route("/api/voice-customer/products/<product_id>", methods=["DELETE"])
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
