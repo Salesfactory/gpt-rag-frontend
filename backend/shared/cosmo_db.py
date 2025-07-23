@@ -951,7 +951,7 @@ def get_company_list():
         logging.error(f"Unexpected error retrieving Companies: {e}")
         raise
 
-def create_new_brand(brand_name, brand_description ,organization_id):
+def create_new_brand(brand_name, brand_description, organization_id):
     """
     Creates a new brand entry in the Cosmos DB 'brandsContainer'.
 
@@ -1069,8 +1069,8 @@ def update_brand_by_id(brand_id, brand_name, brand_description):
         raise NotFound
 
     except Exception as e:
-        logging.error(f"Unexpected error while retrieving brand with id '{brand_id}'")
-        raise Exception
+        logging.error(f"Unexpected error while retrieving brand with id '{brand_id}': {e}")
+        raise Exception(f"Unexpected error while retrieving brand with id '{brand_id}': {e}") from e
 
     try:
         current_brand.update({
@@ -1103,7 +1103,25 @@ def update_brand_by_id(brand_id, brand_name, brand_description):
         raise ve
     
 def create_prod(name, description, category, brand_id, organization_id):
-    """    Creates a new product entry in the Cosmos DB 'productsContainer'. """
+    """
+    Creates a new product entry in the Cosmos DB 'productsContainer'.
+
+    Args:
+        name (str): The name of the product.
+        description (str): A description of the product.
+        category (str): The category of the product.
+        brand_id (str): The ID of the brand associated with the product.
+        organization_id (str): The ID of the organization creating the product.
+
+    Returns:
+        dict: The created product entry as a dictionary.
+
+    Raises:
+        ValueError: If `name`, `description`, or `brand_id` is empty.
+        RuntimeError: If the product creation fails.
+        CosmosHttpResponseError: If there is an HTTP error with Cosmos DB.
+        Exception: For any other errors during the operation.
+    """
     container = get_cosmos_container("productsContainer")
 
     try:
