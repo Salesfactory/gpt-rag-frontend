@@ -1069,8 +1069,8 @@ def update_brand_by_id(brand_id, brand_name, brand_description):
         raise NotFound
 
     except Exception as e:
-        logging.error(f"Unexpected error while retrieving brand with id '{brand_id}'")
-        raise Exception
+        logging.error(f"Unexpected error while retrieving brand with id '{brand_id}': {e}")
+        raise Exception(f"Unexpected error while retrieving brand with id '{brand_id}': {e}") from e
 
     try:
         current_brand.update({
