@@ -950,3 +950,205 @@ def get_company_list():
     except Exception as e:
         logging.error(f"Unexpected error retrieving Companies: {e}")
         raise
+
+def create_new_brand(brand_name, brand_description, organization_id):
+    """
+    Creates a new brand entry in the Cosmos DB 'brandsContainer'.
+
+    Args:
+        brand_name (str): The name of the brand to create.
+        brand_description (str): A description of the brand.
+        organization_id (str): The ID of the organization to which the brand belongs.
+
+    Returns:
+        dict: The created brand item as returned by Cosmos DB.
+
+    Raises:
+        ValueError: If any of the required parameters are empty.
+        RuntimeError: If the brand was not created in Cosmos DB.
+        Exception: For errors related to Cosmos DB operations.
+    """
+    container = get_cosmos_container("brandsContainer")
+    try:
+        if not brand_name or not brand_description or not organization_id:
+            raise ValueError("Brand name, description, and organization ID cannot be empty.")
+        result = container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "name": brand_name,
+                "description": brand_description,
+                "organizationId": organization_id,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "updatedAt": datetime.now(timezone.utc).isoformat()
+            }
+        )
+        logging.info(f"Brand created successfully: {result}")
+        if not result:
+            logging.warning(f"Brand with name '{brand_name}' not created in Cosmos DB.")
+            raise RuntimeError(f"Brand not created")
+        return result
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while creating brand: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
+
+def get_brands_by_organization(organization_id):
+    """
+    Retrieves all brands associated with a specific organization ID.
+
+    Parameters:
+        organization_id (str): The ID of the organization to filter brands by.
+
+    Returns:
+        list: A list of brand documents associated with the specified organization.
+
+    Raises:
+        NotFound: If no brands are found for the specified organization.
+        Exception: For any unexpected errors during retrieval.
+    """
+    container = get_cosmos_container("brandsContainer")
+
+    try:
+        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
+        parameters = [{"name": "@organizationId", "value": organization_id}]
+        items = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if not items:
+            logging.warning(f"No brands found for organization ID '{organization_id}'.")
+            raise NotFound
+
+        logging.info(f"Brands successfully retrieved for organization ID '{organization_id}': {items}")
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No brands found for organization ID '{organization_id}'.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving brands for organization ID '{organization_id}': {e}")
+        raise
+
+def delete_brand_by_id(brand_id):
+    """
+    Deletes a specific brand document using its `id` as partition key.
+    """
+    container = get_cosmos_container("brandsContainer")
+
+    try:
+        container.delete_item(item=brand_id, partition_key=brand_id)
+        logging.info(f"Brand with id {brand_id} deleted successfully.")
+        return {"message": f"Brand with id {brand_id} deleted successfully."}
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Brand with id '{brand_id}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Error deleting brand with id {brand_id}: {e}")
+        raise
+
+def update_brand_by_id(brand_id, brand_name, brand_description):
+    """
+    Updates an existing brand document using its `id` as the partition key.
+
+    Handles database errors and raises exceptions as needed.
+    """
+    container = get_cosmos_container("brandsContainer")
+
+    try:
+        current_brand = container.read_item(item=brand_id, partition_key=brand_id)
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Brand with id '{brand_id}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error while retrieving brand with id '{brand_id}': {e}")
+        raise Exception(f"Unexpected error while retrieving brand with id '{brand_id}': {e}") from e
+
+    try:
+        current_brand.update({
+            "name": brand_name,
+            "description": brand_description,
+        })
+
+        current_brand["id"] = brand_id
+        current_brand["updatedAt"] = datetime.now(timezone.utc).isoformat()
+
+        # Perform the upsert operation
+        container.upsert_item(current_brand)
+        logging.info(f"Brand updated successfully: {current_brand}")
+        return current_brand
+
+    except CosmosResourceNotFoundError:
+        logging.error(
+            f"Failed to upsert item: Brand ID '{brand_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert brand because it does not exist with id '{brand_id}'"
+        )
+
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
+    
+def create_prod(name, description, category, brand_id, organization_id):
+    """
+    Creates a new product entry in the Cosmos DB 'productsContainer'.
+
+    Args:
+        name (str): The name of the product.
+        description (str): A description of the product.
+        category (str): The category of the product.
+        brand_id (str): The ID of the brand associated with the product.
+        organization_id (str): The ID of the organization creating the product.
+
+    Returns:
+        dict: The created product entry as a dictionary.
+
+    Raises:
+        ValueError: If `name`, `description`, or `brand_id` is empty.
+        RuntimeError: If the product creation fails.
+        CosmosHttpResponseError: If there is an HTTP error with Cosmos DB.
+        Exception: For any other errors during the operation.
+    """
+    container = get_cosmos_container("productsContainer")
+
+    try:
+        if not name or not description or not brand_id:
+            raise ValueError("Product name, description, and brand ID cannot be empty.")
+        
+        result = container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "description": description,
+                "brandId": brand_id,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+                "organizationId": organization_id,
+                "category": category
+            }
+        )
+        
+        logging.info(f"Product created successfully: {result}")
+        if not result:
+            logging.warning(f"Product with name '{name}' not created in Cosmos DB.")
+            raise RuntimeError(f"Product not created")
+        return result
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while creating product: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
