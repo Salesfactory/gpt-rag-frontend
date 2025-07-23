@@ -951,7 +951,7 @@ def get_company_list():
         logging.error(f"Unexpected error retrieving Companies: {e}")
         raise
 
-def create_new_brand(brand_name, brand_description ,organization_id):
+def create_new_brand(brand_name, brand_description, organization_id):
     """
     Creates a new brand entry in the Cosmos DB 'brandsContainer'.
 
