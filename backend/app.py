@@ -4556,7 +4556,7 @@ def delete_brand(brand_id):
     except Exception as e:
         return create_error_response(f"Error deleting brand: {str(e)}", 500)
 
-@app.route("/api/voice-customer/brands/<organization_id>", methods=["GET"])
+@app.route("/api/voice-customer/organizations/<organization_id>/brands", methods=["GET"])
 def get_brands(organization_id):
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
