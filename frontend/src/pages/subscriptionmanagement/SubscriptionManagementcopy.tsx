@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import styles from "./SubscriptionManagementcopy.module.css";
 import { Label, Spinner, Dropdown, IconButton, SpinnerSize } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
@@ -286,6 +286,45 @@ const SubscriptionManagement: React.FC = () => {
 
     const totalMobilePages = filteredLogsData ? Math.ceil(filteredLogsData.length / 5) : 1;
 
+    const recentChangesModalRef = useRef<HTMLDivElement>(null);
+    const viewModalRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (recentChangesModalRef.current && !recentChangesModalRef.current.contains(event.target as Node)) {
+                setIsRecentChangesModal(false);
+            }
+        };
+
+        if (isRecentChangesModal) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isRecentChangesModal]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (viewModalRef.current && !viewModalRef.current.contains(event.target as Node)) {
+                setIsViewModal(false);
+            }
+        };
+
+        if (isViewModal) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isViewModal]);
+
     return (
         <div className={styles.pageContainer}>
             <ToastContainer />
@@ -376,7 +415,9 @@ const SubscriptionManagement: React.FC = () => {
                     </table>
                 )}
                 {isRecentChangesModal && (
-                    <div className={styles.modalAudit}>
+                    <div className={styles.modalOverlay}>
+
+                    <div ref={recentChangesModalRef} className={styles.modalAudit}>
                         <div className={styles.modalHeader}>
                             <h1 className={styles.titleRecent}>Recent Changes</h1>
                             <button aria-label="Close" className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
@@ -471,11 +512,15 @@ const SubscriptionManagement: React.FC = () => {
                                     )}
                                 </div>
                             </div>
+                            
                         )}
                     </div>
+                    </div>
+
                 )}
                 {isViewModal && (
-                    <div className={styles.modalSubscription}>
+                    <div className={styles.modalOverlay} >
+                    <div className={styles.modalSubscription} ref={viewModalRef}>
                         <button aria-label="Close" className={styles.closeButton} onClick={() => setIsViewModal(false)}>
                             <IconX />
                         </button>
@@ -502,6 +547,7 @@ const SubscriptionManagement: React.FC = () => {
                                 </button>
                             </div>
                         ))}
+                    </div>
                     </div>
                 )}
                 {isConfirmationModal && (

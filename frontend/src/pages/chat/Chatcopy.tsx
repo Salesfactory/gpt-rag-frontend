@@ -24,6 +24,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import newLogo from "../../img/SFAiLogo.png";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
+import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
 
 const userLanguage = navigator.language;
@@ -676,7 +677,7 @@ const Chat = () => {
                                         )}
                                         {isFinancialAssistantActive && (
                                             <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                                <img height="60px" src={newLogo} alt="Sales Factory logo"></img>
+                                                <img height="70px" src={FreddaidLogoFinlAi} alt="FreddAid 4.1"></img>
                                                 <h1>FinlAI</h1>
 
                                                 <p style={{ width: "80%", textAlign: "center" }}>

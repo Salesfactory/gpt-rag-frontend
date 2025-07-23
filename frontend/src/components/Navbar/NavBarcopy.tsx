@@ -292,6 +292,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/admin" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Team Management</span>}
                         {location === "/organization" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Workspace Governance</span>}
                         {location === "/knowledge-sources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Knowledge Sources</span>}
+                        {location === "/voice-customer" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Voice of Customer</span>}
                         {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution List</span>}
                         {location === "/upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Upload Resources</span>}
                         {location === "/subscription-management" && (
@@ -369,7 +370,11 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
-                                    <button onClick={handleShowChatHistory} aria-label="Chat History Button" className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <button
+                                        onClick={handleShowChatHistory}
+                                        aria-label="Chat History Button"
+                                        className="btn btn-white btn-sm d-flex align-items-center gap-1"
+                                    >
                                         <History className={styles.iconLarge} />
                                     </button>
                                     <span className={styles.tooltipText}>Chat History</span>
