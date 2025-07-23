@@ -58,7 +58,7 @@ const UploadResources: React.FC = () => {
 
     // Dialog state
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
-
+    const MAX_FILENAME_LENGTH = 48;
     // Define columns for DetailsList
     const columns: IColumn[] = [
         {
@@ -79,7 +79,7 @@ const UploadResources: React.FC = () => {
                     iconColorClass = styles.icon_doc;
                 }
 
-                const maxLength = 48;
+                const maxLength = MAX_FILENAME_LENGTH;
                 let displayName = fileName;
                 if (fileName.length > maxLength) {
                     const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
