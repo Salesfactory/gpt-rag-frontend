@@ -4554,7 +4554,7 @@ def delete_brand(brand_id):
         response = delete_brand_by_id(brand_id)
         return create_success_response(response, 201)
     except Exception as e:
-        return create_error_response(f"Error creating brand: {str(e)}", 500)
+        return create_error_response(f"Error deleting brand: {str(e)}", 500)
 
 @app.route("/api/voice-customer/brands/<organization_id>", methods=["GET"])
 def get_brands(organization_id):
