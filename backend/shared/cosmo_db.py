@@ -1173,7 +1173,7 @@ def delete_prod_by_id(product_id):
         logging.error(f"Error deleting data from Cosmos DB: {e}")
         raise e
     
-def update_prod_by_id(product_id, name, category, brand_id, description ):
+def update_prod_by_id(product_id, name, category, brand_id, description):
     container = get_cosmos_container("productsContainer")
     if not product_id:
         raise ValueError("product_id cannot be empty.")
