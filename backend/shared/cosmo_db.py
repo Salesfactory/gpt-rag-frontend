@@ -1174,6 +1174,22 @@ def delete_prod_by_id(product_id):
         raise e
     
 def update_prod_by_id(product_id, name, category, brand_id, description):
+    """
+    Updates a product in the Cosmos DB container by its ID.
+    Parameters:
+        product_id (str): The unique identifier of the product to update. Must not be empty.
+        name (str): The new name of the product.
+        category (str): The new category of the product.
+        brand_id (str): The ID of the brand associated with the product.
+        description (str): The new description of the product.
+    Returns:
+        dict: The updated product object.
+    Raises:
+        ValueError: If `product_id` is empty.
+        NotFound: If the product with the given ID does not exist in the database.
+        Exception: For unexpected errors during the update process.
+        AzureError: If there is an error with Azure Cosmos DB operations.
+    """
     container = get_cosmos_container("productsContainer")
     if not product_id:
         raise ValueError("product_id cannot be empty.")
