@@ -1134,3 +1134,21 @@ def create_prod(name, description, category, brand_id, organization_id):
     except Exception as e:
         logging.error(f"Error inserting data into Cosmos DB: {e}")
         raise e
+    
+def delete_prod(product_id):
+    """
+    Deletes a product from the container given the product_id
+    """
+    container = get_cosmos_container("productsContainer")
+
+    try:
+        if not product_id:
+            raise ValueError("product_id cannot be empty")
+        
+        result = container.delete_item(item=product_id, partition_key=product_id)
+
+        if not result:
+            logging.warning(f"Product with id {product_id} not deleted in cosmos DB")
+            raise RuntimeError("Error deleting the product. try again")
+    except:
+        pass
