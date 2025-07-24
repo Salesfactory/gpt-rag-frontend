@@ -5,7 +5,7 @@ import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { getBrandsByOrganization, createBrand, deleteBrand, updateBrand, getProductsByOrganization, createProduct } from "../../api/api";
+import { getBrandsByOrganization, createBrand, deleteBrand, updateBrand, getProductsByOrganization, createProduct, deleteProduct } from "../../api/api";
 
 interface Brand {
     id: number;
@@ -382,7 +382,7 @@ export default function VoiceCustomerPage() {
             if (type === "brand") {
                 await handleDeleteBrand(String(item.id));
             } else if (type === "product") {
-                setProducts(products.filter(p => p.id !== item.id));
+                await handleDeleteProduct(String(item.id));
             } else if (type === "competitor") {
                 setCompetitors(competitors.filter(c => c.id !== item.id));
             }
@@ -418,6 +418,33 @@ export default function VoiceCustomerPage() {
             toast.error("Failed to delete brand. Please try again.");
         } finally {
             setIsLoadingBrands(false);
+        }
+    };
+
+    const handleDeleteProduct = async (productId: string) => {
+        if (!organization) return;
+
+        try {
+            setIsLoadingProducts(true);
+            await deleteProduct({
+                product_id: productId,
+                user
+            });
+
+            // Reload products from the backend to ensure the list is up-to-date
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setProducts(updatedProducts);
+
+            // Show success notification
+            toast.success("Product deleted successfully");
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            toast.error("Failed to delete product. Please try again.");
+        } finally {
+            setIsLoadingProducts(false);
         }
     };
 
