@@ -5,7 +5,7 @@ import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { getBrandsByOrganization, createBrand, deleteBrand, updateBrand } from "../../api/api";
+import { getBrandsByOrganization, createBrand, deleteBrand, updateBrand, getProductsByOrganization } from "../../api/api";
 
 interface Brand {
     id: number;
@@ -86,11 +86,7 @@ export default function VoiceCustomerPage() {
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ show: false, item: null, type: "" });
 
     const [brands, setBrands] = useState<Brand[]>([]);
-    const [products, setProducts] = useState<Product[]>([
-        { id: 1, name: "iPhone 15", category: "Smartphones", description: "Latest flagship smartphone" },
-        { id: 2, name: "MacBook Pro", category: "Laptops", description: "Professional laptop computer" },
-        { id: 3, name: "Air Jordan 1", category: "Footwear", description: "Classic basketball sneaker" }
-    ]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [competitors, setCompetitors] = useState<Competitor[]>([
         { id: 1, name: "Samsung", industry: "Technology", description: "Global technology conglomerate" },
         { id: 2, name: "Adidas", industry: "Sportswear", description: "German multinational sportswear company" }
@@ -105,6 +101,7 @@ export default function VoiceCustomerPage() {
 
     const [isLoadingBrands, setIsLoadingBrands] = useState(true);
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
     useEffect(() => {
         const fetchBrands = async () => {
@@ -125,6 +122,27 @@ export default function VoiceCustomerPage() {
         };
 
         fetchBrands();
+    }, [organization, user]);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            if (!organization) return;
+            try {
+                setIsLoadingProducts(true);
+
+                const fetchedProducts = await getProductsByOrganization({
+                    organization_id: organization.id,
+                    user
+                });
+                setProducts(fetchedProducts);
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            } finally {
+                setIsLoadingProducts(false);
+            }
+        };
+
+        fetchProducts();
     }, [organization, user]);
 
     // Uniqueness validation helpers
@@ -497,7 +515,9 @@ export default function VoiceCustomerPage() {
                             </button>
                         </div>
                         <div className={styles.cardBody}>
-                            {products.length === 0 ? (
+                            {isLoadingProducts ? (
+                                <Spinner size={SpinnerSize.large} label="Loading products..." />
+                            ) : products.length === 0 ? (
                                 <p className={styles.emptyStateText}>No products added yet</p>
                             ) : (
                                 <div className={styles.itemsList}>
