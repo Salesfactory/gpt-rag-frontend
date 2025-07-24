@@ -1459,3 +1459,75 @@ export async function createProduct({
   });
   return response.json();
 }
+
+// Delete a product
+export async function deleteProduct({
+  product_id,
+  user,
+}: {
+  product_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  return response.json();
+}
+
+// Get products by organization
+export async function getProductsByOrganization({
+  organization_id,
+  user,
+}: {
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/products`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const result = await response.json();
+  return result.data || [];
+}
+
+// Update a product
+export async function updateProduct({
+  product_id,
+  product_name,
+  product_description,
+  category,
+  brand_id,
+  user,
+}: {
+  product_id: string;
+  product_name: string;
+  product_description: string;
+  category: string;
+  brand_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      product_name,
+      product_description,
+      category,
+      brand_id,
+    }),
+  });
+  return response.json();
+}
