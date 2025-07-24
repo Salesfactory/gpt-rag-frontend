@@ -5,7 +5,7 @@ import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { getBrandsByOrganization, createBrand } from "../../api/api";
+import { getBrandsByOrganization, createBrand, deleteBrand } from "../../api/api";
 
 interface Brand {
     id: number;
@@ -104,6 +104,7 @@ export default function VoiceCustomerPage() {
     ]);
 
     const [isLoadingBrands, setIsLoadingBrands] = useState(true);
+    const [isLoadingDelete, setIsLoadingDelete] = useState(false);
 
     useEffect(() => {
         const fetchBrands = async () => {
@@ -325,18 +326,53 @@ export default function VoiceCustomerPage() {
         setDeleteConfirm({ show: true, item, type });
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!deleteConfirm.item) return;
 
+        setIsLoadingDelete(true); // Start spinner
+
         const { item, type } = deleteConfirm;
-        if (type === "brand") {
-            setBrands(brands.filter(b => b.id !== item.id));
-        } else if (type === "product") {
-            setProducts(products.filter(p => p.id !== item.id));
-        } else if (type === "competitor") {
-            setCompetitors(competitors.filter(c => c.id !== item.id));
+        try {
+            if (type === "brand") {
+                await handleDeleteBrand(String(item.id));
+            } else if (type === "product") {
+                setProducts(products.filter(p => p.id !== item.id));
+            } else if (type === "competitor") {
+                setCompetitors(competitors.filter(c => c.id !== item.id));
+            }
+        } catch (error) {
+            console.error("Error during deletion:", error);
+        } finally {
+            setDeleteConfirm({ show: false, item: null, type: "" });
+            setIsLoadingDelete(false); // Stop spinner
         }
-        setDeleteConfirm({ show: false, item: null, type: "" });
+    };
+
+    const handleDeleteBrand = async (brandId: string) => {
+        if (!organization) return;
+
+        try {
+            setIsLoadingBrands(true);
+            await deleteBrand({
+                brand_id: brandId,
+                user
+            });
+
+            // Reload brands from the backend to ensure the list is up-to-date
+            const updatedBrands = await getBrandsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setBrands(updatedBrands);
+
+            // Show success notification
+            toast.success("Brand deleted successfully");
+        } catch (error) {
+            console.error("Error deleting brand:", error);
+            toast.error("Failed to delete brand. Please try again.");
+        } finally {
+            setIsLoadingBrands(false);
+        }
     };
 
     const filteredJobs = reportJobs.filter(job => {
@@ -869,6 +905,36 @@ export default function VoiceCustomerPage() {
                 </div>
             )}
 
+            {deleteConfirm.show && deleteConfirm.type === "brand" && (
+                <div className={styles.modalContainer}>
+                    <div className={styles.modalOverlay} onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })} />
+                    <div className={styles.modal}>
+                        <div className={styles.modalHeader}>
+                            <h3>Confirm Deletion</h3>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <p>Are you sure you want to delete the brand "{deleteConfirm.item?.name}"?</p>
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button
+                                onClick={() => {
+                                    if (deleteConfirm.item) {
+                                        handleDeleteBrand(String(deleteConfirm.item.id));
+                                    }
+                                    setDeleteConfirm({ show: false, item: null, type: "" });
+                                }}
+                                className={styles.confirmButton}
+                            >
+                                Confirm
+                            </button>
+                            <button onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })} className={styles.cancelButton}>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {deleteConfirm.show && (
                 <div className={styles.modalContainer}>
                     <div className={styles.modalOverlay} onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })} />
@@ -895,8 +961,13 @@ export default function VoiceCustomerPage() {
                                 >
                                     Cancel
                                 </button>
-                                <button type="button" onClick={confirmDelete} className={styles.buttonDelete}>
-                                    Yes, Delete
+                                <button
+                                    type="button"
+                                    onClick={confirmDelete}
+                                    className={styles.buttonDelete}
+                                    disabled={isLoadingDelete} // Disable button while loading
+                                >
+                                    {isLoadingDelete ? <Spinner size={SpinnerSize.small} /> : "Yes, Delete"}
                                 </button>
                             </div>
                         </div>
