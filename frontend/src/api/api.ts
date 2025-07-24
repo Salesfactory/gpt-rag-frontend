@@ -1638,3 +1638,20 @@ export async function updateCompetitor({
   });
   return response.json();
 }
+
+export async function getItemsToDeleteByBrand({ brand_id, user }: { brand_id: string; user: any }): Promise<any> {
+  const response = await fetch(`/api/voice-customer/brand/${encodeURIComponent(brand_id)}/items-to-delete/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch items to delete for brand ${brand_id}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
