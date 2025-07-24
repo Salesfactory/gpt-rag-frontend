@@ -76,6 +76,7 @@ from shared.cosmo_db import (
     create_report,
     get_invitation_by_email_and_org,
     get_invitation_role,
+    get_items_to_delete_by_brand,
     get_report,
     get_user_container,
     get_user_organizations,
@@ -107,7 +108,8 @@ from shared.cosmo_db import (
     associate_competitor_with_brand,
     delete_competitor_by_id,
     get_competitors_by_organization,
-    update_competitor_by_id
+    update_competitor_by_id,
+    get_items_to_delete_by_brand,
 )
 
 load_dotenv(override=True)
@@ -4826,11 +4828,11 @@ def add_competitor():
 
         competitor_id = competitor["id"] if competitor else None
 
-        if isinstance(brands_id, list):
-            for brand_id in brands_id:
-                associate_competitor_with_brand(brand_id, competitor_id)
+        for brand_id in brands_id:
+            associate_competitor_with_brand(brand_id, competitor_id)
 
         return create_success_response(competitor, 201)
+    
     except ValueError as ve:
         logger.error(f"Value error creating competitor: {str(ve)}")
         return create_error_response(f"Value error creating competitor: {str(ve)}", 400)
@@ -4935,6 +4937,21 @@ def update_competitor(competitor_id):
         return create_success_response(result, 200)
     except Exception as e:
         return create_error_response(f"Error updating competitor: {str(e)}", 500)
+
+@app.route("/api/voice-customer/brand/<brand_id>/items-to-delete/", methods=["GET"])
+def get_items_to_delete(brand_id):
+    """
+    Endpoint to retrieve items that are marked for deletion.
+    
+    Returns:
+        JSON response with a list of items to delete or an error message.
+    """
+    try:
+        items = get_items_to_delete_by_brand(brand_id)
+        return create_success_response(items, 200)
+    except Exception as e:
+        logger.exception(f"Error retrieving items to delete: {e}")
+        return create_error_response("Internal Server Error", 500)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
