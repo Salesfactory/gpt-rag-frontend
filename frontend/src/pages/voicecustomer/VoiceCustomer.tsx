@@ -5,7 +5,16 @@ import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { getBrandsByOrganization, createBrand, deleteBrand, updateBrand, getProductsByOrganization, createProduct, deleteProduct } from "../../api/api";
+import {
+    getBrandsByOrganization,
+    createBrand,
+    deleteBrand,
+    updateBrand,
+    getProductsByOrganization,
+    createProduct,
+    deleteProduct,
+    updateProduct
+} from "../../api/api";
 
 interface Brand {
     id: number;
@@ -290,6 +299,48 @@ export default function VoiceCustomerPage() {
             toast.error("Failed to create product. Please try again.");
             console.error("Error creating product:", error);
             setProductError("Failed to create product. Please try again.");
+        } finally {
+            setIsLoadingProducts(false);
+        }
+    };
+
+    const handleEditProduct = async () => {
+        if (!organization || !editingProduct) return;
+
+        if (newProduct.name.trim().length === 0 || newProduct.category.trim().length === 0 || !newProduct.brandId) {
+            setProductError("All fields are required");
+            return;
+        }
+
+        try {
+            setIsLoadingProducts(true);
+            await updateProduct({
+                product_id: String(editingProduct.id),
+                product_name: newProduct.name,
+                product_description: newProduct.description,
+                category: newProduct.category,
+                brand_id: newProduct.brandId,
+                user
+            });
+
+            // Reload products from the backend to ensure the updated product is reflected
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setProducts(updatedProducts);
+
+            // Show success notification
+            toast.success("Product updated successfully");
+
+            // Reset form state
+            setNewProduct({ name: "", category: "", description: "", brandId: "" });
+            setProductError("");
+            setEditingProduct(null);
+            setShowProductModal(false);
+        } catch (error) {
+            toast.error("Failed to update product. Please try again.");
+            console.error("Error updating product:", error);
         } finally {
             setIsLoadingProducts(false);
         }
@@ -880,8 +931,12 @@ export default function VoiceCustomerPage() {
                                 >
                                     Cancel
                                 </button>
-                                <button onClick={handleAddProduct} disabled={isLoadingProducts} className={`${styles.button} ${styles.buttonConfirm}`}>
-                                    {isLoadingProducts ? <Spinner size={SpinnerSize.small} /> : "Add"}
+                                <button
+                                    onClick={editingProduct ? handleEditProduct : handleAddProduct}
+                                    disabled={isLoadingProducts}
+                                    className={`${styles.button} ${styles.buttonConfirm}`}
+                                >
+                                    {isLoadingProducts ? <Spinner size={SpinnerSize.small} /> : editingProduct ? "Update" : "Add"}
                                 </button>
                             </div>
                         </div>
