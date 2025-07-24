@@ -232,6 +232,9 @@
     position: relative;
     max-width: 28rem;
 }
+.customCheckbox:checked+.checkboxIndicator {
+    background-color: #4caf50;
+}
 
 .searchInput {
     width: 100%;

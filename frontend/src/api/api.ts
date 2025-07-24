@@ -1531,3 +1531,110 @@ export async function updateProduct({
   });
   return response.json();
 }
+
+// Create a competitor
+export async function createCompetitor({
+  competitor_name,
+  competitor_description,
+  industry,
+  brands_id,
+  organization_id,
+  user,
+}: {
+  competitor_name: string;
+  competitor_description: string;
+  industry: string;
+  brands_id: string[];
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch('/api/voice-customer/competitors', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      competitor_name,
+      competitor_description,
+      industry,
+      brands_id,
+      organization_id,
+    }),
+  });
+  return response.json();
+}
+
+// Delete a competitor
+export async function deleteCompetitor({
+  competitor_id,
+  user,
+}: {
+  competitor_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  return response.json();
+}
+
+// Get competitors by organization
+export async function getCompetitorsByOrganization({
+  organization_id,
+  user,
+}: {
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/competitors`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const result = await response.json();
+  console.log("Competitors fetched:", result);
+  return result.data || [];
+}
+
+// Update a competitor
+export async function updateCompetitor({
+  competitor_id,
+  competitor_name,
+  competitor_description,
+  industry,
+  brands_id,
+  user,
+}: {
+  competitor_id: string;
+  competitor_name: string;
+  competitor_description: string;
+  industry: string;
+  brands_id: string[];
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      competitor_name,
+      competitor_description,
+      industry,
+      brands_id,
+    }),
+  });
+  return response.json();
+}

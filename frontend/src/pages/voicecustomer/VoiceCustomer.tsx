@@ -13,7 +13,11 @@ import {
     getProductsByOrganization,
     createProduct,
     deleteProduct,
-    updateProduct
+    updateProduct,
+    getCompetitorsByOrganization,
+    createCompetitor,
+    updateCompetitor,
+    deleteCompetitor
 } from "../../api/api";
 
 interface Brand {
@@ -34,6 +38,11 @@ interface Competitor {
     name: string;
     industry: string;
     description: string;
+    brands: [
+        {
+            brand_id: number;
+        }
+    ];
 }
 
 interface ReportJob {
@@ -87,7 +96,12 @@ export default function VoiceCustomerPage() {
 
     const [newBrand, setNewBrand] = useState({ name: "", description: "" });
     const [newProduct, setNewProduct] = useState({ name: "", category: "", description: "", brandId: "" });
-    const [newCompetitor, setNewCompetitor] = useState({ name: "", industry: "", description: "" });
+    const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
+        name: "",
+        industry: "",
+        description: "",
+        brandIds: []
+    });
 
     const [brandError, setBrandError] = useState("");
     const [productError, setProductError] = useState("");
@@ -96,10 +110,7 @@ export default function VoiceCustomerPage() {
 
     const [brands, setBrands] = useState<Brand[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [competitors, setCompetitors] = useState<Competitor[]>([
-        { id: 1, name: "Samsung", industry: "Technology", description: "Global technology conglomerate" },
-        { id: 2, name: "Adidas", industry: "Sportswear", description: "German multinational sportswear company" }
-    ]);
+    const [competitors, setCompetitors] = useState<Competitor[]>([]);
     const [reportJobs, setReportJobs] = useState<ReportJob[]>([
         { id: 1, type: "Brand Analysis", target: "Apple", status: "Completed", progress: 100, startDate: "2024-07-15", endDate: "2024-07-16" },
         { id: 2, type: "Product Analysis", target: "iPhone 15", status: "In Progress", progress: 65, startDate: "2024-07-16", endDate: null },
@@ -111,6 +122,7 @@ export default function VoiceCustomerPage() {
     const [isLoadingBrands, setIsLoadingBrands] = useState(true);
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
 
     useEffect(() => {
         const fetchBrands = async () => {
@@ -152,6 +164,28 @@ export default function VoiceCustomerPage() {
         };
 
         fetchProducts();
+    }, [organization, user]);
+
+    useEffect(() => {
+        const fetchCompetitors = async () => {
+            if (!organization) return;
+
+            try {
+                setIsLoadingCompetitors(true);
+                const fetchedCompetitors = await getCompetitorsByOrganization({
+                    organization_id: organization.id,
+                    user
+                });
+                setCompetitors(fetchedCompetitors);
+            } catch (error) {
+                console.error("Error fetching competitors:", error);
+                toast.error("Failed to fetch competitors. Please try again.");
+            } finally {
+                setIsLoadingCompetitors(false);
+            }
+        };
+
+        fetchCompetitors();
     }, [organization, user]);
 
     // Uniqueness validation helpers
@@ -346,56 +380,88 @@ export default function VoiceCustomerPage() {
         }
     };
 
-    const handleAddCompetitor = () => {
+    const handleAddCompetitor = async () => {
+        if (!organization) return;
+
+        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0 || newCompetitor.brandIds.length === 0) {
+            setCompetitorError("Competitor name, industry, and brand are required");
+            return;
+        }
+
+        try {
+            setIsLoadingCompetitors(true);
+            const createdCompetitor = await createCompetitor({
+                competitor_name: newCompetitor.name,
+                competitor_description: newCompetitor.description,
+                industry: newCompetitor.industry,
+                brands_id: (newCompetitor.brandIds || []).map(String),
+                organization_id: organization.id,
+                user
+            });
+
+            // Reload competitors from the backend to ensure the new competitor is up-to-date
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+
+            // Show success notification
+            toast.success("Competitor added successfully");
+
+            // Reset form state
+            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setCompetitorError("");
+            setShowCompetitorModal(false);
+        } catch (error) {
+            toast.error("Failed to create competitor. Please try again.");
+            console.error("Error creating competitor:", error);
+            setCompetitorError("Failed to create competitor. Please try again.");
+        } finally {
+            setIsLoadingCompetitors(false);
+        }
+    };
+
+    const handleEditCompetitor = async () => {
+        if (!organization || !editingCompetitor) return;
+
         if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
             setCompetitorError("Competitor name and industry are required");
             return;
         }
-        // Uniqueness check
-        const normalized = newCompetitor.name.trim().toLowerCase();
-        if (editingCompetitor) {
-            if (competitors.some(c => c.name.trim().toLowerCase() === normalized && c.id !== editingCompetitor.id)) {
-                setCompetitorError("Competitor name must be unique");
-                toast("Competitor name already exists", { type: "error" });
-                return;
-            }
-        } else {
-            if (competitors.some(c => c.name.trim().toLowerCase() === normalized)) {
-                setCompetitorError("Competitor name must be unique");
-                toast("Competitor name already exists", { type: "error" });
-                return;
-            }
-        }
-        if (!editingCompetitor && competitors.length >= 5) {
-            setCompetitorError("Maximum 5 competitors allowed");
-            return;
-        }
-        if (editingCompetitor) {
-            setCompetitors(
-                competitors.map(competitor =>
-                    competitor.id === editingCompetitor.id
-                        ? {
-                              ...competitor,
-                              name: newCompetitor.name,
-                              industry: newCompetitor.industry,
-                              description: newCompetitor.description
-                          }
-                        : competitor
-                )
-            );
-        } else {
-            const competitor: Competitor = {
-                id: generateNextId(competitors),
-                name: newCompetitor.name,
+
+        try {
+            setIsLoadingCompetitors(true);
+            await updateCompetitor({
+                competitor_id: String(editingCompetitor.id),
+                competitor_name: newCompetitor.name,
+                competitor_description: newCompetitor.description,
                 industry: newCompetitor.industry,
-                description: newCompetitor.description
-            };
-            setCompetitors([...competitors, competitor]);
+                brands_id: (newCompetitor.brandIds || []).map(String),
+                user
+            });
+
+            // Reload competitors from the backend to ensure the updated competitor is reflected
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+
+            // Show success notification
+            toast.success("Competitor updated successfully");
+
+            // Reset form state
+            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setCompetitorError("");
+            setEditingCompetitor(null);
+            setShowCompetitorModal(false);
+        } catch (error) {
+            toast.error("Failed to update competitor. Please try again.");
+            console.error("Error updating competitor:", error);
+        } finally {
+            setIsLoadingCompetitors(false);
         }
-        setNewCompetitor({ name: "", industry: "", description: "" });
-        setCompetitorError("");
-        setEditingCompetitor(null);
-        setShowCompetitorModal(false);
     };
 
     const handleEdit = (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
@@ -413,7 +479,7 @@ export default function VoiceCustomerPage() {
             setEditingProduct(item as Product);
             setShowProductModal(true);
         } else if (type === "competitor") {
-            setNewCompetitor({ name: (item as Competitor).name, industry: (item as Competitor).industry, description: item.description });
+            setNewCompetitor({ name: (item as Competitor).name, industry: (item as Competitor).industry, description: item.description, brandIds: [] });
             setEditingCompetitor(item as Competitor);
             setShowCompetitorModal(true);
         }
@@ -435,7 +501,7 @@ export default function VoiceCustomerPage() {
             } else if (type === "product") {
                 await handleDeleteProduct(String(item.id));
             } else if (type === "competitor") {
-                setCompetitors(competitors.filter(c => c.id !== item.id));
+                await handleDeleteCompetitor(String(item.id));
             }
         } catch (error) {
             console.error("Error during deletion:", error);
@@ -499,6 +565,33 @@ export default function VoiceCustomerPage() {
         }
     };
 
+    const handleDeleteCompetitor = async (competitorId: string) => {
+        if (!organization) return;
+
+        try {
+            setIsLoadingCompetitors(true);
+            await deleteCompetitor({
+                competitor_id: competitorId,
+                user
+            });
+
+            // Reload competitors from the backend to ensure the list is up-to-date
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+
+            // Show success notification
+            toast.success("Competitor deleted successfully");
+        } catch (error) {
+            console.error("Error deleting competitor:", error);
+            toast.error("Failed to delete competitor. Please try again.");
+        } finally {
+            setIsLoadingCompetitors(false);
+        }
+    };
+
     const filteredJobs = reportJobs.filter(job => {
         const matchesSearch = job.type.toLowerCase().includes(searchQuery.toLowerCase()) || job.target.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = selectedStatus === "All Status" || job.status === selectedStatus;
@@ -522,6 +615,23 @@ export default function VoiceCustomerPage() {
         if (status === "Failed") return <AlertCircle size={16} style={{ color: "#dc2626" }} />;
         return <Clock size={16} style={{ color: "#6b7280" }} />;
     };
+
+    const get_brands = (competitor: Competitor) => {
+        const brands_c = competitor.brands.map(b => b.brand_id);
+        const brands_names = brands.filter(b => brands_c.includes(b.id)).map(b => b.name);
+        return brands_names;
+    };
+
+    useEffect(() => {
+        if (editingCompetitor) {
+            setNewCompetitor({
+                name: editingCompetitor.name,
+                industry: editingCompetitor.industry,
+                description: editingCompetitor.description,
+                brandIds: editingCompetitor.brands ? editingCompetitor.brands.map(b => b.brand_id) : []
+            });
+        }
+    }, [editingCompetitor]);
 
     return (
         <div className={styles.pageContainer}>
@@ -637,29 +747,44 @@ export default function VoiceCustomerPage() {
                             </button>
                         </div>
                         <div className={styles.cardBody}>
-                            {competitors.length === 0 ? (
+                            {isLoadingCompetitors ? (
+                                <Spinner size={SpinnerSize.large} label="Loading competitors..." />
+                            ) : competitors.length === 0 ? (
                                 <p className={styles.emptyStateText}>No competitors added yet</p>
                             ) : (
                                 <div className={styles.itemsList}>
-                                    {competitors.map(c => (
-                                        <div key={c.id} className={styles.listItem}>
-                                            <div className={styles.itemContent}>
-                                                <div className={styles.itemHeader}>
-                                                    <h4 className={styles.itemName}>{c.name}</h4>
-                                                    <span className={styles.itemIndustry}>{c.industry}</span>
+                                    {competitors.map(c => {
+                                        const brandNames = get_brands(c);
+                                        return (
+                                            <div key={c.id} className={styles.listItem}>
+                                                <div className={styles.itemContent}>
+                                                    <div className={styles.itemHeader}>
+                                                        <h4 className={styles.itemName}>{c.name}</h4>
+                                                        <span className={styles.itemIndustry}>{c.industry}</span>
+                                                        {brandNames.length > 0 &&
+                                                            brandNames.map((name, index) => (
+                                                                <span key={index} className={styles.itemBrand}>
+                                                                    {name}
+                                                                    {index < brandNames.length - 1 ? " " : ""}
+                                                                </span>
+                                                            ))}
+                                                    </div>
+                                                    {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                                 </div>
-                                                {c.description && <p className={styles.itemDescription}>{c.description}</p>}
+                                                <div className={styles.itemActions}>
+                                                    <button onClick={() => handleEdit(c, "competitor")} className={styles.iconButton}>
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(c, "competitor")}
+                                                        className={`${styles.iconButton} ${styles.deleteButton}`}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className={styles.itemActions}>
-                                                <button onClick={() => handleEdit(c, "competitor")} className={styles.iconButton}>
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button onClick={() => handleDelete(c, "competitor")} className={`${styles.iconButton} ${styles.deleteButton}`}>
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -950,7 +1075,7 @@ export default function VoiceCustomerPage() {
                         className={styles.modalOverlay}
                         onClick={() => {
                             setShowCompetitorModal(false);
-                            setNewCompetitor({ name: "", industry: "", description: "" });
+                            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
                             setCompetitorError("");
                             setEditingCompetitor(null);
                         }}
@@ -961,7 +1086,7 @@ export default function VoiceCustomerPage() {
                             <button
                                 onClick={() => {
                                     setShowCompetitorModal(false);
-                                    setNewCompetitor({ name: "", industry: "", description: "" });
+                                    setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
                                     setCompetitorError("");
                                     setEditingCompetitor(null);
                                 }}
@@ -999,6 +1124,40 @@ export default function VoiceCustomerPage() {
                                     />
                                 </div>
                                 <div>
+                                    <label className={styles.formLabel}>Brands</label>
+                                    <div className={styles.multiSelectContainer}>
+                                        {brands.map(brand => (
+                                            <div key={brand.id} className={styles.multiSelectItem}>
+                                                <label htmlFor={`brand-${brand.id}`} className={styles.multiSelectLabel}>
+                                                    <input
+                                                        type="checkbox"
+                                                        id={`brand-${brand.id}`}
+                                                        value={brand.id}
+                                                        checked={newCompetitor.brandIds?.includes(brand.id) || false}
+                                                        onChange={e => {
+                                                            const selectedBrandIds = newCompetitor.brandIds || [];
+                                                            if (e.target.checked) {
+                                                                setNewCompetitor({
+                                                                    ...newCompetitor,
+                                                                    brandIds: [...selectedBrandIds, brand.id]
+                                                                });
+                                                            } else {
+                                                                setNewCompetitor({
+                                                                    ...newCompetitor,
+                                                                    brandIds: selectedBrandIds.filter(id => id !== brand.id)
+                                                                });
+                                                            }
+                                                            if (competitorError) setCompetitorError("");
+                                                        }}
+                                                        style={{ accentColor: "#4caf50" }}
+                                                    />
+                                                    <span className={styles.brandName}>{"   " + brand.name}</span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
                                     <label className={styles.formLabel}>Description (Optional)</label>
                                     <textarea
                                         value={newCompetitor.description}
@@ -1014,7 +1173,7 @@ export default function VoiceCustomerPage() {
                                 <button
                                     onClick={() => {
                                         setShowCompetitorModal(false);
-                                        setNewCompetitor({ name: "", industry: "", description: "" });
+                                        setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
                                         setCompetitorError("");
                                         setEditingCompetitor(null);
                                     }}
@@ -1023,11 +1182,11 @@ export default function VoiceCustomerPage() {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleAddCompetitor}
-                                    disabled={!newCompetitor.name || !newCompetitor.industry}
+                                    onClick={editingCompetitor ? handleEditCompetitor : handleAddCompetitor}
+                                    disabled={isLoadingCompetitors}
                                     className={`${styles.button} ${styles.buttonConfirm}`}
                                 >
-                                    {editingCompetitor ? "Update" : "Add"}
+                                    {isLoadingCompetitors ? <Spinner size={SpinnerSize.small} /> : editingCompetitor ? "Update" : "Add"}
                                 </button>
                             </div>
                         </div>
