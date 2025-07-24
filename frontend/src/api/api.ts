@@ -1398,7 +1398,8 @@ export async function getBrandsByOrganization({
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
   });
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 // Update a brand

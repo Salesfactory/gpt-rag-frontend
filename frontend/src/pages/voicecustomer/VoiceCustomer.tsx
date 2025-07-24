@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Spinner, SpinnerSize } from "@fluentui/react";
 import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAppContext } from "../../providers/AppProviders";
+import { getBrandsByOrganization } from "../../api/api";
 
 interface Brand {
     id: number;
@@ -60,6 +63,8 @@ function getStatusClass(status: string): string {
 }
 
 export default function VoiceCustomerPage() {
+    const { user, organization } = useAppContext();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("All Status");
@@ -80,10 +85,7 @@ export default function VoiceCustomerPage() {
     const [competitorError, setCompetitorError] = useState("");
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ show: false, item: null, type: "" });
 
-    const [brands, setBrands] = useState<Brand[]>([
-        { id: 1, name: "Apple", description: "Consumer electronics and technology" },
-        { id: 2, name: "Nike", description: "Athletic footwear and apparel" }
-    ]);
+    const [brands, setBrands] = useState<Brand[]>([]);
     const [products, setProducts] = useState<Product[]>([
         { id: 1, name: "iPhone 15", category: "Smartphones", description: "Latest flagship smartphone" },
         { id: 2, name: "MacBook Pro", category: "Laptops", description: "Professional laptop computer" },
@@ -100,6 +102,29 @@ export default function VoiceCustomerPage() {
         { id: 4, type: "Brand Analysis", target: "Nike", status: "Failed", progress: 30, startDate: "2024-07-14", endDate: null },
         { id: 5, type: "Product Analysis", target: "MacBook Pro", status: "Completed", progress: 100, startDate: "2024-07-13", endDate: "2024-07-15" }
     ]);
+
+    const [isLoadingBrands, setIsLoadingBrands] = useState(true);
+
+    useEffect(() => {
+        const fetchBrands = async () => {
+            if (!organization) return;
+            try {
+                setIsLoadingBrands(true);
+                const fetchedBrands = await getBrandsByOrganization({
+                    organization_id: organization.id,
+                    user
+                });
+                setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
+            } catch (error) {
+                console.error("Error fetching brands:", error);
+                setBrands([]);
+            } finally {
+                setIsLoadingBrands(false);
+            }
+        };
+
+        fetchBrands();
+    }, [organization, user]);
 
     // Uniqueness validation helpers
     const validateBrand = (name: string) => {
@@ -355,7 +380,9 @@ export default function VoiceCustomerPage() {
                             </button>
                         </div>
                         <div className={styles.cardBody}>
-                            {brands.length === 0 ? (
+                            {isLoadingBrands ? (
+                                <Spinner size={SpinnerSize.large} label="Loading brands..." />
+                            ) : brands.length === 0 ? (
                                 <p className={styles.emptyStateText}>No brands added yet</p>
                             ) : (
                                 <div className={styles.itemsList}>
