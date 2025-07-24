@@ -5,7 +5,7 @@ import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { getBrandsByOrganization } from "../../api/api";
+import { getBrandsByOrganization, createBrand } from "../../api/api";
 
 interface Brand {
     id: number;
@@ -111,7 +111,7 @@ export default function VoiceCustomerPage() {
             try {
                 setIsLoadingBrands(true);
                 const fetchedBrands = await getBrandsByOrganization({
-                    organization_id: organization.id,
+                    organization_id: organization?.id,
                     user
                 });
                 setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
@@ -155,44 +155,43 @@ export default function VoiceCustomerPage() {
         return !competitors.some(c => c.name.trim().toLowerCase() === normalized);
     };
 
-    const handleAddBrand = () => {
+    const handleAddBrand = async () => {
+        if (!organization) return;
         if (newBrand.name.trim().length === 0) {
             setBrandError("Brand name is required");
             return;
         }
-        // Uniqueness check
-        const normalized = newBrand.name.trim().toLowerCase();
-        if (editingBrand) {
-            if (brands.some(b => b.name.trim().toLowerCase() === normalized && b.id !== editingBrand.id)) {
-                setBrandError("Brand name must be unique");
-                toast("Brand name already exists", { type: "error" });
-                return;
-            }
-        } else {
-            if (brands.some(b => b.name.trim().toLowerCase() === normalized)) {
-                setBrandError("Brand name must be unique");
-                toast("Brand name already exists", { type: "error" });
-                return;
-            }
+
+        try {
+            setIsLoadingBrands(true);
+            const createdBrand = await createBrand({
+                brand_name: newBrand.name,
+                brand_description: newBrand.description,
+                organization_id: organization.id,
+                user
+            });
+
+            // Reload brands from the backend to ensure the new brand is up-to-date
+            const updatedBrands = await getBrandsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setBrands(updatedBrands);
+
+            // Show success notification
+            toast.success("Brand added successfully");
+
+            // Reset form state
+            setNewBrand({ name: "", description: "" });
+            setBrandError("");
+            setShowBrandModal(false);
+        } catch (error) {
+            toast.error("Failed to create brand. Please try again.");
+            console.error("Error creating brand:", error);
+            setBrandError("Failed to create brand. Please try again.");
+        } finally {
+            setIsLoadingBrands(false);
         }
-        if (!editingBrand && brands.length >= 3) {
-            setBrandError("Maximum 3 brands allowed");
-            return;
-        }
-        if (editingBrand) {
-            setBrands(brands.map(brand => (brand.id === editingBrand.id ? { ...brand, name: newBrand.name, description: newBrand.description } : brand)));
-        } else {
-            const brand: Brand = {
-                id: generateNextId(brands),
-                name: newBrand.name,
-                description: newBrand.description
-            };
-            setBrands([...brands, brand]);
-        }
-        setNewBrand({ name: "", description: "" });
-        setBrandError("");
-        setEditingBrand(null);
-        setShowBrandModal(false);
     };
 
     const handleAddProduct = () => {
@@ -656,8 +655,8 @@ export default function VoiceCustomerPage() {
                                 >
                                     Cancel
                                 </button>
-                                <button onClick={handleAddBrand} disabled={!newBrand.name} className={`${styles.button} ${styles.buttonConfirm}`}>
-                                    {editingBrand ? "Update" : "Add"}
+                                <button onClick={handleAddBrand} disabled={isLoadingBrands} className={`${styles.button} ${styles.buttonConfirm}`}>
+                                    {isLoadingBrands ? <Spinner size={SpinnerSize.small} /> : "Add"}
                                 </button>
                             </div>
                         </div>
