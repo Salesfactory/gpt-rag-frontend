@@ -105,7 +105,9 @@ from shared.cosmo_db import (
     update_prod_by_id,
     create_competitor,
     associate_competitor_with_brand,
-    delete_competitor_by_id
+    delete_competitor_by_id,
+    get_competitors_by_organization,
+    update_competitor_by_id
 )
 
 load_dotenv(override=True)
@@ -4691,6 +4693,9 @@ def add_competitor():
         industry = data["industry"]
         brands_id = data["brands_id"]
         organization_id = data["organization_id"]
+    
+        if not isinstance(brands_id, list):
+            return create_error_response("brands_id must be a list", 400)
 
         competitor = create_competitor(
             name=name,
@@ -4704,8 +4709,6 @@ def add_competitor():
         if isinstance(brands_id, list):
             for brand_id in brands_id:
                 associate_competitor_with_brand(brand_id, competitor_id)
-        else:
-            associate_competitor_with_brand(brands_id, competitor_id)
 
         return create_success_response(competitor, 201)
     except ValueError as ve:
@@ -4729,6 +4732,48 @@ def delete_competitor(competitor_id):
     except Exception as e:
         return create_error_response(f"Error deleting competitor: {str(e)}", 500)
 
+@app.route("/api/voice-customer/organizations/<organization_id>/competitors", methods=["GET"])
+def get_competitors(organization_id):
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        competitors = get_competitors_by_organization(organization_id)
+        return create_success_response(competitors, 200)
+    except Exception as e:
+        return create_error_response(f"Error retrieving competitors: {str(e)}", 500)
+
+@app.route("/api/voice-customer/competitors/<competitor_id>", methods=["PATCH"])
+def update_competitor(competitor_id):
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    if not competitor_id:
+        return create_error_response("Competitor ID is required", 400)
+    required_fields = ["competitor_name", "competitor_description", "industry", "brands_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        name = data["competitor_name"]
+        description = data["competitor_description"]
+        industry = data["industry"]
+        brands_id = data["brands_id"]
+        
+        if not isinstance(brands_id, list):
+            return create_error_response("brands_id must be a list", 400)
+        
+        result = update_competitor_by_id(
+            competitor_id=competitor_id,
+            name=name,
+            description=description,
+            industry=industry,
+            brands_id=brands_id
+        )
+        return create_success_response(result, 200)
+    except Exception as e:
+        return create_error_response(f"Error updating competitor: {str(e)}", 500)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+

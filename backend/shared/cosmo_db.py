@@ -1371,3 +1371,94 @@ def delete_competitor_by_id(competitor_id):
     except Exception as e:
         logging.error(f"Error deleting data from Cosmos DB: {e}")
         raise e
+
+
+def get_competitors_by_organization(organization_id):
+    """
+    Get all competitors for a specific organization.
+    """
+    container = get_cosmos_container("competitorsContainer")
+    relationship_container = get_cosmos_container("brandsCompetitors")
+
+    competitors = list(container.query_items(
+        query="SELECT * FROM c WHERE c.organization_id = @organization_id",
+        parameters=[{"name": "@organization_id", "value": organization_id}],
+        enable_cross_partition_query=True
+    ))
+
+    for competitor in competitors:
+        competitor['brands'] = list(relationship_container.query_items(
+            query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
+            parameters=[{"name": "@competitor_id", "value": competitor['id']}],
+            enable_cross_partition_query=True
+        ))
+
+    return competitors
+
+def update_competitor_by_id(competitor_id, name, description, industry, brands_id):
+    """
+    Updates an existing competitor document using its `id` as the partition key.
+
+    Handles database errors and raises exceptions as needed.
+    """
+    container = get_cosmos_container("competitorsContainer")
+    relationship_container = get_cosmos_container("brandsCompetitors")
+
+    if not competitor_id:
+        raise ValueError("competitor_id cannot be empty.")
+    
+    try:
+        current_competitor = container.read_item(item=competitor_id, partition_key=competitor_id)
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Competitor with id '{competitor_id}' not found in Cosmos DB.")
+        raise NotFound
+    except Exception as e:
+        logging.error(f"Unexpected error while retrieving competitor with id '{competitor_id}': {e}")
+        raise Exception(f"Unexpected error while retrieving competitor with id '{competitor_id}': {e}") from e
+    
+    try:
+        current_competitor.update(
+            {
+                "name": name,
+                "description": description,
+                "industry": industry
+            }
+        )
+
+        current_competitor["id"] = competitor_id
+        current_competitor["updatedAt"] = datetime.now(timezone.utc).isoformat()
+
+        container.upsert_item(current_competitor)
+
+        # verify, delete or add relationships with brands
+        existing_relationships = list(relationship_container.query_items(
+            query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
+            parameters=[{"name": "@competitor_id", "value": competitor_id}],
+            enable_cross_partition_query=True
+        ))
+        existing_brand_ids = {rel['brand_id'] for rel in existing_relationships}
+        if brands_id:
+            for brand_id in brands_id:
+                if brand_id not in existing_brand_ids:
+                    associate_competitor_with_brand(brand_id, competitor_id)
+            # Delete relationships that are no longer valid
+            for relationship in existing_relationships:
+                if relationship['brand_id'] not in brands_id:
+                    relationship_container.delete_item(item=relationship['id'], partition_key=relationship['id'])
+                    logging.info(f"Deleted relationship for brand_id {relationship['brand_id']} and competitor_id {competitor_id}.")
+         
+        logging.info(f"Competitor updated successfully: {current_competitor}")
+        return current_competitor
+    except CosmosResourceNotFoundError:
+        logging.error(
+            f"Failed to upsert item: Competitor ID '{competitor_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert competitor because it does not exist with id '{competitor_id}'"
+        )
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
