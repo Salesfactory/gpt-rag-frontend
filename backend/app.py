@@ -4533,6 +4533,18 @@ def update_url():
     
 @app.route("/api/voice-customer/brands", methods=["POST"])
 def create_brand():
+    """
+    Handles the creation of a new brand.
+
+    Expects a JSON payload with the following required fields:
+        - brand_name (str): The name of the brand.
+        - brand_description (str): A description of the brand.
+        - organization_id (int or str): The ID of the associated organization.
+
+    Returns:
+        - On success: A JSON response with the created brand data and HTTP status 201.
+        - On failure: A JSON error response with an appropriate error message and HTTP status code.
+    """
     data = request.get_json()
     if not data:
         return create_error_response("No JSON data provided", 400)
@@ -4556,6 +4568,19 @@ def create_brand():
 
 @app.route("/api/voice-customer/brands/<brand_id>", methods=["DELETE"])
 def delete_brand(brand_id):
+    """
+    Deletes a brand by its ID.
+
+    Args:
+        brand_id (str or int): The unique identifier of the brand to delete.
+
+    Returns:
+        Response: A success response with the result of the deletion and HTTP status 200,
+                  or an error response with an appropriate message and status code.
+
+    Raises:
+        Exception: If an error occurs during the deletion process.
+    """
     if not brand_id:
         return create_error_response("Brand ID is required", 400)
     try:
@@ -4566,6 +4591,19 @@ def delete_brand(brand_id):
 
 @app.route("/api/voice-customer/organizations/<organization_id>/brands", methods=["GET"])
 def get_brands(organization_id):
+    """
+    Retrieve brands associated with a given organization.
+
+    Args:
+        organization_id (str or int): The unique identifier of the organization.
+
+    Returns:
+        Response: A success response containing the list of brands (HTTP 200),
+                  or an error response with an appropriate message and status code (HTTP 400 or 500).
+
+    Raises:
+        Exception: If an unexpected error occurs during brand retrieval.
+    """
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
     try:
@@ -4576,6 +4614,18 @@ def get_brands(organization_id):
 
 @app.route("/api/voice-customer/brands/<brand_id>", methods=["PATCH"])
 def update_brand(brand_id):
+    """
+    Updates the details of a brand with the specified brand_id.
+    Expects a JSON payload with the following required fields:
+        - brand_name (str): The new name of the brand.
+        - brand_description (str): The new description of the brand.
+    Args:
+        brand_id (int or str): The unique identifier of the brand to update.
+    Returns:
+        Response: A JSON response indicating success with the updated brand data and HTTP 200 status,
+                  or an error message with the appropriate HTTP status code if the request is invalid
+                  or an error occurs during the update process.
+    """
     data = request.get_json()
     if not data:
         return create_error_response("No JSON data provided", 400)
@@ -4600,6 +4650,18 @@ def update_brand(brand_id):
     
 @app.route("/api/voice-customer/products", methods=["POST"])
 def create_product():
+    """
+    Creates a new product using the provided JSON payload.
+    Expects a JSON object in the request body with the following required fields:
+        - product_name (str): The name of the product.
+        - product_description (str): A description of the product.
+        - brand_id (int or str): The identifier for the brand.
+        - organization_id (int or str): The identifier for the organization.
+        - category (str): The category of the product.
+    Returns:
+        - On success: A JSON response with the created product data and HTTP status 201.
+        - On failure: A JSON error response with an appropriate error message and HTTP status code.
+    """
     data = request.get_json()
     if not data:
         return create_error_response("No JSON data provided", 400)
@@ -4629,6 +4691,19 @@ def create_product():
 
 @app.route("/api/voice-customer/products/<product_id>", methods=["DELETE"])
 def delete_product(product_id):
+    """
+    Deletes a product by its ID.
+
+    Args:
+        product_id (str or int): The unique identifier of the product to be deleted.
+
+    Returns:
+        Response: A success response with the result of the deletion and HTTP status 200,
+                  or an error response with an appropriate message and HTTP status code.
+
+    Raises:
+        None: All exceptions are caught and handled internally, returning an error response.
+    """
     if not product_id:
         return create_error_response("Product ID is required", 400)
     try:
@@ -4639,6 +4714,19 @@ def delete_product(product_id):
 
 @app.route("/api/voice-customer/organizations/<organization_id>/products", methods=["GET"])
 def get_products(organization_id):
+    """
+    Retrieve products for a given organization.
+
+    Args:
+        organization_id (str or int): The unique identifier of the organization.
+
+    Returns:
+        Response: A success response containing the list of products (status code 200),
+                  or an error response with an appropriate message and status code (400 or 500).
+
+    Raises:
+        None: All exceptions are handled internally and returned as error responses.
+    """
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
     try:
@@ -4649,6 +4737,22 @@ def get_products(organization_id):
 
 @app.route("/api/voice-customer/products/<product_id>", methods=["PATCH"])
 def update_product(product_id):
+    """
+    Update an existing product with new data.
+    Args:
+        product_id (int or str): The unique identifier of the product to update.
+    Request JSON Body:
+        product_name (str): The new name of the product.
+        product_description (str): The new description of the product.
+        category (str): The category to which the product belongs.
+        brand_id (int or str): The identifier of the brand associated with the product.
+    Returns:
+        Response: A JSON response indicating success with the updated product data and HTTP 200 status,
+                  or an error message with the appropriate HTTP status code.
+    Error Codes:
+        400: If no JSON data is provided or required fields are missing.
+        500: If an unexpected error occurs during the update process.
+    """
     data = request.get_json()
     if not data:
         return create_error_response("No JSON data provided", 400)
@@ -4677,6 +4781,22 @@ def update_product(product_id):
 
 @app.route("/api/voice-customer/competitors", methods=["POST"])
 def add_competitor():
+    """
+    Handles the creation of a new competitor and associates it with specified brands.
+    Expects a JSON payload with the following required fields:
+        - competitor_name (str): Name of the competitor.
+        - competitor_description (str): Description of the competitor.
+        - industry (str): Industry of the competitor.
+        - brands_id (list): List of brand IDs to associate with the competitor.
+        - organization_id (str): ID of the organization.
+    Returns:
+        - On success: JSON response with the created competitor object and HTTP status 201.
+        - On error: JSON error response with appropriate HTTP status code.
+    Error Handling:
+        - Returns 400 if required fields are missing or if brands_id is not a list.
+        - Returns 400 for value errors during competitor creation.
+        - Returns 500 for database or unexpected errors.
+    """
     data = request.get_json()
 
     if not data:
@@ -4724,6 +4844,19 @@ def add_competitor():
 
 @app.route("/api/voice-customer/competitors/<competitor_id>", methods=["DELETE"])
 def delete_competitor(competitor_id):
+    """
+    Deletes a competitor by their unique identifier.
+
+    Args:
+        competitor_id (str or int): The unique identifier of the competitor to delete.
+
+    Returns:
+        Response: A success response with status 200 if deletion is successful,
+                  or an error response with appropriate status code and message if not.
+
+    Raises:
+        Exception: If an unexpected error occurs during deletion.
+    """
     if not competitor_id:
         return create_error_response("Competitor ID is required", 400)
     try:
@@ -4734,6 +4867,19 @@ def delete_competitor(competitor_id):
 
 @app.route("/api/voice-customer/organizations/<organization_id>/competitors", methods=["GET"])
 def get_competitors(organization_id):
+    """
+    Retrieve competitors for a given organization.
+
+    Args:
+        organization_id (str or int): The unique identifier of the organization.
+
+    Returns:
+        Response: A success response containing the list of competitors and a 200 status code,
+                  or an error response with an appropriate error message and status code.
+
+    Raises:
+        Exception: If an error occurs while retrieving competitors, returns a 500 error response.
+    """
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
     try:
@@ -4744,6 +4890,22 @@ def get_competitors(organization_id):
 
 @app.route("/api/voice-customer/competitors/<competitor_id>", methods=["PATCH"])
 def update_competitor(competitor_id):
+    """
+    Updates a competitor's information based on the provided competitor ID and JSON payload.
+    Args:
+        competitor_id (str or int): The unique identifier of the competitor to update.
+    Request JSON Body:
+        competitor_name (str): The name of the competitor.
+        competitor_description (str): A description of the competitor.
+        industry (str): The industry in which the competitor operates.
+        brands_id (list): A list of brand IDs associated with the competitor.
+    Returns:
+        Response: A Flask response object containing either the updated competitor data (on success)
+        or an error message (on failure), with the appropriate HTTP status code.
+    Error Codes:
+        400: If required data is missing or invalid.
+        500: If an internal server error occurs during the update process.
+    """
     data = request.get_json()
     if not data:
         return create_error_response("No JSON data provided", 400)
