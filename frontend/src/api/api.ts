@@ -1338,3 +1338,123 @@ export async function exportConversation(conversationId: string, userId: string,
         throw error;
     }
 }
+
+// Create a brand
+export async function createBrand({
+  brand_name,
+  brand_description,
+  organization_id,
+  user,
+}: {
+  brand_name: string;
+  brand_description: string;
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch('/api/voice-customer/brands', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({ brand_name, brand_description, organization_id }),
+  });
+  return response.json();
+}
+
+// Delete a brand
+export async function deleteBrand({
+  brand_id,
+  user,
+}: {
+  brand_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  return response.json();
+}
+
+// Get brands by organization
+export async function getBrandsByOrganization({
+  organization_id,
+  user,
+}: {
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/brands`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  return response.json();
+}
+
+// Update a brand
+export async function updateBrand({
+  brand_id,
+  brand_name,
+  brand_description,
+  user,
+}: {
+  brand_id: string;
+  brand_name: string;
+  brand_description: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({ brand_name, brand_description }),
+  });
+  return response.json();
+}
+
+// Create a product
+export async function createProduct({
+  product_name,
+  product_description,
+  brand_id,
+  organization_id,
+  category,
+  user,
+}: {
+  product_name: string;
+  product_description: string;
+  brand_id: string;
+  organization_id: string;
+  category: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch('/api/voice-customer/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      product_name,
+      product_description,
+      brand_id,
+      organization_id,
+      category,
+    }),
+  });
+  return response.json();
+}
