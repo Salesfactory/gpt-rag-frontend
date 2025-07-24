@@ -99,7 +99,10 @@ from shared.cosmo_db import (
     delete_brand_by_id,
     get_brands_by_organization,
     update_brand_by_id,
-    create_prod
+    create_prod,
+    delete_prod_by_id,
+    get_prods_by_organization,
+    update_prod_by_id
 )
 
 load_dotenv(override=True)
@@ -4619,7 +4622,53 @@ def create_product():
     except Exception as e:
         return create_error_response(f"Error creating product: {str(e)}", 500)
 
-# @app.route("/api/voice-customer/products/<product_id>", methods=["DELETE"])
+@app.route("/api/voice-customer/products/<product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    if not product_id:
+        return create_error_response("Product ID is required", 400)
+    try:
+        response = delete_prod_by_id(product_id)
+        return create_success_response(response, 200)
+    except Exception as e:
+        return create_error_response(f"Error deleting product: {str(e)}", 500)
+
+@app.route("/api/voice-customer/organizations/<organization_id>/products", methods=["GET"])
+def get_products(organization_id):
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        products = get_prods_by_organization(organization_id)
+        return create_success_response(products, 200)
+    except Exception as e:
+        return create_error_response(f"Error retrieving products: {str(e)}", 500)
+
+@app.route("/api/voice-customer/products/<product_id>", methods=["PATCH"])
+def update_product(product_id):
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    
+    required_fields = ["product_name", "product_description", "category", "brand_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        name = data["product_name"]
+        description = data["product_description"]
+        category = data["category"]
+        brand_id = data["brand_id"]
+
+        result = update_prod_by_id(
+            product_id=product_id,
+            name=name,
+            category=category,
+            brand_id=brand_id,
+            description=description
+        )
+        return create_success_response(result, 200)
+    except Exception as e:
+        return create_error_response(f"Error updating product: {str(e)}", 500)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

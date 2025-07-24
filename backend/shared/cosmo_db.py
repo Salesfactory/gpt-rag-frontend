@@ -1152,3 +1152,126 @@ def create_prod(name, description, category, brand_id, organization_id):
     except Exception as e:
         logging.error(f"Error inserting data into Cosmos DB: {e}")
         raise e
+    
+def delete_prod_by_id(product_id):
+    """
+    Deletes a product from the container given the product_id
+    """
+    container = get_cosmos_container("productsContainer")
+
+    try:
+        if not product_id:
+            raise ValueError("product_id cannot be empty.")
+        
+        container.delete_item(item=product_id, partition_key=product_id)
+        return {"message": f"Product with id {product_id} deleted successfully."}
+    
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while deleting product: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error deleting data from Cosmos DB: {e}")
+        raise e
+    
+def update_prod_by_id(product_id, name, category, brand_id, description):
+    """
+    Updates a product in the Cosmos DB container by its ID.
+    Parameters:
+        product_id (str): The unique identifier of the product to update. Must not be empty.
+        name (str): The new name of the product.
+        category (str): The new category of the product.
+        brand_id (str): The ID of the brand associated with the product.
+        description (str): The new description of the product.
+    Returns:
+        dict: The updated product object.
+    Raises:
+        ValueError: If `product_id` is empty.
+        NotFound: If the product with the given ID does not exist in the database.
+        Exception: For unexpected errors during the update process.
+        AzureError: If there is an error with Azure Cosmos DB operations.
+    """
+    container = get_cosmos_container("productsContainer")
+    if not product_id:
+        raise ValueError("product_id cannot be empty.")
+    
+    try: 
+        current_product = container.read_item(item=product_id, partition_key=product_id)
+    except CosmosResourceNotFoundError as e:
+        logging.warning(f"Product with id '{product_id}' not found in Cosmos DB.")
+        raise NotFound
+    except Exception as e:
+        logging.error(f"Unexpected error while retrieving product with id '{product_id}': {e}")
+        raise Exception(f"Unexpected error while retrieving product with id '{product_id}': {e}") from e
+    
+    try:
+        current_product.update(
+            {
+                "name": name,
+                "category": category,
+                "brand_id": brand_id,
+                "description": description
+            }
+        )
+
+        current_product["id"] = product_id
+        current_product["updatedAt"] = datetime.now(timezone.utc).isoformat()
+
+        container.upsert_item(current_product)
+        logging.info(f"Product updated successfully: {current_product}")
+        return current_product
+    except CosmosResourceNotFoundError:
+        logging.error(
+            f"Failed to upsert item: Product ID '{product_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert product because it does not exist with id '{product_id}'"
+        )
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
+    except Exception as e:
+        logging.error(f"Unexpected error while updating product with id '{product_id}': {e}")
+        raise e
+    
+def get_prods_by_organization(organization_id):
+    """
+    Retrieves all products associated with a specific organization ID.
+
+    Parameters:
+        organization_id (str): The ID of the organization to filter products by.
+
+    Returns:
+        list: A list of product documents associated with the specified organization.
+
+    Raises:
+        NotFound: If no products are found for the specified organization.
+        Exception: For any unexpected errors during retrieval.
+    """
+    container = get_cosmos_container("productsContainer")
+
+    try:
+        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
+        parameters = [{"name": "@organizationId", "value": organization_id}]
+        items = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if not items:
+            logging.warning(f"No products found for organization ID '{organization_id}'.")
+            raise NotFound
+
+        logging.info(f"Products successfully retrieved for organization ID '{organization_id}': {items}")
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No products found for organization ID '{organization_id}'.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving products for organization ID '{organization_id}': {e}")
+        raise Exception("Error with Azure Cosmos DB operation.") from e
