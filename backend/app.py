@@ -104,7 +104,8 @@ from shared.cosmo_db import (
     get_prods_by_organization,
     update_prod_by_id,
     create_competitor,
-    associate_competitor_with_brand
+    associate_competitor_with_brand,
+    delete_competitor_by_id
 )
 
 load_dotenv(override=True)
@@ -4718,7 +4719,15 @@ def add_competitor():
         logger.exception(f"Error creating competitor: {str(e)}")
         return create_error_response(f"Error creating competitor", 500)
 
-
+@app.route("/api/voice-customer/competitors/<competitor_id>", methods=["DELETE"])
+def delete_competitor(competitor_id):
+    if not competitor_id:
+        return create_error_response("Competitor ID is required", 400)
+    try:
+        response = delete_competitor_by_id(competitor_id)
+        return create_success_response(response, 200)
+    except Exception as e:
+        return create_error_response(f"Error deleting competitor: {str(e)}", 500)
 
 
 if __name__ == "__main__":

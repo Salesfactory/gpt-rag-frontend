@@ -1346,14 +1346,25 @@ def delete_competitor_by_id(competitor_id):
     Deletes a competitor from the container given the competitor_id
     """
     container = get_cosmos_container("competitorsContainer")
+    relationship_container = get_cosmos_container("brandsCompetitors")
 
     try:
         if not competitor_id:
             raise ValueError("competitor_id cannot be empty.")
         
         container.delete_item(item=competitor_id, partition_key=competitor_id)
+        logging.info(f"Competitor with id {competitor_id} deleted successfully.")
+        # Also delete relationships with brands
+        relationships = list(relationship_container.query_items(
+            query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
+            parameters=[{"name": "@competitor_id", "value": competitor_id}],
+            enable_cross_partition_query=True
+        ))
+        for relationship in relationships:
+            relationship_container.delete_item(item=relationship['id'], partition_key=relationship['id'])
+        logging.info(f"Deleted relationships for competitor with id {competitor_id}.")
         return {"message": f"Competitor with id {competitor_id} deleted successfully."}
-    
+
     except CosmosHttpResponseError as e:
         logging.error(f"CosmosDB HTTP error while deleting competitor: {e}")
         raise Exception("Error with Cosmos DB HTTP operation.") from e
