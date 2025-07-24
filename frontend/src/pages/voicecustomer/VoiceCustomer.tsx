@@ -5,7 +5,7 @@ import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { getBrandsByOrganization, createBrand, deleteBrand } from "../../api/api";
+import { getBrandsByOrganization, createBrand, deleteBrand, updateBrand } from "../../api/api";
 
 interface Brand {
     id: number;
@@ -190,6 +190,46 @@ export default function VoiceCustomerPage() {
             toast.error("Failed to create brand. Please try again.");
             console.error("Error creating brand:", error);
             setBrandError("Failed to create brand. Please try again.");
+        } finally {
+            setIsLoadingBrands(false);
+        }
+    };
+
+    const handleEditBrand = async () => {
+        if (!organization || !editingBrand) return;
+
+        if (newBrand.name.trim().length === 0) {
+            setBrandError("Brand name is required");
+            return;
+        }
+
+        try {
+            setIsLoadingBrands(true);
+            await updateBrand({
+                brand_id: String(editingBrand.id),
+                brand_name: newBrand.name,
+                brand_description: newBrand.description,
+                user
+            });
+
+            // Reload brands from the backend to ensure the updated brand is reflected
+            const updatedBrands = await getBrandsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setBrands(updatedBrands);
+
+            // Show success notification
+            toast.success("Brand updated successfully");
+
+            // Reset form state
+            setNewBrand({ name: "", description: "" });
+            setBrandError("");
+            setEditingBrand(null);
+            setShowBrandModal(false);
+        } catch (error) {
+            toast.error("Failed to update brand. Please try again.");
+            console.error("Error updating brand:", error);
         } finally {
             setIsLoadingBrands(false);
         }
@@ -691,8 +731,12 @@ export default function VoiceCustomerPage() {
                                 >
                                     Cancel
                                 </button>
-                                <button onClick={handleAddBrand} disabled={isLoadingBrands} className={`${styles.button} ${styles.buttonConfirm}`}>
-                                    {isLoadingBrands ? <Spinner size={SpinnerSize.small} /> : "Add"}
+                                <button
+                                    onClick={editingBrand ? handleEditBrand : handleAddBrand}
+                                    disabled={isLoadingBrands}
+                                    className={`${styles.button} ${styles.buttonConfirm}`}
+                                >
+                                    {isLoadingBrands ? <Spinner size={SpinnerSize.small} /> : editingBrand ? "Update" : "Add"}
                                 </button>
                             </div>
                         </div>
