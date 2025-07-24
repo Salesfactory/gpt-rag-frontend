@@ -1275,3 +1275,88 @@ def get_prods_by_organization(organization_id):
     except Exception as e:
         logging.error(f"Unexpected error retrieving products for organization ID '{organization_id}': {e}")
         raise Exception("Error with Azure Cosmos DB operation.") from e
+
+
+def create_competitor(name, description, industry, organization_id):
+    """
+    Creates a new competitor entry in the Cosmos DB 'competitorsContainer'.
+
+    Args:
+        name (str): The name of the competitor.
+        description (str): A description of the competitor.
+        industry (str): The industry the competitor operates in.
+        organization_id (str): The ID of the organization to which the competitor belongs.
+
+    Returns:
+        dict: The result of the item creation operation from Cosmos DB.
+
+    Raises:
+        ValueError: If any of the required fields are missing.
+        Exception: If there is an error with the Cosmos DB operation.
+    """
+    container = get_cosmos_container("competitorsContainer")
+    if not name or not description or not industry or not organization_id:
+        raise ValueError("All fields are required to create a competitor.")
+    try:
+        result = container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "description": description,
+                "industry": industry,
+                "organization_id": organization_id,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "updatedAt": datetime.now(timezone.utc).isoformat()
+            }
+        )
+        logging.info(f"Competitor created successfully: {result}")
+        return result
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while creating competitor: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
+
+     
+
+def associate_competitor_with_brand(brand_id, competitor_id):
+    container = get_cosmos_container("brandsCompetitors")
+
+    if not brand_id or not competitor_id:
+        raise ValueError("Both brand_id and competitor_id must be provided.")
+
+    try:
+        container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "brand_id": brand_id,
+                "competitor_id": competitor_id
+            }
+        )
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while relating brand and competitor: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
+
+def delete_competitor_by_id(competitor_id):
+    """
+    Deletes a competitor from the container given the competitor_id
+    """
+    container = get_cosmos_container("competitorsContainer")
+
+    try:
+        if not competitor_id:
+            raise ValueError("competitor_id cannot be empty.")
+        
+        container.delete_item(item=competitor_id, partition_key=competitor_id)
+        return {"message": f"Competitor with id {competitor_id} deleted successfully."}
+    
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while deleting competitor: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error deleting data from Cosmos DB: {e}")
+        raise e

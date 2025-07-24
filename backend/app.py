@@ -102,7 +102,9 @@ from shared.cosmo_db import (
     create_prod,
     delete_prod_by_id,
     get_prods_by_organization,
-    update_prod_by_id
+    update_prod_by_id,
+    create_competitor,
+    associate_competitor_with_brand
 )
 
 load_dotenv(override=True)
@@ -4669,6 +4671,55 @@ def update_product(product_id):
         return create_success_response(result, 200)
     except Exception as e:
         return create_error_response(f"Error updating product: {str(e)}", 500)
+
+@app.route("/api/voice-customer/competitors", methods=["POST"])
+def add_competitor():
+    data = request.get_json()
+
+    if not data:
+        return create_error_response("No JSON data provided.", 400)
+    
+    required_fields = ["competitor_name", "competitor_description", "industry", "brands_id", "organization_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        name = data["competitor_name"]
+        description = data["competitor_description"]
+        industry = data["industry"]
+        brands_id = data["brands_id"]
+        organization_id = data["organization_id"]
+
+        competitor = create_competitor(
+            name=name,
+            description=description,
+            industry=industry,
+            organization_id=organization_id
+        )
+
+        competitor_id = competitor["id"] if competitor else None
+
+        if isinstance(brands_id, list):
+            for brand_id in brands_id:
+                associate_competitor_with_brand(brand_id, competitor_id)
+        else:
+            associate_competitor_with_brand(brands_id, competitor_id)
+
+        return create_success_response(competitor, 201)
+    except ValueError as ve:
+        logger.error(f"Value error creating competitor: {str(ve)}")
+        return create_error_response(f"Value error creating competitor: {str(ve)}", 400)
+    except CosmosHttpResponseError as e:
+        logger.error(f"Cosmos DB error creating competitor: {str(e)}")
+        return create_error_response(f"Database error creating competitor: {str(e)}", 500)
+
+    except Exception as e:
+        logger.exception(f"Error creating competitor: {str(e)}")
+        return create_error_response(f"Error creating competitor", 500)
+
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
