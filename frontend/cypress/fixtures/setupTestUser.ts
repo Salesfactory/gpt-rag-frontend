@@ -152,4 +152,145 @@ export function setupTestUserAndOrg() {
             }
         ]
     });
+
+    cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/brands", {
+        statusCode: 200,
+        body: {
+            "data": [
+                {
+                    "_attachments": "attachments/",
+                    "_etag": "\"61027b6d-0000-0100-0000-68839e700000\"",
+                    "_rid": "piUFAJPb450ZAAAAAAAAAA==",
+                    "_self": "dbs/piUFAA==/colls/piUFAJPb450=/docs/piUFAJPb450ZAAAAAAAAAA==/",
+                    "_ts": 1753456240,
+                    "createdAt": "2025-07-25T15:10:39.576086+00:00",
+                    "description": "Best Team of the world",
+                    "id": "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
+                    "name": "Real Madrid",
+                    "organizationId": "22552b2f-1e98-4bc0-a252-a782d80201d5",
+                    "updatedAt": "2025-07-25T15:10:39.576124+00:00"
+                }
+            ],
+            "status": 200
+        }
+    })
+
+    cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/products", {
+        statusCode: 200,
+        body: {
+            "data": [
+                {
+                    "_attachments": "attachments/",
+                    "_etag": "\"19004a4c-0000-0100-0000-68839ea40000\"",
+                    "_rid": "piUFAMwF0lwRAAAAAAAAAA==",
+                    "_self": "dbs/piUFAA==/colls/piUFAMwF0lw=/docs/piUFAMwF0lwRAAAAAAAAAA==/",
+                    "_ts": 1753456292,
+                    "brandId": "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
+                    "category": "Player",
+                    "createdAt": "2025-07-25T15:11:31.903402+00:00",
+                    "description": "A mid level player",
+                    "id": "9ded4b25-e177-486c-af51-9bb600440b0a",
+                    "name": "Kylian Mbappe",
+                    "organizationId": "22552b2f-1e98-4bc0-a252-a782d80201d5",
+                    "updatedAt": "2025-07-25T15:11:31.903421+00:00"
+                }
+            ],
+            "status": 200
+        }
+    })
+
+    cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/competitors", {
+        statusCode: 200,
+        body: {
+            "data": [
+                {
+                    "_attachments": "attachments/",
+                    "_etag": "\"ca06a92d-0000-0100-0000-68839ecd0000\"",
+                    "_rid": "piUFAIdpn7QWAAAAAAAAAA==",
+                    "_self": "dbs/piUFAA==/colls/piUFAIdpn7Q=/docs/piUFAIdpn7QWAAAAAAAAAA==/",
+                    "_ts": 1753456333,
+                    "brands": [
+                        {
+                            "_attachments": "attachments/",
+                            "_etag": "\"a6037715-0000-0100-0000-68839ece0000\"",
+                            "_rid": "piUFAILPYeciAAAAAAAAAA==",
+                            "_self": "dbs/piUFAA==/colls/piUFAILPYec=/docs/piUFAILPYeciAAAAAAAAAA==/",
+                            "_ts": 1753456334,
+                            "brand_id": "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
+                            "competitor_id": "e2291c49-d922-46ec-b791-9d677c82eed9",
+                            "id": "80488059-89c1-43df-a989-806e6ac1e2d7"
+                        }
+                    ],
+                    "createdAt": "2025-07-25T15:12:12.666829+00:00",
+                    "description": "A mid level football club",
+                    "id": "e2291c49-d922-46ec-b791-9d677c82eed9",
+                    "industry": "Football",
+                    "name": "FC Barcelona",
+                    "organization_id": "22552b2f-1e98-4bc0-a252-a782d80201d5",
+                    "updatedAt": "2025-07-25T15:12:12.666857+00:00"
+                }
+            ],
+            "status": 200
+        }
+
+
+    })
+
+    cy.intercept("POST", "/api/voice-customer/brands", {
+        statusCode: 201,
+        body: {
+            "_attachments": "attachments/",
+            "_etag": "\"61027b6d-0000-0100-0000-68839e700001\"",
+            "_rid": "piUFAJPb450ZAAAAAAAAAB==",
+            "_self": "dbs/piUFAA==/colls/piUFAJPb450=/docs/piUFAJPb450ZAAAAAAAAAB==/",
+            "_ts": 1753456241,
+            "createdAt": "2025-07-25T15:10:40.576086+00:00",
+            "description": "A top level football club",
+            "id": "b1dc8c96-0fc8-4549-8d34-328ada5aa64c",
+            "name": "Chelsea FC",
+            "organizationId": "22552b2f-1e98-4bc0-a252-a782d80201d5",
+            "updatedAt": "2025-07-25T15:10:40.576124+00:00"
+        }
+    }).as("addBrand");
+
+    cy.intercept("POST", "/api/voice-customer/products", {
+        statusCode: 201,
+        body: {
+            "_attachments": "attachments/",
+            "_etag": "\"19004a4c-0000-0100-0000-68839ea40001\"",
+            "_rid": "piUFAMwF0lwRAAAAAAAAAA==",
+            "_self": "dbs/piUFAA==/colls/piUFAMwF0lw=/docs/piUFAMwF0lwRAAAAAAAAAA==/",
+            "_ts": 1753456292,
+            "brandId": "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
+            "category": "Player",
+            "createdAt": "2025-07-25T15:11:31.903402+00:00",
+            "description": "A top level football player",
+            "id": "9ded4b25-e177-486c-af51-9bb600440b0a",
+            "name": "Lionel Messi",
+            "organizationId": "22552b2f-1e98-4bc0-a252-a782d80201d5",
+            "updatedAt": "2025-07-25T15:11:31.903421+00:00"
+        }
+    }).as("addProduct");
+
+    cy.intercept("POST", "/api/voice-customer/competitors", {
+        statusCode: 201,
+        body: {
+            "data": {
+                "_attachments": "attachments/",
+                "_etag": "\"cf06fafc-0000-0100-0000-6883ab480000\"",
+                "_rid": "piUFAIdpn7QXAAAAAAAAAA==",
+                "_self": "dbs/piUFAA==/colls/piUFAIdpn7Q=/docs/piUFAIdpn7QXAAAAAAAAAA==/",
+                "_ts": 1753459528,
+                "createdAt": "2025-07-25T16:05:28.311778+00:00",
+                "description": "A to level football club",
+                "id": "acc26e1b-4c87-4b92-b845-e906814d345a",
+                "industry": "Football Club",
+                "name": "Liverpool",
+                "organization_id": "22552b2f-1e98-4bc0-a252-a782d80201d5",
+                "updatedAt": "2025-07-25T16:05:28.311808+00:00"
+            },
+            "status": 201
+        }
+
+    })
 }
