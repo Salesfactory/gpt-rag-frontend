@@ -119,6 +119,56 @@
   box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.3);
 }
 
+/* Advanced Mode Toggle */
+.advancedToggleContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  margin-top: -8px;
+}
+
+.advancedToggleText {
+  font-size: 0.875rem;
+  color: #333;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.advancedToggle {
+  cursor: pointer;
+  height: 1.25rem;
+  width: 2.25rem;
+  transform: scale(1.5);
+}
+
+.advancedToggle[type="checkbox"] {
+  background-color: #d1d5db;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(255,255,255,1)'/></svg>") !important;
+}
+
+.advancedToggle[type="checkbox"]:checked {
+  background-color: #43A047;
+  border-color: #43A047;
+}
+
+.advancedToggle[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.1rem #43A047;
+}
+
+.advancedToggle[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.advancedToggleContainer:has(.advancedToggle:disabled) .advancedToggleText {
+  opacity: 0.5;
+}
+
+
 /* Search and Filter Bar */
 .searchFilterBar {
   display: flex;
@@ -465,8 +515,19 @@
 @media (min-width: 640px) {
   .addUrlSection {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     gap: 16px;
+  }
+  
+  .advancedToggleContainer {
+    padding: 0 12px;
+    flex-shrink: 0;
+    min-width: 80px;
+    margin-top: -8px;
+  }
+  
+  .inputContainer {
+    align-self: flex-start;
   }
   
   .searchFilterBar {
@@ -485,6 +546,12 @@
   
   .addUrlSection {
     gap: 12px;
+  }
+  
+  .advancedToggleContainer {
+    padding: 0;
+    margin: 0 0 8px 0;
+    align-items: center;
   }
   
   .addButton {

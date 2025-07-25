@@ -62,6 +62,9 @@ const KnowledgeSources: React.FC = () => {
   const [editingError, setEditingError] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   
+  // State for advanced web scrape mode
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
+  
   // Load data on component mount and when organization changes
   useEffect(() => {
     if (organization?.id) {
@@ -487,6 +490,21 @@ const KnowledgeSources: React.FC = () => {
               <p className={styles.errorText}>{urlError}</p>
             )}
           </div>
+          
+          {/* Advanced Mode Toggle */}
+          <div className={styles.advancedToggleContainer}>
+            <span className={styles.advancedToggleText}>Advanced Mode</span>
+            <div className="form-check form-switch">
+              <input
+                className={`form-check-input ${styles.advancedToggle}`}
+                type="checkbox"
+                checked={isAdvancedMode}
+                onChange={(e) => setIsAdvancedMode(e.target.checked)}
+                disabled={isAdding}
+              />
+            </div>
+          </div>
+          
           <button
             onClick={handleAddUrl}
             disabled={!newUrl.trim() || !!urlError || isAdding}
@@ -583,7 +601,7 @@ const KnowledgeSources: React.FC = () => {
                 {searchQuery ? 'No knowledge sources found matching your search.' : 'No knowledge sources found. Add your first URL above to get started.'}
               </div>
             ) : (
-              filteredSources.map((source, index) => {
+              filteredSources.map((source) => {
                 const statusInfo = getStatusInfo(source.result, source.status);
                 const StatusIcon = statusInfo.icon;
                 
