@@ -91,7 +91,7 @@ describe("Knowledge Sources tests", () => {
                 status: 200
             }
         }).as('searchOrganizationUrls');
-        cy.intercept('POST', '/api/webscraping/scrape-urls*', {
+        cy.intercept('POST', '/api/webscraping/scrape-url*', {
             statusCode: 200,
             body: {
                 "data": {
