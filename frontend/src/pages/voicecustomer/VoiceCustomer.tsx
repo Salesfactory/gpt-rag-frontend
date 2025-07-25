@@ -505,7 +505,6 @@ export default function VoiceCustomerPage() {
                 brand_id: String(item.id),
                 user
             });
-            console.log(items);
 
             const MarkedForDeletion = []
             if (items.products && items.products.length > 0) {
@@ -1271,7 +1270,6 @@ export default function VoiceCustomerPage() {
                                         )}
                                         <div className={styles.markedItemsContainer}>
                                             {itemsMarkedForDeletion.map((item: any) => {
-                                                console.log("Item to delete:", item);
                                                 
                                                 return (
                                                     <div className={styles.listMarkedItems}>
