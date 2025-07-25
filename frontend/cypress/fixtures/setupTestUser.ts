@@ -282,7 +282,7 @@ export function setupTestUserAndOrg() {
                 "_self": "dbs/piUFAA==/colls/piUFAIdpn7Q=/docs/piUFAIdpn7QXAAAAAAAAAA==/",
                 "_ts": 1753459528,
                 "createdAt": "2025-07-25T16:05:28.311778+00:00",
-                "description": "A to level football club",
+                "description": "A top level football club",
                 "id": "acc26e1b-4c87-4b92-b845-e906814d345a",
                 "industry": "Football Club",
                 "name": "Liverpool",
