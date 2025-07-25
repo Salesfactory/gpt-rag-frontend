@@ -159,6 +159,20 @@
     margin-top: 0.05rem;
 }
 
+.itemMarked {
+    display: inline-flex;
+    align-items: center;
+    padding: 0rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: #ced1d5;
+    color: #262626;
+    margin-left: 0.5rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.05rem;
+}
+
 .itemActions {
     display: flex;
     align-items: center;
@@ -231,6 +245,9 @@
     flex: 1;
     position: relative;
     max-width: 28rem;
+}
+.customCheckbox:checked+.checkboxIndicator {
+    background-color: #4caf50;
 }
 
 .searchInput {
@@ -568,7 +585,13 @@
 
 .deleteModalText {
     color: #4b5563;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
+}
+
+.deleteModalOption {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-left: 2rem;
 }
 
 .deleteModalText span {
@@ -626,4 +649,27 @@
 
 .jobType {
     font-weight: bold;
+}
+
+.markedItemsContainer {
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.listMarkedItems {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.markedSpinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4rem;
 }

@@ -52,6 +52,7 @@ export default defineConfig({
             "/api/reports/<report_id>":"http://localhost:8000/",
             "/api/logs":"http://localhost:8000/",
             "/api/companydata": "http://localhost:8000/",
+            "/api/voice-customer": "http://localhost:8000/",
         },
         host: true
     }

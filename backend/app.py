@@ -4938,7 +4938,7 @@ def update_competitor(competitor_id):
     except Exception as e:
         return create_error_response(f"Error updating competitor: {str(e)}", 500)
 
-@app.route("/api/voice-customer/brand/<brand_id>/items-to-delete/", methods=["GET"])
+@app.route("/api/voice-customer/brands/<brand_id>/items-to-delete/", methods=["GET"])
 def get_items_to_delete(brand_id):
     """
     Endpoint to retrieve items that are marked for deletion.
