@@ -20,7 +20,7 @@ import {
     deleteCompetitor,
     getItemsToDeleteByBrand
 } from "../../api/api";
-import { get } from "cypress/types/lodash";
+import { get, set } from "cypress/types/lodash";
 
 interface Brand {
     id: number;
@@ -36,7 +36,7 @@ interface Product {
 }
 
 interface Competitor {
-    id: number;
+    id: string;
     name: string;
     industry: string;
     description: string;
@@ -61,6 +61,14 @@ interface DeleteConfirmState {
     show: boolean;
     item: Brand | Product | Competitor | null;
     type: "brand" | "product" | "competitor" | "";
+}
+
+interface ItemToDelete {
+    products: Product[];
+    competitors: [{
+        brand_id: string;
+        competitor_id: string;
+    }];
 }
 
 function generateNextId<T extends { id: number }>(items: T[]): number {
@@ -109,7 +117,7 @@ export default function VoiceCustomerPage() {
     const [productError, setProductError] = useState("");
     const [competitorError, setCompetitorError] = useState("");
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ show: false, item: null, type: "" });
-    const [itemsMarkedForDeletion, setItemsMarkedForDeletion] = useState<any>();
+    const [itemsMarkedForDeletion, setItemsMarkedForDeletion] = useState<any>([]);
 
     const [brands, setBrands] = useState<Brand[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -126,6 +134,7 @@ export default function VoiceCustomerPage() {
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
     const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
+    const [isLoadingMarkedItems, setIsLoadingMarkedItems] = useState(false);
 
     useEffect(() => {
         const fetchBrands = async () => {
@@ -488,15 +497,38 @@ export default function VoiceCustomerPage() {
         }
     };
 
-    const handleDelete = (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
+    const handleDelete = async (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
         setDeleteConfirm({ show: true, item, type });
         if (type === "brand") {
-            const items =  getItemsToDeleteByBrand({
+            setIsLoadingMarkedItems(true); // Start spinner for marked items
+            const items: ItemToDelete = await getItemsToDeleteByBrand({
                 brand_id: String(item.id),
                 user
             });
-            setItemsMarkedForDeletion(items);
-            console.log("Items marked for deletion:", items);
+            console.log(items);
+
+            const MarkedForDeletion = []
+            if (items.products && items.products.length > 0) {
+                MarkedForDeletion.push(...items.products.map(product => ({
+                    ...product,
+                    type: "product"
+                })));
+            }
+
+            if (items.competitors && items.competitors.length > 0) {
+                items.competitors.forEach(comp => {
+                    const competitor = competitors.filter(c => c.id === comp.competitor_id);
+                    MarkedForDeletion.push({
+                        ...competitor[0],
+                        type: "competitor",
+                    });
+                });
+            }
+
+            setItemsMarkedForDeletion(MarkedForDeletion);
+            setIsLoadingMarkedItems(false);
+
+
         }
     };
 
@@ -1223,10 +1255,35 @@ export default function VoiceCustomerPage() {
                             <p className={styles.deleteModalText}>
                                 Are you sure you want to remove <span>{deleteConfirm.item?.name}</span> from tracking?
                             </p>
-                            { deleteConfirm.type === "brand" && (
-                                <p className={styles.deleteModalText}>
-                                    This will also remove all associated products and competitors:∂                        
-                                </p>
+                            {deleteConfirm.type === "brand" && (
+                                <>
+                                    <p className={styles.deleteModalText}>
+                                        This will also remove all associated products and competitors:
+                                    </p>
+                                    {isLoadingMarkedItems ?
+                                    <div className={styles.markedSpinner}>
+                                        <Spinner size={SpinnerSize.small} label="Loading items to delete..." /> 
+                                    </div>
+                                         : (
+                                    <div className={styles.deleteModalList}>
+                                        {itemsMarkedForDeletion.length === 0 && (
+                                            <li className={styles.deleteModalOption}>No items marked for deletion</li>
+                                        )}
+                                        <div className={styles.markedItemsContainer}>
+                                            {itemsMarkedForDeletion.map((item: any) => {
+                                                console.log("Item to delete:", item);
+                                                
+                                                return (
+                                                    <div className={styles.listMarkedItems}>
+                                                        {item.name || item.description || "Unnamed Item"}
+                                                        <span className={styles.itemMarked}>{item.type}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>)
+                                    }
+                                </>
                             )}
 
                             <div className={styles.deleteModalActions}>
