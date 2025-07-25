@@ -17,8 +17,10 @@ import {
     getCompetitorsByOrganization,
     createCompetitor,
     updateCompetitor,
-    deleteCompetitor
+    deleteCompetitor,
+    getItemsToDeleteByBrand
 } from "../../api/api";
+import { get } from "cypress/types/lodash";
 
 interface Brand {
     id: number;
@@ -107,6 +109,7 @@ export default function VoiceCustomerPage() {
     const [productError, setProductError] = useState("");
     const [competitorError, setCompetitorError] = useState("");
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ show: false, item: null, type: "" });
+    const [itemsMarkedForDeletion, setItemsMarkedForDeletion] = useState<any>();
 
     const [brands, setBrands] = useState<Brand[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -487,6 +490,14 @@ export default function VoiceCustomerPage() {
 
     const handleDelete = (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
         setDeleteConfirm({ show: true, item, type });
+        if (type === "brand") {
+            const items =  getItemsToDeleteByBrand({
+                brand_id: String(item.id),
+                user
+            });
+            setItemsMarkedForDeletion(items);
+            console.log("Items marked for deletion:", items);
+        }
     };
 
     const confirmDelete = async () => {
@@ -1194,36 +1205,6 @@ export default function VoiceCustomerPage() {
                 </div>
             )}
 
-            {deleteConfirm.show && deleteConfirm.type === "brand" && (
-                <div className={styles.modalContainer}>
-                    <div className={styles.modalOverlay} onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })} />
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h3>Confirm Deletion</h3>
-                        </div>
-                        <div className={styles.modalBody}>
-                            <p>Are you sure you want to delete the brand "{deleteConfirm.item?.name}"?</p>
-                        </div>
-                        <div className={styles.modalFooter}>
-                            <button
-                                onClick={() => {
-                                    if (deleteConfirm.item) {
-                                        handleDeleteBrand(String(deleteConfirm.item.id));
-                                    }
-                                    setDeleteConfirm({ show: false, item: null, type: "" });
-                                }}
-                                className={styles.confirmButton}
-                            >
-                                Confirm
-                            </button>
-                            <button onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })} className={styles.cancelButton}>
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {deleteConfirm.show && (
                 <div className={styles.modalContainer}>
                     <div className={styles.modalOverlay} onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })} />
@@ -1242,6 +1223,12 @@ export default function VoiceCustomerPage() {
                             <p className={styles.deleteModalText}>
                                 Are you sure you want to remove <span>{deleteConfirm.item?.name}</span> from tracking?
                             </p>
+                            { deleteConfirm.type === "brand" && (
+                                <p className={styles.deleteModalText}>
+                                    This will also remove all associated products and competitors:∂                        
+                                </p>
+                            )}
+
                             <div className={styles.deleteModalActions}>
                                 <button
                                     type="button"
