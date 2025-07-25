@@ -25,7 +25,7 @@ describe("Voice Customer Test Suite", () => {
         cy.get("h4").contains("FC Barcelona").should("be.visible");
     });
 
-    it("Should verify the fuctionality of the brand creation", () => {
+    it("Should verify the functionality of the brand creation", () => {
         cy.url().should("include", "#/voice-customer");
         cy.get('[aria-label="create-brand-button"]').should("be.visible");
         cy.get('[aria-label="create-brand-button"]').click();
