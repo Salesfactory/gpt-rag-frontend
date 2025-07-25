@@ -7,7 +7,8 @@ import {
   deleteOrganizationUrl, 
   updateOrganizationUrl, 
   searchOrganizationUrls,
-  scrapeUrls 
+  scrapeUrls,
+  scrapeUrlsMultipage 
 } from '../../api';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -134,6 +135,27 @@ const KnowledgeSources: React.FC = () => {
     }
   };
   
+  // Helper function to parse multipage scraping response
+  const parseMultipageResponse = (scrapingResult: any, targetUrl: string) => {
+    if (!scrapingResult) return { status: 'error', error: 'No response received' };
+    
+    // Check if there are any successful uploads for this URL
+    const successfulUploads = scrapingResult.blob_storage_result?.successful_uploads || [];
+    const failedUploads = scrapingResult.blob_storage_result?.failed_uploads || [];
+    
+    const hasSuccess = successfulUploads.some((upload: any) => upload.url === targetUrl);
+    const hasFailed = failedUploads.some((upload: any) => upload.url === targetUrl);
+    
+    if (hasSuccess) {
+      return { status: 'success', error: null };
+    } else if (hasFailed) {
+      const failedUpload = failedUploads.find((upload: any) => upload.url === targetUrl);
+      return { status: 'error', error: failedUpload?.error || 'Scraping failed' };
+    } else {
+      return { status: 'unknown', error: null };
+    }
+  };
+
   // Add new URL to the knowledge sources list with web scraping
   // This will trigger web scraping and automatically save the results with blob links to Cosmos
   const handleAddUrl = async () => {
@@ -162,12 +184,21 @@ const KnowledgeSources: React.FC = () => {
     try {
       setIsAdding(true);
       
-      // Use the scraping endpoint to scrape and save the URL
-      const scrapingResult = await scrapeUrls([newUrl], organization.id, user);
+      // Use appropriate endpoint based on advanced mode
+      const scrapingResult = await (isAdvancedMode 
+        ? scrapeUrlsMultipage(newUrl, organization.id, user)
+        : scrapeUrls(newUrl, organization.id, user));
       
-      // Extract results array for easier access
-      const results = scrapingResult?.data?.result?.results || [];
-      const urlResult = results.find((result: any) => result.url === newUrl);
+      let urlResult;
+      
+      if (isAdvancedMode) {
+        // Parse multipage response
+        urlResult = parseMultipageResponse(scrapingResult, newUrl);
+      } else {
+        // Parse regular response
+        const results = scrapingResult?.data?.result?.results || [];
+        urlResult = results.find((result: any) => result.url === newUrl);
+      }
       
       if (urlResult?.status === 'error') {
         // Scraping failed, show error and keep form
@@ -220,12 +251,21 @@ const KnowledgeSources: React.FC = () => {
           : source
       ));
       
-      // Re-scrape the URL and update the existing record
-      const scrapingResult = await scrapeUrls([sourceToRefresh.url], organization.id, user);
+      // Re-scrape the URL using appropriate endpoint based on advanced mode
+      const scrapingResult = await (isAdvancedMode 
+        ? scrapeUrlsMultipage(sourceToRefresh.url, organization.id, user)
+        : scrapeUrls(sourceToRefresh.url, organization.id, user));
       
-      // Extract results array for easier access
-      const results = scrapingResult?.data?.result?.results || [];
-      const urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
+      let urlResult;
+      
+      if (isAdvancedMode) {
+        // Parse multipage response
+        urlResult = parseMultipageResponse(scrapingResult, sourceToRefresh.url);
+      } else {
+        // Parse regular response
+        const results = scrapingResult?.data?.result?.results || [];
+        urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
+      }
       
       if (urlResult?.status === 'error') {
         // Scraping failed, show error message
@@ -323,7 +363,7 @@ const KnowledgeSources: React.FC = () => {
   
   // Get appropriate icon and styling based on result status
   // This provides visual feedback for different states
-  const getStatusInfo = (result: string, status: string) => {
+  const getStatusInfo = (result: string) => {
     switch (result) {
       case 'Success':
         return { 
@@ -602,7 +642,7 @@ const KnowledgeSources: React.FC = () => {
               </div>
             ) : (
               filteredSources.map((source) => {
-                const statusInfo = getStatusInfo(source.result, source.status);
+                const statusInfo = getStatusInfo(source.result);
                 const StatusIcon = statusInfo.icon;
                 
                 return (
