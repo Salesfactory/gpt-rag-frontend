@@ -557,6 +557,8 @@ export default function VoiceCustomerPage() {
 
         try {
             setIsLoadingBrands(true);
+            setIsLoadingCompetitors(true);
+            setIsLoadingProducts(true);
             await deleteBrand({
                 brand_id: brandId,
                 user
@@ -567,7 +569,18 @@ export default function VoiceCustomerPage() {
                 organization_id: organization.id,
                 user
             });
+            // Also reload products and competitors to ensure they are up-to-date
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
             setBrands(updatedBrands);
+            setProducts(updatedProducts);
+            setCompetitors(updatedCompetitors);
 
             // Show success notification
             toast.success("Brand deleted successfully");
@@ -576,6 +589,8 @@ export default function VoiceCustomerPage() {
             toast.error("Failed to delete brand. Please try again.");
         } finally {
             setIsLoadingBrands(false);
+            setIsLoadingCompetitors(false);
+            setIsLoadingProducts(false);
         }
     };
 
