@@ -20,7 +20,6 @@ import {
     deleteCompetitor,
     getItemsToDeleteByBrand
 } from "../../api/api";
-import { get, set } from "cypress/types/lodash";
 
 interface Brand {
     id: number;

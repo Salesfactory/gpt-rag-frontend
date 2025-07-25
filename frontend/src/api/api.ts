@@ -1602,7 +1602,6 @@ export async function getCompetitorsByOrganization({
     },
   });
   const result = await response.json();
-  console.log("Competitors fetched:", result);
   return result.data || [];
 }
 
