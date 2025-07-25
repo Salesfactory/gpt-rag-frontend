@@ -2232,7 +2232,7 @@ def sendEmail():
         <div class="container">
             <h1>Dear [Recipient's Name],</h1>
             <h2>Congratulations and Welcome to FreddAid!</h2>
-            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
+            <p>You now have exclusive access to <strong>[Recipient's Organization]'s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
             <h2>Ready to Get Started?</h2>
             <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
             <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
@@ -4294,6 +4294,7 @@ def scrape_urls():
     """
     Endpoint to scrape URLs using the external web scraping service.
     Expects a JSON payload with a 'urls' array and optionally 'organization_id'.
+    The external service now accepts only single URLs, so we make individual calls.
     """
     try:
         # Get JSON data from request
@@ -4315,37 +4316,102 @@ def scrape_urls():
         client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
         client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
         
-        # Prepare payload for external scraping service
-        payload = {
-            "urls": urls,
-            "client_principal_id": client_principal_id
-        }
-        
-        # Make request to external scraping service
-        WEB_SCRAPING_ENDPOINT = os.getenv("ORCHESTRATOR_URI") + "/api/scrape-pages"
+        # Get the external scraping service endpoint
+        WEB_SCRAPING_ENDPOINT = os.getenv("ORCHESTRATOR_URI") + "/api/scrape-page"
         if not WEB_SCRAPING_ENDPOINT:
             return create_error_response("Scraping service endpoint is not set", 500)
-        response = requests.post(
-            WEB_SCRAPING_ENDPOINT,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=120  
-        )
         
-        # Check if request was successful
-        if not response.ok:
-            logger.error(f"Scraping service returned error: {response.status_code} - {response.text}")
-            return create_error_response(f"Scraping service error: {response.status_code}", 502)
+        # Initialize aggregated results
+        all_results = []
+        successful_scrapes = 0
+        failed_scrapes = 0
+        blob_storage_results = []
         
-        # Parse response from scraping service
-        try:
-            scraping_result = response.json()
-        except ValueError:
-            logger.error("Invalid JSON response from scraping service")
-            return create_error_response("Invalid response from scraping service", 502)
+        # Make individual requests for each URL
+        for url in urls:
+            try:
+                # Prepare payload for external scraping service (single URL format)
+                payload = {
+                    "url": url,
+                    "client_principal_id": client_principal_id
+                }
+                
+                # Make request to external scraping service
+                response = requests.post(
+                    WEB_SCRAPING_ENDPOINT,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=120  
+                )
+                
+                # Check if request was successful
+                if not response.ok:
+                    logger.error(f"Scraping service returned error for {url}: {response.status_code} - {response.text}")
+                    # Add failed result to aggregated results
+                    all_results.append({
+                        "url": url,
+                        "status": "error",
+                        "error": f"Scraping service error: {response.status_code}"
+                    })
+                    failed_scrapes += 1
+                    continue
+                
+                # Parse response from scraping service
+                try:
+                    scraping_result = response.json()
+                except ValueError:
+                    logger.error(f"Invalid JSON response from scraping service for {url}")
+                    all_results.append({
+                        "url": url,
+                        "status": "error",
+                        "error": "Invalid response from scraping service"
+                    })
+                    failed_scrapes += 1
+                    continue
+                
+                # Extract the result from the new response format
+                if scraping_result.get("results") and len(scraping_result["results"]) > 0:
+                    url_result = scraping_result["results"][0]
+                    all_results.append(url_result)
+                    
+                    # Track success/failure based on status
+                    if url_result.get("status") == "success":
+                        successful_scrapes += 1
+                    else:
+                        failed_scrapes += 1
+                    
+                    # Add blob storage result if available
+                    if scraping_result.get("blob_storage_result"):
+                        blob_storage_results.append(scraping_result["blob_storage_result"])
+                        
+                else:
+                    # No results in response - treat as error
+                    all_results.append({
+                        "url": url,
+                        "status": "error",
+                        "error": "No results returned from scraping service"
+                    })
+                    failed_scrapes += 1
+                    
+            except requests.Timeout:
+                logger.error(f"Timeout while calling scraping service for {url}")
+                all_results.append({
+                    "url": url,
+                    "status": "error",
+                    "error": "Scraping service timeout"
+                })
+                failed_scrapes += 1
+            except requests.RequestException as e:
+                logger.error(f"Request error while calling scraping service for {url}: {str(e)}")
+                all_results.append({
+                    "url": url,
+                    "status": "error",
+                    "error": "Failed to connect to scraping service"
+                })
+                failed_scrapes += 1
         
         # If organization_id is provided, save the scraped URLs to the database
-        if organization_id and scraping_result.get("results"):
+        if organization_id and all_results:
             logger.info(f"Saving scraped URLs to organization {organization_id}")
             
             # Use the user information already extracted earlier
@@ -4353,10 +4419,19 @@ def scrape_urls():
             added_by_name = client_principal_name
             
             # Create a mapping of URLs to blob storage results for easy lookup
-            blob_storage_results = scraping_result.get("blob_storage_results", [])
-            blob_mapping = {blob_result["url"]: blob_result for blob_result in blob_storage_results}
+            blob_mapping = {}
+            for blob_result in blob_storage_results:
+                if isinstance(blob_result, dict) and blob_result.get("blob_path"):
+                    # Extract URL from blob path or use the URL from the result
+                    blob_url = None
+                    for result in all_results:
+                        if result.get("url") and blob_result.get("blob_path", "").find(result["url"].replace("https://", "").replace("http://", "").replace("/", "")) != -1:
+                            blob_url = result["url"]
+                            break
+                    if blob_url:
+                        blob_mapping[blob_url] = blob_result
             
-            for url_result in scraping_result["results"]:
+            for url_result in all_results:
                 try:
                     # Get the corresponding blob storage result for this URL
                     blob_result = blob_mapping.get(url_result["url"], {})
@@ -4376,22 +4451,27 @@ def scrape_urls():
                     logger.error(f"Failed to save URL {url_result['url']} to database: {str(e)}")
                     # Continue with other URLs even if one fails
         
-        logger.info(f"Successfully scraped {len(urls)} URLs")
+        # Create aggregated response in the expected format
+        aggregated_result = {
+            "summary": {
+                "total_urls": len(urls),
+                "successful_scrapes": successful_scrapes,
+                "failed_scrapes": failed_scrapes
+            },
+            "results": all_results,
+            "blob_storage_results": blob_storage_results
+        }
+        
+        logger.info(f"Successfully processed {len(urls)} URLs: {successful_scrapes} successful, {failed_scrapes} failed")
         return create_success_response({
             "message": f"Attempted to scrape {len(urls)} URL(s)",
             "scraped_urls": urls,
-            "result": scraping_result
+            "result": aggregated_result
         }, 200)
         
-    except requests.Timeout:
-        logger.error("Timeout while calling scraping service")
-        return create_error_response("Scraping service timeout", 504)
-    except requests.RequestException as e:
-        logger.error(f"Request error while calling scraping service: {str(e)}")
-        return create_error_response("Failed to connect to scraping service", 502)
     except Exception as e:
-        logger.exception(f"Unexpected error in scrape_urls: {e}")
-        return create_error_response("Internal Server Error", 500)
+        logger.error(f"Unexpected error in scrape_urls: {str(e)}")
+        return create_error_response("Internal server error", 500)
 
 
 @app.route("/api/webscraping/get-urls", methods=["GET"])
