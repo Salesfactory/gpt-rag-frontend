@@ -4448,7 +4448,7 @@ def multipage_scrape():
             "client_principal_id": client_principal_id
         }
         
-        # Include organization_id if provided (for saving to database)
+        # Include organization_id 
         organization_id = data.get("organization_id")
         if organization_id:
             payload["organization_id"] = organization_id
@@ -4476,6 +4476,71 @@ def multipage_scrape():
             try:
                 scraping_result = response.json()
                 logger.info(f"Successfully received multipage scraping response")
+                
+                # If organization_id is provided, save the successfully scraped URLs to the database
+                if organization_id and organization_id.strip():
+                    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
+                    
+                    # Check overall status first - accept both 'success' and 'completed'
+                    if scraping_result.get("status") in ["success", "completed"]:
+                        results = scraping_result.get("results", [])
+                        root_blob_result = scraping_result.get("blob_storage_result", {})
+                        
+                        for result in results:
+                            try:
+                                # For multipage results, check if we have raw_content (indicates successful scraping)
+                                if result.get("raw_content"):
+                                    blob_path = None
+                                    result_status = "error"  # Default to error
+                                    
+                                    # Look for this URL in successful_uploads
+                                    successful_uploads = root_blob_result.get("successful_uploads", [])
+                                    logger.info(f"Checking URL {result.get('url')} against {len(successful_uploads)} successful uploads")
+                                    for upload in successful_uploads:
+                                        if upload.get("url") == result.get("url"):
+                                            blob_path = upload.get("blob_path")
+                                            result_status = "success"
+                                            logger.info(f"Found matching URL {result.get('url')} with blob_path {blob_path}")
+                                            break
+                                    
+                                    if result_status == "error":
+                                        logger.warning(f"URL {result.get('url')} not found in successful_uploads")
+                                    
+                                    # Format the result for database storage
+                                    formatted_result = {
+                                        "url": result.get("url"),
+                                        "status": result_status,
+                                        "title": result.get("title"),
+                                        "content_length": len(result.get("raw_content", "")),
+                                        "blob_path": blob_path,
+                                        "error": None if result_status == "success" else "Blob storage failed"
+                                    }
+                                    
+                                    # Save URL to database
+                                    db_result = add_or_update_organization_url(
+                                        organization_id=organization_id,
+                                        url=result.get("url"),
+                                        scraping_result=formatted_result,
+                                        added_by_id=client_principal_id,
+                                        added_by_name=client_principal_name
+                                    )
+                                    action = db_result.get("action", "processed")
+                                    logger.info(f"{action.capitalize()} URL {result.get('url')} for organization {organization_id} by {client_principal_name or 'Unknown'} with status {result_status}")
+                                        
+                            except Exception as e:
+                                logger.error(f"Error saving URL {result.get('url', 'unknown')} to Cosmos DB: {str(e)}")
+                                continue
+                if "blob_storage_result" not in scraping_result:
+                    results = scraping_result.get("results", [])
+                    total_results = len(results)
+                    
+                    scraping_result["blob_storage_result"] = {
+                        "status": "error" if total_results > 0 else "success",
+                        "message": "No blob storage information provided by orchestrator",
+                        "successful_count": 0,
+                        "total_count": total_results
+                    }
+                
                 return jsonify(scraping_result), 200
                 
             except ValueError:

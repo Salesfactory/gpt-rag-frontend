@@ -139,21 +139,50 @@ const KnowledgeSources: React.FC = () => {
   const parseMultipageResponse = (scrapingResult: any, targetUrl: string) => {
     if (!scrapingResult) return { status: 'error', error: 'No response received' };
     
-    // Check if there are any successful uploads for this URL
-    const successfulUploads = scrapingResult.blob_storage_result?.successful_uploads || [];
-    const failedUploads = scrapingResult.blob_storage_result?.failed_uploads || [];
-    
-    const hasSuccess = successfulUploads.some((upload: any) => upload.url === targetUrl);
-    const hasFailed = failedUploads.some((upload: any) => upload.url === targetUrl);
-    
-    if (hasSuccess) {
-      return { status: 'success', error: null };
-    } else if (hasFailed) {
-      const failedUpload = failedUploads.find((upload: any) => upload.url === targetUrl);
-      return { status: 'error', error: failedUpload?.error || 'Scraping failed' };
-    } else {
-      return { status: 'unknown', error: null };
+    // Check the overall status first - handle both 'completed' and 'success' from orchestrator
+    if (scrapingResult.status === 'error' || scrapingResult.status === 'failed') {
+      return { status: 'error', error: scrapingResult.message || 'Scraping failed' };
     }
+    
+    // Accept both 'success' and 'completed' as valid success statuses
+    const isOverallSuccess = scrapingResult.status === 'success' || scrapingResult.status === 'completed';
+    if (!isOverallSuccess) {
+      return { status: 'error', error: `Unexpected status: ${scrapingResult.status}` };
+    }
+    
+    // Check blob storage result first to determine if content was successfully saved
+    const blobResult = scrapingResult.blob_storage_result;
+    if (blobResult?.status === 'error') {
+      const errorMessage = blobResult.message || 'Blob storage failed - content could not be saved';
+      return { status: 'error', error: errorMessage };
+    }
+    
+    // If blob storage was successful, we can consider this a success
+    if (blobResult?.status === 'success' || (blobResult?.successful_count > 0)) {
+      return { status: 'success', error: null };
+    }
+    
+    // Check individual results for this specific URL as fallback
+    const results = scrapingResult.results || [];
+    const urlResult = results.find((result: any) => result.url === targetUrl);
+    
+    if (urlResult) {
+      // If we found the URL in results but blob storage info is unclear,
+      // check if we have raw_content (indicates successful scraping)
+      if (urlResult.raw_content) {
+        return { status: 'success', error: null };
+      } else if (urlResult.status === 'error' || urlResult.status === 'failed') {
+        return { status: 'error', error: urlResult.error || 'URL scraping failed' };
+      }
+    }
+    
+    // If we have results but unclear blob storage status, check if any content was scraped
+    if (results.length > 0 && results.some((result: any) => result.raw_content)) {
+      return { status: 'success', error: null };
+    }
+    
+    // Default case - if we can't determine status, assume error for safety
+    return { status: 'error', error: 'Unable to determine scraping status or blob storage failed' };
   };
 
   // Add new URL to the knowledge sources list with web scraping
@@ -195,9 +224,17 @@ const KnowledgeSources: React.FC = () => {
         // Parse multipage response
         urlResult = parseMultipageResponse(scrapingResult, newUrl);
       } else {
-        // Parse regular response
-        const results = scrapingResult?.data?.result?.results || [];
+        // Parse regular response - results are directly in the response root
+        const results = scrapingResult?.results || [];
         urlResult = results.find((result: any) => result.url === newUrl);
+        
+        // If we found a result, also check blob storage status
+        if (urlResult && urlResult.status === 'success') {
+          const blobStatus = scrapingResult?.blob_storage_result?.status;
+          if (blobStatus !== 'success') {
+            urlResult = { ...urlResult, status: 'error', error: 'Blob storage failed' };
+          }
+        }
       }
       
       if (urlResult?.status === 'error') {
@@ -262,9 +299,17 @@ const KnowledgeSources: React.FC = () => {
         // Parse multipage response
         urlResult = parseMultipageResponse(scrapingResult, sourceToRefresh.url);
       } else {
-        // Parse regular response
-        const results = scrapingResult?.data?.result?.results || [];
+        // Parse regular response - results are directly in the response root
+        const results = scrapingResult?.results || [];
         urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
+        
+        // If we found a result, also check blob storage status
+        if (urlResult && urlResult.status === 'success') {
+          const blobStatus = scrapingResult?.blob_storage_result?.status;
+          if (blobStatus !== 'success') {
+            urlResult = { ...urlResult, status: 'error', error: 'Blob storage failed' };
+          }
+        }
       }
       
       if (urlResult?.status === 'error') {
