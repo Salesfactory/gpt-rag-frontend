@@ -557,6 +557,8 @@ export default function VoiceCustomerPage() {
 
         try {
             setIsLoadingBrands(true);
+            setIsLoadingCompetitors(true);
+            setIsLoadingProducts(true);
             await deleteBrand({
                 brand_id: brandId,
                 user
@@ -567,7 +569,18 @@ export default function VoiceCustomerPage() {
                 organization_id: organization.id,
                 user
             });
+            // Also reload products and competitors to ensure they are up-to-date
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
             setBrands(updatedBrands);
+            setProducts(updatedProducts);
+            setCompetitors(updatedCompetitors);
 
             // Show success notification
             toast.success("Brand deleted successfully");
@@ -576,6 +589,8 @@ export default function VoiceCustomerPage() {
             toast.error("Failed to delete brand. Please try again.");
         } finally {
             setIsLoadingBrands(false);
+            setIsLoadingCompetitors(false);
+            setIsLoadingProducts(false);
         }
     };
 
@@ -685,7 +700,7 @@ export default function VoiceCustomerPage() {
                                 <Building size={20} />
                                 <h3 className={styles.cardTitle}>Brands ({brands.length}/3)</h3>
                             </div>
-                            <button onClick={() => setShowBrandModal(true)} disabled={brands.length >= 3} className={styles.headerAddButton}>
+                            <button aria-label="create-brand-button" onClick={() => setShowBrandModal(true)} disabled={brands.length >= 3} className={styles.headerAddButton}>
                                 <PlusCircle size={16} />
                             </button>
                         </div>
@@ -724,6 +739,7 @@ export default function VoiceCustomerPage() {
                                 <h3 className={styles.cardTitle}>Products ({products.length}/10)</h3>
                             </div>
                             <button
+                                aria-label="create-product-button"
                                 onClick={() => setShowProductModal(true)}
                                 disabled={products.length >= 10 || brands.length === 0}
                                 className={styles.headerAddButton}
@@ -780,6 +796,7 @@ export default function VoiceCustomerPage() {
                                 <h3 className={styles.cardTitle}>Competitors ({competitors.length}/5)</h3>
                             </div>
                             <button
+                                aria-label="create-competitor-button"
                                 onClick={() => setShowCompetitorModal(true)}
                                 disabled={competitors.length >= 5 || brands.length === 0}
                                 className={styles.headerAddButton}
@@ -984,6 +1001,7 @@ export default function VoiceCustomerPage() {
                                     Cancel
                                 </button>
                                 <button
+                                    aria-label={editingBrand ? "update-brand-button" : "add-brand-button"}
                                     onClick={editingBrand ? handleEditBrand : handleAddBrand}
                                     disabled={isLoadingBrands}
                                     className={`${styles.button} ${styles.buttonConfirm}`}
@@ -1053,6 +1071,7 @@ export default function VoiceCustomerPage() {
                                 <div>
                                     <label className={styles.formLabel}>Brand</label>
                                     <select
+                                        aria-label="brand-select"
                                         value={newProduct.brandId}
                                         onChange={e => {
                                             setNewProduct({ ...newProduct, brandId: e.target.value });
@@ -1098,6 +1117,7 @@ export default function VoiceCustomerPage() {
                                     Cancel
                                 </button>
                                 <button
+                                    aria-label={editingProduct ? "update-product-button" : "add-product-button"}
                                     onClick={editingProduct ? handleEditProduct : handleAddProduct}
                                     disabled={isLoadingProducts}
                                     className={`${styles.button} ${styles.buttonConfirm}`}
@@ -1171,6 +1191,7 @@ export default function VoiceCustomerPage() {
                                             <div key={brand.id} className={styles.multiSelectItem}>
                                                 <label htmlFor={`brand-${brand.id}`} className={styles.multiSelectLabel}>
                                                     <input
+                                                        aria-label={`brand-${brand.name}`}
                                                         type="checkbox"
                                                         id={`brand-${brand.id}`}
                                                         value={brand.id}
@@ -1223,6 +1244,7 @@ export default function VoiceCustomerPage() {
                                     Cancel
                                 </button>
                                 <button
+                                    aria-label={editingCompetitor ? "update-competitor-button" : "add-competitor-button"}
                                     onClick={editingCompetitor ? handleEditCompetitor : handleAddCompetitor}
                                     disabled={isLoadingCompetitors}
                                     className={`${styles.button} ${styles.buttonConfirm}`}
