@@ -1399,7 +1399,11 @@ export async function createBrand({
     },
     body: JSON.stringify({ brand_name, brand_description, organization_id }),
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error creating brand');
+  }
+  return data;
 }
 
 // Delete a brand
@@ -1418,7 +1422,11 @@ export async function deleteBrand({
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error deleting brand');
+  }
+  return data;
 }
 
 // Get brands by organization
@@ -1437,8 +1445,11 @@ export async function getBrandsByOrganization({
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
   });
-  const result = await response.json();
-  return result.data || [];
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error fetching brands');
+  }
+  return data.data || [];
 }
 
 // Update a brand
@@ -1462,7 +1473,11 @@ export async function updateBrand({
     },
     body: JSON.stringify({ brand_name, brand_description }),
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error updating brand');
+  }
+  return data;
 }
 
 // Create a product
@@ -1496,7 +1511,11 @@ export async function createProduct({
       category,
     }),
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error creating product');
+  }
+  return data;
 }
 
 // Delete a product
@@ -1515,7 +1534,11 @@ export async function deleteProduct({
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error deleting product');
+  }
+  return data;
 }
 
 // Get products by organization
@@ -1534,8 +1557,11 @@ export async function getProductsByOrganization({
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
   });
-  const result = await response.json();
-  return result.data || [];
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error fetching products');
+  }
+  return data.data || [];
 }
 
 // Update a product
@@ -1568,7 +1594,11 @@ export async function updateProduct({
       brand_id,
     }),
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error updating product');
+  }
+  return data;
 }
 
 // Create a competitor
@@ -1602,7 +1632,11 @@ export async function createCompetitor({
       organization_id,
     }),
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error creating competitor');
+  }
+  return data;
 }
 
 // Delete a competitor
@@ -1621,7 +1655,11 @@ export async function deleteCompetitor({
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error deleting competitor');
+  }
+  return data;
 }
 
 // Get competitors by organization
@@ -1640,8 +1678,11 @@ export async function getCompetitorsByOrganization({
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
   });
-  const result = await response.json();
-  return result.data || [];
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error fetching competitors');
+  }
+  return data.data || [];
 }
 
 // Update a competitor
@@ -1674,7 +1715,11 @@ export async function updateCompetitor({
       brands_id,
     }),
   });
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error updating competitor');
+  }
+  return data;
 }
 
 export async function getItemsToDeleteByBrand({ brand_id, user }: { brand_id: string; user: any }): Promise<any> {

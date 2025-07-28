@@ -4717,13 +4717,13 @@ def create_brand():
     data = request.get_json()
     if not data:
         return create_error_response("No JSON data provided", 400)
-    required_fields = ["brand_name","brand_description", "organization_id"]
+    required_fields = ["brand_name", "organization_id"]
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
     try:
         brand_name = data["brand_name"]
-        brand_description = data["brand_description"]
+        brand_description = data.get("brand_description", "")
         organization_id = data["organization_id"]
 
         result = create_new_brand(
@@ -4835,14 +4835,14 @@ def create_product():
     if not data:
         return create_error_response("No JSON data provided", 400)
     
-    required_fields = ["product_name", "product_description", "brand_id", "organization_id","category"]
+    required_fields = ["product_name", "brand_id", "organization_id", "category"]
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
-    
+
     try:
         name = data["product_name"]
-        description = data["product_description"]
+        description = data.get("product_description", "")
         brand_id = data["brand_id"]
         organization_id = data["organization_id"]
         category = data["category"]
@@ -4971,18 +4971,18 @@ def add_competitor():
     if not data:
         return create_error_response("No JSON data provided.", 400)
     
-    required_fields = ["competitor_name", "competitor_description", "industry", "brands_id", "organization_id"]
+    required_fields = ["competitor_name", "industry", "brands_id", "organization_id"]
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
-    
+
     try:
         name = data["competitor_name"]
-        description = data["competitor_description"]
+        description = data.get("competitor_description", "")
         industry = data["industry"]
         brands_id = data["brands_id"]
         organization_id = data["organization_id"]
-    
+
         if not isinstance(brands_id, list):
             return create_error_response("brands_id must be a list", 400)
 
@@ -4999,7 +4999,7 @@ def add_competitor():
             associate_competitor_with_brand(brand_id, competitor_id)
 
         return create_success_response(competitor, 201)
-    
+
     except ValueError as ve:
         logger.error(f"Value error creating competitor: {str(ve)}")
         return create_error_response(f"Value error creating competitor: {str(ve)}", 400)
