@@ -64,10 +64,12 @@ interface DeleteConfirmState {
 
 interface ItemToDelete {
     products: Product[];
-    competitors: [{
-        brand_id: string;
-        competitor_id: string;
-    }];
+    competitors: [
+        {
+            brand_id: string;
+            competitor_id: string;
+        }
+    ];
 }
 
 function generateNextId<T extends { id: number }>(items: T[]): number {
@@ -399,6 +401,14 @@ export default function VoiceCustomerPage() {
             return;
         }
 
+        const normalizedName = newCompetitor.name.trim().toLowerCase();
+        const duplicate = competitors.some(c => c.name.trim().toLowerCase() === normalizedName);
+        if (duplicate) {
+            setCompetitorError("A competitor with this name already exists. Please choose a different name.");
+            toast.error("A competitor with this name already exists. Please choose a different name.");
+            return;
+        }
+
         try {
             setIsLoadingCompetitors(true);
             const createdCompetitor = await createCompetitor({
@@ -505,12 +515,14 @@ export default function VoiceCustomerPage() {
                 user
             });
 
-            const MarkedForDeletion = []
+            const MarkedForDeletion = [];
             if (items.products && items.products.length > 0) {
-                MarkedForDeletion.push(...items.products.map(product => ({
-                    ...product,
-                    type: "product"
-                })));
+                MarkedForDeletion.push(
+                    ...items.products.map(product => ({
+                        ...product,
+                        type: "product"
+                    }))
+                );
             }
 
             if (items.competitors && items.competitors.length > 0) {
@@ -518,15 +530,13 @@ export default function VoiceCustomerPage() {
                     const competitor = competitors.filter(c => c.id === comp.competitor_id);
                     MarkedForDeletion.push({
                         ...competitor[0],
-                        type: "competitor",
+                        type: "competitor"
                     });
                 });
             }
 
             setItemsMarkedForDeletion(MarkedForDeletion);
             setIsLoadingMarkedItems(false);
-
-
         }
     };
 
@@ -1255,31 +1265,26 @@ export default function VoiceCustomerPage() {
                             </p>
                             {deleteConfirm.type === "brand" && (
                                 <>
-                                    <p className={styles.deleteModalText}>
-                                        This will also remove all associated products and competitors:
-                                    </p>
-                                    {isLoadingMarkedItems ?
-                                    <div className={styles.markedSpinner}>
-                                        <Spinner size={SpinnerSize.small} label="Loading items to delete..." /> 
-                                    </div>
-                                         : (
-                                    <div className={styles.deleteModalList}>
-                                        {itemsMarkedForDeletion.length === 0 && (
-                                            <li className={styles.deleteModalOption}>No items marked for deletion</li>
-                                        )}
-                                        <div className={styles.markedItemsContainer}>
-                                            {itemsMarkedForDeletion.map((item: any) => {
-                                                
-                                                return (
-                                                    <div className={styles.listMarkedItems}>
-                                                        {item.name || item.description || "Unnamed Item"}
-                                                        <span className={styles.itemMarked}>{item.type}</span>
-                                                    </div>
-                                                );
-                                            })}
+                                    <p className={styles.deleteModalText}>This will also remove all associated products and competitors:</p>
+                                    {isLoadingMarkedItems ? (
+                                        <div className={styles.markedSpinner}>
+                                            <Spinner size={SpinnerSize.small} label="Loading items to delete..." />
                                         </div>
-                                    </div>)
-                                    }
+                                    ) : (
+                                        <div className={styles.deleteModalList}>
+                                            {itemsMarkedForDeletion.length === 0 && <li className={styles.deleteModalOption}>No items marked for deletion</li>}
+                                            <div className={styles.markedItemsContainer}>
+                                                {itemsMarkedForDeletion.map((item: any) => {
+                                                    return (
+                                                        <div className={styles.listMarkedItems}>
+                                                            {item.name || item.description || "Unnamed Item"}
+                                                            <span className={styles.itemMarked}>{item.type}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
                                 </>
                             )}
 

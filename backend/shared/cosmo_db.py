@@ -1035,10 +1035,12 @@ def create_new_brand(brand_name, brand_description, organization_id):
     """
     container = get_cosmos_container("brandsContainer")
     try:
-        if not brand_name or not brand_description or not organization_id:
+        if not brand_name or not organization_id:
             raise ValueError(
-                "Brand name, description, and organization ID cannot be empty."
+                "Brand name and organization ID cannot be empty."
             )
+        if brand_description is None:
+            brand_description = ""
         result = container.create_item(
             body={
                 "id": str(uuid.uuid4()),
@@ -1185,8 +1187,10 @@ def create_prod(name, description, category, brand_id, organization_id):
     container = get_cosmos_container("productsContainer")
 
     try:
-        if not name or not description or not brand_id:
-            raise ValueError("Product name, description, and brand ID cannot be empty.")
+        if description is None:
+            description = ""
+        if not name or not brand_id:
+            raise ValueError("Product name and brand ID cannot be empty.")
 
         result = container.create_item(
             body={
@@ -1370,8 +1374,11 @@ def create_competitor(name, description, industry, organization_id):
         Exception: If there is an error with the Cosmos DB operation.
     """
     container = get_cosmos_container("competitorsContainer")
-    if not name or not description or not industry or not organization_id:
-        raise ValueError("All fields are required to create a competitor.")
+
+    if description is None:
+        description = ""
+    if not name or not industry or not organization_id:
+        raise ValueError("Competitor name, industry, and organization ID cannot be empty.")
     try:
         result = container.create_item(
             body={
