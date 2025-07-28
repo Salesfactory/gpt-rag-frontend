@@ -4326,6 +4326,8 @@ def scrape_url():
             "url": url,
             "client_principal_id": client_principal_id
         }
+        if not orch_function_key:
+            return create_error_response("Scraping service function key is not set", 500)
         
         # Make request to external scraping service
         try:

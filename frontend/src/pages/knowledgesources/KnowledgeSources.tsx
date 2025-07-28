@@ -158,7 +158,11 @@ const KnowledgeSources: React.FC = () => {
     }
     
     // If blob storage was successful, we can consider this a success
-    if (blobResult?.status === 'success' || (blobResult?.successful_count > 0)) {
+    // Check for both successful_count (fallback structure) and successful_uploads (orchestrator structure)
+    const hasSuccessfulUploads = blobResult?.successful_uploads && blobResult.successful_uploads.length > 0;
+    const hasSuccessfulCount = blobResult?.successful_count > 0;
+    
+    if (blobResult?.status === 'success' || hasSuccessfulUploads || hasSuccessfulCount) {
       return { status: 'success', error: null };
     }
     
