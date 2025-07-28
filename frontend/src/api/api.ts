@@ -1130,9 +1130,9 @@ export async function getCompanyData() {
     }
 }
 
-export async function scrapeUrls(urls: string[], organizationId?: string, user?: any): Promise<any> {
+export async function scrapeUrls(url: string, organizationId?: string, user?: any): Promise<any> {
     try {
-        const payload: any = { urls };
+        const payload: any = { url };
         
         // Include organization_id if provided to save URLs to database
         if (organizationId) {
@@ -1149,7 +1149,7 @@ export async function scrapeUrls(urls: string[], organizationId?: string, user?:
             headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
         }
         
-        const response = await fetch("/api/webscraping/scrape-urls", {
+        const response = await fetch("/api/webscraping/scrape-url", {
             method: "POST",
             headers,
             body: JSON.stringify(payload)
@@ -1164,7 +1164,46 @@ export async function scrapeUrls(urls: string[], organizationId?: string, user?:
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
-        console.error("Error scraping URLs:", error);
+        console.error("Error scraping URL:", error);
+        throw error;
+    }
+}
+
+export async function scrapeUrlsMultipage(url: string, organizationId?: string, user?: any): Promise<any> {
+    try {
+        const payload: any = { url };
+        
+        // Include organization_id if provided to save URLs to database
+        if (organizationId) {
+            payload.organization_id = organizationId;
+        }
+        
+        const headers: any = {
+            "Content-Type": "application/json",
+        };
+        
+        // Add user authentication headers if user is provided
+        if (user) {
+            headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
+            headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
+        }
+        
+        const response = await fetch("/api/webscraping/multipage-scrape", {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        // Return the detailed result which should include success/failure info for each URL
+        return result;
+    } catch (error) {
+        console.error("Error scraping URL with multipage:", error);
         throw error;
     }
 }
