@@ -7,7 +7,8 @@ import {
   deleteOrganizationUrl, 
   updateOrganizationUrl, 
   searchOrganizationUrls,
-  scrapeUrls 
+  scrapeUrls,
+  scrapeUrlsMultipage 
 } from '../../api';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -61,6 +62,9 @@ const KnowledgeSources: React.FC = () => {
   const [editingUrl, setEditingUrl] = useState('');
   const [editingError, setEditingError] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // State for advanced web scrape mode
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   
   // Load data on component mount and when organization changes
   useEffect(() => {
@@ -131,6 +135,60 @@ const KnowledgeSources: React.FC = () => {
     }
   };
   
+  // Helper function to parse multipage scraping response
+  const parseMultipageResponse = (scrapingResult: any, targetUrl: string) => {
+    if (!scrapingResult) return { status: 'error', error: 'No response received' };
+    
+    // Check the overall status first - handle both 'completed' and 'success' from orchestrator
+    if (scrapingResult.status === 'error' || scrapingResult.status === 'failed') {
+      return { status: 'error', error: scrapingResult.message || 'Scraping failed' };
+    }
+    
+    // Accept both 'success' and 'completed' as valid success statuses
+    const isOverallSuccess = scrapingResult.status === 'success' || scrapingResult.status === 'completed';
+    if (!isOverallSuccess) {
+      return { status: 'error', error: `Unexpected status: ${scrapingResult.status}` };
+    }
+    
+    // Check blob storage result first to determine if content was successfully saved
+    const blobResult = scrapingResult.blob_storage_result;
+    if (blobResult?.status === 'error') {
+      const errorMessage = blobResult.message || 'Blob storage failed - content could not be saved';
+      return { status: 'error', error: errorMessage };
+    }
+    
+    // If blob storage was successful, we can consider this a success
+    // Check for both successful_count (fallback structure) and successful_uploads (orchestrator structure)
+    const hasSuccessfulUploads = blobResult?.successful_uploads && blobResult.successful_uploads.length > 0;
+    const hasSuccessfulCount = blobResult?.successful_count > 0;
+    
+    if (blobResult?.status === 'success' || hasSuccessfulUploads || hasSuccessfulCount) {
+      return { status: 'success', error: null };
+    }
+    
+    // Check individual results for this specific URL as fallback
+    const results = scrapingResult.results || [];
+    const urlResult = results.find((result: any) => result.url === targetUrl);
+    
+    if (urlResult) {
+      // If we found the URL in results but blob storage info is unclear,
+      // check if we have raw_content (indicates successful scraping)
+      if (urlResult.raw_content) {
+        return { status: 'success', error: null };
+      } else if (urlResult.status === 'error' || urlResult.status === 'failed') {
+        return { status: 'error', error: urlResult.error || 'URL scraping failed' };
+      }
+    }
+    
+    // If we have results but unclear blob storage status, check if any content was scraped
+    if (results.length > 0 && results.some((result: any) => result.raw_content)) {
+      return { status: 'success', error: null };
+    }
+    
+    // Default case - if we can't determine status, assume error for safety
+    return { status: 'error', error: 'Unable to determine scraping status or blob storage failed' };
+  };
+
   // Add new URL to the knowledge sources list with web scraping
   // This will trigger web scraping and automatically save the results with blob links to Cosmos
   const handleAddUrl = async () => {
@@ -159,12 +217,29 @@ const KnowledgeSources: React.FC = () => {
     try {
       setIsAdding(true);
       
-      // Use the scraping endpoint to scrape and save the URL
-      const scrapingResult = await scrapeUrls([newUrl], organization.id, user);
+      // Use appropriate endpoint based on advanced mode
+      const scrapingResult = await (isAdvancedMode 
+        ? scrapeUrlsMultipage(newUrl, organization.id, user)
+        : scrapeUrls(newUrl, organization.id, user));
       
-      // Extract results array for easier access
-      const results = scrapingResult?.data?.result?.results || [];
-      const urlResult = results.find((result: any) => result.url === newUrl);
+      let urlResult;
+      
+      if (isAdvancedMode) {
+        // Parse multipage response
+        urlResult = parseMultipageResponse(scrapingResult, newUrl);
+      } else {
+        // Parse regular response - results are directly in the response root
+        const results = scrapingResult?.results || [];
+        urlResult = results.find((result: any) => result.url === newUrl);
+        
+        // If we found a result, also check blob storage status
+        if (urlResult && urlResult.status === 'success') {
+          const blobStatus = scrapingResult?.blob_storage_result?.status;
+          if (blobStatus !== 'success') {
+            urlResult = { ...urlResult, status: 'error', error: 'Blob storage failed' };
+          }
+        }
+      }
       
       if (urlResult?.status === 'error') {
         // Scraping failed, show error and keep form
@@ -217,12 +292,29 @@ const KnowledgeSources: React.FC = () => {
           : source
       ));
       
-      // Re-scrape the URL and update the existing record
-      const scrapingResult = await scrapeUrls([sourceToRefresh.url], organization.id, user);
+      // Re-scrape the URL using appropriate endpoint based on advanced mode
+      const scrapingResult = await (isAdvancedMode 
+        ? scrapeUrlsMultipage(sourceToRefresh.url, organization.id, user)
+        : scrapeUrls(sourceToRefresh.url, organization.id, user));
       
-      // Extract results array for easier access
-      const results = scrapingResult?.data?.result?.results || [];
-      const urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
+      let urlResult;
+      
+      if (isAdvancedMode) {
+        // Parse multipage response
+        urlResult = parseMultipageResponse(scrapingResult, sourceToRefresh.url);
+      } else {
+        // Parse regular response - results are directly in the response root
+        const results = scrapingResult?.results || [];
+        urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
+        
+        // If we found a result, also check blob storage status
+        if (urlResult && urlResult.status === 'success') {
+          const blobStatus = scrapingResult?.blob_storage_result?.status;
+          if (blobStatus !== 'success') {
+            urlResult = { ...urlResult, status: 'error', error: 'Blob storage failed' };
+          }
+        }
+      }
       
       if (urlResult?.status === 'error') {
         // Scraping failed, show error message
@@ -320,7 +412,7 @@ const KnowledgeSources: React.FC = () => {
   
   // Get appropriate icon and styling based on result status
   // This provides visual feedback for different states
-  const getStatusInfo = (result: string, status: string) => {
+  const getStatusInfo = (result: string) => {
     switch (result) {
       case 'Success':
         return { 
@@ -487,6 +579,21 @@ const KnowledgeSources: React.FC = () => {
               <p className={styles.errorText}>{urlError}</p>
             )}
           </div>
+          
+          {/* Advanced Mode Toggle */}
+          <div className={styles.advancedToggleContainer}>
+            <span className={styles.advancedToggleText}>Advanced Mode</span>
+            <div className="form-check form-switch">
+              <input
+                className={`form-check-input ${styles.advancedToggle}`}
+                type="checkbox"
+                checked={isAdvancedMode}
+                onChange={(e) => setIsAdvancedMode(e.target.checked)}
+                disabled={isAdding}
+              />
+            </div>
+          </div>
+          
           <button
             onClick={handleAddUrl}
             disabled={!newUrl.trim() || !!urlError || isAdding}
@@ -583,8 +690,8 @@ const KnowledgeSources: React.FC = () => {
                 {searchQuery ? 'No knowledge sources found matching your search.' : 'No knowledge sources found. Add your first URL above to get started.'}
               </div>
             ) : (
-              filteredSources.map((source, index) => {
-                const statusInfo = getStatusInfo(source.result, source.status);
+              filteredSources.map((source) => {
+                const statusInfo = getStatusInfo(source.result);
                 const StatusIcon = statusInfo.icon;
                 
                 return (

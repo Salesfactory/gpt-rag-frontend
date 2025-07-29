@@ -1,8 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Spinner, SpinnerSize } from "@fluentui/react";
 import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAppContext } from "../../providers/AppProviders";
+import {
+    getBrandsByOrganization,
+    createBrand,
+    deleteBrand,
+    updateBrand,
+    getProductsByOrganization,
+    createProduct,
+    deleteProduct,
+    updateProduct,
+    getCompetitorsByOrganization,
+    createCompetitor,
+    updateCompetitor,
+    deleteCompetitor,
+    getItemsToDeleteByBrand
+} from "../../api/api";
 
 interface Brand {
     id: number;
@@ -18,10 +35,15 @@ interface Product {
 }
 
 interface Competitor {
-    id: number;
+    id: string;
     name: string;
     industry: string;
     description: string;
+    brands: [
+        {
+            brand_id: number;
+        }
+    ];
 }
 
 interface ReportJob {
@@ -38,6 +60,16 @@ interface DeleteConfirmState {
     show: boolean;
     item: Brand | Product | Competitor | null;
     type: "brand" | "product" | "competitor" | "";
+}
+
+interface ItemToDelete {
+    products: Product[];
+    competitors: [
+        {
+            brand_id: string;
+            competitor_id: string;
+        }
+    ];
 }
 
 function generateNextId<T extends { id: number }>(items: T[]): number {
@@ -60,6 +92,8 @@ function getStatusClass(status: string): string {
 }
 
 export default function VoiceCustomerPage() {
+    const { user, organization } = useAppContext();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("All Status");
@@ -73,26 +107,22 @@ export default function VoiceCustomerPage() {
 
     const [newBrand, setNewBrand] = useState({ name: "", description: "" });
     const [newProduct, setNewProduct] = useState({ name: "", category: "", description: "", brandId: "" });
-    const [newCompetitor, setNewCompetitor] = useState({ name: "", industry: "", description: "" });
+    const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
+        name: "",
+        industry: "",
+        description: "",
+        brandIds: []
+    });
 
     const [brandError, setBrandError] = useState("");
     const [productError, setProductError] = useState("");
     const [competitorError, setCompetitorError] = useState("");
     const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ show: false, item: null, type: "" });
+    const [itemsMarkedForDeletion, setItemsMarkedForDeletion] = useState<any>([]);
 
-    const [brands, setBrands] = useState<Brand[]>([
-        { id: 1, name: "Apple", description: "Consumer electronics and technology" },
-        { id: 2, name: "Nike", description: "Athletic footwear and apparel" }
-    ]);
-    const [products, setProducts] = useState<Product[]>([
-        { id: 1, name: "iPhone 15", category: "Smartphones", description: "Latest flagship smartphone" },
-        { id: 2, name: "MacBook Pro", category: "Laptops", description: "Professional laptop computer" },
-        { id: 3, name: "Air Jordan 1", category: "Footwear", description: "Classic basketball sneaker" }
-    ]);
-    const [competitors, setCompetitors] = useState<Competitor[]>([
-        { id: 1, name: "Samsung", industry: "Technology", description: "Global technology conglomerate" },
-        { id: 2, name: "Adidas", industry: "Sportswear", description: "German multinational sportswear company" }
-    ]);
+    const [brands, setBrands] = useState<Brand[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [competitors, setCompetitors] = useState<Competitor[]>([]);
     const [reportJobs, setReportJobs] = useState<ReportJob[]>([
         { id: 1, type: "Brand Analysis", target: "Apple", status: "Completed", progress: 100, startDate: "2024-07-15", endDate: "2024-07-16" },
         { id: 2, type: "Product Analysis", target: "iPhone 15", status: "In Progress", progress: 65, startDate: "2024-07-16", endDate: null },
@@ -100,6 +130,76 @@ export default function VoiceCustomerPage() {
         { id: 4, type: "Brand Analysis", target: "Nike", status: "Failed", progress: 30, startDate: "2024-07-14", endDate: null },
         { id: 5, type: "Product Analysis", target: "MacBook Pro", status: "Completed", progress: 100, startDate: "2024-07-13", endDate: "2024-07-15" }
     ]);
+
+    const [isLoadingBrands, setIsLoadingBrands] = useState(true);
+    const [isLoadingDelete, setIsLoadingDelete] = useState(false);
+    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
+    const [isLoadingMarkedItems, setIsLoadingMarkedItems] = useState(false);
+
+    useEffect(() => {
+        const fetchBrands = async () => {
+            if (!organization) return;
+            try {
+                setIsLoadingBrands(true);
+                const fetchedBrands = await getBrandsByOrganization({
+                    organization_id: organization?.id,
+                    user
+                });
+                setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
+            } catch (error) {
+                console.error("Error fetching brands:", error);
+                setBrands([]);
+            } finally {
+                setIsLoadingBrands(false);
+            }
+        };
+
+        fetchBrands();
+    }, [organization, user]);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            if (!organization) return;
+            try {
+                setIsLoadingProducts(true);
+
+                const fetchedProducts = await getProductsByOrganization({
+                    organization_id: organization.id,
+                    user
+                });
+                setProducts(fetchedProducts);
+            } catch (error) {
+                console.error("Error fetching products:", error);
+            } finally {
+                setIsLoadingProducts(false);
+            }
+        };
+
+        fetchProducts();
+    }, [organization, user]);
+
+    useEffect(() => {
+        const fetchCompetitors = async () => {
+            if (!organization) return;
+
+            try {
+                setIsLoadingCompetitors(true);
+                const fetchedCompetitors = await getCompetitorsByOrganization({
+                    organization_id: organization.id,
+                    user
+                });
+                setCompetitors(fetchedCompetitors);
+            } catch (error) {
+                console.error("Error fetching competitors:", error);
+                toast.error("Failed to fetch competitors. Please try again.");
+            } finally {
+                setIsLoadingCompetitors(false);
+            }
+        };
+
+        fetchCompetitors();
+    }, [organization, user]);
 
     // Uniqueness validation helpers
     const validateBrand = (name: string) => {
@@ -130,150 +230,259 @@ export default function VoiceCustomerPage() {
         return !competitors.some(c => c.name.trim().toLowerCase() === normalized);
     };
 
-    const handleAddBrand = () => {
+    const handleAddBrand = async () => {
+        if (!organization) return;
         if (newBrand.name.trim().length === 0) {
             setBrandError("Brand name is required");
             return;
         }
-        // Uniqueness check
-        const normalized = newBrand.name.trim().toLowerCase();
-        if (editingBrand) {
-            if (brands.some(b => b.name.trim().toLowerCase() === normalized && b.id !== editingBrand.id)) {
-                setBrandError("Brand name must be unique");
-                toast("Brand name already exists", { type: "error" });
-                return;
-            }
-        } else {
-            if (brands.some(b => b.name.trim().toLowerCase() === normalized)) {
-                setBrandError("Brand name must be unique");
-                toast("Brand name already exists", { type: "error" });
-                return;
-            }
+
+        try {
+            setIsLoadingBrands(true);
+            const createdBrand = await createBrand({
+                brand_name: newBrand.name,
+                brand_description: newBrand.description,
+                organization_id: organization.id,
+                user
+            });
+
+            // Reload brands from the backend to ensure the new brand is up-to-date
+            const updatedBrands = await getBrandsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setBrands(updatedBrands);
+
+            // Show success notification
+            toast.success("Brand added successfully");
+
+            // Reset form state
+            setNewBrand({ name: "", description: "" });
+            setBrandError("");
+            setShowBrandModal(false);
+        } catch (error) {
+            toast.error("Failed to create brand. Please try again.");
+            console.error("Error creating brand:", error);
+            setBrandError("Failed to create brand. Please try again.");
+        } finally {
+            setIsLoadingBrands(false);
         }
-        if (!editingBrand && brands.length >= 3) {
-            setBrandError("Maximum 3 brands allowed");
-            return;
-        }
-        if (editingBrand) {
-            setBrands(brands.map(brand => (brand.id === editingBrand.id ? { ...brand, name: newBrand.name, description: newBrand.description } : brand)));
-        } else {
-            const brand: Brand = {
-                id: generateNextId(brands),
-                name: newBrand.name,
-                description: newBrand.description
-            };
-            setBrands([...brands, brand]);
-        }
-        setNewBrand({ name: "", description: "" });
-        setBrandError("");
-        setEditingBrand(null);
-        setShowBrandModal(false);
     };
 
-    const handleAddProduct = () => {
+    const handleEditBrand = async () => {
+        if (!organization || !editingBrand) return;
+
+        if (newBrand.name.trim().length === 0) {
+            setBrandError("Brand name is required");
+            return;
+        }
+
+        try {
+            setIsLoadingBrands(true);
+            await updateBrand({
+                brand_id: String(editingBrand.id),
+                brand_name: newBrand.name,
+                brand_description: newBrand.description,
+                user
+            });
+
+            // Reload brands from the backend to ensure the updated brand is reflected
+            const updatedBrands = await getBrandsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setBrands(updatedBrands);
+
+            // Show success notification
+            toast.success("Brand updated successfully");
+
+            // Reset form state
+            setNewBrand({ name: "", description: "" });
+            setBrandError("");
+            setEditingBrand(null);
+            setShowBrandModal(false);
+        } catch (error) {
+            toast.error("Failed to update brand. Please try again.");
+            console.error("Error updating brand:", error);
+        } finally {
+            setIsLoadingBrands(false);
+        }
+    };
+
+    const handleAddProduct = async () => {
+        if (!organization) return;
+
         if (newProduct.name.trim().length === 0 || newProduct.category.trim().length === 0 || !newProduct.brandId) {
-            setProductError("Product name, category, and brand are required");
+            setProductError("All fields are required");
             return;
         }
-        // Uniqueness check
-        const normalized = newProduct.name.trim().toLowerCase();
-        if (editingProduct) {
-            if (products.some(p => p.name.trim().toLowerCase() === normalized && p.id !== editingProduct.id)) {
-                setProductError("Product name must be unique");
-                toast("Product name already exists", { type: "error" });
-                return;
-            }
-        } else {
-            if (products.some(p => p.name.trim().toLowerCase() === normalized)) {
-                setProductError("Product name must be unique");
-                toast("Product name already exists", { type: "error" });
-                return;
-            }
-        }
-        if (!editingProduct && products.length >= 10) {
-            setProductError("Maximum 10 products allowed");
-            return;
-        }
-        if (editingProduct) {
-            setProducts(
-                products.map(product =>
-                    product.id === editingProduct.id
-                        ? {
-                              ...product,
-                              name: newProduct.name,
-                              category: newProduct.category,
-                              description: newProduct.description,
-                              brandId: newProduct.brandId
-                          }
-                        : product
-                )
-            );
-        } else {
-            const product: Product & { brandId?: string } = {
-                id: generateNextId(products),
-                name: newProduct.name,
+
+        try {
+            setIsLoadingProducts(true);
+            const createdProduct = await createProduct({
+                product_name: newProduct.name,
+                product_description: newProduct.description,
+                brand_id: newProduct.brandId,
+                organization_id: organization.id,
                 category: newProduct.category,
-                description: newProduct.description,
-                brandId: newProduct.brandId
-            };
-            setProducts([...products, product]);
+                user
+            });
+
+            // Reload products from the backend to ensure the new product is up-to-date
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setProducts(updatedProducts);
+
+            // Show success notification
+            toast.success("Product added successfully");
+
+            // Reset form state
+            setNewProduct({ name: "", category: "", description: "", brandId: "" });
+            setProductError("");
+            setShowProductModal(false);
+        } catch (error) {
+            toast.error("Failed to create product. Please try again.");
+            console.error("Error creating product:", error);
+            setProductError("Failed to create product. Please try again.");
+        } finally {
+            setIsLoadingProducts(false);
         }
-        setNewProduct({ name: "", category: "", description: "", brandId: "" });
-        setProductError("");
-        setEditingProduct(null);
-        setShowProductModal(false);
     };
 
-    const handleAddCompetitor = () => {
+    const handleEditProduct = async () => {
+        if (!organization || !editingProduct) return;
+
+        if (newProduct.name.trim().length === 0 || newProduct.category.trim().length === 0 || !newProduct.brandId) {
+            setProductError("All fields are required");
+            return;
+        }
+
+        try {
+            setIsLoadingProducts(true);
+            await updateProduct({
+                product_id: String(editingProduct.id),
+                product_name: newProduct.name,
+                product_description: newProduct.description,
+                category: newProduct.category,
+                brand_id: newProduct.brandId,
+                user
+            });
+
+            // Reload products from the backend to ensure the updated product is reflected
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setProducts(updatedProducts);
+
+            // Show success notification
+            toast.success("Product updated successfully");
+
+            // Reset form state
+            setNewProduct({ name: "", category: "", description: "", brandId: "" });
+            setProductError("");
+            setEditingProduct(null);
+            setShowProductModal(false);
+        } catch (error) {
+            toast.error("Failed to update product. Please try again.");
+            console.error("Error updating product:", error);
+        } finally {
+            setIsLoadingProducts(false);
+        }
+    };
+
+    const handleAddCompetitor = async () => {
+        if (!organization) return;
+
+        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0 || newCompetitor.brandIds.length === 0) {
+            setCompetitorError("Competitor name, industry, and brand are required");
+            return;
+        }
+
+        const normalizedName = newCompetitor.name.trim().toLowerCase();
+        const duplicate = competitors.some(c => c.name.trim().toLowerCase() === normalizedName);
+        if (duplicate) {
+            setCompetitorError("A competitor with this name already exists. Please choose a different name.");
+            toast.error("A competitor with this name already exists. Please choose a different name.");
+            return;
+        }
+
+        try {
+            setIsLoadingCompetitors(true);
+            const createdCompetitor = await createCompetitor({
+                competitor_name: newCompetitor.name,
+                competitor_description: newCompetitor.description,
+                industry: newCompetitor.industry,
+                brands_id: (newCompetitor.brandIds || []).map(String),
+                organization_id: organization.id,
+                user
+            });
+
+            // Reload competitors from the backend to ensure the new competitor is up-to-date
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+
+            // Show success notification
+            toast.success("Competitor added successfully");
+
+            // Reset form state
+            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setCompetitorError("");
+            setShowCompetitorModal(false);
+        } catch (error) {
+            toast.error("Failed to create competitor. Please try again.");
+            console.error("Error creating competitor:", error);
+            setCompetitorError("Failed to create competitor. Please try again.");
+        } finally {
+            setIsLoadingCompetitors(false);
+        }
+    };
+
+    const handleEditCompetitor = async () => {
+        if (!organization || !editingCompetitor) return;
+
         if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
             setCompetitorError("Competitor name and industry are required");
             return;
         }
-        // Uniqueness check
-        const normalized = newCompetitor.name.trim().toLowerCase();
-        if (editingCompetitor) {
-            if (competitors.some(c => c.name.trim().toLowerCase() === normalized && c.id !== editingCompetitor.id)) {
-                setCompetitorError("Competitor name must be unique");
-                toast("Competitor name already exists", { type: "error" });
-                return;
-            }
-        } else {
-            if (competitors.some(c => c.name.trim().toLowerCase() === normalized)) {
-                setCompetitorError("Competitor name must be unique");
-                toast("Competitor name already exists", { type: "error" });
-                return;
-            }
-        }
-        if (!editingCompetitor && competitors.length >= 5) {
-            setCompetitorError("Maximum 5 competitors allowed");
-            return;
-        }
-        if (editingCompetitor) {
-            setCompetitors(
-                competitors.map(competitor =>
-                    competitor.id === editingCompetitor.id
-                        ? {
-                              ...competitor,
-                              name: newCompetitor.name,
-                              industry: newCompetitor.industry,
-                              description: newCompetitor.description
-                          }
-                        : competitor
-                )
-            );
-        } else {
-            const competitor: Competitor = {
-                id: generateNextId(competitors),
-                name: newCompetitor.name,
+
+        try {
+            setIsLoadingCompetitors(true);
+            await updateCompetitor({
+                competitor_id: String(editingCompetitor.id),
+                competitor_name: newCompetitor.name,
+                competitor_description: newCompetitor.description,
                 industry: newCompetitor.industry,
-                description: newCompetitor.description
-            };
-            setCompetitors([...competitors, competitor]);
+                brands_id: (newCompetitor.brandIds || []).map(String),
+                user
+            });
+
+            // Reload competitors from the backend to ensure the updated competitor is reflected
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+
+            // Show success notification
+            toast.success("Competitor updated successfully");
+
+            // Reset form state
+            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setCompetitorError("");
+            setEditingCompetitor(null);
+            setShowCompetitorModal(false);
+        } catch (error) {
+            toast.error("Failed to update competitor. Please try again.");
+            console.error("Error updating competitor:", error);
+        } finally {
+            setIsLoadingCompetitors(false);
         }
-        setNewCompetitor({ name: "", industry: "", description: "" });
-        setCompetitorError("");
-        setEditingCompetitor(null);
-        setShowCompetitorModal(false);
     };
 
     const handleEdit = (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
@@ -291,28 +500,162 @@ export default function VoiceCustomerPage() {
             setEditingProduct(item as Product);
             setShowProductModal(true);
         } else if (type === "competitor") {
-            setNewCompetitor({ name: (item as Competitor).name, industry: (item as Competitor).industry, description: item.description });
+            setNewCompetitor({ name: (item as Competitor).name, industry: (item as Competitor).industry, description: item.description, brandIds: [] });
             setEditingCompetitor(item as Competitor);
             setShowCompetitorModal(true);
         }
     };
 
-    const handleDelete = (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
+    const handleDelete = async (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
         setDeleteConfirm({ show: true, item, type });
+        if (type === "brand") {
+            setIsLoadingMarkedItems(true); // Start spinner for marked items
+            const items: ItemToDelete = await getItemsToDeleteByBrand({
+                brand_id: String(item.id),
+                user
+            });
+
+            const MarkedForDeletion = [];
+            if (items.products && items.products.length > 0) {
+                MarkedForDeletion.push(
+                    ...items.products.map(product => ({
+                        ...product,
+                        type: "product"
+                    }))
+                );
+            }
+
+            if (items.competitors && items.competitors.length > 0) {
+                items.competitors.forEach(comp => {
+                    const competitor = competitors.filter(c => c.id === comp.competitor_id);
+                    MarkedForDeletion.push({
+                        ...competitor[0],
+                        type: "competitor"
+                    });
+                });
+            }
+
+            setItemsMarkedForDeletion(MarkedForDeletion);
+            setIsLoadingMarkedItems(false);
+        }
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!deleteConfirm.item) return;
 
+        setIsLoadingDelete(true); // Start spinner
+
         const { item, type } = deleteConfirm;
-        if (type === "brand") {
-            setBrands(brands.filter(b => b.id !== item.id));
-        } else if (type === "product") {
-            setProducts(products.filter(p => p.id !== item.id));
-        } else if (type === "competitor") {
-            setCompetitors(competitors.filter(c => c.id !== item.id));
+        try {
+            if (type === "brand") {
+                await handleDeleteBrand(String(item.id));
+            } else if (type === "product") {
+                await handleDeleteProduct(String(item.id));
+            } else if (type === "competitor") {
+                await handleDeleteCompetitor(String(item.id));
+            }
+        } catch (error) {
+            console.error("Error during deletion:", error);
+        } finally {
+            setDeleteConfirm({ show: false, item: null, type: "" });
+            setIsLoadingDelete(false); // Stop spinner
         }
-        setDeleteConfirm({ show: false, item: null, type: "" });
+    };
+
+    const handleDeleteBrand = async (brandId: string) => {
+        if (!organization) return;
+
+        try {
+            setIsLoadingBrands(true);
+            setIsLoadingCompetitors(true);
+            setIsLoadingProducts(true);
+            await deleteBrand({
+                brand_id: brandId,
+                user
+            });
+
+            // Reload brands from the backend to ensure the list is up-to-date
+            const updatedBrands = await getBrandsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            // Also reload products and competitors to ensure they are up-to-date
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setBrands(updatedBrands);
+            setProducts(updatedProducts);
+            setCompetitors(updatedCompetitors);
+
+            // Show success notification
+            toast.success("Brand deleted successfully");
+        } catch (error) {
+            console.error("Error deleting brand:", error);
+            toast.error("Failed to delete brand. Please try again.");
+        } finally {
+            setIsLoadingBrands(false);
+            setIsLoadingCompetitors(false);
+            setIsLoadingProducts(false);
+        }
+    };
+
+    const handleDeleteProduct = async (productId: string) => {
+        if (!organization) return;
+
+        try {
+            setIsLoadingProducts(true);
+            await deleteProduct({
+                product_id: productId,
+                user
+            });
+
+            // Reload products from the backend to ensure the list is up-to-date
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setProducts(updatedProducts);
+
+            // Show success notification
+            toast.success("Product deleted successfully");
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            toast.error("Failed to delete product. Please try again.");
+        } finally {
+            setIsLoadingProducts(false);
+        }
+    };
+
+    const handleDeleteCompetitor = async (competitorId: string) => {
+        if (!organization) return;
+
+        try {
+            setIsLoadingCompetitors(true);
+            await deleteCompetitor({
+                competitor_id: competitorId,
+                user
+            });
+
+            // Reload competitors from the backend to ensure the list is up-to-date
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+
+            // Show success notification
+            toast.success("Competitor deleted successfully");
+        } catch (error) {
+            console.error("Error deleting competitor:", error);
+            toast.error("Failed to delete competitor. Please try again.");
+        } finally {
+            setIsLoadingCompetitors(false);
+        }
     };
 
     const filteredJobs = reportJobs.filter(job => {
@@ -339,6 +682,23 @@ export default function VoiceCustomerPage() {
         return <Clock size={16} style={{ color: "#6b7280" }} />;
     };
 
+    const get_brands = (competitor: Competitor) => {
+        const brands_c = competitor.brands.map(b => b.brand_id);
+        const brands_names = brands.filter(b => brands_c.includes(b.id)).map(b => b.name);
+        return brands_names;
+    };
+
+    useEffect(() => {
+        if (editingCompetitor) {
+            setNewCompetitor({
+                name: editingCompetitor.name,
+                industry: editingCompetitor.industry,
+                description: editingCompetitor.description,
+                brandIds: editingCompetitor.brands ? editingCompetitor.brands.map(b => b.brand_id) : []
+            });
+        }
+    }, [editingCompetitor]);
+
     return (
         <div className={styles.pageContainer}>
             <ToastContainer />
@@ -350,12 +710,14 @@ export default function VoiceCustomerPage() {
                                 <Building size={20} />
                                 <h3 className={styles.cardTitle}>Brands ({brands.length}/3)</h3>
                             </div>
-                            <button onClick={() => setShowBrandModal(true)} disabled={brands.length >= 3} className={styles.headerAddButton}>
+                            <button aria-label="create-brand-button" onClick={() => setShowBrandModal(true)} disabled={brands.length >= 3} className={styles.headerAddButton}>
                                 <PlusCircle size={16} />
                             </button>
                         </div>
                         <div className={styles.cardBody}>
-                            {brands.length === 0 ? (
+                            {isLoadingBrands ? (
+                                <Spinner size={SpinnerSize.large} label="Loading brands..." />
+                            ) : brands.length === 0 ? (
                                 <p className={styles.emptyStateText}>No brands added yet</p>
                             ) : (
                                 <div className={styles.itemsList}>
@@ -387,6 +749,7 @@ export default function VoiceCustomerPage() {
                                 <h3 className={styles.cardTitle}>Products ({products.length}/10)</h3>
                             </div>
                             <button
+                                aria-label="create-product-button"
                                 onClick={() => setShowProductModal(true)}
                                 disabled={products.length >= 10 || brands.length === 0}
                                 className={styles.headerAddButton}
@@ -395,7 +758,9 @@ export default function VoiceCustomerPage() {
                             </button>
                         </div>
                         <div className={styles.cardBody}>
-                            {products.length === 0 ? (
+                            {isLoadingProducts ? (
+                                <Spinner size={SpinnerSize.large} label="Loading products..." />
+                            ) : products.length === 0 ? (
                                 <p className={styles.emptyStateText}>No products added yet</p>
                             ) : (
                                 <div className={styles.itemsList}>
@@ -441,6 +806,7 @@ export default function VoiceCustomerPage() {
                                 <h3 className={styles.cardTitle}>Competitors ({competitors.length}/5)</h3>
                             </div>
                             <button
+                                aria-label="create-competitor-button"
                                 onClick={() => setShowCompetitorModal(true)}
                                 disabled={competitors.length >= 5 || brands.length === 0}
                                 className={styles.headerAddButton}
@@ -449,29 +815,44 @@ export default function VoiceCustomerPage() {
                             </button>
                         </div>
                         <div className={styles.cardBody}>
-                            {competitors.length === 0 ? (
+                            {isLoadingCompetitors ? (
+                                <Spinner size={SpinnerSize.large} label="Loading competitors..." />
+                            ) : competitors.length === 0 ? (
                                 <p className={styles.emptyStateText}>No competitors added yet</p>
                             ) : (
                                 <div className={styles.itemsList}>
-                                    {competitors.map(c => (
-                                        <div key={c.id} className={styles.listItem}>
-                                            <div className={styles.itemContent}>
-                                                <div className={styles.itemHeader}>
-                                                    <h4 className={styles.itemName}>{c.name}</h4>
-                                                    <span className={styles.itemIndustry}>{c.industry}</span>
+                                    {competitors.map(c => {
+                                        const brandNames = get_brands(c);
+                                        return (
+                                            <div key={c.id} className={styles.listItem}>
+                                                <div className={styles.itemContent}>
+                                                    <div className={styles.itemHeader}>
+                                                        <h4 className={styles.itemName}>{c.name}</h4>
+                                                        <span className={styles.itemIndustry}>{c.industry}</span>
+                                                        {brandNames.length > 0 &&
+                                                            brandNames.map((name, index) => (
+                                                                <span key={index} className={styles.itemBrand}>
+                                                                    {name}
+                                                                    {index < brandNames.length - 1 ? " " : ""}
+                                                                </span>
+                                                            ))}
+                                                    </div>
+                                                    {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                                 </div>
-                                                {c.description && <p className={styles.itemDescription}>{c.description}</p>}
+                                                <div className={styles.itemActions}>
+                                                    <button onClick={() => handleEdit(c, "competitor")} className={styles.iconButton}>
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(c, "competitor")}
+                                                        className={`${styles.iconButton} ${styles.deleteButton}`}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className={styles.itemActions}>
-                                                <button onClick={() => handleEdit(c, "competitor")} className={styles.iconButton}>
-                                                    <Edit size={16} />
-                                                </button>
-                                                <button onClick={() => handleDelete(c, "competitor")} className={`${styles.iconButton} ${styles.deleteButton}`}>
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -629,8 +1010,13 @@ export default function VoiceCustomerPage() {
                                 >
                                     Cancel
                                 </button>
-                                <button onClick={handleAddBrand} disabled={!newBrand.name} className={`${styles.button} ${styles.buttonConfirm}`}>
-                                    {editingBrand ? "Update" : "Add"}
+                                <button
+                                    aria-label={editingBrand ? "update-brand-button" : "add-brand-button"}
+                                    onClick={editingBrand ? handleEditBrand : handleAddBrand}
+                                    disabled={isLoadingBrands}
+                                    className={`${styles.button} ${styles.buttonConfirm}`}
+                                >
+                                    {isLoadingBrands ? <Spinner size={SpinnerSize.small} /> : editingBrand ? "Update" : "Add"}
                                 </button>
                             </div>
                         </div>
@@ -695,6 +1081,7 @@ export default function VoiceCustomerPage() {
                                 <div>
                                     <label className={styles.formLabel}>Brand</label>
                                     <select
+                                        aria-label="brand-select"
                                         value={newProduct.brandId}
                                         onChange={e => {
                                             setNewProduct({ ...newProduct, brandId: e.target.value });
@@ -740,11 +1127,12 @@ export default function VoiceCustomerPage() {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleAddProduct}
-                                    disabled={!newProduct.name || !newProduct.category || !newProduct.brandId}
+                                    aria-label={editingProduct ? "update-product-button" : "add-product-button"}
+                                    onClick={editingProduct ? handleEditProduct : handleAddProduct}
+                                    disabled={isLoadingProducts}
                                     className={`${styles.button} ${styles.buttonConfirm}`}
                                 >
-                                    {editingProduct ? "Update" : "Add"}
+                                    {isLoadingProducts ? <Spinner size={SpinnerSize.small} /> : editingProduct ? "Update" : "Add"}
                                 </button>
                             </div>
                         </div>
@@ -758,7 +1146,7 @@ export default function VoiceCustomerPage() {
                         className={styles.modalOverlay}
                         onClick={() => {
                             setShowCompetitorModal(false);
-                            setNewCompetitor({ name: "", industry: "", description: "" });
+                            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
                             setCompetitorError("");
                             setEditingCompetitor(null);
                         }}
@@ -769,7 +1157,7 @@ export default function VoiceCustomerPage() {
                             <button
                                 onClick={() => {
                                     setShowCompetitorModal(false);
-                                    setNewCompetitor({ name: "", industry: "", description: "" });
+                                    setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
                                     setCompetitorError("");
                                     setEditingCompetitor(null);
                                 }}
@@ -807,6 +1195,41 @@ export default function VoiceCustomerPage() {
                                     />
                                 </div>
                                 <div>
+                                    <label className={styles.formLabel}>Brands</label>
+                                    <div className={styles.multiSelectContainer}>
+                                        {brands.map(brand => (
+                                            <div key={brand.id} className={styles.multiSelectItem}>
+                                                <label htmlFor={`brand-${brand.id}`} className={styles.multiSelectLabel}>
+                                                    <input
+                                                        aria-label={`brand-${brand.name}`}
+                                                        type="checkbox"
+                                                        id={`brand-${brand.id}`}
+                                                        value={brand.id}
+                                                        checked={newCompetitor.brandIds?.includes(brand.id) || false}
+                                                        onChange={e => {
+                                                            const selectedBrandIds = newCompetitor.brandIds || [];
+                                                            if (e.target.checked) {
+                                                                setNewCompetitor({
+                                                                    ...newCompetitor,
+                                                                    brandIds: [...selectedBrandIds, brand.id]
+                                                                });
+                                                            } else {
+                                                                setNewCompetitor({
+                                                                    ...newCompetitor,
+                                                                    brandIds: selectedBrandIds.filter(id => id !== brand.id)
+                                                                });
+                                                            }
+                                                            if (competitorError) setCompetitorError("");
+                                                        }}
+                                                        style={{ accentColor: "#4caf50" }}
+                                                    />
+                                                    <span className={styles.brandName}>{"   " + brand.name}</span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
                                     <label className={styles.formLabel}>Description (Optional)</label>
                                     <textarea
                                         value={newCompetitor.description}
@@ -822,7 +1245,7 @@ export default function VoiceCustomerPage() {
                                 <button
                                     onClick={() => {
                                         setShowCompetitorModal(false);
-                                        setNewCompetitor({ name: "", industry: "", description: "" });
+                                        setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
                                         setCompetitorError("");
                                         setEditingCompetitor(null);
                                     }}
@@ -831,11 +1254,12 @@ export default function VoiceCustomerPage() {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleAddCompetitor}
-                                    disabled={!newCompetitor.name || !newCompetitor.industry}
+                                    aria-label={editingCompetitor ? "update-competitor-button" : "add-competitor-button"}
+                                    onClick={editingCompetitor ? handleEditCompetitor : handleAddCompetitor}
+                                    disabled={isLoadingCompetitors}
                                     className={`${styles.button} ${styles.buttonConfirm}`}
                                 >
-                                    {editingCompetitor ? "Update" : "Add"}
+                                    {isLoadingCompetitors ? <Spinner size={SpinnerSize.small} /> : editingCompetitor ? "Update" : "Add"}
                                 </button>
                             </div>
                         </div>
@@ -861,6 +1285,31 @@ export default function VoiceCustomerPage() {
                             <p className={styles.deleteModalText}>
                                 Are you sure you want to remove <span>{deleteConfirm.item?.name}</span> from tracking?
                             </p>
+                            {deleteConfirm.type === "brand" && (
+                                <>
+                                    <p className={styles.deleteModalText}>This will also remove all associated products and competitors:</p>
+                                    {isLoadingMarkedItems ? (
+                                        <div className={styles.markedSpinner}>
+                                            <Spinner size={SpinnerSize.small} label="Loading items to delete..." />
+                                        </div>
+                                    ) : (
+                                        <div className={styles.deleteModalList}>
+                                            {itemsMarkedForDeletion.length === 0 && <li className={styles.deleteModalOption}>No items marked for deletion</li>}
+                                            <div className={styles.markedItemsContainer}>
+                                                {itemsMarkedForDeletion.map((item: any) => {
+                                                    return (
+                                                        <div className={styles.listMarkedItems}>
+                                                            {item.name || item.description || "Unnamed Item"}
+                                                            <span className={styles.itemMarked}>{item.type}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
                             <div className={styles.deleteModalActions}>
                                 <button
                                     type="button"
@@ -869,8 +1318,13 @@ export default function VoiceCustomerPage() {
                                 >
                                     Cancel
                                 </button>
-                                <button type="button" onClick={confirmDelete} className={styles.buttonDelete}>
-                                    Yes, Delete
+                                <button
+                                    type="button"
+                                    onClick={confirmDelete}
+                                    className={styles.buttonDelete}
+                                    disabled={isLoadingDelete} // Disable button while loading
+                                >
+                                    {isLoadingDelete ? <Spinner size={SpinnerSize.small} /> : "Yes, Delete"}
                                 </button>
                             </div>
                         </div>

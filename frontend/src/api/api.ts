@@ -1130,9 +1130,9 @@ export async function getCompanyData() {
     }
 }
 
-export async function scrapeUrls(urls: string[], organizationId?: string, user?: any): Promise<any> {
+export async function scrapeUrls(url: string, organizationId?: string, user?: any): Promise<any> {
     try {
-        const payload: any = { urls };
+        const payload: any = { url };
         
         // Include organization_id if provided to save URLs to database
         if (organizationId) {
@@ -1149,7 +1149,7 @@ export async function scrapeUrls(urls: string[], organizationId?: string, user?:
             headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
         }
         
-        const response = await fetch("/api/webscraping/scrape-urls", {
+        const response = await fetch("/api/webscraping/scrape-url", {
             method: "POST",
             headers,
             body: JSON.stringify(payload)
@@ -1164,7 +1164,46 @@ export async function scrapeUrls(urls: string[], organizationId?: string, user?:
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
-        console.error("Error scraping URLs:", error);
+        console.error("Error scraping URL:", error);
+        throw error;
+    }
+}
+
+export async function scrapeUrlsMultipage(url: string, organizationId?: string, user?: any): Promise<any> {
+    try {
+        const payload: any = { url };
+        
+        // Include organization_id if provided to save URLs to database
+        if (organizationId) {
+            payload.organization_id = organizationId;
+        }
+        
+        const headers: any = {
+            "Content-Type": "application/json",
+        };
+        
+        // Add user authentication headers if user is provided
+        if (user) {
+            headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
+            headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
+        }
+        
+        const response = await fetch("/api/webscraping/multipage-scrape", {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        // Return the detailed result which should include success/failure info for each URL
+        return result;
+    } catch (error) {
+        console.error("Error scraping URL with multipage:", error);
         throw error;
     }
 }
@@ -1337,4 +1376,367 @@ export async function exportConversation(conversationId: string, userId: string,
         console.error("Error exporting conversation:", error);
         throw error;
     }
+}
+
+// Create a brand
+export async function createBrand({
+  brand_name,
+  brand_description,
+  organization_id,
+  user,
+}: {
+  brand_name: string;
+  brand_description: string;
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch('/api/voice-customer/brands', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({ brand_name, brand_description, organization_id }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error creating brand');
+  }
+  return data;
+}
+
+// Delete a brand
+export async function deleteBrand({
+  brand_id,
+  user,
+}: {
+  brand_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error deleting brand');
+  }
+  return data;
+}
+
+// Get brands by organization
+export async function getBrandsByOrganization({
+  organization_id,
+  user,
+}: {
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/brands`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error fetching brands');
+  }
+  return data.data || [];
+}
+
+// Update a brand
+export async function updateBrand({
+  brand_id,
+  brand_name,
+  brand_description,
+  user,
+}: {
+  brand_id: string;
+  brand_name: string;
+  brand_description: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({ brand_name, brand_description }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error updating brand');
+  }
+  return data;
+}
+
+// Create a product
+export async function createProduct({
+  product_name,
+  product_description,
+  brand_id,
+  organization_id,
+  category,
+  user,
+}: {
+  product_name: string;
+  product_description: string;
+  brand_id: string;
+  organization_id: string;
+  category: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch('/api/voice-customer/products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      product_name,
+      product_description,
+      brand_id,
+      organization_id,
+      category,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error creating product');
+  }
+  return data;
+}
+
+// Delete a product
+export async function deleteProduct({
+  product_id,
+  user,
+}: {
+  product_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error deleting product');
+  }
+  return data;
+}
+
+// Get products by organization
+export async function getProductsByOrganization({
+  organization_id,
+  user,
+}: {
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/products`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error fetching products');
+  }
+  return data.data || [];
+}
+
+// Update a product
+export async function updateProduct({
+  product_id,
+  product_name,
+  product_description,
+  category,
+  brand_id,
+  user,
+}: {
+  product_id: string;
+  product_name: string;
+  product_description: string;
+  category: string;
+  brand_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      product_name,
+      product_description,
+      category,
+      brand_id,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error updating product');
+  }
+  return data;
+}
+
+// Create a competitor
+export async function createCompetitor({
+  competitor_name,
+  competitor_description,
+  industry,
+  brands_id,
+  organization_id,
+  user,
+}: {
+  competitor_name: string;
+  competitor_description: string;
+  industry: string;
+  brands_id: string[];
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch('/api/voice-customer/competitors', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      competitor_name,
+      competitor_description,
+      industry,
+      brands_id,
+      organization_id,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error creating competitor');
+  }
+  return data;
+}
+
+// Delete a competitor
+export async function deleteCompetitor({
+  competitor_id,
+  user,
+}: {
+  competitor_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error deleting competitor');
+  }
+  return data;
+}
+
+// Get competitors by organization
+export async function getCompetitorsByOrganization({
+  organization_id,
+  user,
+}: {
+  organization_id: string;
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/competitors`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error fetching competitors');
+  }
+  return data.data || [];
+}
+
+// Update a competitor
+export async function updateCompetitor({
+  competitor_id,
+  competitor_name,
+  competitor_description,
+  industry,
+  brands_id,
+  user,
+}: {
+  competitor_id: string;
+  competitor_name: string;
+  competitor_description: string;
+  industry: string;
+  brands_id: string[];
+  user: any;
+}): Promise<any> {
+  const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+    body: JSON.stringify({
+      competitor_name,
+      competitor_description,
+      industry,
+      brands_id,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || 'Error updating competitor');
+  }
+  return data;
+}
+
+export async function getItemsToDeleteByBrand({ brand_id, user }: { brand_id: string; user: any }): Promise<any> {
+  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}/items-to-delete/`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch items to delete for brand ${brand_id}: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  return result.data;
 }

@@ -1,7 +1,11 @@
 import os
 from azure.cosmos import CosmosClient
 from azure.identity import DefaultAzureCredential
-from azure.cosmos.exceptions import CosmosResourceNotFoundError, AzureError, CosmosHttpResponseError
+from azure.cosmos.exceptions import (
+    CosmosResourceNotFoundError,
+    AzureError,
+    CosmosHttpResponseError,
+)
 import uuid
 import logging
 import time
@@ -319,6 +323,7 @@ def get_user_container(user_id):
         logging.error(f"Unexpected error retrieving report with id '{user_id}'")
         raise
 
+
 def get_invitation(invited_user_email):
     if not invited_user_email:
         return {"error": "User ID not found."}
@@ -390,25 +395,31 @@ def set_user(client_principal):
             }
         )
         if user_invitation:
-                try:
-                    invitation_id = user_invitation["id"]
-                    user_invitation["invited_user_id"] = client_principal["id"]
+            try:
+                invitation_id = user_invitation["id"]
+                user_invitation["invited_user_id"] = client_principal["id"]
 
-                    container_inv = get_cosmos_container("invitations")
-                    updated_invitation = container_inv.replace_item(
-                        item=invitation_id,
-                        body=user_invitation
-                    )
-                    logging.info(f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}")
-                except Exception as e:
-                    logging.error(f"[get_user] Failed to update invitation with user_id: {e}")
+                container_inv = get_cosmos_container("invitations")
+                updated_invitation = container_inv.replace_item(
+                    item=invitation_id, body=user_invitation
+                )
+                logging.info(
+                    f"[get_user] Invitation {invitation_id} updated successfully with user_id {client_principal['id']}"
+                )
+            except Exception as e:
+                logging.error(
+                    f"[get_user] Failed to update invitation with user_id: {e}"
+                )
         else:
-            logging.info(f"[get_user] No invitation found for user {client_principal['id']}")
+            logging.info(
+                f"[get_user] No invitation found for user {client_principal['id']}"
+            )
     except Exception as e:
         logging.error(f"[get_user] Error creating the user: {e}")
         return {"is_new_user": None, "user_data": None}
 
     return {"is_new_user": is_new_user, "user_data": user["data"]}
+
 
 def update_user(user_id, updated_data):
     """
@@ -457,6 +468,7 @@ def update_user(user_id, updated_data):
         )
         raise
 
+
 def patch_organization_data(org_id, patch_data):
     """
     Updates or adds 'brandInformation', 'industryInformation' and 'segmentSynonyms' to the organization.
@@ -469,7 +481,12 @@ def patch_organization_data(org_id, patch_data):
         logging.warning(f"Organization with id '{org_id}' not found.")
         raise NotFound(f"Organization not found")
 
-    allowed_fields = {"brandInformation", "industryInformation", "segmentSynonyms","additionalInstructions"}
+    allowed_fields = {
+        "brandInformation",
+        "industryInformation",
+        "segmentSynonyms",
+        "additionalInstructions",
+    }
 
     for key in allowed_fields:
         if key in patch_data:
@@ -478,6 +495,7 @@ def patch_organization_data(org_id, patch_data):
     container.upsert_item(org)
     logging.info(f"Organization {org_id} updated successfully.")
     return org
+
 
 def update_invitation_role(invited_user_id, organization_id, new_role):
     """
@@ -490,17 +508,24 @@ def update_invitation_role(invited_user_id, organization_id, new_role):
     """
     parameters = [
         {"name": "@invited_user_id", "value": invited_user_id},
-        {"name": "@organization_id", "value": organization_id}
+        {"name": "@organization_id", "value": organization_id},
     ]
-    items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+    items = list(
+        container.query_items(
+            query=query, parameters=parameters, enable_cross_partition_query=True
+        )
+    )
     if not items:
-        logging.warning(f"No invitation found for user {invited_user_id} in org {organization_id}")
+        logging.warning(
+            f"No invitation found for user {invited_user_id} in org {organization_id}"
+        )
         return None
     invitation = items[0]
     invitation["role"] = new_role
     container.replace_item(item=invitation["id"], body=invitation)
     logging.info(f"Invitation {invitation['id']} updated with new role: {new_role}")
     return invitation
+
 
 def patch_user_data(user_id, patch_data):
     """
@@ -535,14 +560,15 @@ def patch_user_data(user_id, patch_data):
 
         container.upsert_item(current_user)
         logging.info(f"User data updated successfully: {current_user}")
-        
-        organization_id = patch_data.get("organizationId") or user_data.get("organizationId")
+
+        organization_id = patch_data.get("organizationId") or user_data.get(
+            "organizationId"
+        )
         new_role = patch_data.get("role")
         if organization_id and new_role:
             update_invitation_role(user_id, organization_id, new_role)
 
         return current_user
-
 
     except CosmosResourceNotFoundError as nf:
         logging.error(f"User with id '{user_id}' not found during upsert.")
@@ -557,7 +583,9 @@ def patch_user_data(user_id, patch_data):
         raise ve
 
     except Exception as e:
-        logging.error(f"Unexpected error while updating user data with id '{user_id}': {e}")
+        logging.error(
+            f"Unexpected error while updating user data with id '{user_id}': {e}"
+        )
         raise e
 
 
@@ -565,15 +593,17 @@ def get_audit_logs(organization_id):
     """Get the 10 most recent audit logs in a cosmosDB container"""
     container = get_cosmos_container("auditLogs")
     try:
-        items = list(container.query_items(
-            query="""
+        items = list(
+            container.query_items(
+                query="""
                 SELECT TOP 10 * FROM c 
                 WHERE c.organization_id = @organization_id 
                 ORDER BY c._ts DESC
             """,
-            parameters=[{"name": "@organization_id", "value": organization_id}],
-            enable_cross_partition_query=True
-        ))
+                parameters=[{"name": "@organization_id", "value": organization_id}],
+                enable_cross_partition_query=True,
+            )
+        )
 
         if not items:
             logging.warning(f"No audit logs found.")
@@ -590,7 +620,8 @@ def get_audit_logs(organization_id):
     except Exception as e:
         logging.error(f"Unexpected error retrieving audit logs: {e}")
         raise
-    
+
+
 def get_organization_subscription(organizationId):
     """
     Retrieves a specific document (organizationId) from the Cosmos DB container using its `id` as partition key.
@@ -609,23 +640,34 @@ def get_organization_subscription(organizationId):
         logging.error(f"Organization ID not provided.")
         raise ValueError("Organization ID is required.")
     container = get_cosmos_container("organizations")
-    
+
     try:
-        organization = container.read_item(item=organizationId, partition_key=organizationId)
+        organization = container.read_item(
+            item=organizationId, partition_key=organizationId
+        )
         logging.info(f"Organization successfully retrieved: {organization}")
         return organization
 
     except CosmosResourceNotFoundError:
-        logging.warning(f"Organization with id '{organizationId}' not found in Cosmos DB.")
+        logging.warning(
+            f"Organization with id '{organizationId}' not found in Cosmos DB."
+        )
         raise NotFound
-    
+
     except CosmosHttpResponseError as ch_err:
-        logging.error(f"CosmosHttpError encountered while retrieving organization with id '{organizationId}': {ch_err}")
-        raise Exception(f"Error retrieving organization with id '{organizationId}': {ch_err}") from ch_err
+        logging.error(
+            f"CosmosHttpError encountered while retrieving organization with id '{organizationId}': {ch_err}"
+        )
+        raise Exception(
+            f"Error retrieving organization with id '{organizationId}': {ch_err}"
+        ) from ch_err
 
     except Exception as e:
-        logging.error(f"Unexpected error retrieving organization with id '{organizationId}': {e}")
+        logging.error(
+            f"Unexpected error retrieving organization with id '{organizationId}': {e}"
+        )
         raise
+
 
 def get_user_organizations(user_id):
     """
@@ -667,7 +709,9 @@ def get_user_organizations(user_id):
         owner_parameters = [{"name": "@user_id", "value": user_id}]
         owned_organizations = list(
             organizations_container.query_items(
-                query=owner_query, parameters=owner_parameters, enable_cross_partition_query=True
+                query=owner_query,
+                parameters=owner_parameters,
+                enable_cross_partition_query=True,
             )
         )
 
@@ -680,13 +724,17 @@ def get_user_organizations(user_id):
             if org_id in returned_org_ids:
                 continue
             try:
-                org = organizations_container.read_item(item=org_id, partition_key=org_id)
+                org = organizations_container.read_item(
+                    item=org_id, partition_key=org_id
+                )
                 simplified_org = {
                     "id": org.get("id", ""),
                     "name": org.get("name", ""),
                     "owner": org.get("owner", ""),
                     "sessionId": org.get("sessionId", ""),
-                    "subscriptionExpirationDate": org.get("subscriptionExpirationDate", ""),
+                    "subscriptionExpirationDate": org.get(
+                        "subscriptionExpirationDate", ""
+                    ),
                     "subscriptionId": org.get("subscriptionId", ""),
                     "subscriptionStatus": org.get("subscriptionStatus", []),
                 }
@@ -714,12 +762,17 @@ def get_user_organizations(user_id):
             organizations.append(simplified_org)
             returned_org_ids.add(org_id)
 
-        logging.info(f"Successfully retrieved {len(organizations)} organizations for user ID '{user_id}'.")
+        logging.info(
+            f"Successfully retrieved {len(organizations)} organizations for user ID '{user_id}'."
+        )
         return organizations
 
     except Exception as e:
-        logging.error(f"Unexpected error retrieving organizations for user ID '{user_id}': {e}")
+        logging.error(
+            f"Unexpected error retrieving organizations for user ID '{user_id}': {e}"
+        )
         raise
+
 
 def get_invitation_role(user_id, organization_id):
     """
@@ -731,19 +784,21 @@ def get_invitation_role(user_id, organization_id):
 
     Returns:
         str: The user's role in the organization if the invitation is active.
-        
+
     Raises:
         NotFound: If no active invitation is found for the user and organization.
     """
-    invitations_container = get_cosmos_container('invitations')
-    organizations_container = get_cosmos_container('organizations')
+    invitations_container = get_cosmos_container("invitations")
+    organizations_container = get_cosmos_container("organizations")
 
     # Check ownership
     org_query = "SELECT * FROM c WHERE c.id = @organization_id"
     org_params = [{"name": "@organization_id", "value": organization_id}]
-    org_result = list(organizations_container.query_items(
-        query=org_query, parameters=org_params, enable_cross_partition_query=True
-    ))
+    org_result = list(
+        organizations_container.query_items(
+            query=org_query, parameters=org_params, enable_cross_partition_query=True
+        )
+    )
 
     if org_result and org_result[0].get("owner") == user_id:
         return "admin"
@@ -757,17 +812,20 @@ def get_invitation_role(user_id, organization_id):
     """
     parameters = [
         {"name": "@user_id", "value": user_id},
-        {"name": "@organization_id", "value": organization_id}
+        {"name": "@organization_id", "value": organization_id},
     ]
 
-    invitations = list(invitations_container.query_items(
-        query=query, parameters=parameters, enable_cross_partition_query=True
-    ))
+    invitations = list(
+        invitations_container.query_items(
+            query=query, parameters=parameters, enable_cross_partition_query=True
+        )
+    )
 
     if invitations:
-        return invitations[0].get('role')
+        return invitations[0].get("role")
 
     raise ValueError("No role found: user is not owner nor has active invitation")
+
 
 def create_invitation(invited_user_email, organization_id, role, nickname):
     """
@@ -785,7 +843,7 @@ def create_invitation(invited_user_email, organization_id, role, nickname):
     invitation = {}
 
     user_id = None
-    
+
     try:
         user_container = get_cosmos_container("users")
         user = user_container.query_items(
@@ -794,7 +852,7 @@ def create_invitation(invited_user_email, organization_id, role, nickname):
             enable_cross_partition_query=True,
         )
         for u in user:
-            user_id=u["id"]
+            user_id = u["id"]
             if u["data"].get("organizationId") is None:
                 u["data"]["organizationId"] = organization_id
                 u["data"]["role"] = role
@@ -804,7 +862,9 @@ def create_invitation(invited_user_email, organization_id, role, nickname):
                 )
 
         token = str(uuid.uuid4())
-        expiry_time = datetime.now(timezone.utc) + timedelta(days=7)  # Token valid for 7 days
+        expiry_time = datetime.now(timezone.utc) + timedelta(
+            days=7
+        )  # Token valid for 7 days
         token_expiry = int(expiry_time.timestamp())
 
         invitation = {
@@ -817,17 +877,16 @@ def create_invitation(invited_user_email, organization_id, role, nickname):
             "invited_user_id": user_id,
             "token": token,
             "token_used": False,
-            "token_expiry": token_expiry
+            "token_expiry": token_expiry,
         }
         result = container.create_item(body=invitation)
     except Exception as e:
-        logging.info(
-            f"create_invitation: something went wrong. {str(e)}"
-        )
+        logging.info(f"create_invitation: something went wrong. {str(e)}")
         raise e
     except ValueError as ve:
         logging.error(str(ve))
         raise ve
+
 
 def get_invitation_by_email_and_org(invited_user_email, organizationId):
     """
@@ -852,14 +911,14 @@ def get_invitation_by_email_and_org(invited_user_email, organizationId):
         parameters = [
             {"name": "@invited_user_email", "value": invited_user_email},
             {"name": "@organization_id", "value": organizationId},
-            {"name": "@current_ts", "value": current_ts}
+            {"name": "@current_ts", "value": current_ts},
         ]
 
-        result = list(container.query_items(
-            query=query,
-            parameters=parameters,
-            enable_cross_partition_query=True
-        ))
+        result = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
 
         return result[0] if result else None
 
@@ -879,23 +938,27 @@ def create_organization(user_id, organization_name):
             raise ValueError("Organization name cannot be empty.")
         container = get_cosmos_container("organizations")
         result = container.create_item(
-        body={
-            "id": str(uuid.uuid4()),
-            "name": organization_name,
-            "owner": user_id,
-            "sessionId": None,
-            "subscriptionStatus": "inactive",
-            "subscriptionExpirationDate": None,
-        }
-    )
+            body={
+                "id": str(uuid.uuid4()),
+                "name": organization_name,
+                "owner": user_id,
+                "sessionId": None,
+                "subscriptionStatus": "inactive",
+                "subscriptionExpirationDate": None,
+            }
+        )
         if not result:
-            logging.warning(f"Organization with name '{organization_name}' not created in Cosmos DB.")
+            logging.warning(
+                f"Organization with name '{organization_name}' not created in Cosmos DB."
+            )
             raise RuntimeError(f"Organization not created")
     except Exception as e:
         logging.error(f"Error inserting data into Cosmos DB: {e}")
         raise e
     except RuntimeError as re:
-        logging.error(f"Organization with name '{organization_name}' not created in Cosmos DB.")
+        logging.error(
+            f"Organization with name '{organization_name}' not created in Cosmos DB."
+        )
         raise re
     try:
         user = get_user_container(user_id)
@@ -914,6 +977,7 @@ def create_organization(user_id, organization_name):
     return result
 
     return invitation
+
 
 def get_company_list():
     """
@@ -949,4 +1013,664 @@ def get_company_list():
 
     except Exception as e:
         logging.error(f"Unexpected error retrieving Companies: {e}")
+        raise
+
+
+def create_new_brand(brand_name, brand_description, organization_id):
+    """
+    Creates a new brand entry in the Cosmos DB 'brandsContainer'.
+
+    Args:
+        brand_name (str): The name of the brand to create.
+        brand_description (str): A description of the brand.
+        organization_id (str): The ID of the organization to which the brand belongs.
+
+    Returns:
+        dict: The created brand item as returned by Cosmos DB.
+
+    Raises:
+        ValueError: If any of the required parameters are empty.
+        RuntimeError: If the brand was not created in Cosmos DB.
+        Exception: For errors related to Cosmos DB operations.
+    """
+    container = get_cosmos_container("brandsContainer")
+    try:
+        if not brand_name or not organization_id:
+            raise ValueError(
+                "Brand name and organization ID cannot be empty."
+            )
+        if brand_description is None:
+            brand_description = ""
+        result = container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "name": brand_name,
+                "description": brand_description,
+                "organizationId": organization_id,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        logging.info(f"Brand created successfully: {result}")
+        if not result:
+            logging.warning(f"Brand with name '{brand_name}' not created in Cosmos DB.")
+            raise RuntimeError(f"Brand not created")
+        return result
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while creating brand: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
+
+
+def get_brands_by_organization(organization_id):
+    """
+    Retrieves all brands associated with a specific organization ID.
+
+    Parameters:
+        organization_id (str): The ID of the organization to filter brands by.
+
+    Returns:
+        list: A list of brand documents associated with the specified organization.
+
+    Raises:
+        NotFound: If no brands are found for the specified organization.
+        Exception: For any unexpected errors during retrieval.
+    """
+    container = get_cosmos_container("brandsContainer")
+
+    try:
+        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
+        parameters = [{"name": "@organizationId", "value": organization_id}]
+        items = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if not items:
+            logging.warning(f"No brands found for organization ID '{organization_id}'.")
+            return []
+
+        logging.info(
+            f"Brands successfully retrieved for organization ID '{organization_id}': {items}"
+        )
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No brands found for organization ID '{organization_id}'.")
+        return []
+
+    except Exception as e:
+        logging.error(
+            f"Unexpected error retrieving brands for organization ID '{organization_id}': {e}"
+        )
+        return []
+
+
+def update_brand_by_id(brand_id, brand_name, brand_description):
+    """
+    Updates an existing brand document using its `id` as the partition key.
+
+    Handles database errors and raises exceptions as needed.
+    """
+    container = get_cosmos_container("brandsContainer")
+
+    try:
+        current_brand = container.read_item(item=brand_id, partition_key=brand_id)
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Brand with id '{brand_id}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(
+            f"Unexpected error while retrieving brand with id '{brand_id}': {e}"
+        )
+        raise Exception(
+            f"Unexpected error while retrieving brand with id '{brand_id}': {e}"
+        ) from e
+
+    try:
+        current_brand.update(
+            {
+                "name": brand_name,
+                "description": brand_description,
+            }
+        )
+
+        current_brand["id"] = brand_id
+        current_brand["updatedAt"] = datetime.now(timezone.utc).isoformat()
+
+        # Perform the upsert operation
+        container.upsert_item(current_brand)
+        logging.info(f"Brand updated successfully: {current_brand}")
+        return current_brand
+
+    except CosmosResourceNotFoundError:
+        logging.error(
+            f"Failed to upsert item: Brand ID '{brand_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert brand because it does not exist with id '{brand_id}'"
+        )
+
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
+
+
+def create_prod(name, description, category, brand_id, organization_id):
+    """
+    Creates a new product entry in the Cosmos DB 'productsContainer'.
+
+    Args:
+        name (str): The name of the product.
+        description (str): A description of the product.
+        category (str): The category of the product.
+        brand_id (str): The ID of the brand associated with the product.
+        organization_id (str): The ID of the organization creating the product.
+
+    Returns:
+        dict: The created product entry as a dictionary.
+
+    Raises:
+        ValueError: If `name`, `description`, or `brand_id` is empty.
+        RuntimeError: If the product creation fails.
+        CosmosHttpResponseError: If there is an HTTP error with Cosmos DB.
+        Exception: For any other errors during the operation.
+    """
+    container = get_cosmos_container("productsContainer")
+
+    try:
+        if description is None:
+            description = ""
+        if not name or not brand_id:
+            raise ValueError("Product name and brand ID cannot be empty.")
+
+        result = container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "description": description,
+                "brandId": brand_id,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+                "organizationId": organization_id,
+                "category": category,
+            }
+        )
+
+        logging.info(f"Product created successfully: {result}")
+        if not result:
+            logging.warning(f"Product with name '{name}' not created in Cosmos DB.")
+            raise RuntimeError(f"Product not created")
+        return result
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while creating product: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
+
+
+def delete_prod_by_id(product_id):
+    """
+    Deletes a product from the container given the product_id
+    """
+    container = get_cosmos_container("productsContainer")
+
+    try:
+        if not product_id:
+            raise ValueError("product_id cannot be empty.")
+
+        container.delete_item(item=product_id, partition_key=product_id)
+        return {"message": f"Product with id {product_id} deleted successfully."}
+
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while deleting product: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error deleting data from Cosmos DB: {e}")
+        raise e
+
+
+def update_prod_by_id(product_id, name, category, brand_id, description):
+    """
+    Updates a product in the Cosmos DB container by its ID.
+    Parameters:
+        product_id (str): The unique identifier of the product to update. Must not be empty.
+        name (str): The new name of the product.
+        category (str): The new category of the product.
+        brand_id (str): The ID of the brand associated with the product.
+        description (str): The new description of the product.
+    Returns:
+        dict: The updated product object.
+    Raises:
+        ValueError: If `product_id` is empty.
+        NotFound: If the product with the given ID does not exist in the database.
+        Exception: For unexpected errors during the update process.
+        AzureError: If there is an error with Azure Cosmos DB operations.
+    """
+    container = get_cosmos_container("productsContainer")
+    if not product_id:
+        raise ValueError("product_id cannot be empty.")
+
+    try:
+        current_product = container.read_item(item=product_id, partition_key=product_id)
+    except CosmosResourceNotFoundError as e:
+        logging.warning(f"Product with id '{product_id}' not found in Cosmos DB.")
+        raise NotFound
+    except Exception as e:
+        logging.error(
+            f"Unexpected error while retrieving product with id '{product_id}': {e}"
+        )
+        raise Exception(
+            f"Unexpected error while retrieving product with id '{product_id}': {e}"
+        ) from e
+
+    try:
+        current_product.update(
+            {
+                "name": name,
+                "category": category,
+                "brand_id": brand_id,
+                "description": description,
+            }
+        )
+
+        current_product["id"] = product_id
+        current_product["updatedAt"] = datetime.now(timezone.utc).isoformat()
+
+        container.upsert_item(current_product)
+        logging.info(f"Product updated successfully: {current_product}")
+        return current_product
+    except CosmosResourceNotFoundError:
+        logging.error(
+            f"Failed to upsert item: Product ID '{product_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert product because it does not exist with id '{product_id}'"
+        )
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
+    except Exception as e:
+        logging.error(
+            f"Unexpected error while updating product with id '{product_id}': {e}"
+        )
+        raise e
+
+
+def get_prods_by_organization(organization_id):
+    """
+    Retrieves all products associated with a specific organization ID.
+
+    Parameters:
+        organization_id (str): The ID of the organization to filter products by.
+
+    Returns:
+        list: A list of product documents associated with the specified organization.
+    """
+    container = get_cosmos_container("productsContainer")
+
+    try:
+        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
+        parameters = [{"name": "@organizationId", "value": organization_id}]
+        items = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if not items:
+            logging.warning(
+                f"No products found for organization ID '{organization_id}'."
+            )
+            return []
+
+        logging.info(
+            f"Products successfully retrieved for organization ID '{organization_id}': {items}"
+        )
+        return items
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No products found for organization ID '{organization_id}'.")
+        return []
+
+    except Exception as e:
+        logging.error(
+            f"Unexpected error retrieving products for organization ID '{organization_id}': {e}"
+        )
+        return []
+
+
+def create_competitor(name, description, industry, organization_id):
+    """
+    Creates a new competitor entry in the Cosmos DB 'competitorsContainer'.
+
+    Args:
+        name (str): The name of the competitor.
+        description (str): A description of the competitor.
+        industry (str): The industry the competitor operates in.
+        organization_id (str): The ID of the organization to which the competitor belongs.
+
+    Returns:
+        dict: The result of the item creation operation from Cosmos DB.
+
+    Raises:
+        ValueError: If any of the required fields are missing.
+        Exception: If there is an error with the Cosmos DB operation.
+    """
+    container = get_cosmos_container("competitorsContainer")
+
+    if description is None:
+        description = ""
+    if not name or not industry or not organization_id:
+        raise ValueError("Competitor name, industry, and organization ID cannot be empty.")
+    try:
+        result = container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "description": description,
+                "industry": industry,
+                "organization_id": organization_id,
+                "createdAt": datetime.now(timezone.utc).isoformat(),
+                "updatedAt": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        logging.info(f"Competitor created successfully: {result}")
+        return result
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while creating competitor: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
+
+
+def associate_competitor_with_brand(brand_id, competitor_id):
+    """
+    Associates a competitor with a brand by creating a relationship entry in the 'brandsCompetitors' Cosmos DB container.
+
+    Args:
+        brand_id (str): The unique identifier of the brand.
+        competitor_id (str): The unique identifier of the competitor.
+
+    Raises:
+        ValueError: If either brand_id or competitor_id is not provided.
+        Exception: If there is an error during the Cosmos DB operation.
+    """
+    container = get_cosmos_container("brandsCompetitors")
+
+    if not brand_id or not competitor_id:
+        raise ValueError("Both brand_id and competitor_id must be provided.")
+
+    try:
+        container.create_item(
+            body={
+                "id": str(uuid.uuid4()),
+                "brand_id": brand_id,
+                "competitor_id": competitor_id,
+            }
+        )
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while relating brand and competitor: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error inserting data into Cosmos DB: {e}")
+        raise e
+
+
+def delete_competitor_by_id(competitor_id):
+    """
+    Deletes a competitor from the container given the competitor_id
+    """
+    container = get_cosmos_container("competitorsContainer")
+    relationship_container = get_cosmos_container("brandsCompetitors")
+
+    try:
+        if not competitor_id:
+            raise ValueError("competitor_id cannot be empty.")
+
+        container.delete_item(item=competitor_id, partition_key=competitor_id)
+        logging.info(f"Competitor with id {competitor_id} deleted successfully.")
+        # Also delete relationships with brands
+        relationships = list(
+            relationship_container.query_items(
+                query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
+                parameters=[{"name": "@competitor_id", "value": competitor_id}],
+                enable_cross_partition_query=True,
+            )
+        )
+        for relationship in relationships:
+            relationship_container.delete_item(
+                item=relationship["id"], partition_key=relationship["id"]
+            )
+        logging.info(f"Deleted relationships for competitor with id {competitor_id}.")
+        return {"message": f"Competitor with id {competitor_id} deleted successfully."}
+
+    except CosmosHttpResponseError as e:
+        logging.error(f"CosmosDB HTTP error while deleting competitor: {e}")
+        raise Exception("Error with Cosmos DB HTTP operation.") from e
+    except Exception as e:
+        logging.error(f"Error deleting data from Cosmos DB: {e}")
+        raise e
+
+
+def get_competitors_by_organization(organization_id):
+    """
+    Get all competitors for a specific organization.
+    """
+    container = get_cosmos_container("competitorsContainer")
+    relationship_container = get_cosmos_container("brandsCompetitors")
+
+    competitors = list(
+        container.query_items(
+            query="SELECT * FROM c WHERE c.organization_id = @organization_id",
+            parameters=[{"name": "@organization_id", "value": organization_id}],
+            enable_cross_partition_query=True,
+        )
+    )
+
+    for competitor in competitors:
+        competitor["brands"] = list(
+            relationship_container.query_items(
+                query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
+                parameters=[{"name": "@competitor_id", "value": competitor["id"]}],
+                enable_cross_partition_query=True,
+            )
+        )
+
+    return competitors
+
+
+def update_competitor_by_id(competitor_id, name, description, industry, brands_id):
+    """
+    Updates an existing competitor document using its `id` as the partition key.
+
+    Handles database errors and raises exceptions as needed.
+    """
+    container = get_cosmos_container("competitorsContainer")
+    relationship_container = get_cosmos_container("brandsCompetitors")
+
+    if not competitor_id:
+        raise ValueError("competitor_id cannot be empty.")
+
+    try:
+        current_competitor = container.read_item(
+            item=competitor_id, partition_key=competitor_id
+        )
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Competitor with id '{competitor_id}' not found in Cosmos DB.")
+        raise NotFound
+    except Exception as e:
+        logging.error(
+            f"Unexpected error while retrieving competitor with id '{competitor_id}': {e}"
+        )
+        raise Exception(
+            f"Unexpected error while retrieving competitor with id '{competitor_id}': {e}"
+        ) from e
+
+    try:
+        current_competitor.update(
+            {"name": name, "description": description, "industry": industry}
+        )
+
+        current_competitor["id"] = competitor_id
+        current_competitor["updatedAt"] = datetime.now(timezone.utc).isoformat()
+
+        container.upsert_item(current_competitor)
+
+        # verify, delete or add relationships with brands
+        existing_relationships = list(
+            relationship_container.query_items(
+                query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
+                parameters=[{"name": "@competitor_id", "value": competitor_id}],
+                enable_cross_partition_query=True,
+            )
+        )
+        existing_brand_ids = {rel["brand_id"] for rel in existing_relationships}
+        if brands_id:
+            for brand_id in brands_id:
+                if brand_id not in existing_brand_ids:
+                    associate_competitor_with_brand(brand_id, competitor_id)
+            # Delete relationships that are no longer valid
+            for relationship in existing_relationships:
+                if relationship["brand_id"] not in brands_id:
+                    relationship_container.delete_item(
+                        item=relationship["id"], partition_key=relationship["id"]
+                    )
+                    logging.info(
+                        f"Deleted relationship for brand_id {relationship['brand_id']} and competitor_id {competitor_id}."
+                    )
+
+        logging.info(f"Competitor updated successfully: {current_competitor}")
+        return current_competitor
+    except CosmosResourceNotFoundError:
+        logging.error(
+            f"Failed to upsert item: Competitor ID '{competitor_id}' not found during upsert."
+        )
+        raise NotFound(
+            f"Cannot upsert competitor because it does not exist with id '{competitor_id}'"
+        )
+    except AzureError as az_err:
+        logging.error(f"AzureError while performing upsert: {az_err}")
+        raise Exception("Error with Azure Cosmos DB operation.") from az_err
+    except ValueError as ve:
+        logging.error(str(ve))
+        raise ve
+
+
+def get_items_to_delete_by_brand(brand_id):
+    """
+    Retrieves all products and their associated competitors only if they exist for a specific brand.
+    """
+    container = get_cosmos_container("productsContainer")
+    relationship_container = get_cosmos_container("brandsCompetitors")
+
+    products = list(
+        container.query_items(
+            query="SELECT * FROM c WHERE c.brandId = @brandId",
+            parameters=[{"name": "@brandId", "value": brand_id}],
+            enable_cross_partition_query=True,
+        )
+    )
+
+    competitors = list(
+        relationship_container.query_items(
+            query="SELECT * FROM c WHERE c.brand_id = @brand_id",
+            parameters=[{"name": "@brand_id", "value": brand_id}],
+            enable_cross_partition_query=True,
+        )
+    )
+    
+    for competitor in competitors:
+        competitor_id = competitor["competitor_id"]
+
+        #find all brands associated with this competitor
+        query = """
+            SELECT DISTINCT c.brand_id
+            FROM c
+            WHERE c.competitor_id = @competitor_id
+        """
+        parameters = [{"name": "@competitor_id", "value": competitor_id}]
+        brands = list(
+            relationship_container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        # If the competitor is associated with more than one brand, remove it from the list
+        if len(brands) > 1:
+            competitors.remove(competitor)
+
+
+    return {
+        "competitors": competitors,
+        "products": products,
+    }
+
+def delete_brand_by_id(brand_id):
+    """
+    Deletes a specific brand document using its `id` as partition key.
+    """
+    container = get_cosmos_container("brandsContainer")
+
+    try:
+        container.delete_item(item=brand_id, partition_key=brand_id)
+        logging.info(f"Brand with id {brand_id} deleted successfully.")
+
+        items_to_delete = get_items_to_delete_by_brand(brand_id)
+
+        if not items_to_delete["products"] and not items_to_delete["competitors"]:
+            logging.info(f"No products or competitors associated with brand {brand_id}.")
+            return {"message": f"Brand with id {brand_id} deleted successfully."}
+
+        products_container = get_cosmos_container("productsContainer")
+        competitors_container = get_cosmos_container("competitorsContainer")
+        relationship_container = get_cosmos_container("brandsCompetitors")
+
+        # Delete relationships in brandsCompetitors container
+        relationships = list(
+            relationship_container.query_items(
+                query="SELECT * FROM c WHERE c.brand_id = @brand_id",
+                parameters=[{"name": "@brand_id", "value": brand_id}],
+                enable_cross_partition_query=True,
+            )
+        )
+
+        # Delete products associated with the brand
+        for product in items_to_delete["products"]:
+            products_container.delete_item(item=product["id"], partition_key=product["id"])
+            logging.info(f"Product with id {product['id']} deleted successfully.")
+
+        # Delete competitors associated with the brand
+        for competitor in items_to_delete["competitors"]:
+            competitors_container.delete_item(item=competitor["competitor_id"], partition_key=competitor["competitor_id"])
+            logging.info(f"Competitor with id {competitor['competitor_id']} deleted successfully.")
+
+        for relationship in relationships:
+            relationship_container.delete_item(
+                item=relationship["id"], partition_key=relationship["id"]
+            )
+            logging.info(f"Relationship with id {relationship['id']} deleted successfully.")
+
+        return {"message": f"Brand with id {brand_id} and associated items deleted successfully."}
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Brand with id '{brand_id}' not found in Cosmos DB.")
+        raise NotFound
+
+    except Exception as e:
+        logging.error(f"Error deleting brand with id {brand_id}: {e}")
         raise

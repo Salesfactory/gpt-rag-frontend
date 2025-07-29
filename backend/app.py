@@ -76,6 +76,7 @@ from shared.cosmo_db import (
     create_report,
     get_invitation_by_email_and_org,
     get_invitation_role,
+    get_items_to_delete_by_brand,
     get_report,
     get_user_container,
     get_user_organizations,
@@ -94,7 +95,21 @@ from shared.cosmo_db import (
     create_invitation,
     set_user,
     create_organization,
-    get_company_list
+    get_company_list,
+    create_new_brand,
+    delete_brand_by_id,
+    get_brands_by_organization,
+    update_brand_by_id,
+    create_prod,
+    delete_prod_by_id,
+    get_prods_by_organization,
+    update_prod_by_id,
+    create_competitor,
+    associate_competitor_with_brand,
+    delete_competitor_by_id,
+    get_competitors_by_organization,
+    update_competitor_by_id,
+    get_items_to_delete_by_brand,
 )
 
 load_dotenv(override=True)
@@ -133,8 +148,8 @@ SPEECH_RECOGNITION_LANGUAGE = os.getenv("SPEECH_RECOGNITION_LANGUAGE")
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
 AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
-
-
+ORCH_MASTER_KEY = "orchestrator-host--functionKey"
+orch_function_key = get_azure_key_vault_secret(ORCH_MASTER_KEY)
 # Retrieve the connection string for Azure Blob Storage from secrets
 try:
     AZURE_STORAGE_CONNECTION_STRING = get_azure_key_vault_secret("storageConnectionString")
@@ -2201,7 +2216,7 @@ def sendEmail():
             .cta-button a {
             color: #fff !important;
             }
-            .cta-button a:visited {
+                       .cta-button a:visited {
             color: #fff !important;
             }
             .ii a[href] {
@@ -2217,7 +2232,7 @@ def sendEmail():
         <div class="container">
             <h1>Dear [Recipient's Name],</h1>
             <h2>Congratulations and Welcome to FreddAid!</h2>
-            <p>You now have exclusive access to <strong>[Recipient's Organization]’s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
+            <p>You now have exclusive access to <strong>[Recipient's Organization]'s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
             <h2>Ready to Get Started?</h2>
             <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
             <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
@@ -2379,8 +2394,12 @@ def checkUser():
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
         response = requests.request("POST", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...")
-        return jsonify(response), 200
 
+        if response.status_code != 200:
+            logging.error(f"[webbackend] Error from orchestrator: {response.text}")
+            return jsonify({"error": "Error contacting orchestrator"}), 500
+
+        return response.text
     except Exception as e:
         logging.exception("[webbackend] Unexpected exception in /api/checkUser")
         return jsonify({"error": "An unexpected error occurred"}), 500
@@ -2871,10 +2890,6 @@ def get_subscription_details(subscription_id):
     except stripe.error.APIConnectionError:
         logging.exception("Network communication with Stripe failed")
         return jsonify({"error": "Network communication with Stripe failed."}), 502
-    except stripe.error.StripeError as e:
-        logging.exception("Stripe error occurred")
-        return jsonify({"error": "An error occurred with Stripe."}), 500
-    except Exception as e:
         logging.exception("Exception in /api/subscription/<subscription_id>/tiers")
         return jsonify({"error": str(e)}), 500
 
@@ -4274,11 +4289,12 @@ def get_password_reset_url():
     return jsonify({"resetUrl": url})
 
 
-@app.route("/api/webscraping/scrape-urls", methods=["POST"])
-def scrape_urls():
+
+@app.route("/api/webscraping/scrape-url", methods=["POST"])
+def scrape_url():
     """
-    Endpoint to scrape URLs using the external web scraping service.
-    Expects a JSON payload with a 'urls' array and optionally 'organization_id'.
+    Endpoint to scrape a single URL using the external web scraping service.
+    Expects a JSON payload with a 'url' string and optionally 'organization_id'.
     """
     try:
         # Get JSON data from request
@@ -4287,96 +4303,262 @@ def scrape_urls():
             return create_error_response("No JSON data provided", 400)
         
         # Validate required fields
-        urls = data.get("urls", [])
+        url = data.get("url")
         organization_id = data.get("organization_id")  # Optional for backwards compatibility
         
-        if not urls or not isinstance(urls, list):
-            return create_error_response("URLs must be provided as a list", 400)
-        
-        if len(urls) == 0:
-            return create_error_response("At least one URL is required", 400)
+        if not url:
+            return create_error_response("URL field is required", 400)
         
         # Extract user information from request headers
         client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
         client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
         
+        # Get the external scraping service endpoint
+        WEB_SCRAPING_ENDPOINT = os.getenv("ORCHESTRATOR_URI") + "/api/scrape-page"
+        if not WEB_SCRAPING_ENDPOINT:
+            return create_error_response("Scraping service endpoint is not set", 500)
+        
+        # Initialize result
+        blob_storage_results = []
+        
         # Prepare payload for external scraping service
         payload = {
-            "urls": urls,
+            "url": url,
+            "client_principal_id": client_principal_id
+        }
+        if not orch_function_key:
+            return create_error_response("Scraping service function key is not set", 500)
+        
+        # Make request to external scraping service
+        try:
+            response = requests.post(
+                WEB_SCRAPING_ENDPOINT,
+                json=payload,
+                headers={"Content-Type": "application/json", "x-functions-key": orch_function_key},
+                timeout=120  
+            )
+            
+            # Check if request was successful
+            if not response.ok:
+                logger.error(f"Scraping service returned error for {url}: {response.status_code} - {response.text}")
+                return create_error_response(f"Scraping service error: {response.status_code}", response.status_code)
+            
+            # Parse response from scraping service
+            try:
+                scraping_result = response.json()
+            except ValueError:
+                logger.error(f"Invalid JSON response from scraping service for {url}")
+                return create_error_response("Invalid response from scraping service", 500)
+                
+            # Simple success check - external service returns "completed" for success
+            scraping_success = scraping_result.get("status") == "completed"
+            
+            # Extract data from the results array (single URL, so take first result)
+            first_result = scraping_result.get("results", [{}])[0] if scraping_success else {}
+            
+            # Create a simple formatted result for database and frontend
+            formatted_result = {
+                "url": url,
+                "status": "success" if scraping_success else "error",
+                "title": first_result.get("title"),
+                "content_length": first_result.get("content_length"),
+                "blob_path": scraping_result.get("blob_storage_result", {}).get("blob_path"),
+                "error": None if scraping_success else "Scraping failed"
+            }
+            
+            # If organization_id is provided, save the URL to the database
+            if organization_id and organization_id.strip():
+                try:
+                    # Extract blob storage info from scraping result
+                    if scraping_result.get("blob_url") and scraping_result.get("blob_name"):
+                        blob_storage_results.append({
+                            "blob_url": scraping_result["blob_url"],
+                            "blob_name": scraping_result["blob_name"],
+                            "container_name": scraping_result.get("container_name", "knowledge-sources")
+                        })
+                    
+                    # Save URL to database using the correctly formatted result
+                    result = add_or_update_organization_url(
+                        organization_id=organization_id,
+                        url=url,
+                        scraping_result=formatted_result,  # Use formatted result with correct status
+                        added_by_id=client_principal_id,
+                        added_by_name=client_principal_name
+                    )
+                    action = result.get("action", "processed")
+                    logger.info(f"{action.capitalize()} URL {url} for organization {organization_id} by {client_principal_name or 'Unknown'}")
+                    
+                except Exception as e:
+                    logger.error(f"Error saving URL to Cosmos DB: {str(e)}")
+                    # Don't fail the entire request if database save fails
+            
+            # Return response with correct status and summary
+            return jsonify({
+                 "status": "success",
+                 "data": {
+                     "result": {
+                         "results": [formatted_result],
+                         "summary": {
+                             "total_urls": 1,
+                             "successful_scrapes": 1 if scraping_success else 0,
+                             "failed_scrapes": 0 if scraping_success else 1
+                         }
+                     },
+                     "blob_storage_results": blob_storage_results
+                 }
+             }), 200
+            
+        except requests.Timeout:
+            logger.error(f"Timeout while scraping {url}")
+            return create_error_response("Scraping service timeout", 504)
+        except requests.RequestException as e:
+            logger.error(f"Request error while scraping {url}: {str(e)}")
+            return create_error_response("Failed to connect to scraping service", 502)
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in scrape_url: {str(e)}")
+        return create_error_response("Internal server error", 500)
+
+
+@app.route("/api/webscraping/multipage-scrape", methods=["POST"])
+def multipage_scrape():
+    """
+    Endpoint to scrape URLs using the external multipage scraping service.
+    This is a proxy endpoint that forwards requests to the orchestrator's multipage-scrape endpoint.
+    """
+    try:
+        # Get JSON data from request
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+        
+        # Validate required fields
+        url = data.get("url")
+        if not url:
+            return create_error_response("URL field is required", 400)
+        
+        # Extract user information from request headers
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        
+        # Get the external multipage scraping service endpoint
+        MULTIPAGE_SCRAPING_ENDPOINT = os.getenv("ORCHESTRATOR_URI") + "/api/multipage-scrape"
+        if not MULTIPAGE_SCRAPING_ENDPOINT:
+            return create_error_response("Multipage scraping service endpoint is not set", 500)
+        
+        payload = {
+            "url": url,
             "client_principal_id": client_principal_id
         }
         
-        # Make request to external scraping service
-        WEB_SCRAPING_ENDPOINT = os.getenv("ORCHESTRATOR_URI") + "/api/scrape-pages"
-        if not WEB_SCRAPING_ENDPOINT:
-            return create_error_response("Scraping service endpoint is not set", 500)
-        response = requests.post(
-            WEB_SCRAPING_ENDPOINT,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=120  
-        )
+        # Include organization_id 
+        organization_id = data.get("organization_id")
+        if organization_id:
+            payload["organization_id"] = organization_id
         
-        # Check if request was successful
-        if not response.ok:
-            logger.error(f"Scraping service returned error: {response.status_code} - {response.text}")
-            return create_error_response(f"Scraping service error: {response.status_code}", 502)
         
-        # Parse response from scraping service
+        # Forward the request to the orchestrator's multipage-scrape endpoint
         try:
-            scraping_result = response.json()
-        except ValueError:
-            logger.error("Invalid JSON response from scraping service")
-            return create_error_response("Invalid response from scraping service", 502)
-        
-        # If organization_id is provided, save the scraped URLs to the database
-        if organization_id and scraping_result.get("results"):
-            logger.info(f"Saving scraped URLs to organization {organization_id}")
+            logger.info(f"Forwarding multipage scrape request for {url} to orchestrator")
+            response = requests.post(
+                MULTIPAGE_SCRAPING_ENDPOINT,
+                json=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "x-functions-key": orch_function_key
+                },
+                timeout=120  # 2 minute timeout for multipage scraping
+            )
             
-            # Use the user information already extracted earlier
-            added_by_id = client_principal_id
-            added_by_name = client_principal_name
+            # Check if request was successful
+            if not response.ok:
+                logger.error(f"Multipage scraping service returned error: {response.status_code} - {response.text}")
+                return create_error_response(f"Multipage scraping service error: {response.status_code}", response.status_code)
             
-            # Create a mapping of URLs to blob storage results for easy lookup
-            blob_storage_results = scraping_result.get("blob_storage_results", [])
-            blob_mapping = {blob_result["url"]: blob_result for blob_result in blob_storage_results}
-            
-            for url_result in scraping_result["results"]:
-                try:
-                    # Get the corresponding blob storage result for this URL
-                    blob_result = blob_mapping.get(url_result["url"], {})
+            # Parse and return the response from the orchestrator
+            try:
+                scraping_result = response.json()
+                logger.info(f"Successfully received multipage scraping response")
+                
+                # If organization_id is provided, save the successfully scraped URLs to the database
+                if organization_id and organization_id.strip():
+                    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
                     
-                    # Combine scraping result with blob storage information
-                    combined_result = {
-                        **url_result,
-                        "blob_path": blob_result.get("blob_path")
+                    # Check overall status first - accept both 'success' and 'completed'
+                    if scraping_result.get("status") in ["success", "completed"]:
+                        results = scraping_result.get("results", [])
+                        root_blob_result = scraping_result.get("blob_storage_result", {})
+                        
+                        for result in results:
+                            try:
+                                # For multipage results, check if we have raw_content (indicates successful scraping)
+                                if result.get("raw_content"):
+                                    blob_path = None
+                                    result_status = "error"  # Default to error
+                                    
+                                    # Look for this URL in successful_uploads
+                                    successful_uploads = root_blob_result.get("successful_uploads", [])
+                                    logger.info(f"Checking URL {result.get('url')} against {len(successful_uploads)} successful uploads")
+                                    for upload in successful_uploads:
+                                        if upload.get("url") == result.get("url"):
+                                            blob_path = upload.get("blob_path")
+                                            result_status = "success"
+                                            logger.info(f"Found matching URL {result.get('url')} with blob_path {blob_path}")
+                                            break
+                                    
+                                    if result_status == "error":
+                                        logger.warning(f"URL {result.get('url')} not found in successful_uploads")
+                                    
+                                    # Format the result for database storage
+                                    formatted_result = {
+                                        "url": result.get("url"),
+                                        "status": result_status,
+                                        "title": result.get("title"),
+                                        "content_length": len(result.get("raw_content", "")),
+                                        "blob_path": blob_path,
+                                        "error": None if result_status == "success" else "Blob storage failed"
+                                    }
+                                    
+                                    # Save URL to database
+                                    db_result = add_or_update_organization_url(
+                                        organization_id=organization_id,
+                                        url=result.get("url"),
+                                        scraping_result=formatted_result,
+                                        added_by_id=client_principal_id,
+                                        added_by_name=client_principal_name
+                                    )
+                                    action = db_result.get("action", "processed")
+                                    logger.info(f"{action.capitalize()} URL {result.get('url')} for organization {organization_id} by {client_principal_name or 'Unknown'} with status {result_status}")
+                                        
+                            except Exception as e:
+                                logger.error(f"Error saving URL {result.get('url', 'unknown')} to Cosmos DB: {str(e)}")
+                                continue
+                if "blob_storage_result" not in scraping_result:
+                    results = scraping_result.get("results", [])
+                    total_results = len(results)
+                    
+                    scraping_result["blob_storage_result"] = {
+                        "status": "error" if total_results > 0 else "success",
+                        "message": "No blob storage information provided by orchestrator",
+                        "successful_count": 0,
+                        "total_count": total_results
                     }
-                    
-                    # Add or update each URL in the organization's knowledge sources
-                    # This will update existing URLs instead of creating duplicates
-                    result = add_or_update_organization_url(organization_id, url_result["url"], combined_result, added_by_id, added_by_name)
-                    action = result.get("action", "processed")
-                    logger.info(f"{action.capitalize()} URL {url_result['url']} for organization {organization_id} by {added_by_name or 'Unknown'}")
-                except Exception as e:
-                    logger.error(f"Failed to save URL {url_result['url']} to database: {str(e)}")
-                    # Continue with other URLs even if one fails
+                
+                return jsonify(scraping_result), 200
+                
+            except ValueError:
+                logger.error("Invalid JSON response from multipage scraping service")
+                return create_error_response("Invalid response from multipage scraping service", 500)
+                
+        except requests.Timeout:
+            logger.error("Timeout while calling multipage scraping service")
+            return create_error_response("Multipage scraping service timeout", 504)
+        except requests.RequestException as e:
+            logger.error(f"Request error while calling multipage scraping service: {str(e)}")
+            return create_error_response("Failed to connect to multipage scraping service", 502)
         
-        logger.info(f"Successfully scraped {len(urls)} URLs")
-        return create_success_response({
-            "message": f"Attempted to scrape {len(urls)} URL(s)",
-            "scraped_urls": urls,
-            "result": scraping_result
-        }, 200)
-        
-    except requests.Timeout:
-        logger.error("Timeout while calling scraping service")
-        return create_error_response("Scraping service timeout", 504)
-    except requests.RequestException as e:
-        logger.error(f"Request error while calling scraping service: {str(e)}")
-        return create_error_response("Failed to connect to scraping service", 502)
     except Exception as e:
-        logger.exception(f"Unexpected error in scrape_urls: {e}")
-        return create_error_response("Internal Server Error", 500)
+        logger.error(f"Unexpected error in multipage_scrape: {str(e)}")
+        return create_error_response("Internal server error", 500)
 
 
 @app.route("/api/webscraping/get-urls", methods=["GET"])
@@ -4518,6 +4700,426 @@ def update_url():
         logger.exception(f"Unexpected error in modify_url: {e}")
         return create_error_response("Internal Server Error", 500)
     
+@app.route("/api/voice-customer/brands", methods=["POST"])
+def create_brand():
+    """
+    Handles the creation of a new brand.
+
+    Expects a JSON payload with the following required fields:
+        - brand_name (str): The name of the brand.
+        - brand_description (str): A description of the brand.
+        - organization_id (int or str): The ID of the associated organization.
+
+    Returns:
+        - On success: A JSON response with the created brand data and HTTP status 201.
+        - On failure: A JSON error response with an appropriate error message and HTTP status code.
+    """
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    required_fields = ["brand_name", "organization_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    try:
+        brand_name = data["brand_name"]
+        brand_description = data.get("brand_description", "")
+        organization_id = data["organization_id"]
+
+        result = create_new_brand(
+            brand_name=brand_name,
+            brand_description=brand_description,
+            organization_id=organization_id
+        )
+        return create_success_response(result, 201)
+    except Exception as e:
+        return create_error_response(f"Error creating brand: {str(e)}", 500)
+
+@app.route("/api/voice-customer/brands/<brand_id>", methods=["DELETE"])
+def delete_brand(brand_id):
+    """
+    Deletes a brand by its ID.
+
+    Args:
+        brand_id (str or int): The unique identifier of the brand to delete.
+
+    Returns:
+        Response: A success response with the result of the deletion and HTTP status 200,
+                  or an error response with an appropriate message and status code.
+
+    Raises:
+        Exception: If an error occurs during the deletion process.
+    """
+    if not brand_id:
+        return create_error_response("Brand ID is required", 400)
+    try:
+        response = delete_brand_by_id(brand_id)
+        return create_success_response(response, 200)
+    except Exception as e:
+        return create_error_response(f"Error deleting brand: {str(e)}", 500)
+
+@app.route("/api/voice-customer/organizations/<organization_id>/brands", methods=["GET"])
+def get_brands(organization_id):
+    """
+    Retrieve brands associated with a given organization.
+
+    Args:
+        organization_id (str or int): The unique identifier of the organization.
+
+    Returns:
+        Response: A success response containing the list of brands (HTTP 200),
+                  or an error response with an appropriate message and status code (HTTP 400 or 500).
+
+    Raises:
+        Exception: If an unexpected error occurs during brand retrieval.
+    """
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        brands = get_brands_by_organization(organization_id)
+        return create_success_response(brands, 200)
+    except Exception as e:
+        return create_error_response(f"Error retrieving brands: {str(e)}", 500)
+
+@app.route("/api/voice-customer/brands/<brand_id>", methods=["PATCH"])
+def update_brand(brand_id):
+    """
+    Updates the details of a brand with the specified brand_id.
+    Expects a JSON payload with the following required fields:
+        - brand_name (str): The new name of the brand.
+        - brand_description (str): The new description of the brand.
+    Args:
+        brand_id (int or str): The unique identifier of the brand to update.
+    Returns:
+        Response: A JSON response indicating success with the updated brand data and HTTP 200 status,
+                  or an error message with the appropriate HTTP status code if the request is invalid
+                  or an error occurs during the update process.
+    """
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    
+    required_fields = ["brand_name", "brand_description"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        brand_name = data["brand_name"]
+        brand_description = data["brand_description"]
+
+        result = update_brand_by_id(
+            brand_id=brand_id,
+            brand_name=brand_name,
+            brand_description=brand_description
+        )
+        return create_success_response(result, 200)
+    except Exception as e:
+        return create_error_response(f"Error updating brand: {str(e)}", 500)
+    
+@app.route("/api/voice-customer/products", methods=["POST"])
+def create_product():
+    """
+    Creates a new product using the provided JSON payload.
+    Expects a JSON object in the request body with the following required fields:
+        - product_name (str): The name of the product.
+        - product_description (str): A description of the product.
+        - brand_id (int or str): The identifier for the brand.
+        - organization_id (int or str): The identifier for the organization.
+        - category (str): The category of the product.
+    Returns:
+        - On success: A JSON response with the created product data and HTTP status 201.
+        - On failure: A JSON error response with an appropriate error message and HTTP status code.
+    """
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    
+    required_fields = ["product_name", "brand_id", "organization_id", "category"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+
+    try:
+        name = data["product_name"]
+        description = data.get("product_description", "")
+        brand_id = data["brand_id"]
+        organization_id = data["organization_id"]
+        category = data["category"]
+
+        result = create_prod(
+            name,
+            description,
+            category,
+            brand_id,
+            organization_id
+        )
+        return create_success_response(result, 201)
+    except Exception as e:
+        return create_error_response(f"Error creating product: {str(e)}", 500)
+
+@app.route("/api/voice-customer/products/<product_id>", methods=["DELETE"])
+def delete_product(product_id):
+    """
+    Deletes a product by its ID.
+
+    Args:
+        product_id (str or int): The unique identifier of the product to be deleted.
+
+    Returns:
+        Response: A success response with the result of the deletion and HTTP status 200,
+                  or an error response with an appropriate message and HTTP status code.
+
+    Raises:
+        None: All exceptions are caught and handled internally, returning an error response.
+    """
+    if not product_id:
+        return create_error_response("Product ID is required", 400)
+    try:
+        response = delete_prod_by_id(product_id)
+        return create_success_response(response, 200)
+    except Exception as e:
+        return create_error_response(f"Error deleting product: {str(e)}", 500)
+
+@app.route("/api/voice-customer/organizations/<organization_id>/products", methods=["GET"])
+def get_products(organization_id):
+    """
+    Retrieve products for a given organization.
+
+    Args:
+        organization_id (str or int): The unique identifier of the organization.
+
+    Returns:
+        Response: A success response containing the list of products (status code 200),
+                  or an error response with an appropriate message and status code (400 or 500).
+
+    Raises:
+        None: All exceptions are handled internally and returned as error responses.
+    """
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        products = get_prods_by_organization(organization_id)
+        return create_success_response(products, 200)
+    except Exception as e:
+        return create_error_response(f"Error retrieving products: {str(e)}", 500)
+
+@app.route("/api/voice-customer/products/<product_id>", methods=["PATCH"])
+def update_product(product_id):
+    """
+    Update an existing product with new data.
+    Args:
+        product_id (int or str): The unique identifier of the product to update.
+    Request JSON Body:
+        product_name (str): The new name of the product.
+        product_description (str): The new description of the product.
+        category (str): The category to which the product belongs.
+        brand_id (int or str): The identifier of the brand associated with the product.
+    Returns:
+        Response: A JSON response indicating success with the updated product data and HTTP 200 status,
+                  or an error message with the appropriate HTTP status code.
+    Error Codes:
+        400: If no JSON data is provided or required fields are missing.
+        500: If an unexpected error occurs during the update process.
+    """
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    
+    required_fields = ["product_name", "product_description", "category", "brand_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        name = data["product_name"]
+        description = data["product_description"]
+        category = data["category"]
+        brand_id = data["brand_id"]
+
+        result = update_prod_by_id(
+            product_id=product_id,
+            name=name,
+            category=category,
+            brand_id=brand_id,
+            description=description
+        )
+        return create_success_response(result, 200)
+    except Exception as e:
+        return create_error_response(f"Error updating product: {str(e)}", 500)
+
+@app.route("/api/voice-customer/competitors", methods=["POST"])
+def add_competitor():
+    """
+    Handles the creation of a new competitor and associates it with specified brands.
+    Expects a JSON payload with the following required fields:
+        - competitor_name (str): Name of the competitor.
+        - competitor_description (str): Description of the competitor.
+        - industry (str): Industry of the competitor.
+        - brands_id (list): List of brand IDs to associate with the competitor.
+        - organization_id (str): ID of the organization.
+    Returns:
+        - On success: JSON response with the created competitor object and HTTP status 201.
+        - On error: JSON error response with appropriate HTTP status code.
+    Error Handling:
+        - Returns 400 if required fields are missing or if brands_id is not a list.
+        - Returns 400 for value errors during competitor creation.
+        - Returns 500 for database or unexpected errors.
+    """
+    data = request.get_json()
+
+    if not data:
+        return create_error_response("No JSON data provided.", 400)
+    
+    required_fields = ["competitor_name", "industry", "brands_id", "organization_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+
+    try:
+        name = data["competitor_name"]
+        description = data.get("competitor_description", "")
+        industry = data["industry"]
+        brands_id = data["brands_id"]
+        organization_id = data["organization_id"]
+
+        if not isinstance(brands_id, list):
+            return create_error_response("brands_id must be a list", 400)
+
+        competitor = create_competitor(
+            name=name,
+            description=description,
+            industry=industry,
+            organization_id=organization_id
+        )
+
+        competitor_id = competitor["id"] if competitor else None
+
+        for brand_id in brands_id:
+            associate_competitor_with_brand(brand_id, competitor_id)
+
+        return create_success_response(competitor, 201)
+
+    except ValueError as ve:
+        logger.error(f"Value error creating competitor: {str(ve)}")
+        return create_error_response(f"Value error creating competitor: {str(ve)}", 400)
+    except CosmosHttpResponseError as e:
+        logger.error(f"Cosmos DB error creating competitor: {str(e)}")
+        return create_error_response(f"Database error creating competitor: {str(e)}", 500)
+
+    except Exception as e:
+        logger.exception(f"Error creating competitor: {str(e)}")
+        return create_error_response(f"Error creating competitor", 500)
+
+@app.route("/api/voice-customer/competitors/<competitor_id>", methods=["DELETE"])
+def delete_competitor(competitor_id):
+    """
+    Deletes a competitor by their unique identifier.
+
+    Args:
+        competitor_id (str or int): The unique identifier of the competitor to delete.
+
+    Returns:
+        Response: A success response with status 200 if deletion is successful,
+                  or an error response with appropriate status code and message if not.
+
+    Raises:
+        Exception: If an unexpected error occurs during deletion.
+    """
+    if not competitor_id:
+        return create_error_response("Competitor ID is required", 400)
+    try:
+        response = delete_competitor_by_id(competitor_id)
+        return create_success_response(response, 200)
+    except Exception as e:
+        return create_error_response(f"Error deleting competitor: {str(e)}", 500)
+
+@app.route("/api/voice-customer/organizations/<organization_id>/competitors", methods=["GET"])
+def get_competitors(organization_id):
+    """
+    Retrieve competitors for a given organization.
+
+    Args:
+        organization_id (str or int): The unique identifier of the organization.
+
+    Returns:
+        Response: A success response containing the list of competitors and a 200 status code,
+                  or an error response with an appropriate error message and status code.
+
+    Raises:
+        Exception: If an error occurs while retrieving competitors, returns a 500 error response.
+    """
+    if not organization_id:
+        return create_error_response("Organization ID is required", 400)
+    try:
+        competitors = get_competitors_by_organization(organization_id)
+        return create_success_response(competitors, 200)
+    except Exception as e:
+        return create_error_response(f"Error retrieving competitors: {str(e)}", 500)
+
+@app.route("/api/voice-customer/competitors/<competitor_id>", methods=["PATCH"])
+def update_competitor(competitor_id):
+    """
+    Updates a competitor's information based on the provided competitor ID and JSON payload.
+    Args:
+        competitor_id (str or int): The unique identifier of the competitor to update.
+    Request JSON Body:
+        competitor_name (str): The name of the competitor.
+        competitor_description (str): A description of the competitor.
+        industry (str): The industry in which the competitor operates.
+        brands_id (list): A list of brand IDs associated with the competitor.
+    Returns:
+        Response: A Flask response object containing either the updated competitor data (on success)
+        or an error message (on failure), with the appropriate HTTP status code.
+    Error Codes:
+        400: If required data is missing or invalid.
+        500: If an internal server error occurs during the update process.
+    """
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    if not competitor_id:
+        return create_error_response("Competitor ID is required", 400)
+    required_fields = ["competitor_name", "competitor_description", "industry", "brands_id"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return create_error_response(f"Missing required fields: {', '.join(missing_fields)}", 400)
+    
+    try:
+        name = data["competitor_name"]
+        description = data["competitor_description"]
+        industry = data["industry"]
+        brands_id = data["brands_id"]
+        
+        if not isinstance(brands_id, list):
+            return create_error_response("brands_id must be a list", 400)
+        
+        result = update_competitor_by_id(
+            competitor_id=competitor_id,
+            name=name,
+            description=description,
+            industry=industry,
+            brands_id=brands_id
+        )
+        return create_success_response(result, 200)
+    except Exception as e:
+        return create_error_response(f"Error updating competitor: {str(e)}", 500)
+
+@app.route("/api/voice-customer/brands/<brand_id>/items-to-delete/", methods=["GET"])
+def get_items_to_delete(brand_id):
+    """
+    Endpoint to retrieve items that are marked for deletion.
+    
+    Returns:
+        JSON response with a list of items to delete or an error message.
+    """
+    try:
+        items = get_items_to_delete_by_brand(brand_id)
+        return create_success_response(items, 200)
+    except Exception as e:
+        logger.exception(f"Error retrieving items to delete: {e}")
+        return create_error_response("Internal Server Error", 500)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
