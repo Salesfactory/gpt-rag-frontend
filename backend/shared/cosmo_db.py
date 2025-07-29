@@ -1091,7 +1091,7 @@ def get_brands_by_organization(organization_id):
 
         if not items:
             logging.warning(f"No brands found for organization ID '{organization_id}'.")
-            raise NotFound
+            return []
 
         logging.info(
             f"Brands successfully retrieved for organization ID '{organization_id}': {items}"
@@ -1100,13 +1100,14 @@ def get_brands_by_organization(organization_id):
 
     except CosmosResourceNotFoundError:
         logging.warning(f"No brands found for organization ID '{organization_id}'.")
-        raise NotFound
+        return []
 
     except Exception as e:
         logging.error(
             f"Unexpected error retrieving brands for organization ID '{organization_id}': {e}"
         )
-        raise
+        return []
+
 
 def update_brand_by_id(brand_id, brand_name, brand_description):
     """
@@ -1318,10 +1319,6 @@ def get_prods_by_organization(organization_id):
 
     Returns:
         list: A list of product documents associated with the specified organization.
-
-    Raises:
-        NotFound: If no products are found for the specified organization.
-        Exception: For any unexpected errors during retrieval.
     """
     container = get_cosmos_container("productsContainer")
 
@@ -1338,7 +1335,7 @@ def get_prods_by_organization(organization_id):
             logging.warning(
                 f"No products found for organization ID '{organization_id}'."
             )
-            raise NotFound
+            return []
 
         logging.info(
             f"Products successfully retrieved for organization ID '{organization_id}': {items}"
@@ -1347,13 +1344,13 @@ def get_prods_by_organization(organization_id):
 
     except CosmosResourceNotFoundError:
         logging.warning(f"No products found for organization ID '{organization_id}'.")
-        raise NotFound
+        return []
 
     except Exception as e:
         logging.error(
             f"Unexpected error retrieving products for organization ID '{organization_id}': {e}"
         )
-        raise Exception("Error with Azure Cosmos DB operation.") from e
+        return []
 
 
 def create_competitor(name, description, industry, organization_id):
