@@ -18,6 +18,7 @@ export type ConversationHistoryItem = {
     start_date: string;
     content: string;
     type: string;
+    organization_id: string;
 };
 
 export type ConversationChatItem = {

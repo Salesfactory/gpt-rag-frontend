@@ -34,6 +34,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
         dataHistory,
         setDataHistory,
         user,
+        organization,
         dataConversation,
         setDataConversation,
         setConversationIsLoading,
@@ -292,8 +293,8 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
     const dataDefaultOrFinancial = isFinancialAssistantActive
-        ? dataHistory.filter(item => item.type == "financial")
-        : dataHistory.filter(item => item.type != "financial");
+        ? dataHistory.filter(item => item.type === "financial" && (item.organization_id === "" || (organization && item.organization_id === organization.id)))
+        : dataHistory.filter(item => item.type !== "financial" && (item.organization_id === "" || (organization && item.organization_id === organization.id)));
     const sortedDataByDate = dataDefaultOrFinancial.sort((a, b) => Number(new Date(a.start_date)) - Number(new Date(b.start_date)));
 
     const uniqueItems = new Set();
