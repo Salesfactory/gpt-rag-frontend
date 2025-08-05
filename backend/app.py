@@ -4214,6 +4214,10 @@ def upload_source_document():
         metadata = {
             "organization_id": organization_id
         }
+
+        if file.filename.endswith((".csv", ".xls", ".xlsx")):
+            logger.info(f"Gen AI description for file '{file.filename}'")
+            metadata["description"] = " " # Here Should Go the AI Generated Description for the metadata
         
         # Initialize blob storage manager and upload file
         blob_storage_manager = BlobStorageManager()
