@@ -658,7 +658,15 @@ def get_conversations(user_id):
         db = db_client.get_database_client(database=AZURE_DB_NAME)
         container = db.get_container_client("conversations")
 
-        query = "SELECT c.id, c.conversation_data.start_date, c.conversation_data.history[0].content AS first_message, c.conversation_data.type FROM c WHERE c.conversation_data.interaction.user_id = @user_id"
+        # Fetch all conversations for the user
+        query = """
+            SELECT c.id, c.conversation_data.start_date, 
+                   c.conversation_data.history[0].content AS first_message, 
+                   c.conversation_data.type,
+                   c.conversation_data.interaction.organization_id
+            FROM c 
+            WHERE c.conversation_data.interaction.user_id = @user_id
+        """
         parameters = [dict(name="@user_id", value=user_id)]
 
         try:
@@ -685,15 +693,15 @@ def get_conversations(user_id):
         one_year_ago = now - timedelta(days=365)
         default_date = one_year_ago.strftime("%Y-%m-%d %H:%M:%S")
 
-        formatted_conversations = [
-            {
+        formatted_conversations = []
+        for con in conversations:
+            formatted_conversations.append({
                 "id": con["id"],
                 "start_date": con.get("start_date", default_date),
                 "content": con.get("first_message", "No content"),
                 "type": con.get("type", "default"),
-            }
-            for con in conversations
-        ]
+                "organization_id": con.get("organization_id", ""),  # always include, empty string if missing
+            })
 
         return formatted_conversations
     except Exception as e:
