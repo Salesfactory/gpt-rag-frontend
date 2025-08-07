@@ -1,19 +1,16 @@
-import { useRef, useState, useEffect, useContext } from "react";
-import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
+import { useRef, useState, useEffect } from "react";
+import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
 import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation } from "../../api";
-import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
+import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
-import { ExampleList } from "../../components/Example";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
-import { ClearChatButton } from "../../components/ClearChatButton";
 import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
-import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 // import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 //import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
@@ -22,7 +19,6 @@ import DownloadButton from "../../components/DownloadButton/DownloadButton";
 import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import newLogo from "../../img/SFAiLogo.png";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
@@ -55,8 +51,6 @@ const Chat = () => {
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
     const {
-        showHistoryPanel,
-        showFeedbackRatingPanel,
         dataConversation,
         setDataConversation,
         chatId,
@@ -69,7 +63,6 @@ const Chat = () => {
         user,
         isFinancialAssistantActive,
         documentName,
-        isResizingAnalysisPanel,
         setisResizingAnalysisPanel
     } = useAppContext();
 
@@ -161,7 +154,10 @@ const Chat = () => {
                 answer: "",
                 thoughts: ""
             };
-            let jsonBuffer = ""; // Buffer for incomplete JSON structures
+            let jsonBuffer = "";
+
+            // ADD ONLY THIS LINE: Buffer for potential IMAGE_PREVIEW splits
+            let imageBuffer = "";
 
             while (true) {
                 if (restartChat.current) {
@@ -169,16 +165,20 @@ const Chat = () => {
                     return;
                 }
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    // ADD: Flush any remaining buffer
+                    if (imageBuffer) {
+                        result += imageBuffer;
+                        setLastAnswer(result);
+                    }
+                    break;
+                }
 
                 const chunk = decoder.decode(value, { stream: true });
 
-                // Check if chunk contains a JSON structure
+                // Check if chunk contains a JSON structure (YOUR EXISTING CODE)
                 if (chunk.includes("{") || jsonBuffer) {
-                    // Add chunk to buffer
                     jsonBuffer += chunk;
-
-                    // Try to find complete JSON structure
                     const startIndex = jsonBuffer.indexOf("{");
                     const endIndex = jsonBuffer.lastIndexOf("}");
 
@@ -187,7 +187,6 @@ const Chat = () => {
                             const jsonString = jsonBuffer.substring(startIndex, endIndex + 1);
                             const parsedObj = JSON.parse(jsonString);
 
-                            // Update resultObj if we have a valid conversation_id
                             if (parsedObj.conversation_id) {
                                 resultObj = parsedObj;
                                 const conditionOne = answers.map(a => ({ user: a[0] }));
@@ -200,24 +199,53 @@ const Chat = () => {
                                 setUserId(resultObj.conversation_id);
                             }
 
-                            // Handle any text after the JSON structure
                             const remainingText = jsonBuffer.substring(endIndex + 1);
                             if (remainingText) {
-                                result += remainingText;
-                                setLastAnswer(result);
+                                // CHANGE: Add to imageBuffer instead of result
+                                imageBuffer += remainingText;
                             }
 
-                            // Clear the buffer after successful parsing
                             jsonBuffer = "";
                         } catch (e) {
-                            // If parsing fails, keep the buffer for next iteration
                             console.log("Incomplete JSON structure, waiting for more data");
                         }
                     }
                 } else {
-                    // Regular text content
-                    result += chunk;
-                    setLastAnswer(result);
+                    // REPLACE THIS SECTION with buffering logic
+                    imageBuffer += chunk;
+
+                    // Check if we have a potentially incomplete IMAGE_PREVIEW at the end
+                    const lastImagePreviewIndex = imageBuffer.lastIndexOf("IMAGE_PREVIEW:");
+
+                    if (lastImagePreviewIndex === -1) {
+                        // No IMAGE_PREVIEW, display everything
+                        result += imageBuffer;
+                        setLastAnswer(result);
+                        imageBuffer = "";
+                    } else {
+                        // Check if the IMAGE_PREVIEW after lastImagePreviewIndex is complete
+                        const afterImagePreview = imageBuffer.substring(lastImagePreviewIndex);
+
+                        // Simple check: if it has a newline or we're at the end, it's complete
+                        // Otherwise, it might be split
+                        if (afterImagePreview.includes("\n") || (afterImagePreview.includes("|") && afterImagePreview.split("|").length >= 2)) {
+                            // Looks complete, display everything
+                            result += imageBuffer;
+                            setLastAnswer(result);
+                            imageBuffer = "";
+                        } else if (imageBuffer.length - lastImagePreviewIndex < 200) {
+                            // Might be incomplete, hold back the IMAGE_PREVIEW part
+                            const beforeImagePreview = imageBuffer.substring(0, lastImagePreviewIndex);
+                            result += beforeImagePreview;
+                            setLastAnswer(result);
+                            imageBuffer = imageBuffer.substring(lastImagePreviewIndex);
+                        } else {
+                            // Too long to be incomplete, display it
+                            result += imageBuffer;
+                            setLastAnswer(result);
+                            imageBuffer = "";
+                        }
+                    }
                 }
             }
 
@@ -488,30 +516,6 @@ const Chat = () => {
             ])
         );
     }, [isLoading, dataConversation]);
-
-    const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setPromptTemplate(newValue || "");
-    };
-
-    const onRetrieveCountChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setRetrieveCount(parseInt(newValue || "3"));
-    };
-
-    const onUseSemanticRankerChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
-        setUseSemanticRanker(!!checked);
-    };
-
-    const onUseSemanticCaptionsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
-        setUseSemanticCaptions(!!checked);
-    };
-
-    const onExcludeCategoryChanged = (_ev?: React.FormEvent, newValue?: string) => {
-        setExcludeCategory(newValue || "");
-    };
-
-    const onUseSuggestFollowupQuestionsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
-        setUseSuggestFollowupQuestions(!!checked);
-    };
 
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
