@@ -22,6 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
+import { parseStream, ParsedEvent } from "./streamParser";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -36,11 +37,9 @@ if (userLanguage.startsWith("pt")) {
 const Chat = () => {
     // speech synthesis is disabled by default
 
-    const { organization } = useAppContext();
     const speechSynthesisEnabled = false;
 
     const [placeholderText, setPlaceholderText] = useState("");
-    const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
     const [promptTemplate, setPromptTemplate] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
@@ -87,17 +86,19 @@ const Chat = () => {
     const restartChat = useRef<boolean>(false);
 
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
-        let agent;
+        /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         lastFileBlobUrl.current = fileBlobUrl;
         restartChat.current = false;
-        error && setError(undefined);
+        if (error) {
+            setError(undefined);
+        }
         setIsLoading(true);
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
         setLastAnswer("");
 
-        agent = isFinancialAssistantActive ? "financial" : "consumer";
+        const agent = isFinancialAssistantActive ? "financial" : "consumer";
 
         let history: ChatTurn[] = [];
         if (dataConversation.length > 0) {
@@ -146,144 +147,60 @@ const Chat = () => {
                 throw new Error("ReadableStream not supported in this browser.");
             }
 
+            /* ---------- 3 · Consume the stream via our parser ---------- */
             const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
             let result = "";
-            let resultObj = {
-                conversation_id: "",
-                answer: "",
-                thoughts: ""
-            };
-            let jsonBuffer = "";
+            let ctrlMsg: { conversation_id?: string; thoughts?: string[] } = {};
 
-            // ADD ONLY THIS LINE: Buffer for potential IMAGE_PREVIEW splits
-            let imageBuffer = "";
-
-            while (true) {
+            for await (const evt of parseStream(reader)) {
+                /* allow user to abort mid-stream */
                 if (restartChat.current) {
                     handleNewChat();
                     return;
                 }
-                const { done, value } = await reader.read();
-                if (done) {
-                    // ADD: Flush any remaining buffer
-                    if (imageBuffer) {
-                        result += imageBuffer;
-                        setLastAnswer(result);
-                    }
-                    break;
-                }
 
-                const chunk = decoder.decode(value, { stream: true });
-
-                // Check if chunk contains a JSON structure (YOUR EXISTING CODE)
-                if (chunk.includes("{") || jsonBuffer) {
-                    jsonBuffer += chunk;
-                    const startIndex = jsonBuffer.indexOf("{");
-                    const endIndex = jsonBuffer.lastIndexOf("}");
-
-                    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-                        try {
-                            const jsonString = jsonBuffer.substring(startIndex, endIndex + 1);
-                            const parsedObj = JSON.parse(jsonString);
-
-                            if (parsedObj.conversation_id) {
-                                resultObj = parsedObj;
-                                const conditionOne = answers.map(a => ({ user: a[0] }));
-                                if (conditionOne.length <= 0) {
-                                    setRefreshFetchHistory(true);
-                                    setChatId(resultObj.conversation_id);
-                                } else {
-                                    setRefreshFetchHistory(false);
-                                }
-                                setUserId(resultObj.conversation_id);
-                            }
-
-                            const remainingText = jsonBuffer.substring(endIndex + 1);
-                            if (remainingText) {
-                                // CHANGE: Add to imageBuffer instead of result
-                                imageBuffer += remainingText;
-                            }
-
-                            jsonBuffer = "";
-                        } catch (e) {
-                            console.log("Incomplete JSON structure, waiting for more data");
+                if (evt.type === "json") {
+                    // ---- control message arriving from backend ----
+                    const { conversation_id, thoughts } = evt.payload;
+                    if (conversation_id && conversation_id !== ctrlMsg.conversation_id) {
+                        ctrlMsg = { conversation_id, thoughts };
+                        if (answers.length === 0) {
+                            setRefreshFetchHistory(true);
+                            setChatId(conversation_id);
+                        } else {
+                            setRefreshFetchHistory(false);
                         }
+                        setUserId(conversation_id);
                     }
                 } else {
-                    // REPLACE THIS SECTION with buffering logic
-                    imageBuffer += chunk;
-
-                    // Check if we have a potentially incomplete IMAGE_PREVIEW at the end
-                    const lastImagePreviewIndex = imageBuffer.lastIndexOf("IMAGE_PREVIEW:");
-
-                    if (lastImagePreviewIndex === -1) {
-                        // No IMAGE_PREVIEW, display everything
-                        result += imageBuffer;
-                        setLastAnswer(result);
-                        imageBuffer = "";
-                    } else {
-                        // Check if the IMAGE_PREVIEW after lastImagePreviewIndex is complete
-                        const afterImagePreview = imageBuffer.substring(lastImagePreviewIndex);
-
-                        // Simple check: if it has a newline or we're at the end, it's complete
-                        // Otherwise, it might be split
-                        if (afterImagePreview.includes("\n") || (afterImagePreview.includes("|") && afterImagePreview.split("|").length >= 2)) {
-                            // Looks complete, display everything
-                            result += imageBuffer;
-                            setLastAnswer(result);
-                            imageBuffer = "";
-                        } else if (imageBuffer.length - lastImagePreviewIndex < 200) {
-                            // Might be incomplete, hold back the IMAGE_PREVIEW part
-                            const beforeImagePreview = imageBuffer.substring(0, lastImagePreviewIndex);
-                            result += beforeImagePreview;
-                            setLastAnswer(result);
-                            imageBuffer = imageBuffer.substring(lastImagePreviewIndex);
-                        } else {
-                            // Too long to be incomplete, display it
-                            result += imageBuffer;
-                            setLastAnswer(result);
-                            imageBuffer = "";
-                        }
-                    }
+                    // ---- plain text / IMAGE_PREVIEW ----
+                    result += evt.payload;
+                    setLastAnswer(result); // incremental UI update
                 }
             }
 
-            const regex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
+            /* ---------- 4 · Post-stream tidy-up (citation cleanup etc.) ---------- */
+            const blobRegex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
             // Function to clean citations
             const cleanCitation = (citation: string) => {
-                return citation.replace(regex, "");
+                return citation.replace(blobRegex, "");
+            };
+            result = result.replace(/\\[\\[(\\d+)\\]\\]\\((.*?)\\)/g, (_, n, cite) => `[[${n}]](${cleanCitation(cite)})`);
+
+            /* ---------- 5 · Persist to local chat state ---------- */
+            const botResponse: AskResponse = {
+                answer: result || "",
+                conversation_id: ctrlMsg.conversation_id ?? "",
+                data_points: [""],
+                thoughts: ctrlMsg.thoughts ?? []
             };
 
-            // Find and replace citations in the text
-            const citationRegex = /\[\[(\d+)\]\]\((.*?)\)/g;
-            result = result.replace(citationRegex, (match, number, citation) => {
-                const cleanedCitation = cleanCitation(citation);
-                return `[[${number}]](${cleanedCitation})`;
-            });
-            setAnswers([
-                ...answers,
-                [
-                    question,
-                    {
-                        answer: result || "",
-                        conversation_id: resultObj.conversation_id,
-                        data_points: [""],
-                        thoughts: resultObj.thoughts || []
-                    } as AskResponse
-                ]
-            ]);
-            const botResponse = {
-                answer: result || "",
-                conversation_id: resultObj.conversation_id,
-                data_points: [""],
-                thoughts: resultObj.thoughts || []
-            } as AskResponse;
-            setDataConversation([...dataConversation, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
+            setAnswers(prev => [...prev, [question, botResponse]]);
+            setDataConversation(prev => [...prev, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
             lastQuestionRef.current = "";
-        } catch (error) {
-            console.error("Error fetching streamed response:", error);
-            setError(error);
+        } catch (err) {
+            console.error("Error fetching streamed response:", err);
+            setError(err as Error);
         } finally {
             setIsLoading(false);
         }
@@ -709,7 +626,7 @@ const Chat = () => {
                                                   return (
                                                       <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
                                                           <UserChatMessage message={item.user} />
-                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                               <Answer
                                                                   key={index}
                                                                   answer={response}
@@ -729,7 +646,7 @@ const Chat = () => {
                                                   return (
                                                       <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
                                                           <UserChatMessage message={answer[0]} />
-                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                               <Answer
                                                                   key={index}
                                                                   answer={answer[1]}
@@ -761,7 +678,7 @@ const Chat = () => {
                                         {lastQuestionRef.current !== "" && (
                                             <>
                                                 <UserChatMessage message={lastQuestionRef.current} />
-                                                <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                                <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                     <Answer
                                                         answer={
                                                             {

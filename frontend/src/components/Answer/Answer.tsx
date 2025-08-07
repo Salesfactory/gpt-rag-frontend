@@ -52,12 +52,15 @@ function truncateString(str: string, maxLength: number): string {
     return str.substring(0, startLength) + "..." + str.substring(str.length - endLength);
 }
 
+const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: React.CSSProperties }> = ({ level: Tag, style, children }) => (
+    <Tag style={style}>{children}</Tag>
+);
+
 export const Answer = ({
     answer,
     isSelected,
     onCitationClicked,
     onThoughtProcessClicked,
-    onSupportingContentClicked,
     onFollowupQuestionClicked,
     showFollowupQuestions,
     showSources
@@ -66,14 +69,11 @@ export const Answer = ({
         from: { opacity: 0 },
         to: { opacity: 1 }
     });
-
+    console.log("Rendering Answer component with answer:", answer);
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const { settings } = useAppContext();
+    console.log("Parsed answer:", parsedAnswer);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
-    const Heading = ({ node, ...props }: any) => {
-        const Tag = node.tagName as keyof JSX.IntrinsicElements;
-        return <Tag style={headingStyle}>{props.children}</Tag>;
-    };
 
     if (answer.answer === "") {
         return (
@@ -94,10 +94,7 @@ export const Answer = ({
     const fontFamily = settings.font_family?.trim() || "Arial";
     const fontSize = settings.font_size || 16;
 
-    const baseTextStyle = {
-        fontFamily,
-        fontSize: `${fontSize}px`
-    };
+    const baseTextStyle = useMemo(() => ({ fontFamily, fontSize: `${fontSize}px` }), [fontFamily, fontSize]);
 
     const headingStyle = {
         ...baseTextStyle,
@@ -105,6 +102,88 @@ export const Answer = ({
         marginTop: "20px",
         marginBottom: "16px"
     };
+
+    const components = useMemo(
+        () => ({
+            h1: (props: any) => <MarkdownHeading level="h1" style={headingStyle} {...props} />,
+            h2: (props: any) => <MarkdownHeading level="h2" style={headingStyle} {...props} />,
+            h3: (props: any) => <MarkdownHeading level="h3" style={headingStyle} {...props} />,
+            h4: (props: any) => <MarkdownHeading level="h4" style={headingStyle} {...props} />,
+            h5: (props: any) => <MarkdownHeading level="h5" style={headingStyle} {...props} />,
+            h6: (props: any) => <MarkdownHeading level="h6" style={headingStyle} {...props} />,
+            p: (props: any) => (
+                <p style={{ ...baseTextStyle, marginBottom: "8px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>{props.children}</p>
+            ),
+            li: (props: any) => (
+                <li style={{ ...baseTextStyle, marginBottom: "4px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>
+                    {props.children}
+                </li>
+            ),
+            a: (props: any) => (
+                <a
+                    {...props}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        ...baseTextStyle,
+                        color: "#85a717",
+                        textDecoration: "none",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        maxWidth: "100%"
+                    }}
+                >
+                    {props.children}
+                </a>
+            ),
+            table: (props: any) => (
+                <table
+                    style={{
+                        ...baseTextStyle,
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        marginBottom: "16px"
+                    }}
+                >
+                    {props.children}
+                </table>
+            ),
+            thead: (props: any) => <thead style={{ ...baseTextStyle, backgroundColor: "#f3f4f6" }}>{props.children}</thead>,
+            th: (props: any) => (
+                <th
+                    style={{
+                        ...baseTextStyle,
+                        padding: "8px",
+                        border: "1px solid #d1d5db",
+                        fontWeight: "bold",
+                        textAlign: "left",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        maxWidth: "100%"
+                    }}
+                >
+                    {props.children}
+                </th>
+            ),
+            tbody: (props: any) => <tbody style={baseTextStyle}>{props.children}</tbody>,
+            tr: (props: any) => <tr style={{ ...baseTextStyle, borderBottom: "1px solid #e5e7eb" }}>{props.children}</tr>,
+            td: (props: any) => (
+                <td
+                    style={{
+                        ...baseTextStyle,
+                        padding: "8px",
+                        border: "1px solid #d1d5db",
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                        maxWidth: "100%"
+                    }}
+                >
+                    {props.children}
+                </td>
+            )
+        }),
+        [baseTextStyle, headingStyle]
+    );
 
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
@@ -125,97 +204,14 @@ export const Answer = ({
             </Stack.Item>
 
             <Stack.Item>
-                <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeRaw]}
-                    components={{
-                        h1: props => <Heading {...props} />,
-                        h2: props => <Heading {...props} />,
-                        h3: props => <Heading {...props} />,
-                        h4: props => <Heading {...props} />,
-                        h5: props => <Heading {...props} />,
-                        h6: props => <Heading {...props} />,
-                        p: ({ node, ...props }) => (
-                            <p style={{ ...baseTextStyle, marginBottom: "8px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>
-                                {props.children}
-                            </p>
-                        ),
-                        li: ({ node, ...props }) => (
-                            <li style={{ ...baseTextStyle, marginBottom: "4px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>
-                                {props.children}
-                            </li>
-                        ),
-                        a: ({ node, ...props }) => (
-                            <a
-                                {...props}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                    ...baseTextStyle,
-                                    color: "#85a717",
-                                    textDecoration: "none",
-                                    overflowWrap: "break-word",
-                                    wordBreak: "break-word",
-                                    maxWidth: "100%"
-                                }}
-                            >
-                                {props.children}
-                            </a>
-                        ),
-                        table: ({ node, ...props }) => (
-                            <table
-                                style={{
-                                    ...baseTextStyle,
-                                    width: "100%",
-                                    borderCollapse: "collapse",
-                                    marginBottom: "16px"
-                                }}
-                            >
-                                {props.children}
-                            </table>
-                        ),
-                        thead: ({ node, ...props }) => <thead style={{ ...baseTextStyle, backgroundColor: "#f3f4f6" }}>{props.children}</thead>,
-                        th: ({ node, ...props }) => (
-                            <th
-                                style={{
-                                    ...baseTextStyle,
-                                    padding: "8px",
-                                    border: "1px solid #d1d5db",
-                                    fontWeight: "bold",
-                                    textAlign: "left",
-                                    overflowWrap: "break-word",
-                                    wordBreak: "break-word",
-                                    maxWidth: "100%"
-                                }}
-                            >
-                                {props.children}
-                            </th>
-                        ),
-                        tbody: ({ node, ...props }) => <tbody style={baseTextStyle}>{props.children}</tbody>,
-                        tr: ({ node, ...props }) => <tr style={{ ...baseTextStyle, borderBottom: "1px solid #e5e7eb" }}>{props.children}</tr>,
-                        td: ({ node, ...props }) => (
-                            <td
-                                style={{
-                                    ...baseTextStyle,
-                                    padding: "8px",
-                                    border: "1px solid #d1d5db",
-                                    overflowWrap: "break-word",
-                                    wordBreak: "break-word",
-                                    maxWidth: "100%"
-                                }}
-                            >
-                                {props.children}
-                            </td>
-                        )
-                    }}
-                >
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
                     {sanitizedAnswerHtml}
                 </ReactMarkdown>
             </Stack.Item>
 
             {!!parsedAnswer.citations.length && showSources && (
                 <Stack.Item>
-                    <Stack id="Sources" horizontal wrap tokens={{ childrenGap: 5 }}>
+                    <Stack id="Sources" horizontal wrap tokens={{ childrenGap: 5 }} data-cy="sources-section">
                         <span className={styles.citationLearnMore}>{citation_label_text}:</span>
                         {parsedAnswer.citations.map((url, i) => {
                             const path = getFilePath(url);
