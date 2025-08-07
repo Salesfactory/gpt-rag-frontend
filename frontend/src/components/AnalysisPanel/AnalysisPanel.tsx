@@ -99,7 +99,7 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
         });
         cleaned = cleaned.replace(/(['{\[]*\s*)(content|title)(\s*['}\]]*\s*:)/gi, (match, pre, key, post) => {
             const label = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
-            return `\n\n ${label}:\n\n`;
+            return `\n\n<strong>${label}:</strong>\n\n`;
         });
         return cleaned.trim();
     }
@@ -255,14 +255,13 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         fontSize: "14px",
                                         lineHeight: "1.4"
                                     }}
-                                >
-                                    {item.value.split("<br />").map((line, i) => (
-                                        <React.Fragment key={i}>
-                                            {line}
-                                            <br />
-                                        </React.Fragment>
-                                    ))}
-                                </p>
+                                    dangerouslySetInnerHTML={{
+                                        __html: item.value
+                                            .split("<br />")
+                                            .map(line => line)
+                                            .join("<br />")
+                                    }}
+                                />
                             </div>
                         ))}
                     </div>
