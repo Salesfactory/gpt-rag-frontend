@@ -256,10 +256,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         lineHeight: "1.4"
                                     }}
                                     dangerouslySetInnerHTML={{
-                                        __html: item.value
-                                            .split("<br />")
-                                            .map(line => line)
-                                            .join("<br />")
+                                        __html: DOMPurify.sanitize(item.value.split("<br />").join("<br />"))
                                     }}
                                 />
                             </div>
