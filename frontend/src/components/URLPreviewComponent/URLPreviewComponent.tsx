@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Spinner } from '@fluentui/react';
 import styles from './URLPreviewComponent.module.css';
 import { getFileType, isImageFile } from '../../utils/functions';
+import { getFileBlob } from '../../api/api';
 
 export interface URLPreviewComponentProps {
     url: string;
@@ -37,35 +38,7 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
     const [imageLoaded, setImageLoaded] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
 
-    // Generic file blob fetching function
-    const getFileBlob = async (fileName: string, container: string): Promise<Blob> => {
-        // Clean prefix 'documents/' if present
-        const cleanedFileName = fileName.startsWith('documents/') 
-            ? fileName.slice('documents/'.length) 
-            : fileName;
 
-        try {
-            const response = await fetch('/api/get-blob', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    container: container,
-                    blob_name: cleanedFileName
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error fetching file: ${response.status} ${response.statusText}`);
-            }
-
-            return await response.blob();
-        } catch (error) {
-            console.error('Error fetching file blob:', error);
-            throw new Error('Error fetching file.');
-        }
-    };
 
     useEffect(() => {
         const loadFile = async () => {

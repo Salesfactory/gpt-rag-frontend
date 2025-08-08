@@ -3,7 +3,7 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -372,34 +372,17 @@ const Chat = () => {
         }
     };
 
-    /**Get File Blob - Generic function for fetching any file type from Azure blob storage */
-    const getFileBlob = async (fileName: string, container: string) => {
+    /**Get File Blob - Wrapper function that uses the centralized API and manages local state */
+    const getFileBlobWithState = async (fileName: string, container: string = "documents") => {
         /** get file type */
         let type = getFileType(fileName);
         setFileType(type);
 
-        // Clear prefix 'documents/' if present
-        const cleanedFileName = fileName.startsWith("documents/") ? fileName.slice("documents/".length) : fileName;
         try {
-            const response = await fetch("/api/get-blob", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    container: container,
-                    blob_name: cleanedFileName
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error fetching file: ${response.status} ${response.statusText}`);
-            }
-
-            return await response.blob();
+            return await getFileBlob(fileName, container);
         } catch (error) {
             console.error(error);
-            throw new Error("Error fetching file.");
+            throw error;
         }
     };
 
@@ -457,7 +440,7 @@ const Chat = () => {
         // Extract filepath if necessary
         const modifiedFilename = extractAfterDomain(fileName);
 
-        const response = await getFileBlob(modifiedFilename, "documents");
+        const response = await getFileBlobWithState(modifiedFilename, "documents");
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
