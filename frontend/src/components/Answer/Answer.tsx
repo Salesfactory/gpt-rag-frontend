@@ -52,9 +52,11 @@ function truncateString(str: string, maxLength: number): string {
     return str.substring(0, startLength) + "..." + str.substring(str.length - endLength);
 }
 
-const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: React.CSSProperties }> = ({ level: Tag, style, children }) => (
-    <Tag style={style}>{children}</Tag>
-);
+const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: React.CSSProperties; children: React.ReactNode }> = ({
+    level: Tag,
+    style,
+    children
+}) => <Tag style={style}>{children}</Tag>;
 
 export const Answer = ({
     answer,
