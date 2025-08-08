@@ -111,6 +111,7 @@ from shared.cosmo_db import (
     update_competitor_by_id,
     get_items_to_delete_by_brand,
 )
+from excel_weaver.utils import create_description
 
 load_dotenv(override=True)
 
@@ -4217,8 +4218,10 @@ def upload_source_document():
 
         if file.filename.endswith((".csv", ".xls", ".xlsx")):
             logger.info(f"Gen AI description for file '{file.filename}'")
-            metadata["description"] = " " # Here Should Go the AI Generated Description for the metadata
-        
+            description = str(create_description(temp_file_path))
+            logger.info(f"Generated Description of file {temp_file_path}: {description}")
+            metadata["description"] = description
+
         # Initialize blob storage manager and upload file
         blob_storage_manager = BlobStorageManager()
         
