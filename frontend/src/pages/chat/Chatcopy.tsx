@@ -190,9 +190,8 @@ const Chat = () => {
             /* ---------- 5 · Persist to local chat state ---------- */
             const botResponse: AskResponse = {
                 answer: result || "",
-                conversation_id: ctrlMsg.conversation_id ?? "",
                 data_points: [""],
-                thoughts: ctrlMsg.thoughts ?? []
+                thoughts: ctrlMsg.thoughts ? ctrlMsg.thoughts.join('\n') : null
             };
 
             setAnswers(prev => [...prev, [question, botResponse]]);
@@ -373,14 +372,14 @@ const Chat = () => {
         }
     };
 
-    /**Get Pdf */
-    const getPdf = async (pdfName: string) => {
+    /**Get File Blob - Generic function for fetching any file type from Azure blob storage */
+    const getFileBlob = async (fileName: string, container: string) => {
         /** get file type */
-        let type = getFileType(pdfName);
+        let type = getFileType(fileName);
         setFileType(type);
 
-        // Clear prefix ‘documents/’ if present
-        const cleanedPdfName = pdfName.startsWith("documents/") ? pdfName.slice("documents/".length) : pdfName;
+        // Clear prefix 'documents/' if present
+        const cleanedFileName = fileName.startsWith("documents/") ? fileName.slice("documents/".length) : fileName;
         try {
             const response = await fetch("/api/get-blob", {
                 method: "POST",
@@ -388,18 +387,19 @@ const Chat = () => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    blob_name: cleanedPdfName
+                    container: container,
+                    blob_name: cleanedFileName
                 })
             });
 
             if (!response.ok) {
-                throw new Error(`Error fetching DOC: ${response.status}`);
+                throw new Error(`Error fetching file: ${response.status} ${response.statusText}`);
             }
 
             return await response.blob();
         } catch (error) {
             console.error(error);
-            throw new Error("Error fetching DOC.");
+            throw new Error("Error fetching file.");
         }
     };
 
@@ -457,7 +457,7 @@ const Chat = () => {
         // Extract filepath if necessary
         const modifiedFilename = extractAfterDomain(fileName);
 
-        const response = await getPdf(modifiedFilename);
+        const response = await getFileBlob(modifiedFilename, "documents");
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {

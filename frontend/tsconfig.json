@@ -42,5 +42,6 @@
        
         
     },
-    "include": ["src","cypress/**/*.ts"]
+    "include": ["src", "vite-env.d.ts"],
+    "exclude": ["cypress"]
 }

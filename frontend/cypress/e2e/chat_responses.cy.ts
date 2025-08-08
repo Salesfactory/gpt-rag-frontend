@@ -1,5 +1,7 @@
 /// <reference types="cypress" />
 
+export {};
+
 /* helper to stub a streaming response */
 function stubStream(alias: string, body: string) {
     cy.intercept("POST", "/stream_chatgpt", {
