@@ -25,7 +25,7 @@ import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob
 import { useAppContext } from "../../providers/AppProviders";
 import { toast, ToastContainer } from "react-toastify";
 const ALLOWED_FILE_TYPES = [".pdf", ".csv", ".xlsx", ".xls"];
-const EXCEL_FILES = ["csv", "xls", "xlsx"]
+const EXCEL_FILES = ["csv", "xls", "xlsx"];
 
 // Interface for blob data
 interface BlobItem {
