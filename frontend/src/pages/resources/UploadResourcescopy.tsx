@@ -376,7 +376,7 @@ const UploadResources: React.FC = () => {
 
     // Open upload dialog
     const openUploadDialog = () => {
-        if (user?.role == "user") {
+        if (user?.role === "user") {
             toast("Only Admins can Upload Files", {
                 type: "warning"
             })
