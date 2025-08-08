@@ -23,7 +23,9 @@ import { DocumentRegular } from "@fluentui/react-icons";
 import { FileText, Download, Trash2, RefreshCw, Upload, Search, CirclePlus } from "lucide-react";
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
+import { toast, ToastContainer } from "react-toastify";
 const ALLOWED_FILE_TYPES = [".pdf", ".csv", ".xlsx", ".xls"];
+const EXCEL_FILES = ["csv", "xls", "xlsx"]
 
 // Interface for blob data
 interface BlobItem {
@@ -75,6 +77,8 @@ const UploadResources: React.FC = () => {
                 let iconColorClass = "";
                 if (fileExtension === "pdf") {
                     iconColorClass = styles.icon_pdf;
+                } else if (EXCEL_FILES.includes(fileExtension || "")) {
+                    iconColorClass = styles.icon_excel;
                 } else if (["doc", "docx", "odt", "rtf"].includes(fileExtension || "")) {
                     iconColorClass = styles.icon_doc;
                 }
@@ -372,10 +376,17 @@ const UploadResources: React.FC = () => {
 
     // Open upload dialog
     const openUploadDialog = () => {
-        setIsUploadDialogOpen(true);
-        setSelectedFiles([]);
-        setUploadStatus(null);
-        setUploadProgress(0);
+        if (user?.role == "user") {
+            toast("Only Admins can Upload Files", {
+                type: "warning"
+            })
+        }
+        else {
+            setIsUploadDialogOpen(true);
+            setSelectedFiles([]);
+            setUploadStatus(null);
+            setUploadProgress(0);
+        }
     };
 
     // Close upload dialog
@@ -394,6 +405,7 @@ const UploadResources: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
+            <ToastContainer />
             <div className={styles.file_list_header}>
                 <SearchBox
                     placeholder="Search files..."

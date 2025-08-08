@@ -53,6 +53,8 @@ export default defineConfig({
             "/api/logs":"http://localhost:8000/",
             "/api/companydata": "http://localhost:8000/",
             "/api/voice-customer": "http://localhost:8000/",
+            "/api/get-source-documents": "http://127.0.0.1:8000",
+            "api/upload-source-document": "http://127.0.0.1:8000"
         },
         host: true
     }
