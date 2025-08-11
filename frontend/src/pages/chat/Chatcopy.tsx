@@ -150,7 +150,7 @@ const Chat = () => {
             /* ---------- 3 · Consume the stream via our parser ---------- */
             const reader = response.body.getReader();
             let result = "";
-            let ctrlMsg: { conversation_id?: string; thoughts?: string[] } = {};
+            let ctrlMsg: { conversation_id?: string; thoughts?: string } = {};
 
             for await (const evt of parseStream(reader)) {
                 /* allow user to abort mid-stream */
@@ -188,11 +188,13 @@ const Chat = () => {
             result = result.replace(/\\[\\[(\\d+)\\]\\]\\((.*?)\\)/g, (_, n, cite) => `[[${n}]](${cleanCitation(cite)})`);
 
             /* ---------- 5 · Persist to local chat state ---------- */
-            const botResponse: AskResponse = {
+            const botResponse = {
                 answer: result || "",
                 data_points: [""],
-                thoughts: ctrlMsg.thoughts ? ctrlMsg.thoughts.join('\n') : null
-            };
+
+                thoughts: ctrlMsg.thoughts ?? ""
+            } as AskResponse;
+
 
             setAnswers(prev => [...prev, [question, botResponse]]);
             setDataConversation(prev => [...prev, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);

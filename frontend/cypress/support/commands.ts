@@ -4,18 +4,27 @@ import { setupTestUserAndOrg } from "../fixtures/setupTestUser";
 
 /* ───────────────────────────── Custom commands ─────────────────────────── */
 
-Cypress.Commands.add("openChat", (): Cypress.Chainable<Element> => {
+// Update the command implementations:
+Cypress.Commands.add("goHome", () => {
+    cy.url().should("include", "#/");
+});
+
+Cypress.Commands.add("focusChatInput", () => {
+    cy.get("textarea[placeholder*='Write your question']");
+});
+
+Cypress.Commands.add("openChat", () => {
     setupTestUserAndOrg();
     cy.visit("/");
     cy.get("#headerCollapse").click();
     cy.contains("a", /ai chat/i).click();
-    return cy.url().should("include", "#/");
+    cy.url().should("include", "#/");
 });
 
-Cypress.Commands.add("askChat", (message: string): Cypress.Chainable<Element> => {
+Cypress.Commands.add("askChat", (message: string) => {
     cy.get("textarea[placeholder*='Write your question']").type(message);
     cy.get("[aria-label='Ask a question button']").click();
-    return cy.get("textarea[placeholder*='Write your question']"); // any element to keep chain
+    cy.get("textarea[placeholder*='Write your question']"); // any element to keep chain
 });
 
 /**
@@ -32,6 +41,8 @@ declare global {
             openChat(): Chainable<Element>;
             askChat(message: string): Chainable<Element>;
             dataCy(value: string): Chainable<JQuery<HTMLElement>>;
+            goHome(): Chainable<void>;
+            focusChatInput(): Chainable<void>;
         }
     }
 }

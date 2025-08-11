@@ -54,6 +54,57 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
 
     const items: ThoughtItem[] = [];
 
+    function formatContentBlocks(text: string): string {
+        let cleaned = text
+            .replace(/\n/g, "\n")
+            .replace(/\\n/g, "\n")
+            .replace(/[\[\]{}()"'\\]/g, "")
+            .replace(/\s+/g, " ");
+        cleaned = cleaned.replace(/(^|\n)\s*n(?=\w)/g, "$1");
+        cleaned = cleaned.replace(/\.\s*([^\n:]+:)/g, ".\n\n$1");
+        cleaned = cleaned.replace(/(Title:\s*)([\s\S]*?)(?=(?:Content:|$))/gi, (match, p1, p2) => {
+            let titleText = "";
+            let source = "";
+            let id = "";
+            let reranker = "";
+            let index = "";
+            let rest = p2.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
+            const sourceMatch = rest.match(/source:\s*([^,]+),?/i);
+            if (sourceMatch) {
+                source = sourceMatch[1].trim();
+                rest = rest.replace(sourceMatch[0], "");
+            }
+            const idMatch = rest.match(/id:\s*([^,]+),?/i);
+            if (idMatch) {
+                id = idMatch[1].trim();
+                rest = rest.replace(idMatch[0], "");
+            }
+            const rerankerMatch = rest.match(/reranker_score:\s*([^,]+),?/i);
+            if (rerankerMatch) {
+                reranker = rerankerMatch[1].trim();
+                rest = rest.replace(rerankerMatch[0], "");
+            }
+            const indexMatch = rest.match(/index:\s*([^,]+),?/i);
+            if (indexMatch) {
+                index = indexMatch[1].trim();
+                rest = rest.replace(indexMatch[0], "");
+            }
+            titleText = rest.trim();
+            let result = `\n\nTitle:${titleText ? titleText : ""}`;
+            if (source) result += `\nsource: ${source}`;
+            if (id) result += `\nid: ${id}`;
+            if (reranker) result += `\nreranker_score: ${reranker}`;
+            if (index) result += `\nindex: ${index}`;
+            return result + "\n";
+        });
+        cleaned = cleaned.replace(/(['{\[]*\s*)(content|title)(\s*['}\]]*\s*:)/gi, (match, pre, key, post) => {
+            const label = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+            return `\n\n<strong>${label}:</strong>\n\n`;
+        });
+        return cleaned.trim();
+    }
+
+    let afterContent = false;
     sections.forEach(section => {
         let cleanSection = section
             .replace(/<hr \/>/g, "")
@@ -69,7 +120,13 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
 
                 if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.?\s/.test(potentialTitle)) {
                     const title = potentialTitle;
-                    const value = cleanSection.slice(colonIndex + 1).trim();
+                    let value = cleanSection.slice(colonIndex + 1).trim();
+                    if (title === "Content") {
+                        value = formatContentBlocks(value);
+                        afterContent = true;
+                    } else if (afterContent) {
+                        value = formatContentBlocks(value);
+                    }
                     items.push({ title, value });
                 } else {
                     items.push({ title: "", value: cleanSection });
@@ -94,7 +151,6 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
         if (answer.thoughts) {
             // Attempt to parse the entire string as JSON
             const thoughtData = JSON.parse(answer.thoughts);
-
             // Check if it has the expected structure with a "thoughts" array
             if (thoughtData && Array.isArray(thoughtData.thoughts) && thoughtData.thoughts.length > 0) {
                 // Extract the first element of the thoughts array
@@ -199,14 +255,10 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         fontSize: "14px",
                                         lineHeight: "1.4"
                                     }}
-                                >
-                                    {item.value.split("<br />").map((line, i) => (
-                                        <React.Fragment key={i}>
-                                            {line}
-                                            <br />
-                                        </React.Fragment>
-                                    ))}
-                                </p>
+                                    dangerouslySetInnerHTML={{
+                                        __html: DOMPurify.sanitize(item.value.split("<br />").join("<br />"))
+                                    }}
+                                />
                             </div>
                         ))}
                     </div>

@@ -1,6 +1,5 @@
-/// <reference types="cypress" />
 
-export {};
+export {}; // Add this line at the top
 
 /* helper to stub a streaming response */
 function stubStream(alias: string, body: string) {
