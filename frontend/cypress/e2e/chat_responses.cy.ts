@@ -8,6 +8,14 @@ function stubStream(alias: string, body: string) {
         headers: { "content-type": "text/event-stream" },
         body
     }).as(alias);
+
+    cy.intercept('GET', '/api/get-storage-account', { statusCode: 200, body: {/* mock data */} });
+    cy.intercept('GET', '/api/get-blob', { statusCode: 200, body: {/* mock data */} });
+    cy.intercept('GET', '/api/settings', { statusCode: 200, body: {/* mock settings */} });
+    cy.intercept('GET', '/api/get-user-organizations', { statusCode: 200, body: {/* mock orgs */} });
+    cy.intercept('GET', '/api/chat-history', { statusCode: 200, body: {/* mock chat history */} });
+    cy.intercept('GET', '/api/getusers*', { statusCode: 200, body: {/* mock users */} });
+    
 }
 
 describe("Answer component rendering tests", () => {
