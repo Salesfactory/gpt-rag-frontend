@@ -177,7 +177,7 @@ const UploadResources: React.FC = () => {
 
     // Handle delete
     const handleDelete = async (item: BlobItem) => {
-        if (window.confirm(`Are you sure you want to delete ${item.name.split("/").pop()}?`)) {
+        if (window.confirm(`Are you sure you want to delete ${item.name.split("/").pop()}? (The file will be deleted permanently in 1 day)`)) {
             try {
                 await deleteSourceFileFromBlob(item.name);
                 setUploadStatus({
