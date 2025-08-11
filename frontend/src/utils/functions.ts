@@ -26,20 +26,33 @@ export function getFileType(citation: string): string {
         case "xlsx":
             return "xlsx";
         case "jpg":
-            return "jpg";
         case "jpeg":
-            return "jpeg";
+            return "image";
         case "png":
-            return "png";
+            return "image";
         case "gif":
-            return "gif";
+            return "image";
+        case "webp":
+            return "image";
+        case "svg":
+            return "image";
+        case "bmp":
+            return "image";
+        case "tiff":
+        case "tif":
+            return "image";
         case "txt":
             return "txt";
         case "html":
-            return "html";
         case "htm":
             return "html";
         default:
             return "unknown";
     }
+}
+
+export function isImageFile(filename: string): boolean {
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'tiff', 'tif'];
+    const extension = filename.split('.').pop()?.toLowerCase();
+    return imageExtensions.includes(extension || '');
 }

@@ -1888,15 +1888,20 @@ def uploadBlob():
 
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
-    logging.exception("------------------ENTRA ------------")
     blob_name = unquote(request.json["blob_name"])
+    container = request.json["container"]
+    #White list of containers
+    white_list_containers = ["documents", "fa-documents"]
+    if container not in white_list_containers:
+        return jsonify({"error": "Invalid container"}), 400
+    
     try:
         client_credential = DefaultAzureCredential()
         blob_service_client = BlobServiceClient(
             f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", client_credential
         )
         blob_client = blob_service_client.get_blob_client(
-            container="documents", blob=blob_name
+            container=container, blob=blob_name
         )
         blob_data = blob_client.download_blob()
         blob_text = blob_data.readall()
