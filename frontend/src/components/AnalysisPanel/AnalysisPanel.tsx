@@ -130,7 +130,6 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
-    console.log("preguntapensamientos:", answer.thoughts);
     let formattedThoughts = "";
     try {
         if (answer.thoughts) {
