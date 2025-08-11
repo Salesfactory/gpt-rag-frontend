@@ -22,7 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
-import { parseStream, ParsedEvent } from "./streamParser";
+import { parseStreamWithMarkdownValidation, ParsedEvent } from "./streamParser";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -147,12 +147,12 @@ const Chat = () => {
                 throw new Error("ReadableStream not supported in this browser.");
             }
 
-            /* ---------- 3 · Consume the stream via our parser ---------- */
+            /* ---------- 3 · Consume the stream via our parser with markdown validation ---------- */
             const reader = response.body.getReader();
             let result = "";
             let ctrlMsg: { conversation_id?: string; thoughts?: string } = {};
 
-            for await (const evt of parseStream(reader)) {
+            for await (const evt of parseStreamWithMarkdownValidation(reader)) {
                 /* allow user to abort mid-stream */
                 if (restartChat.current) {
                     handleNewChat();
@@ -173,7 +173,7 @@ const Chat = () => {
                         setUserId(conversation_id);
                     }
                 } else {
-                    // ---- plain text / IMAGE_PREVIEW ----
+                    // ---- plain text / IMAGE_PREVIEW (markdown validation handled in parser) ----
                     result += evt.payload;
                     setLastAnswer(result); // incremental UI update
                 }
