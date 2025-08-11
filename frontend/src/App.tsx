@@ -14,7 +14,6 @@ import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 import CurationReports from "./pages/reports/CurationReports";
 import CurationCreation from "./pages/reports/ReportCreation/CurationCreation";
 import SummarizationReports from "./pages/reports/SummarizationReports";
-
 // New Routes
 
 import Layout from "./pages/layout/_Layoutcopy";

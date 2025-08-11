@@ -9,6 +9,7 @@ import styles from "./Answer.module.css";
 
 import { AskResponse, getFilePath } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
+import { URLPreviewComponent } from "../URLPreviewComponent";
 import { AnswerIcon } from "./AnswerIcon";
 
 import { animated, useSpring } from "@react-spring/web";
@@ -73,7 +74,6 @@ export const Answer = ({
         from: { opacity: 0 },
         to: { opacity: 1 }
     });
-    console.log("Rendering Answer component with answer:", answer);
 
     const { settings } = useAppContext();
     const fontFamily = settings.font_family?.trim() || "Arial";
@@ -93,6 +93,7 @@ export const Answer = ({
             h4: (props: any) => <MarkdownHeading level="h4" style={headingStyle} {...props} />,
             h5: (props: any) => <MarkdownHeading level="h5" style={headingStyle} {...props} />,
             h6: (props: any) => <MarkdownHeading level="h6" style={headingStyle} {...props} />,
+            img: (props: any) => <URLPreviewComponent url={props.src} />,
             p: (props: any) => (
                 <p style={{ ...baseTextStyle, marginBottom: "8px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>{props.children}</p>
             ),
@@ -168,7 +169,6 @@ export const Answer = ({
     );
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
-    console.log("Parsed answer:", parsedAnswer);
     if (answer.answer === "") {
         return (
             <animated.div style={{ ...animatedStyles }}>
