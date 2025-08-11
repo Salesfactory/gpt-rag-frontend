@@ -93,7 +93,7 @@ export const Answer = ({
             h4: (props: any) => <MarkdownHeading level="h4" style={headingStyle} {...props} />,
             h5: (props: any) => <MarkdownHeading level="h5" style={headingStyle} {...props} />,
             h6: (props: any) => <MarkdownHeading level="h6" style={headingStyle} {...props} />,
-            img: (props: any) => <URLPreviewComponent url={props.src} />,
+            img: (props: any) => <URLPreviewComponent url={props.src} alt={props.alt} />,
             p: (props: any) => (
                 <p style={{ ...baseTextStyle, marginBottom: "8px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>{props.children}</p>
             ),
