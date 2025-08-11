@@ -62,45 +62,12 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
             .replace(/\s+/g, " ");
         cleaned = cleaned.replace(/(^|\n)\s*n(?=\w)/g, "$1");
         cleaned = cleaned.replace(/\.\s*([^\n:]+:)/g, ".\n\n$1");
-        cleaned = cleaned.replace(/(Title:\s*)([\s\S]*?)(?=(?:Content:|$))/gi, (match, p1, p2) => {
-            let titleText = "";
-            let source = "";
-            let id = "";
-            let reranker = "";
-            let index = "";
-            let rest = p2.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
-            const sourceMatch = rest.match(/source:\s*([^,]+),?/i);
-            if (sourceMatch) {
-                source = sourceMatch[1].trim();
-                rest = rest.replace(sourceMatch[0], "");
-            }
-            const idMatch = rest.match(/id:\s*([^,]+),?/i);
-            if (idMatch) {
-                id = idMatch[1].trim();
-                rest = rest.replace(idMatch[0], "");
-            }
-            const rerankerMatch = rest.match(/reranker_score:\s*([^,]+),?/i);
-            if (rerankerMatch) {
-                reranker = rerankerMatch[1].trim();
-                rest = rest.replace(rerankerMatch[0], "");
-            }
-            const indexMatch = rest.match(/index:\s*([^,]+),?/i);
-            if (indexMatch) {
-                index = indexMatch[1].trim();
-                rest = rest.replace(indexMatch[0], "");
-            }
-            titleText = rest.trim();
-            let result = `\n\nTitle:${titleText ? titleText : ""}`;
-            if (source) result += `\nsource: ${source}`;
-            if (id) result += `\nid: ${id}`;
-            if (reranker) result += `\nreranker_score: ${reranker}`;
-            if (index) result += `\nindex: ${index}`;
-            return result + "\n";
-        });
+        cleaned = cleaned.replace(/(Title:\s*)([\s\S]*?)(?=(?:Content:|$))/gi, "");
         cleaned = cleaned.replace(/(['{\[]*\s*)(content|title)(\s*['}\]]*\s*:)/gi, (match, pre, key, post) => {
             const label = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
             return `\n\n<strong>${label}:</strong>\n\n`;
         });
+        cleaned = cleaned.replace(/subquery_1: query:.*?(\n|$)/gi, "");
         return cleaned.trim();
     }
 
@@ -116,12 +83,23 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
             const colonIndex = cleanSection.indexOf(":");
 
             if (colonIndex > -1 && colonIndex < 100) {
-                const potentialTitle = cleanSection.slice(0, colonIndex).trim();
+                let potentialTitle = cleanSection.slice(0, colonIndex).trim();
+
+                if (
+                    potentialTitle === "Rewritten Query" ||
+                    potentialTitle === "Required Retrieval" ||
+                    potentialTitle === "Context Retrieved using the rewritten query"
+                ) {
+                    return;
+                }
+                if (potentialTitle === "Content") {
+                    potentialTitle = "Context";
+                }
 
                 if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.?\s/.test(potentialTitle)) {
                     const title = potentialTitle;
                     let value = cleanSection.slice(colonIndex + 1).trim();
-                    if (title === "Content") {
+                    if (title === "Context") {
                         value = formatContentBlocks(value);
                         afterContent = true;
                     } else if (afterContent) {
@@ -132,7 +110,14 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
                     items.push({ title: "", value: cleanSection });
                 }
             } else {
-                items.push({ title: "", value: cleanSection });
+                const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
+                if (finalThoughtsRegex.test(cleanSection.trim())) {
+                    let match = cleanSection.trim().match(finalThoughtsRegex);
+                    let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
+                    let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
+                    let formatted = `<strong>${prefix}:</strong> ` + value.replace(/(\\n)+/g, "<br />");
+                    items.push({ title: "", value: formatted });
+                }
             }
         }
     });
@@ -145,7 +130,6 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
-
     let formattedThoughts = "";
     try {
         if (answer.thoughts) {
