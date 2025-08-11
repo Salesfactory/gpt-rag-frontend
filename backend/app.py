@@ -1890,6 +1890,11 @@ def uploadBlob():
 def getBlob():
     blob_name = unquote(request.json["blob_name"])
     container = request.json["container"]
+    #White list of containers
+    white_list_containers = ["documents", "fa-documents"]
+    if container not in white_list_containers:
+        return jsonify({"error": "Invalid container"}), 400
+    
     try:
         client_credential = DefaultAzureCredential()
         blob_service_client = BlobServiceClient(

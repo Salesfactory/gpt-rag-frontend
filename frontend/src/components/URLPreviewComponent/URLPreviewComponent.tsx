@@ -70,14 +70,15 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
         };
 
         loadFile();
+    }, [url, onLoad, onError]);
 
-        // Cleanup function to revoke object URL
+    useEffect(() => {
         return () => {
             if (fileBlob?.url) {
                 URL.revokeObjectURL(fileBlob.url);
             }
         };
-    }, [url, onLoad, onError]);
+    }, [fileBlob]);
 
     // Handle modal close on outside click
     useEffect(() => {
@@ -195,7 +196,7 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
                         onLoad={handleImageLoad}
                         onError={handleImageError}
                     />
-                    {isLoading && !imageLoaded && (
+                    {!imageLoaded && (
                         <div className={styles.imageLoadingOverlay}>
                             <Spinner size={2} />
                         </div>
