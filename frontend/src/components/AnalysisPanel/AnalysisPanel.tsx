@@ -124,7 +124,6 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
 
     return items;
 }
-// Formatear Final Thoughts aunque no tenga dos puntos ni entre al if
 
 export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
