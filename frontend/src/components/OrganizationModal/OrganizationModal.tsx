@@ -42,29 +42,30 @@ const graphemeSegmenter =
     : null;
 
 function truncateLabel(input: string, max = MAX_LABEL_CHARS): string {
-  const s = (input ?? "").trim();
-  if (!s) return s;
+  const normalizedLabel = (input ?? "").trim();
+  if (!normalizedLabel) return normalizedLabel;
 
   if (graphemeSegmenter) {
-    let out = "";
-    let count = 0;
-    for (const { segment } of graphemeSegmenter.segment(s)) {
-      if (count === max) return out + ELLIPSIS;
-      out += segment;
-      count++;
+    let result = "";
+    let graphemeCount = 0;
+    for (const { segment } of graphemeSegmenter.segment(normalizedLabel)) {
+      if (graphemeCount === max) return result + ELLIPSIS;
+      result += segment;
+      graphemeCount++;
     }
-    return out;
+    return result;
   }
 
-  let out = "";
-  let count = 0;
-  for (const ch of s) {
-    if (count === max) return out + ELLIPSIS;
-    out += ch;
-    count++;
+  let result = "";
+  let charCount = 0;
+  for (const char of normalizedLabel) {
+    if (charCount === max) return result + ELLIPSIS;
+    result += char;
+    charCount++;
   }
-  return out;
+  return result;
 }
+
 
 
 const OrganizationModal = ({ isOpen, onClose }: Props) => {
