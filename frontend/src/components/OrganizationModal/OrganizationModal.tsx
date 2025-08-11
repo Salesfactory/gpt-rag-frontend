@@ -33,6 +33,40 @@ function setCookie(name: string, value: string | number | boolean, days: number)
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
+const MAX_LABEL_CHARS = 10 as const;
+const ELLIPSIS = "...";
+
+const graphemeSegmenter =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter("en", { granularity: "grapheme" })
+    : null;
+
+function truncateLabel(input: string, max = MAX_LABEL_CHARS): string {
+  const s = (input ?? "").trim();
+  if (!s) return s;
+
+  if (graphemeSegmenter) {
+    let out = "";
+    let count = 0;
+    for (const { segment } of graphemeSegmenter.segment(s)) {
+      if (count === max) return out + ELLIPSIS;
+      out += segment;
+      count++;
+    }
+    return out;
+  }
+
+  let out = "";
+  let count = 0;
+  for (const ch of s) {
+    if (count === max) return out + ELLIPSIS;
+    out += ch;
+    count++;
+  }
+  return out;
+}
+
+
 const OrganizationModal = ({ isOpen, onClose }: Props) => {
     const { user } = useAppContext();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -168,7 +202,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                             </svg>
                                         </div>
                                         <div>
-                                            <h3 className={styles.orgTitle}>{org.name}</h3>
+                                            <h3 className={styles.orgTitle}>{truncateLabel(org.name)}</h3>
                                             <div className={styles.orgDetails}>
                                                 <span className={`${styles.roleBadge} ${roleStyles[org.role.toLowerCase()] || styles.roleUser}`}>
                                                     {roleDisplayNames[org.role.toLowerCase()] || org.role}

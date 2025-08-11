@@ -20,6 +20,28 @@
     flex-direction: column;
     gap: 0.5rem;
     padding-right: 0.5rem;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #f3f4f6;
+}
+
+.orgList::-webkit-scrollbar {
+    width: 10px;
+}
+
+.orgList::-webkit-scrollbar-track {
+    background: #f3f4f6;                    
+    border-radius: 9999px;
+}
+
+.orgList::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 9999px;
+    border: 2px solid #f3f4f6;
+}
+
+.orgList::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
 }
 
 .modal {
