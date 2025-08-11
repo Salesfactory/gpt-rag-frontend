@@ -22,7 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
-import { parseStream, ParsedEvent } from "./streamParser";
+import { parseStreamWithMarkdownValidation, ParsedEvent } from "./streamParser";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -147,18 +147,12 @@ const Chat = () => {
                 throw new Error("ReadableStream not supported in this browser.");
             }
 
-            /* ---------- 3 · Consume the stream via our parser ---------- */
+            /* ---------- 3 · Consume the stream via our parser with markdown validation ---------- */
             const reader = response.body.getReader();
             let result = "";
             let ctrlMsg: { conversation_id?: string; thoughts?: string } = {};
-            let markdownImageBuffer = ""; // Buffer for incomplete markdown images
 
-            // Regex to detect complete markdown images: ![Alt text](image-url "Optional Title")
-            const completeMarkdownImageRegex = /!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]*)")?\)/g;
-            // Regex to detect potential start of markdown image
-            const incompleteMarkdownImageRegex = /!\[([^\]]*)?(\]?\([^)]*)?$/;
-
-            for await (const evt of parseStream(reader)) {
+            for await (const evt of parseStreamWithMarkdownValidation(reader)) {
                 /* allow user to abort mid-stream */
                 if (restartChat.current) {
                     handleNewChat();
@@ -179,58 +173,10 @@ const Chat = () => {
                         setUserId(conversation_id);
                     }
                 } else {
-                    // ---- plain text / IMAGE_PREVIEW with markdown image validation ----
-                    let textToProcess = markdownImageBuffer + evt.payload;
-                    
-                    // Check if we have complete markdown images
-                    const completeImages = [...textToProcess.matchAll(completeMarkdownImageRegex)];
-                    
-                    if (completeImages.length > 0) {
-                        // We have complete markdown images, process them
-                        let lastCompleteImageEnd = 0;
-                        
-                        completeImages.forEach(match => {
-                            const matchEnd = match.index! + match[0].length;
-                            lastCompleteImageEnd = Math.max(lastCompleteImageEnd, matchEnd);
-                        });
-                        
-                        // Add the text up to and including the last complete image
-                        const textToAdd = textToProcess.substring(0, lastCompleteImageEnd);
-                        result += textToAdd;
-                        
-                        // Keep any remaining text in buffer for next iteration
-                        const remainingText = textToProcess.substring(lastCompleteImageEnd);
-                        
-                        // Check if remaining text starts an incomplete markdown image
-                        if (incompleteMarkdownImageRegex.test(remainingText)) {
-                            markdownImageBuffer = remainingText;
-                        } else {
-                            // No incomplete image pattern, add remaining text to result
-                            result += remainingText;
-                            markdownImageBuffer = "";
-                        }
-                        
-                        setLastAnswer(result); // incremental UI update
-                    } else {
-                        // No complete images found
-                        // Check if the text contains an incomplete markdown image pattern
-                        if (incompleteMarkdownImageRegex.test(textToProcess)) {
-                            // Buffer the text as it might be an incomplete markdown image
-                            markdownImageBuffer = textToProcess;
-                        } else {
-                            // No markdown image pattern detected, add to result
-                            result += textToProcess;
-                            markdownImageBuffer = "";
-                            setLastAnswer(result); // incremental UI update
-                        }
-                    }
+                    // ---- plain text / IMAGE_PREVIEW (markdown validation handled in parser) ----
+                    result += evt.payload;
+                    setLastAnswer(result); // incremental UI update
                 }
-            }
-
-            // After stream ends, flush any remaining buffer
-            if (markdownImageBuffer) {
-                result += markdownImageBuffer;
-                setLastAnswer(result);
             }
 
             /* ---------- 4 · Post-stream tidy-up (citation cleanup etc.) ---------- */
