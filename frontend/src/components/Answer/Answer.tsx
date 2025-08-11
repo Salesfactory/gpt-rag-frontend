@@ -72,39 +72,17 @@ export const Answer = ({
         to: { opacity: 1 }
     });
     console.log("Rendering Answer component with answer:", answer);
-    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
+
     const { settings } = useAppContext();
-    console.log("Parsed answer:", parsedAnswer);
-    const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
-
-    if (answer.answer === "") {
-        return (
-            <animated.div style={{ ...animatedStyles }}>
-                <Stack className={styles.answerContainer} verticalAlign="space-between">
-                    <AnswerIcon />
-                    <Stack.Item grow>
-                        <p className={styles.answerText}>
-                            {generating_answer_text}
-                            <span className={styles.loadingdots} />
-                        </p>
-                    </Stack.Item>
-                </Stack>
-            </animated.div>
-        );
-    }
-
     const fontFamily = settings.font_family?.trim() || "Arial";
     const fontSize = settings.font_size || 16;
-
     const baseTextStyle = useMemo(() => ({ fontFamily, fontSize: `${fontSize}px` }), [fontFamily, fontSize]);
-
     const headingStyle = {
         ...baseTextStyle,
         fontWeight: "bold",
         marginTop: "20px",
         marginBottom: "16px"
     };
-
     const components = useMemo(
         () => ({
             h1: (props: any) => <MarkdownHeading level="h1" style={headingStyle} {...props} />,
@@ -186,7 +164,24 @@ export const Answer = ({
         }),
         [baseTextStyle, headingStyle]
     );
-
+    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
+    const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
+    console.log("Parsed answer:", parsedAnswer);
+    if (answer.answer === "") {
+        return (
+            <animated.div style={{ ...animatedStyles }}>
+                <Stack className={styles.answerContainer} verticalAlign="space-between">
+                    <AnswerIcon />
+                    <Stack.Item grow>
+                        <p className={styles.answerText}>
+                            {generating_answer_text}
+                            <span className={styles.loadingdots} />
+                        </p>
+                    </Stack.Item>
+                </Stack>
+            </animated.div>
+        );
+    }
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
             <Stack.Item>
