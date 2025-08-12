@@ -103,6 +103,7 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
             .replace(/<hr \/>/g, "")
             .replace(/<br \/>/g, "\n")
             .replace(/(\d+)\\\./g, "$1.")
+            .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
             .trim();
 
         if (cleanSection) {
@@ -166,20 +167,48 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
                     items.push({ title: "", value: cleanSection });
                 }
             } else {
-                const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
-                if (finalThoughtsRegex.test(cleanSection.trim())) {
-                    let match = cleanSection.trim().match(finalThoughtsRegex);
-                    let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
-                    let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
+                const analysisRegex = /###\s*Sales Factory Performance Analysis/i;
+                if (analysisRegex.test(cleanSection)) {
+                    const lines = cleanSection.split("\n").filter(line => line.trim() !== "");
 
-                    const formatted = extractContentDetails(value);
-                    if (formatted) {
-                        items.push({ title: "", value: formatted });
+                    let currentTitle = "";
+                    let currentValue = "";
+
+                    function pushItem() {
+                        if (currentValue.trim()) {
+                            items.push({ title: currentTitle, value: currentValue.trim() });
+                            currentValue = "";
+                        }
                     }
+
+                    for (const line of lines) {
+                        if (line.startsWith("### ") || line.startsWith("#### ")) {
+                            pushItem();
+                            currentTitle = line.replace(/#+\s*/, "").trim();
+                        } else if (line.trim() === "---") {
+                            pushItem();
+                            currentTitle = "";
+                        } else {
+                            currentValue += line.replace(/\\/g, "") + "\n";
+                        }
+                    }
+                    pushItem();
                 } else {
-                    const formatted = extractContentDetails(cleanSection);
-                    if (formatted) {
-                        items.push({ title: "", value: formatted });
+                    const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
+                    if (finalThoughtsRegex.test(cleanSection.trim())) {
+                        let match = cleanSection.trim().match(finalThoughtsRegex);
+                        let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
+                        let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
+
+                        const formatted = extractContentDetails(value);
+                        if (formatted) {
+                            items.push({ title: "", value: formatted });
+                        }
+                    } else {
+                        const formatted = extractContentDetails(cleanSection);
+                        if (formatted) {
+                            items.push({ title: "", value: formatted });
+                        }
                     }
                 }
             }
