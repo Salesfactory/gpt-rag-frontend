@@ -27,29 +27,25 @@ def app(monkeypatch):
     """Creates and configures a new app instance for each test."""
     monkeypatch.setenv("AZURE_DB_ID", "dummy-value-for-testing")
     monkeypatch.setenv("AZURE_DB_NAME", "dummy-value-for-testing")
-    monkeypatch.setenv("AZURE_KEY_VAULT_NAME", "dummy-value-for-testing")
 
-    # Patch Key Vault secret retrieval BEFORE importing app.py
-    import backend.utils as utils  # adjust if utils.py is elsewhere
-    monkeypatch.setattr(utils, "get_azure_key_vault_secret", lambda name: "fake-secret-value")
+    from app import upload_source_document
 
-    from app import upload_source_document  # safe now, no network call
-
-    # Patch other dependencies
+    # Patch the external dependencies
     monkeypatch.setattr("app.setup_llm", lambda: FakeLLM())
     fake_blob_mgr = FakeBlobMgr()
     monkeypatch.setattr("app.BlobStorageManager", lambda: fake_blob_mgr)
 
-    flask_app = Flask(__name__)
-    flask_app.config["TESTING"] = True
-    flask_app.fake_blob_mgr = fake_blob_mgr
+    app = Flask(__name__)
+    app.config["TESTING"] = True
 
-    flask_app.add_url_rule(
-        "/api/upload-source-document",
-        view_func=upload_source_document,
-        methods=["POST"]
-    )
-    return flask_app
+    # Attach for easy access in the test
+    app.fake_blob_mgr = fake_blob_mgr
+
+    # Register the route with the real endpoint path
+    app.add_url_rule("/api/upload-source-document",
+                     view_func=upload_source_document,
+                     methods=["POST"])
+    return app
 
 def test_upload_generates_description_and_uploads(app):
     """
