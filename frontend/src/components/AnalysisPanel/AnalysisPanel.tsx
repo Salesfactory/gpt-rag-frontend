@@ -42,6 +42,49 @@ interface ThoughtItem {
     value: string;
 }
 
+function formatContentBlocks(content: string): string {
+    try {
+        const formattedData: string[] = [];
+
+        const subqueryRegex = /'documents': \[.*?\]/gs;
+        const documentRegex = /\{.*?\}/gs;
+
+        const subqueries = content.match(subqueryRegex);
+        if (subqueries) {
+            subqueries.forEach(subquery => {
+                const documents = subquery.match(documentRegex);
+                if (documents) {
+                    documents.forEach(document => {
+                        const contentMatch = document.match(/'content':\s*'(.*?)'/);
+                        const titleMatch = document.match(/'title':\s*'(.*?)'/);
+                        const sourceMatch = document.match(/'source':\s*'(.*?)'/);
+
+                        let content = contentMatch ? contentMatch[1] : "";
+                        const title = titleMatch ? titleMatch[1] : "";
+                        const source = sourceMatch ? sourceMatch[1] : "";
+
+                        if (!content.trim()) {
+                            return;
+                        }
+
+                        content = content
+                            .replace(/\\n/g, "\n\n")
+                            .replace(/\.\s{2,}/g, ".\n\n")
+                            .trim();
+
+                        formattedData.push(`<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`);
+                    });
+                }
+            });
+        }
+
+        return formattedData.join("\n\n");
+    } catch (error) {
+        console.error("Error parsing content:", error);
+        return "Invalid input format";
+    }
+}
+
 function parseFormattedThoughts(html: string): ThoughtItem[] {
     if (!html || html.trim() === "") {
         return [];
@@ -53,23 +96,6 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
         .filter(section => section.length > 0);
 
     const items: ThoughtItem[] = [];
-
-    function formatContentBlocks(text: string): string {
-        let cleaned = text
-            .replace(/\n/g, "\n")
-            .replace(/\\n/g, "\n")
-            .replace(/[\[\]{}()"'\\]/g, "")
-            .replace(/\s+/g, " ");
-        cleaned = cleaned.replace(/(^|\n)\s*n(?=\w)/g, "$1");
-        cleaned = cleaned.replace(/\.\s*([^\n:]+:)/g, ".\n\n$1");
-        cleaned = cleaned.replace(/(Title:\s*)([\s\S]*?)(?=(?:Content:|$))/gi, "");
-        cleaned = cleaned.replace(/(['{\[]*\s*)(content|title)(\s*['}\]]*\s*:)/gi, (match, pre, key, post) => {
-            const label = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
-            return `\n\n<strong>${label}:</strong>\n\n`;
-        });
-        cleaned = cleaned.replace(/subquery_1: query:.*?(\n|$)/gi, "");
-        return cleaned.trim();
-    }
 
     let afterContent = false;
     sections.forEach(section => {
