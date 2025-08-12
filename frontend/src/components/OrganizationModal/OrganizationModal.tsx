@@ -33,14 +33,6 @@ function setCookie(name: string, value: string | number | boolean, days: number)
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
-const MAX_LABEL_CHARS = 10;
-const ELLIPSIS = "...";
-
-const graphemeSegmenter =
-  typeof Intl !== "undefined" && "Segmenter" in Intl
-    ? new Intl.Segmenter("en", { granularity: "grapheme" })
-    : null;
-
 
 const OrganizationModal = ({ isOpen, onClose }: Props) => {
     const { user } = useAppContext();
