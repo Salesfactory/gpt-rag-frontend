@@ -42,6 +42,49 @@ interface ThoughtItem {
     value: string;
 }
 
+function formatContentBlocks(content: string): string {
+    try {
+        const formattedData: string[] = [];
+
+        const subqueryRegex = /'documents': \[.*?\]/gs;
+        const documentRegex = /\{.*?\}/gs;
+
+        const subqueries = content.match(subqueryRegex);
+        if (subqueries) {
+            subqueries.forEach(subquery => {
+                const documents = subquery.match(documentRegex);
+                if (documents) {
+                    documents.forEach(document => {
+                        const contentMatch = document.match(/'content':\s*'(.*?)'/);
+                        const titleMatch = document.match(/'title':\s*'(.*?)'/);
+                        const sourceMatch = document.match(/'source':\s*'(.*?)'/);
+
+                        let content = contentMatch ? contentMatch[1] : "";
+                        const title = titleMatch ? titleMatch[1] : "";
+                        const source = sourceMatch ? sourceMatch[1] : "";
+
+                        if (!content.trim()) {
+                            return;
+                        }
+
+                        content = content
+                            .replace(/\\n/g, "\n\n")
+                            .replace(/\.\s{2,}/g, ".\n\n")
+                            .trim();
+
+                        formattedData.push(`<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`);
+                    });
+                }
+            });
+        }
+
+        return formattedData.join("\n\n");
+    } catch (error) {
+        console.error("Error parsing content:", error);
+        return "Invalid input format";
+    }
+}
+
 function parseFormattedThoughts(html: string): ThoughtItem[] {
     if (!html || html.trim() === "") {
         return [];
@@ -54,33 +97,45 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
 
     const items: ThoughtItem[] = [];
 
-    function formatContentBlocks(text: string): string {
-        let cleaned = text
-            .replace(/\n/g, "\n")
-            .replace(/\\n/g, "\n")
-            .replace(/[\[\]{}()"'\\]/g, "")
-            .replace(/\s+/g, " ");
-        cleaned = cleaned.replace(/(^|\n)\s*n(?=\w)/g, "$1");
-        cleaned = cleaned.replace(/\.\s*([^\n:]+:)/g, ".\n\n$1");
-        cleaned = cleaned.replace(/(Title:\s*)([\s\S]*?)(?=(?:Content:|$))/gi, "");
-        cleaned = cleaned.replace(/(['{\[]*\s*)(content|title)(\s*['}\]]*\s*:)/gi, (match, pre, key, post) => {
-            const label = key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
-            return `\n\n<strong>${label}:</strong>\n\n`;
-        });
-        cleaned = cleaned.replace(/subquery_1: query:.*?(\n|$)/gi, "");
-        return cleaned.trim();
-    }
-
     let afterContent = false;
     sections.forEach(section => {
         let cleanSection = section
             .replace(/<hr \/>/g, "")
             .replace(/<br \/>/g, "\n")
             .replace(/(\d+)\\\./g, "$1.")
+            .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
             .trim();
 
         if (cleanSection) {
             const colonIndex = cleanSection.indexOf(":");
+
+            function cleanPotentialTitle(potentialTitle: string): string {
+                if (potentialTitle.includes("title")) {
+                    potentialTitle = potentialTitle
+                        .replace(/title/gi, "")
+                        .replace(/["',.]/g, "")
+                        .trim();
+                }
+                return potentialTitle;
+            }
+
+            function extractContentDetails(value: string): string {
+                const contentMatch = value.match(/'content':\s*'(.*?)'/);
+                const titleMatch = value.match(/'title':\s*'(.*?)'/);
+                const sourceMatch = value.match(/'source':\s*'(.*?)'/);
+
+                let content = contentMatch ? contentMatch[1] : "";
+                const title = titleMatch ? titleMatch[1] : "";
+                const source = sourceMatch ? sourceMatch[1] : "";
+
+                if (!content.trim()) {
+                    return "";
+                }
+
+                content = content.replace(/\\n/g, "\n").trim();
+
+                return `<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`;
+            }
 
             if (colonIndex > -1 && colonIndex < 100) {
                 let potentialTitle = cleanSection.slice(0, colonIndex).trim();
@@ -96,6 +151,8 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
                     potentialTitle = "Context";
                 }
 
+                potentialTitle = cleanPotentialTitle(potentialTitle);
+
                 if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.?\s/.test(potentialTitle)) {
                     const title = potentialTitle;
                     let value = cleanSection.slice(colonIndex + 1).trim();
@@ -110,13 +167,49 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
                     items.push({ title: "", value: cleanSection });
                 }
             } else {
-                const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
-                if (finalThoughtsRegex.test(cleanSection.trim())) {
-                    let match = cleanSection.trim().match(finalThoughtsRegex);
-                    let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
-                    let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
-                    let formatted = `<strong>${prefix}:</strong> ` + value.replace(/(\\n)+/g, "<br />");
-                    items.push({ title: "", value: formatted });
+                const analysisRegex = /###\s*Sales Factory Performance Analysis/i;
+                if (analysisRegex.test(cleanSection)) {
+                    const lines = cleanSection.split("\n").filter(line => line.trim() !== "");
+
+                    let currentTitle = "";
+                    let currentValue = "";
+
+                    function pushItem() {
+                        if (currentValue.trim()) {
+                            items.push({ title: currentTitle, value: currentValue.trim() });
+                            currentValue = "";
+                        }
+                    }
+
+                    for (const line of lines) {
+                        if (line.startsWith("### ") || line.startsWith("#### ")) {
+                            pushItem();
+                            currentTitle = line.replace(/#+\s*/, "").trim();
+                        } else if (line.trim() === "---") {
+                            pushItem();
+                            currentTitle = "";
+                        } else {
+                            currentValue += line.replace(/\\/g, "") + "\n";
+                        }
+                    }
+                    pushItem();
+                } else {
+                    const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
+                    if (finalThoughtsRegex.test(cleanSection.trim())) {
+                        let match = cleanSection.trim().match(finalThoughtsRegex);
+                        let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
+                        let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
+
+                        const formatted = extractContentDetails(value);
+                        if (formatted) {
+                            items.push({ title: "", value: formatted });
+                        }
+                    } else {
+                        const formatted = extractContentDetails(cleanSection);
+                        if (formatted) {
+                            items.push({ title: "", value: formatted });
+                        }
+                    }
                 }
             }
         }
