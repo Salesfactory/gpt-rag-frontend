@@ -27,6 +27,7 @@ def app(monkeypatch):
     """Creates and configures a new app instance for each test."""
     monkeypatch.setenv("AZURE_DB_ID", "dummy-value-for-testing")
     monkeypatch.setenv("AZURE_DB_NAME", "dummy-value-for-testing")
+    monkeypatch.setenv("AZURE_KEY_VAULT_NAME", "dummy-value-for-testing")
 
     from app import upload_source_document
 
