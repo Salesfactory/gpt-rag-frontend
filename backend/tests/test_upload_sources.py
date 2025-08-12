@@ -30,22 +30,25 @@ def app(monkeypatch):
     monkeypatch.setenv("AZURE_KEY_VAULT_NAME", "dummy-value-for-testing")
 
     from app import upload_source_document
+    import utils  # adjust to your actual module path
 
-    # Patch the external dependencies
+    # Patch external dependencies
     monkeypatch.setattr("app.setup_llm", lambda: FakeLLM())
     fake_blob_mgr = FakeBlobMgr()
     monkeypatch.setattr("app.BlobStorageManager", lambda: fake_blob_mgr)
 
+    # Patch Azure Key Vault call to avoid real network access
+    monkeypatch.setattr(utils, "get_azure_key_vault_secret", lambda name: "fake-secret-value")
+
     app = Flask(__name__)
     app.config["TESTING"] = True
-
-    # Attach for easy access in the test
     app.fake_blob_mgr = fake_blob_mgr
 
-    # Register the route with the real endpoint path
-    app.add_url_rule("/api/upload-source-document",
-                     view_func=upload_source_document,
-                     methods=["POST"])
+    app.add_url_rule(
+        "/api/upload-source-document",
+        view_func=upload_source_document,
+        methods=["POST"]
+    )
     return app
 
 def test_upload_generates_description_and_uploads(app):
