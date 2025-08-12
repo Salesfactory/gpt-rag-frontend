@@ -165,10 +165,16 @@
 }
 
 .orgTitle {
-    font-weight: 500;
-    color: #1f2937;
-    margin: 0 0 0.25rem 0;
-    font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: 200px;
+  display: block;
 }
 
 .orgDetails {

@@ -33,39 +33,13 @@ function setCookie(name: string, value: string | number | boolean, days: number)
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
-const MAX_LABEL_CHARS = 10 as const;
+const MAX_LABEL_CHARS = 10;
 const ELLIPSIS = "...";
 
 const graphemeSegmenter =
   typeof Intl !== "undefined" && "Segmenter" in Intl
     ? new Intl.Segmenter("en", { granularity: "grapheme" })
     : null;
-
-function truncateLabel(input: string, max = MAX_LABEL_CHARS): string {
-  const normalizedLabel = (input ?? "").trim();
-  if (!normalizedLabel) return normalizedLabel;
-
-  if (graphemeSegmenter) {
-    let result = "";
-    let graphemeCount = 0;
-    for (const { segment } of graphemeSegmenter.segment(normalizedLabel)) {
-      if (graphemeCount === max) return result + ELLIPSIS;
-      result += segment;
-      graphemeCount++;
-    }
-    return result;
-  }
-
-  let result = "";
-  let charCount = 0;
-  for (const char of normalizedLabel) {
-    if (charCount === max) return result + ELLIPSIS;
-    result += char;
-    charCount++;
-  }
-  return result;
-}
-
 
 
 const OrganizationModal = ({ isOpen, onClose }: Props) => {
@@ -203,15 +177,15 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                             </svg>
                                         </div>
                                         <div>
-                                            <h3 className={styles.orgTitle}>{truncateLabel(org.name)}</h3>
+                                            
+                                            <h3 className={styles.orgTitle}>{org.name}</h3>
                                             <div className={styles.orgDetails}>
                                                 <span className={`${styles.roleBadge} ${roleStyles[org.role.toLowerCase()] || styles.roleUser}`}>
                                                     {roleDisplayNames[org.role.toLowerCase()] || org.role}
                                                 </span>
                                             </div>
                                         </div>
-                                    </div>
-
+                                     </div>
                                     {selectedOrgId === org.id && (
                                         <div className={styles.check}>
                                             <svg width="12" height="12" fill="white" viewBox="0 0 20 20">
