@@ -108,6 +108,34 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
         if (cleanSection) {
             const colonIndex = cleanSection.indexOf(":");
 
+            function cleanPotentialTitle(potentialTitle: string): string {
+                if (potentialTitle.includes("title")) {
+                    potentialTitle = potentialTitle
+                        .replace(/title/gi, "")
+                        .replace(/["',.]/g, "")
+                        .trim();
+                }
+                return potentialTitle;
+            }
+
+            function extractContentDetails(value: string): string {
+                const contentMatch = value.match(/'content':\s*'(.*?)'/);
+                const titleMatch = value.match(/'title':\s*'(.*?)'/);
+                const sourceMatch = value.match(/'source':\s*'(.*?)'/);
+
+                let content = contentMatch ? contentMatch[1] : "";
+                const title = titleMatch ? titleMatch[1] : "";
+                const source = sourceMatch ? sourceMatch[1] : "";
+
+                if (!content.trim()) {
+                    return "";
+                }
+
+                content = content.replace(/\\n/g, "\n").trim();
+
+                return `<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`;
+            }
+
             if (colonIndex > -1 && colonIndex < 100) {
                 let potentialTitle = cleanSection.slice(0, colonIndex).trim();
 
@@ -121,6 +149,8 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
                 if (potentialTitle === "Content") {
                     potentialTitle = "Context";
                 }
+
+                potentialTitle = cleanPotentialTitle(potentialTitle);
 
                 if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.?\s/.test(potentialTitle)) {
                     const title = potentialTitle;
@@ -141,8 +171,16 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
                     let match = cleanSection.trim().match(finalThoughtsRegex);
                     let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
                     let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
-                    let formatted = `<strong>${prefix}:</strong> ` + value.replace(/(\\n)+/g, "<br />");
-                    items.push({ title: "", value: formatted });
+
+                    const formatted = extractContentDetails(value);
+                    if (formatted) {
+                        items.push({ title: "", value: formatted });
+                    }
+                } else {
+                    const formatted = extractContentDetails(cleanSection);
+                    if (formatted) {
+                        items.push({ title: "", value: formatted });
+                    }
                 }
             }
         }
