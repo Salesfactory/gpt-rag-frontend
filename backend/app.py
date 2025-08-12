@@ -111,6 +111,9 @@ from shared.cosmo_db import (
     update_competitor_by_id,
     get_items_to_delete_by_brand,
 )
+from data_summary.config import get_azure_openai_config
+from data_summary.llm import PandasAIClient
+from data_summary.summarize import create_description
 
 load_dotenv(override=True)
 
@@ -185,6 +188,10 @@ auth = Auth(
     b2c_edit_profile_user_flow=os.getenv("EDITPROFILE_USER_FLOW"),
 )
 
+def setup_llm() -> PandasAIClient:
+    cfg = get_azure_openai_config(deployment_name="gpt-4.1")
+    llm = PandasAIClient(cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name)
+    return llm
 
 def handle_auth_error(func):
     """Decorator to handle authentication errors consistently"""
@@ -4186,6 +4193,7 @@ def get_source_documents():
 
 @app.route("/api/upload-source-document", methods=["POST"])
 def upload_source_document():
+    llm = setup_llm()
     try:
         # Check if file is in the request
         if 'file' not in request.files:
@@ -4222,8 +4230,10 @@ def upload_source_document():
 
         if file.filename.endswith((".csv", ".xls", ".xlsx")):
             logger.info(f"Gen AI description for file '{file.filename}'")
-            metadata["description"] = " " # Here Should Go the AI Generated Description for the metadata
-        
+            description = str(create_description(temp_file_path, llm=llm))
+            logger.info(f"Generated Description of file {temp_file_path}: {description}")
+            metadata["description"] = description
+
         # Initialize blob storage manager and upload file
         blob_storage_manager = BlobStorageManager()
         
@@ -4233,10 +4243,6 @@ def upload_source_document():
             metadata=metadata, 
             container = os.getenv("BLOB_CONTAINER_NAME")
         )
-        
-        # Remove temporary file
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
             
         if result["status"] == "success":
             logger.info(f"Successfully uploaded file '{file.filename}' to '{blob_folder}'")
@@ -4245,10 +4251,15 @@ def upload_source_document():
             error_msg = f"Error uploading file: {result.get('error', 'Unknown error')}"
             logger.error(error_msg)
             return create_error_response(error_msg, 500)
-            
+        
     except Exception as e:
         logger.exception(f"Unexpected error in upload_source_to_blob: {e}")
         return create_error_response("Internal Server Error", 500)
+    
+    finally: 
+        # Remove temporary file
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
 
 @app.route("/api/delete-source-document", methods=["DELETE"])
 def delete_source_document():
