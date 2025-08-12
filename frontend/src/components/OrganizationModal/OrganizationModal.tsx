@@ -33,6 +33,7 @@ function setCookie(name: string, value: string | number | boolean, days: number)
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
+
 const OrganizationModal = ({ isOpen, onClose }: Props) => {
     const { user } = useAppContext();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -168,6 +169,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                             </svg>
                                         </div>
                                         <div>
+                                            
                                             <h3 className={styles.orgTitle}>{org.name}</h3>
                                             <div className={styles.orgDetails}>
                                                 <span className={`${styles.roleBadge} ${roleStyles[org.role.toLowerCase()] || styles.roleUser}`}>
@@ -175,8 +177,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                                 </span>
                                             </div>
                                         </div>
-                                    </div>
-
+                                     </div>
                                     {selectedOrgId === org.id && (
                                         <div className={styles.check}>
                                             <svg width="12" height="12" fill="white" viewBox="0 0 20 20">
