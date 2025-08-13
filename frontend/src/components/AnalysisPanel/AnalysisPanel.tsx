@@ -38,190 +38,106 @@ const closeButtonStyle = {
     }
 };
 
-interface ThoughtItem {
-    title: string;
-    value: string;
-}
-
-function formatContentBlocks(content: string): string {
-    try {
-        const formattedData: string[] = [];
-
-        const subqueryRegex = /'documents': \[.*?\]/gs;
-        const documentRegex = /\{.*?\}/gs;
-
-        const subqueries = content.match(subqueryRegex);
-        if (subqueries) {
-            subqueries.forEach(subquery => {
-                const documents = subquery.match(documentRegex);
-                if (documents) {
-                    documents.forEach(document => {
-                        const contentMatch = document.match(/'content':\s*'(.*?)'/);
-                        const titleMatch = document.match(/'title':\s*'(.*?)'/);
-                        const sourceMatch = document.match(/'source':\s*'(.*?)'/);
-
-                        let content = contentMatch ? contentMatch[1] : "";
-                        const title = titleMatch ? titleMatch[1] : "";
-                        const source = sourceMatch ? sourceMatch[1] : "";
-
-                        if (!content.trim()) {
-                            return;
-                        }
-
-                        content = content
-                            .replace(/\\n/g, "\n\n")
-                            .replace(/\.\s{2,}/g, ".\n\n")
-                            .trim();
-
-                        formattedData.push(`<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`);
-                    });
-                }
-            });
-        }
-
-        return formattedData.join("\n\n");
-    } catch (error) {
-        console.error("Error parsing content:", error);
-        return "Invalid input format";
-    }
-}
-
-function parseFormattedThoughts(html: string): ThoughtItem[] {
-    if (!html || html.trim() === "") {
-        return [];
-    }
-
-    const sections = html
-        .split(/<hr \/><br \/><br \/>|<br \/><hr \/><br \/>/)
-        .map(section => section.trim())
-        .filter(section => section.length > 0);
-
-    const items: ThoughtItem[] = [];
-
-    let afterContent = false;
-    sections.forEach(section => {
-        let cleanSection = section
-            .replace(/<hr \/>/g, "")
-            .replace(/<br \/>/g, "\n")
-            .replace(/(\d+)\\\./g, "$1.")
-            .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
-            .trim();
-
-        if (cleanSection) {
-            const colonIndex = cleanSection.indexOf(":");
-
-            function cleanPotentialTitle(potentialTitle: string): string {
-                if (potentialTitle.includes("title")) {
-                    potentialTitle = potentialTitle
-                        .replace(/title/gi, "")
-                        .replace(/["',.]/g, "")
-                        .trim();
-                }
-                return potentialTitle;
-            }
-
-            function extractContentDetails(value: string): string {
-                const contentMatch = value.match(/Content:\s*(.*?)$/s);
-                if (contentMatch) {
-                    return contentMatch[1].replace(/\\n/g, "\n").trim();
-                }
-                return value;
-            }
-
-            function detectSubquery(value: string): boolean {
-                return /subquery_1/i.test(value);
-            }
-
-            if (colonIndex > -1 && colonIndex < 100) {
-                let potentialTitle = cleanSection.slice(0, colonIndex).trim();
-
-                if (
-                    potentialTitle === "Rewritten Query" ||
-                    potentialTitle === "Required Retrieval" ||
-                    potentialTitle === "Context Retrieved using the rewritten query"
-                ) {
-                    return;
-                }
-                if (potentialTitle === "Content") {
-                    potentialTitle = "Context";
-                }
-
-                potentialTitle = cleanPotentialTitle(potentialTitle);
-
-                if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.\?\s/.test(potentialTitle)) {
-                    const title = potentialTitle;
-                    let value = cleanSection.slice(colonIndex + 1).trim();
-                    if (detectSubquery(value)) {
-                        value = formatContentBlocks(value);
-                        afterContent = true;
-                    } else {
-                        value = extractContentDetails(value);
-                    }
-                    items.push({ title, value });
-                } else {
-                    items.push({ title: "", value: cleanSection });
-                }
-            } else {
-                const analysisRegex = /###\s*Sales Factory Performance Analysis/i;
-                if (analysisRegex.test(cleanSection)) {
-                    const lines = cleanSection.split("\n").filter(line => line.trim() !== "");
-
-                    let currentTitle = "";
-                    let currentValue = "";
-
-                    function pushItem() {
-                        if (currentValue.trim()) {
-                            items.push({ title: currentTitle, value: currentValue.trim() });
-                            currentValue = "";
-                        }
-                    }
-
-                    for (const line of lines) {
-                        if (line.startsWith("### ") || line.startsWith("#### ")) {
-                            pushItem();
-                            currentTitle = line.replace(/#+\s*/, "").trim();
-                        } else if (line.trim() === "---") {
-                            pushItem();
-                            currentTitle = "";
-                        } else {
-                            currentValue += line.replace(/\\/g, "") + "\n";
-                        }
-                    }
-                    pushItem();
-                } else {
-                    const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
-                    if (finalThoughtsRegex.test(cleanSection.trim())) {
-                        let match = cleanSection.trim().match(finalThoughtsRegex);
-                        let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
-                        let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
-
-                        const formatted = extractContentDetails(value);
-                        if (formatted) {
-                            items.push({ title: "", value: formatted });
-                        }
-                    } else {
-                        const formatted = extractContentDetails(cleanSection);
-                        if (formatted) {
-                            items.push({ title: "", value: formatted });
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    return items;
-}
-
 export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
-    let formattedThoughts = "";
-    console.log("answer thought: ", answer.thoughts);
-    let pensamientos = parseThoughts(answer.thoughts);
-    console.log("Pensamientos: ", pensamientos);
+    let thoughts = parseThoughts(answer.thoughts);
+
+    // --- Metadata extraction from answer.thoughts (text before "Content:") ---
+    const rawThoughtsToString = (v: unknown): string => {
+        if (typeof v === "string") return v;
+        if (Array.isArray(v)) return v.filter(x => typeof x === "string").join("\n");
+        return "";
+    };
+
+    const extractPreContent = (s: string): string => {
+        if (!s) return "";
+        const idx = s.search(/\bContent\s*:/i);
+        return idx === -1 ? s : s.slice(0, idx);
+    };
+
+    const parseMeta = (s: string) => {
+        const pick = (label: string): string | undefined => {
+            const re = new RegExp(label + "\\s*:\\s*([^/\\\r\\\n]+)", "i");
+            const m = s.match(re);
+            return m ? m[1].trim() : undefined;
+        };
+        return {
+            modelUsed: pick("Model\\s*Used"),
+            toolSelected: pick("Tool\\s*Selected"),
+            originalQuery: pick("Original\\s*Query"),
+            rewrittenQuery: pick("Rewritten\\s*Query"),
+            requiredRetrieval: pick("Required\\s*Retrieval"),
+            documentsRetrieved: pick("Number\\s*of\\s*documents\\s*retrieved"),
+            mcpToolsUsed: pick("MCP\\s*Tools\\s*Used")
+        };
+    };
+
+    const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
+    const meta = parseMeta(preContent);
+    const hasAnyMeta = Object.values(meta).some(Boolean);
+
+    // Helper: strip all HTML/CSS/JS, keep simple line breaks, decode entities
+    const toPlainText = (html: string | undefined | null): string => {
+        if (!html) return "";
+        let src = String(html);
+        // Remove <style> and <script> blocks entirely (including content)
+        src = src.replace(/<\s*style\b[^>]*>[\s\S]*?<\s*\/\s*style\s*>/gi, "");
+        src = src.replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "");
+        // Remove CSS comments like /* ... */
+        src = src.replace(/\/\*[\s\S]*?\*\//g, "");
+        // Remove standalone CSS blocks that contain semicolons (to avoid nuking JSON)
+        src = src.replace(/[^\{]+\{[^}]*;[^}]*\}/g, "");
+        // Normalize common break tags to newlines, drop opening <p>
+        src = src
+            .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+            .replace(/<\s*\/p\s*>/gi, "\n")
+            .replace(/<\s*p\b[^>]*>/gi, "");
+        // Strip remaining tags/attrs
+        let stripped = DOMPurify.sanitize(src, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+        // Decode HTML entities
+        if (typeof window !== "undefined") {
+            const textarea = document.createElement("textarea");
+            textarea.innerHTML = stripped;
+            stripped = textarea.value;
+        }
+        // Remove incomplete links without protocol (e.g., .domain.com/path or www.domain.com/path)
+        stripped = stripped.replace(/(^|\s)(?!(?:https?:\/\/))(?:www\.|\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[\w\-./?%&=+#@]*)?/gi, "$1");
+        // Remove stray characters like '">', "'>" or standalone '>' left from broken HTML
+        stripped = stripped.replace(/"?>/g, "");
+        // Cleanup whitespace
+        return stripped
+            .replace(/\u00A0/g, " ")
+            .replace(/\s+\n/g, "\n")
+            .trim();
+    };
+    const filteredThoughts = (thoughts || []).filter((p: any) => {
+        const title = toPlainText(p?.title).toLowerCase();
+        return !title.includes("assistant") && !title.includes("construction adhesives");
+    });
+
+    // Helpers to sanitize and render sources
+    const sourcePlain = (val: unknown): string => {
+        if (val == null) return "";
+        let text = DOMPurify.sanitize(String(val), { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+        if (typeof window !== "undefined") {
+            const textarea = document.createElement("textarea");
+            textarea.innerHTML = text;
+            text = textarea.value;
+        }
+        return text.replace(/\u00A0/g, " ").trim();
+    };
+
+    const toHref = (val: unknown): string | null => {
+        const s = sourcePlain(val);
+        if (!s) return null;
+        if (/^https?:\/\//i.test(s)) return s;
+        if (/^www\./i.test(s)) return `https://${s}`;
+        if (/^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(s)) return `https://${s}`;
+        return null;
+    };
     return (
         <>
             <Pivot
@@ -260,42 +176,120 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     )}
                 >
                     <div className={styles.thoughtProcess}>
-                        {/* {thoughtItems.map((item, index) => (
-                            <div
-                                key={index}
-                                style={{
-                                    backgroundColor: "#f9fafb",
-                                    padding: "12px",
-                                    marginBottom: "10px",
-                                    borderRadius: "6px"
-                                }}
-                            >
-                                {item.title && (
-                                    <h3
+                        {hasAnyMeta && (
+                            <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+                                {meta.modelUsed && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Model Used</h4>
+                                        <p className={styles.contentCard}>{meta.modelUsed}</p>
+                                    </section>
+                                )}
+                                {meta.toolSelected && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Tool Selected</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
+                                    </section>
+                                )}
+                                {meta.originalQuery && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Original Query</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
+                                    </section>
+                                )}
+                                {meta.rewrittenQuery && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Rewritten Query</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.rewrittenQuery)}</p>
+                                    </section>
+                                )}
+                                {meta.mcpToolsUsed && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>MCP Tools Used</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolsUsed)}</p>
+                                    </section>
+                                )}
+                            </div>
+                        )}
+                        {filteredThoughts &&
+                            filteredThoughts.length > 0 &&
+                            filteredThoughts.map((p: any, index: number) => (
+                                <div
+                                    key={index}
+                                    style={{
+                                        backgroundColor: "#f9fafb",
+                                        padding: "12px",
+                                        marginBottom: "10px",
+                                        borderRadius: "6px"
+                                    }}
+                                >
+                                    {p.title && (
+                                        <h3
+                                            style={{
+                                                margin: "0 0 6px 0",
+                                                color: "#333",
+                                                fontWeight: 600,
+                                                fontSize: "1rem"
+                                            }}
+                                        >
+                                            {toPlainText(p.title)}
+                                        </h3>
+                                    )}
+                                    <p
                                         style={{
-                                            margin: "0 0 6px 0",
-                                            color: "#333",
-                                            fontWeight: "600",
-                                            fontSize: "1rem"
+                                            margin: 0,
+                                            color: "#555",
+                                            whiteSpace: "pre-wrap",
+                                            fontSize: "14px",
+                                            lineHeight: 1.4
                                         }}
                                     >
-                                        {item.title}
-                                    </h3>
-                                )}
-                                <p
-                                    style={{
-                                        margin: 0,
-                                        color: "#555",
-                                        whiteSpace: "pre-wrap",
-                                        fontSize: "14px",
-                                        lineHeight: "1.4"
-                                    }}
-                                    dangerouslySetInnerHTML={{
-                                        __html: DOMPurify.sanitize(item.value.split("<br />").join("<br />"))
-                                    }}
-                                />
-                            </div>
-                        ))} */}
+                                        {toPlainText(p.content)}
+                                    </p>
+                                    {(p.sources || p.source) && (
+                                        <div
+                                            style={{
+                                                marginTop: 8,
+                                                color: "#6b7280",
+                                                fontSize: 12
+                                            }}
+                                        >
+                                            Source:{" "}
+                                            {Array.isArray(p.sources || p.source) ? (
+                                                <ul style={{ margin: "4px 0 0 16px" }}>
+                                                    {(p.sources || p.source).map((s: unknown, i: number) => {
+                                                        const href = toHref(s);
+                                                        const label = sourcePlain(s);
+                                                        return (
+                                                            <li key={i} style={{ marginBottom: 2 }}>
+                                                                {href ? (
+                                                                    <a href={href} target="_blank" rel="noreferrer noopener" style={{ color: "#2563eb" }}>
+                                                                        {label}
+                                                                    </a>
+                                                                ) : (
+                                                                    <span>{label}</span>
+                                                                )}
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            ) : (
+                                                (() => {
+                                                    const single = (p.sources || p.source) as unknown;
+                                                    const href = toHref(single);
+                                                    const label = sourcePlain(single);
+                                                    return href ? (
+                                                        <a href={href} target="_blank" rel="noreferrer noopener" style={{ color: "#2563eb" }}>
+                                                            {label}
+                                                        </a>
+                                                    ) : (
+                                                        <span>{label}</span>
+                                                    );
+                                                })()
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                     </div>
                 </PivotItem>
 
