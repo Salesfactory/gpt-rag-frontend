@@ -64,24 +64,15 @@ const UploadResources: React.FC = () => {
     // Define columns for DetailsList
     const columns: IColumn[] = [
         {
-            key: "name",
-            name: "Name",
-            fieldName: "name",
-            minWidth: 200,
-            maxWidth: 500,
+            key: "files",
+            name: "Files",
+            fieldName: "files",
+            minWidth: 500,
+            maxWidth: 1300,
             isResizable: true,
             onRender: (item: BlobItem) => {
                 const fileName = item.name.split("/").pop() || "";
                 const fileExtension = fileName.split(".").pop()?.toLowerCase();
-
-                let iconColorClass = "";
-                if (fileExtension === "pdf") {
-                    iconColorClass = styles.icon_pdf;
-                } else if (EXCEL_FILES.includes(fileExtension || "")) {
-                    iconColorClass = styles.icon_excel;
-                } else if (["doc", "docx", "odt", "rtf"].includes(fileExtension || "")) {
-                    iconColorClass = styles.icon_doc;
-                }
 
                 const maxLength = MAX_FILENAME_LENGTH;
                 let displayName = fileName;
@@ -92,49 +83,26 @@ const UploadResources: React.FC = () => {
 
                 return (
                     <div className={styles.file_name_cell}>
-                        <FileText className={`${styles.file_icon} ${iconColorClass}`} />
-                        <Text className={styles.file_text} title={fileName}>
-                            {displayName}
-                        </Text>
+                        <div className={styles.file_info_row}>
+                            <Text className={styles.file_text} title={fileName}>
+                                {displayName}
+                            </Text>
+                            <div className={styles.file_extension_pill}>
+                                {fileExtension?.toUpperCase() || "FILE"}
+                            </div>
+                            <div className={styles.file_size_pill}>
+                                {formatFileSize(item.size)}
+                            </div>
+                        </div>
+                        <span>Uploaded on {formatDate(item.created_on)}</span>
                     </div>
                 );
             }
         },
         {
-            key: "size",
-            name: "Size",
-            fieldName: "size",
-            minWidth: 70,
-            maxWidth: 90,
-            isResizable: true,
-            onRender: (item: BlobItem) => {
-                return <Text className={styles.file_text_list}>{formatFileSize(item.size)}</Text>;
-            }
-        },
-        {
-            key: "created_on",
-            name: "Created",
-            fieldName: "created_on",
-            minWidth: 100,
-            maxWidth: 180,
-            isResizable: true,
-            onRender: (item: BlobItem) => {
-                return <Text className={styles.file_text_list}>{formatDate(item.created_on)}</Text>;
-            }
-        },
-        {
-            key: "content_type",
-            name: "Type",
-            fieldName: "content_type",
-            minWidth: 100,
-            maxWidth: 280,
-            isResizable: true,
-            onRender: (item: BlobItem) => <Text className={styles.file_text_list}>{item.content_type}</Text>
-        },
-        {
             key: "actions",
             name: "Actions",
-            minWidth: 70,
+            minWidth: 100,
             maxWidth: 70,
             isResizable: false,
             isPadded: false,
@@ -499,7 +467,8 @@ const UploadResources: React.FC = () => {
                             onRenderRow={(props, defaultRender) => {
                                 if (!props || !defaultRender) return null;
 
-                                const backgroundColor = props.itemIndex % 2 === 0 ? "#f8f8f8" : "#ffffff";
+                                const backgroundColor = "#ffffff";
+
 
                                 const customStyles = {
                                     root: {
