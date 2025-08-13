@@ -505,28 +505,70 @@ const UploadResources: React.FC = () => {
                 }}
             >
                 <div className={styles.upload_dialog_content}>
-                    <div
-                        className={`${styles.dropzone} ${isDragging ? styles.dragging : ""}`}
-                        onDragEnter={handleDragEnter}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                    >
-                        <input
-                            type="file"
-                            id="file-upload"
-                            ref={fileInputRef}
-                            multiple
-                            onChange={handleFileSelect}
-                            className={styles.file_input}
-                            accept={ALLOWED_FILE_TYPES.join(",")}
-                        />
-                        <label htmlFor="file-upload" className={styles.file_label}>
-                            <Upload className={styles.upload_icon} />
-                            <Text>{isDragging ? "Drop files here" : "Drag files here or click to browse"}</Text>
-                            <Text variant="small">Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}</Text>
-                        </label>
-                    </div>
+                    {isUploading ?  <div className={styles.processing_container}>
+                            {/* File names */}
+                            <div className={styles.processing_files}>
+                                <span className={styles.processing_files_loader_msg}>Processing Files</span>
+                                <div className={styles.processing_files_name}>
+                                    {/* {uploadedFileNames.map((name, index) => (
+                    <div key={index}>{name}</div>
+                  ))} */}
+                                    <span >Chess.pdf</span>
+                                </div>
+                            </div>
+
+                            {/* Spinner */}
+                            <div className={styles.spinner_container}>
+                                <div className={styles.spinner}>
+                                    {[...Array(8)].map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={styles.spinner_dot}
+                                            style={{
+                                                backgroundColor:
+                                                    i === 7
+                                                        ? "#065f46"
+                                                        : i === 6
+                                                            ? "#047857"
+                                                            : i === 0
+                                                                ? "#059669"
+                                                                : "#d1fae5",
+                                                transform: `translate(-50%, -50%) rotate(${i * 45
+                                                    }deg) translateY(-24px)`,
+                                                animationDelay: `${i * 0.125}s`
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                                <span>Processing</span>
+                            </div>
+                        </div>
+                         :
+                         <div
+                            className={`${styles.dropzone} ${isDragging ? styles.dropzone_active : ""}`}
+                            onDragEnter={handleDragEnter}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
+                            <input
+                                type="file"
+                                id="file-upload"
+                                ref={fileInputRef}
+                                multiple
+                                onChange={handleFileSelect}
+                                className={styles.file_input}
+                                accept={ALLOWED_FILE_TYPES.join(",")}
+                            />
+                            <label htmlFor="file-upload" className={styles.file_label}>
+                                <Upload className={styles.upload_icon} />
+                                <Text>{isDragging ? "Drop files here" : "Drag files here or click to browse"}</Text>
+                                <Text variant="small">Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}</Text>
+                            </label>
+                        </div>
+                       }
+
+
 
                     {selectedFiles.length > 0 && (
                         <div className={styles.selected_files}>

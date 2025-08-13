@@ -20,21 +20,6 @@
     max-width: 800px;
 }
 
-.dropzone {
-    border: 2px dashed #ccc;
-    border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    background-color: #f9f9f9;
-    transition: all 0.3s ease;
-    margin: 20px 0;
-    cursor: pointer;
-}
-
-.dropzone:hover {
-    border-color: #16a34a;
-}
-
 .dragging {
     border-color: #78c435;
     background-color: rgba(0, 120, 212, 0.05);
@@ -343,12 +328,6 @@
     min-height: 300px;
 }
 
-/* Make the dialog dropzone a bit smaller */
-.upload_dialog_content .dropzone {
-    margin: 0;
-    padding: 30px;
-}
-
 
 .trashIcon {
     display: flex;
@@ -405,4 +384,76 @@
 
 .detailsListContainer :global(.ms-DetailsRow:nth-child(odd)) {
     background-color: #fff;
+}
+
+
+.processing_container {
+  text-align: center;
+}
+
+.processing_files {
+  margin-bottom: 2rem;
+}
+
+.processing_files_loader_msg {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: black;
+}
+
+.processing_files_name {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    color: #72767c;
+}
+
+.spinner_container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.spinner {
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+}
+.spinner_dot {
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0 0;
+  animation: fadeInOut 1s linear infinite;
+}
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.2; }
+  12.5% { opacity: 1; }
+}
+.message_box {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: left;
+}
+.message_box h5 {
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  padding: 3rem;
+  text-align: center;
+  background-color: #f9fafb;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+.dropzone_active {
+  border-color: #22c55e;
+  background-color: #f0fdf4;
 }
