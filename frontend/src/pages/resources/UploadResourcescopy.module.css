@@ -152,6 +152,8 @@
     display: flex;
     gap: 10px;
     align-items: center;
+    justify-content: center;
+    align-content: center;
 }
 
 .responsiveSearch {
@@ -264,8 +266,40 @@
 
 .file_name_cell {
     display: flex;
-    align-items: center;
-    gap: 20px;
+    flex-direction: column;
+    gap: 7px;
+    padding: 0.8rem;
+}
+
+
+.file_extension_pill {
+    margin-left: 0.5rem;
+    border-radius: 99999px;
+    line-height: 1rem;
+    font-size: 0.75rem;
+    display: inline-flex;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    padding-left: 0.50rem;
+    padding-right: 0.50rem;
+    background-color: #dbeafe;
+    color: #1e40af;
+
+}
+
+.file_size_pill {
+    margin-left: 0.5rem;
+    border-radius: 99999px;
+    line-height: 1rem;
+    font-size: 0.75rem;
+    display: inline-flex;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    padding-left: 0.50rem;
+    padding-right: 0.50rem;
+    background-color: #f3f4f6;
+    color: #374151;
+
 }
 
 .file_icon {
@@ -274,6 +308,10 @@
 
 .icon_pdf{
     color: #ff6900;
+}
+
+.icon_excel{
+    color: #71b33b;
 }
 
 .icon_doc{

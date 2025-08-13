@@ -93,11 +93,13 @@ export function setupTestUserAndOrg() {
                 id: "2d3afddf-8b77-4b53-a415-dcfff81bdb4d",
                 start_date: "2025-01-21 09:09:55",
                 content: "What is the customer pulse segment?",
+                organization_id: '0aad82ee-52ec-428e-b211-e9cc34b94457',
                 type: "default"
             },
             {
                 id: "04ec0c95-8d2d-451e-a192-94541dbd5496",
                 start_date: "2025-01-21 13:12:14",
+                organization_id: '0aad82ee-52ec-428e-b211-e9cc34b94457',
                 content: "how the customer pulse segment can help to sell a chopping cart?",
                 type: "default"
             }

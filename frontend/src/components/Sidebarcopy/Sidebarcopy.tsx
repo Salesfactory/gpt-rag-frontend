@@ -163,18 +163,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {
                             title: "Upload Resources",
                             href: "/upload-resources",
-                            roles: ["admin", "user", "platformAdmin"],
+                            roles: ["admin", "platformAdmin"],
                             tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
                         },
                         {
                             title: "Request Studies",
                             href: "/request-studies",
-                            roles: ["admin", "user", "platformAdmin"],
+                            roles: ["admin", "platformAdmin"],
                             tiers: ["Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
                         }
                     ],
                     tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user", "platformAdmin"]
+                    roles: ["admin", "platformAdmin"]
                 }
             ]
         },

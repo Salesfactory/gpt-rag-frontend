@@ -1,37 +1,49 @@
 /// <reference types="cypress" />
-// ***********************************************
-// This example commands.ts shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-//
-// declare global {
-//   namespace Cypress {
-//     interface Chainable {
-//       login(email: string, password: string): Chainable<void>
-//       drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
-//     }
-//   }
-// }
+
+import { setupTestUserAndOrg } from "../fixtures/setupTestUser";
+
+/* ───────────────────────────── Custom commands ─────────────────────────── */
+
+// Update the command implementations:
+Cypress.Commands.add("goHome", () => {
+    cy.url().should("include", "#/");
+});
+
+Cypress.Commands.add("focusChatInput", () => {
+    cy.get("textarea[placeholder*='Write your question']");
+});
+
+Cypress.Commands.add("openChat", () => {
+    setupTestUserAndOrg();
+    cy.visit("/");
+    cy.get("#headerCollapse").click();
+    cy.contains("a", /ai chat/i).click();
+    cy.url().should("include", "#/");
+});
+
+Cypress.Commands.add("askChat", (message: string) => {
+    cy.get("textarea[placeholder*='Write your question']").type(message);
+    cy.get("[aria-label='Ask a question button']").click();
+    cy.get("textarea[placeholder*='Write your question']"); // any element to keep chain
+});
+
+/**
+ * Shorthand for `[data-cy="value"]`.
+ * We keep the return type `Chainable<JQuery<HTMLElement>>` to satisfy TS.
+ */
+Cypress.Commands.add("dataCy", (value: string): Cypress.Chainable<JQuery<HTMLElement>> => cy.get(`[data-cy="${value}"]`));
+
+/* ──────────────────────────── TS augmentation ──────────────────────────── */
+declare global {
+    namespace Cypress {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        interface Chainable<Subject = any> {
+            openChat(): Chainable<Element>;
+            askChat(message: string): Chainable<Element>;
+            dataCy(value: string): Chainable<JQuery<HTMLElement>>;
+            goHome(): Chainable<void>;
+            focusChatInput(): Chainable<void>;
+        }
+    }
+}
+export {};

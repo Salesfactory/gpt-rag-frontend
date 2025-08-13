@@ -18,6 +18,7 @@ export type ConversationHistoryItem = {
     start_date: string;
     content: string;
     type: string;
+    organization_id: string;
 };
 
 export type ConversationChatItem = {
@@ -105,8 +106,8 @@ export type PostSettingsProps = {
     } | null;
     temperature: number;
     model: string;
-    font_family:string;
-    font_size:string;
+    font_family: string;
+    font_size: string;
 };
 
 export type SummarizationReportProps = {
@@ -114,4 +115,4 @@ export type SummarizationReportProps = {
     description: string;
     companyTicker: string;
     companyName: string;
-}
+};

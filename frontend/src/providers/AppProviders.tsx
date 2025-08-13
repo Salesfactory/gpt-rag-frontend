@@ -63,6 +63,7 @@ export interface ConversationHistoryItem {
     start_date: string;
     content: string;
     type: string;
+    organization_id: string;
     // Add other properties as needed
 }
 

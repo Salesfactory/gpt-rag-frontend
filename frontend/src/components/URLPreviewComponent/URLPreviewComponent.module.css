@@ -1,0 +1,258 @@
+.container {
+    display: inline-block;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+.loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    min-height: 100px;
+    background: #f8f9fa;
+}
+
+.loadingText {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.errorContainer {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+    min-height: 80px;
+}
+
+.errorIcon {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+}
+
+.errorText {
+    flex: 1;
+}
+
+.errorText p {
+    margin: 0 0 0.25rem 0;
+    font-weight: 500;
+    color: #c53030;
+}
+
+.errorText small {
+    color: #718096;
+    font-size: 0.8rem;
+}
+
+.image {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.thumbnail {
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.thumbnail:hover {
+    transform: scale(1.05);
+    opacity: 0.9;
+}
+
+.imageLoadingOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+}
+
+.filePreview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    min-width: 150px;
+}
+
+.fileIcon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+.fileName {
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
+    word-break: break-all;
+    max-width: 200px;
+}
+
+.downloadLink {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #4299e1;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.downloadLink:hover {
+    background: #3182ce;
+    color: white;
+    text-decoration: none;
+}
+
+/* Modal styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modalOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.modalContent {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modalCloseButton {
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    color: #333;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    z-index: 1001;
+}
+
+.modalCloseButton:hover {
+    background: #f7fafc;
+    transform: scale(1.1);
+}
+
+.modalImage {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .modalContent {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+        max-height: calc(100vh - 2rem);
+        padding: 0.5rem;
+    }
+    
+    .modalCloseButton {
+        top: -10px;
+        right: -10px;
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .thumbnail {
+        max-width: 120px;
+        max-height: 120px;
+    }
+    
+    .filePreview {
+        padding: 1rem;
+        min-width: 120px;
+    }
+    
+    .fileName {
+        font-size: 0.8rem;
+        max-width: 150px;
+    }
+}
+
+/* Animation for modal */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal {
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+/* Accessibility improvements */
+.image:focus,
+.thumbnail:focus {
+    outline: 2px solid #4299e1;
+    outline-offset: 2px;
+}
+
+.modalCloseButton:focus {
+    outline: 2px solid #4299e1;
+    outline-offset: 2px;
+}

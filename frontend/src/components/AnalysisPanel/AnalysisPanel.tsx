@@ -42,6 +42,49 @@ interface ThoughtItem {
     value: string;
 }
 
+function formatContentBlocks(content: string): string {
+    try {
+        const formattedData: string[] = [];
+
+        const subqueryRegex = /'documents': \[.*?\]/gs;
+        const documentRegex = /\{.*?\}/gs;
+
+        const subqueries = content.match(subqueryRegex);
+        if (subqueries) {
+            subqueries.forEach(subquery => {
+                const documents = subquery.match(documentRegex);
+                if (documents) {
+                    documents.forEach(document => {
+                        const contentMatch = document.match(/'content':\s*'(.*?)'/);
+                        const titleMatch = document.match(/'title':\s*'(.*?)'/);
+                        const sourceMatch = document.match(/'source':\s*'(.*?)'/);
+
+                        let content = contentMatch ? contentMatch[1] : "";
+                        const title = titleMatch ? titleMatch[1] : "";
+                        const source = sourceMatch ? sourceMatch[1] : "";
+
+                        if (!content.trim()) {
+                            return;
+                        }
+
+                        content = content
+                            .replace(/\\n/g, "\n\n")
+                            .replace(/\.\s{2,}/g, ".\n\n")
+                            .trim();
+
+                        formattedData.push(`<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`);
+                    });
+                }
+            });
+        }
+
+        return formattedData.join("\n\n");
+    } catch (error) {
+        console.error("Error parsing content:", error);
+        return "Invalid input format";
+    }
+}
+
 function parseFormattedThoughts(html: string): ThoughtItem[] {
     if (!html || html.trim() === "") {
         return [];
@@ -54,28 +97,114 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
 
     const items: ThoughtItem[] = [];
 
+    let afterContent = false;
     sections.forEach(section => {
         let cleanSection = section
             .replace(/<hr \/>/g, "")
             .replace(/<br \/>/g, "\n")
             .replace(/(\d+)\\\./g, "$1.")
+            .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
             .trim();
 
         if (cleanSection) {
             const colonIndex = cleanSection.indexOf(":");
 
-            if (colonIndex > -1 && colonIndex < 100) {
-                const potentialTitle = cleanSection.slice(0, colonIndex).trim();
+            function cleanPotentialTitle(potentialTitle: string): string {
+                if (potentialTitle.includes("title")) {
+                    potentialTitle = potentialTitle
+                        .replace(/title/gi, "")
+                        .replace(/["',.]/g, "")
+                        .trim();
+                }
+                return potentialTitle;
+            }
 
-                if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.?\s/.test(potentialTitle)) {
+            function extractContentDetails(value: string): string {
+                const contentMatch = value.match(/Content:\s*(.*?)$/s);
+                if (contentMatch) {
+                    return contentMatch[1].replace(/\\n/g, "\n").trim();
+                }
+                return value;
+            }
+
+            function detectSubquery(value: string): boolean {
+                return /subquery_1/i.test(value);
+            }
+
+            if (colonIndex > -1 && colonIndex < 100) {
+                let potentialTitle = cleanSection.slice(0, colonIndex).trim();
+
+                if (
+                    potentialTitle === "Rewritten Query" ||
+                    potentialTitle === "Required Retrieval" ||
+                    potentialTitle === "Context Retrieved using the rewritten query"
+                ) {
+                    return;
+                }
+                if (potentialTitle === "Content") {
+                    potentialTitle = "Context";
+                }
+
+                potentialTitle = cleanPotentialTitle(potentialTitle);
+
+                if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.\?\s/.test(potentialTitle)) {
                     const title = potentialTitle;
-                    const value = cleanSection.slice(colonIndex + 1).trim();
+                    let value = cleanSection.slice(colonIndex + 1).trim();
+                    if (detectSubquery(value)) {
+                        value = formatContentBlocks(value);
+                        afterContent = true;
+                    } else {
+                        value = extractContentDetails(value);
+                    }
                     items.push({ title, value });
                 } else {
                     items.push({ title: "", value: cleanSection });
                 }
             } else {
-                items.push({ title: "", value: cleanSection });
+                const analysisRegex = /###\s*Sales Factory Performance Analysis/i;
+                if (analysisRegex.test(cleanSection)) {
+                    const lines = cleanSection.split("\n").filter(line => line.trim() !== "");
+
+                    let currentTitle = "";
+                    let currentValue = "";
+
+                    function pushItem() {
+                        if (currentValue.trim()) {
+                            items.push({ title: currentTitle, value: currentValue.trim() });
+                            currentValue = "";
+                        }
+                    }
+
+                    for (const line of lines) {
+                        if (line.startsWith("### ") || line.startsWith("#### ")) {
+                            pushItem();
+                            currentTitle = line.replace(/#+\s*/, "").trim();
+                        } else if (line.trim() === "---") {
+                            pushItem();
+                            currentTitle = "";
+                        } else {
+                            currentValue += line.replace(/\\/g, "") + "\n";
+                        }
+                    }
+                    pushItem();
+                } else {
+                    const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
+                    if (finalThoughtsRegex.test(cleanSection.trim())) {
+                        let match = cleanSection.trim().match(finalThoughtsRegex);
+                        let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
+                        let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
+
+                        const formatted = extractContentDetails(value);
+                        if (formatted) {
+                            items.push({ title: "", value: formatted });
+                        }
+                    } else {
+                        const formatted = extractContentDetails(cleanSection);
+                        if (formatted) {
+                            items.push({ title: "", value: formatted });
+                        }
+                    }
+                }
             }
         }
     });
@@ -88,13 +217,11 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
-
     let formattedThoughts = "";
     try {
         if (answer.thoughts) {
             // Attempt to parse the entire string as JSON
             const thoughtData = JSON.parse(answer.thoughts);
-
             // Check if it has the expected structure with a "thoughts" array
             if (thoughtData && Array.isArray(thoughtData.thoughts) && thoughtData.thoughts.length > 0) {
                 // Extract the first element of the thoughts array
@@ -199,14 +326,10 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         fontSize: "14px",
                                         lineHeight: "1.4"
                                     }}
-                                >
-                                    {item.value.split("<br />").map((line, i) => (
-                                        <React.Fragment key={i}>
-                                            {line}
-                                            <br />
-                                        </React.Fragment>
-                                    ))}
-                                </p>
+                                    dangerouslySetInnerHTML={{
+                                        __html: DOMPurify.sanitize(item.value.split("<br />").join("<br />"))
+                                    }}
+                                />
                             </div>
                         ))}
                     </div>

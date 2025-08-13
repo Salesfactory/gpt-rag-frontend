@@ -1,3 +1,5 @@
+export {}; // Add this line at the top
+
 describe("Agent Section Tests", () => {
     beforeEach(() => {
         // Replace with the URL of your dashboard
@@ -93,12 +95,14 @@ describe("Agent Section Tests", () => {
                 {
                     id: "2d3afddf-8b77-4b53-a415-dcfff81bdb4d",
                     start_date: "2025-01-21 09:09:55",
+                    organization_id: "",
                     content: "hello",
                     type: "default"
                 },
                 {
                     id: "04ec0c95-8d2d-451e-a192-94541dbd5496",
                     start_date: "2025-01-21 13:12:14",
+                    organization_id: "",
                     content: "hello",
                     type: "default"
                 }

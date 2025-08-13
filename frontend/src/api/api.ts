@@ -1740,3 +1740,38 @@ export async function getItemsToDeleteByBrand({ brand_id, user }: { brand_id: st
 
   return result.data;
 }
+
+/**
+ * Generic function for fetching any file type from Azure blob storage
+ * @param fileName - The name/path of the file to fetch
+ * @param container - The container name (defaults to "documents")
+ * @returns Promise<Blob> - The file blob data
+ */
+export async function getFileBlob(fileName: string, container: string = "documents"): Promise<Blob> {
+    // Clean prefix 'documents/' if present
+    const cleanedFileName = fileName.startsWith('documents/') 
+        ? fileName.slice('documents/'.length) 
+        : fileName;
+
+    try {
+        const response = await fetch('/api/get-blob', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                container: container,
+                blob_name: cleanedFileName
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error fetching file: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.blob();
+    } catch (error) {
+        console.error('Error fetching file blob:', error);
+        throw new Error('Error fetching file.');
+    }
+}

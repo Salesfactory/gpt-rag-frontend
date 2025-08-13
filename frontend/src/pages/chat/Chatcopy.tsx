@@ -1,19 +1,16 @@
-import { useRef, useState, useEffect, useContext } from "react";
-import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Spinner } from "@fluentui/react";
+import { useRef, useState, useEffect } from "react";
+import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation } from "../../api";
-import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
+import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob } from "../../api";
+import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
-import { ExampleList } from "../../components/Example";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
-import { ClearChatButton } from "../../components/ClearChatButton";
 import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
-import salesLogo from "../../img/logo.png";
 import { useAppContext } from "../../providers/AppProviders";
 // import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
 //import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
@@ -22,10 +19,10 @@ import DownloadButton from "../../components/DownloadButton/DownloadButton";
 import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import newLogo from "../../img/SFAiLogo.png";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
+import { parseStreamWithMarkdownValidation, ParsedEvent } from "./streamParser";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -40,11 +37,9 @@ if (userLanguage.startsWith("pt")) {
 const Chat = () => {
     // speech synthesis is disabled by default
 
-    const { organization } = useAppContext();
     const speechSynthesisEnabled = false;
 
     const [placeholderText, setPlaceholderText] = useState("");
-    const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
     const [promptTemplate, setPromptTemplate] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
@@ -55,8 +50,6 @@ const Chat = () => {
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
     const {
-        showHistoryPanel,
-        showFeedbackRatingPanel,
         dataConversation,
         setDataConversation,
         chatId,
@@ -69,7 +62,6 @@ const Chat = () => {
         user,
         isFinancialAssistantActive,
         documentName,
-        isResizingAnalysisPanel,
         setisResizingAnalysisPanel
     } = useAppContext();
 
@@ -94,17 +86,19 @@ const Chat = () => {
     const restartChat = useRef<boolean>(false);
 
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
-        let agent;
+        /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         lastFileBlobUrl.current = fileBlobUrl;
         restartChat.current = false;
-        error && setError(undefined);
+        if (error) {
+            setError(undefined);
+        }
         setIsLoading(true);
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
         setLastAnswer("");
 
-        agent = isFinancialAssistantActive ? "financial" : "consumer";
+        const agent = isFinancialAssistantActive ? "financial" : "consumer";
 
         let history: ChatTurn[] = [];
         if (dataConversation.length > 0) {
@@ -153,109 +147,61 @@ const Chat = () => {
                 throw new Error("ReadableStream not supported in this browser.");
             }
 
+            /* ---------- 3 · Consume the stream via our parser with markdown validation ---------- */
             const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
             let result = "";
-            let resultObj = {
-                conversation_id: "",
-                answer: "",
-                thoughts: ""
-            };
-            let jsonBuffer = ""; // Buffer for incomplete JSON structures
+            let ctrlMsg: { conversation_id?: string; thoughts?: string } = {};
 
-            while (true) {
+            for await (const evt of parseStreamWithMarkdownValidation(reader)) {
+                /* allow user to abort mid-stream */
                 if (restartChat.current) {
                     handleNewChat();
                     return;
                 }
-                const { done, value } = await reader.read();
-                if (done) break;
 
-                const chunk = decoder.decode(value, { stream: true });
-
-                // Check if chunk contains a JSON structure
-                if (chunk.includes("{") || jsonBuffer) {
-                    // Add chunk to buffer
-                    jsonBuffer += chunk;
-
-                    // Try to find complete JSON structure
-                    const startIndex = jsonBuffer.indexOf("{");
-                    const endIndex = jsonBuffer.lastIndexOf("}");
-
-                    if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-                        try {
-                            const jsonString = jsonBuffer.substring(startIndex, endIndex + 1);
-                            const parsedObj = JSON.parse(jsonString);
-
-                            // Update resultObj if we have a valid conversation_id
-                            if (parsedObj.conversation_id) {
-                                resultObj = parsedObj;
-                                const conditionOne = answers.map(a => ({ user: a[0] }));
-                                if (conditionOne.length <= 0) {
-                                    setRefreshFetchHistory(true);
-                                    setChatId(resultObj.conversation_id);
-                                } else {
-                                    setRefreshFetchHistory(false);
-                                }
-                                setUserId(resultObj.conversation_id);
-                            }
-
-                            // Handle any text after the JSON structure
-                            const remainingText = jsonBuffer.substring(endIndex + 1);
-                            if (remainingText) {
-                                result += remainingText;
-                                setLastAnswer(result);
-                            }
-
-                            // Clear the buffer after successful parsing
-                            jsonBuffer = "";
-                        } catch (e) {
-                            // If parsing fails, keep the buffer for next iteration
-                            console.log("Incomplete JSON structure, waiting for more data");
+                if (evt.type === "json") {
+                    // ---- control message arriving from backend ----
+                    const { conversation_id, thoughts } = evt.payload;
+                    if (conversation_id && conversation_id !== ctrlMsg.conversation_id) {
+                        ctrlMsg = { conversation_id, thoughts };
+                        if (answers.length === 0) {
+                            setRefreshFetchHistory(true);
+                            setChatId(conversation_id);
+                        } else {
+                            setRefreshFetchHistory(false);
                         }
+                        setUserId(conversation_id);
                     }
                 } else {
-                    // Regular text content
-                    result += chunk;
-                    setLastAnswer(result);
+                    // ---- plain text / IMAGE_PREVIEW (markdown validation handled in parser) ----
+                    result += evt.payload;
+                    setLastAnswer(result); // incremental UI update
                 }
             }
 
-            const regex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
+            /* ---------- 4 · Post-stream tidy-up (citation cleanup etc.) ---------- */
+            const blobRegex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
             // Function to clean citations
             const cleanCitation = (citation: string) => {
-                return citation.replace(regex, "");
+                return citation.replace(blobRegex, "");
             };
+            result = result.replace(/\\[\\[(\\d+)\\]\\]\\((.*?)\\)/g, (_, n, cite) => `[[${n}]](${cleanCitation(cite)})`);
 
-            // Find and replace citations in the text
-            const citationRegex = /\[\[(\d+)\]\]\((.*?)\)/g;
-            result = result.replace(citationRegex, (match, number, citation) => {
-                const cleanedCitation = cleanCitation(citation);
-                return `[[${number}]](${cleanedCitation})`;
-            });
-            setAnswers([
-                ...answers,
-                [
-                    question,
-                    {
-                        answer: result || "",
-                        conversation_id: resultObj.conversation_id,
-                        data_points: [""],
-                        thoughts: resultObj.thoughts || []
-                    } as AskResponse
-                ]
-            ]);
+            /* ---------- 5 · Persist to local chat state ---------- */
             const botResponse = {
                 answer: result || "",
-                conversation_id: resultObj.conversation_id,
                 data_points: [""],
-                thoughts: resultObj.thoughts || []
+
+                thoughts: ctrlMsg.thoughts ?? ""
             } as AskResponse;
-            setDataConversation([...dataConversation, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
+
+
+            setAnswers(prev => [...prev, [question, botResponse]]);
+            setDataConversation(prev => [...prev, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
             lastQuestionRef.current = "";
-        } catch (error) {
-            console.error("Error fetching streamed response:", error);
-            setError(error);
+        } catch (err) {
+            console.error("Error fetching streamed response:", err);
+            setError(err as Error);
         } finally {
             setIsLoading(false);
         }
@@ -428,33 +374,17 @@ const Chat = () => {
         }
     };
 
-    /**Get Pdf */
-    const getPdf = async (pdfName: string) => {
+    /**Get File Blob - Wrapper function that uses the centralized API and manages local state */
+    const getFileBlobWithState = async (fileName: string, container: string = "documents") => {
         /** get file type */
-        let type = getFileType(pdfName);
+        let type = getFileType(fileName);
         setFileType(type);
 
-        // Clear prefix ‘documents/’ if present
-        const cleanedPdfName = pdfName.startsWith("documents/") ? pdfName.slice("documents/".length) : pdfName;
         try {
-            const response = await fetch("/api/get-blob", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    blob_name: cleanedPdfName
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error fetching DOC: ${response.status}`);
-            }
-
-            return await response.blob();
+            return await getFileBlob(fileName, container);
         } catch (error) {
             console.error(error);
-            throw new Error("Error fetching DOC.");
+            throw error;
         }
     };
 
@@ -489,30 +419,6 @@ const Chat = () => {
         );
     }, [isLoading, dataConversation]);
 
-    const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setPromptTemplate(newValue || "");
-    };
-
-    const onRetrieveCountChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setRetrieveCount(parseInt(newValue || "3"));
-    };
-
-    const onUseSemanticRankerChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
-        setUseSemanticRanker(!!checked);
-    };
-
-    const onUseSemanticCaptionsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
-        setUseSemanticCaptions(!!checked);
-    };
-
-    const onExcludeCategoryChanged = (_ev?: React.FormEvent, newValue?: string) => {
-        setExcludeCategory(newValue || "");
-    };
-
-    const onUseSuggestFollowupQuestionsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
-        setUseSuggestFollowupQuestions(!!checked);
-    };
-
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
 
@@ -536,7 +442,7 @@ const Chat = () => {
         // Extract filepath if necessary
         const modifiedFilename = extractAfterDomain(fileName);
 
-        const response = await getPdf(modifiedFilename);
+        const response = await getFileBlobWithState(modifiedFilename, "documents");
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
@@ -705,7 +611,7 @@ const Chat = () => {
                                                   return (
                                                       <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
                                                           <UserChatMessage message={item.user} />
-                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                               <Answer
                                                                   key={index}
                                                                   answer={response}
@@ -725,7 +631,7 @@ const Chat = () => {
                                                   return (
                                                       <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
                                                           <UserChatMessage message={answer[0]} />
-                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                               <Answer
                                                                   key={index}
                                                                   answer={answer[1]}
@@ -757,7 +663,7 @@ const Chat = () => {
                                         {lastQuestionRef.current !== "" && (
                                             <>
                                                 <UserChatMessage message={lastQuestionRef.current} />
-                                                <div className={styles.chatMessageGpt} role="region" aria-label="Chat message">
+                                                <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                     <Answer
                                                         answer={
                                                             {

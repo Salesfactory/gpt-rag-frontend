@@ -38,7 +38,10 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
-        "types": ["vite/client", "cypress"]
+        "types": ["vite/client", "cypress","jest", "node"],
+       
+        
     },
-    "include": ["src"]
+    "include": ["src", "vite-env.d.ts"],
+    "exclude": ["cypress"]
 }
