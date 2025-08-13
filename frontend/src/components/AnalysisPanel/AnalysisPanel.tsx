@@ -8,6 +8,7 @@ import { getPage } from "../../utils/functions";
 import { DismissCircleFilled } from "@fluentui/react-icons";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { Brain, BookOpen } from "lucide-react";
+import { parseThoughts } from "./parseThoughts";
 
 const LazyViewer = lazy(() => import("../DocView/DocView"));
 
@@ -218,46 +219,9 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
     let formattedThoughts = "";
-    try {
-        if (answer.thoughts) {
-            // Attempt to parse the entire string as JSON
-            const thoughtData = JSON.parse(answer.thoughts);
-            // Check if it has the expected structure with a "thoughts" array
-            if (thoughtData && Array.isArray(thoughtData.thoughts) && thoughtData.thoughts.length > 0) {
-                // Extract the first element of the thoughts array
-                let rawThoughts = thoughtData.thoughts[0] || "";
-
-                // Sanitize the extracted thought string
-                const sanitizedThoughts = DOMPurify.sanitize(rawThoughts);
-
-                // Format the string: newlines and separators
-                const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-                const formattedInternalContent = thoughtsWithBreaks
-                    .replace(/\s*==============================================\s*/g, "<hr />")
-                    .replace(/\s*#\s*/g, "<hr /><br />");
-                formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
-            } else {
-                // Fallback if parsing failed or structure is unexpected: treat as plain text and apply basic formatting
-                console.warn("Could not parse thoughts as JSON or structure was unexpected. Falling back to plain text formatting.");
-                const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts);
-                const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-                const formattedInternalContent = thoughtsWithBreaks
-                    .replace(/\s*==============================================\s*/g, "<hr />")
-                    .replace(/\s*#\s*/g, "<hr /><br />");
-                formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
-            }
-        }
-    } catch (error) {
-        // Fallback if JSON parsing completely fails: treat as plain text and apply basic formatting
-        console.error("Error parsing thoughts JSON:", error);
-        const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts || "");
-        const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-        const formattedInternalContent = thoughtsWithBreaks
-            .replace(/\s*==============================================\s*/g, "<hr />")
-            .replace(/\s*#\s*/g, "<hr /><br />");
-        formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
-    }
-    const thoughtItems = parseFormattedThoughts(formattedThoughts);
+    console.log("answer thought: ", answer.thoughts);
+    let pensamientos = parseThoughts(answer.thoughts);
+    console.log("Pensamientos: ", pensamientos);
     return (
         <>
             <Pivot
@@ -296,7 +260,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     )}
                 >
                     <div className={styles.thoughtProcess}>
-                        {thoughtItems.map((item, index) => (
+                        {/* {thoughtItems.map((item, index) => (
                             <div
                                 key={index}
                                 style={{
@@ -331,7 +295,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                     }}
                                 />
                             </div>
-                        ))}
+                        ))} */}
                     </div>
                 </PivotItem>
 
