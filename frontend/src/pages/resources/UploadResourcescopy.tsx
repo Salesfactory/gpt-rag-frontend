@@ -24,6 +24,7 @@ import { FileText, Download, Trash2, RefreshCw, Upload, Search, CirclePlus } fro
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast, ToastContainer } from "react-toastify";
+import { log } from "node:console";
 const ALLOWED_FILE_TYPES = [".pdf", ".csv", ".xlsx", ".xls"];
 const EXCEL_FILES = ["csv", "xls", "xlsx"];
 
@@ -51,16 +52,30 @@ const UploadResources: React.FC = () => {
     const [blobUrls, setBlobUrls] = useState<string[]>([]);
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
+    const [currentMessage, setCurrentMessage] = useState<number>(0);
     // States for file list view
     const [blobItems, setBlobItems] = useState<BlobItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [filteredItems, setFilteredItems] = useState<BlobItem[]>([]);
+    const uploadModalRef = useRef<HTMLDivElement>(null);
 
     // Dialog state
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
     const MAX_FILENAME_LENGTH = 48;
+
+    // Fun processing messages
+    const processingMessages = [
+        "**Train a neural network to read your files.** We won't build a digital brain that learns patterns from millions of examples, then gets confused by your unique formatting.",
+        "**Pit two AI systems against each other.** We won't create fake data by having one AI generate content while another tries to spot the fakes—like a never-ending game of digital forgery.",
+        "**Slice your images into tiny pieces.** We won't run algorithms that examine every pixel, looking for edges and patterns like a detective with a magnifying glass.",
+        "**Apply fuzzy logic to your numbers.** We won't use rules that work with 'maybe' and 'sort of'—turning clear data into digital soup.",
+        "**Run machine learning experiments.** We won't split your data into training sets, test different models, and pick winners like hosting a science fair for algorithms.",
+        "**Hunt for perfect settings.** We won't spend hours testing thousands of parameter combinations, like tuning a radio to find the perfect station that doesn't exist.",
+        "**Memorize your specific files too well.** We won't create a system so tailored to your data that it fails the moment it sees anything new—like a student who only knows yesterday's test answers.",
+        "**Set up reward systems for AI agents.** We won't create digital entities that learn by trial and error, wandering through your files like lost tourists collecting stamps.",
+        "**Break your text into subword pieces.** We won't tokenize every sentence and run it through layers of attention mechanisms that decide which words matter most—like having a committee debate every phrase."
+    ];
     // Define columns for DetailsList
     const columns: IColumn[] = [
         {
@@ -87,12 +102,8 @@ const UploadResources: React.FC = () => {
                             <Text className={styles.file_text} title={fileName}>
                                 {displayName}
                             </Text>
-                            <div className={styles.file_extension_pill}>
-                                {fileExtension?.toUpperCase() || "FILE"}
-                            </div>
-                            <div className={styles.file_size_pill}>
-                                {formatFileSize(item.size)}
-                            </div>
+                            <div className={styles.file_extension_pill}>{fileExtension?.toUpperCase() || "FILE"}</div>
+                            <div className={styles.file_size_pill}>{formatFileSize(item.size)}</div>
                         </div>
                         <span>Uploaded on {formatDate(item.created_on)}</span>
                     </div>
@@ -238,6 +249,7 @@ const UploadResources: React.FC = () => {
 
         setSelectedFiles(fileArray);
         setUploadStatus(null);
+        handleUpload(fileArray);
     };
 
     const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
@@ -255,6 +267,7 @@ const UploadResources: React.FC = () => {
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         e.stopPropagation();
+        setIsDragging(true);
     };
 
     const handleDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -284,58 +297,94 @@ const UploadResources: React.FC = () => {
 
         setSelectedFiles(fileArray);
         setUploadStatus(null);
+        handleUpload();
     };
 
-    const handleUpload = useCallback(async () => {
-        if (selectedFiles.length === 0) return;
-
-        setIsUploading(true);
-        setUploadProgress(0);
-        setUploadStatus(null);
-
-        const urls: string[] = [];
-        let successful = 0;
-
-        for (let i = 0; i < selectedFiles.length; i++) {
-            try {
-                // Calculate progress for each file
-                const fileProgress = (i / selectedFiles.length) * 100;
-                setUploadProgress(fileProgress);
-
-                // Upload the file with organization ID
-                const result = await uploadSourceFileToBlob(selectedFiles[i], user?.organizationId || "");
-
-                if (result && result.blob_url) {
-                    urls.push(result.blob_url);
-                    successful++;
-                }
-            } catch (error) {
-                console.error("Error uploading file:", error);
-                setUploadStatus({
-                    message: `Error uploading ${selectedFiles[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`,
-                    type: MessageBarType.error
-                });
-                setIsUploading(false);
+    const handleUpload = useCallback(
+        async (filesToUpload?: File[]) => {
+            const files = filesToUpload || selectedFiles;
+            if (files.length === 0) {
+                console.log("No files to upload");
                 return;
             }
-        }
 
-        // All files uploaded successfully
-        setUploadProgress(100);
-        setBlobUrls(urls);
-        setUploadStatus({
-            message: `Successfully uploaded ${successful} file${successful !== 1 ? "s" : ""}`,
-            type: MessageBarType.success
-        });
-        setIsUploading(false);
-        setSelectedFiles([]);
+            setIsUploading(true);
+            setUploadProgress(0);
+            setUploadStatus(null);
 
-        // Reset the file input
-        if (fileInputRef.current) fileInputRef.current.value = "";
+            const urls: string[] = [];
+            let successful = 0;
 
-        // Refresh the blob list
-        fetchBlobData();
-    }, [selectedFiles, fetchBlobData]);
+            // Start the fun processing animation
+            const duration = 35000; // 35 seconds
+            const interval = 100; // Update every 100ms
+            const totalSteps = duration / interval;
+            const progressIncrement = 100 / totalSteps;
+            const messageInterval = duration / processingMessages.length;
+
+            let step = 0;
+            let messageIndex = 0;
+
+            const timer = setInterval(() => {
+                step++;
+
+                // Change message every messageInterval milliseconds
+                const elapsedTime = step * interval;
+                if (elapsedTime >= (messageIndex + 1) * messageInterval) {
+                    messageIndex = (messageIndex + 1) % processingMessages.length; // 🔄 Loop infinito
+                    setCurrentMessage(messageIndex);
+                }
+
+                if (step >= totalSteps) {
+                    clearInterval(timer);
+                }
+            }, interval);
+
+            for (let i = 0; i < files.length; i++) {
+                try {
+                    // Calculate progress for each file
+                    const fileProgress = (i / files.length) * 100;
+                    setUploadProgress(fileProgress);
+
+                    // Upload the file with organization ID
+                    const result = await uploadSourceFileToBlob(files[i], user?.organizationId || "");
+
+                    if (result && result.blob_url) {
+                        urls.push(result.blob_url);
+                        successful++;
+                    }
+                } catch (error) {
+                    console.error("Error uploading file:", error);
+                    setUploadStatus({
+                        message: `Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`,
+                        type: MessageBarType.error
+                    });
+                    setIsUploading(false);
+                    return;
+                }
+            }
+
+            // All files uploaded successfully
+            setUploadProgress(100);
+            setBlobUrls(urls);
+            setUploadStatus({
+                message: `Successfully uploaded ${successful} file${successful !== 1 ? "s" : ""}`,
+                type: MessageBarType.success
+            });
+            toast("Your file has been uploaded successfully!", {
+                type: "success"
+            })
+            setIsUploading(false);
+            setSelectedFiles([]);
+
+            // Reset the file input
+            if (fileInputRef.current) fileInputRef.current.value = "";
+
+            // Refresh the blob list
+            fetchBlobData();
+        },
+        [selectedFiles, fetchBlobData]
+    );
 
     const clearSelection = () => {
         setSelectedFiles([]);
@@ -347,9 +396,8 @@ const UploadResources: React.FC = () => {
         if (user?.role === "user") {
             toast("Only Admins can Upload Files", {
                 type: "warning"
-            })
-        }
-        else {
+            });
+        } else {
             setIsUploadDialogOpen(true);
             setSelectedFiles([]);
             setUploadStatus(null);
@@ -359,9 +407,21 @@ const UploadResources: React.FC = () => {
 
     // Close upload dialog
     const closeUploadDialog = () => {
-        setIsUploadDialogOpen(false);
-        clearSelection();
+        setIsUploadDialogOpen(false);;
     };
+
+    useEffect(() => {
+            const handleClickOutside = (event: MouseEvent) => {
+                if (uploadModalRef.current && !uploadModalRef.current.contains(event.target as Node)) {
+                    closeUploadDialog();
+                }
+            };
+    
+            document.addEventListener("mousedown", handleClickOutside);
+            return () => {
+                document.removeEventListener("mousedown", handleClickOutside);
+            };
+        }, []);
 
     // Dialog content type
     const dialogContentProps = {
@@ -370,6 +430,24 @@ const UploadResources: React.FC = () => {
         closeButtonAriaLabel: "Close",
         subText: "Select files to upload to blob storage"
     };
+
+
+    function BoldMessage({ text }: { text: string }) {
+        // Dividimos el texto usando regex, conservando el contenido dentro de **
+        const parts = text.split(/\*\*(.*?)\*\*/g);
+
+        return (
+            <>
+                {parts.map((part, index) =>
+                    index % 2 === 1 ? (
+                        <strong key={index}>{part}</strong> // Esto es lo que estaba entre **
+                    ) : (
+                        <span key={index}>{part}</span>
+                    )
+                )}
+            </>
+        );
+    }
 
     return (
         <div className={styles.page_container}>
@@ -469,7 +547,6 @@ const UploadResources: React.FC = () => {
 
                                 const backgroundColor = "#ffffff";
 
-
                                 const customStyles = {
                                     root: {
                                         backgroundColor
@@ -494,141 +571,138 @@ const UploadResources: React.FC = () => {
             </div>
 
             {/* Upload Dialog */}
-            <Dialog
-                hidden={!isUploadDialogOpen}
-                onDismiss={closeUploadDialog}
-                dialogContentProps={dialogContentProps}
-                minWidth={700}
-                modalProps={{
-                    isBlocking: false,
-                    styles: { main: { maxWidth: 800 } }
-                }}
-            >
-                <div className={styles.upload_dialog_content}>
-                    {isUploading ?  <div className={styles.processing_container}>
-                            {/* File names */}
-                            <div className={styles.processing_files}>
-                                <span className={styles.processing_files_loader_msg}>Processing Files</span>
-                                <div className={styles.processing_files_name}>
-                                    {/* {uploadedFileNames.map((name, index) => (
-                    <div key={index}>{name}</div>
-                  ))} */}
-                                    <span >Chess.pdf</span>
-                                </div>
-                            </div>
 
-                            {/* Spinner */}
-                            <div className={styles.spinner_container}>
-                                <div className={styles.spinner}>
-                                    {[...Array(8)].map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={styles.spinner_dot}
-                                            style={{
-                                                backgroundColor:
-                                                    i === 7
-                                                        ? "#065f46"
-                                                        : i === 6
-                                                            ? "#047857"
-                                                            : i === 0
-                                                                ? "#059669"
-                                                                : "#d1fae5",
-                                                transform: `translate(-50%, -50%) rotate(${i * 45
-                                                    }deg) translateY(-24px)`,
-                                                animationDelay: `${i * 0.125}s`
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                                <span>Processing</span>
-                            </div>
+            {isUploadDialogOpen && (
+                <div className={styles.custom_modal_overlay}>
+                    <div className={styles.custom_modal} ref={uploadModalRef}>
+                        {/* Modal Header */}
+                        <div className={styles.modal_header}>
+                            <h4>Upload Files</h4>
+                            <p className={styles.modal_subtext}>Select files to upload to blob storage</p>
                         </div>
-                         :
-                         <div
-                            className={`${styles.dropzone} ${isDragging ? styles.dropzone_active : ""}`}
-                            onDragEnter={handleDragEnter}
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                        >
-                            <input
-                                type="file"
-                                id="file-upload"
-                                ref={fileInputRef}
-                                multiple
-                                onChange={handleFileSelect}
-                                className={styles.file_input}
-                                accept={ALLOWED_FILE_TYPES.join(",")}
-                            />
-                            <label htmlFor="file-upload" className={styles.file_label}>
-                                <Upload className={styles.upload_icon} />
-                                <Text>{isDragging ? "Drop files here" : "Drag files here or click to browse"}</Text>
-                                <Text variant="small">Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}</Text>
-                            </label>
-                        </div>
-                       }
+                        <div className={styles.modal_content}>
+                            {/* Modal Content */}
+                            <div className={styles.upload_dialog_content}>
+                                {isUploading ? (
+                                    <div className={styles.processing_container}>
+                                        {/* File names */}
+                                        <div className={styles.processing_files}>
+                                            <span className={styles.processing_files_loader_msg}>Processing Files</span>
+                                            <div className={styles.processing_files_name}>
+                                                {selectedFiles.map((file, index) => (
+                                                    <div key={index}>{file.name}</div>
+                                                ))}
+                                            </div>
+                                        </div>
 
-
-
-                    {selectedFiles.length > 0 && (
-                        <div className={styles.selected_files}>
-                            <Text variant="mediumPlus">Selected Files ({selectedFiles.length})</Text>
-                            <Stack tokens={{ childrenGap: 8 }}>
-                                {selectedFiles.map((file, index) => (
-                                    <div key={index} className={styles.file_item}>
-                                        <DocumentRegular />
-                                        <Text>{file.name}</Text>
-                                        <Text className={styles.file_size}>({(file.size / 1024).toFixed(2)} KB)</Text>
+                                        {/* Spinner */}
+                                        <div className={styles.spinner_container}>
+                                            <div className={styles.spinner}>
+                                                {[...Array(8)].map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={styles.spinner_dot}
+                                                        style={{
+                                                            backgroundColor: i === 7 ? "#065f46" : i === 6 ? "#047857" : i === 0 ? "#059669" : "#d1fae5",
+                                                            transform: `translate(-50%, -50%) rotate(${i * 45}deg) translateY(-24px)`,
+                                                            animationDelay: `${i * 0.125}s`
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className={styles.processing_footer}>Processing</span>
+                                        </div>
+                                        <div className={styles.message_container}>
+                                            <h5 className={styles.message_title}>
+                                                Here's a little peek behind the curtain at what we{" "}
+                                                <em>
+                                                    absolutely will <strong>not</strong>
+                                                </em>{" "}
+                                                do to your files while we process them—because simplicity rules, and complexity drools:
+                                            </h5>
+                                            <div className={styles.message_body}>
+                                                <div className={styles.message_line}>
+                                                    <span className={styles.message_bullet}>•</span>
+                                                    <div className={styles.message_text}>
+                                                        <BoldMessage text={processingMessages[currentMessage] || ""} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                ))}
-                            </Stack>
-                        </div>
-                    )}
+                                ) : (
+                                    <div
+                                        className={`${styles.dropzone} ${isDragging ? styles.dropzone_active : ""}`}
+                                        onDragEnter={handleDragEnter}
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                    >
+                                        <input
+                                            type="file"
+                                            id="file-upload"
+                                            ref={fileInputRef}
+                                            multiple
+                                            onChange={handleFileSelect}
+                                            className={styles.file_input}
+                                            accept={ALLOWED_FILE_TYPES.join(",")}
+                                        />
+                                        <div>
+                                            <label htmlFor="file-upload" className={styles.file_label}>
+                                                <Upload size={48} className={styles.upload_icon} />
+                                                <Text variant="large">{isDragging ? "Drop files here" : "Drag files here or click to browse"}</Text>
+                                                <Text variant="medium" color="#4B5563">
+                                                    Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}
+                                                </Text>
+                                            </label>
+                                            <label className={styles.browse_button}>
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept=".docx,.xls,.xlsx,.csv,.pdf"
+                                                    onChange={handleFileSelect}
+                                                    className={styles.hidden_file_input}
+                                                />
+                                                Browse Files
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
-                    {isUploading && (
-                        <div className={styles.progress_container}>
-                            <Text>Uploading files...</Text>
-                            <ProgressIndicator percentComplete={uploadProgress / 100} description={`${Math.round(uploadProgress)}% complete`} />
+                            {/* Modal Footer */}
+                            {!isUploading && (
+                                <div className={styles.modal_footer}>
+                                    <PrimaryButton
+                                        onClick={closeUploadDialog}
+                                        text="Cancel"
+                                        styles={{
+                                            root: {
+                                                backgroundColor: "#d83b01 !important",
+                                                borderColor: "#d83b01 !important",
+                                                color: "white !important",
+                                                borderRadius: "0.5rem"
+                                            },
+                                            rootHovered: {
+                                                backgroundColor: "#a42600 !important",
+                                                borderColor: "#a42600 !important",
+                                                color: "white !important",
+                                                borderRadius: "0.5rem"
+                                            },
+                                            rootPressed: {
+                                                backgroundColor: "#a42600 !important",
+                                                borderColor: "#a42600 !important",
+                                                color: "white !important",
+                                                borderRadius: "0.5rem"
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
-                    )}
-
-                    {uploadStatus && (
-                        <MessageBar messageBarType={uploadStatus.type} isMultiline={true} dismissButtonAriaLabel="Close" className={styles.message_bar}>
-                            {uploadStatus.message}
-                        </MessageBar>
-                    )}
+                    </div>
                 </div>
-
-                <DialogFooter>
-                    <PrimaryButton
-                        onClick={closeUploadDialog}
-                        text="Cancel"
-                        styles={{
-                            root: {
-                                backgroundColor: "#d83b01 !important",
-                                borderColor: "#d83b01 !important",
-                                color: "white !important"
-                            },
-                            rootHovered: {
-                                backgroundColor: "#a42600 !important",
-                                borderColor: "#a42600 !important",
-                                color: "white !important"
-                            },
-                            rootPressed: {
-                                backgroundColor: "#a42600 !important",
-                                borderColor: "#a42600 !important",
-                                color: "white !important"
-                            }
-                        }}
-                    />
-                    <PrimaryButton
-                        className={styles.upload2_button}
-                        onClick={handleUpload}
-                        disabled={isUploading || selectedFiles.length === 0}
-                        text="Upload"
-                    />
-                </DialogFooter>
-            </Dialog>
+            )}
         </div>
     );
 };
