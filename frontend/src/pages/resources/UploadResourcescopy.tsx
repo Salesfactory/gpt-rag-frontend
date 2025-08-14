@@ -439,7 +439,7 @@ const UploadResources: React.FC = () => {
             <>
                 {parts.map((part, index) =>
                     index % 2 === 1 ? (
-                        <strong key={index}>{part}</strong> // Esto es lo que estaba entre **
+                        <strong key={index}>{part}</strong> // This is what was between **
                     ) : (
                         <span key={index}>{part}</span>
                     )
