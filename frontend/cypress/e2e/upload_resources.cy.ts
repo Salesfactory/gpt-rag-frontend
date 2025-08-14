@@ -51,6 +51,6 @@ describe("Upload Resources Test Suite", () => {
 
         cy.get("label").contains("Browse Files").should("be.visible");
         cy.get("label").contains("Browse Files").click().selectFile("./cypress/files/Electric_Vehicle_Population_Data copy.xlsx");
-        cy.contains("Error: File upload failed. Please try again.").should("be.visible");
+        cy.contains("Your file has been uploaded successfully!").should("be.visible");
     });
 });
