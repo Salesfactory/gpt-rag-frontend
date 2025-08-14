@@ -2,6 +2,8 @@ import io
 import json
 import pytest
 from flask import Flask
+import re
+import unicodedata
 
 class FakeLLM:
     """A fake LLM that returns a predictable description."""
@@ -76,3 +78,40 @@ def test_upload_generates_description_and_uploads(app):
     assert metadata.get("organization_id") == "org-123"
     assert "description" in metadata
     assert "3 rows × 2 columns" in metadata["description"]
+
+
+from data_summary.summarize import sanitize_metadata_value
+
+@pytest.mark.parametrize(
+    "input_value, expected",
+    [
+        ("\x00Hello\x07World", "HelloWorld"),
+        ("Hello\u00a0World", "Hello World"),
+        ("Résumé café", "Rsum caf"),
+        ("Hello__World___Test", "Hello_World_Test"),
+        ("__Hello_World__", "Hello_World"),
+        (12345, "12345"),
+        ("Valid_Metadata", "Valid_Metadata"),
+        ("A" * 9000, "A" * 8192),
+    ]
+)
+def test_sanitize_metadata_value(input_value, expected):
+    assert sanitize_metadata_value(input_value) == expected
+
+def test_unicode_normalization():
+    input_value = unicodedata.normalize("NFKD", "é")
+    result = sanitize_metadata_value(input_value)
+    assert result == ""
+
+def test_no_modifications_needed():
+    value = "Perfect_String"
+    assert sanitize_metadata_value(value) == value
+
+def test_sanitize_metadata_value_truncation():
+    """
+    Explicitly tests that the output string is truncated to 8192 characters.
+    """
+    long_string = "X" * 10000
+    sanitized = sanitize_metadata_value(long_string)
+    assert len(sanitized) == 8192
+    assert sanitized == "X" * 8192
