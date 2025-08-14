@@ -354,10 +354,12 @@ const UploadResources: React.FC = () => {
                     }
                 } catch (error) {
                     console.error("Error uploading file:", error);
+                    const error_message = `Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`
                     setUploadStatus({
-                        message: `Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`,
+                        message: error_message,
                         type: MessageBarType.error
                     });
+                    toast("Error: File upload failed. Please try again.", {type: "error"})
                     setIsUploading(false);
                     return;
                 }
