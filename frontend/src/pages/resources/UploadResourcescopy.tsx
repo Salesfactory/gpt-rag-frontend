@@ -372,7 +372,7 @@ const UploadResources: React.FC = () => {
             });
             toast("Your file has been uploaded successfully!", {
                 type: "success"
-            })
+            });
             setIsUploading(false);
             setSelectedFiles([]);
 
