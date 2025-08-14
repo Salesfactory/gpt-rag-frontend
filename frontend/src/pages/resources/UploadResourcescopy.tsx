@@ -330,7 +330,7 @@ const UploadResources: React.FC = () => {
                 // Change message every messageInterval milliseconds
                 const elapsedTime = step * interval;
                 if (elapsedTime >= (messageIndex + 1) * messageInterval) {
-                    messageIndex = (messageIndex + 1) % processingMessages.length; // 🔄 Loop infinito
+                    messageIndex = (messageIndex + 1) % processingMessages.length; // 🔄 Infinite loop
                     setCurrentMessage(messageIndex);
                 }
 
