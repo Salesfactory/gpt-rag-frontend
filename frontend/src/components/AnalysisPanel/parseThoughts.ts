@@ -304,6 +304,6 @@ function replacePythonLiteralsOutsideStrings(s: string): string {
 function formatMarkdownToPlainText(content: string): string {
   if (!content) return '';
   return content
-    .replace(/=+/g, '')
+    .replace(/^\s*[=-]{3,}\s*$/gm, '')
     .trim();
 }
