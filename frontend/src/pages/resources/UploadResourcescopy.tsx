@@ -433,7 +433,7 @@ const UploadResources: React.FC = () => {
 
 
     function BoldMessage({ text }: { text: string }) {
-        // Dividimos el texto usando regex, conservando el contenido dentro de **
+        // We split the text using regex, preserving the content within **
         const parts = text.split(/\*\*(.*?)\*\*/g);
 
         return (
