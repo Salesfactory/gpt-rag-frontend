@@ -4280,7 +4280,7 @@ def delete_source_document():
         
         # Get the blob client
         blob_client = container_client.get_blob_client(blob_name)
-        
+
         # Check if blob exists
         if not blob_client.exists():
             return create_error_response(f"File not found: {blob_name}", 404)
@@ -5139,6 +5139,39 @@ def get_items_to_delete(brand_id):
     except Exception as e:
         logger.exception(f"Error retrieving items to delete: {e}")
         return create_error_response("Internal Server Error", 500)
+    
+@app.route("/api/organization/<organization_id>/<file_name>/business-describe", methods=["POST"])
+def generate_business_description(organization_id, file_name):
+
+    if not organization_id or not file_name:
+        return create_error_response("organization_id and file_name are required", HTTPStatus.BAD_REQUEST)
+    
+    try:
+
+        if file_name.startswith("organization_files/"):
+            blob_name = file_name
+        else:    
+            blob_name = f"organization_files/{organization_id}/{file_name}"
+
+
+        blob_storage_manager = BlobStorageManager()
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+
+        blob_client = container_client.get_blob_client(blob_name)
+
+        if not blob_client.exists:
+            return create_error_response("The Document does not exist", HTTPStatus.NOT_FOUND)
+        
+        blob_client.download_blob()
+
+
+    except:
+        pass
+    finally:
+        pass
+
+    return f"{blob_client}"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
