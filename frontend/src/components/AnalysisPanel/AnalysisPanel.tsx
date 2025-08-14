@@ -120,21 +120,15 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
             }
 
             function extractContentDetails(value: string): string {
-                const contentMatch = value.match(/'content':\s*'(.*?)'/);
-                const titleMatch = value.match(/'title':\s*'(.*?)'/);
-                const sourceMatch = value.match(/'source':\s*'(.*?)'/);
-
-                let content = contentMatch ? contentMatch[1] : "";
-                const title = titleMatch ? titleMatch[1] : "";
-                const source = sourceMatch ? sourceMatch[1] : "";
-
-                if (!content.trim()) {
-                    return "";
+                const contentMatch = value.match(/Content:\s*(.*?)$/s);
+                if (contentMatch) {
+                    return contentMatch[1].replace(/\\n/g, "\n").trim();
                 }
+                return value;
+            }
 
-                content = content.replace(/\\n/g, "\n").trim();
-
-                return `<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`;
+            function detectSubquery(value: string): boolean {
+                return /subquery_1/i.test(value);
             }
 
             if (colonIndex > -1 && colonIndex < 100) {
@@ -153,14 +147,14 @@ function parseFormattedThoughts(html: string): ThoughtItem[] {
 
                 potentialTitle = cleanPotentialTitle(potentialTitle);
 
-                if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.?\s/.test(potentialTitle)) {
+                if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.\?\s/.test(potentialTitle)) {
                     const title = potentialTitle;
                     let value = cleanSection.slice(colonIndex + 1).trim();
-                    if (title === "Context") {
+                    if (detectSubquery(value)) {
                         value = formatContentBlocks(value);
                         afterContent = true;
-                    } else if (afterContent) {
-                        value = formatContentBlocks(value);
+                    } else {
+                        value = extractContentDetails(value);
                     }
                     items.push({ title, value });
                 } else {
