@@ -43,8 +43,12 @@ export function parseThoughts(thoughts: unknown): ThoughtBlock[] {
       `Thought ${out.length + 1}`;
 
     const content = extractContentSection(t).trim();
-    const sources = dedupe([...extractSources(content), ...extractSources(t)]);
-    out.push({ title, content, sources });
+
+    // Format Markdown to plain text
+    const processedContent = formatMarkdownToPlainText(content);
+
+    const sources = dedupe([...extractSources(processedContent), ...extractSources(t)]);
+    out.push({ title, content: processedContent, sources });
   }
 
   return out;
@@ -295,4 +299,11 @@ function replacePythonLiteralsOutsideStrings(s: string): string {
     out += ch;
   }
   return out;
+}
+
+function formatMarkdownToPlainText(content: string): string {
+  if (!content) return '';
+  return content
+    .replace(/=+/g, '')
+    .trim();
 }

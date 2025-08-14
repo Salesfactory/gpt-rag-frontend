@@ -9,6 +9,7 @@ import { DismissCircleFilled } from "@fluentui/react-icons";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { Brain, BookOpen } from "lucide-react";
 import { parseThoughts } from "./parseThoughts";
+import { rawThoughtsToString, extractPreContent, parseMeta, toPlainText, sourcePlain } from "../../utils/formattingUtils";
 
 const LazyViewer = lazy(() => import("../DocView/DocView"));
 
@@ -45,91 +46,16 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const page = getPage(answer.data_points.toString());
     let thoughts = parseThoughts(answer.thoughts);
 
-    // --- Metadata extraction from answer.thoughts (text before "Content:") ---
-    const rawThoughtsToString = (v: unknown): string => {
-        if (typeof v === "string") return v;
-        if (Array.isArray(v)) return v.filter(x => typeof x === "string").join("\n");
-        return "";
-    };
-
-    const extractPreContent = (s: string): string => {
-        if (!s) return "";
-        const idx = s.search(/\bContent\s*:/i);
-        return idx === -1 ? s : s.slice(0, idx);
-    };
-
-    const parseMeta = (s: string) => {
-        const pick = (label: string): string | undefined => {
-            const re = new RegExp(label + "\\s*:\\s*([^/\\\r\\\n]+)", "i");
-            const m = s.match(re);
-            return m ? m[1].trim() : undefined;
-        };
-        return {
-            modelUsed: pick("Model\\s*Used"),
-            toolSelected: pick("Tool\\s*Selected"),
-            originalQuery: pick("Original\\s*Query"),
-            rewrittenQuery: pick("Rewritten\\s*Query"),
-            requiredRetrieval: pick("Required\\s*Retrieval"),
-            documentsRetrieved: pick("Number\\s*of\\s*documents\\s*retrieved"),
-            mcpToolsUsed: pick("MCP\\s*Tools\\s*Used")
-        };
-    };
-
     const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
     const meta = parseMeta(preContent);
     const hasAnyMeta = Object.values(meta).some(Boolean);
 
-    // Helper: strip all HTML/CSS/JS, keep simple line breaks, decode entities
-    const toPlainText = (html: string | undefined | null): string => {
-        if (!html) return "";
-        let src = String(html);
-        // Remove <style> and <script> blocks entirely (including content)
-        src = src.replace(/<\s*style\b[^>]*>[\s\S]*?<\s*\/\s*style\s*>/gi, "");
-        src = src.replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, "");
-        // Remove CSS comments like /* ... */
-        src = src.replace(/\/\*[\s\S]*?\*\//g, "");
-        // Remove standalone CSS blocks that contain semicolons (to avoid nuking JSON)
-        src = src.replace(/[^\{]+\{[^}]*;[^}]*\}/g, "");
-        // Normalize common break tags to newlines, drop opening <p>
-        src = src
-            .replace(/<\s*br\s*\/?\s*>/gi, "\n")
-            .replace(/<\s*\/p\s*>/gi, "\n")
-            .replace(/<\s*p\b[^>]*>/gi, "");
-        // Strip remaining tags/attrs
-        let stripped = DOMPurify.sanitize(src, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-        // Decode HTML entities
-        if (typeof window !== "undefined") {
-            const textarea = document.createElement("textarea");
-            textarea.innerHTML = stripped;
-            stripped = textarea.value;
-        }
-        // Remove incomplete links without protocol (e.g., .domain.com/path or www.domain.com/path)
-        stripped = stripped.replace(/(^|\s)(?!(?:https?:\/\/))(?:www\.|\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[\w\-./?%&=+#@]*)?/gi, "$1");
-        // Remove stray characters like '">', "'>" or standalone '>' left from broken HTML
-        stripped = stripped.replace(/"?>/g, "");
-        // Cleanup whitespace
-        return stripped
-            .replace(/\u00A0/g, " ")
-            .replace(/\s+\n/g, "\n")
-            .trim();
-    };
-    const filteredThoughts = (thoughts || []).filter((p: any) => {
-        const title = toPlainText(p?.title).toLowerCase();
+    const filteredThoughts = (thoughts || []).filter((thought: any) => {
+        const title = toPlainText(thought?.title).toLowerCase();
         return !title.includes("assistant") && !title.includes("construction adhesives");
     });
 
     // Helpers to sanitize and render sources
-    const sourcePlain = (val: unknown): string => {
-        if (val == null) return "";
-        let text = DOMPurify.sanitize(String(val), { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-        if (typeof window !== "undefined") {
-            const textarea = document.createElement("textarea");
-            textarea.innerHTML = text;
-            text = textarea.value;
-        }
-        return text.replace(/\u00A0/g, " ").trim();
-    };
-
     const toHref = (val: unknown): string | null => {
         const s = sourcePlain(val);
         if (!s) return null;
@@ -194,12 +120,6 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                     <section className={styles.sectionCard}>
                                         <h4 className={styles.headerCard}>Original Query</h4>
                                         <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
-                                    </section>
-                                )}
-                                {meta.rewrittenQuery && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Rewritten Query</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.rewrittenQuery)}</p>
                                     </section>
                                 )}
                                 {meta.mcpToolsUsed && (
