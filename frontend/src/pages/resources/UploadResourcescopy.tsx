@@ -24,7 +24,6 @@ import { FileText, Download, Trash2, RefreshCw, Upload, Search, CirclePlus } fro
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast, ToastContainer } from "react-toastify";
-import { log } from "node:console";
 const ALLOWED_FILE_TYPES = [".pdf", ".csv", ".xlsx", ".xls"];
 const EXCEL_FILES = ["csv", "xls", "xlsx"];
 
