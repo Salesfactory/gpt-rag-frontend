@@ -406,7 +406,7 @@ const UploadResources: React.FC = () => {
 
     // Close upload dialog
     const closeUploadDialog = () => {
-        setIsUploadDialogOpen(false);;
+        setIsUploadDialogOpen(false);
     };
 
     useEffect(() => {
