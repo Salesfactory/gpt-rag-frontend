@@ -8,6 +8,8 @@ import { getPage } from "../../utils/functions";
 import { DismissCircleFilled } from "@fluentui/react-icons";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { Brain, BookOpen } from "lucide-react";
+import { parseThoughts } from "./parseThoughts";
+import { rawThoughtsToString, extractPreContent, parseMeta, toPlainText, sourcePlain } from "../../utils/formattingUtils";
 
 const LazyViewer = lazy(() => import("../DocView/DocView"));
 
@@ -37,227 +39,31 @@ const closeButtonStyle = {
     }
 };
 
-interface ThoughtItem {
-    title: string;
-    value: string;
-}
-
-function formatContentBlocks(content: string): string {
-    try {
-        const formattedData: string[] = [];
-
-        const subqueryRegex = /'documents': \[.*?\]/gs;
-        const documentRegex = /\{.*?\}/gs;
-
-        const subqueries = content.match(subqueryRegex);
-        if (subqueries) {
-            subqueries.forEach(subquery => {
-                const documents = subquery.match(documentRegex);
-                if (documents) {
-                    documents.forEach(document => {
-                        const contentMatch = document.match(/'content':\s*'(.*?)'/);
-                        const titleMatch = document.match(/'title':\s*'(.*?)'/);
-                        const sourceMatch = document.match(/'source':\s*'(.*?)'/);
-
-                        let content = contentMatch ? contentMatch[1] : "";
-                        const title = titleMatch ? titleMatch[1] : "";
-                        const source = sourceMatch ? sourceMatch[1] : "";
-
-                        if (!content.trim()) {
-                            return;
-                        }
-
-                        content = content
-                            .replace(/\\n/g, "\n\n")
-                            .replace(/\.\s{2,}/g, ".\n\n")
-                            .trim();
-
-                        formattedData.push(`<b>Title</b>\n${title}\n\n<b>Content</b>\n${content}\n\n<b>Source</b>\n${source}`);
-                    });
-                }
-            });
-        }
-
-        return formattedData.join("\n\n");
-    } catch (error) {
-        console.error("Error parsing content:", error);
-        return "Invalid input format";
-    }
-}
-
-function parseFormattedThoughts(html: string): ThoughtItem[] {
-    if (!html || html.trim() === "") {
-        return [];
-    }
-
-    const sections = html
-        .split(/<hr \/><br \/><br \/>|<br \/><hr \/><br \/>/)
-        .map(section => section.trim())
-        .filter(section => section.length > 0);
-
-    const items: ThoughtItem[] = [];
-
-    let afterContent = false;
-    sections.forEach(section => {
-        let cleanSection = section
-            .replace(/<hr \/>/g, "")
-            .replace(/<br \/>/g, "\n")
-            .replace(/(\d+)\\\./g, "$1.")
-            .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
-            .trim();
-
-        if (cleanSection) {
-            const colonIndex = cleanSection.indexOf(":");
-
-            function cleanPotentialTitle(potentialTitle: string): string {
-                if (potentialTitle.includes("title")) {
-                    potentialTitle = potentialTitle
-                        .replace(/title/gi, "")
-                        .replace(/["',.]/g, "")
-                        .trim();
-                }
-                return potentialTitle;
-            }
-
-            function extractContentDetails(value: string): string {
-                const contentMatch = value.match(/Content:\s*(.*?)$/s);
-                if (contentMatch) {
-                    return contentMatch[1].replace(/\\n/g, "\n").trim();
-                }
-                return value;
-            }
-
-            function detectSubquery(value: string): boolean {
-                return /subquery_1/i.test(value);
-            }
-
-            if (colonIndex > -1 && colonIndex < 100) {
-                let potentialTitle = cleanSection.slice(0, colonIndex).trim();
-
-                if (
-                    potentialTitle === "Rewritten Query" ||
-                    potentialTitle === "Required Retrieval" ||
-                    potentialTitle === "Context Retrieved using the rewritten query"
-                ) {
-                    return;
-                }
-                if (potentialTitle === "Content") {
-                    potentialTitle = "Context";
-                }
-
-                potentialTitle = cleanPotentialTitle(potentialTitle);
-
-                if (potentialTitle.length < 80 && !potentialTitle.includes("\n") && !/^\d+\.\?\s/.test(potentialTitle)) {
-                    const title = potentialTitle;
-                    let value = cleanSection.slice(colonIndex + 1).trim();
-                    if (detectSubquery(value)) {
-                        value = formatContentBlocks(value);
-                        afterContent = true;
-                    } else {
-                        value = extractContentDetails(value);
-                    }
-                    items.push({ title, value });
-                } else {
-                    items.push({ title: "", value: cleanSection });
-                }
-            } else {
-                const analysisRegex = /###\s*Sales Factory Performance Analysis/i;
-                if (analysisRegex.test(cleanSection)) {
-                    const lines = cleanSection.split("\n").filter(line => line.trim() !== "");
-
-                    let currentTitle = "";
-                    let currentValue = "";
-
-                    function pushItem() {
-                        if (currentValue.trim()) {
-                            items.push({ title: currentTitle, value: currentValue.trim() });
-                            currentValue = "";
-                        }
-                    }
-
-                    for (const line of lines) {
-                        if (line.startsWith("### ") || line.startsWith("#### ")) {
-                            pushItem();
-                            currentTitle = line.replace(/#+\s*/, "").trim();
-                        } else if (line.trim() === "---") {
-                            pushItem();
-                            currentTitle = "";
-                        } else {
-                            currentValue += line.replace(/\\/g, "") + "\n";
-                        }
-                    }
-                    pushItem();
-                } else {
-                    const finalThoughtsRegex = /^\s*(#+\s*)?Final Thoughts:?/i;
-                    if (finalThoughtsRegex.test(cleanSection.trim())) {
-                        let match = cleanSection.trim().match(finalThoughtsRegex);
-                        let prefix = match ? match[0].replace(/[:\s]+$/, "") : "Final Thoughts";
-                        let value = cleanSection.trim().replace(finalThoughtsRegex, "").trim();
-
-                        const formatted = extractContentDetails(value);
-                        if (formatted) {
-                            items.push({ title: "", value: formatted });
-                        }
-                    } else {
-                        const formatted = extractContentDetails(cleanSection);
-                        if (formatted) {
-                            items.push({ title: "", value: formatted });
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    return items;
-}
-
 export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
-    let formattedThoughts = "";
-    try {
-        if (answer.thoughts) {
-            // Attempt to parse the entire string as JSON
-            const thoughtData = JSON.parse(answer.thoughts);
-            // Check if it has the expected structure with a "thoughts" array
-            if (thoughtData && Array.isArray(thoughtData.thoughts) && thoughtData.thoughts.length > 0) {
-                // Extract the first element of the thoughts array
-                let rawThoughts = thoughtData.thoughts[0] || "";
+    let thoughts = parseThoughts(answer.thoughts);
 
-                // Sanitize the extracted thought string
-                const sanitizedThoughts = DOMPurify.sanitize(rawThoughts);
+    const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
+    const meta = parseMeta(preContent);
+    const hasAnyMeta = Object.values(meta).some(Boolean);
 
-                // Format the string: newlines and separators
-                const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-                const formattedInternalContent = thoughtsWithBreaks
-                    .replace(/\s*==============================================\s*/g, "<hr />")
-                    .replace(/\s*#\s*/g, "<hr /><br />");
-                formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
-            } else {
-                // Fallback if parsing failed or structure is unexpected: treat as plain text and apply basic formatting
-                console.warn("Could not parse thoughts as JSON or structure was unexpected. Falling back to plain text formatting.");
-                const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts);
-                const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-                const formattedInternalContent = thoughtsWithBreaks
-                    .replace(/\s*==============================================\s*/g, "<hr />")
-                    .replace(/\s*#\s*/g, "<hr /><br />");
-                formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
-            }
-        }
-    } catch (error) {
-        // Fallback if JSON parsing completely fails: treat as plain text and apply basic formatting
-        console.error("Error parsing thoughts JSON:", error);
-        const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts || "");
-        const thoughtsWithBreaks = sanitizedThoughts.replace(/\n/g, "<br />");
-        const formattedInternalContent = thoughtsWithBreaks
-            .replace(/\s*==============================================\s*/g, "<hr />")
-            .replace(/\s*#\s*/g, "<hr /><br />");
-        formattedThoughts = formattedInternalContent.replace(/ \/ /g, "<br /><hr /><br />");
-    }
-    const thoughtItems = parseFormattedThoughts(formattedThoughts);
+    const filteredThoughts = (thoughts || []).filter((thought: any) => {
+        const title = toPlainText(thought?.title).toLowerCase();
+        return !title.includes("assistant") && !title.includes("construction adhesives");
+    });
+
+    // Helpers to sanitize and render sources
+    const toHref = (val: unknown): string | null => {
+        const s = sourcePlain(val);
+        if (!s) return null;
+        if (/^https?:\/\//i.test(s)) return s;
+        if (/^www\./i.test(s)) return `https://${s}`;
+        if (/^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(s)) return `https://${s}`;
+        return null;
+    };
     return (
         <>
             <Pivot
@@ -296,42 +102,114 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     )}
                 >
                     <div className={styles.thoughtProcess}>
-                        {thoughtItems.map((item, index) => (
-                            <div
-                                key={index}
-                                style={{
-                                    backgroundColor: "#f9fafb",
-                                    padding: "12px",
-                                    marginBottom: "10px",
-                                    borderRadius: "6px"
-                                }}
-                            >
-                                {item.title && (
-                                    <h3
+                        {hasAnyMeta && (
+                            <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+                                {meta.modelUsed && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Model Used</h4>
+                                        <p className={styles.contentCard}>{meta.modelUsed}</p>
+                                    </section>
+                                )}
+                                {meta.toolSelected && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Tool Selected</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
+                                    </section>
+                                )}
+                                {meta.originalQuery && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Original Query</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
+                                    </section>
+                                )}
+                                {meta.mcpToolsUsed && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>MCP Tools Used</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolsUsed)}</p>
+                                    </section>
+                                )}
+                            </div>
+                        )}
+                        {filteredThoughts &&
+                            filteredThoughts.length > 0 &&
+                            filteredThoughts.map((p: any, index: number) => (
+                                <div
+                                    key={index}
+                                    style={{
+                                        backgroundColor: "#f9fafb",
+                                        padding: "12px",
+                                        marginBottom: "10px",
+                                        borderRadius: "6px"
+                                    }}
+                                >
+                                    {p.title && (
+                                        <h3
+                                            style={{
+                                                margin: "0 0 6px 0",
+                                                color: "#333",
+                                                fontWeight: 600,
+                                                fontSize: "1rem"
+                                            }}
+                                        >
+                                            {toPlainText(p.title)}
+                                        </h3>
+                                    )}
+                                    <p
                                         style={{
-                                            margin: "0 0 6px 0",
-                                            color: "#333",
-                                            fontWeight: "600",
-                                            fontSize: "1rem"
+                                            margin: 0,
+                                            color: "#555",
+                                            whiteSpace: "pre-wrap",
+                                            fontSize: "14px",
+                                            lineHeight: 1.4
                                         }}
                                     >
-                                        {item.title}
-                                    </h3>
-                                )}
-                                <p
-                                    style={{
-                                        margin: 0,
-                                        color: "#555",
-                                        whiteSpace: "pre-wrap",
-                                        fontSize: "14px",
-                                        lineHeight: "1.4"
-                                    }}
-                                    dangerouslySetInnerHTML={{
-                                        __html: DOMPurify.sanitize(item.value.split("<br />").join("<br />"))
-                                    }}
-                                />
-                            </div>
-                        ))}
+                                        {toPlainText(p.content)}
+                                    </p>
+                                    {(p.sources || p.source) && (
+                                        <div
+                                            style={{
+                                                marginTop: 8,
+                                                color: "#6b7280",
+                                                fontSize: 12
+                                            }}
+                                        >
+                                            Source:{" "}
+                                            {Array.isArray(p.sources || p.source) ? (
+                                                <ul style={{ margin: "4px 0 0 16px" }}>
+                                                    {(p.sources || p.source).map((s: unknown, i: number) => {
+                                                        const href = toHref(s);
+                                                        const label = sourcePlain(s);
+                                                        return (
+                                                            <li key={i} style={{ marginBottom: 2 }}>
+                                                                {href ? (
+                                                                    <a href={href} target="_blank" rel="noreferrer noopener" style={{ color: "#2563eb" }}>
+                                                                        {label}
+                                                                    </a>
+                                                                ) : (
+                                                                    <span>{label}</span>
+                                                                )}
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            ) : (
+                                                (() => {
+                                                    const single = (p.sources || p.source) as unknown;
+                                                    const href = toHref(single);
+                                                    const label = sourcePlain(single);
+                                                    return href ? (
+                                                        <a href={href} target="_blank" rel="noreferrer noopener" style={{ color: "#2563eb" }}>
+                                                            {label}
+                                                        </a>
+                                                    ) : (
+                                                        <span>{label}</span>
+                                                    );
+                                                })()
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
                     </div>
                 </PivotItem>
 
