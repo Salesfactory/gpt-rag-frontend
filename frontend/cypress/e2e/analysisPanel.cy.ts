@@ -85,6 +85,6 @@ describe('AnalysisPanel Component', () => {
 
         cy.contains("MCP Tools Used").should("be.visible");
 
-        cy.contains("**33.3% of surveyed customers quit due to bad customer service**").should("be.visible");
+        cy.contains("33.3% of surveyed customers quit due to bad customer service").should("be.visible");
     });
 });
