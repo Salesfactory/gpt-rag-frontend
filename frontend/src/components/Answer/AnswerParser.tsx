@@ -38,6 +38,16 @@ export function removeCitations(text: string): string {
     return text.replace(RX_CITATION_BLOCK, "");
 }
 
+/**
+ * Remove the Citations/Sources block and its links.
+ */
+export function removeCitationsBlock(input: string): string {
+    // Delete only the Citations/Sources/Fuentes block at the end of the text.
+    let out = input;
+    // Markdown: block type “**Citations:** ...” or “**Sources:** ...” or “**Fuentes:** ...” at the end
+    out = out.replace(/(\n|\r|\r\n)?\s*(\*\*\s*(Citations)\s*:\*\*|####?\s*(Citations))\s*:?[\s\S]*$/gi, "");
+    return out;
+}
 /* ------------------------------------------------------------------
  * Pure helper: convert inline markdown links → [url]
  * ---------------------------------------------------------------- */
@@ -75,11 +85,10 @@ export function parseAnswerToHtml(
 
     /* 1. Pre‑clean non‑citation transformations */
     let text = fixWrongNumbers(replaceMarkdownLinks(raw));
-
     // Collect citations & mapping only if needed
     if (!showSources || isResizingAnalysisPanel) {
         return {
-            answerHtml: removeCitations(text).trim(),
+            answerHtml: removeCitationsBlock(removeCitations(text)).trim(),
             citations: [],
             followupQuestions: []
         };
@@ -98,7 +107,7 @@ export function parseAnswerToHtml(
     });
 
     return {
-        answerHtml: html.split("Sources:")[0].trim(),
+        answerHtml: removeCitationsBlock(html).trim(),
         citations,
         followupQuestions: []
     };
