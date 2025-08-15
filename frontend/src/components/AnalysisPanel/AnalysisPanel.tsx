@@ -52,7 +52,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
 
     const filteredThoughts = (thoughts || []).filter((thought: any) => {
         const title = toPlainText(thought?.title).toLowerCase();
-        return !title.includes("assistant") && !title.includes("construction adhesives");
+        return !title.includes("assistant");
     });
 
     // Helpers to sanitize and render sources
@@ -120,6 +120,12 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                     <section className={styles.sectionCard}>
                                         <h4 className={styles.headerCard}>Original Query</h4>
                                         <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
+                                    </section>
+                                )}
+                                {meta.mcpToolUsed && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>MCP Tool Used</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolUsed)}</p>
                                     </section>
                                 )}
                                 {meta.mcpToolsUsed && (
