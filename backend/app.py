@@ -1,6 +1,7 @@
 from functools import wraps
 import os
 import re
+import io
 import logging
 import requests
 import json
@@ -47,6 +48,7 @@ from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
 from azure.cosmos.exceptions import CosmosHttpResponseError
+from azure.core.exceptions import ResourceNotFoundError, AzureError
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
 from utils import (
@@ -59,6 +61,7 @@ from utils import (
     MissingJSONPayloadError,
     MissingRequiredFieldError,
     MissingParameterError,
+    InvalidFileType,
     require_client_principal,
     get_azure_key_vault_secret,
     get_conversations,
@@ -111,9 +114,12 @@ from shared.cosmo_db import (
     update_competitor_by_id,
     get_items_to_delete_by_brand,
 )
+from data_summary.file_utils import detect_extension
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
 from data_summary.summarize import create_description
+from data_summary.blob_utils import (download_blob_to_temp, update_blob_metadata, build_blob_name)
+from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
 load_dotenv(override=True)
 
@@ -129,6 +135,11 @@ INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/api/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
 FINANCIAL_ASSISTANT_ENDPOINT = ORCHESTRATOR_URI + "/api/financial-orc"
 PRODUCT_ID_DEFAULT = os.getenv("STRIPE_PRODUCT_ID")
+
+DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
+# ==== BLOB STORAGE ====
+BLOB_CONTAINER_NAME = "documents"
+ORG_FILES_PREFIX = "organization_files"
 
 # email
 EMAIL_HOST = os.getenv("EMAIL_HOST")
@@ -5142,35 +5153,60 @@ def get_items_to_delete(brand_id):
     
 @app.route("/api/organization/<organization_id>/<file_name>/business-describe", methods=["POST"])
 def generate_business_description(organization_id, file_name):
+    blob_temp_path = None
 
     if not organization_id or not file_name:
         return create_error_response("organization_id and file_name are required", HTTPStatus.BAD_REQUEST)
     
     try:
 
-        if file_name.startswith("organization_files/"):
-            blob_name = file_name
-        else:    
-            blob_name = f"organization_files/{organization_id}/{file_name}"
+        valid_file_extensions = [".csv", ".xlsx", ".xls"]
+        file_ext = detect_extension(file_name)
 
-
-        blob_storage_manager = BlobStorageManager()
-        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
-
-        blob_client = container_client.get_blob_client(blob_name)
-
-        if not blob_client.exists:
-            return create_error_response("The Document does not exist", HTTPStatus.NOT_FOUND)
+        if file_ext not in valid_file_extensions:
+            raise InvalidFileType(f"Invalid file type '{file_ext}'. Allowed types are: {', '.join(valid_file_extensions)}.")
         
-        blob_client.download_blob()
+            
+        llm = setup_llm()
 
+        blob_name = build_blob_name(organization_id, file_name, ORG_FILES_PREFIX)
 
-    except:
-        pass
+        blob_temp_path, blob_metadata = download_blob_to_temp(blob_name, BLOB_CONTAINER_NAME)
+
+        business_description = create_description(blob_temp_path, llm, BUSINESS_DESCRIPTION)
+
+        blob_metadata["business_description"] = str(business_description)
+
+        updated_metadata = update_blob_metadata(blob_name, blob_metadata, BLOB_CONTAINER_NAME)
+
+        return create_success_response(updated_metadata)
+
+    except InvalidFileType as e:
+        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+    
+    except ValueError as e:
+        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
+
+    except ResourceNotFoundError:
+        return create_error_response("The document does not exist", HTTPStatus.NOT_FOUND)
+
+    except AzureError as e:
+        return create_error_response(f"Azure storage error: {str(e)}", HTTPStatus.SERVICE_UNAVAILABLE)
+
+    except (OSError, IOError) as e:
+        return create_error_response(f"File processing error: {str(e)}", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+    except pd.errors.ParserError as e:
+        return create_error_response(f"Error parsing file: {str(e)}", HTTPStatus.BAD_REQUEST)
+
+    except Exception as e:
+        app.logger.exception("Unexpected error")
+        return create_error_response(f"Unexpected error: {str(e)}", HTTPStatus.INTERNAL_SERVER_ERROR)
+
     finally:
-        pass
+        if os.path.exists(blob_temp_path) and blob_temp_path:
+            os.remove(blob_temp_path)
 
-    return f"{blob_client}"
 
 
 if __name__ == "__main__":

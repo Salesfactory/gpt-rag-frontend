@@ -1,6 +1,9 @@
 import csv, os, logging
 from typing import Optional, Tuple
 import pandas as pd
+import io
+import tempfile
+import shutil
 
 logger = logging.getLogger("datasummary.file_utils")
 
@@ -65,3 +68,10 @@ def to_pandasai_dataframe(df: pd.DataFrame):
     df.columns = df.columns.astype(str)
     df.columns = [c.strip().replace("\n", " ").replace("\r", " ") for c in df.columns]
     return PAIDF(df)
+
+def bytesio_to_tempfile(byte_data: io.BytesIO, suffix: str) -> str:
+    temp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+    byte_data.seek(0)  # rewind
+    shutil.copyfileobj(byte_data, temp)
+    temp.close()
+    return str(temp.name)  # full path to the temp file

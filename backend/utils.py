@@ -108,6 +108,8 @@ class MissingParameterError(Exception):
 
     pass
 
+class InvalidFileType(Exception):
+    """Raised when a invalid file type is recieved"""
 
 # Security: Decorator to ensure client principal ID is present
 def require_client_principal(f):
