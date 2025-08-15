@@ -16,11 +16,15 @@ interface SidebarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [activeItem, setActiveItem] = useState<string | null>(null);
+    const [activeSubItem, setActiveSubItem] = useState<string | null>(null);
+
     const handleItemClick = (itemTitle: string) => {
         setActiveItem(itemTitle);
         setIsCollapsed(true);
+        setActiveSubItem(null);
     };
 
     const handleOnClickCloseSideBar = () => {
@@ -28,6 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     };
     const handleSetActiveItem = (title: string) => {
         setActiveItem(prev => (prev === title ? null : title));
+        setActiveSubItem(null);
     };
 
     const {
@@ -318,6 +323,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                                     isActive={activeItem === item.title}
                                                     setIsActive={() => handleSetActiveItem(item.title)}
                                                     onClick={() => handleItemClick(item.title)}
+                                                    activeSubItem={activeSubItem}
+                                                    setActiveSubItem={setActiveSubItem}
                                                 />
                                             );
                                         })}
