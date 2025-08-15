@@ -399,6 +399,7 @@ const UploadResources: React.FC = () => {
                 type: "warning"
             });
         } else {
+
             setIsUploadDialogOpen(true);
             setSelectedFiles([]);
             setUploadStatus(null);
