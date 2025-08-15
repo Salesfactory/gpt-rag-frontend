@@ -39,12 +39,12 @@ export function removeCitations(text: string): string {
 }
 
 /**
- * Remove the Citations/Sources block and its links.
+ * Remove the Citations block and its links.
  */
 export function removeCitationsBlock(input: string): string {
-    // Delete only the Citations/Sources/Fuentes block at the end of the text.
+    // Delete only the Citations block at the end of the text.
     let out = input;
-    // Markdown: block type “**Citations:** ...” or “**Sources:** ...” or “**Fuentes:** ...” at the end
+    // Markdown: block type “**Citations:**” at the end
     out = out.replace(/(\n|\r|\r\n)?\s*(\*\*\s*(Citations)\s*:\*\*|####?\s*(Citations))\s*:?[\s\S]*$/gi, "");
     return out;
 }
