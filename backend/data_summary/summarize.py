@@ -90,6 +90,7 @@ def create_description(
             try:
                 resp = llm.summarize_dataframe(pai_df, prompt)
 
+
                 # Handle PandasAI StringResponse
                 if hasattr(resp, "value"):
                     resp = resp.value
