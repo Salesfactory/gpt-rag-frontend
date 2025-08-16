@@ -1775,3 +1775,23 @@ export async function getFileBlob(fileName: string, container: string = "documen
         throw new Error('Error fetching file.');
     }
 }
+
+export async function postReportByName(reportName: string): Promise<any> {
+    try{
+        const response = await fetch(`/api/reports/${encodeURIComponent(reportName)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error creating report: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating report: ', error);
+        throw new Error('Error creating report.');
+    }
+}
