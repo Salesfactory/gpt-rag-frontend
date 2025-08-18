@@ -1,7 +1,5 @@
 # tests/test_report_jobs_routes.py
 from __future__ import annotations
-import json
-import types
 import pytest
 from flask import Flask
 
@@ -117,7 +115,7 @@ def test_create_job_201(client, app):
         "report_name": "brand-analysis",
         "params": {"foo": "bar"},
     }
-    resp = client.post("/v1/report-jobs", json=body)
+    resp = client.post("/api/report-jobs", json=body)
     assert resp.status_code == 201
     data = resp.get_json()
     assert data["organization_id"] == "t1"
@@ -137,14 +135,14 @@ def test_get_job_200(client, app):
             "status": "QUEUED",
         }
     )
-    resp = client.get("/v1/report-jobs/job-1?organization_id=t1")
+    resp = client.get("/api/report-jobs/job-1?organization_id=t1")
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["id"] == created["id"]
 
 
 def test_get_job_404(client):
-    resp = client.get("/v1/report-jobs/does-not-exist?organization_id=t1")
+    resp = client.get("/api/report-jobs/does-not-exist?organization_id=t1")
     assert resp.status_code == 404
 
 
@@ -165,7 +163,7 @@ def test_list_jobs_200(client, app):
             "created_at": "2025-02-01T00:00:00+00:00",
         }
     )
-    resp = client.get("/v1/report-jobs?organization_id=t1&limit=10")
+    resp = client.get("/api/report-jobs?organization_id=t1&limit=10")
     assert resp.status_code == 200
     data = resp.get_json()
     # ordered DESC by created_at -> 'b' first
@@ -176,8 +174,8 @@ def test_delete_job_204(client, app):
     app.fake_container.create_item(
         {"id": "z", "organization_id": "t1", "report_name": "r3"}
     )
-    resp = client.delete("/v1/report-jobs/z?organization_id=t1")
+    resp = client.delete("/api/report-jobs/z?organization_id=t1")
     assert resp.status_code == 204
     # subsequent GET should 404
-    resp2 = client.get("/v1/report-jobs/z?organization_id=t1")
+    resp2 = client.get("/api/report-jobs/z?organization_id=t1")
     assert resp2.status_code == 404
