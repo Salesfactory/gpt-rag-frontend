@@ -5474,11 +5474,13 @@ def get_items_to_delete(brand_id):
         return create_error_response("Internal Server Error", 500)
 
 
+
 @app.get("/healthz")
 def healthz():
     _ = clients.get_container(clients.USERS_CONT)
     _ = clients.sb_client()
     return jsonify(status="ok")
+
 
 
 if __name__ == "__main__":
