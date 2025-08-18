@@ -2898,10 +2898,11 @@ def get_subscription_details(subscription_id):
         return jsonify({"error": "Invalid subscription ID provided."}), 400
     except stripe.error.AuthenticationError:
         logging.exception("Authentication with Stripe's API failed")
-        return jsonify({"error": "Authentication with Stripe failed."}), 500
+        return jsonify({"error": "Authentication with Stripe failed."}), 401
     except stripe.error.APIConnectionError:
         logging.exception("Network communication with Stripe failed")
         return jsonify({"error": "Network communication with Stripe failed."}), 502
+    except Exception as e:
         logging.exception("Exception in /api/subscription/<subscription_id>/tiers")
         return jsonify({"error": str(e)}), 500
 
