@@ -33,7 +33,7 @@ describe("Subscription Error", () => {
         cy.contains("Authentication with Stripe's API failed.");
     });
 
-    it("Should display subscription error message when Authentication with Stripe's API failed", () => {
+    it("Should display subscription error message when network communication with Stripe failed", () => {
         cy.intercept("GET", "/api/subscriptions/sub_dummy/tiers", {
         statusCode: 502,
         body: {
