@@ -645,7 +645,6 @@ def get_organization_subscription(organizationId):
         organization = container.read_item(
             item=organizationId, partition_key=organizationId
         )
-        logging.info(f"Organization successfully retrieved: {organization}")
         return organization
 
     except CosmosResourceNotFoundError:
