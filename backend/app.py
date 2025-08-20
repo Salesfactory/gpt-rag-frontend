@@ -4177,12 +4177,12 @@ def get_source_documents():
             include_metadata="yes"
         )
 
-
-        # Return the original blob dicts so all fields (including created_on) are preserved
+        # Exclude blobs inside the generated_images subfolder
         organization_blobs = []
+        generated_images_prefix = f"{prefix}generated_images/"
         for blob in blobs:
             blob_name = blob.get("name", "")
-            if blob_name.startswith(prefix):
+            if blob_name.startswith(prefix) and not blob_name.startswith(generated_images_prefix):
                 organization_blobs.append(blob)
 
         logger.info(f"Found {len(organization_blobs)} source documents for organization {organization_id}")
