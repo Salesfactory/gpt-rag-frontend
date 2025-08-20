@@ -246,6 +246,29 @@ const UploadResources: React.FC = () => {
             return;
         }
 
+        // Count existing spreadsheet files
+        const existingSpreadsheetCount = blobItems.filter(item => {
+            const ext = item.name.split('.').pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+
+        // Count new spreadsheet files in this selection
+        const newSpreadsheetCount = fileArray.filter(file => {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+
+        if (existingSpreadsheetCount + newSpreadsheetCount > 20) {
+            setUploadStatus({
+                message: `Spreadsheet file limit reached: You can only upload up to 20 .csv, .xls, or .xlsx files per organization. (${existingSpreadsheetCount} already uploaded, ${newSpreadsheetCount} selected)` ,
+                type: MessageBarType.error
+            });
+            toast("Spreadsheet file limit reached: You can only upload up to 20 .csv, .xls, or .xlsx files per organization.", {
+                type: "error"
+            });
+            return;
+        }
+
         setSelectedFiles(fileArray);
         setUploadStatus(null);
         handleUpload(fileArray);
@@ -290,6 +313,29 @@ const UploadResources: React.FC = () => {
             setUploadStatus({
                 message: `Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`,
                 type: MessageBarType.error
+            });
+            return;
+        }
+
+        // Count existing spreadsheet files
+        const existingSpreadsheetCount = blobItems.filter(item => {
+            const ext = item.name.split('.').pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+
+        // Count new spreadsheet files in this drop
+        const newSpreadsheetCount = fileArray.filter(file => {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+
+        if (existingSpreadsheetCount + newSpreadsheetCount > 20) {
+            setUploadStatus({
+                message: `Spreadsheet file limit reached: You can only upload up to 20 .csv, .xls, or .xlsx files per organization. (${existingSpreadsheetCount} already uploaded, ${newSpreadsheetCount} selected)` ,
+                type: MessageBarType.error
+            });
+            toast("Spreadsheet file limit reached: You can only upload up to 20 .csv, .xls, or .xlsx files per organization.", {
+                type: "error"
             });
             return;
         }
