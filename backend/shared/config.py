@@ -16,34 +16,40 @@ class Settings:
     users_container: str = os.getenv("COSMOS_CONTAINER_USERS", "users")
     jobs_container: str = os.getenv("COSMOS_CONTAINER_JOBS", "report_jobs")
 
-    # ---- Azure Queue Storage (replacing Service Bus) ----
-    # Storage account name, e.g. "mystorageacct"
+    # Azure Queue Storage
     storage_account: str = os.getenv("AZURE_STORAGE_ACCOUNT", "")
-    # Queue name (defaults to report-jobs)
     queue_name: str = os.getenv("QUEUE_NAME", "report-jobs")
-    # Optional explicit override for the full account URL
     _queue_account_url: str = os.getenv("QUEUE_ACCOUNT_URL", "")
+
+    # Azure Key Vault
+    key_vault_name: str = os.getenv("AZURE_KEY_VAULT_NAME", "")
+    key_vault_url_override: str = os.getenv("AZURE_KEY_VAULT_URL", "")  # optional
 
     @property
     def queue_account_url(self) -> str:
-        """
-        Returns the Queue service account URL.
-        Priority:
-          1) Explicit QUEUE_ACCOUNT_URL if set
-          2) Construct from AZURE_STORAGE_ACCOUNT: https://<acct>.queue.core.windows.net
-          3) Empty string if neither is available (caller can treat as 'not configured')
-        """
+        """Queue endpoint URL: explicit override or derived from storage account."""
         if self._queue_account_url:
             return self._queue_account_url
-        if self.storage_account:
-            return f"https://{self.storage_account}.queue.core.windows.net"
-        return ""
+        return (
+            f"https://{self.storage_account}.queue.core.windows.net"
+            if self.storage_account
+            else ""
+        )
+
+    @property
+    def key_vault_url(self) -> str:
+        """Key Vault URL: explicit override or derived from AZURE_KEY_VAULT_NAME."""
+        if self.key_vault_url_override:
+            return self.key_vault_url_override
+        return (
+            f"https://{self.key_vault_name}.vault.azure.net"
+            if self.key_vault_name
+            else ""
+        )
 
     @property
     def cosmos_uri(self) -> str:
-        """
-        Prefer explicit COSMOS_URL; otherwise derive from account name.
-        """
+        """Prefer explicit COSMOS_URL; otherwise derive from account name."""
         if self.cosmos_url:
             return self.cosmos_url
         if not self.cosmos_account:

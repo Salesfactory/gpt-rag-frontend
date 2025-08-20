@@ -1,6 +1,5 @@
 # tests/conftest.py (continued)
 import sys
-import types
 import pytest
 
 
@@ -52,35 +51,21 @@ def fake_cosmos_db(monkeypatch, cosmo_db_module):
 
 
 @pytest.fixture(autouse=True)
-def stub_utils_module(monkeypatch):
-    """
-    Create a stub `utils` module in sys.modules BEFORE importing app.py.
-    Include any symbols app.py imports from utils.
-    """
-    fake_utils = types.ModuleType("utils")
+def mock_kv(monkeypatch):
+    import shared.clients as clients
 
-    # Provide every name app.py imports from utils
-    def fake_get_azure_key_vault_secret(name: str) -> str:
+    def fake_get_secret(name: str) -> str:
         return {
             "speechKey": "fake-speech",
             "orchestrator-host--functionKey": "fake-func-key",
-            "storageConnectionString": (
-                "DefaultEndpointsProtocol=https;"
-                "AccountName=fakestorage;"
-                "AccountKey=FAKEKEY==;"
-                "EndpointSuffix=core.windows.net"
-            ),
+            "storageConnectionString": "DefaultEndpointsProtocol=https;AccountName=fake;AccountKey=FAKE;EndpointSuffix=core.windows.net",
         }.get(name, f"fake-{name}")
 
-    # If app.py imports other helpers from utils, define dummies here too:
-    # def create_error_response(...): ...
-    # def require_client_principal(...): ...
-    # etc.
+    monkeypatch.setattr(
+        clients, "get_azure_key_vault_secret", fake_get_secret, raising=True
+    )
 
-    fake_utils.get_azure_key_vault_secret = fake_get_azure_key_vault_secret
-    monkeypatch.setitem(sys.modules, "utils", fake_utils)
-
-    # Force a clean import of app.py to pick up our stub
+    # Ensure app.py re-import uses the monkeypatched function
     if "app" in sys.modules:
         del sys.modules["app"]
     yield

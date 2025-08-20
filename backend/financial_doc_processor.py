@@ -15,16 +15,15 @@ import pandas as pd
 import fitz
 from dotenv import load_dotenv
 from azure.storage.blob import BlobServiceClient, ContentSettings
-from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from urllib.parse import urlparse, unquote
 
-from utils import convert_html_to_pdf, get_azure_key_vault_secret
+from utils import convert_html_to_pdf
 from app_config import BLOB_CONTAINER_NAME, PDF_PATH
+from shared import clients
+from _secrets import get_secret
 
 # Load environment variables
 load_dotenv()
@@ -32,7 +31,8 @@ load_dotenv()
 
 # Retrieve the connection string for Azure Blob Storage from secrets
 try:
-    BLOB_CONNECTION_STRING = get_azure_key_vault_secret("storageConnectionString")
+    BLOB_CONNECTION_STRING = get_secret("storageConnectionString")
+
     if not BLOB_CONNECTION_STRING:
         raise ValueError(
             "The connection string for Azure Blob Storage (BLOB_CONNECTION_STRING): '{BLOB_CONNECTION_STRING}' is not set. Please ensure it is correctly configured."
@@ -53,31 +53,12 @@ if not BLOB_CONTAINER_NAME:
         "The Blob container name (BLOB_CONTAINER_NAME) is not set. Please ensure it is correctly configured."
     )
 
-#Retrieve the Financial Agent Container name from environment variables
+# Retrieve the Financial Agent Container name from environment variables
 FINANCIAL_AGENT_CONTAINER = os.getenv("FINANCIAL_AGENT_CONTAINER")
 if not FINANCIAL_AGENT_CONTAINER:
     raise ValueError(
         "The Financial Agent Container name (FINANCIAL_AGENT_CONTAINER) is not set. Please ensure it is correctly configured."
     )
-
-# Initialize the Blob service client
-try:
-    blob_service_client = BlobServiceClient.from_connection_string(
-        BLOB_CONNECTION_STRING
-    )
-    container_client = blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
-    if not container_client.exists():
-        logging.warning(f"Blob container '{BLOB_CONTAINER_NAME}' does not exist.")
-        # Uncomment below to create the container dynamically:
-        # container_client.create_container()
-    
-    financial_container_client = blob_service_client.get_container_client(FINANCIAL_AGENT_CONTAINER)
-    if not financial_container_client.exists():
-        logging.warning(f"Blob container '{FINANCIAL_AGENT_CONTAINER}' does not exist.")
-
-except Exception as e:
-    logging.error(f"Failed to initialize Blob service client or access container: {e}")
-    raise
 
 
 # configure logging
@@ -473,8 +454,8 @@ class BlobStorageManager:
                 BLOB_CONTAINER_NAME
             )
 
-            self.container_client_financial = self.blob_service_client.get_container_client(
-                FINANCIAL_AGENT_CONTAINER
+            self.container_client_financial = (
+                self.blob_service_client.get_container_client(FINANCIAL_AGENT_CONTAINER)
             )
             self.blob_base_folder = "financial"
         except ValueError as e:
@@ -691,7 +672,9 @@ class BlobStorageManager:
         """
 
         try:
-            blob_client = self.container_client_financial.get_blob_client(remote_file_path)
+            blob_client = self.container_client_financial.get_blob_client(
+                remote_file_path
+            )
             blob_properties = blob_client.get_blob_properties()
             return blob_properties.metadata
         except Exception as e:
@@ -706,7 +689,7 @@ class BlobStorageManager:
         metadata: dict = None,
         file_path: str = None,
         blob_folder: str = None,
-        container: str = None, # temp fix for the container name
+        container: str = None,  # temp fix for the container name
     ) -> Dict:
         """
         Upload files to Azure Blob Storage. Can handle either a document_paths dictionary
@@ -726,7 +709,7 @@ class BlobStorageManager:
         if document_paths and file_path:
             raise ValueError("Cannot provide both document_paths and file_path")
         try:
-            blob_sas_token = get_azure_key_vault_secret("blobSasToken")
+            blob_sas_token = get_secret("blobSasToken")
             if not blob_sas_token:
                 raise ValueError(
                     "The SAS token for Azure Blob Storage (blob_sas_token) is not set. Please ensure it is correctly configured."
@@ -761,12 +744,16 @@ class BlobStorageManager:
                     content_type = "application/octet-stream"
                 with open(file_path, "rb") as data:
                     try:
-                        if container == os.getenv("BLOB_CONTAINER_NAME"): # this is our marketing container, already been defined in the env
+                        if container == os.getenv(
+                            "BLOB_CONTAINER_NAME"
+                        ):  # this is our marketing container, already been defined in the env
                             self.container_client.upload_blob(
                                 name=blob_path,
                                 data=data,
                                 overwrite=True,
-                                content_settings=ContentSettings(content_type=content_type),
+                                content_settings=ContentSettings(
+                                    content_type=content_type
+                                ),
                                 metadata=metadata,
                             )
                         else:
@@ -774,7 +761,9 @@ class BlobStorageManager:
                                 name=blob_path,
                                 data=data,
                                 overwrite=True,
-                                content_settings=ContentSettings(content_type=content_type),
+                                content_settings=ContentSettings(
+                                    content_type=content_type
+                                ),
                                 metadata=metadata,
                             )
                     except Exception as e:
@@ -801,7 +790,7 @@ class BlobStorageManager:
         if not isinstance(document_paths, dict):
             raise ValueError("document_paths must be a dictionary")
         try:
-            blob_sas_token = get_azure_key_vault_secret("blobSasToken")
+            blob_sas_token = get_secret("blobSasToken")
             if not blob_sas_token:
                 raise ValueError(
                     "The SAS token for Azure Blob Storage (blob_sas_token) is not set. Please ensure it is correctly configured."
@@ -965,7 +954,7 @@ class BlobStorageManager:
                 )
             logger.error(f"Error listing blobs in container: {str(e)}")
             raise
-    
+
     def list_blobs_in_container_for_upload_files(
         self,
         container_name: str,
@@ -1004,7 +993,9 @@ class BlobStorageManager:
             raise ValueError("max_results must be greater than 0")
 
         try:
-            container_client = self.blob_service_client.get_container_client(container_name)
+            container_client = self.blob_service_client.get_container_client(
+                container_name
+            )
 
             # Verify container exists
             if not container_client.exists():

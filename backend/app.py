@@ -1,15 +1,3 @@
-from functools import wraps
-import os
-from dotenv import load_dotenv
-
-# Load .env BEFORE importing modules that might read env at import time
-load_dotenv(override=True)
-import re
-import logging
-import requests
-import json
-import stripe
-import tempfile
 from flask import (
     Flask,
     request,
@@ -20,7 +8,21 @@ from flask import (
     url_for,
     session,
     render_template,
+    stream_with_context,
+    current_app,
 )
+from functools import wraps
+import os
+from dotenv import load_dotenv
+
+
+import re
+import logging
+import requests
+import json
+import stripe
+import tempfile
+
 import markdown
 from flask_cors import CORS
 from azure.identity import DefaultAzureCredential
@@ -28,30 +30,22 @@ from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
 
-# Suppress Azure SDK logs (including Key Vault calls)
-logging.getLogger("azure").setLevel(logging.WARNING)
-logging.getLogger("azure.identity").setLevel(logging.WARNING)
-logging.getLogger("azure.keyvault").setLevel(logging.WARNING)
-logging.getLogger("azure.core").setLevel(logging.WARNING)
-
 from identity.flask import Auth
 from datetime import timedelta, datetime
 
-from flask import Flask, Response, stream_with_context
-import requests
-
-import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import app_config
-import logging
-from functools import wraps
+
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
 from azure.cosmos.exceptions import CosmosHttpResponseError
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
+
+# Load .env BEFORE importing modules that might read env at import time
+load_dotenv(override=True)
+import app_config
 from utils import (
     create_error_response,
     create_success_response,
@@ -61,7 +55,6 @@ from utils import (
     MissingRequiredFieldError,
     MissingParameterError,
     require_client_principal,
-    get_azure_key_vault_secret,
     get_conversations,
     get_conversation,
     delete_conversation,
@@ -117,6 +110,13 @@ from data_summary.llm import PandasAIClient
 from data_summary.summarize import create_description
 from routes.report_jobs import bp as jobs_bp
 from shared import clients
+from _secrets import get_secret
+
+# Suppress Azure SDK logs (including Key Vault calls)
+logging.getLogger("azure").setLevel(logging.WARNING)
+logging.getLogger("azure.identity").setLevel(logging.WARNING)
+logging.getLogger("azure.keyvault").setLevel(logging.WARNING)
+logging.getLogger("azure.core").setLevel(logging.WARNING)
 
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
@@ -146,49 +146,20 @@ INVITATION_LINK = os.getenv("INVITATION_LINK")
 LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
 logging.basicConfig(level=LOGLEVEL)
 
-SPEECH_KEY = get_azure_key_vault_secret("speechKey")
 
 SPEECH_RECOGNITION_LANGUAGE = os.getenv("SPEECH_RECOGNITION_LANGUAGE")
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv("SPEECH_SYNTHESIS_LANGUAGE")
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv("SPEECH_SYNTHESIS_VOICE_NAME")
 AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 ORCH_MASTER_KEY = "orchestrator-host--functionKey"
-orch_function_key = get_azure_key_vault_secret(ORCH_MASTER_KEY)
-# Retrieve the connection string for Azure Blob Storage from secrets
-try:
-    AZURE_STORAGE_CONNECTION_STRING = get_azure_key_vault_secret(
-        "storageConnectionString"
-    )
-    if not AZURE_STORAGE_CONNECTION_STRING:
-        raise ValueError(
-            "The connection string for Azure Blob Storage (AZURE_STORAGE_CONNECTION_STRING):  is not set. Please ensure it is correctly configured."
-        )
-
-    logging.info("Successfully retrieved Blob connection string.")
-    # Validate that the connection string is available
-
-except Exception as e:
-    logging.error("Error retrieving the connection string for Azure Blob Storage.")
-    logging.debug(f"Detailed error: {e}")  # Log detailed errors at the debug level
-    raise
 
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-
-
-@app.before_request
-def setup_clients():
-    print(f"[before_request] {request.method} {request.path}", flush=True)
-    clients.warm_up()  # idempotent
-
-
 app.config.from_object(app_config)
 CORS(app)
-
-
 auth = Auth(
     app,
     client_id=os.getenv("AAD_CLIENT_ID"),
@@ -198,6 +169,31 @@ auth = Auth(
     b2c_signup_signin_user_flow=os.getenv("AAD_POLICY_NAME"),
     b2c_edit_profile_user_flow=os.getenv("EDITPROFILE_USER_FLOW"),
 )
+
+
+@app.before_request
+def setup_clients():
+    print(f"[before_request] {request.method} {request.path}", flush=True)
+    clients.warm_up()  # idempotent
+
+
+@app.before_first_request
+def _load_secrets_once():
+    # Prefer env / Key Vault References; fallback to KV
+    current_app.config["SPEECH_KEY"] = get_secret(
+        "speechKey", env_name="SPEECH_KEY", ttl=60 * 60
+    )
+    # If you must keep function keys, give them a short TTL so rotations are picked up
+    current_app.config["ORCH_FUNCTION_KEY"] = get_secret(
+        "orchestrator-host--functionKey", env_name="ORCH_FUNCTION_KEY", ttl=15 * 60
+    )
+    # Storage: try to avoid connection strings; see section 3. If you must, still cache:
+    current_app.config["AZURE_STORAGE_CONNECTION_STRING"] = get_secret(
+        "storageConnectionString",
+        env_name="AZURE_STORAGE_CONNECTION_STRING",
+        ttl=60 * 60,
+    )
+
 
 app.register_blueprint(jobs_bp)
 
@@ -607,7 +603,7 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
         # Get function key from Key Vault
         key_secret_name = "orchestrator-host--checkuser"
-        function_key = get_azure_key_vault_secret(key_secret_name)
+        function_key = clients.get_azure_key_vault_secret(key_secret_name)
         if not function_key:
             raise ValueError(f"Secret {key_secret_name} not found in Key Vault")
 
@@ -760,7 +756,7 @@ def proxy_orc():
             if agent == "financial"
             else "orchestrator-host--functionKey"
         )
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        functionKey = clients.get_azure_key_vault_secret(keySecretName)
         if not functionKey:
             raise ValueError(f"Function key {keySecretName} is empty")
     except Exception as e:
@@ -844,7 +840,7 @@ def chatgpt():
         else:
             keySecretName = "orchestrator-host--functionKey"
 
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        functionKey = clients.get_azure_key_vault_secret(keySecretName)
     except Exception as e:
         logging.exception(
             "[webbackend] exception in /api/orchestrator-host--functionKey"
@@ -976,7 +972,7 @@ def exportConversation():
         # Get the function key from Azure Key Vault
         try:
             keySecretName = "orchestrator-host--functionKey"
-            functionKey = get_azure_key_vault_secret(keySecretName)
+            functionKey = clients.get_azure_key_vault_secret(keySecretName)
             if not functionKey:
                 raise ValueError(f"Function key {keySecretName} is empty")
         except Exception as e:
@@ -1764,6 +1760,7 @@ def getSummarizationReport(*, context, template_id):
 @app.route("/api/get-speech-token", methods=["GET"])
 def getGptSpeechToken():
     try:
+        SPEECH_KEY = current_app.config["SPEECH_KEY"]
         fetch_token_url = (
             f"https://{SPEECH_REGION}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
         )
@@ -1917,7 +1914,7 @@ def create_customer_portal_session():
 def getStripe():
     try:
         keySecretName = "stripeKey"
-        functionKey = get_azure_key_vault_secret(keySecretName)
+        functionKey = clients.get_azure_key_vault_secret(keySecretName)
         return functionKey
     except Exception as e:
         logging.exception("[webbackend] exception in /api/stripe")
@@ -1961,7 +1958,7 @@ def webhook():
             # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
             # It is set during the infrastructure deployment.
             keySecretName = "orchestrator-host--subscriptions"
-            functionKey = get_azure_key_vault_secret(keySecretName)
+            functionKey = clients.get_azure_key_vault_secret(keySecretName)
         except Exception as e:
             logging.exception(
                 "[webbackend] exception in /api/orchestrator-host--subscriptions"
@@ -2022,7 +2019,7 @@ def uploadBlob():
 
     try:
         blob_service_client = BlobServiceClient.from_connection_string(
-            AZURE_STORAGE_CONNECTION_STRING
+            current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
         )
         blob_client = blob_service_client.get_blob_client(
             container=AZURE_CSV_STORAGE_NAME, blob=filename
@@ -2098,7 +2095,7 @@ def download_document():
         from datetime import datetime, timedelta
 
         blob_service_client = BlobServiceClient.from_connection_string(
-            AZURE_STORAGE_CONNECTION_STRING
+            current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
         )
         account_name = blob_service_client.account_name
         container_name = "documents"
@@ -4579,6 +4576,7 @@ def scrape_url():
 
         # Prepare payload for external scraping service
         payload = {"url": url, "client_principal_id": client_principal_id}
+        orch_function_key = current_app.config["ORCH_FUNCTION_KEY"]
         if not orch_function_key:
             return create_error_response(
                 "Scraping service function key is not set", 500
@@ -4740,6 +4738,8 @@ def multipage_scrape():
 
         # Forward the request to the orchestrator's multipage-scrape endpoint
         try:
+            orch_function_key = current_app.config["ORCH_FUNCTION_KEY"]
+
             logger.info(
                 f"Forwarding multipage scrape request for {url} to orchestrator"
             )
@@ -5474,13 +5474,11 @@ def get_items_to_delete(brand_id):
         return create_error_response("Internal Server Error", 500)
 
 
-
 @app.get("/healthz")
 def healthz():
     _ = clients.get_container(clients.USERS_CONT)
     _ = clients.sb_client()
     return jsonify(status="ok")
-
 
 
 if __name__ == "__main__":
