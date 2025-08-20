@@ -46,46 +46,31 @@ class FakeContainer:
         return iter(items)
 
 
-class FakeSbClient:
-    def __init__(self, bag):
-        self.bag = bag
-
-    def get_queue_sender(self, queue_name: str):
-        bag = self.bag
-
-        class Sender:
-            def __enter__(self_inner):
-                return self_inner
-
-            def __exit__(self_inner, *exc):
-                return False
-
-            def send_messages(self_inner, msg):
-                # record the send (serialize agnostic)
-                bag.append(("sent", queue_name, str(msg)))
-
-        return Sender()
-
-
 # ----- Pytest fixtures -----
 @pytest.fixture
 def app(monkeypatch):
     fake_container = FakeContainer()
-    sent = []
+    enqueued = []
 
     # Patch clients.* used by the blueprint
 
     # Create a tiny module-like object for clients to patch attributes cleanly
     clients_mod = __import__("shared.clients", fromlist=["*"])
 
+    # Cosmos container handle
     monkeypatch.setattr(clients_mod, "JOBS_CONT", "report_jobs", raising=False)
     monkeypatch.setattr(
-        clients_mod, "get_container", lambda name: fake_container, raising=True
+        clients_mod, "get_cosmos_container", lambda name: fake_container, raising=True
     )
+
+    # Azure Queue Storage enqueue (fire-and-forget)
+    def _fake_enqueue(payload):
+        # record the enqueue with payload for assertions
+        enqueued.append(("enqueued", payload))
+
     monkeypatch.setattr(
-        clients_mod, "sb_client", lambda: FakeSbClient(sent), raising=True
+        clients_mod, "enqueue_report_job_message", _fake_enqueue, raising=True
     )
-    monkeypatch.setattr(clients_mod, "SB_QUEUE", "report-jobs", raising=False)
 
     # Also patch exceptions in the route module so our NotFoundError is treated as CosmosResourceNotFoundError
     from routes import report_jobs as routes_mod
@@ -99,7 +84,7 @@ def app(monkeypatch):
 
     # Stash fakes on app for tests to access
     app.fake_container = fake_container
-    app.sent_messages = sent
+    app.enqueued_messages = enqueued
     return app
 
 
@@ -121,8 +106,8 @@ def test_create_job_201(client, app):
     assert data["organization_id"] == "t1"
     assert data["report_name"] == "brand-analysis"
     assert data["status"] == "QUEUED"
-    # Service Bus send recorded
-    assert any(evt[0] == "sent" for evt in app.sent_messages)
+    # Azure Queue enqueue recorded
+    assert any(evt[0] == "enqueued" for evt in app.enqueued_messages)
 
 
 def test_get_job_200(client, app):

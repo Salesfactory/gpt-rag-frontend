@@ -6,11 +6,13 @@ from shared.config import Settings
 
 def _clear_caches():
     """Reset lru_caches so CONFIG changes take effect."""
-    clients._credential.cache_clear()
-    clients._cosmos.cache_clear()
-    clients._db.cache_clear()
-    clients.get_container.cache_clear()
-    clients.sb_client.cache_clear()
+    # credential & cosmos
+    clients.get_default_azure_credential.cache_clear()
+    clients.get_cosmos_client.cache_clear()
+    clients.get_cosmos_database.cache_clear()
+    clients.get_cosmos_container.cache_clear()
+    # queue storage
+    clients.get_report_jobs_queue_client.cache_clear()
 
 
 @pytest.fixture(autouse=True)
@@ -23,10 +25,10 @@ def fresh_caches():
 @pytest.fixture
 def fake_azure(monkeypatch):
     """
-    Patch Azure SDK classes referenced by backend.shared.clients and
+    Patch Azure SDK classes referenced by shared.clients and
     replace clients.CONFIG with our own Settings. No network calls happen.
     """
-    state = {"cosmos": None, "db": None, "sb": None}
+    state = {"cosmos": None, "db": None, "queue": None}
 
     class FakeCredential:
         pass
@@ -61,12 +63,21 @@ def fake_azure(monkeypatch):
         def close(self):
             self.closed = True
 
-    class FakeServiceBusClient:
-        def __init__(self, fully_qualified_namespace, credential):
-            self.fully_qualified_namespace = fully_qualified_namespace
+    class FakeQueueClient:
+        def __init__(self, account_url, queue_name, credential):
+            self.account_url = account_url
+            self.queue_name = queue_name
             self.credential = credential
             self.closed = False
-            state["sb"] = self
+            self.created = False
+            self.sent = []
+            state["queue"] = self
+
+        def create_queue(self):
+            self.created = True
+
+        def send_message(self, body):
+            self.sent.append(body)
 
         def close(self):
             self.closed = True
@@ -74,17 +85,19 @@ def fake_azure(monkeypatch):
     # Patch SDK classes INSIDE the clients module
     monkeypatch.setattr(clients, "DefaultAzureCredential", FakeCredential)
     monkeypatch.setattr(clients, "CosmosClient", FakeCosmosClient)
-    monkeypatch.setattr(clients, "ServiceBusClient", FakeServiceBusClient)
+    monkeypatch.setattr(clients, "QueueClient", FakeQueueClient)
 
     # Replace CONFIG with our own (frozen) Settings instance
+    # Use storage_account so queue_account_url is derived automatically.
     test_config = Settings(
         cosmos_url="https://acct.documents.azure.com:443/",  # satisfies cosmos_uri property
         cosmos_account="ignored-when-url-present",
         cosmos_db_name="mydb",
         users_container="users",
         jobs_container="report_jobs",
-        sb_fqns="sb-namespace.example.net",
-        sb_queue="report-jobs",
+        storage_account="mystorageacct",
+        queue_name="report-jobs",
+        _queue_account_url="",  # force derivation from storage_account
     )
     monkeypatch.setattr(clients, "CONFIG", test_config, raising=True)
 
@@ -92,54 +105,57 @@ def fake_azure(monkeypatch):
     return state
 
 
-def test_warm_up_initializes_cosmos_users_and_sb(fake_azure):
+def test_warm_up_initializes_cosmos_users_and_queue(fake_azure):
     # Act
     clients.warm_up()
 
     # Cosmos created and 'users' container touched once
-    cos = clients._cosmos()
+    cos = clients.get_cosmos_client()
     assert cos is fake_azure["cosmos"]
     assert cos.uri == clients.CONFIG.cosmos_uri
     assert fake_azure["cosmos"].db.calls == ["users"]
     assert "users" in fake_azure["cosmos"].db.containers
 
-    # SB created
-    sb = clients.sb_client()
-    assert sb is fake_azure["sb"]
-    assert sb.fully_qualified_namespace == clients.CONFIG.sb_fqns
+    # Queue client created and ensured
+    qc = clients.get_report_jobs_queue_client()
+    assert qc is fake_azure["queue"]
+    assert qc.account_url == clients.CONFIG.queue_account_url
+    assert qc.queue_name == clients.CONFIG.queue_name
+    assert qc.created is True  # create_queue() invoked during init
 
     # Same credential shared
-    assert cos.credential is sb.credential is clients._credential()
+    assert cos.credential is qc.credential is clients.get_default_azure_credential()
 
 
-def test_get_container_is_cached(fake_azure):
-    c1 = clients.get_container("report_jobs")
-    c2 = clients.get_container("report_jobs")
+def test_get_cosmos_container_is_cached(fake_azure):
+    c1 = clients.get_cosmos_container("report_jobs")
+    c2 = clients.get_cosmos_container("report_jobs")
     assert c1 is c2, "Expected lru_cache to cache containers by name"
     # Only one DB call for that container
     assert fake_azure["cosmos"].db.calls.count("report_jobs") == 1
 
 
-def test_sb_client_none_when_fqdn_absent(monkeypatch, fake_azure):
-    # Replace CONFIG with same values but no SB FQDN
+def test_queue_client_none_when_not_configured(monkeypatch, fake_azure):
+    # Replace CONFIG with same values but no storage account and no explicit URL
     cfg = Settings(
         cosmos_url="https://acct.documents.azure.com:443/",
         cosmos_account="",
         cosmos_db_name="mydb",
         users_container="users",
         jobs_container="report_jobs",
-        sb_fqns="",  # disables SB
-        sb_queue="report-jobs",
+        storage_account="",  # disables queue derivation
+        queue_name="report-jobs",
+        _queue_account_url="",  # no explicit override
     )
     monkeypatch.setattr(clients, "CONFIG", cfg, raising=True)
     _clear_caches()
 
-    sb = clients.sb_client()
-    assert sb is None
+    qc = clients.get_report_jobs_queue_client()
+    assert qc is None
 
-    # warm_up should tolerate missing SB too
+    # warm_up should tolerate missing queue client too
     clients.warm_up()
-    assert fake_azure["sb"] is None  # no SB client constructed
+    assert fake_azure["queue"] is None  # no QueueClient constructed
 
 
 def test_shutdown_closes_both_clients(fake_azure):
@@ -147,14 +163,14 @@ def test_shutdown_closes_both_clients(fake_azure):
 
     # Precondition
     assert fake_azure["cosmos"].closed is False
-    assert fake_azure["sb"].closed is False
+    assert fake_azure["queue"].closed is False
 
     clients._shutdown()
 
     assert fake_azure["cosmos"].closed is True
-    assert fake_azure["sb"].closed is True
+    assert fake_azure["queue"].closed is True
 
     # Idempotent call
     clients._shutdown()
     assert fake_azure["cosmos"].closed is True
-    assert fake_azure["sb"].closed is True
+    assert fake_azure["queue"].closed is True
