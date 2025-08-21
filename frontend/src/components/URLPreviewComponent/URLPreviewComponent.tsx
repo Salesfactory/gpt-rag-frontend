@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Spinner } from '@fluentui/react';
-import styles from './URLPreviewComponent.module.css';
-import { getFileType, isImageFile } from '../../utils/functions';
-import { getFileBlob } from '../../api/api';
+import React, { useState, useEffect, useRef } from "react";
+import { Spinner } from "@fluentui/react";
+import styles from "./URLPreviewComponent.module.css";
+import { getFileType, isImageFile } from "../../utils/functions";
+import { getFileBlob } from "../../api/api";
 
 export interface URLPreviewComponentProps {
     url: string;
     alt?: string;
     className?: string;
-    displayMode?: 'thumbnail' | 'full' | 'modal';
+    displayMode?: "thumbnail" | "full" | "modal";
+    isGenerating?: boolean;
     onLoad?: () => void;
     onError?: (error: Error) => void;
     maxWidth?: string;
@@ -23,13 +24,14 @@ interface FileBlob {
 
 export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
     url,
-    alt = 'Preview',
-    className = '',
-    displayMode = 'full',
+    alt = "Preview",
+    className = "",
+    displayMode = "full",
+    isGenerating,
     onLoad,
     onError,
-    maxWidth = '100%',
-    maxHeight = '400px'
+    maxWidth = "100%",
+    maxHeight = "400px"
 }) => {
     const [fileBlob, setFileBlob] = useState<FileBlob | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -38,9 +40,10 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
     const [imageLoaded, setImageLoaded] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
 
-
-
     useEffect(() => {
+        if (isGenerating) {
+            return;
+        }
         const loadFile = async () => {
             if (!url) return;
 
@@ -61,7 +64,7 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
 
                 onLoad?.();
             } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+                const errorMessage = err instanceof Error ? err.message : "Unknown error occurred";
                 setError(errorMessage);
                 onError?.(err instanceof Error ? err : new Error(errorMessage));
             } finally {
@@ -89,26 +92,26 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
         };
 
         if (isModalOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-            document.body.style.overflow = 'hidden';
+            document.addEventListener("mousedown", handleClickOutside);
+            document.body.style.overflow = "hidden";
         }
 
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.body.style.overflow = 'unset';
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.body.style.overflow = "unset";
         };
     }, [isModalOpen]);
 
     // Handle escape key for modal
     useEffect(() => {
         const handleEscapeKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && isModalOpen) {
+            if (event.key === "Escape" && isModalOpen) {
                 setIsModalOpen(false);
             }
         };
 
-        document.addEventListener('keydown', handleEscapeKey);
-        return () => document.removeEventListener('keydown', handleEscapeKey);
+        document.addEventListener("keydown", handleEscapeKey);
+        return () => document.removeEventListener("keydown", handleEscapeKey);
     }, [isModalOpen]);
 
     const handleImageLoad = () => {
@@ -116,12 +119,12 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
     };
 
     const handleImageError = () => {
-        setError('Failed to load image');
+        setError("Failed to load image");
         setImageLoaded(false);
     };
 
     const handleThumbnailClick = () => {
-        if (displayMode === 'thumbnail') {
+        if (displayMode === "thumbnail") {
             setIsModalOpen(true);
         }
     };
@@ -130,37 +133,35 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
         const baseStyles: React.CSSProperties = {};
 
         switch (displayMode) {
-            case 'thumbnail':
+            case "thumbnail":
                 return {
                     ...baseStyles,
-                    maxWidth: '150px',
-                    maxHeight: '150px',
-                    cursor: 'pointer'
+                    maxWidth: "150px",
+                    maxHeight: "150px",
+                    cursor: "pointer"
                 };
-            case 'full':
+            case "full":
                 return {
                     ...baseStyles,
                     maxWidth,
                     maxHeight
                 };
-            case 'modal':
+            case "modal":
                 return {
                     ...baseStyles,
-                    maxWidth: '90vw',
-                    maxHeight: '90vh'
+                    maxWidth: "90vw",
+                    maxHeight: "90vh"
                 };
             default:
                 return baseStyles;
         }
     };
 
-    if (isLoading) {
+    if (isLoading || isGenerating) {
         return (
-            <div className={`${styles.container} ${className}`}>
-                <div className={styles.loadingContainer}>
-                    <Spinner size={3} />
-                    <span className={styles.loadingText}>Loading preview...</span>
-                </div>
+            <div className={styles.loadingContainer}>
+                <Spinner size={3} />
+                <span className={styles.loadingText}>Loading preview...</span>
             </div>
         );
     }
@@ -191,7 +192,7 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
                         src={fileBlob.url}
                         alt={alt}
                         style={getDisplayStyles()}
-                        className={`${styles.image} ${displayMode === 'thumbnail' ? styles.thumbnail : ''}`}
+                        className={`${styles.image} ${displayMode === "thumbnail" ? styles.thumbnail : ""}`}
                         onClick={handleThumbnailClick}
                         onLoad={handleImageLoad}
                         onError={handleImageError}
@@ -208,12 +209,8 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
             return (
                 <div className={styles.filePreview}>
                     <div className={styles.fileIcon}>📄</div>
-                    <div className={styles.fileName}>{url.split('/').pop()}</div>
-                    <a
-                        href={fileBlob.url}
-                        download={url.split('/').pop()}
-                        className={styles.downloadLink}
-                    >
+                    <div className={styles.fileName}>{url.split("/").pop()}</div>
+                    <a href={fileBlob.url} download={url.split("/").pop()} className={styles.downloadLink}>
                         Download
                     </a>
                 </div>
@@ -223,28 +220,17 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
 
     return (
         <>
-            <div className={`${styles.container} ${className}`}>
-                {renderContent()}
-            </div>
+            <div className={`${styles.container} ${className}`}>{renderContent()}</div>
 
             {/* Modal for thumbnail expansion */}
             {isModalOpen && isImage && (
                 <div className={styles.modal}>
                     <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)} />
                     <div className={styles.modalContent} ref={modalRef}>
-                        <button
-                            className={styles.modalCloseButton}
-                            onClick={() => setIsModalOpen(false)}
-                            aria-label="Close modal"
-                        >
+                        <button className={styles.modalCloseButton} onClick={() => setIsModalOpen(false)} aria-label="Close modal">
                             ✕
                         </button>
-                        <img
-                            src={fileBlob.url}
-                            alt={alt}
-                            className={styles.modalImage}
-                            style={getDisplayStyles()}
-                        />
+                        <img src={fileBlob.url} alt={alt} className={styles.modalImage} style={getDisplayStyles()} />
                     </div>
                 </div>
             )}

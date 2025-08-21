@@ -615,6 +615,7 @@ const Chat = () => {
                                                               <Answer
                                                                   key={index}
                                                                   answer={response}
+                                                                  isGenerating={false}
                                                                   isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
@@ -635,6 +636,7 @@ const Chat = () => {
                                                               <Answer
                                                                   key={index}
                                                                   answer={answer[1]}
+                                                                  isGenerating={false}
                                                                   isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
@@ -673,6 +675,7 @@ const Chat = () => {
                                                                 thoughts: ""
                                                             } as AskResponse
                                                         }
+                                                        isGenerating={isLoading}
                                                         isSelected={activeAnalysisPanelTab !== undefined}
                                                         onCitationClicked={(c, n) => {}}
                                                         onThoughtProcessClicked={() => {}}

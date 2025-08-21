@@ -2898,10 +2898,11 @@ def get_subscription_details(subscription_id):
         return jsonify({"error": "Invalid subscription ID provided."}), 400
     except stripe.error.AuthenticationError:
         logging.exception("Authentication with Stripe's API failed")
-        return jsonify({"error": "Authentication with Stripe failed."}), 500
+        return jsonify({"error": "Authentication with Stripe failed."}), 401
     except stripe.error.APIConnectionError:
         logging.exception("Network communication with Stripe failed")
         return jsonify({"error": "Network communication with Stripe failed."}), 502
+    except Exception as e:
         logging.exception("Exception in /api/subscription/<subscription_id>/tiers")
         return jsonify({"error": str(e)}), 500
 
@@ -5139,6 +5140,31 @@ def get_items_to_delete(brand_id):
     except Exception as e:
         logger.exception(f"Error retrieving items to delete: {e}")
         return create_error_response("Internal Server Error", 500)
+
+
+@app.route("/api/reports/<reportName>", methods=["POST"])
+def post_report_by_name(reportName):
+    """
+    Endpoint to store report metadata in CosmosDB.
+    """
+
+    try:
+        container = get_cosmos_container("reports")
+
+        report_document = {
+            "id": str(uuid.uuid4()),
+            "report_name": reportName,
+            "start_datetime": datetime.now(timezone.utc).isoformat(),
+            "status": "PENDING",
+        }
+
+        container.create_item(body=report_document)
+
+        return jsonify({"message": "Report created successfully."}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

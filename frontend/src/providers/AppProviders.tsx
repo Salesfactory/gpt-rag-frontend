@@ -134,6 +134,8 @@ interface AppContextType {
     setUserName: Dispatch<SetStateAction<string>>;
     isResizingAnalysisPanel: boolean;
     setisResizingAnalysisPanel: Dispatch<SetStateAction<boolean>>;
+    subscriptionError: string | null;
+    setSubscriptionError: Dispatch<SetStateAction<string | null>>;
 }
 
 // Create the context with a default value
@@ -182,6 +184,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [documentName, setDocumentName] = useState<string>(documentParam || "defaultDocument");
     const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
     const [isResizingAnalysisPanel, setisResizingAnalysisPanel] = useState<boolean>(false);
+    const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
 
     // Move agentType update into useEffect to prevent state updates on every render
     useEffect(() => {
@@ -436,6 +439,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 debugLog("Failed to fetch subscription tiers:", error);
                 console.error("Failed to fetch subscription tiers:", error);
                 toast.error(error.message || "Failed to fetch subscription tiers.");
+                setSubscriptionError(error.message || "Failed to fetch subscription tiers.");
             } finally {
                 setIsSubscriptionTiersLoading(false);
                 debugLog("Subscription tiers fetch completed.");
@@ -536,7 +540,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             userName,
             setUserName,
             isResizingAnalysisPanel,
-            setisResizingAnalysisPanel
+            setisResizingAnalysisPanel,
+            subscriptionError,
+            setSubscriptionError,
         }),
         [
             showHistoryPanel,
@@ -563,7 +569,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isChatHistoryLoading,
             settings,
             userName,
-            isResizingAnalysisPanel
+            isResizingAnalysisPanel,
+            subscriptionError
         ]
     );
     useEffect(() => {

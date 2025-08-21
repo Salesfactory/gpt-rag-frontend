@@ -35,7 +35,8 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setChatId,
         setNewChatDeleted,
         chatId,
-        dataConversation
+        dataConversation,
+        setRefreshFetchHistory
     } = useAppContext();
 
     const subscriptiontype = subscriptionTiers || " ";
@@ -73,6 +74,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         setSettingsPanel(false);
         setIsDropdownOpen(false);
         setIsCollapsed(true);
+        setRefreshFetchHistory(true);
     };
 
     const handleShowFeedbackRatingPanel = () => {
