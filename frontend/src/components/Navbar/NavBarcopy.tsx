@@ -297,6 +297,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/voice-customer" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Voice of Customer</span>}
                         {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution List</span>}
                         {location === "/upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Upload Resources</span>}
+                        {location === "/vizvault" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>VizVault</span>}
                         {location === "/subscription-management" && (
                             <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
                         )}

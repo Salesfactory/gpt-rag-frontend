@@ -30,6 +30,7 @@ import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateC
 import { TemplateReports } from "./pages/reports/ReportTemplates";
 import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
 import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
+import Gallery from "./pages/gallery/Gallery";
 import SubscriptionError from "./pages/SubscriptionError";
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
                     <Route path="/" element={<Chat />} />
                     <Route path="/success-payment" element={<SuccessPayment />} />
                     <Route path="/help-center" element={<HelpCenter />} />
+                    <Route path="/vizvault" element={<Gallery />} />
                     <Route path="/notification-settings" element={<Notifications />} />
                     <Route path="/access-denied" element={<AccessDenied />} />
                     <Route path="/subscription-error" element={<SubscriptionError />} />
