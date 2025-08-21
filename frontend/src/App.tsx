@@ -31,6 +31,7 @@ import { TemplateReports } from "./pages/reports/ReportTemplates";
 import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
 import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
 import Gallery from "./pages/gallery/Gallery";
+import SubscriptionError from "./pages/SubscriptionError";
 
 export default function App() {
     return (
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/payment" element={<PaymentGateway />} />
             <Route path="/access-denied" element={<AccessDenied />} />
+            <Route path="/subscription-error" element={<SubscriptionError />} />
             <Route path="/logout" element={<Logout />} />
 
             {/* Protected Routes for Authenticated Users (Regular and Admin) */}
@@ -64,6 +66,7 @@ export default function App() {
                     <Route path="/vizvault" element={<Gallery />} />
                     <Route path="/notification-settings" element={<Notifications />} />
                     <Route path="/access-denied" element={<AccessDenied />} />
+                    <Route path="/subscription-error" element={<SubscriptionError />} />
                 </Route>
             </Route>
             {/* <Route
