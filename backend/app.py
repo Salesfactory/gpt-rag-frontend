@@ -105,6 +105,7 @@ from shared.cosmo_db import (
     update_competitor_by_id,
     get_items_to_delete_by_brand,
 )
+from report_scheduler import initialize_scheduler, stop_scheduler
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
 from data_summary.summarize import create_description
@@ -5530,6 +5531,83 @@ def get_gallery(organization_id):
         )
         return create_error_response("Database error retrieving gallery items.", 500)
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/scheduler/status", methods=["GET"])
+def get_scheduler_status():
+    """
+    Get the current status of the report scheduler.
+    """
+    from report_scheduler import get_scheduler
+    
+    scheduler = get_scheduler()
+    if scheduler and scheduler.scheduler.running:
+        return jsonify({
+            "status": "running",
+            "next_run": "2:00 AM UTC daily",
+            "message": "Scheduler is active and will trigger reports daily at 2:00 AM UTC"
+        }), 200
+    else:
+        return jsonify({
+            "status": "stopped",
+            "message": "Scheduler is not running"
+        }), 200
+
+
+@app.route("/api/scheduler/logs", methods=["GET"])
+def get_scheduler_logs():
+    """
+    Get recent scheduler execution logs from Cosmos DB.
+    """
+    try:
+        container = get_cosmos_container("scheduled_report_triggers")
+        
+        # Query for recent logs (last 7 days)
+        query = """
+        SELECT * FROM c 
+        WHERE c.timestamp >= @start_date 
+        ORDER BY c.timestamp DESC
+        """
+        
+        start_date = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+        
+        parameters = [{"name": "@start_date", "value": start_date}]
+        items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        
+        return jsonify({
+            "logs": items,
+            "count": len(items),
+            "period": "last 7 days"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/scheduler/logs/<execution_id>", methods=["GET"])
+def get_scheduler_logs_by_execution(execution_id):
+    """
+    Get logs for a specific execution ID.
+    """
+    try:
+        container = get_cosmos_container("scheduled_report_triggers")
+        
+        query = "SELECT * FROM c WHERE c.execution_id = @execution_id ORDER BY c.timestamp ASC"
+        parameters = [{"name": "@execution_id", "value": execution_id}]
+        
+        items = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        
+        if not items:
+            return jsonify({"error": "Execution ID not found"}), 404
+        
+        return jsonify({
+            "execution_id": execution_id,
+            "logs": items,
+            "count": len(items)
+        }), 200
+        
+    except Exception as e:
         logger.exception(
             f"Unexpected error retrieving gallery items for org {organization_id}: {e}"
         )
@@ -5537,4 +5615,16 @@ def get_gallery(organization_id):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    # Initialize the report scheduler
+    try:
+        initialize_scheduler()
+        logger.info("Report scheduler initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize report scheduler: {e}")
+    
+    try:
+        app.run(host="0.0.0.0", port=8000, debug=True)
+    finally:
+        # Ensure scheduler is stopped when the app shuts down
+        stop_scheduler()
+
