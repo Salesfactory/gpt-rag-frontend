@@ -23,13 +23,12 @@ def reset_caches(monkeypatch):
 
 
 def test_get_blob_container_client_happy(monkeypatch):
-  # Monkey-patch the internal URL resolver to simulate a valid blob endpoint.
-  monkeypatch.setattr(clients, "_resolve_blob_account_url", lambda: "https://example.blob.core.windows.net")
-  # Monkey-patch BlobServiceClient with our dummy implementation.
-  monkeypatch.setattr(clients, "BlobServiceClient", DummyBlobServiceClient)
+  dummy = DummyBlobServiceClient("https://example.blob.core.windows.net", DefaultAzureCredential())
+  monkeypatch.setattr(clients, "get_blob_service_client", lambda: dummy)
 
   container_client = clients.get_blob_container_client("testcontainer")
   assert container_client == "dummy_container_client: testcontainer"
+
 
   service_client = clients.get_blob_service_client()
   assert service_client is not None
@@ -39,7 +38,7 @@ def test_get_blob_container_client_happy(monkeypatch):
 
 def test_get_blob_container_client_error(monkeypatch):
   # Force the URL resolver to return None, simulating missing configuration.
-  monkeypatch.setattr(clients, "_resolve_blob_account_url", lambda: None)
+  monkeypatch.setattr(clients, "get_blob_service_client", lambda: None)
 
   service_client = clients.get_blob_service_client()
   assert service_client is None
