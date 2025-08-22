@@ -8,16 +8,13 @@ import unicodedata
 
 logger = logging.getLogger("datasummary.summarize")
 
-DEFAULT_PROMPT = """You are a data analyst performing an initial review of a file for a key business decision.
-Examine the provided Excel file and create a brief metadata summary (up to 2 sentences) that covers the following:
-1. Data Topic & Purpose: What the dataset includes and its intended use.
-2. Notable Patterns: Find 1-2 significant insights like common categories, outliers, trends.
-3. Do not mention the data quality in the file; just create the brief.
-4. Make sure the description contains these: size (number of rows and columns).
-5. List all the column names if they are not more than 10; if more than 10, list only the most important ones (skip unnamed ones).
-Format: Plain text only. No code blocks, images, or charts.
-You may include punctuation, special characters, and non-ASCII characters in the summary if they help convey meaning.
-This summary will help determine if the file is suitable for further analysis."""
+DEFAULT_PROMPT = """You are a data analyst providing file descriptions for automated file selection.
+Task: Examine the Excel file and provide a brief description (2-3 sentences) covering:
+Content Type: What kind of data this file contains (e.g., sales records, customer list, inventory data, financial statements)
+Key Dimensions: Main data categories/columns (do not include details of individual rows or columns, just summarize the categories) and rough size (number of rows/records)
+Time Scope: Date range covered, if applicable
+Output: Plain text description only.
+Purpose: Help a coding agent understand what each file contains without opening it, enabling efficient file selection for analysis tasks."""
 STALL_MSG = "Unfortunately, I was not able to get your answer. Please try again."
 
 
@@ -89,6 +86,7 @@ def create_description(
         for attempt in range(1, max_retries + 1):
             try:
                 resp = llm.summarize_dataframe(pai_df, prompt)
+
 
                 # Handle PandasAI StringResponse
                 if hasattr(resp, "value"):

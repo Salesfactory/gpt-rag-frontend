@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { X, Loader2, AlertCircle } from "lucide-react";
 import styles from "./OrganizationModal.module.css";
 import { fetchUserOrganizations, fetchUserRoleForOrganization, getUsers } from "../../api";
@@ -15,6 +15,9 @@ type Props = {
     isOpen: boolean;
     onClose: () => void;
 };
+
+// Maximum number of organizations to display in the Switch Organization panel
+const MAX_ORGANIZATIONS_DISPLAY = 20;
 
 const roleDisplayNames: Record<string, string> = {
     platformadmin: "Platform Admin",
@@ -40,6 +43,13 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
     const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Sort and limit organizations for display
+    const sortedAndLimitedOrganizations = useMemo(() => {
+        return organizations
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .slice(0, MAX_ORGANIZATIONS_DISPLAY);
+    }, [organizations]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -151,7 +161,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
 
                     {!loading && !error && organizations.length > 0 && (
                         <div className={styles.orgList}>
-                            {organizations.map(org => (
+                            {sortedAndLimitedOrganizations.map(org => (
                                 <div
                                     key={org.id}
                                     onClick={() => setSelectedOrgId(org.id)}
@@ -191,6 +201,13 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    )}
+                    {!loading && !error && organizations.length > MAX_ORGANIZATIONS_DISPLAY && (
+                        <div className={styles.limitMessage}>
+                            <p className={styles.limitText}>
+                                Showing {MAX_ORGANIZATIONS_DISPLAY} of {organizations.length} organizations
+                            </p>
                         </div>
                     )}
                 </div>

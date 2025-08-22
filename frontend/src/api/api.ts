@@ -1775,3 +1775,58 @@ export async function getFileBlob(fileName: string, container: string = "documen
         throw new Error('Error fetching file.');
     }
 }
+
+export async function postReportByName(reportName: string): Promise<any> {
+    try{
+        const response = await fetch(`/api/reports/${encodeURIComponent(reportName)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error creating report: ${response.status} ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error creating report: ', error);
+        throw new Error('Error creating report.');
+    }
+}
+
+export async function getGalleryItems(organization_id: string, params: { user: any }): Promise<any[]> {
+    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/gallery`, {
+        method: 'GET',
+        headers: {
+            'X-MS-CLIENT-PRINCIPAL-ID': params.user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': params.user?.name ?? 'anonymous',
+            'Accept': 'application/json'
+        },
+    });
+
+    console.log('getGalleryItems response status:', response.status, response.statusText);
+
+    // If server returned non-2xx, read text to capture HTML error pages and throw meaningful error
+    if (!response.ok) {
+        const bodyText = await response.text().catch(() => '');
+        console.error(`Failed to fetch gallery items: ${response.status} ${response.statusText}`, bodyText);
+        throw new Error(`Failed to fetch gallery items: ${response.status}`);
+    }
+
+    // Ensure response is JSON before parsing to avoid "Unexpected token '<'"
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+        const bodyText = await response.text().catch(() => '');
+        console.error('Unexpected non-JSON response from gallery API:', bodyText);
+        throw new Error('Invalid response from gallery API (expected JSON)');
+    }
+
+    const data = await response.json().catch((err) => {
+        console.error('Error parsing gallery JSON response:', err);
+        throw new Error('Invalid JSON from gallery API');
+    });
+
+    return data?.data ?? data ?? [];
+}

@@ -102,6 +102,20 @@ export function setupTestUserAndOrg() {
                 organization_id: "0aad82ee-52ec-428e-b211-e9cc34b94457",
                 content: "how the customer pulse segment can help to sell a chopping cart?",
                 type: "default"
+            },
+            {
+                id: "6e77f115-6df9-40b4-a321-a0a7c700938b",
+                start_date: "2025-01-21 15:15:00",
+                organization_id: '0aad82ee-52ec-428e-b211-e9cc34b94457',
+                content: "What is the customer pulse segmentation?",
+                type: "default"
+            },
+            {
+                id: "83fef006-4b6e-43df-a989-deebcd250cf2",
+                start_date: "2025-01-21 15:15:00",
+                organization_id: '0aad82ee-52ec-428e-b211-e9cc34b94457',
+                content: "What is the percent of customer quitting due to bad customer service? please generate a graph to visualize the result",
+                type: "default"
             }
         ]
     }).as("getChatHistory");

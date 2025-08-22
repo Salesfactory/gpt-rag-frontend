@@ -62,6 +62,7 @@ const UploadResources: React.FC = () => {
     // Dialog state
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
     const MAX_FILENAME_LENGTH = 48;
+    const SPREADSHEET_FILE_LIMIT = 20;
 
     // Fun processing messages
     const processingMessages = [
@@ -225,6 +226,29 @@ const UploadResources: React.FC = () => {
         }
     }, [uploadStatus, fetchBlobData]);
 
+    // Check spreadsheet file limit
+    const checkSpreadsheetFileLimit = (newFiles: File[]): boolean => {
+        const existingSpreadsheetCount = blobItems.filter(item => {
+            const ext = item.name.split('.').pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+        const newSpreadsheetCount = newFiles.filter(file => {
+            const ext = file.name.split('.').pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+        if (existingSpreadsheetCount + newSpreadsheetCount > SPREADSHEET_FILE_LIMIT) {
+            setUploadStatus({
+                message: `Spreadsheet file limit reached: You can only upload up to ${SPREADSHEET_FILE_LIMIT} .csv, .xls, or .xlsx files per organization. (${existingSpreadsheetCount} already uploaded, ${newSpreadsheetCount} selected)`,
+                type: MessageBarType.error
+            });
+            toast(`Spreadsheet file limit reached: You can only upload up to ${SPREADSHEET_FILE_LIMIT} .csv, .xls, or .xlsx files per organization.`, {
+                type: "error"
+            });
+            return false;
+        }
+        return true;
+    };
+
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (!files) return;
@@ -245,6 +269,9 @@ const UploadResources: React.FC = () => {
             });
             return;
         }
+
+        // Use helper for spreadsheet file limit
+        if (!checkSpreadsheetFileLimit(fileArray)) return;
 
         setSelectedFiles(fileArray);
         setUploadStatus(null);
@@ -293,6 +320,9 @@ const UploadResources: React.FC = () => {
             });
             return;
         }
+
+        // Use helper for spreadsheet file limit
+        if (!checkSpreadsheetFileLimit(fileArray)) return;
 
         setSelectedFiles(fileArray);
         setUploadStatus(null);
@@ -399,6 +429,7 @@ const UploadResources: React.FC = () => {
                 type: "warning"
             });
         } else {
+
             setIsUploadDialogOpen(true);
             setSelectedFiles([]);
             setUploadStatus(null);

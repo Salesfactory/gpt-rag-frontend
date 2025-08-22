@@ -126,6 +126,7 @@ from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 from shared import clients
 
 from routes.organizations import bp as organizations
+from gallery.blob_utils import get_gallery_items_by_org
 
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
@@ -1916,6 +1917,7 @@ def uploadBlob():
         return jsonify({"error": str(e)}), 500
 
 
+
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
     blob_name = unquote(request.json["blob_name"])
@@ -1940,6 +1942,7 @@ def getBlob():
         logging.exception("[webbackend] exception in /api/get-blob")
         logging.exception(blob_name)
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route("/api/settings", methods=["GET"])
@@ -1996,7 +1999,6 @@ def download_document():
     except Exception as e:
         logging.exception("[webbackend] Exception in /api/download")
         return jsonify({"error": str(e)}), 500
-
 
 @app.route("/api/settings", methods=["POST"])
 def setSettings():
@@ -2921,10 +2923,11 @@ def get_subscription_details(subscription_id):
         return jsonify({"error": "Invalid subscription ID provided."}), 400
     except stripe.error.AuthenticationError:
         logging.exception("Authentication with Stripe's API failed")
-        return jsonify({"error": "Authentication with Stripe failed."}), 500
+        return jsonify({"error": "Authentication with Stripe failed."}), 401
     except stripe.error.APIConnectionError:
         logging.exception("Network communication with Stripe failed")
         return jsonify({"error": "Network communication with Stripe failed."}), 502
+    except Exception as e:
         logging.exception("Exception in /api/subscription/<subscription_id>/tiers")
         return jsonify({"error": str(e)}), 500
 
@@ -4199,12 +4202,12 @@ def get_source_documents():
             include_metadata="yes"
         )
 
-
-        # Return the original blob dicts so all fields (including created_on) are preserved
+        # Exclude blobs inside the generated_images subfolder
         organization_blobs = []
+        generated_images_prefix = f"{prefix}generated_images/"
         for blob in blobs:
             blob_name = blob.get("name", "")
-            if blob_name.startswith(prefix):
+            if blob_name.startswith(prefix) and not blob_name.startswith(generated_images_prefix):
                 organization_blobs.append(blob)
 
         logger.info(f"Found {len(organization_blobs)} source documents for organization {organization_id}")
@@ -5161,6 +5164,66 @@ def get_items_to_delete(brand_id):
         return create_success_response(items, 200)
     except Exception as e:
         logger.exception(f"Error retrieving items to delete: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+
+@app.route("/api/reports/<reportName>", methods=["POST"])
+def post_report_by_name(reportName):
+    """
+    Endpoint to store report metadata in CosmosDB.
+    """
+
+    try:
+        container = get_cosmos_container("reports")
+
+        report_document = {
+            "id": str(uuid.uuid4()),
+            "report_name": reportName,
+            "start_datetime": datetime.now(timezone.utc).isoformat(),
+            "status": "PENDING",
+        }
+
+        container.create_item(body=report_document)
+
+        return jsonify({"message": "Report created successfully."}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/organization/<organization_id>/gallery", methods=["GET"])
+def get_gallery(organization_id):
+    """
+    Retrieve gallery items for a specific organization.
+
+    Args:
+        organization_id (str): The unique identifier of the organization.
+
+    Returns:
+        Response: JSON response containing a list of gallery items (HTTP 200),
+                  or an error response with an appropriate message and status code.
+
+    Error Codes:
+        400: If organization_id is missing or invalid.
+        404: If no gallery items are found for the organization.
+        500: If an unexpected error occurs during retrieval.
+    """
+    if not organization_id or not isinstance(organization_id, str) or not organization_id.strip():
+        return create_error_response("Organization ID is required and must be a non-empty string.", 400)
+    try:
+        gallery_items = get_gallery_items_by_org(organization_id)
+        if gallery_items is None:
+            return create_error_response(f"No gallery items found for organization {organization_id}.", 404)
+        if isinstance(gallery_items, list) and not gallery_items:
+            return create_success_response([], 204)
+        return create_success_response(gallery_items, 200)
+    except ValueError as ve:
+        logger.error(f"Value error retrieving gallery items for org {organization_id}: {ve}")
+        return create_error_response(str(ve), 400)
+    except CosmosHttpResponseError as ce:
+        logger.error(f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}")
+        return create_error_response("Database error retrieving gallery items.", 500)
+    except Exception as e:
+        logger.exception(f"Unexpected error retrieving gallery items for org {organization_id}: {e}")
         return create_error_response("Internal Server Error", 500)
 
 
