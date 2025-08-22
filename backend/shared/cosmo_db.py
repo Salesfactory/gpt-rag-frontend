@@ -11,38 +11,39 @@ import logging
 import time
 from datetime import datetime, timezone, timedelta
 from werkzeug.exceptions import NotFound
-
-AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
-AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
-AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
+from shared import clients
 
 
-def get_cosmos_container(container_name):
+def get_cosmos_container(container_name: str):
     """
-    Establishes the connection to the Cosmos DB container specified by `container_name`.
+    Returns a cached Cosmos DB container handle via backend.shared.clients.
     """
-    credential = DefaultAzureCredential()
-    client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
-    db = client.get_database_client(database=AZURE_DB_NAME)
-    container = db.get_container_client(container_name)
+    if not container_name:
+        raise ValueError("Container name must be provided.")
 
     try:
+        container = clients.get_container(container_name)  # <- delegated
         logging.info(
-            f"Connection to Cosmos DB container '{container_name}' established successfully."
+            "Connection to Cosmos DB container '%s' established successfully.",
+            container_name,
         )
         return container
 
     except AzureError as az_err:
         logging.error(
-            f"AzureError encountered while connecting to Cosmos DB container '{container_name}': {az_err}"
+            "AzureError encountered while connecting to Cosmos DB container '%s': %s",
+            container_name,
+            az_err,
         )
-        raise Exception(f"Azure connection error: {az_err}") from az_err
+        raise
 
     except Exception as e:
         logging.error(
-            f"Unexpected error while connecting to Cosmos DB container '{container_name}': {e}"
+            "Unexpected error while connecting to Cosmos DB container '%s': %s",
+            container_name,
+            e,
         )
-        raise Exception(f"Unexpected connection error: {e}") from e
+        raise
 
 
 def create_report(data):
@@ -1035,9 +1036,7 @@ def create_new_brand(brand_name, brand_description, organization_id):
     container = get_cosmos_container("brandsContainer")
     try:
         if not brand_name or not organization_id:
-            raise ValueError(
-                "Brand name and organization ID cannot be empty."
-            )
+            raise ValueError("Brand name and organization ID cannot be empty.")
         if brand_description is None:
             brand_description = ""
         result = container.create_item(
@@ -1374,7 +1373,9 @@ def create_competitor(name, description, industry, organization_id):
     if description is None:
         description = ""
     if not name or not industry or not organization_id:
-        raise ValueError("Competitor name, industry, and organization ID cannot be empty.")
+        raise ValueError(
+            "Competitor name, industry, and organization ID cannot be empty."
+        )
     try:
         result = container.create_item(
             body={
@@ -1592,11 +1593,11 @@ def get_items_to_delete_by_brand(brand_id):
             enable_cross_partition_query=True,
         )
     )
-    
+
     for competitor in competitors:
         competitor_id = competitor["competitor_id"]
 
-        #find all brands associated with this competitor
+        # find all brands associated with this competitor
         query = """
             SELECT DISTINCT c.brand_id
             FROM c
@@ -1613,11 +1614,11 @@ def get_items_to_delete_by_brand(brand_id):
         if len(brands) > 1:
             competitors.remove(competitor)
 
-
     return {
         "competitors": competitors,
         "products": products,
     }
+
 
 def delete_brand_by_id(brand_id):
     """
@@ -1632,7 +1633,9 @@ def delete_brand_by_id(brand_id):
         items_to_delete = get_items_to_delete_by_brand(brand_id)
 
         if not items_to_delete["products"] and not items_to_delete["competitors"]:
-            logging.info(f"No products or competitors associated with brand {brand_id}.")
+            logging.info(
+                f"No products or competitors associated with brand {brand_id}."
+            )
             return {"message": f"Brand with id {brand_id} deleted successfully."}
 
         products_container = get_cosmos_container("productsContainer")
@@ -1650,21 +1653,32 @@ def delete_brand_by_id(brand_id):
 
         # Delete products associated with the brand
         for product in items_to_delete["products"]:
-            products_container.delete_item(item=product["id"], partition_key=product["id"])
+            products_container.delete_item(
+                item=product["id"], partition_key=product["id"]
+            )
             logging.info(f"Product with id {product['id']} deleted successfully.")
 
         # Delete competitors associated with the brand
         for competitor in items_to_delete["competitors"]:
-            competitors_container.delete_item(item=competitor["competitor_id"], partition_key=competitor["competitor_id"])
-            logging.info(f"Competitor with id {competitor['competitor_id']} deleted successfully.")
+            competitors_container.delete_item(
+                item=competitor["competitor_id"],
+                partition_key=competitor["competitor_id"],
+            )
+            logging.info(
+                f"Competitor with id {competitor['competitor_id']} deleted successfully."
+            )
 
         for relationship in relationships:
             relationship_container.delete_item(
                 item=relationship["id"], partition_key=relationship["id"]
             )
-            logging.info(f"Relationship with id {relationship['id']} deleted successfully.")
+            logging.info(
+                f"Relationship with id {relationship['id']} deleted successfully."
+            )
 
-        return {"message": f"Brand with id {brand_id} and associated items deleted successfully."}
+        return {
+            "message": f"Brand with id {brand_id} and associated items deleted successfully."
+        }
 
     except CosmosResourceNotFoundError:
         logging.warning(f"Brand with id '{brand_id}' not found in Cosmos DB.")
