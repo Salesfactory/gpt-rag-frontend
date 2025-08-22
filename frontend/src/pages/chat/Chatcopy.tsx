@@ -195,106 +195,12 @@ const Chat = () => {
                 thoughts: ctrlMsg.thoughts ?? ""
             } as AskResponse;
 
-
             setAnswers(prev => [...prev, [question, botResponse]]);
             setDataConversation(prev => [...prev, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
             lastQuestionRef.current = "";
         } catch (err) {
             console.error("Error fetching streamed response:", err);
             setError(err as Error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
-        let agent = null;
-        lastQuestionRef.current = question;
-        lastFileBlobUrl.current = fileBlobUrl;
-
-        error && setError(undefined);
-        setIsLoading(true);
-        setActiveCitation(undefined);
-        setActiveAnalysisPanelTab(undefined);
-
-        if (isFinancialAssistantActive == true) {
-            agent = "financial";
-        } else {
-            agent = "consumer";
-        }
-
-        try {
-            let history: ChatTurn[] = [];
-            if (dataConversation.length > 0) {
-                history.push(...dataConversation);
-            } else {
-                history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
-            }
-            history.push({ user: question, bot: undefined });
-            const request: ChatRequestGpt = {
-                history: history,
-                approach: Approaches.ReadRetrieveRead,
-                conversation_id: chatId !== null ? chatId : userId,
-                query: question,
-                file_blob_url: fileBlobUrl || "",
-                documentName,
-                agent,
-                overrides: {
-                    promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
-                    excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
-                    top: retrieveCount,
-                    semanticRanker: useSemanticRanker,
-                    semanticCaptions: useSemanticCaptions,
-                    suggestFollowupQuestions: useSuggestFollowupQuestions
-                }
-            };
-            const result = await chatApiGpt(request, user);
-            const conditionOne = answers.map(a => ({ user: a[0] }));
-            if (conditionOne.length <= 0) {
-                setRefreshFetchHistory(true);
-                setChatId(result.conversation_id);
-            } else {
-                setRefreshFetchHistory(false);
-            }
-            setAnswers([...answers, [question, result]]);
-            setUserId(result.conversation_id);
-            const response = {
-                answer: result.answer || "",
-                conversation_id: chatId,
-                data_points: [""],
-                thoughts: result.thoughts || []
-            } as AskResponse;
-            setDataConversation([...dataConversation, { user: question, bot: { message: response.answer, thoughts: response.thoughts } }]);
-            lastQuestionRef.current = "";
-
-            // Voice Synthesis
-            if (speechSynthesisEnabled) {
-                const tokenObj = await getTokenOrRefresh();
-                const speechConfig = SpeechConfig.fromAuthorizationToken(tokenObj.authToken, tokenObj.region);
-                const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
-                speechConfig.speechSynthesisLanguage = tokenObj.speechSynthesisLanguage;
-                speechConfig.speechSynthesisVoiceName = tokenObj.speechSynthesisVoiceName;
-                const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
-
-                synthesizer.speakTextAsync(
-                    result.answer.replace(/ *\[[^)]*\] */g, ""),
-                    function (result) {
-                        if (result.reason === ResultReason.SynthesizingAudioCompleted) {
-                            console.log("synthesis finished.");
-                        } else {
-                            console.error("Speech synthesis canceled, " + result.errorDetails + "\nDid you update the subscription info?");
-                        }
-                        synthesizer.close();
-                    },
-                    function (err) {
-                        console.trace("err - " + err);
-                        synthesizer.close();
-                    }
-                );
-            }
-        } catch (e) {
-            setError(e);
-            console.log(e);
         } finally {
             setIsLoading(false);
         }
@@ -620,7 +526,9 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
+                                                                  onFollowupQuestionClicked={question =>
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                  }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />
@@ -641,7 +549,9 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
+                                                                  onFollowupQuestionClicked={question =>
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                  }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />

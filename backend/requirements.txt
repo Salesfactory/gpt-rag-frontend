@@ -38,3 +38,4 @@ beautifulsoup4==4.13.3
 azure-ai-inference==1.0.0b9
 pandasai==3.0.0b19
 pandasai-openai==0.1.6
+azure-storage-queue
