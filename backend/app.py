@@ -5493,7 +5493,7 @@ def get_items_to_delete(brand_id):
 
 @app.get("/healthz")
 def healthz():
-    _ = clients.get_container(clients.USERS_CONT)
+    _ = clients.get_cosmos_container(clients.USERS_CONT)
     _ = clients.sb_client()
     return jsonify(status="ok")
 

@@ -28,6 +28,7 @@ def download_blob_to_temp(blob_name: str, container_name: str) -> Tuple[str, Dic
     temp_path = bytesio_to_tempfile(buffer, detect_extension(blob_name))
     return temp_path, blob_metadata
 
+
 def update_blob_metadata(blob_name: str, metadata: Dict, container_name: str) -> Dict:
     """
     Merge and update blob metadata with the provided key/values.
@@ -51,9 +52,9 @@ def update_blob_metadata(blob_name: str, metadata: Dict, container_name: str) ->
     blob_client.set_blob_metadata(metadata=merged)
     return merged
 
+
 def build_blob_name(organization_id: str, file_name: str, prefix: str) -> str:
     """Normalize file path to match blob storage structure."""
     if file_name.startswith(f"{prefix}/"):
         return file_name
     return f"{prefix}/{organization_id}/{file_name}"
-

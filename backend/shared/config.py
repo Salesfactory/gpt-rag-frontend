@@ -1,17 +1,14 @@
 # backend/shared/config.py
 import os
 from dataclasses import dataclass
-from utils import get_azure_key_vault_secret
 
 
 @dataclass(frozen=True)
 class Settings:
-    # Storage account name (used to derive the Blob service URL if no override is given)
-    storage_account: str = os.getenv("STORAGE_ACCOUNT", "")
+    """Application settings loaded from environment variables.
+    Use defaults where appropriate."""
+
     # Explicit Blob service URL override (e.g., "https://mystorage.blob.core.windows.net")
-    blob_account_url_override: str = get_azure_key_vault_secret(
-        "storageConnectionString"
-    )
     # Default containers (optional, for convenience)
     default_container: str = os.getenv("BLOB_CONTAINER_NAME", "public")
     financial_container: str = os.getenv("FINANCIAL_AGENT_CONTAINER", "financial")
@@ -44,8 +41,6 @@ class Settings:
         """
         Blob endpoint URL: explicit override or derived from storage account.
         """
-        if self.blob_account_url_override:
-            return self.blob_account_url_override
         return (
             f"https://{self.storage_account}.blob.core.windows.net"
             if self.storage_account
