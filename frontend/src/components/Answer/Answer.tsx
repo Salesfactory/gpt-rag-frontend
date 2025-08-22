@@ -36,6 +36,7 @@ if (userLanguage.startsWith("pt")) {
 interface Props {
     answer: AskResponse;
     isSelected?: boolean;
+    isGenerating?: boolean;
     onCitationClicked: (filePath: string, filename: string) => void;
     onThoughtProcessClicked: () => void;
     onSupportingContentClicked: () => void;
@@ -63,6 +64,7 @@ const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: Rea
 
 export const Answer = ({
     answer,
+    isGenerating,
     isSelected,
     onCitationClicked,
     onThoughtProcessClicked,
@@ -93,7 +95,7 @@ export const Answer = ({
             h4: (props: any) => <MarkdownHeading level="h4" style={headingStyle} {...props} />,
             h5: (props: any) => <MarkdownHeading level="h5" style={headingStyle} {...props} />,
             h6: (props: any) => <MarkdownHeading level="h6" style={headingStyle} {...props} />,
-            img: (props: any) => <URLPreviewComponent url={props.src} alt={props.alt} />,
+            img: (props: any) => <URLPreviewComponent url={props.src} alt={props.alt} isGenerating={isGenerating} />,
             p: (props: any) => (
                 <p style={{ ...baseTextStyle, marginBottom: "8px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>{props.children}</p>
             ),

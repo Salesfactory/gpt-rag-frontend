@@ -10,7 +10,7 @@ const updatedData = {
 describe("Agent Section Tests", () => {
     beforeEach(() => {
         setupTestUserAndOrg();
-        cy.intercept("PATCH", "/api/organization/*").as("updateOrg");
+        cy.intercept("PATCH", "/api/organization/*", {statusCode: 200}).as("updateOrg");
         cy.visit("/");
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();

@@ -61,16 +61,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
         return hasRole;
     };
 
-    // Check if the user's subscription tier is in the allowed tiers
-    const hasRequiredTier = (): boolean => {
+    // Check if the user has a Subscription
+    const hasSubscription = (): boolean => {
         if (!organization?.subscriptionId) {
-            debugLog("hasRequiredTier: User does not have a subscription ID.");
+            debugLog("hasSubscription: User does not have a subscription ID.");
             return false;
         }
         if (!subscriptionTiers || subscriptionTiers.length === 0) {
-            debugLog("hasRequiredTier: No subscription tiers available.");
+            debugLog("hasSubscription: No subscription tiers available.");
             return false;
         }
+        return true;
+    };
+
+    // Check if the user's subscription tier is in the allowed tiers
+    const hasRequiredTier = (): boolean => {
         const hasTier = subscriptionTiers.some(tier => allowedTiers.includes(tier));
         debugLog(`hasRequiredTier: User has ${hasTier ? "" : "no "}allowed subscription tiers.`);
         return hasTier;
@@ -101,6 +106,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
     } else if (!isValidSubscriptionForOrganization()) {
         debugLog("ProtectedRoute: Subscription is invalid. Redirecting to /onboarding.");
         return <Navigate to="/onboarding" replace />;
+    } else if (!hasSubscription()) {
+        debugLog("ProtectedRoute: User does not have a subscription. Redirecting to /subscription-error.");
+        return <Navigate to="/subscription-error" replace />;
     } else if (!hasRequiredTier()) {
         debugLog("ProtectedRoute: User does not have the required subscription tier. Redirecting to /access-denied.");
         return <Navigate to="/access-denied" replace />;
