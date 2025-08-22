@@ -1,4 +1,4 @@
-
+/// <reference types="cypress" />
 export {}; // Add this line at the top
 
 /* helper to stub a streaming response */
