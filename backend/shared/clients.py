@@ -1,5 +1,6 @@
 # backend/shared/clients.py
 from __future__ import annotations
+import atexit
 import logging
 from functools import lru_cache
 from typing import Optional
@@ -37,9 +38,8 @@ def get_blob_service_client() -> Optional[BlobServiceClient]:
         log.info("Blob account URL not set; BlobServiceClient disabled.")
         return None
     log.info("Creating BlobServiceClient for %s", account_url)
-    return BlobServiceClient(
-        account_url=account_url,
-        credential=get_default_azure_credential(),
+    return BlobServiceClient.from_connection_string(
+        CONFIG.blob_account_url_override
     )
 @lru_cache(maxsize=64)
 def get_blob_container_client(container_name: str):
@@ -52,3 +52,26 @@ def get_blob_container_client(container_name: str):
     if bsc is None:
         raise RuntimeError("Azure Blob Storage not configured (no account URL).")
     return bsc.get_container_client(container_name)
+
+# -----------------------------
+# Warm-up & graceful shutdown
+# -----------------------------
+def warm_up() -> None:
+    """Pre-initialize credential, DB, users container, queue client, Blob client, and SecretClient."""
+    log.info("Warm-up: initializing Azure clients...")
+    _ = get_default_azure_credential()
+    try:
+        _ = get_blob_service_client()
+    except Exception as e:
+        log.warning("Warm-up: failed to init Azure Blob Storage client: %s", e)
+    log.info("Warm-up: done.")
+def _shutdown():
+    """Close any SDK clients that expose a close()."""
+    log.info("Shutting down Azure clients...")
+    try:
+        bsc = get_blob_service_client()
+        if bsc:
+            bsc.close()
+    except Exception:
+        pass
+atexit.register(_shutdown)

@@ -8,6 +8,7 @@ import json
 import stripe
 import tempfile
 from flask import (
+    current_app,
     Flask,
     request,
     jsonify,
@@ -48,9 +49,11 @@ from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
 from azure.cosmos.exceptions import CosmosHttpResponseError
-from azure.core.exceptions import ResourceNotFoundError, AzureError
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
+
+load_dotenv(override=True)
+
 from utils import (
     create_error_response,
     create_success_response,
@@ -120,8 +123,9 @@ from data_summary.llm import PandasAIClient
 from data_summary.summarize import create_description
 from data_summary.blob_utils import (download_blob_to_temp, update_blob_metadata, build_blob_name)
 from data_summary.custom_prompts import BUSINESS_DESCRIPTION
+from shared import clients
 
-load_dotenv(override=True)
+from routes.organizations import bp as organizations
 
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
@@ -188,6 +192,10 @@ app = Flask(__name__)
 app.config.from_object(app_config)
 CORS(app)
 
+def setup_llm() -> PandasAIClient:
+    cfg = get_azure_openai_config(deployment_name="gpt-4.1")
+    llm = PandasAIClient(cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name)
+    return llm
 
 auth = Auth(
     app,
@@ -199,10 +207,14 @@ auth = Auth(
     b2c_edit_profile_user_flow=os.getenv("EDITPROFILE_USER_FLOW"),
 )
 
-def setup_llm() -> PandasAIClient:
-    cfg = get_azure_openai_config(deployment_name="gpt-4.1")
-    llm = PandasAIClient(cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name)
-    return llm
+@app.before_request
+def setup_clients():
+    print(f"[before_request] {request.method} {request.path}", flush=True)
+    clients.warm_up()
+    current_app.config["llm"] = setup_llm()
+    current_app.config["BLOB_CONECTION_STRING"] = AZURE_STORAGE_CONNECTION_STRING
+
+
 
 def handle_auth_error(func):
     """Decorator to handle authentication errors consistently"""
@@ -225,7 +237,6 @@ def handle_auth_error(func):
             )
 
     return wrapper
-
 
 class UserService:
     """Service class to handle user-related operations"""
@@ -384,7 +395,7 @@ def append_script(file, query_params):
 def activate_invitation(invitation_id: str) -> bool:
     container = get_cosmos_container("invitations")
     
-    try:
+    try: 
         item = container.read_item(item=invitation_id, partition_key=invitation_id)
         if item.get("active") is False:
             item["active"] = True
@@ -394,6 +405,7 @@ def activate_invitation(invitation_id: str) -> bool:
     except CosmosResourceNotFoundError:
         return False
 
+app.register_blueprint(organizations)
 
 
 @app.route("/api/invitations/<inviteId>/redeemed", methods=["GET"])
@@ -5150,63 +5162,6 @@ def get_items_to_delete(brand_id):
     except Exception as e:
         logger.exception(f"Error retrieving items to delete: {e}")
         return create_error_response("Internal Server Error", 500)
-    
-@app.route("/api/organization/<organization_id>/<file_name>/business-describe", methods=["POST"])
-def generate_business_description(organization_id, file_name):
-    blob_temp_path = None
-
-    if not organization_id or not file_name:
-        return create_error_response("organization_id and file_name are required", HTTPStatus.BAD_REQUEST)
-    
-    try:
-
-        valid_file_extensions = [".csv", ".xlsx", ".xls"]
-        file_ext = detect_extension(file_name)
-
-        if file_ext not in valid_file_extensions:
-            raise InvalidFileType(f"Invalid file type '{file_ext}'. Allowed types are: {', '.join(valid_file_extensions)}.")
-        
-            
-        llm = setup_llm()
-
-        blob_name = build_blob_name(organization_id, file_name, ORG_FILES_PREFIX)
-
-        blob_temp_path, blob_metadata = download_blob_to_temp(blob_name, BLOB_CONTAINER_NAME)
-
-        business_description = create_description(blob_temp_path, llm, BUSINESS_DESCRIPTION)
-
-        blob_metadata["business_description"] = str(business_description)
-
-        updated_metadata = update_blob_metadata(blob_name, blob_metadata, BLOB_CONTAINER_NAME)
-
-        return create_success_response(updated_metadata)
-
-    except InvalidFileType as e:
-        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
-    
-    except ValueError as e:
-        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
-
-    except ResourceNotFoundError:
-        return create_error_response("The document does not exist", HTTPStatus.NOT_FOUND)
-
-    except AzureError as e:
-        return create_error_response(f"Azure storage error: {str(e)}", HTTPStatus.SERVICE_UNAVAILABLE)
-
-    except (OSError, IOError) as e:
-        return create_error_response(f"File processing error: {str(e)}", HTTPStatus.INTERNAL_SERVER_ERROR)
-
-    except pd.errors.ParserError as e:
-        return create_error_response(f"Error parsing file: {str(e)}", HTTPStatus.BAD_REQUEST)
-
-    except Exception as e:
-        app.logger.exception("Unexpected error")
-        return create_error_response(f"Unexpected error: {str(e)}", HTTPStatus.INTERNAL_SERVER_ERROR)
-
-    finally:
-        if os.path.exists(blob_temp_path) and blob_temp_path:
-            os.remove(blob_temp_path)
-
 
 
 if __name__ == "__main__":
