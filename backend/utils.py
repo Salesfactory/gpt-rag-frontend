@@ -65,52 +65,6 @@ def create_success_response(
     """
     return jsonify({"data": data, "status": optionalCode}), optionalCode
 
-
-# Error Handling: Custom exception hierarchy for subscription-specific errors
-class SubscriptionError(Exception):
-    """Base exception for subscription-related errors"""
-
-    pass
-
-
-class InvalidFinancialPriceError(SubscriptionError):
-    """Raised when subscription modification fails"""
-
-    pass
-
-
-class InvalidSubscriptionError(SubscriptionError):
-    """Raised when subscription modification fails"""
-
-    pass
-
-
-class MissingJSONPayloadError(Exception):
-    """Raised when JSON payload is missing"""
-
-    pass
-
-
-class MissingRequiredFieldError(Exception):
-    """Raised when a required field is missing"""
-
-    pass
-
-
-class InvalidParameterError(Exception):
-    """Raised when an invalid parameter is provided"""
-
-    pass
-
-
-class MissingParameterError(Exception):
-    """Raised when a required parameter is missing"""
-
-    pass
-
-class InvalidFileType(Exception):
-    """Raised when a invalid file type is recieved"""
-
 # Security: Decorator to ensure client principal ID is present
 def require_client_principal(f):
     """

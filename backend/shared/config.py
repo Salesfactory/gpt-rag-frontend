@@ -28,7 +28,7 @@ class Settings:
     jobs_container: str = os.getenv("COSMOS_CONTAINER_JOBS", "report_jobs")
 
     # Azure Queue Storage
-    storage_account: str = os.getenv("AZURE_STORAGE_ACCOUNT", "")
+    storage_account: str = os.getenv("STORAGE_ACCOUNT", "")
     queue_name: str = os.getenv("QUEUE_NAME", "report-jobs")
     _queue_account_url: str = os.getenv("QUEUE_ACCOUNT_URL", "")
 
