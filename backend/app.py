@@ -43,6 +43,8 @@ from azure.cosmos.exceptions import CosmosHttpResponseError
 import smtplib
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
 
+from gallery.blob_utils import get_gallery_items_by_org
+
 # Load .env BEFORE importing modules that might read env at import time
 load_dotenv(override=True)
 import app_config
