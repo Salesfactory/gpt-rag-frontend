@@ -5,7 +5,7 @@ import json
 import logging
 from functools import lru_cache
 from typing import Optional
-
+from azure.storage.blob import BlobServiceClient
 from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
 from azure.storage.queue import QueueClient
@@ -141,14 +141,46 @@ def get_azure_key_vault_secret(secret_name: str) -> str:
     return secret.value
 
 
+@lru_cache(maxsize=1)
+def get_blob_service_client() -> Optional[BlobServiceClient]:
+    """
+    Return a cached BlobServiceClient or None if not configured.
+    """
+    log.info("Creating BlobServiceClient...")
+    return BlobServiceClient(
+        account_url=CONFIG.blob_account_url, credential=get_default_azure_credential()
+    )
+
+
+# -----------------------------
+# Blob Storage (containers)
+# -----------------------------
+@lru_cache(maxsize=64)
+def get_blob_container_client(container_name: str):
+    """
+    Get a cached ContainerClient by name.
+    Raises:
+        RuntimeError: if Blob service is not configured.
+    """
+    bsc = get_blob_service_client()
+    if bsc is None:
+        raise RuntimeError("Azure Blob Storage not configured (no account URL).")
+    return bsc.get_container_client(container_name)
+
+
 # -----------------------------
 # Warm-up & graceful shutdown
 # -----------------------------
 def warm_up() -> None:
-    """Pre-initialize credential, DB, users container, queue client, and SecretClient."""
+    """Pre-initialize credential, DB, users container, queue client, Blob client, and SecretClient."""
     log.info("Warm-up: initializing Azure clients...")
     _ = get_default_azure_credential()
+    _ = get_default_azure_credential()
     _ = get_cosmos_database()
+    try:
+        _ = get_blob_service_client()
+    except Exception as e:
+        log.warning("Warm-up: failed to init Azure Blob Storage client: %s", e)
     try:
         _ = get_cosmos_container(CONFIG.users_container)
         log.info("Warm-up: users container ready: %s", CONFIG.users_container)
@@ -172,6 +204,12 @@ def warm_up() -> None:
 def _shutdown():
     """Close any SDK clients that expose a close()."""
     log.info("Shutting down Azure clients...")
+    try:
+        bsc = get_blob_service_client()
+        if bsc:
+            bsc.close()
+    except Exception:
+        pass
     try:
         qc = get_report_jobs_queue_client()
         if qc:

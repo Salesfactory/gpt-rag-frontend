@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from pandasai_openai import AzureOpenAI as PandasAIAzureOpenAI
+import pandasai as pai
 
 class LLMClient(ABC):
     @abstractmethod
@@ -6,8 +8,6 @@ class LLMClient(ABC):
 
 class PandasAIClient(LLMClient):
     def __init__(self, azure_endpoint: str, api_key: str, api_version: str, deployment_name: str):
-        from pandasai_openai import AzureOpenAI as PandasAIAzureOpenAI
-        import pandasai as pai
         self._llm = PandasAIAzureOpenAI(
             azure_endpoint=azure_endpoint,
             api_token=api_key,

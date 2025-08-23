@@ -1,7 +1,8 @@
 import pytest
 
 import shared.clients as clients
-from shared.config import Settings
+
+import shared.config as config
 
 
 def _clear_caches():
@@ -89,7 +90,7 @@ def fake_azure(monkeypatch):
 
     # Replace CONFIG with our own (frozen) Settings instance
     # Use storage_account so queue_account_url is derived automatically.
-    test_config = Settings(
+    test_config = config.Settings(
         cosmos_url="https://acct.documents.azure.com:443/",  # satisfies cosmos_uri property
         cosmos_account="ignored-when-url-present",
         cosmos_db_name="mydb",
@@ -137,7 +138,7 @@ def test_get_cosmos_container_is_cached(fake_azure):
 
 def test_queue_client_none_when_not_configured(monkeypatch, fake_azure):
     # Replace CONFIG with same values but no storage account and no explicit URL
-    cfg = Settings(
+    cfg = config.Settings(
         cosmos_url="https://acct.documents.azure.com:443/",
         cosmos_account="",
         cosmos_db_name="mydb",

@@ -1,4 +1,5 @@
 from flask import (
+    current_app,
     Flask,
     request,
     jsonify,
@@ -48,14 +49,19 @@ from gallery.blob_utils import get_gallery_items_by_org
 # Load .env BEFORE importing modules that might read env at import time
 load_dotenv(override=True)
 import app_config
+
+from shared.error_handling import (
+    IncompleteConfigurationError,
+    MissingJSONPayloadError,
+    MissingRequiredFieldError,
+    InvalidParameterError,
+    MissingParameterError,
+    InvalidFileType,
+)
+
 from utils import (
     create_error_response,
     create_success_response,
-    InvalidFinancialPriceError,
-    InvalidParameterError,
-    MissingJSONPayloadError,
-    MissingRequiredFieldError,
-    MissingParameterError,
     require_client_principal,
     get_conversations,
     get_conversation,
@@ -65,6 +71,7 @@ from utils import (
     validate_url,
     delete_invitation,
 )
+
 import stripe.error
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
@@ -107,11 +114,14 @@ from shared.cosmo_db import (
     update_competitor_by_id,
     get_items_to_delete_by_brand,
 )
+from shared import clients
+from data_summary.file_utils import detect_extension
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
 from data_summary.summarize import create_description
 from routes.report_jobs import bp as jobs_bp
-from shared import clients
+from routes.organizations import bp as organizations
+from routes.upload_source_document import bp as upload_source_document
 from _secrets import get_secret
 
 # Suppress Azure SDK logs (including Key Vault calls)
@@ -132,6 +142,11 @@ INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/api/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
 FINANCIAL_ASSISTANT_ENDPOINT = ORCHESTRATOR_URI + "/api/financial-orc"
 PRODUCT_ID_DEFAULT = os.getenv("STRIPE_PRODUCT_ID")
+
+DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
+# ==== BLOB STORAGE ====
+BLOB_CONTAINER_NAME = "documents"
+ORG_FILES_PREFIX = "organization_files"
 
 # email
 EMAIL_HOST = os.getenv("EMAIL_HOST")
@@ -162,6 +177,16 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(app_config)
 CORS(app)
+
+
+def setup_llm() -> PandasAIClient:
+    cfg = get_azure_openai_config(deployment_name="gpt-4.1")
+    llm = PandasAIClient(
+        cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name
+    )
+    return llm
+
+
 auth = Auth(
     app,
     client_id=os.getenv("AAD_CLIENT_ID"),
@@ -177,6 +202,8 @@ auth = Auth(
 def setup_clients():
     print(f"[before_request] {request.method} {request.path}", flush=True)
     clients.warm_up()  # idempotent
+    current_app.config["llm"] = setup_llm()  # todo move to a client for panda AI
+    current_app.config["blob_storage_manager"] = BlobStorageManager()  # TODO implement the new BlobStorageManager in the upload_sources.py (this is the only way that there is no pytest import issue) The issue was that when running all tests together, there was a complex import resolution problem where the utils module was not being found properly due to module caching issues and conflicts between test fixtures.
 
 
 @app.before_first_request
@@ -198,14 +225,8 @@ def _load_secrets_once():
 
 
 app.register_blueprint(jobs_bp)
-
-
-def setup_llm() -> PandasAIClient:
-    cfg = get_azure_openai_config(deployment_name="gpt-4.1")
-    llm = PandasAIClient(
-        cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name
-    )
-    return llm
+app.register_blueprint(organizations)
+app.register_blueprint(upload_source_document)
 
 
 def handle_auth_error(func):
@@ -2789,7 +2810,7 @@ def financial_assistant(subscriptionId):
     # Logging: Info level for normal operations
     logging.info(f"Modifying subscription {subscriptionId} to add Financial Assistant")
     if not FINANCIAL_ASSISTANT_PRICE_ID:
-        raise InvalidFinancialPriceError("Financial Assistant price ID not configured")
+        raise IncompleteConfigurationError("Financial Assistant price ID not configured")
 
     try:
         updated_subscription = stripe.Subscription.modify(
@@ -2817,7 +2838,7 @@ def financial_assistant(subscriptionId):
         )
 
     # Error Handling: Specific error types with proper status codes
-    except InvalidFinancialPriceError as e:
+    except IncompleteConfigurationError as e:
         # Logging: Error level for operation failures
         logging.error(f"Stripe invalid request error: {str(e)}")
         return create_error_response(
@@ -4421,81 +4442,6 @@ def get_source_documents():
         return create_error_response("Internal Server Error", 500)
 
 
-@app.route("/api/upload-source-document", methods=["POST"])
-def upload_source_document():
-    llm = setup_llm()
-    try:
-        # Check if file is in the request
-        if "file" not in request.files:
-            logger.error("No file part in the request")
-            return create_error_response("No file part in the request", 400)
-
-        file = request.files["file"]
-
-        # Check if filename is empty
-        if file.filename == "":
-            logger.error("No file selected")
-            return create_error_response("No file selected", 400)
-
-        # Get organization ID from form data, query parameters, or headers
-        organization_id = request.form.get("organization_id")
-
-        if not organization_id:
-            logger.error("Organization ID not provided in request")
-            return create_error_response("Organization ID is required", 400)
-
-        logger.info(
-            f"Uploading file '{file.filename}' for organization '{organization_id}'"
-        )
-
-        # Create a temporary file to save the uploaded content
-        temp_file_path = os.path.join(tempfile.gettempdir(), file.filename)
-        file.save(temp_file_path)
-
-        # Define the folder path in blob storage
-        blob_folder = f"organization_files/{organization_id}"
-
-        # Create metadata with organization ID
-        metadata = {"organization_id": organization_id}
-
-        if file.filename.endswith((".csv", ".xls", ".xlsx")):
-            logger.info(f"Gen AI description for file '{file.filename}'")
-            description = str(create_description(temp_file_path, llm=llm))
-            logger.info(
-                f"Generated Description of file {temp_file_path}: {description}"
-            )
-            metadata["description"] = description
-
-        # Initialize blob storage manager and upload file
-        blob_storage_manager = BlobStorageManager()
-
-        result = blob_storage_manager.upload_to_blob(
-            file_path=temp_file_path,
-            blob_folder=blob_folder,
-            metadata=metadata,
-            container=os.getenv("BLOB_CONTAINER_NAME"),
-        )
-
-        if result["status"] == "success":
-            logger.info(
-                f"Successfully uploaded file '{file.filename}' to '{blob_folder}'"
-            )
-            return create_success_response({"blob_url": result["blob_url"]}, 200)
-        else:
-            error_msg = f"Error uploading file: {result.get('error', 'Unknown error')}"
-            logger.error(error_msg)
-            return create_error_response(error_msg, 500)
-
-    except Exception as e:
-        logger.exception(f"Unexpected error in upload_source_to_blob: {e}")
-        return create_error_response("Internal Server Error", 500)
-
-    finally:
-        # Remove temporary file
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-
-
 @app.route("/api/delete-source-document", methods=["DELETE"])
 def delete_source_document():
     try:
@@ -5482,7 +5428,7 @@ def get_items_to_delete(brand_id):
 
 @app.get("/healthz")
 def healthz():
-    _ = clients.get_container(clients.USERS_CONT)
+    _ = clients.get_cosmos_container(clients.USERS_CONT)
     _ = clients.sb_client()
     return jsonify(status="ok")
 
