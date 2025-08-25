@@ -186,8 +186,8 @@ const Chat = () => {
                     result += evt.payload;
                     setLastAnswer(result); // incremental UI update
                     
-                    // Clear progress state once we start getting actual response content
-                    if (progressState && result.length > 0) {
+                    // Clear progress state once we start getting actual response content (not just whitespace)
+                    if (progressState && result.trim().length > 0 && evt.payload.trim().length > 0) {
                         setProgressState(null);
                     }
                 }
