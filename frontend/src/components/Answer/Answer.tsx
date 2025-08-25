@@ -180,38 +180,22 @@ export const Answer = ({
     );
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
-    if (answer.answer === "" && isGenerating) {
+    
+    // Show fallback loading when no content and no progress state
+    if (answer.answer === "" && !progressState && isGenerating) {
         return (
-            <animated.div style={{ ...animatedStyles }}>
-                <Stack className={styles.answerContainer} verticalAlign="space-between">
-                    <AnswerIcon />
-                    <Stack.Item grow>
-                        {progressState ? (
-                            <div className={styles.progressContainer}>
-                                <p className={styles.progressMessage}>
-                                    {progressState.message}
-                                </p>
-                                {progressState.progress !== undefined && (
-                                    <div className={styles.progressBarContainer}>
-                                        <div 
-                                            className={styles.progressBar}
-                                            style={{ width: `${progressState.progress}%` }}
-                                        />
-                                    </div>
-                                )}
-                                <span className={styles.loadingdots} />
-                            </div>
-                        ) : (
-                            <p className={styles.answerText}>
-                                {generating_answer_text}
-                                <span className={styles.loadingdots} />
-                            </p>
-                        )}
-                    </Stack.Item>
-                </Stack>
-            </animated.div>
+            <Stack className={styles.answerContainer} verticalAlign="space-between">
+                <AnswerIcon />
+                <Stack.Item grow>
+                    <p className={styles.answerText}>
+                        {generating_answer_text}
+                        <span className={styles.loadingdots} />
+                    </p>
+                </Stack.Item>
+            </Stack>
         );
     }
+    
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
             <Stack.Item>
@@ -229,6 +213,25 @@ export const Answer = ({
                     </div>
                 </Stack>
             </Stack.Item>
+
+            {progressState && (
+                <Stack.Item>
+                    <div className={styles.progressContainer}>
+                        <p className={styles.progressMessage}>
+                            {progressState.message}
+                        </p>
+                        {progressState.progress !== undefined && (
+                            <div className={styles.progressBarContainer}>
+                                <div 
+                                    className={styles.progressBar}
+                                    style={{ width: `${progressState.progress}%` }}
+                                />
+                            </div>
+                        )}
+                        <span className={styles.loadingdots} />
+                    </div>
+                </Stack.Item>
+            )}
 
             <Stack.Item>
                 <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
