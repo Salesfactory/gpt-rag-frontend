@@ -22,7 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
-import { parseStreamWithMarkdownValidation, ParsedEvent } from "./streamParser";
+import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -83,6 +83,7 @@ const Chat = () => {
     const triggered = useRef(false);
 
     const [lastAnswer, setLastAnswer] = useState<string>("");
+    const [progressState, setProgressState] = useState<{step: string; message: string; progress?: number; timestamp?: number} | null>(null);
     const restartChat = useRef<boolean>(false);
 
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
@@ -97,6 +98,7 @@ const Chat = () => {
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
         setLastAnswer("");
+        setProgressState(null); 
 
         const agent = isFinancialAssistantActive ? "financial" : "consumer";
 
@@ -160,22 +162,34 @@ const Chat = () => {
                 }
 
                 if (evt.type === "json") {
-                    // ---- control message arriving from backend ----
-                    const { conversation_id, thoughts } = evt.payload;
-                    if (conversation_id && conversation_id !== ctrlMsg.conversation_id) {
-                        ctrlMsg = { conversation_id, thoughts };
-                        if (answers.length === 0) {
-                            setRefreshFetchHistory(true);
-                            setChatId(conversation_id);
-                        } else {
-                            setRefreshFetchHistory(false);
+                    // ---- Handle different types of JSON messages from backend ----
+                    if (isProgressMessage(evt.payload)) {
+                        // Progress message - update progress state
+                        const progress = extractProgressState(evt.payload as ProgressMessage);
+                        setProgressState(progress);
+                    } else if (isThoughtsMessage(evt.payload)) {
+                        // Thoughts/control message arriving from backend
+                        const { conversation_id, thoughts } = evt.payload;
+                        if (conversation_id && conversation_id !== ctrlMsg.conversation_id) {
+                            ctrlMsg = { conversation_id, thoughts };
+                            if (answers.length === 0) {
+                                setRefreshFetchHistory(true);
+                                setChatId(conversation_id);
+                            } else {
+                                setRefreshFetchHistory(false);
+                            }
+                            setUserId(conversation_id);
                         }
-                        setUserId(conversation_id);
                     }
                 } else {
                     // ---- plain text / IMAGE_PREVIEW (markdown validation handled in parser) ----
                     result += evt.payload;
                     setLastAnswer(result); // incremental UI update
+                    
+                    // Clear progress state once we start getting actual response content (not just whitespace)
+                    if (progressState && result.trim().length > 0 && evt.payload.trim().length > 0) {
+                        setProgressState(null);
+                    }
                 }
             }
 
@@ -197,6 +211,10 @@ const Chat = () => {
 
             setAnswers(prev => [...prev, [question, botResponse]]);
             setDataConversation(prev => [...prev, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
+            
+            // Clear progress state when response is complete
+            setProgressState(null);
+            
             lastQuestionRef.current = "";
         } catch (err) {
             console.error("Error fetching streamed response:", err);
@@ -586,6 +604,7 @@ const Chat = () => {
                                                             } as AskResponse
                                                         }
                                                         isGenerating={isLoading}
+                                                        progressState={progressState}
                                                         isSelected={activeAnalysisPanelTab !== undefined}
                                                         onCitationClicked={(c, n) => {}}
                                                         onThoughtProcessClicked={() => {}}

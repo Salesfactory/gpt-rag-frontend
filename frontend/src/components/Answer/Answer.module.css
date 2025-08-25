@@ -137,30 +137,6 @@ sup {
     }
 }
 
-/* Re-add the loading keyframes */
-@keyframes loading {
-    0% {
-        content: "";
-    }
-    25% {
-        content: ".";
-    }
-    50% {
-        content: "..";
-    }
-    75% {
-        content: "...";
-    }
-    100% {
-        content: "";
-    }
-}
-
-.loadingdots::after {
-    content: "";
-    animation: loading 1.5s infinite;
-    margin-left: 0.25em; 
-}
 
 /* Add shimmer keyframes */
 @keyframes shimmer {
@@ -171,4 +147,55 @@ sup {
 
 .thoughtProcessButton {
     z-index: 200;
+}
+
+/* Progress indicator styles */
+.progressContainer {
+    padding-top: 1em;
+    padding-bottom: 1em;
+}
+
+.progressMessage {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.375em;
+    margin-bottom: 0.75em;
+    color: #333;
+}
+
+.progressBarContainer {
+    width: 100%;
+    height: 6px;
+    background-color: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.5em;
+}
+
+.progressBar {
+    height: 100%;
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progressBar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: progressShimmer 1.5s infinite;
+}
+
+@keyframes progressShimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
 }

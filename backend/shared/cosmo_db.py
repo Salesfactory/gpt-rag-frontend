@@ -22,7 +22,7 @@ def get_cosmos_container(container_name: str):
         raise ValueError("Container name must be provided.")
 
     try:
-        container = clients.get_container(container_name)  # <- delegated
+        container = clients.get_cosmos_container(container_name)  # <- delegated
         logging.info(
             "Connection to Cosmos DB container '%s' established successfully.",
             container_name,
