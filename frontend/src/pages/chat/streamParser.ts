@@ -210,3 +210,51 @@ export function makeStream(chunks: string[]): ReadableStream<Uint8Array> {
         }
     });
 }
+
+/**
+ * Progress message types from the backend
+ */
+export interface ProgressMessage {
+    type: "progress" | "error" | "complete";
+    step?: string;
+    message: string;
+    progress?: number;
+    timestamp?: number;
+    data?: any;
+}
+
+/**
+ * Check if a parsed JSON payload is a progress message
+ */
+export function isProgressMessage(payload: any): payload is ProgressMessage {
+    return payload && 
+           typeof payload === 'object' && 
+           ['progress', 'error', 'complete'].includes(payload.type) &&
+           typeof payload.message === 'string';
+}
+
+/**
+ * Check if a parsed JSON payload is a thoughts/metadata message
+ */
+export function isThoughtsMessage(payload: any): boolean {
+    return payload && 
+           typeof payload === 'object' && 
+           (payload.conversation_id || payload.thoughts || payload.images_blob_urls);
+}
+
+/**
+ * Extract progress state from a progress message for the Answer component
+ */
+export function extractProgressState(progressMessage: ProgressMessage): {
+    step: string;
+    message: string;
+    progress?: number;
+    timestamp?: number;
+} {
+    return {
+        step: progressMessage.step || 'processing',
+        message: progressMessage.message,
+        progress: progressMessage.progress,
+        timestamp: progressMessage.timestamp
+    };
+}
