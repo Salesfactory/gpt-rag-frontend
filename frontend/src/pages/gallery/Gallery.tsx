@@ -1,11 +1,9 @@
 import { toast, ToastContainer } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { IconButton } from "@fluentui/react/lib/components/Button/IconButton/IconButton";
-import { ArrowUpDown, Download, Filter, RefreshCw, Search, Trash2, Upload, Users } from "lucide-react";
-import { LazyLoadImage } from "react-lazy-load-image-component";
-import { MessageBarType, SearchBox, Spinner } from "@fluentui/react";
+import { ArrowUpDown, Download, Search, Trash2, Upload, Users } from "lucide-react";
+import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef } from "react";
-import { deleteSourceFileFromBlob, getFileBlob, getGalleryItems } from "../../api";
+import { deleteSourceFileFromBlob, getFileBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
 const statusFilterOptions = [
@@ -17,12 +15,28 @@ type GalleryItem = {
     content_type: string;
     created_on: string;
     last_modified: string;
-    metadata: Record<string, unknown>;
+    metadata: {
+        user_id?: string;
+    };
     name: string;
     size: number;
     url: string;
     blob?: string;
 };
+
+type UserData = {
+    id: string
+    data: {
+        name: string
+    }
+    [key: string]: any
+}
+
+type User = {
+  id: string
+  name: string
+}
+
 
 
 
@@ -30,13 +44,34 @@ const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
 
     const [showStatusFilter, setShowStatusFilter] = useState<boolean>(false);
-    const [selectedStatus, setSelectedStatus] = useState<string>(statusFilterOptions[0].value);
+    const [selectedStatus, setSelectedStatus] = useState<string>();
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [users, setUsers] = useState<User[]>();
+
 
     useEffect(() => {
+
+        const fetchUsers = async () => {
+            try {
+                let userData: UserData[] = await getUsers({ user })
+                const userList = userData.map(item => (
+                    {
+                        "id": item.id,
+                        "name": item.data.name
+                    }
+                ))
+                setUsers(userList)
+            }
+            catch {
+                console.log("");
+            }
+        }
+
+        fetchUsers();
+
         const fetchAndProcessGalleryItems = async () => {
             if (!organization) return;
 
@@ -67,9 +102,9 @@ const Gallery: React.FC = () => {
                         const objectUrl = URL.createObjectURL(blob);
 
                         const updateImagesWithBlob = (currentImages: GalleryItem[]) =>
-                          currentImages.map(img =>
-                            img.name === itemToFetch.name ? { ...img, blob: objectUrl } : img
-                          );
+                            currentImages.map(img =>
+                                img.name === itemToFetch.name ? { ...img, blob: objectUrl } : img
+                            );
 
                         setImages(updateImagesWithBlob);
                         setFetchedImages(updateImagesWithBlob);
@@ -92,11 +127,12 @@ const Gallery: React.FC = () => {
                         URL.revokeObjectURL(item.blob);
                     }
                 });
-                return []; 
+                return [];
             });
         };
-    }, [user, organization]);
 
+
+    }, [user, organization]);
 
 
     const handleDownload = (item: GalleryItem) => {
@@ -120,6 +156,7 @@ const Gallery: React.FC = () => {
         }
     };
 
+    
     const sortImages = (order: string, source?: GalleryItem[]) => {
         const base = Array.isArray(source) ? [...source] : [...(images ?? [])];
         base.sort((a, b) => {
@@ -143,47 +180,51 @@ const Gallery: React.FC = () => {
         return last_part.length > 20 ? last_part.slice(0, 16) + "..." + " ." + extension : last_part + "." + extension;
     };
 
-        const searchTimeout = useRef<number | null>(null);
+    const searchTimeout = useRef<number | null>(null);
 
-        const handleSearch = (searchQuery: string) => {
-            if (searchTimeout.current) {
-                window.clearTimeout(searchTimeout.current);
+    const handleSearch = (searchQuery: string) => {
+        if (searchTimeout.current) {
+            window.clearTimeout(searchTimeout.current);
+        }
+
+
+        searchTimeout.current = window.setTimeout(() => {
+            const q = (searchQuery || "").trim().toLowerCase();
+
+            if (!q) {
+                setImages(fetchedImages ?? []);
+                return;
             }
 
+            const filtered = (fetchedImages ?? []).filter(img => {
+                if (img.name && img.name.toLowerCase().includes(q)) return true;
 
-            searchTimeout.current = window.setTimeout(() => {
-                const q = (searchQuery || "").trim().toLowerCase();
-
-                if (!q) {
-                    setImages(fetchedImages ?? []);
-                    return;
+                try {
+                    const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
+                    if (metaString.includes(q)) return true;
+                } catch (e) {
                 }
 
-                const filtered = (fetchedImages ?? []).filter(img => {
-                    if (img.name && img.name.toLowerCase().includes(q)) return true;
+                if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
 
-                    try {
-                        const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
-                        if (metaString.includes(q)) return true;
-                    } catch (e) {
-                    }
+                if (img.content_type && img.content_type.toLowerCase().includes(q)) return true;
 
-                    if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
+                return false;
+            });
 
-                    if (img.content_type && img.content_type.toLowerCase().includes(q)) return true;
+            setImages(filtered);
+        }, 200);
+    };
 
-                    return false;
-                });
-
-                setImages(filtered);
-            }, 200);
+    useEffect(() => {
+        return () => {
+            if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
         };
+    }, []);
 
-        useEffect(() => {
-            return () => {
-                if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
-            };
-        }, []);
+    const getUserName = (id: string) => {
+        return users?.find(user => user.id === id)?.name
+    }
 
     return (
         <div className={styles.page_container}>
@@ -248,7 +289,7 @@ const Gallery: React.FC = () => {
                     <div className={styles.filterContainer}>
                         <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
                             <ArrowUpDown size={16} className={styles.filterIcon} />
-                            {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Filter"}
+                            {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Sort by order"}
                         </button>
 
                         {showStatusFilter && (
@@ -343,8 +384,7 @@ const Gallery: React.FC = () => {
                                                         <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
                                                     </div>
                                                 </div>
-                                                {/* <span className={styles.userTag}>{file.metadata.userID ?? 'Unknown User'}</span> */}
-
+                                                <span className={styles.userTag}>{file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}</span>
                                                 <p className={styles.fileDate}>Created {new Date(file.created_on).toLocaleDateString()}</p>
                                             </div>
                                         </div>
