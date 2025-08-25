@@ -1,11 +1,8 @@
-import React, { useState, useCallback, useRef, DragEvent, useEffect, useContext } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import styles from "./UploadResourcescopy.module.css";
 import {
-    Stack,
     Text,
     PrimaryButton,
-    ProgressIndicator,
-    MessageBar,
     MessageBarType,
     Spinner,
     DetailsList,
@@ -14,16 +11,14 @@ import {
     SelectionMode,
     IconButton,
     SearchBox,
-    Dialog,
-    DialogType,
-    DialogFooter,
-    mergeStyleSets
+    DialogType
 } from "@fluentui/react";
-import { DocumentRegular } from "@fluentui/react-icons";
-import { FileText, Download, Trash2, RefreshCw, Upload, Search, CirclePlus } from "lucide-react";
+import { Download, Trash2, RefreshCw, Upload, Search, CirclePlus } from "lucide-react";
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast, ToastContainer } from "react-toastify";
+import { useDropzone } from "react-dropzone";
+
 const ALLOWED_FILE_TYPES = [".pdf", ".csv", ".xlsx", ".xls"];
 const EXCEL_FILES = ["csv", "xls", "xlsx"];
 
@@ -229,11 +224,11 @@ const UploadResources: React.FC = () => {
     // Check spreadsheet file limit
     const checkSpreadsheetFileLimit = (newFiles: File[]): boolean => {
         const existingSpreadsheetCount = blobItems.filter(item => {
-            const ext = item.name.split('.').pop()?.toLowerCase();
+            const ext = item.name.split(".").pop()?.toLowerCase();
             return EXCEL_FILES.includes(ext || "");
         }).length;
         const newSpreadsheetCount = newFiles.filter(file => {
-            const ext = file.name.split('.').pop()?.toLowerCase();
+            const ext = file.name.split(".").pop()?.toLowerCase();
             return EXCEL_FILES.includes(ext || "");
         }).length;
         if (existingSpreadsheetCount + newSpreadsheetCount > SPREADSHEET_FILE_LIMIT) {
@@ -278,62 +273,25 @@ const UploadResources: React.FC = () => {
         handleUpload(fileArray);
     };
 
-    const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-    };
-
-    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(true);
-    };
-
-    const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragging(false);
-
-        const files = e.dataTransfer.files;
-        if (!files || files.length === 0) return;
-
-        // Convert FileList to array for easier manipulation
-        const fileArray = Array.from(files);
-
-        // Validate file types
-        const invalidFiles = fileArray.filter(file => {
-            const extension = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-            return !ALLOWED_FILE_TYPES.includes(extension);
-        });
-
-        if (invalidFiles.length > 0) {
-            setUploadStatus({
-                message: `Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`,
-                type: MessageBarType.error
-            });
-            return;
-        }
-
-        // Use helper for spreadsheet file limit
-        if (!checkSpreadsheetFileLimit(fileArray)) return;
-
-        setSelectedFiles(fileArray);
-        setUploadStatus(null);
-        handleUpload();
-    };
-
     const handleUpload = useCallback(
         async (filesToUpload?: File[]) => {
             const files = filesToUpload || selectedFiles;
             if (files.length === 0) {
                 console.log("No files to upload");
+                return;
+            }
+
+            const invalidFiles = files.filter(file => {
+                const extension = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+                return !ALLOWED_FILE_TYPES.includes(extension);
+            });
+
+            if (invalidFiles.length > 0) {
+                setUploadStatus({
+                    message: `Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`,
+                    type: MessageBarType.error
+                });
+                toast("Error: Invalid file type(s) selected.", { type: "warning" });
                 return;
             }
 
@@ -384,12 +342,12 @@ const UploadResources: React.FC = () => {
                     }
                 } catch (error) {
                     console.error("Error uploading file:", error);
-                    const error_message = `Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`
+                    const error_message = `Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`;
                     setUploadStatus({
                         message: error_message,
                         type: MessageBarType.error
                     });
-                    toast("Error: File upload failed. Please try again.", {type: "error"})
+                    toast("Error: File upload failed. Please try again.", { type: "error" });
                     setIsUploading(false);
                     return;
                 }
@@ -429,7 +387,6 @@ const UploadResources: React.FC = () => {
                 type: "warning"
             });
         } else {
-
             setIsUploadDialogOpen(true);
             setSelectedFiles([]);
             setUploadStatus(null);
@@ -443,17 +400,17 @@ const UploadResources: React.FC = () => {
     };
 
     useEffect(() => {
-            const handleClickOutside = (event: MouseEvent) => {
-                if (uploadModalRef.current && !uploadModalRef.current.contains(event.target as Node)) {
-                    closeUploadDialog();
-                }
-            };
-    
-            document.addEventListener("mousedown", handleClickOutside);
-            return () => {
-                document.removeEventListener("mousedown", handleClickOutside);
-            };
-        }, []);
+        const handleClickOutside = (event: MouseEvent) => {
+            if (uploadModalRef.current && !uploadModalRef.current.contains(event.target as Node)) {
+                closeUploadDialog();
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     // Dialog content type
     const dialogContentProps = {
@@ -462,7 +419,6 @@ const UploadResources: React.FC = () => {
         closeButtonAriaLabel: "Close",
         subText: "Select files to upload to blob storage"
     };
-
 
     function BoldMessage({ text }: { text: string }) {
         // We split the text using regex, preserving the content within **
@@ -480,6 +436,12 @@ const UploadResources: React.FC = () => {
             </>
         );
     }
+
+    const onDrop = useCallback((acceptedFiles: any) => {
+        setSelectedFiles(acceptedFiles);
+        handleUpload(acceptedFiles);
+    }, []);
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
     return (
         <div className={styles.page_container}>
@@ -663,19 +625,13 @@ const UploadResources: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div
-                                        className={`${styles.dropzone} ${isDragging ? styles.dropzone_active : ""}`}
-                                        onDragEnter={handleDragEnter}
-                                        onDragOver={handleDragOver}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={handleDrop}
-                                    >
+                                    <div className={`${styles.dropzone} ${isDragActive ? styles.dropzone_active : ""}`} {...getRootProps()}>
                                         <input
+                                            {...getInputProps()}
                                             type="file"
                                             id="file-upload"
                                             ref={fileInputRef}
                                             multiple
-                                            onChange={handleFileSelect}
                                             className={styles.file_input}
                                             accept={ALLOWED_FILE_TYPES.join(",")}
                                         />
