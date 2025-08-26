@@ -1871,7 +1871,6 @@ function mapReportDocToVM(doc: any): ReportJobVM {
 
 /**
  * GET /api/report-jobs?organization_id=...&limit=...&status=...
- * - el backend devuelve un array (no { jobs: [] })
  */
 export async function getReportJobs({
   organization_id,
