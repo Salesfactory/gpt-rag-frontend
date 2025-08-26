@@ -190,11 +190,13 @@ def get_job(job_id: str):
 @bp.get("")
 def list_jobs():
     """
-    List recent jobs for an organization (most recent first).
-
-    Query params:
-        organization_id: Organization/partition id (required; can also be in header/body).
-        limit: Optional integer limit (default: 50, applied client-side).
+     List recent report jobs for an organization (most recent first).
+    Query parameters:
+        organization_id (str): Required partition key. You may also provide it
+            via the JSON body or the `X-Tenant-Id` header.
+        limit (int, optional): Maximum number of items to return. Defaults to 50.
+        status (str, optional): Filter by status. One of:
+            COMPLETED | FAILED | RUNNING | QUEUED.
 
     Returns:
         200 OK with a JSON array of job documents (max `limit` items).
@@ -204,13 +206,22 @@ def list_jobs():
     """
     organization_id = _require_organization_id()
     limit = int(request.args.get("limit", 50))
-    query = "SELECT * FROM c WHERE c.organization_id = @organization_id ORDER BY c.created_at DESC"
+    status = request.args.get("status")
+
+    status_clause = " AND c.status = @status" if status else ""
+    query = (
+        f"SELECT * FROM c "
+        f"WHERE c.organization_id = @organization_id{status_clause} "
+        f"ORDER BY c.created_at DESC"
+    )
     params = [{"name": "@organization_id", "value": organization_id}]
+    if status:
+        params.append({"name": "@status", "value": status})
     try:
-        it: Iterable[Dict[str, Any]] = _jobs_container().query_items(
+        it = _jobs_container().query_items(
             query=query, parameters=params, partition_key=organization_id
         )
-        out: List[Dict[str, Any]] = []
+        out = []
         for i, item in enumerate(it):
             if i >= limit:
                 break

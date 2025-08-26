@@ -18,8 +18,10 @@ import {
     createCompetitor,
     updateCompetitor,
     deleteCompetitor,
-    getItemsToDeleteByBrand
+    getItemsToDeleteByBrand,
+    getReportJobs
 } from "../../api/api";
+import type { ReportJobVM } from "../../api/models";
 
 interface Brand {
     id: number;
@@ -123,13 +125,9 @@ export default function VoiceCustomerPage() {
     const [brands, setBrands] = useState<Brand[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
-    const [reportJobs, setReportJobs] = useState<ReportJob[]>([
-        { id: 1, type: "Brand Analysis", target: "Apple", status: "Completed", progress: 100, startDate: "2024-07-15", endDate: "2024-07-16" },
-        { id: 2, type: "Product Analysis", target: "iPhone 15", status: "In Progress", progress: 65, startDate: "2024-07-16", endDate: null },
-        { id: 3, type: "Competitive Analysis", target: "Samsung vs Apple", status: "Pending", progress: 0, startDate: null, endDate: null },
-        { id: 4, type: "Brand Analysis", target: "Nike", status: "Failed", progress: 30, startDate: "2024-07-14", endDate: null },
-        { id: 5, type: "Product Analysis", target: "MacBook Pro", status: "Completed", progress: 100, startDate: "2024-07-13", endDate: "2024-07-15" }
-    ]);
+    const [reportJobs, setReportJobs] = useState<ReportJobVM[]>([]);
+    const [isLoadingReports, setIsLoadingReports] = useState(false);
+    const [reportsError, setReportsError] = useState("");
 
     const [isLoadingBrands, setIsLoadingBrands] = useState(true);
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
@@ -200,6 +198,30 @@ export default function VoiceCustomerPage() {
 
         fetchCompetitors();
     }, [organization, user]);
+
+    useEffect(() => {
+    const fetchReports = async () => {
+        if (!organization) return;
+        try {
+        setReportsError("");
+        setIsLoadingReports(true);
+        const jobs = await getReportJobs({
+            organization_id: organization.id,
+            user,
+            limit: 10,
+            uiStatus: selectedStatus,
+        });
+        setReportJobs(jobs);
+        } catch (e: any) {
+        setReportsError(e?.message || "Failed to fetch report statuses.");
+        toast.error("Failed to fetch report statuses. Please try again.");
+        setReportJobs([]);
+        } finally {
+        setIsLoadingReports(false);
+        }
+    };
+    fetchReports();
+    }, [organization, user, selectedStatus]);
 
     // Uniqueness validation helpers
     const validateBrand = (name: string) => {
@@ -675,7 +697,7 @@ export default function VoiceCustomerPage() {
     const jobsWithoutEndDate = filteredJobs.filter(job => job.endDate === null);
 
     const jobsToDisplay = [...sortedJobsWithEndDate, ...jobsWithoutEndDate].slice(0, 10);
-    const getStatusIcon = (status: ReportJob["status"]) => {
+    const getStatusIcon = (status: ReportJobVM["status"]) => {
         if (status === "Completed") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
         if (status === "In Progress") return <Clock size={16} style={{ color: "#2563eb" }} />;
         if (status === "Failed") return <AlertCircle size={16} style={{ color: "#dc2626" }} />;
@@ -919,32 +941,67 @@ export default function VoiceCustomerPage() {
                     </div>
 
                     <div className={styles.tableContainer}>
+                    {isLoadingReports ? (
+                        <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+                        <Spinner data-testid="reports-loading" size={SpinnerSize.large} label="Loading report statuses..." />
+                        </div>
+                    ) : reportsError ? (
+                        <div data-testid="reports-error" className={styles.errorMessage} aria-live="polite">
+                        {reportsError}
+                        </div>
+                    ) : (
                         <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th className={styles.tableTh}>Type</th>
-                                    <th className={styles.tableTh}>End Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className={styles.tableBody}>
-                                {jobsToDisplay.map(job => (
-                                    <tr key={job.id} className={styles.tableRow}>
-                                        <td className={styles.tableCell}>
-                                            <div className={styles.statusCell}>
-                                                {getStatusIcon(job.status)}
-                                                <span className={styles.jobType}>{job.type}</span>
-                                                <span className={`${styles.statusBadge} ${getStatusClass(job.status)}`}>{job.status}</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.tableCell}>{job.endDate || "-"}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
+                        <thead>
+                            <tr>
+                            <th className={styles.tableTh}>Type</th>
+                            <th className={styles.tableTh}>Target</th>
+                            <th className={styles.tableTh}>Status</th>
+                            <th className={styles.tableTh}>Progress</th>
+                            <th className={styles.tableTh}>Start Date</th>
+                            <th className={styles.tableTh}>End Date</th>
+                            </tr>
+                        </thead>
+
+                        <tbody className={styles.tableBody}>
+                            {jobsToDisplay.map(job => (
+                            <tr key={job.id} className={styles.tableRow}>
+                                <td className={styles.tableCell}>
+                                <span className={styles.jobType}>{job.type}</span>
+                                </td>
+
+                                <td className={styles.tableCell}>{job.target || "-"}</td>
+
+                                <td className={styles.tableCell}>
+                                <div className={styles.statusCell}>
+                                    {getStatusIcon(job.status)}
+                                    <span className={`${styles.statusBadge} ${getStatusClass(job.status)}`}>{job.status}</span>
+                                </div>
+                                </td>
+
+                                <td className={styles.tableCell}>
+                                {typeof job.progress === "number" ? `${Math.round(job.progress)}%` : "-"}
+                                </td>
+
+                                <td className={styles.tableCell}>{job.startDate || "-"}</td>
+                                <td className={styles.tableCell}>{job.endDate || "-"}</td>
+                            </tr>
+                            ))}
+
+                            {jobsToDisplay.length === 0 && (
+                            <tr>
+                                <td className={styles.tableCell} colSpan={6} data-testid="reports-empty">
+                                No reports found
+                                </td>
+                            </tr>
+                            )}
+                        </tbody>
                         </table>
+                    )}
                     </div>
+
+
                 </div>
             </main>
-
             {showBrandModal && (
                 <div className={styles.modalContainer}>
                     <div
