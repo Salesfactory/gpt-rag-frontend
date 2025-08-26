@@ -116,3 +116,17 @@ export type SummarizationReportProps = {
     companyTicker: string;
     companyName: string;
 };
+
+// ---- Report Jobs (status) ----
+export type UiReportStatus = "Completed" | "In Progress" | "Pending" | "Failed";
+export type BackendReportStatus = "COMPLETED" | "RUNNING" | "QUEUED" | "FAILED";
+
+export interface ReportJobVM {
+  id: string;
+  type: string;
+  target: string;
+  status: UiReportStatus;
+  progress: number;
+  startDate: string | null;
+  endDate: string | null;
+}

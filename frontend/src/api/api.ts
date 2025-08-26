@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps } from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps, ReportJobVM, UiReportStatus, BackendReportStatus } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -1829,4 +1829,82 @@ export async function getGalleryItems(organization_id: string, params: { user: a
     });
 
     return data?.data ?? data ?? [];
+}
+function mapBackendStatusToUi(s?: string): UiReportStatus {
+  switch ((s || "").toUpperCase()) {
+    case "COMPLETED":
+      return "Completed";
+    case "RUNNING":
+      return "In Progress";
+    case "QUEUED":
+      return "Pending";
+    case "FAILED":
+    default:
+      return "Failed";
+  }
+}
+
+function uiToBackendStatus(ui?: string): BackendReportStatus | undefined {
+  if (!ui || ui === "All Status") return undefined;
+  const map: Record<string, BackendReportStatus> = {
+    "Completed": "COMPLETED",
+    "In Progress": "RUNNING",
+    "Pending": "QUEUED",
+    "Failed": "FAILED",
+  };
+  return map[ui];
+}
+
+function mapReportDocToVM(doc: any): ReportJobVM {
+  const uiStatus = mapBackendStatusToUi(doc?.status);
+  const isTerminal = ["COMPLETED", "FAILED"].includes(String(doc?.status || "").toUpperCase());
+  return {
+    id: String(doc?.id ?? ""),
+    type: doc?.report_name ?? doc?.type ?? "Report",
+    target: doc?.params?.target ?? "",
+    status: uiStatus,
+    progress: typeof doc?.progress === "number" ? doc.progress : 0,
+    startDate: doc?.created_at ?? null,
+    endDate: isTerminal ? (doc?.updated_at ?? null) : null,
+  };
+}
+
+/**
+ * GET /api/report-jobs?organization_id=...&limit=...&status=...
+ * - el backend devuelve un array (no { jobs: [] })
+ */
+export async function getReportJobs({
+  organization_id,
+  user,
+  limit = 10,
+  uiStatus,
+}: {
+  organization_id: string;
+  user: any;
+  limit?: number;
+  uiStatus?: string;
+}): Promise<ReportJobVM[]> {
+  const params = new URLSearchParams({
+    organization_id,
+    limit: String(limit),
+  });
+  const beStatus = uiToBackendStatus(uiStatus);
+  if (beStatus) params.set("status", beStatus);
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-MS-CLIENT-PRINCIPAL-ID": user?.id ?? "00000000-0000-0000-0000-000000000000",
+    "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+  };
+
+  const res = await fetch(`/api/report-jobs?${params.toString()}`, { method: "GET", headers });
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const msg = (data && (data.message || data.error)) || `Failed to fetch report jobs (${res.status})`;
+    throw new Error(msg);
+  }
+
+  const items: any[] = Array.isArray(data) ? data : [];
+  return items.map(mapReportDocToVM);
 }
