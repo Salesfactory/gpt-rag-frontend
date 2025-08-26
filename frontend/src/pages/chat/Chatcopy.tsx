@@ -22,7 +22,7 @@ import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
-import { parseStreamWithMarkdownValidation, ParsedEvent } from "./streamParser";
+import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -83,6 +83,7 @@ const Chat = () => {
     const triggered = useRef(false);
 
     const [lastAnswer, setLastAnswer] = useState<string>("");
+    const [progressState, setProgressState] = useState<{step: string; message: string; progress?: number; timestamp?: number} | null>(null);
     const restartChat = useRef<boolean>(false);
 
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
@@ -97,6 +98,7 @@ const Chat = () => {
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
         setLastAnswer("");
+        setProgressState(null); 
 
         const agent = isFinancialAssistantActive ? "financial" : "consumer";
 
@@ -160,22 +162,34 @@ const Chat = () => {
                 }
 
                 if (evt.type === "json") {
-                    // ---- control message arriving from backend ----
-                    const { conversation_id, thoughts } = evt.payload;
-                    if (conversation_id && conversation_id !== ctrlMsg.conversation_id) {
-                        ctrlMsg = { conversation_id, thoughts };
-                        if (answers.length === 0) {
-                            setRefreshFetchHistory(true);
-                            setChatId(conversation_id);
-                        } else {
-                            setRefreshFetchHistory(false);
+                    // ---- Handle different types of JSON messages from backend ----
+                    if (isProgressMessage(evt.payload)) {
+                        // Progress message - update progress state
+                        const progress = extractProgressState(evt.payload as ProgressMessage);
+                        setProgressState(progress);
+                    } else if (isThoughtsMessage(evt.payload)) {
+                        // Thoughts/control message arriving from backend
+                        const { conversation_id, thoughts } = evt.payload;
+                        if (conversation_id && conversation_id !== ctrlMsg.conversation_id) {
+                            ctrlMsg = { conversation_id, thoughts };
+                            if (answers.length === 0) {
+                                setRefreshFetchHistory(true);
+                                setChatId(conversation_id);
+                            } else {
+                                setRefreshFetchHistory(false);
+                            }
+                            setUserId(conversation_id);
                         }
-                        setUserId(conversation_id);
                     }
                 } else {
                     // ---- plain text / IMAGE_PREVIEW (markdown validation handled in parser) ----
                     result += evt.payload;
                     setLastAnswer(result); // incremental UI update
+                    
+                    // Clear progress state once we start getting actual response content (not just whitespace)
+                    if (progressState && result.trim().length > 0 && evt.payload.trim().length > 0) {
+                        setProgressState(null);
+                    }
                 }
             }
 
@@ -195,106 +209,16 @@ const Chat = () => {
                 thoughts: ctrlMsg.thoughts ?? ""
             } as AskResponse;
 
-
             setAnswers(prev => [...prev, [question, botResponse]]);
             setDataConversation(prev => [...prev, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
+            
+            // Clear progress state when response is complete
+            setProgressState(null);
+            
             lastQuestionRef.current = "";
         } catch (err) {
             console.error("Error fetching streamed response:", err);
             setError(err as Error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const makeApiRequestGpt = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
-        let agent = null;
-        lastQuestionRef.current = question;
-        lastFileBlobUrl.current = fileBlobUrl;
-
-        error && setError(undefined);
-        setIsLoading(true);
-        setActiveCitation(undefined);
-        setActiveAnalysisPanelTab(undefined);
-
-        if (isFinancialAssistantActive == true) {
-            agent = "financial";
-        } else {
-            agent = "consumer";
-        }
-
-        try {
-            let history: ChatTurn[] = [];
-            if (dataConversation.length > 0) {
-                history.push(...dataConversation);
-            } else {
-                history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
-            }
-            history.push({ user: question, bot: undefined });
-            const request: ChatRequestGpt = {
-                history: history,
-                approach: Approaches.ReadRetrieveRead,
-                conversation_id: chatId !== null ? chatId : userId,
-                query: question,
-                file_blob_url: fileBlobUrl || "",
-                documentName,
-                agent,
-                overrides: {
-                    promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
-                    excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
-                    top: retrieveCount,
-                    semanticRanker: useSemanticRanker,
-                    semanticCaptions: useSemanticCaptions,
-                    suggestFollowupQuestions: useSuggestFollowupQuestions
-                }
-            };
-            const result = await chatApiGpt(request, user);
-            const conditionOne = answers.map(a => ({ user: a[0] }));
-            if (conditionOne.length <= 0) {
-                setRefreshFetchHistory(true);
-                setChatId(result.conversation_id);
-            } else {
-                setRefreshFetchHistory(false);
-            }
-            setAnswers([...answers, [question, result]]);
-            setUserId(result.conversation_id);
-            const response = {
-                answer: result.answer || "",
-                conversation_id: chatId,
-                data_points: [""],
-                thoughts: result.thoughts || []
-            } as AskResponse;
-            setDataConversation([...dataConversation, { user: question, bot: { message: response.answer, thoughts: response.thoughts } }]);
-            lastQuestionRef.current = "";
-
-            // Voice Synthesis
-            if (speechSynthesisEnabled) {
-                const tokenObj = await getTokenOrRefresh();
-                const speechConfig = SpeechConfig.fromAuthorizationToken(tokenObj.authToken, tokenObj.region);
-                const audioConfig = AudioConfig.fromDefaultSpeakerOutput();
-                speechConfig.speechSynthesisLanguage = tokenObj.speechSynthesisLanguage;
-                speechConfig.speechSynthesisVoiceName = tokenObj.speechSynthesisVoiceName;
-                const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
-
-                synthesizer.speakTextAsync(
-                    result.answer.replace(/ *\[[^)]*\] */g, ""),
-                    function (result) {
-                        if (result.reason === ResultReason.SynthesizingAudioCompleted) {
-                            console.log("synthesis finished.");
-                        } else {
-                            console.error("Speech synthesis canceled, " + result.errorDetails + "\nDid you update the subscription info?");
-                        }
-                        synthesizer.close();
-                    },
-                    function (err) {
-                        console.trace("err - " + err);
-                        synthesizer.close();
-                    }
-                );
-            }
-        } catch (e) {
-            setError(e);
-            console.log(e);
         } finally {
             setIsLoading(false);
         }
@@ -620,7 +544,9 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
+                                                                  onFollowupQuestionClicked={question =>
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                  }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />
@@ -641,7 +567,9 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={q => makeApiRequestGpt(q, null, null)}
+                                                                  onFollowupQuestionClicked={question =>
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                  }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />
@@ -676,6 +604,7 @@ const Chat = () => {
                                                             } as AskResponse
                                                         }
                                                         isGenerating={isLoading}
+                                                        progressState={progressState}
                                                         isSelected={activeAnalysisPanelTab !== undefined}
                                                         onCitationClicked={(c, n) => {}}
                                                         onThoughtProcessClicked={() => {}}

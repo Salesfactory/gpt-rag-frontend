@@ -1,6 +1,6 @@
 // Sidebar.tsx
 import React, { useCallback, useMemo, useState } from "react";
-import { BadgeCheck, Bell, MessageSquare, SlidersHorizontal, Headphones, Star, FileText } from "lucide-react";
+import { BadgeCheck, Bell, MessageSquare, SlidersHorizontal, Headphones, Star, FileText, ChartBar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { IconX, IconDots } from "@tabler/icons-react";
 import salesLogo from "../../img/logo_white.png";
@@ -10,6 +10,7 @@ import { useAppContext } from "../../providers/AppProviders";
 import { SidebarSection } from "./SidebarSectionTypescopy";
 import { SidebarItem as SidebarItemType, Role, SubscriptionTier } from "./SidebarItemTypescopy";
 import newSFLogo from "../../img/NewSFLogo.png";
+import { Image } from "@fluentui/react";
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -67,6 +68,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     title: "AI Chat",
                     icon: <MessageSquare className={styles.sidebarLinkIcon} />,
                     to: "/",
+                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    roles: ["admin", "user", "platformAdmin"]
+                },
+                {
+                    title: "VizVault",
+                    icon: <ChartBar className={styles.sidebarLinkIcon} />,
+                    to: "/vizvault",
                     tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user", "platformAdmin"]
                 },

@@ -34,12 +34,29 @@ function parseLeadingJson(text: string): { json: any; rest: string } | null {
 export async function* parseStream(reader: ReadableStreamDefaultReader<Uint8Array>): AsyncGenerator<ParsedEvent, void, unknown> {
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
+    
+    // Regex to detect progress/metadata markers
+    const progressMarkerRegex = /__PROGRESS__(.+?)__PROGRESS__/g;
+    const metadataMarkerRegex = /__METADATA__(.+?)__METADATA__/g;
 
     while (true) {
         const { done, value } = await reader.read();
         if (value) buffer += decoder.decode(value, { stream: true });
 
         while (buffer.length) {
+            // First, check for and extract progress/metadata markers
+            const markerResults = extractMarkers(buffer, progressMarkerRegex, metadataMarkerRegex);
+            
+            // Yield any extracted markers as JSON events
+            for (const marker of markerResults.markers) {
+                yield { type: "json", payload: marker };
+            }
+            
+            // Update buffer with markers removed
+            buffer = markerResults.remainingBuffer;
+            
+            if (!buffer.length) break;
+
             const brace = buffer.indexOf("{");
 
             if (brace === -1) {
@@ -82,12 +99,29 @@ export async function* parseStreamWithMarkdownValidation(reader: ReadableStreamD
     const completeMarkdownImageRegex = /!\[([^\]]*)\]\(([^)]+?)(?:\s+"([^"]*)")?\)/g;
     // Regex to detect potential start of markdown image
     const incompleteMarkdownImageRegex = /!\[([^\]]*)?(\]?\([^)]*)?$/;
+    // Regex to detect progress markers
+    const progressMarkerRegex = /__PROGRESS__(.+?)__PROGRESS__/g;
+    // Regex to detect metadata markers
+    const metadataMarkerRegex = /__METADATA__(.+?)__METADATA__/g;
 
     while (true) {
         const { done, value } = await reader.read();
         if (value) buffer += decoder.decode(value, { stream: true });
 
         while (buffer.length) {
+            // First, check for and extract progress/metadata markers
+            const markerResults = extractMarkers(buffer, progressMarkerRegex, metadataMarkerRegex);
+            
+            // Yield any extracted markers as JSON events
+            for (const marker of markerResults.markers) {
+                yield { type: "json", payload: marker };
+            }
+            
+            // Update buffer with markers removed
+            buffer = markerResults.remainingBuffer;
+            
+            if (!buffer.length) break;
+
             const brace = buffer.indexOf("{");
 
             if (brace === -1) {
@@ -200,6 +234,52 @@ function processMarkdownText(
     }
 }
 
+/**
+ * Extract progress and metadata markers from text buffer
+ */
+function extractMarkers(
+    buffer: string, 
+    progressRegex: RegExp, 
+    metadataRegex: RegExp
+): { markers: any[], remainingBuffer: string } {
+    const markers: any[] = [];
+    let processedBuffer = buffer;
+    
+    // Use matchAll for cleaner extraction and avoid regex state issues
+    // Extract progress markers
+    const progressMatches = Array.from(processedBuffer.matchAll(progressRegex));
+    for (const match of progressMatches) {
+        try {
+            const markerJson = JSON.parse(match[1]);
+            markers.push(markerJson);
+        } catch (e) {
+            console.warn("Failed to parse progress marker JSON:", match[1]);
+        }
+    }
+    
+    // Extract metadata markers  
+    const metadataMatches = Array.from(processedBuffer.matchAll(metadataRegex));
+    for (const match of metadataMatches) {
+        try {
+            const markerJson = JSON.parse(match[1]);
+            markers.push(markerJson);
+        } catch (e) {
+            console.warn("Failed to parse metadata marker JSON:", match[1]);
+        }
+    }
+    
+    // Remove all markers from buffer using fresh regex instances to avoid state issues
+    // Handle both complete and malformed markers
+    processedBuffer = processedBuffer.replace(/__PROGRESS__.*?__PROGRESS__/g, '');
+    processedBuffer = processedBuffer.replace(/__METADATA__.*?__METADATA__/g, '');
+    
+    // Clean up any remaining standalone marker tags that might be malformed
+    processedBuffer = processedBuffer.replace(/__PROGRESS__/g, '');
+    processedBuffer = processedBuffer.replace(/__METADATA__/g, '');
+    
+    return { markers, remainingBuffer: processedBuffer };
+}
+
 /* helper for tests */
 export function makeStream(chunks: string[]): ReadableStream<Uint8Array> {
     return new ReadableStream({
@@ -209,4 +289,52 @@ export function makeStream(chunks: string[]): ReadableStream<Uint8Array> {
             ctrl.close();
         }
     });
+}
+
+/**
+ * Progress message types from the backend
+ */
+export interface ProgressMessage {
+    type: "progress" | "error" | "complete";
+    step?: string;
+    message: string;
+    progress?: number;
+    timestamp?: number;
+    data?: any;
+}
+
+/**
+ * Check if a parsed JSON payload is a progress message
+ */
+export function isProgressMessage(payload: any): payload is ProgressMessage {
+    return payload && 
+           typeof payload === 'object' && 
+           ['progress', 'error', 'complete'].includes(payload.type) &&
+           typeof payload.message === 'string';
+}
+
+/**
+ * Check if a parsed JSON payload is a thoughts/metadata message
+ */
+export function isThoughtsMessage(payload: any): boolean {
+    return payload && 
+           typeof payload === 'object' && 
+           (payload.conversation_id || payload.thoughts || payload.images_blob_urls);
+}
+
+/**
+ * Extract progress state from a progress message for the Answer component
+ */
+export function extractProgressState(progressMessage: ProgressMessage): {
+    step: string;
+    message: string;
+    progress?: number;
+    timestamp?: number;
+} {
+    return {
+        step: progressMessage.step || 'processing',
+        message: progressMessage.message,
+        progress: progressMessage.progress,
+        timestamp: progressMessage.timestamp
+    };
 }

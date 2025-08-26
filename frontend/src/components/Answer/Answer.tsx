@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Stack, IconButton } from "@fluentui/react";
 import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
@@ -31,12 +31,20 @@ if (userLanguage.startsWith("pt")) {
 } else if (userLanguage.startsWith("es")) {
     generating_answer_text = "Generando respuesta";
 } else {
-    generating_answer_text = "Generating response";
+    generating_answer_text = "Processing Query...";
+}
+
+interface ProgressState {
+    step: string;
+    message: string;
+    progress?: number;
+    timestamp?: number;
 }
 interface Props {
     answer: AskResponse;
     isSelected?: boolean;
     isGenerating?: boolean;
+    progressState?: ProgressState | null;
     onCitationClicked: (filePath: string, filename: string) => void;
     onThoughtProcessClicked: () => void;
     onSupportingContentClicked: () => void;
@@ -66,6 +74,7 @@ export const Answer = ({
     answer,
     isGenerating,
     isSelected,
+    progressState,
     onCitationClicked,
     onThoughtProcessClicked,
     onFollowupQuestionClicked,
@@ -171,21 +180,22 @@ export const Answer = ({
     );
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
-    if (answer.answer === "") {
+    
+    // Show fallback loading when no content and no progress state
+    if (answer.answer === "" && !progressState && isGenerating) {
         return (
-            <animated.div style={{ ...animatedStyles }}>
-                <Stack className={styles.answerContainer} verticalAlign="space-between">
-                    <AnswerIcon />
-                    <Stack.Item grow>
-                        <p className={styles.answerText}>
-                            {generating_answer_text}
-                            <span className={styles.loadingdots} />
-                        </p>
-                    </Stack.Item>
-                </Stack>
-            </animated.div>
+            <Stack className={styles.answerContainer} verticalAlign="space-between">
+                <AnswerIcon />
+                <Stack.Item grow>
+                    <p className={styles.answerText}>
+                        {generating_answer_text}
+                        <span className={styles.loadingdots} />
+                    </p>
+                </Stack.Item>
+            </Stack>
         );
     }
+    
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
             <Stack.Item>
@@ -203,6 +213,25 @@ export const Answer = ({
                     </div>
                 </Stack>
             </Stack.Item>
+
+            {progressState && (
+                <Stack.Item>
+                    <div className={styles.progressContainer}>
+                        <p className={styles.progressMessage}>
+                            {progressState.message}
+                        </p>
+                        {progressState.progress !== undefined && (
+                            <div className={styles.progressBarContainer}>
+                                <div 
+                                    className={styles.progressBar}
+                                    style={{ width: `${progressState.progress}%` }}
+                                />
+                            </div>
+                        )}
+                        <span className={styles.loadingdots} />
+                    </div>
+                </Stack.Item>
+            )}
 
             <Stack.Item>
                 <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
