@@ -1163,7 +1163,7 @@ def update_brand_by_id(brand_id, brand_name, brand_description, organization_id)
         raise ve
 
 
-def create_prod(name, description, category, brand_id, organization_id):
+def create_prod(name, description, industry, brand_id, organization_id):
     """
     Creates a new product entry in the Cosmos DB 'productsContainer'.
 
@@ -1183,7 +1183,7 @@ def create_prod(name, description, category, brand_id, organization_id):
         CosmosHttpResponseError: If there is an HTTP error with Cosmos DB.
         Exception: For any other errors during the operation.
     """
-    container = get_cosmos_container("productsContainer")
+    container = get_cosmos_container("products")
 
     try:
         if description is None:
@@ -1196,11 +1196,11 @@ def create_prod(name, description, category, brand_id, organization_id):
                 "id": str(uuid.uuid4()),
                 "name": name,
                 "description": description,
-                "brandId": brand_id,
+                "brand_id": brand_id,
                 "createdAt": datetime.now(timezone.utc).isoformat(),
                 "updatedAt": datetime.now(timezone.utc).isoformat(),
-                "organizationId": organization_id,
-                "category": category,
+                "organization_id": organization_id,
+                "industry": industry,
             }
         )
 
@@ -1217,17 +1217,17 @@ def create_prod(name, description, category, brand_id, organization_id):
         raise e
 
 
-def delete_prod_by_id(product_id):
+def delete_prod_by_id(product_id, organization_id):
     """
     Deletes a product from the container given the product_id
     """
-    container = get_cosmos_container("productsContainer")
+    container = get_cosmos_container("products")
 
     try:
         if not product_id:
             raise ValueError("product_id cannot be empty.")
 
-        container.delete_item(item=product_id, partition_key=product_id)
+        container.delete_item(item=product_id, partition_key=organization_id)
         return {"message": f"Product with id {product_id} deleted successfully."}
 
     except CosmosHttpResponseError as e:
@@ -1238,7 +1238,7 @@ def delete_prod_by_id(product_id):
         raise e
 
 
-def update_prod_by_id(product_id, name, category, brand_id, description):
+def update_prod_by_id(product_id, name, industry, brand_id, description, organization_id):
     """
     Updates a product in the Cosmos DB container by its ID.
     Parameters:
@@ -1255,12 +1255,12 @@ def update_prod_by_id(product_id, name, category, brand_id, description):
         Exception: For unexpected errors during the update process.
         AzureError: If there is an error with Azure Cosmos DB operations.
     """
-    container = get_cosmos_container("productsContainer")
+    container = get_cosmos_container("products")
     if not product_id:
         raise ValueError("product_id cannot be empty.")
 
     try:
-        current_product = container.read_item(item=product_id, partition_key=product_id)
+        current_product = container.read_item(item=product_id, partition_key=organization_id)
     except CosmosResourceNotFoundError as e:
         logging.warning(f"Product with id '{product_id}' not found in Cosmos DB.")
         raise NotFound
@@ -1276,7 +1276,7 @@ def update_prod_by_id(product_id, name, category, brand_id, description):
         current_product.update(
             {
                 "name": name,
-                "category": category,
+                "industry": industry,
                 "brand_id": brand_id,
                 "description": description,
             }
@@ -1318,14 +1318,14 @@ def get_prods_by_organization(organization_id):
     Returns:
         list: A list of product documents associated with the specified organization.
     """
-    container = get_cosmos_container("productsContainer")
+    container = get_cosmos_container("products")
 
     try:
-        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
-        parameters = [{"name": "@organizationId", "value": organization_id}]
+        query = "SELECT * FROM c WHERE c.organization_id = @organization_id"
+        parameters = [{"name": "@organization_id", "value": organization_id}]
         items = list(
             container.query_items(
-                query=query, parameters=parameters, enable_cross_partition_query=True
+                query=query, partition_key=organization_id, parameters=parameters, enable_cross_partition_query=True
             )
         )
 
