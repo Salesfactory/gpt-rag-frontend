@@ -4,7 +4,6 @@ import styles from "./UploadResourcescopy.module.css";
 import {
     Text,
     PrimaryButton,
-    MessageBarType,
     Spinner,
     DetailsList,
     DetailsListLayoutMode,
@@ -12,17 +11,15 @@ import {
     SelectionMode,
     IconButton,
     SearchBox,
-    DialogType
 } from "@fluentui/react";
 
-import { Download, Trash2, RefreshCw, Upload, Search, CirclePlus } from "lucide-react";
+import { Download, Trash2, RefreshCw, Upload, Search, CirclePlus, AlertTriangle } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { toast, ToastContainer } from "react-toastify";
 
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 import { formatDate, formatFileSize } from "../../utils/fileUtils";
-import { set } from "cypress/types/lodash";
 
 const ALLOWED_FILE_TYPES = [".pdf", ".csv", ".xlsx", ".xls"];
 const EXCEL_FILES = ["csv", "xls", "xlsx"];
@@ -64,6 +61,9 @@ const UploadResources: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [filteredItems, setFilteredItems] = useState<BlobItem[]>([]);
+
+    const [showExcelWarning, setShowExcelWarning] = useState<boolean>(false)
+    const [excelFiles, setExcelFiles] = useState<string[]>([])
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadModalRef = useRef<HTMLDivElement>(null);
@@ -133,10 +133,22 @@ const UploadResources: React.FC = () => {
                 fetchBlobData();
             } catch (error) {
                 console.error("Error deleting file:", error);
-                toast(`Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`, { type: "error" });
+                toast(`Error deleting file`, { type: "error" });
             }
         }
     };
+
+    const openUploadDialog = () => {
+        if (user?.role === "user") {
+            toast("Only Admins can Upload Files", { type: "warning" });
+        } else {
+            setIsUploadDialogOpen(true);
+            setSelectedFiles([]);
+            setUploadProgress(0);
+        }
+    };
+
+    const closeUploadDialog = () => { setIsUploadDialogOpen(false); setShowExcelWarning(false) }
 
     // #1
     const checkSpreadsheetFileLimit = (newFiles: File[]): boolean => {
@@ -169,6 +181,7 @@ const UploadResources: React.FC = () => {
         return { validFiles, invalidFiles };
     };
 
+    // # 3
     const handleUpload = useCallback(
         async (filesToUpload?: File[]) => {
             const duration = 35000;
@@ -203,7 +216,7 @@ const UploadResources: React.FC = () => {
                     await uploadSourceFileToBlob(files[i], user?.organizationId || "");
                 } catch (error) {
                     console.error("Error uploading file:", error);
-                    toast(`Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`, { type: "error" });
+                    toast(`Error uploading ${files[i].name}. Try again later`, { type: "error" });
                     setIsUploading(false);
                 }
             }
@@ -219,41 +232,56 @@ const UploadResources: React.FC = () => {
         [selectedFiles, fetchBlobData]
     );
 
-    const openUploadDialog = () => {
-        if (user?.role === "user") {
-            toast("Only Admins can Upload Files", { type: "warning" });
-        } else {
-            setIsUploadDialogOpen(true);
-            setSelectedFiles([]);
-            setUploadProgress(0);
+    const handleFiles = (fileArray: File[]) => {
+        const { validFiles, invalidFiles } = validateFiles(fileArray, ALLOWED_FILE_TYPES);
+
+
+        if (invalidFiles.length > 0) {
+            toast(`Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`, {
+                type: "warning"
+            });
         }
+
+        if (validFiles.length === 0) {
+            toast("No valid files to upload.", { type: "error" });
+            return;
+        }
+
+        if (!checkSpreadsheetFileLimit(validFiles)) {
+            toast(`File limit exceeded. Maximum allowed files: ${SPREADSHEET_FILE_LIMIT}`, { type: "error" });
+            return;
+        }
+
+        const excelFileNames = validFiles
+            .filter(file => {
+                const extension = file.name.split('.').pop()?.toLowerCase();
+                return extension === 'xls' || extension === 'xlsx';
+            })
+            .map(file => file.name);
+
+        if (excelFileNames.length > 0) {
+            setExcelFiles(excelFileNames);
+            setShowExcelWarning(true);
+            setSelectedFiles(validFiles)
+            return;
+        }
+
+        handleUpload(validFiles);
+    }
+
+    const handleExcelWarningConfirm = () => {
+        setShowExcelWarning(false);
+        handleUpload(selectedFiles)
     };
 
-    const closeUploadDialog = () => setIsUploadDialogOpen(false);
+    const handleExcelWarningCancel = () => {
+        setShowExcelWarning(false);
+        setExcelFiles([]);
+        setSelectedFiles([]);
+    };
 
     const onDrop = useCallback((acceptedFiles: any) => {
-            const { validFiles, invalidFiles } = validateFiles(acceptedFiles, ALLOWED_FILE_TYPES);
-
-            console.log(invalidFiles);
-            
-            if (invalidFiles.length > 0) {
-                toast(`Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`, {
-                    type: "warning"
-                });
-            }
-
-            if (validFiles.length === 0) {
-                toast("No valid files to upload.", { type: "error" });
-                return;
-            }
-
-            if (!checkSpreadsheetFileLimit(validFiles)) {
-                toast(`File limit exceeded. Maximum allowed files: ${SPREADSHEET_FILE_LIMIT}`, { type: "error" });
-                return;
-            }
-            
-            handleUpload(validFiles);
-
+        handleFiles(acceptedFiles)
     }, []);
 
     const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
@@ -497,7 +525,7 @@ const UploadResources: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                ) : (
+                                ) : !showExcelWarning ? (
                                     <div className={`${styles.dropzone} ${isDragActive ? styles.dropzone_active : ""}`} {...getRootProps()}>
                                         <input {...getInputProps()} />
 
@@ -509,9 +537,44 @@ const UploadResources: React.FC = () => {
                                                     Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}
                                                 </Text>
                                             </label>
-                                                <button type="button" onClick={open} className={styles.browse_button}>
-                                                    Browse Files
-                                                </button>
+                                            <button type="button" onClick={open} className={styles.browse_button}>
+                                                Browse Files
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className={styles.excelWarningContainer}>
+                                        <div className={styles.excelWarningHeader}>
+                                            <div className={styles.iconWrapper}>
+                                                <AlertTriangle className={styles.icon} />
+                                            </div>
+                                            <h4 className={styles.title}>Excel Files Detected</h4>
+                                        </div>
+
+                                        <div className={styles.warningBox}>
+                                            <p className={styles.message}>
+                                                <strong>Important:</strong> Only the first sheet of each Excel file will be processed.
+                                            </p>
+                                            <p className={styles.message}>
+                                                If your Excel files have multiple sheets, we recommend uploading one file per sheet for complete data processing.
+                                            </p>
+                                            <div className={styles.filesList}>
+                                                <strong>Excel files detected:</strong>
+                                                <ul>
+                                                    {excelFiles.map((fileName, index) => (
+                                                        <li key={index}>{fileName}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div className={styles.actions}>
+                                            <button onClick={handleExcelWarningCancel} className={styles.cancelButton}>
+                                                Cancel Upload
+                                            </button>
+                                            <button onClick={handleExcelWarningConfirm} className={styles.confirmButton}>
+                                                Continue Anyway
+                                            </button>
                                         </div>
                                     </div>
                                 )}
