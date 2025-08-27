@@ -1368,7 +1368,7 @@ def create_competitor(name, description, industry, organization_id):
         ValueError: If any of the required fields are missing.
         Exception: If there is an error with the Cosmos DB operation.
     """
-    container = get_cosmos_container("competitorsContainer")
+    container = get_cosmos_container("competitors")
 
     if description is None:
         description = ""
@@ -1398,65 +1398,19 @@ def create_competitor(name, description, industry, organization_id):
         raise e
 
 
-def associate_competitor_with_brand(brand_id, competitor_id):
-    """
-    Associates a competitor with a brand by creating a relationship entry in the 'brandsCompetitors' Cosmos DB container.
-
-    Args:
-        brand_id (str): The unique identifier of the brand.
-        competitor_id (str): The unique identifier of the competitor.
-
-    Raises:
-        ValueError: If either brand_id or competitor_id is not provided.
-        Exception: If there is an error during the Cosmos DB operation.
-    """
-    container = get_cosmos_container("brandsCompetitors")
-
-    if not brand_id or not competitor_id:
-        raise ValueError("Both brand_id and competitor_id must be provided.")
-
-    try:
-        container.create_item(
-            body={
-                "id": str(uuid.uuid4()),
-                "brand_id": brand_id,
-                "competitor_id": competitor_id,
-            }
-        )
-    except CosmosHttpResponseError as e:
-        logging.error(f"CosmosDB HTTP error while relating brand and competitor: {e}")
-        raise Exception("Error with Cosmos DB HTTP operation.") from e
-    except Exception as e:
-        logging.error(f"Error inserting data into Cosmos DB: {e}")
-        raise e
-
-
-def delete_competitor_by_id(competitor_id):
+def delete_competitor_by_id(competitor_id, organization_id):
     """
     Deletes a competitor from the container given the competitor_id
     """
-    container = get_cosmos_container("competitorsContainer")
-    relationship_container = get_cosmos_container("brandsCompetitors")
+    container = get_cosmos_container("competitors")
 
     try:
         if not competitor_id:
             raise ValueError("competitor_id cannot be empty.")
 
-        container.delete_item(item=competitor_id, partition_key=competitor_id)
+        container.delete_item(item=competitor_id, partition_key=organization_id)
         logging.info(f"Competitor with id {competitor_id} deleted successfully.")
-        # Also delete relationships with brands
-        relationships = list(
-            relationship_container.query_items(
-                query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
-                parameters=[{"name": "@competitor_id", "value": competitor_id}],
-                enable_cross_partition_query=True,
-            )
-        )
-        for relationship in relationships:
-            relationship_container.delete_item(
-                item=relationship["id"], partition_key=relationship["id"]
-            )
-        logging.info(f"Deleted relationships for competitor with id {competitor_id}.")
+        
         return {"message": f"Competitor with id {competitor_id} deleted successfully."}
 
     except CosmosHttpResponseError as e:
@@ -1471,8 +1425,7 @@ def get_competitors_by_organization(organization_id):
     """
     Get all competitors for a specific organization.
     """
-    container = get_cosmos_container("competitorsContainer")
-    relationship_container = get_cosmos_container("brandsCompetitors")
+    container = get_cosmos_container("competitors")
 
     competitors = list(
         container.query_items(
@@ -1482,33 +1435,23 @@ def get_competitors_by_organization(organization_id):
         )
     )
 
-    for competitor in competitors:
-        competitor["brands"] = list(
-            relationship_container.query_items(
-                query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
-                parameters=[{"name": "@competitor_id", "value": competitor["id"]}],
-                enable_cross_partition_query=True,
-            )
-        )
-
     return competitors
 
 
-def update_competitor_by_id(competitor_id, name, description, industry, brands_id):
+def update_competitor_by_id(competitor_id, name, description, industry, organization_id):
     """
     Updates an existing competitor document using its `id` as the partition key.
 
     Handles database errors and raises exceptions as needed.
     """
-    container = get_cosmos_container("competitorsContainer")
-    relationship_container = get_cosmos_container("brandsCompetitors")
+    container = get_cosmos_container("competitors")
 
     if not competitor_id:
         raise ValueError("competitor_id cannot be empty.")
 
     try:
         current_competitor = container.read_item(
-            item=competitor_id, partition_key=competitor_id
+            item=competitor_id, partition_key=organization_id
         )
     except CosmosResourceNotFoundError:
         logging.warning(f"Competitor with id '{competitor_id}' not found in Cosmos DB.")
@@ -1530,29 +1473,6 @@ def update_competitor_by_id(competitor_id, name, description, industry, brands_i
         current_competitor["updatedAt"] = datetime.now(timezone.utc).isoformat()
 
         container.upsert_item(current_competitor)
-
-        # verify, delete or add relationships with brands
-        existing_relationships = list(
-            relationship_container.query_items(
-                query="SELECT * FROM c WHERE c.competitor_id = @competitor_id",
-                parameters=[{"name": "@competitor_id", "value": competitor_id}],
-                enable_cross_partition_query=True,
-            )
-        )
-        existing_brand_ids = {rel["brand_id"] for rel in existing_relationships}
-        if brands_id:
-            for brand_id in brands_id:
-                if brand_id not in existing_brand_ids:
-                    associate_competitor_with_brand(brand_id, competitor_id)
-            # Delete relationships that are no longer valid
-            for relationship in existing_relationships:
-                if relationship["brand_id"] not in brands_id:
-                    relationship_container.delete_item(
-                        item=relationship["id"], partition_key=relationship["id"]
-                    )
-                    logging.info(
-                        f"Deleted relationship for brand_id {relationship['brand_id']} and competitor_id {competitor_id}."
-                    )
 
         logging.info(f"Competitor updated successfully: {current_competitor}")
         return current_competitor
@@ -1579,8 +1499,8 @@ def get_items_to_delete_by_brand(brand_id, organization_id):
 
     products = list(
         container.query_items(
-            query="SELECT * FROM c WHERE c.brandId = @brandId",
-            parameters=[{"name": "@brandId", "value": brand_id, "partition_key": organization_id}],
+            query="SELECT * FROM c WHERE c.brand_id = @brand_id",
+            parameters=[{"name": "@brand_id", "value": brand_id, "partition_key": organization_id}],
             enable_cross_partition_query=True,
         )
     )
