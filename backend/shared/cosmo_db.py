@@ -1500,7 +1500,8 @@ def get_items_to_delete_by_brand(brand_id, organization_id):
     products = list(
         container.query_items(
             query="SELECT * FROM c WHERE c.brand_id = @brand_id",
-            parameters=[{"name": "@brand_id", "value": brand_id, "partition_key": organization_id}],
+            parameters=[{"name": "@brand_id", "value": brand_id}],
+            partition_key=organization_id,
             enable_cross_partition_query=True,
         )
     )
@@ -1517,9 +1518,7 @@ def delete_brand_by_id(brand_id, organization_id):
     container = get_cosmos_container("brands")
 
     try:
-        container.delete_item(item=brand_id, partition_key=organization_id)
-        logging.info(f"Brand with id {brand_id} deleted successfully.")
-
+        
         items_to_delete = get_items_to_delete_by_brand(brand_id, organization_id)
 
         if not items_to_delete["products"]:
@@ -1533,10 +1532,11 @@ def delete_brand_by_id(brand_id, organization_id):
         # Delete products associated with the brand
         for product in items_to_delete["products"]:
             products_container.delete_item(
-                item=product["id"], partition_key=product["id"]
+                item=product["id"], partition_key=product["organization_id"]
             )
             logging.info(f"Product with id {product['id']} deleted successfully.")
-
+        container.delete_item(item=brand_id, partition_key=organization_id)
+        logging.info(f"Brand with id {brand_id} deleted successfully.")
         return {
             "message": f"Brand with id {brand_id} and associated items deleted successfully."
         }
