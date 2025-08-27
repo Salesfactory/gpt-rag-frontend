@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp } from "lucide-react";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -751,11 +751,24 @@ export default function VoiceCustomerPage() {
                                                 {brand.description && <p className={styles.itemDescription}>{brand.description}</p>}
                                             </div>
                                             <div className={styles.itemActions}>
-                                                <button onClick={() => handleEdit(brand, "brand")} className={styles.iconButton}>
-                                                    <Edit size={16} />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEdit(brand, "brand")}
+                                                    className={styles.iconButton}
+                                                    aria-label={`Edit brand ${brand.name}`}
+                                                    title={`Edit brand ${brand.name}`}
+                                                    >
+                                                    <Edit aria-hidden="true" size={16} />
                                                 </button>
-                                                <button onClick={() => handleDelete(brand, "brand")} className={`${styles.iconButton} ${styles.deleteButton}`}>
-                                                    <Trash2 size={16} />
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDelete(brand, "brand")}
+                                                    className={`${styles.iconButton} ${styles.deleteButton}`}
+                                                    aria-label={`Delete brand ${brand.name}`}
+                                                    title={`Delete brand ${brand.name}`}
+                                                    >
+                                                    <Trash2 aria-hidden="true" size={16} />
                                                 </button>
                                             </div>
                                         </div>
@@ -804,14 +817,23 @@ export default function VoiceCustomerPage() {
                                                     {product.description && <p className={styles.itemDescription}>{product.description}</p>}
                                                 </div>
                                                 <div className={styles.itemActions}>
-                                                    <button onClick={() => handleEdit(product, "product")} className={styles.iconButton}>
-                                                        <Edit size={16} />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEdit(product, "product")}
+                                                        className={styles.iconButton}
+                                                        aria-label={`Edit product ${product.name}`}
+                                                        title={`Edit product ${product.name}`}
+                                                        >
+                                                        <Edit aria-hidden="true" size={16} />
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={() => handleDelete(product, "product")}
                                                         className={`${styles.iconButton} ${styles.deleteButton}`}
-                                                    >
-                                                        <Trash2 size={16} />
+                                                        aria-label={`Delete product ${product.name}`}
+                                                        title={`Delete product ${product.name}`}
+                                                        >
+                                                        <Trash2 aria-hidden="true" size={16} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -863,14 +885,23 @@ export default function VoiceCustomerPage() {
                                                     {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                                 </div>
                                                 <div className={styles.itemActions}>
-                                                    <button onClick={() => handleEdit(c, "competitor")} className={styles.iconButton}>
-                                                        <Edit size={16} />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEdit(c, "competitor")}
+                                                        className={styles.iconButton}
+                                                        aria-label={`Edit competitor ${c.name}`}
+                                                        title={`Edit competitor ${c.name}`}
+                                                        >
+                                                        <Edit size={16} aria-hidden="true" focusable="false" />
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={() => handleDelete(c, "competitor")}
                                                         className={`${styles.iconButton} ${styles.deleteButton}`}
-                                                    >
-                                                        <Trash2 size={16} />
+                                                        aria-label={`Delete competitor ${c.name}`}
+                                                        title={`Delete competitor ${c.name}`}
+                                                        >
+                                                        <Trash2 size={16} aria-hidden="true" focusable="false" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -902,8 +933,14 @@ export default function VoiceCustomerPage() {
                                     className={styles.searchInput}
                                 />
                                 {searchQuery && (
-                                    <button onClick={() => setSearchQuery("")} className={styles.clearSearchButton}>
-                                        <X size={16} />
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery("")}
+                                        className={styles.clearSearchButton}
+                                        aria-label="Clear search"
+                                        title="Clear search"
+                                        >
+                                        <X size={16} aria-hidden="true" focusable="false" />
                                     </button>
                                 )}
                             </div>
@@ -1020,6 +1057,7 @@ export default function VoiceCustomerPage() {
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{editingBrand ? "Edit Brand" : "Add Brand to Track"}</h3>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setShowBrandModal(false);
                                     setNewBrand({ name: "", description: "" });
@@ -1027,6 +1065,8 @@ export default function VoiceCustomerPage() {
                                     setEditingBrand(null);
                                 }}
                                 className={styles.modalCloseButton}
+                                aria-label="Close brand modal"
+                                title="Close"
                             >
                                 <X size={24} />
                             </button>
@@ -1099,6 +1139,7 @@ export default function VoiceCustomerPage() {
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{editingProduct ? "Edit Product" : "Add Product to Track"}</h3>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setShowProductModal(false);
                                     setNewProduct({ name: "", category: "", description: "", brandId: "" });
@@ -1106,6 +1147,8 @@ export default function VoiceCustomerPage() {
                                     setEditingProduct(null);
                                 }}
                                 className={styles.modalCloseButton}
+                                aria-label="Close product modal"
+                                title="Close"
                             >
                                 <X size={24} />
                             </button>
@@ -1215,6 +1258,7 @@ export default function VoiceCustomerPage() {
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{editingCompetitor ? "Edit Competitor" : "Add Competitor to Track"}</h3>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setShowCompetitorModal(false);
                                     setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
@@ -1222,8 +1266,10 @@ export default function VoiceCustomerPage() {
                                     setEditingCompetitor(null);
                                 }}
                                 className={styles.modalCloseButton}
-                            >
-                                <X size={24} />
+                                aria-label="Close competitor modal"
+                                title="Close"
+                                >
+                                <X size={24} aria-hidden="true" focusable="false" />
                             </button>
                         </div>
                         <div className={styles.modalContent}>
@@ -1335,9 +1381,12 @@ export default function VoiceCustomerPage() {
                             <div className={styles.deleteModalHeader}>
                                 <h3 className={styles.deleteModalTitle}>Delete {deleteConfirm.type}</h3>
                                 <button
+                                    type="button"
                                     onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })}
                                     className={styles.modalCloseButton}
                                     style={{ color: "#9ca3af" }}
+                                    aria-label="Close delete dialog"
+                                    title="Close"
                                 >
                                     <X size={24} />
                                 </button>
