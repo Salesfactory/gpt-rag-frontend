@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import styles from "./UploadResourcescopy.module.css";
+
 import {
     Text,
     PrimaryButton,
@@ -13,16 +14,19 @@ import {
     SearchBox,
     DialogType
 } from "@fluentui/react";
+
 import { Download, Trash2, RefreshCw, Upload, Search, CirclePlus } from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import { toast, ToastContainer } from "react-toastify";
+
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
-import { toast, ToastContainer } from "react-toastify";
-import { useDropzone } from "react-dropzone";
+import { formatDate, formatFileSize } from "../../utils/fileUtils";
+import { set } from "cypress/types/lodash";
 
 const ALLOWED_FILE_TYPES = [".pdf", ".csv", ".xlsx", ".xls"];
 const EXCEL_FILES = ["csv", "xls", "xlsx"];
 
-// Interface for blob data
 interface BlobItem {
     name: string;
     size: number;
@@ -33,45 +37,230 @@ interface BlobItem {
     metadata?: Record<string, string>;
 }
 
+const processingMessages = [
+    "**Train a neural network to read your files.** We won't build a digital brain that learns patterns from millions of examples, then gets confused by your unique formatting.",
+    "**Pit two AI systems against each other.** We won't create fake data by having one AI generate content while another tries to spot the fakes—like a never-ending game of digital forgery.",
+    "**Slice your images into tiny pieces.** We won't run algorithms that examine every pixel, looking for edges and patterns like a detective with a magnifying glass.",
+    "**Apply fuzzy logic to your numbers.** We won't use rules that work with 'maybe' and 'sort of'—turning clear data into digital soup.",
+    "**Run machine learning experiments.** We won't split your data into training sets, test different models, and pick winners like hosting a science fair for algorithms.",
+    "**Hunt for perfect settings.** We won't spend hours testing thousands of parameter combinations, like tuning a radio to find the perfect station that doesn't exist.",
+    "**Memorize your specific files too well.** We won't create a system so tailored to your data that it fails the moment it sees anything new—like a student who only knows yesterday's test answers.",
+    "**Set up reward systems for AI agents.** We won't create digital entities that learn by trial and error, wandering through your files like lost tourists collecting stamps.",
+    "**Break your text into subword pieces.** We won't tokenize every sentence and run it through layers of attention mechanisms that decide which words matter most—like having a committee debate every phrase."
+];
+
 const UploadResources: React.FC = () => {
     const { user } = useAppContext();
+
+    const MAX_FILENAME_LENGTH = 48;
+    const SPREADSHEET_FILE_LIMIT = 20;
 
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [isUploading, setIsUploading] = useState<boolean>(false);
-    const [uploadStatus, setUploadStatus] = useState<{
-        message: string;
-        type: MessageBarType;
-    } | null>(null);
-    const [blobUrls, setBlobUrls] = useState<string[]>([]);
-    const [isDragging, setIsDragging] = useState<boolean>(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentMessage, setCurrentMessage] = useState<number>(0);
-    // States for file list view
+
     const [blobItems, setBlobItems] = useState<BlobItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [filteredItems, setFilteredItems] = useState<BlobItem[]>([]);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadModalRef = useRef<HTMLDivElement>(null);
 
-    // Dialog state
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
-    const MAX_FILENAME_LENGTH = 48;
-    const SPREADSHEET_FILE_LIMIT = 20;
 
-    // Fun processing messages
-    const processingMessages = [
-        "**Train a neural network to read your files.** We won't build a digital brain that learns patterns from millions of examples, then gets confused by your unique formatting.",
-        "**Pit two AI systems against each other.** We won't create fake data by having one AI generate content while another tries to spot the fakes—like a never-ending game of digital forgery.",
-        "**Slice your images into tiny pieces.** We won't run algorithms that examine every pixel, looking for edges and patterns like a detective with a magnifying glass.",
-        "**Apply fuzzy logic to your numbers.** We won't use rules that work with 'maybe' and 'sort of'—turning clear data into digital soup.",
-        "**Run machine learning experiments.** We won't split your data into training sets, test different models, and pick winners like hosting a science fair for algorithms.",
-        "**Hunt for perfect settings.** We won't spend hours testing thousands of parameter combinations, like tuning a radio to find the perfect station that doesn't exist.",
-        "**Memorize your specific files too well.** We won't create a system so tailored to your data that it fails the moment it sees anything new—like a student who only knows yesterday's test answers.",
-        "**Set up reward systems for AI agents.** We won't create digital entities that learn by trial and error, wandering through your files like lost tourists collecting stamps.",
-        "**Break your text into subword pieces.** We won't tokenize every sentence and run it through layers of attention mechanisms that decide which words matter most—like having a committee debate every phrase."
-    ];
-    // Define columns for DetailsList
+    const fetchBlobData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await getSourceFileFromBlob(user?.organizationId || "");
+            const blobItems = response.data.map((item: any) => ({
+                name: item.name,
+                size: item.size,
+                created_on: item.created_on,
+                content_type: item.content_type,
+                url: item.url
+            }));
+            setBlobItems(blobItems);
+            setFilteredItems(blobItems);
+        } catch (error) {
+            console.error("Error fetching blob data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchBlobData();
+    }, [fetchBlobData]);
+
+    const filterItems = useCallback(() => {
+        if (!searchQuery.trim()) {
+            setFilteredItems(blobItems);
+        } else {
+            const query = searchQuery.toLowerCase();
+            const filtered = blobItems.filter(item => item.name.toLowerCase().includes(query) || item.content_type.toLowerCase().includes(query));
+            setFilteredItems(filtered);
+        }
+    }, [searchQuery, blobItems]);
+
+    useEffect(() => {
+        filterItems();
+    }, [searchQuery, blobItems, filterItems]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (uploadModalRef.current && !uploadModalRef.current.contains(event.target as Node)) {
+                closeUploadDialog();
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const handleDownload = (item: BlobItem) => {
+        const organizationId = user?.organizationId;
+        const downloadUrl = `/api/download?organizationId=${organizationId}&blobName=${encodeURIComponent(item.name)}`;
+        window.open(downloadUrl, "_blank");
+    };
+
+    const handleDelete = async (item: BlobItem) => {
+        if (window.confirm(`Are you sure you want to delete ${item.name.split("/").pop()}? (The file will be deleted permanently in 1 day)`)) {
+            try {
+                await deleteSourceFileFromBlob(item.name);
+                fetchBlobData();
+            } catch (error) {
+                console.error("Error deleting file:", error);
+                toast(`Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`, { type: "error" });
+            }
+        }
+    };
+
+    // #1
+    const checkSpreadsheetFileLimit = (newFiles: File[]): boolean => {
+        const existingSpreadsheetCount = blobItems.filter(item => {
+            const ext = item.name.split(".").pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+        const newSpreadsheetCount = newFiles.filter(file => {
+            const ext = file.name.split(".").pop()?.toLowerCase();
+            return EXCEL_FILES.includes(ext || "");
+        }).length;
+
+        if (existingSpreadsheetCount + newSpreadsheetCount > SPREADSHEET_FILE_LIMIT) {
+            toast(`Spreadsheet file limit reached: You can only upload up to ${SPREADSHEET_FILE_LIMIT} .csv, .xls, or .xlsx files per organization.`, {
+                type: "error"
+            });
+            return false;
+        }
+        return true;
+    };
+
+    // #2
+    const validateFiles = (files: File[], allowedTypes: string[]) => {
+        const invalidFiles = files.filter(file => {
+            const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+            return !allowedTypes.includes(ext);
+        });
+        const validFiles = files.filter(f => !invalidFiles.includes(f));
+
+        return { validFiles, invalidFiles };
+    };
+
+    const handleUpload = useCallback(
+        async (filesToUpload?: File[]) => {
+            const duration = 35000;
+            const interval = 100;
+            const totalSteps = duration / interval;
+            const messageInterval = duration / processingMessages.length;
+
+            let step = 0;
+            let messageIndex = 0;
+
+            const files = filesToUpload || selectedFiles;
+            if (files.length === 0) return;
+
+            setSelectedFiles(files);
+            setIsUploading(true);
+            setUploadProgress(0);
+
+            const timer = setInterval(() => {
+                step++;
+                const elapsedTime = step * interval;
+                if (elapsedTime >= (messageIndex + 1) * messageInterval) {
+                    messageIndex = (messageIndex + 1) % processingMessages.length;
+                    setCurrentMessage(messageIndex);
+                }
+                if (step >= totalSteps) clearInterval(timer);
+            }, interval);
+
+            for (let i = 0; i < files.length; i++) {
+                try {
+                    const fileProgress = (i / files.length) * 100;
+                    setUploadProgress(fileProgress);
+                    await uploadSourceFileToBlob(files[i], user?.organizationId || "");
+                } catch (error) {
+                    console.error("Error uploading file:", error);
+                    toast(`Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`, { type: "error" });
+                    setIsUploading(false);
+                }
+            }
+
+            setUploadProgress(100);
+            toast("Successfully uploaded files", { type: "success" });
+            setIsUploading(false);
+            setSelectedFiles([]);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            setIsUploadDialogOpen(false)
+            fetchBlobData();
+        },
+        [selectedFiles, fetchBlobData]
+    );
+
+    const openUploadDialog = () => {
+        if (user?.role === "user") {
+            toast("Only Admins can Upload Files", { type: "warning" });
+        } else {
+            setIsUploadDialogOpen(true);
+            setSelectedFiles([]);
+            setUploadProgress(0);
+        }
+    };
+
+    const closeUploadDialog = () => setIsUploadDialogOpen(false);
+
+    const onDrop = useCallback((acceptedFiles: any) => {
+            const { validFiles, invalidFiles } = validateFiles(acceptedFiles, ALLOWED_FILE_TYPES);
+
+            console.log(invalidFiles);
+            
+            if (invalidFiles.length > 0) {
+                toast(`Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`, {
+                    type: "warning"
+                });
+            }
+
+            if (validFiles.length === 0) {
+                toast("No valid files to upload.", { type: "error" });
+                return;
+            }
+
+            if (!checkSpreadsheetFileLimit(validFiles)) {
+                toast(`File limit exceeded. Maximum allowed files: ${SPREADSHEET_FILE_LIMIT}`, { type: "error" });
+                return;
+            }
+            
+            handleUpload(validFiles);
+
+    }, []);
+
+    const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+        onDrop,
+        noClick: true,
+    });
+
     const columns: IColumn[] = [
         {
             key: "files",
@@ -83,14 +272,11 @@ const UploadResources: React.FC = () => {
             onRender: (item: BlobItem) => {
                 const fileName = item.name.split("/").pop() || "";
                 const fileExtension = fileName.split(".").pop()?.toLowerCase();
-
-                const maxLength = MAX_FILENAME_LENGTH;
                 let displayName = fileName;
-                if (fileName.length > maxLength) {
+                if (fileName.length > MAX_FILENAME_LENGTH) {
                     const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
-                    displayName = fileName.substring(0, maxLength - ext.length - 3) + "..." + ext;
+                    displayName = fileName.substring(0, MAX_FILENAME_LENGTH - ext.length - 3) + "..." + ext;
                 }
-
                 return (
                     <div className={styles.file_name_cell}>
                         <div className={styles.file_info_row}>
@@ -112,336 +298,23 @@ const UploadResources: React.FC = () => {
             maxWidth: 70,
             isResizable: false,
             isPadded: false,
-            onRender: (item: BlobItem) => {
-                return (
-                    <div className={styles.actions_cell}>
-                        <IconButton title="Download" ariaLabel="Download" onClick={() => handleDownload(item)}>
-                            <Download className={styles.trashIcon} />
-                        </IconButton>
-                        <IconButton title="Delete" ariaLabel="Delete" onClick={() => handleDelete(item)}>
-                            <Trash2 className={styles.trashIcon} />
-                        </IconButton>
-                    </div>
-                );
-            }
+            onRender: (item: BlobItem) => (
+                <div className={styles.actions_cell}>
+                    <IconButton title="Download" ariaLabel="Download" onClick={() => handleDownload(item)}>
+                        <Download className={styles.trashIcon} />
+                    </IconButton>
+                    <IconButton title="Delete" ariaLabel="Delete" onClick={() => handleDelete(item)}>
+                        <Trash2 className={styles.trashIcon} />
+                    </IconButton>
+                </div>
+            )
         }
     ];
 
-    // Format file size
-    const formatFileSize = (bytes: number): string => {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-        return (bytes / 1048576).toFixed(1) + " MB";
-    };
-
-    // Format date
-    const formatDate = (dateString: string): string => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    };
-
-    // Handle download
-    const handleDownload = (item: BlobItem) => {
-        const organizationId = user?.organizationId;
-
-        const downloadUrl = `/api/download?organizationId=${organizationId}&blobName=${encodeURIComponent(item.name)}`;
-
-        window.open(downloadUrl, "_blank");
-    };
-
-    // Handle delete
-    const handleDelete = async (item: BlobItem) => {
-        if (window.confirm(`Are you sure you want to delete ${item.name.split("/").pop()}? (The file will be deleted permanently in 1 day)`)) {
-            try {
-                await deleteSourceFileFromBlob(item.name);
-                setUploadStatus({
-                    message: `File ${item.name.split("/").pop()} deleted successfully`,
-                    type: MessageBarType.success
-                });
-                // Refresh the blob list
-                fetchBlobData();
-            } catch (error) {
-                console.error("Error deleting file:", error);
-                setUploadStatus({
-                    message: `Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`,
-                    type: MessageBarType.error
-                });
-            }
-        }
-    };
-
-    // Fetch blob data
-    const fetchBlobData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const response = await getSourceFileFromBlob(user?.organizationId || "");
-            const blobItems = response.data.map((item: any) => ({
-                name: item.name,
-                size: item.size,
-                created_on: item.created_on,
-                content_type: item.content_type,
-                url: item.url
-            }));
-            setBlobItems(blobItems);
-            setFilteredItems(blobItems);
-        } catch (error) {
-            console.error("Error fetching blob data:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    // Filter items based on search query
-    const filterItems = useCallback(() => {
-        if (!searchQuery.trim()) {
-            setFilteredItems(blobItems);
-        } else {
-            const query = searchQuery.toLowerCase();
-            const filtered = blobItems.filter(item => item.name.toLowerCase().includes(query) || item.content_type.toLowerCase().includes(query));
-            setFilteredItems(filtered);
-        }
-    }, [searchQuery, blobItems]);
-
-    // Call filterItems when search query or blob items change
-    useEffect(() => {
-        filterItems();
-    }, [searchQuery, blobItems, filterItems]);
-
-    // Fetch blob data on component mount
-    useEffect(() => {
-        fetchBlobData();
-    }, [fetchBlobData]);
-
-    // Refresh blob list after successful upload
-    useEffect(() => {
-        if (uploadStatus?.type === MessageBarType.success) {
-            fetchBlobData();
-            // Close dialog on successful upload
-            setIsUploadDialogOpen(false);
-        }
-    }, [uploadStatus, fetchBlobData]);
-
-    // Check spreadsheet file limit
-    const checkSpreadsheetFileLimit = (newFiles: File[]): boolean => {
-        const existingSpreadsheetCount = blobItems.filter(item => {
-            const ext = item.name.split(".").pop()?.toLowerCase();
-            return EXCEL_FILES.includes(ext || "");
-        }).length;
-        const newSpreadsheetCount = newFiles.filter(file => {
-            const ext = file.name.split(".").pop()?.toLowerCase();
-            return EXCEL_FILES.includes(ext || "");
-        }).length;
-        if (existingSpreadsheetCount + newSpreadsheetCount > SPREADSHEET_FILE_LIMIT) {
-            setUploadStatus({
-                message: `Spreadsheet file limit reached: You can only upload up to ${SPREADSHEET_FILE_LIMIT} .csv, .xls, or .xlsx files per organization. (${existingSpreadsheetCount} already uploaded, ${newSpreadsheetCount} selected)`,
-                type: MessageBarType.error
-            });
-            toast(`Spreadsheet file limit reached: You can only upload up to ${SPREADSHEET_FILE_LIMIT} .csv, .xls, or .xlsx files per organization.`, {
-                type: "error"
-            });
-            return false;
-        }
-        return true;
-    };
-
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (!files) return;
-
-        // Convert FileList to array for easier manipulation
-        const fileArray = Array.from(files);
-
-        // Validate file types
-        const invalidFiles = fileArray.filter(file => {
-            const extension = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-            return !ALLOWED_FILE_TYPES.includes(extension);
-        });
-
-        if (invalidFiles.length > 0) {
-            setUploadStatus({
-                message: `Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`,
-                type: MessageBarType.error
-            });
-            return;
-        }
-
-        // Use helper for spreadsheet file limit
-        if (!checkSpreadsheetFileLimit(fileArray)) return;
-
-        setSelectedFiles(fileArray);
-        setUploadStatus(null);
-        handleUpload(fileArray);
-    };
-
-    const handleUpload = useCallback(
-        async (filesToUpload?: File[]) => {
-            const files = filesToUpload || selectedFiles;
-            if (files.length === 0) {
-                console.log("No files to upload");
-                return;
-            }
-
-            const invalidFiles = files.filter(file => {
-                const extension = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-                return !ALLOWED_FILE_TYPES.includes(extension);
-            });
-
-            if (invalidFiles.length > 0) {
-                setUploadStatus({
-                    message: `Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`,
-                    type: MessageBarType.error
-                });
-                toast("Error: Invalid file type(s) selected.", { type: "warning" });
-                return;
-            }
-
-            setIsUploading(true);
-            setUploadProgress(0);
-            setUploadStatus(null);
-
-            const urls: string[] = [];
-            let successful = 0;
-
-            // Start the fun processing animation
-            const duration = 35000; // 35 seconds
-            const interval = 100; // Update every 100ms
-            const totalSteps = duration / interval;
-            const progressIncrement = 100 / totalSteps;
-            const messageInterval = duration / processingMessages.length;
-
-            let step = 0;
-            let messageIndex = 0;
-
-            const timer = setInterval(() => {
-                step++;
-
-                // Change message every messageInterval milliseconds
-                const elapsedTime = step * interval;
-                if (elapsedTime >= (messageIndex + 1) * messageInterval) {
-                    messageIndex = (messageIndex + 1) % processingMessages.length; // 🔄 Infinite loop
-                    setCurrentMessage(messageIndex);
-                }
-
-                if (step >= totalSteps) {
-                    clearInterval(timer);
-                }
-            }, interval);
-
-            for (let i = 0; i < files.length; i++) {
-                try {
-                    // Calculate progress for each file
-                    const fileProgress = (i / files.length) * 100;
-                    setUploadProgress(fileProgress);
-
-                    // Upload the file with organization ID
-                    const result = await uploadSourceFileToBlob(files[i], user?.organizationId || "");
-
-                    if (result && result.blob_url) {
-                        urls.push(result.blob_url);
-                        successful++;
-                    }
-                } catch (error) {
-                    console.error("Error uploading file:", error);
-                    const error_message = `Error uploading ${files[i].name}: ${error instanceof Error ? error.message : "Unknown error"}`;
-                    setUploadStatus({
-                        message: error_message,
-                        type: MessageBarType.error
-                    });
-                    toast("Error: File upload failed. Please try again.", { type: "error" });
-                    setIsUploading(false);
-                    return;
-                }
-            }
-
-            // All files uploaded successfully
-            setUploadProgress(100);
-            setBlobUrls(urls);
-            setUploadStatus({
-                message: `Successfully uploaded ${successful} file${successful !== 1 ? "s" : ""}`,
-                type: MessageBarType.success
-            });
-            toast("Your file has been uploaded successfully!", {
-                type: "success"
-            });
-            setIsUploading(false);
-            setSelectedFiles([]);
-
-            // Reset the file input
-            if (fileInputRef.current) fileInputRef.current.value = "";
-
-            // Refresh the blob list
-            fetchBlobData();
-        },
-        [selectedFiles, fetchBlobData]
-    );
-
-    const clearSelection = () => {
-        setSelectedFiles([]);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-    };
-
-    // Open upload dialog
-    const openUploadDialog = () => {
-        if (user?.role === "user") {
-            toast("Only Admins can Upload Files", {
-                type: "warning"
-            });
-        } else {
-            setIsUploadDialogOpen(true);
-            setSelectedFiles([]);
-            setUploadStatus(null);
-            setUploadProgress(0);
-        }
-    };
-
-    // Close upload dialog
-    const closeUploadDialog = () => {
-        setIsUploadDialogOpen(false);
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (uploadModalRef.current && !uploadModalRef.current.contains(event.target as Node)) {
-                closeUploadDialog();
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
-
-    // Dialog content type
-    const dialogContentProps = {
-        type: DialogType.normal,
-        title: "Upload Files",
-        closeButtonAriaLabel: "Close",
-        subText: "Select files to upload to blob storage"
-    };
-
     function BoldMessage({ text }: { text: string }) {
-        // We split the text using regex, preserving the content within **
         const parts = text.split(/\*\*(.*?)\*\*/g);
-
-        return (
-            <>
-                {parts.map((part, index) =>
-                    index % 2 === 1 ? (
-                        <strong key={index}>{part}</strong> // This is what was between **
-                    ) : (
-                        <span key={index}>{part}</span>
-                    )
-                )}
-            </>
-        );
+        return <>{parts.map((part, index) => (index % 2 === 1 ? <strong key={index}>{part}</strong> : <span key={index}>{part}</span>))}</>;
     }
-
-    const onDrop = useCallback((acceptedFiles: any) => {
-        setSelectedFiles(acceptedFiles);
-        handleUpload(acceptedFiles);
-    }, []);
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
     return (
         <div className={styles.page_container}>
@@ -626,33 +499,19 @@ const UploadResources: React.FC = () => {
                                     </div>
                                 ) : (
                                     <div className={`${styles.dropzone} ${isDragActive ? styles.dropzone_active : ""}`} {...getRootProps()}>
-                                        <input
-                                            {...getInputProps()}
-                                            type="file"
-                                            id="file-upload"
-                                            ref={fileInputRef}
-                                            multiple
-                                            className={styles.file_input}
-                                            accept={ALLOWED_FILE_TYPES.join(",")}
-                                        />
+                                        <input {...getInputProps()} />
+
                                         <div>
-                                            <label htmlFor="file-upload" className={styles.file_label}>
+                                            <label className={styles.file_label}>
                                                 <Upload size={48} className={styles.upload_icon} />
-                                                <Text variant="large">{isDragging ? "Drop files here" : "Drag files here or click to browse"}</Text>
+                                                <Text variant="large">{isDragActive ? "Drop files here" : "Drag files here or click to browse"}</Text>
                                                 <Text variant="medium" color="#4B5563">
                                                     Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}
                                                 </Text>
                                             </label>
-                                            <label className={styles.browse_button}>
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    accept=".docx,.xls,.xlsx,.csv,.pdf"
-                                                    onChange={handleFileSelect}
-                                                    className={styles.hidden_file_input}
-                                                />
-                                                Browse Files
-                                            </label>
+                                                <button type="button" onClick={open} className={styles.browse_button}>
+                                                    Browse Files
+                                                </button>
                                         </div>
                                     </div>
                                 )}

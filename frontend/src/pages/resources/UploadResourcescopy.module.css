@@ -188,8 +188,8 @@
   border-radius: 0.5rem; /* rounded-lg */
   cursor: pointer;
   transition: background-color 0.2s; /* transition-colors */
-  outline: none; /* focus:outline-none */
   margin-top: 1rem;
+  border: none;
 }
 
 .browse_button:hover {
