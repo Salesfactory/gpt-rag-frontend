@@ -1018,7 +1018,7 @@ def get_company_list():
 
 def create_new_brand(brand_name, brand_description, organization_id):
     """
-    Creates a new brand entry in the Cosmos DB 'brandsContainer'.
+    Creates a new brand entry in the Cosmos DB 'brands' container.
 
     Args:
         brand_name (str): The name of the brand to create.
@@ -1033,7 +1033,7 @@ def create_new_brand(brand_name, brand_description, organization_id):
         RuntimeError: If the brand was not created in Cosmos DB.
         Exception: For errors related to Cosmos DB operations.
     """
-    container = get_cosmos_container("brandsContainer")
+    container = get_cosmos_container("brands")
     try:
         if not brand_name or not organization_id:
             raise ValueError("Brand name and organization ID cannot be empty.")
@@ -1044,7 +1044,7 @@ def create_new_brand(brand_name, brand_description, organization_id):
                 "id": str(uuid.uuid4()),
                 "name": brand_name,
                 "description": brand_description,
-                "organizationId": organization_id,
+                "organization_id": organization_id,
                 "createdAt": datetime.now(timezone.utc).isoformat(),
                 "updatedAt": datetime.now(timezone.utc).isoformat(),
             }
@@ -1076,14 +1076,14 @@ def get_brands_by_organization(organization_id):
         NotFound: If no brands are found for the specified organization.
         Exception: For any unexpected errors during retrieval.
     """
-    container = get_cosmos_container("brandsContainer")
+    container = get_cosmos_container("brands")
 
     try:
-        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
-        parameters = [{"name": "@organizationId", "value": organization_id}]
+        query = "SELECT * FROM c WHERE c.organization_id = @organization_id"
+        parameters = [{"name": "@organization_id", "value": organization_id}]
         items = list(
             container.query_items(
-                query=query, parameters=parameters, enable_cross_partition_query=True
+                query=query, parameters=parameters, partition_key=organization_id, enable_cross_partition_query=True
             )
         )
 
@@ -1107,16 +1107,16 @@ def get_brands_by_organization(organization_id):
         return []
 
 
-def update_brand_by_id(brand_id, brand_name, brand_description):
+def update_brand_by_id(brand_id, brand_name, brand_description, organization_id):
     """
     Updates an existing brand document using its `id` as the partition key.
 
     Handles database errors and raises exceptions as needed.
     """
-    container = get_cosmos_container("brandsContainer")
+    container = get_cosmos_container("brands")
 
     try:
-        current_brand = container.read_item(item=brand_id, partition_key=brand_id)
+        current_brand = container.read_item(item=brand_id, partition_key=organization_id)
 
     except CosmosResourceNotFoundError:
         logging.warning(f"Brand with id '{brand_id}' not found in Cosmos DB.")
@@ -1571,85 +1571,44 @@ def update_competitor_by_id(competitor_id, name, description, industry, brands_i
         raise ve
 
 
-def get_items_to_delete_by_brand(brand_id):
+def get_items_to_delete_by_brand(brand_id, organization_id):
     """
-    Retrieves all products and their associated competitors only if they exist for a specific brand.
+    Retrieves all products only if they exist for a specific brand.
     """
-    container = get_cosmos_container("productsContainer")
-    relationship_container = get_cosmos_container("brandsCompetitors")
+    container = get_cosmos_container("products")
 
     products = list(
         container.query_items(
             query="SELECT * FROM c WHERE c.brandId = @brandId",
-            parameters=[{"name": "@brandId", "value": brand_id}],
+            parameters=[{"name": "@brandId", "value": brand_id, "partition_key": organization_id}],
             enable_cross_partition_query=True,
         )
     )
-
-    competitors = list(
-        relationship_container.query_items(
-            query="SELECT * FROM c WHERE c.brand_id = @brand_id",
-            parameters=[{"name": "@brand_id", "value": brand_id}],
-            enable_cross_partition_query=True,
-        )
-    )
-
-    for competitor in competitors:
-        competitor_id = competitor["competitor_id"]
-
-        # find all brands associated with this competitor
-        query = """
-            SELECT DISTINCT c.brand_id
-            FROM c
-            WHERE c.competitor_id = @competitor_id
-        """
-        parameters = [{"name": "@competitor_id", "value": competitor_id}]
-        brands = list(
-            relationship_container.query_items(
-                query=query, parameters=parameters, enable_cross_partition_query=True
-            )
-        )
-
-        # If the competitor is associated with more than one brand, remove it from the list
-        if len(brands) > 1:
-            competitors.remove(competitor)
 
     return {
-        "competitors": competitors,
         "products": products,
     }
 
 
-def delete_brand_by_id(brand_id):
+def delete_brand_by_id(brand_id, organization_id):
     """
     Deletes a specific brand document using its `id` as partition key.
     """
-    container = get_cosmos_container("brandsContainer")
+    container = get_cosmos_container("brands")
 
     try:
-        container.delete_item(item=brand_id, partition_key=brand_id)
+        container.delete_item(item=brand_id, partition_key=organization_id)
         logging.info(f"Brand with id {brand_id} deleted successfully.")
 
-        items_to_delete = get_items_to_delete_by_brand(brand_id)
+        items_to_delete = get_items_to_delete_by_brand(brand_id, organization_id)
 
-        if not items_to_delete["products"] and not items_to_delete["competitors"]:
+        if not items_to_delete["products"]:
             logging.info(
-                f"No products or competitors associated with brand {brand_id}."
+                f"No products associated with brand {brand_id}."
             )
             return {"message": f"Brand with id {brand_id} deleted successfully."}
 
-        products_container = get_cosmos_container("productsContainer")
-        competitors_container = get_cosmos_container("competitorsContainer")
-        relationship_container = get_cosmos_container("brandsCompetitors")
-
-        # Delete relationships in brandsCompetitors container
-        relationships = list(
-            relationship_container.query_items(
-                query="SELECT * FROM c WHERE c.brand_id = @brand_id",
-                parameters=[{"name": "@brand_id", "value": brand_id}],
-                enable_cross_partition_query=True,
-            )
-        )
+        products_container = get_cosmos_container("products")
 
         # Delete products associated with the brand
         for product in items_to_delete["products"]:
@@ -1657,24 +1616,6 @@ def delete_brand_by_id(brand_id):
                 item=product["id"], partition_key=product["id"]
             )
             logging.info(f"Product with id {product['id']} deleted successfully.")
-
-        # Delete competitors associated with the brand
-        for competitor in items_to_delete["competitors"]:
-            competitors_container.delete_item(
-                item=competitor["competitor_id"],
-                partition_key=competitor["competitor_id"],
-            )
-            logging.info(
-                f"Competitor with id {competitor['competitor_id']} deleted successfully."
-            )
-
-        for relationship in relationships:
-            relationship_container.delete_item(
-                item=relationship["id"], partition_key=relationship["id"]
-            )
-            logging.info(
-                f"Relationship with id {relationship['id']} deleted successfully."
-            )
 
         return {
             "message": f"Brand with id {brand_id} and associated items deleted successfully."
