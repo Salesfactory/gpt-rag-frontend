@@ -19,10 +19,9 @@ import {
     updateCompetitor,
     deleteCompetitor,
     getItemsToDeleteByBrand,
-    getReportJobs
+    fetchReportJobs
 } from "../../api/api";
-import type { ReportJobVM } from "../../api/models";
-
+import type { BackendReportStatus } from "../../api/models";
 interface Brand {
     id: number;
     name: string;
@@ -48,16 +47,6 @@ interface Competitor {
     ];
 }
 
-interface ReportJob {
-    id: number;
-    type: string;
-    target: string;
-    status: "Completed" | "In Progress" | "Pending" | "Failed";
-    progress: number;
-    startDate: string | null;
-    endDate: string | null;
-}
-
 interface DeleteConfirmState {
     show: boolean;
     item: Brand | Product | Competitor | null;
@@ -74,24 +63,42 @@ interface ItemToDelete {
     ];
 }
 
-function generateNextId<T extends { id: number }>(items: T[]): number {
-    return items.length > 0 ? Math.max(...items.map(item => item.id)) + 1 : 1;
+// ---- Report jobs UI helpers ----
+type Canonical = BackendReportStatus | "UNKNOWN";
+
+function toCanonical(s?: string): Canonical {
+  const v = String(s || "").toUpperCase() as string;
+  const allowed: BackendReportStatus[] = ["COMPLETED", "RUNNING", "QUEUED", "FAILED"];
+  return allowed.includes(v as BackendReportStatus) ? (v as BackendReportStatus) : "UNKNOWN";
 }
 
-function getStatusClass(status: string): string {
-    switch (status) {
-        case "Completed":
-            return styles.Completed;
-        case "In Progress":
-            return styles.InProgress;
-        case "Pending":
-            return styles.Pending;
-        case "Failed":
-            return styles.Failed;
-        default:
-            return styles.Unknown;
+function statusLabel(c: Canonical): string {
+    switch (c) {
+        case "COMPLETED": return "Completed";
+        case "RUNNING":   return "In Progress";
+        case "QUEUED":    return "Pending";
+        case "FAILED":    return "Failed";
+        case "UNKNOWN":   return "Unknown";
     }
 }
+
+function statusClass(c: Canonical): string {
+    switch (c) {
+        case "COMPLETED": return styles.Completed;
+        case "RUNNING":   return styles.InProgress;
+        case "QUEUED":    return styles.Pending;
+        case "FAILED":    return styles.Failed;
+        case "UNKNOWN":   return styles.Unknown;
+    }
+}
+
+function statusIcon(c: Canonical) {
+    if (c === "COMPLETED") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
+    if (c === "RUNNING")   return <Clock size={16} style={{ color: "#2563eb" }} />;
+    if (c === "FAILED")    return <AlertCircle size={16} style={{ color: "#dc2626" }} />;
+    return <Clock size={16} style={{ color: "#6b7280" }} />;
+}
+
 
 export default function VoiceCustomerPage() {
     const { user, organization } = useAppContext();
@@ -125,7 +132,7 @@ export default function VoiceCustomerPage() {
     const [brands, setBrands] = useState<Brand[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
-    const [reportJobs, setReportJobs] = useState<ReportJobVM[]>([]);
+    const [rawReportJobs, setRawReportJobs] = useState<any[]>([]);
     const [isLoadingReports, setIsLoadingReports] = useState(false);
     const [reportsError, setReportsError] = useState("");
 
@@ -199,29 +206,45 @@ export default function VoiceCustomerPage() {
         fetchCompetitors();
     }, [organization, user]);
 
+    function uiToCanonicalFilter(ui?: string): Canonical | undefined {
+        if (!ui || ui === "All Status") return undefined;
+        const map: Record<string, Canonical> = {
+            "Completed": "COMPLETED",
+            "In Progress": "RUNNING",
+            "Pending": "QUEUED",
+            "Failed": "FAILED",
+            "Unknown": "UNKNOWN",
+        };
+        return map[ui];
+    }
+
     useEffect(() => {
-    const fetchReports = async () => {
-        if (!organization) return;
-        try {
-        setReportsError("");
-        setIsLoadingReports(true);
-        const jobs = await getReportJobs({
-            organization_id: organization.id,
-            user,
-            limit: 10,
-            uiStatus: selectedStatus,
-        });
-        setReportJobs(jobs);
-        } catch (e: any) {
-        setReportsError(e?.message || "Failed to fetch report statuses.");
-        toast.error("Failed to fetch report statuses. Please try again.");
-        setReportJobs([]);
-        } finally {
-        setIsLoadingReports(false);
-        }
-    };
-    fetchReports();
+        const fetchReports = async () => {
+            if (!organization) return;
+            try {
+                setReportsError("");
+                setIsLoadingReports(true);
+
+                const statusFilter = uiToCanonicalFilter(selectedStatus);
+                const data = await fetchReportJobs({
+                    organization_id: organization.id,
+                    user,
+                    limit: 10,
+                    status: statusFilter && statusFilter !== "UNKNOWN" ? statusFilter : undefined,
+                });
+
+                setRawReportJobs(data);
+            } catch (e: any) {
+                setReportsError(e?.message || "Failed to fetch report statuses.");
+                toast.error("Failed to fetch report statuses. Please try again.");
+                setRawReportJobs([]);
+            } finally {
+                setIsLoadingReports(false);
+            }
+        };
+        fetchReports();
     }, [organization, user, selectedStatus]);
+
 
     // Uniqueness validation helpers
     const validateBrand = (name: string) => {
@@ -680,29 +703,49 @@ export default function VoiceCustomerPage() {
         }
     };
 
-    const filteredJobs = reportJobs.filter(job => {
-        const matchesSearch = job.type.toLowerCase().includes(searchQuery.toLowerCase()) || job.target.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = selectedStatus === "All Status" || job.status === selectedStatus;
+    interface ReportJobVM {
+        id: string;
+        type: string;
+        target: string;
+        status: Canonical;
+        progress: number;
+        startDate: string | null;
+        endDate: string | null;
+    }
+
+    const jobsVM: ReportJobVM[] = (rawReportJobs || []).map((doc: any) => {
+    const c = toCanonical(doc?.status);
+    const terminal = c === "COMPLETED" || c === "FAILED";
+        return {
+            id: String(doc?.id ?? ""),
+            type: doc?.report_name ?? doc?.type ?? "Report",
+            target: doc?.params?.target ?? "",
+            status: c,
+            progress: typeof doc?.progress === "number" ? doc.progress : 0,
+            startDate: doc?.created_at ?? null,
+            endDate: terminal ? (doc?.updated_at ?? null) : null,
+        };
+    });
+
+    const filteredJobs = jobsVM.filter(job => {
+        const matchesSearch =
+            job.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            job.target.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const uiActive = selectedStatus !== "All Status" ? selectedStatus : undefined;
+        const matchesStatus = !uiActive || statusLabel(job.status) === uiActive;
+
         return matchesSearch && matchesStatus;
     });
 
-    const jobsWithEndDate = filteredJobs.filter(job => job.endDate !== null);
-
+    const jobsWithEndDate = filteredJobs.filter(j => j.endDate !== null);
     const sortedJobsWithEndDate = jobsWithEndDate.sort((a, b) => {
         const endDateA = new Date(a.endDate!).getTime();
         const endDateB = new Date(b.endDate!).getTime();
         return endDateB - endDateA;
     });
-
-    const jobsWithoutEndDate = filteredJobs.filter(job => job.endDate === null);
-
+    const jobsWithoutEndDate = filteredJobs.filter(j => j.endDate === null);
     const jobsToDisplay = [...sortedJobsWithEndDate, ...jobsWithoutEndDate].slice(0, 10);
-    const getStatusIcon = (status: ReportJobVM["status"]) => {
-        if (status === "Completed") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
-        if (status === "In Progress") return <Clock size={16} style={{ color: "#2563eb" }} />;
-        if (status === "Failed") return <AlertCircle size={16} style={{ color: "#dc2626" }} />;
-        return <Clock size={16} style={{ color: "#6b7280" }} />;
-    };
 
     const get_brands = (competitor: Competitor) => {
         const brands_c = competitor.brands.map(b => b.brand_id);
@@ -973,8 +1016,10 @@ export default function VoiceCustomerPage() {
 
                                 <td className={styles.tableCell}>
                                 <div className={styles.statusCell}>
-                                    {getStatusIcon(job.status)}
-                                    <span className={`${styles.statusBadge} ${getStatusClass(job.status)}`}>{job.status}</span>
+                                    {statusIcon(job.status)}
+                                    <span className={`${styles.statusBadge} ${statusClass(job.status)}`}>
+                                    {statusLabel(job.status)}
+                                    </span>
                                 </div>
                                 </td>
 

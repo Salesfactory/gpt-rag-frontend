@@ -190,7 +190,8 @@ def get_job(job_id: str):
 @bp.get("")
 def list_jobs():
     """
-     List recent report jobs for an organization (most recent first).
+    List recent report jobs for an organization (most recent first).
+
     Query parameters:
         organization_id (str): Required partition key. You may also provide it
             via the JSON body or the `X-Tenant-Id` header.
@@ -217,11 +218,12 @@ def list_jobs():
     params = [{"name": "@organization_id", "value": organization_id}]
     if status:
         params.append({"name": "@status", "value": status})
+
     try:
-        it = _jobs_container().query_items(
+        it: Iterable[Dict[str, Any]] = _jobs_container().query_items(
             query=query, parameters=params, partition_key=organization_id
         )
-        out = []
+        out: List[Dict[str, Any]] = []
         for i, item in enumerate(it):
             if i >= limit:
                 break
@@ -229,6 +231,7 @@ def list_jobs():
         return jsonify(out)
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error listing jobs: {e}")
+
 
 
 @bp.delete("/<job_id>")

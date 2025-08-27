@@ -118,20 +118,18 @@ export type SummarizationReportProps = {
 };
 
 // ---- Report Jobs (status) ----
-export type UiReportStatus =
-  | "Completed"
-  | "In Progress"
-  | "Pending"
-  | "Failed"
-  | "Unknown";
 export type BackendReportStatus = "COMPLETED" | "RUNNING" | "QUEUED" | "FAILED";
 
-export interface ReportJobVM {
+export interface BackendReportJobDoc {
   id: string;
-  type: string;
-  target: string;
-  status: UiReportStatus;
-  progress: number;
-  startDate: string | null;
-  endDate: string | null;
+  type?: string;
+  report_name?: string;
+  status?: BackendReportStatus | string;
+  progress?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+  params?: { target?: string };
 }
+
+
+
