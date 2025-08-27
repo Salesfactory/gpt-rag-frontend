@@ -23,9 +23,8 @@ import {
 } from "../../api/api";
 
 import type { BackendReportJobDoc } from "../../api/models";
-import { toCanonical, statusLabel, uiLabelToBackendStatus } from "../../utils/reportStatus";
+import { toCanonical } from "../../utils/reportStatus";
 import { statusIcon, statusClass } from "./reportStatusUi";
-import type { Canonical } from "../../utils/reportStatus";
 
 interface Brand {
     id: number;
@@ -181,16 +180,8 @@ export default function VoiceCustomerPage() {
         try {
         setReportsError("");
         setIsLoadingReports(true);
-
-        const statusFilter = uiLabelToBackendStatus(selectedStatus as any);
-        const data = await fetchReportJobs({
-            organization_id: organization.id,
-            user,
-            limit: 10,
-            status: statusFilter,
-        });
-
-        setRawReportJobs(data);
+        const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
+        setRawReportJobs(Array.isArray(data) ? data : []);
         } catch (e: any) {
         setReportsError(e?.message || "Failed to fetch report statuses.");
         toast.error("Failed to fetch report statuses. Please try again.");
@@ -200,7 +191,7 @@ export default function VoiceCustomerPage() {
         }
     };
     fetchReports();
-    }, [organization, user, selectedStatus]);
+    }, [organization, user]);
 
 
     // Uniqueness validation helpers
@@ -660,51 +651,6 @@ export default function VoiceCustomerPage() {
         }
     };
 
-    interface ReportJobVM {
-        id: string;
-        type: string;
-        target: string;
-        status: Canonical;
-        progress: number;
-        startDate: string | null;
-        endDate: string | null;
-    }
-
-    const jobsVM: ReportJobVM[] = (rawReportJobs || []).map((doc: BackendReportJobDoc) => {
-        const c = toCanonical(doc?.status);
-        const terminal = c === "COMPLETED" || c === "FAILED";
-        return {
-            id: String(doc?.id ?? ""),
-            type: doc?.report_name ?? doc?.type ?? "Report",
-            target: doc?.params?.target ?? "",
-            status: c,
-            progress: typeof doc?.progress === "number" ? doc.progress : 0,
-            startDate: doc?.created_at ?? null,
-            endDate: terminal ? (doc?.updated_at ?? null) : null,
-        };
-    });
-
-
-    const filteredJobs = jobsVM.filter(job => {
-        const matchesSearch =
-            job.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            job.target.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const uiActive = selectedStatus !== "All Status" ? selectedStatus : undefined;
-        const matchesStatus = !uiActive || statusLabel(job.status) === uiActive;
-
-        return matchesSearch && matchesStatus;
-    });
-
-    const jobsWithEndDate = filteredJobs.filter(j => j.endDate !== null);
-    const sortedJobsWithEndDate = jobsWithEndDate.sort((a, b) => {
-        const endDateA = new Date(a.endDate!).getTime();
-        const endDateB = new Date(b.endDate!).getTime();
-        return endDateB - endDateA;
-    });
-    const jobsWithoutEndDate = filteredJobs.filter(j => j.endDate === null);
-    const jobsToDisplay = [...sortedJobsWithEndDate, ...jobsWithoutEndDate].slice(0, 10);
-
     const get_brands = (competitor: Competitor) => {
         const brands_c = competitor.brands.map(b => b.brand_id);
         const brands_names = brands.filter(b => brands_c.includes(b.id)).map(b => b.name);
@@ -1001,33 +947,36 @@ export default function VoiceCustomerPage() {
                         </thead>
 
                         <tbody className={styles.tableBody}>
-                            {jobsToDisplay.map(job => (
-                            <tr key={job.id} className={styles.tableRow}>
-                                <td className={styles.tableCell}>
-                                <span className={styles.jobType}>{job.type}</span>
-                                </td>
-
-                                <td className={styles.tableCell}>{job.target || "-"}</td>
-
-                                <td className={styles.tableCell}>
-                                    <div className={styles.statusCell}>
-                                        {statusIcon(job.status)}
-                                        <span className={`${styles.statusBadge} ${statusClass(job.status)}`}>
-                                        {statusLabel(job.status)}
+                            {rawReportJobs.map((doc) => {
+                                const c = toCanonical(doc?.status);
+                                const terminal = c === "COMPLETED" || c === "FAILED";
+                                const progress = typeof doc?.progress === "number"
+                                    ? doc.progress
+                                    : c === "COMPLETED" ? 100 : undefined;
+                                const endDate = terminal ? (doc?.updated_at ?? null) : null;
+                                return (
+                                    <tr key={String(doc?.id)} className={styles.tableRow}>
+                                    <td className={styles.tableCell}>
+                                        <span className={styles.jobType}>{doc?.report_name ?? doc?.type ?? "Report"}</span>
+                                    </td>
+                                    <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
+                                    <td className={styles.tableCell}>
+                                        <div className={styles.statusCell}>
+                                        {statusIcon(c)}
+                                        <span className={`${styles.statusBadge} ${statusClass(c)}`}>
+                                            {doc?.status}
                                         </span>
-                                    </div>
-                                </td>
-
-                                <td className={styles.tableCell}>
-                                {typeof job.progress === "number" ? `${Math.round(job.progress)}%` : "-"}
-                                </td>
-
-                                <td className={styles.tableCell}>{job.startDate || "-"}</td>
-                                <td className={styles.tableCell}>{job.endDate || "-"}</td>
-                            </tr>
-                            ))}
-
-                            {jobsToDisplay.length === 0 && (
+                                        </div>
+                                    </td>
+                                    <td className={styles.tableCell}>
+                                        {typeof progress === "number" ? `${Math.round(progress)}%` : "-"}
+                                    </td>
+                                    <td className={styles.tableCell}>{doc?.created_at ?? "-"}</td>
+                                    <td className={styles.tableCell}>{endDate ?? "-"}</td>
+                                    </tr>
+                                );
+                                })}
+                            {rawReportJobs.length === 0 && !isLoadingReports && !reportsError && (
                             <tr>
                                 <td className={styles.tableCell} colSpan={6} data-testid="reports-empty">
                                 No reports found
