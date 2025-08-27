@@ -186,6 +186,7 @@ def get_job(job_id: str):
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error reading job: {e}")
 
+ALLOWED_STATUSES = {"COMPLETED", "RUNNING", "QUEUED", "FAILED"}
 
 @bp.get("")
 def list_jobs():
@@ -196,32 +197,50 @@ def list_jobs():
         organization_id (str): Required partition key. You may also provide it
             via the JSON body or the `X-Tenant-Id` header.
         limit (int, optional): Maximum number of items to return. Defaults to 50.
-        status (str, optional): Filter by status. One of:
+        status (str, optional): Filter by status (case-insensitive). One of:
             COMPLETED | FAILED | RUNNING | QUEUED.
 
     Returns:
         200 OK with a JSON array of job documents (max `limit` items).
 
     Errors:
+        400: Invalid query parameters.
         502: Cosmos query errors.
     """
     organization_id = _require_organization_id()
-    limit = int(request.args.get("limit", 50))
-    status = request.args.get("status")
+
+    try:
+        limit = int(request.args.get("limit", 50))
+    except ValueError:
+        abort(400, "Invalid 'limit' (must be an integer).")
+    if limit < 1:
+        limit = 1
+
+    status_raw = request.args.get("status")
+    status = None
+    if status_raw:
+        status_candidate = status_raw.strip().upper()
+        if status_candidate not in ALLOWED_STATUSES:
+            allowed = ", ".join(sorted(ALLOWED_STATUSES))
+            abort(400, f"Invalid status '{status_raw}'. Allowed: {allowed}")
+        status = status_candidate
 
     status_clause = " AND c.status = @status" if status else ""
     query = (
-        f"SELECT * FROM c "
-        f"WHERE c.organization_id = @organization_id{status_clause} "
-        f"ORDER BY c.created_at DESC"
+        "SELECT * FROM c "
+        "WHERE c.organization_id = @organization_id" + status_clause + " "
+        "ORDER BY c.created_at DESC"
     )
+
     params = [{"name": "@organization_id", "value": organization_id}]
     if status:
         params.append({"name": "@status", "value": status})
 
     try:
         it: Iterable[Dict[str, Any]] = _jobs_container().query_items(
-            query=query, parameters=params, partition_key=organization_id
+            query=query,
+            parameters=params,
+            partition_key=organization_id,
         )
         out: List[Dict[str, Any]] = []
         for i, item in enumerate(it):
