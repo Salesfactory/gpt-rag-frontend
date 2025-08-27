@@ -3,7 +3,7 @@
 from flask import Blueprint, current_app, request
 import logging
 
-from utils import create_success_response, create_error_response
+from utils import (create_success_response, create_error_response)
 from shared.cosmo_db import (
     create_new_brand,
     delete_brand_by_id,
