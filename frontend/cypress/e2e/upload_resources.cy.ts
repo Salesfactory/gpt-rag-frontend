@@ -29,9 +29,13 @@ describe("Upload Resources Test Suite", () => {
         cy.get("span").contains("Upload Resources").should("be.visible");
         cy.get("span").contains("Upload File").should("be.visible").click();
 
-        cy.get("label").contains("Browse Files").should("be.visible");
-        cy.get("label").contains("Browse Files").click().selectFile("./cypress/files/Electric_Vehicle_Population_Data copy.xlsx");
-        cy.contains("Error: File upload failed. Please try again.").should("be.visible");
+        cy.get("button").contains("Browse Files").should("be.visible");
+        cy.get("input[aria-label='Dropzone']").selectFile("./cypress/files/Electric_Vehicle_Population_Data copy.xlsx", {force: true, action: "drag-drop"});
+
+        cy.get("button").contains("Continue Anyway").should("be.visible")
+        cy.get("button").contains("Continue Anyway").click()
+
+        cy.contains("Error uploading Electric_Vehicle_Population_Data copy.xlsx. Try again later").should("be.visible");
     });
 
     it("Should verify the functionality of the Upload File Button (500 Error Case)", () => {
@@ -49,8 +53,12 @@ describe("Upload Resources Test Suite", () => {
         cy.get("span").contains("Upload Resources").should("be.visible");
         cy.get("span").contains("Upload File").should("be.visible").click();
 
-        cy.get("label").contains("Browse Files").should("be.visible");
-        cy.get("label").contains("Browse Files").click().selectFile("./cypress/files/Electric_Vehicle_Population_Data copy.xlsx");
-        cy.contains("Your file has been uploaded successfully!").should("be.visible");
+        cy.get("button").contains("Browse Files").should("be.visible");
+        cy.get("input[aria-label='Dropzone']").selectFile("./cypress/files/Electric_Vehicle_Population_Data copy.xlsx", {force: true, action: "drag-drop"});
+
+        cy.get("button").contains("Continue Anyway").should("be.visible")
+        cy.get("button").contains("Continue Anyway").click()
+
+        cy.contains("Your files has been uploaded successfully!").should("be.visible");
     });
 });

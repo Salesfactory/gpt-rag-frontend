@@ -222,7 +222,7 @@ const UploadResources: React.FC = () => {
             }
 
             setUploadProgress(100);
-            toast("Successfully uploaded files", { type: "success" });
+            toast("Your files has been uploaded successfully!", { type: "success" });
             setIsUploading(false);
             setSelectedFiles([]);
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -527,7 +527,7 @@ const UploadResources: React.FC = () => {
                                     </div>
                                 ) : !showExcelWarning ? (
                                     <div className={`${styles.dropzone} ${isDragActive ? styles.dropzone_active : ""}`} {...getRootProps()}>
-                                        <input {...getInputProps()} />
+                                        <input aria-label="Dropzone" {...getInputProps()} />
 
                                         <div>
                                             <label className={styles.file_label}>
