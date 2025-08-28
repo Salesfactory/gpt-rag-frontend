@@ -177,7 +177,7 @@ def create_product():
     if not data:
         return create_error_response("No JSON data provided", 400)
 
-    required_fields = ["product_name", "brand_id", "organization_id", "industry"]
+    required_fields = ["product_name", "brand_id", "organization_id", "category"]
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return create_error_response(
@@ -189,9 +189,9 @@ def create_product():
         description = data.get("product_description", "")
         brand_id = data["brand_id"]
         organization_id = data["organization_id"]
-        industry = data["industry"]
+        category = data["category"]
 
-        result = create_prod(name, description, industry, brand_id, organization_id)
+        result = create_prod(name, description, category, brand_id, organization_id)
         return create_success_response(result, 201)
     except Exception as e:
         return create_error_response(f"Error creating product: {str(e)}", 500)
@@ -243,7 +243,7 @@ def update_product(product_id):
     if not data:
         return create_error_response("No JSON data provided", 400)
 
-    required_fields = ["product_name", "product_description", "industry", "brand_id", "organization_id"]
+    required_fields = ["product_name", "product_description", "category", "brand_id", "organization_id"]
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return create_error_response(
@@ -253,13 +253,13 @@ def update_product(product_id):
     try:
         name = data["product_name"]
         description = data["product_description"]
-        industry = data["industry"]
+        category = data["category"]
         brand_id = data["brand_id"]
 
         result = update_prod_by_id(
             product_id=product_id,
             name=name,
-            industry=industry,
+            category=category,
             brand_id=brand_id,
             description=description,
             organization_id=data["organization_id"]

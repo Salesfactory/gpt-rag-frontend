@@ -1163,7 +1163,7 @@ def update_brand_by_id(brand_id, brand_name, brand_description, organization_id)
         raise ve
 
 
-def create_prod(name, description, industry, brand_id, organization_id):
+def create_prod(name, description, category, brand_id, organization_id):
     """
     Creates a new product entry in the Cosmos DB 'productsContainer'.
 
@@ -1200,7 +1200,7 @@ def create_prod(name, description, industry, brand_id, organization_id):
                 "createdAt": datetime.now(timezone.utc).isoformat(),
                 "updatedAt": datetime.now(timezone.utc).isoformat(),
                 "organization_id": organization_id,
-                "industry": industry,
+                "category": category,
             }
         )
 
@@ -1238,7 +1238,7 @@ def delete_prod_by_id(product_id, organization_id):
         raise e
 
 
-def update_prod_by_id(product_id, name, industry, brand_id, description, organization_id):
+def update_prod_by_id(product_id, name, category, brand_id, description, organization_id):
     """
     Updates a product in the Cosmos DB container by its ID.
     Parameters:
@@ -1276,7 +1276,7 @@ def update_prod_by_id(product_id, name, industry, brand_id, description, organiz
         current_product.update(
             {
                 "name": name,
-                "industry": industry,
+                "category": category,
                 "brand_id": brand_id,
                 "description": description,
             }
