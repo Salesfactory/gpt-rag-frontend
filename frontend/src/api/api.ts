@@ -1616,14 +1616,12 @@ export async function updateProduct({
 export async function createCompetitor({
   competitor_name,
   competitor_description,
-  industry,
   brands_id,
   organization_id,
   user,
 }: {
   competitor_name: string;
   competitor_description: string;
-  industry: string;
   brands_id: string[];
   organization_id: string;
   user: any;
@@ -1638,7 +1636,6 @@ export async function createCompetitor({
     body: JSON.stringify({
       competitor_name,
       competitor_description,
-      industry,
       brands_id,
       organization_id,
     }),
@@ -1704,7 +1701,6 @@ export async function updateCompetitor({
   competitor_id,
   competitor_name,
   competitor_description,
-  industry,
   brands_id,
   user,
   organization_id,
@@ -1712,7 +1708,6 @@ export async function updateCompetitor({
   competitor_id: string;
   competitor_name: string;
   competitor_description: string;
-  industry: string;
   brands_id: string[];
   user: any;
   organization_id: string;
@@ -1727,7 +1722,6 @@ export async function updateCompetitor({
     body: JSON.stringify({
       competitor_name,
       competitor_description,
-      industry,
       brands_id,
       organization_id,
     }),

@@ -37,7 +37,6 @@ interface Product {
 interface Competitor {
     id: string;
     name: string;
-    industry: string;
     description: string;
     brands: [
         {
@@ -107,9 +106,8 @@ export default function VoiceCustomerPage() {
 
     const [newBrand, setNewBrand] = useState({ name: "", description: "" });
     const [newProduct, setNewProduct] = useState({ name: "", description: "", brandId: "", category: "" });
-    const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
+    const [newCompetitor, setNewCompetitor] = useState<{ name: string; description: string; brandIds: number[] }>({
         name: "",
-        industry: "",
         description: "",
         brandIds: []
     });
@@ -136,6 +134,22 @@ export default function VoiceCustomerPage() {
     const [isLoadingProducts, setIsLoadingProducts] = useState(true);
     const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
     const [isLoadingMarkedItems, setIsLoadingMarkedItems] = useState(false);
+
+    // State for industry definition
+    const [industryDefinition, setIndustryDefinition] = useState("");
+    const [industryError, setIndustryError] = useState("");
+    const [industrySaved, setIndustrySaved] = useState(false);
+
+    const handleSaveIndustry = () => {
+        if (!industryDefinition.trim()) {
+            setIndustryError("Industry definition is required");
+            setIndustrySaved(false);
+            return;
+        }
+        setIndustryError("");
+        setIndustrySaved(true);
+        // Optionally, persist industryDefinition to backend here
+    };
 
     useEffect(() => {
         const fetchBrands = async () => {
@@ -398,8 +412,8 @@ export default function VoiceCustomerPage() {
     const handleAddCompetitor = async () => {
         if (!organization) return;
 
-        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
-            setCompetitorError("Competitor name, industry, and brand are required");
+        if (newCompetitor.name.trim().length === 0) {
+            setCompetitorError("Competitor name and brand are required");
             return;
         }
 
@@ -416,7 +430,6 @@ export default function VoiceCustomerPage() {
             const createdCompetitor = await createCompetitor({
                 competitor_name: newCompetitor.name,
                 competitor_description: newCompetitor.description,
-                industry: newCompetitor.industry,
                 brands_id: (newCompetitor.brandIds || []).map(String),
                 organization_id: organization.id,
                 user
@@ -433,7 +446,7 @@ export default function VoiceCustomerPage() {
             toast.success("Competitor added successfully");
 
             // Reset form state
-            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setNewCompetitor({ name: "", description: "", brandIds: [] });
             setCompetitorError("");
             setShowCompetitorModal(false);
         } catch (error) {
@@ -448,8 +461,8 @@ export default function VoiceCustomerPage() {
     const handleEditCompetitor = async () => {
         if (!organization || !editingCompetitor) return;
 
-        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
-            setCompetitorError("Competitor name and industry are required");
+        if (newCompetitor.name.trim().length === 0) {
+            setCompetitorError("Competitor name is required");
             return;
         }
 
@@ -459,7 +472,6 @@ export default function VoiceCustomerPage() {
                 competitor_id: String(editingCompetitor.id),
                 competitor_name: newCompetitor.name,
                 competitor_description: newCompetitor.description,
-                industry: newCompetitor.industry,
                 brands_id: (newCompetitor.brandIds || []).map(String),
                 user,
                 organization_id: organization.id
@@ -476,7 +488,7 @@ export default function VoiceCustomerPage() {
             toast.success("Competitor updated successfully");
 
             // Reset form state
-            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setNewCompetitor({ name: "", description: "", brandIds: [] });
             setCompetitorError("");
             setEditingCompetitor(null);
             setShowCompetitorModal(false);
@@ -503,7 +515,7 @@ export default function VoiceCustomerPage() {
             setEditingProduct(item as Product);
             setShowProductModal(true);
         } else if (type === "competitor") {
-            setNewCompetitor({ name: (item as Competitor).name, industry: (item as Competitor).industry, description: item.description, brandIds: [] });
+            setNewCompetitor({ name: (item as Competitor).name, description: item.description, brandIds: [] });
             setEditingCompetitor(item as Competitor);
             setShowCompetitorModal(true);
         }
@@ -694,7 +706,6 @@ export default function VoiceCustomerPage() {
         if (editingCompetitor) {
             setNewCompetitor({
                 name: editingCompetitor.name,
-                industry: editingCompetitor.industry,
                 description: editingCompetitor.description,
                 brandIds: editingCompetitor.brands ? editingCompetitor.brands.map(b => b.brand_id) : []
             });
@@ -707,12 +718,46 @@ export default function VoiceCustomerPage() {
             <main className={styles.mainContainer}>
                 <div className={styles.cardsGrid}>
                     <div className={styles.card}>
-                        <div className={styles.cardHeader}>
+                        <div className={styles.industryHeader}>
                             <div className={styles.cardHeaderTitle}>
                                 <h3 className={styles.cardTitle}>Industry Definition</h3>
                             </div>
                         </div>
-                        <div className={styles.cardBody}></div>
+                        <div className={styles.industryBody}>
+                            <p className={styles.description}>
+                                Define your industry in 2-5 words to help refine the content and analysis for brand and competitor reports. This context will be
+                                used to provide more targeted insights and relevant market analysis.
+                            </p>
+                            <div className={styles.inputRow}>
+                                <div className={styles.inputWrap}>
+                                    <input
+                                        aria-label="industry-definition-input"
+                                        type="text"
+                                        value={industryDefinition}
+                                        onChange={e => {
+                                            setIndustryDefinition(e.target.value);
+                                            if (industryError) setIndustryError("");
+                                            setIndustrySaved(false);
+                                        }}
+                                        placeholder="e.g., Consumer Electronics, Athletic Footwear, B2B SaaS..."
+                                        className={styles.input}
+                                    />
+                                    {industryError && <p className={styles.error}>{industryError}</p>}
+                                </div>
+
+                                <button onClick={handleSaveIndustry} disabled={!industryDefinition.trim()} className={styles.saveButton}>
+                                    {industrySaved ? (
+                                        <>
+                                            <CheckCircle size={16} style={{ marginRight: 8 }} />
+                                            <span>Saved</span>
+                                        </>
+                                    ) : (
+                                        <span>Save</span>
+                                    )}
+                                </button>
+                            </div>
+                            <p className={styles.examples}>Examples: "Consumer Electronics", "Athletic Footwear", "Financial Services", "B2B SaaS"</p>
+                        </div>
                     </div>
                     <div className={styles.card}>
                         <div className={styles.cardHeader}>
@@ -842,7 +887,6 @@ export default function VoiceCustomerPage() {
                                                 <div className={styles.itemContent}>
                                                     <div className={styles.itemHeader}>
                                                         <h4 className={styles.itemName}>{c.name}</h4>
-                                                        <span className={styles.itemIndustry}>{c.industry}</span>
                                                     </div>
                                                     {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                                 </div>
@@ -1153,7 +1197,7 @@ export default function VoiceCustomerPage() {
                         className={styles.modalOverlay}
                         onClick={() => {
                             setShowCompetitorModal(false);
-                            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                            setNewCompetitor({ name: "", description: "", brandIds: [] });
                             setCompetitorError("");
                             setEditingCompetitor(null);
                         }}
@@ -1164,7 +1208,7 @@ export default function VoiceCustomerPage() {
                             <button
                                 onClick={() => {
                                     setShowCompetitorModal(false);
-                                    setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                                    setNewCompetitor({ name: "", description: "", brandIds: [] });
                                     setCompetitorError("");
                                     setEditingCompetitor(null);
                                 }}
@@ -1189,19 +1233,6 @@ export default function VoiceCustomerPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className={styles.formLabel}>Industry</label>
-                                    <input
-                                        type="text"
-                                        value={newCompetitor.industry}
-                                        onChange={e => {
-                                            setNewCompetitor({ ...newCompetitor, industry: e.target.value });
-                                            if (competitorError) setCompetitorError("");
-                                        }}
-                                        placeholder="Enter industry"
-                                        className={styles.formInput}
-                                    />
-                                </div>
-                                <div>
                                     <label className={styles.formLabel}>Description (Optional)</label>
                                     <textarea
                                         value={newCompetitor.description}
@@ -1217,7 +1248,7 @@ export default function VoiceCustomerPage() {
                                 <button
                                     onClick={() => {
                                         setShowCompetitorModal(false);
-                                        setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                                        setNewCompetitor({ name: "", description: "", brandIds: [] });
                                         setCompetitorError("");
                                         setEditingCompetitor(null);
                                     }}
