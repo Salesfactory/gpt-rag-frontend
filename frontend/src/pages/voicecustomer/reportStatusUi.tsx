@@ -12,6 +12,25 @@ export function statusClass(c: Canonical): string {
   }
 }
 
+export function statusLabel(c: Canonical): string {
+  switch (c) {
+    case "COMPLETED": return "Completed";
+    case "RUNNING":   return "In Progress";
+    case "FAILED":    return "Failed";
+    case "QUEUED":    return "Pending";
+    default:           return "Unknown";
+  }
+}
+
+export function statusType(string: string | undefined): string {
+  switch (string) {
+    case "brand_analysis": return "Brand Analysis";
+    case "product_analysis":   return "Product Analysis";
+    case "competitor_analysis":    return "Competitor Analysis";
+    default:           return "Unknown";
+  }
+}
+
 export function statusIcon(c: Canonical) {
   if (c === "COMPLETED") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
   if (c === "RUNNING")   return <Clock size={16} style={{ color: "#2563eb" }} />;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp } from "lucide-react";
+import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, CircleX, Circle } from "lucide-react";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -24,7 +24,7 @@ import {
 
 import type { BackendReportJobDoc } from "../../api/models";
 import { toCanonical } from "../../utils/reportStatus";
-import { statusIcon, statusClass } from "./reportStatusUi";
+import { statusIcon, statusClass, statusLabel, statusType } from "./reportStatusUi";
 
 interface Brand {
     id: number;
@@ -178,16 +178,16 @@ export default function VoiceCustomerPage() {
     const fetchReports = async () => {
         if (!organization) return;
         try {
-        setReportsError("");
-        setIsLoadingReports(true);
-        const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
-        setRawReportJobs(Array.isArray(data) ? data : []);
+            setReportsError("");
+            setIsLoadingReports(true);
+            const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
+            setRawReportJobs(Array.isArray(data) ? data : []);
         } catch (e: any) {
-        setReportsError(e?.message || "Failed to fetch report statuses.");
-        toast.error("Failed to fetch report statuses. Please try again.");
-        setRawReportJobs([]);
+            setReportsError(e?.message || "Failed to fetch report statuses.");
+            toast.error("Failed to fetch report statuses. Please try again.");
+            setRawReportJobs([]);
         } finally {
-        setIsLoadingReports(false);
+            setIsLoadingReports(false);
         }
     };
     fetchReports();
@@ -937,6 +937,7 @@ export default function VoiceCustomerPage() {
                         </div>
                     ) : reportsError ? (
                         <div data-testid="reports-error" className={styles.errorMessage} aria-live="polite">
+                        <CircleX />
                         {reportsError}
                         </div>
                     ) : (
@@ -963,22 +964,22 @@ export default function VoiceCustomerPage() {
                                 return (
                                     <tr key={String(doc?.id)} className={styles.tableRow}>
                                     <td className={styles.tableCell}>
-                                        <span className={styles.jobType}>{doc?.report_name ?? doc?.type ?? "Report"}</span>
+                                        <span className={styles.jobType}>{statusType(doc?.type) ?? doc?.report_name ?? "Report"}</span>
                                     </td>
                                     <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
                                     <td className={styles.tableCell}>
                                         <div className={styles.statusCell}>
                                         {statusIcon(c)}
                                         <span className={`${styles.statusBadge} ${statusClass(c)}`}>
-                                            {doc?.status}
+                                            {statusLabel(c)}
                                         </span>
                                         </div>
                                     </td>
                                     <td className={styles.tableCell}>
                                         {typeof progress === "number" ? `${Math.round(progress)}%` : "-"}
                                     </td>
-                                    <td className={styles.tableCell}>{doc?.created_at ?? "-"}</td>
-                                    <td className={styles.tableCell}>{endDate ?? "-"}</td>
+                                    <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
+                                    <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
                                     </tr>
                                 );
                                 })}
