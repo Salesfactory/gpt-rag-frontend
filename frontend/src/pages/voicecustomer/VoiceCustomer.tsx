@@ -709,6 +709,14 @@ export default function VoiceCustomerPage() {
                     <div className={styles.card}>
                         <div className={styles.cardHeader}>
                             <div className={styles.cardHeaderTitle}>
+                                <h3 className={styles.cardTitle}>Industry Definition</h3>
+                            </div>
+                        </div>
+                        <div className={styles.cardBody}></div>
+                    </div>
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.cardHeaderTitle}>
                                 <Building size={20} />
                                 <h3 className={styles.cardTitle}>Brands ({brands.length}/3)</h3>
                             </div>
