@@ -10,22 +10,3 @@ export function toCanonical(s?: string): Canonical {
   return (ALLOWED as readonly string[]).includes(v) ? (v as BackendReportStatus) : "UNKNOWN";
 }
 
-export function statusLabel(c: Canonical): UiLabel {
-  switch (c) {
-    case "COMPLETED": return "Completed";
-    case "RUNNING":   return "In Progress";
-    case "QUEUED":    return "Pending";
-    case "FAILED":    return "Failed";
-    default:          return "Unknown";
-  }
-}
-
-export function uiLabelToBackendStatus(ui?: UiLabel | "All Status"): BackendReportStatus | undefined {
-  switch (ui) {
-    case "Completed":    return "COMPLETED";
-    case "In Progress":  return "RUNNING";
-    case "Pending":      return "QUEUED";
-    case "Failed":       return "FAILED";
-    default:             return undefined;
-  }
-}
