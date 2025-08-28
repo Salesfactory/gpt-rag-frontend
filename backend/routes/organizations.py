@@ -54,6 +54,8 @@ def generate_business_description(organization_id, file_name):
             blob_name, BLOB_CONTAINER_NAME
         )
 
+        logger.info(f"Downloaded blob '{blob_name}' to temporary path '{blob_temp_path}'")
+
         business_description = create_description(
             blob_temp_path, llm, BUSINESS_DESCRIPTION
         )
@@ -63,6 +65,8 @@ def generate_business_description(organization_id, file_name):
         updated_metadata = update_blob_metadata(
             blob_name, blob_metadata, BLOB_CONTAINER_NAME
         )
+
+        logger.info(f"Updated blob metadata for '{blob_name}': {updated_metadata}")
 
         return create_success_response(updated_metadata)
 
