@@ -83,7 +83,7 @@ export default function VoiceCustomerPage() {
     const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null);
 
     const [newBrand, setNewBrand] = useState({ name: "", description: "" });
-    const [newProduct, setNewProduct] = useState({ name: "", category: "", description: "", brandId: "" });
+    const [newProduct, setNewProduct] = useState({ name: "", description: "", brandId: "", category: "" });
     const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
         name: "",
         industry: "",
@@ -276,6 +276,7 @@ export default function VoiceCustomerPage() {
                 brand_id: String(editingBrand.id),
                 brand_name: newBrand.name,
                 brand_description: newBrand.description,
+                organization_id: organization.id,
                 user
             });
 
@@ -305,7 +306,7 @@ export default function VoiceCustomerPage() {
     const handleAddProduct = async () => {
         if (!organization) return;
 
-        if (newProduct.name.trim().length === 0 || newProduct.category.trim().length === 0 || !newProduct.brandId) {
+        if (newProduct.name.trim().length === 0 || !newProduct.brandId || !newProduct.category) {
             setProductError("All fields are required");
             return;
         }
@@ -316,8 +317,8 @@ export default function VoiceCustomerPage() {
                 product_name: newProduct.name,
                 product_description: newProduct.description,
                 brand_id: newProduct.brandId,
-                organization_id: organization.id,
                 category: newProduct.category,
+                organization_id: organization.id,
                 user
             });
 
@@ -332,7 +333,7 @@ export default function VoiceCustomerPage() {
             toast.success("Product added successfully");
 
             // Reset form state
-            setNewProduct({ name: "", category: "", description: "", brandId: "" });
+            setNewProduct({ name: "", description: "", brandId: "", category: "" });
             setProductError("");
             setShowProductModal(false);
         } catch (error) {
@@ -358,9 +359,10 @@ export default function VoiceCustomerPage() {
                 product_id: String(editingProduct.id),
                 product_name: newProduct.name,
                 product_description: newProduct.description,
-                category: newProduct.category,
                 brand_id: newProduct.brandId,
-                user
+                category: newProduct.category,
+                user,
+                organization_id: organization.id
             });
 
             // Reload products from the backend to ensure the updated product is reflected
@@ -374,7 +376,7 @@ export default function VoiceCustomerPage() {
             toast.success("Product updated successfully");
 
             // Reset form state
-            setNewProduct({ name: "", category: "", description: "", brandId: "" });
+            setNewProduct({ name: "", description: "", brandId: "", category: "" });
             setProductError("");
             setEditingProduct(null);
             setShowProductModal(false);
@@ -389,7 +391,7 @@ export default function VoiceCustomerPage() {
     const handleAddCompetitor = async () => {
         if (!organization) return;
 
-        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0 || newCompetitor.brandIds.length === 0) {
+        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
             setCompetitorError("Competitor name, industry, and brand are required");
             return;
         }
@@ -452,7 +454,8 @@ export default function VoiceCustomerPage() {
                 competitor_description: newCompetitor.description,
                 industry: newCompetitor.industry,
                 brands_id: (newCompetitor.brandIds || []).map(String),
-                user
+                user,
+                organization_id: organization.id
             });
 
             // Reload competitors from the backend to ensure the updated competitor is reflected
@@ -486,9 +489,9 @@ export default function VoiceCustomerPage() {
         } else if (type === "product") {
             setNewProduct({
                 name: (item as any).name,
-                category: (item as any).category,
                 description: item.description,
-                brandId: (item as any).brandId || (brands[0]?.id ? String(brands[0].id) : "")
+                brandId: (item as any).brandId || (brands[0]?.id ? String(brands[0].id) : ""),
+                category: (item as any).category
             });
             setEditingProduct(item as Product);
             setShowProductModal(true);
@@ -500,12 +503,14 @@ export default function VoiceCustomerPage() {
     };
 
     const handleDelete = async (item: Brand | Product | Competitor, type: "brand" | "product" | "competitor") => {
+        if (!organization) return;
         setDeleteConfirm({ show: true, item, type });
         if (type === "brand") {
             setIsLoadingMarkedItems(true); // Start spinner for marked items
             const items: ItemToDelete = await getItemsToDeleteByBrand({
                 brand_id: String(item.id),
-                user
+                user,
+                organization_id: organization.id
             });
 
             const MarkedForDeletion = [];
@@ -564,7 +569,8 @@ export default function VoiceCustomerPage() {
             setIsLoadingProducts(true);
             await deleteBrand({
                 brand_id: brandId,
-                user
+                user,
+                organization_id: organization.id
             });
 
             // Reload brands from the backend to ensure the list is up-to-date
@@ -604,7 +610,8 @@ export default function VoiceCustomerPage() {
             setIsLoadingProducts(true);
             await deleteProduct({
                 product_id: productId,
-                user
+                user,
+                organization_id: organization.id
             });
 
             // Reload products from the backend to ensure the list is up-to-date
@@ -631,7 +638,8 @@ export default function VoiceCustomerPage() {
             setIsLoadingCompetitors(true);
             await deleteCompetitor({
                 competitor_id: competitorId,
-                user
+                user,
+                organization_id: organization.id
             });
 
             // Reload competitors from the backend to ensure the list is up-to-date
@@ -650,6 +658,7 @@ export default function VoiceCustomerPage() {
             setIsLoadingCompetitors(false);
         }
     };
+
 
     const get_brands = (competitor: Competitor) => {
         const brands_c = competitor.brands.map(b => b.brand_id);
@@ -679,7 +688,12 @@ export default function VoiceCustomerPage() {
                                 <Building size={20} />
                                 <h3 className={styles.cardTitle}>Brands ({brands.length}/3)</h3>
                             </div>
-                            <button aria-label="create-brand-button" onClick={() => setShowBrandModal(true)} disabled={brands.length >= 3} className={styles.headerAddButton}>
+                            <button
+                                aria-label="create-brand-button"
+                                onClick={() => setShowBrandModal(true)}
+                                disabled={brands.length >= 3}
+                                className={styles.headerAddButton}
+                            >
                                 <PlusCircle size={16} />
                             </button>
                         </div>
@@ -813,20 +827,12 @@ export default function VoiceCustomerPage() {
                             ) : (
                                 <div className={styles.itemsList}>
                                     {competitors.map(c => {
-                                        const brandNames = get_brands(c);
                                         return (
                                             <div key={c.id} className={styles.listItem}>
                                                 <div className={styles.itemContent}>
                                                     <div className={styles.itemHeader}>
                                                         <h4 className={styles.itemName}>{c.name}</h4>
                                                         <span className={styles.itemIndustry}>{c.industry}</span>
-                                                        {brandNames.length > 0 &&
-                                                            brandNames.map((name, index) => (
-                                                                <span key={index} className={styles.itemBrand}>
-                                                                    {name}
-                                                                    {index < brandNames.length - 1 ? " " : ""}
-                                                                </span>
-                                                            ))}
                                                     </div>
                                                     {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                                 </div>
@@ -1079,7 +1085,7 @@ export default function VoiceCustomerPage() {
                         className={styles.modalOverlay}
                         onClick={() => {
                             setShowProductModal(false);
-                            setNewProduct({ name: "", category: "", description: "", brandId: "" });
+                            setNewProduct({ name: "", description: "", brandId: "", category: "" });
                             setProductError("");
                             setEditingProduct(null);
                         }}
@@ -1091,7 +1097,7 @@ export default function VoiceCustomerPage() {
                                 type="button"
                                 onClick={() => {
                                     setShowProductModal(false);
-                                    setNewProduct({ name: "", category: "", description: "", brandId: "" });
+                                    setNewProduct({ name: "", description: "", brandId: "", category: "" });
                                     setProductError("");
                                     setEditingProduct(null);
                                 }}
@@ -1170,7 +1176,7 @@ export default function VoiceCustomerPage() {
                                 <button
                                     onClick={() => {
                                         setShowProductModal(false);
-                                        setNewProduct({ name: "", category: "", description: "", brandId: "" });
+                                        setNewProduct({ name: "", description: "", brandId: "", category: "" });
                                         setProductError("");
                                         setEditingProduct(null);
                                     }}
@@ -1248,41 +1254,6 @@ export default function VoiceCustomerPage() {
                                         placeholder="Enter industry"
                                         className={styles.formInput}
                                     />
-                                </div>
-                                <div>
-                                    <label className={styles.formLabel}>Brands</label>
-                                    <div className={styles.multiSelectContainer}>
-                                        {brands.map(brand => (
-                                            <div key={brand.id} className={styles.multiSelectItem}>
-                                                <label htmlFor={`brand-${brand.id}`} className={styles.multiSelectLabel}>
-                                                    <input
-                                                        aria-label={`brand-${brand.name}`}
-                                                        type="checkbox"
-                                                        id={`brand-${brand.id}`}
-                                                        value={brand.id}
-                                                        checked={newCompetitor.brandIds?.includes(brand.id) || false}
-                                                        onChange={e => {
-                                                            const selectedBrandIds = newCompetitor.brandIds || [];
-                                                            if (e.target.checked) {
-                                                                setNewCompetitor({
-                                                                    ...newCompetitor,
-                                                                    brandIds: [...selectedBrandIds, brand.id]
-                                                                });
-                                                            } else {
-                                                                setNewCompetitor({
-                                                                    ...newCompetitor,
-                                                                    brandIds: selectedBrandIds.filter(id => id !== brand.id)
-                                                                });
-                                                            }
-                                                            if (competitorError) setCompetitorError("");
-                                                        }}
-                                                        style={{ accentColor: "#4caf50" }}
-                                                    />
-                                                    <span className={styles.brandName}>{"   " + brand.name}</span>
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
                                 </div>
                                 <div>
                                     <label className={styles.formLabel}>Description (Optional)</label>

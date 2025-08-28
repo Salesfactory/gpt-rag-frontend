@@ -1410,9 +1410,11 @@ export async function createBrand({
 export async function deleteBrand({
   brand_id,
   user,
+  organization_id,
 }: {
   brand_id: string;
   user: any;
+  organization_id: string;
 }): Promise<any> {
   const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
     method: 'DELETE',
@@ -1421,6 +1423,7 @@ export async function deleteBrand({
       'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
+    body: JSON.stringify({ organization_id }),
   });
   const data = await response.json();
   if (!response.ok) {
@@ -1458,11 +1461,13 @@ export async function updateBrand({
   brand_name,
   brand_description,
   user,
+  organization_id,
 }: {
   brand_id: string;
   brand_name: string;
   brand_description: string;
   user: any;
+  organization_id: string;
 }): Promise<any> {
   const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
     method: 'PATCH',
@@ -1471,7 +1476,7 @@ export async function updateBrand({
       'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
-    body: JSON.stringify({ brand_name, brand_description }),
+    body: JSON.stringify({ brand_name, brand_description, organization_id }),
   });
   const data = await response.json();
   if (!response.ok) {
@@ -1486,15 +1491,15 @@ export async function createProduct({
   product_description,
   brand_id,
   organization_id,
-  category,
   user,
+  category,
 }: {
   product_name: string;
   product_description: string;
   brand_id: string;
   organization_id: string;
-  category: string;
   user: any;
+  category: string;
 }): Promise<any> {
   const response = await fetch('/api/voice-customer/products', {
     method: 'POST',
@@ -1522,9 +1527,11 @@ export async function createProduct({
 export async function deleteProduct({
   product_id,
   user,
+  organization_id,
 }: {
   product_id: string;
   user: any;
+  organization_id: string;
 }): Promise<any> {
   const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
     method: 'DELETE',
@@ -1533,6 +1540,7 @@ export async function deleteProduct({
       'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
+    body: JSON.stringify({ organization_id }),
   });
   const data = await response.json();
   if (!response.ok) {
@@ -1569,16 +1577,18 @@ export async function updateProduct({
   product_id,
   product_name,
   product_description,
-  category,
   brand_id,
   user,
+  organization_id,
+  category,
 }: {
   product_id: string;
   product_name: string;
   product_description: string;
-  category: string;
   brand_id: string;
   user: any;
+  organization_id: string;
+  category: string;
 }): Promise<any> {
   const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
     method: 'PATCH',
@@ -1590,8 +1600,9 @@ export async function updateProduct({
     body: JSON.stringify({
       product_name,
       product_description,
-      category,
       brand_id,
+      organization_id,
+      category,
     }),
   });
   const data = await response.json();
@@ -1643,9 +1654,11 @@ export async function createCompetitor({
 export async function deleteCompetitor({
   competitor_id,
   user,
+  organization_id,
 }: {
   competitor_id: string;
   user: any;
+  organization_id: string;
 }): Promise<any> {
   const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
     method: 'DELETE',
@@ -1654,6 +1667,7 @@ export async function deleteCompetitor({
       'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
       'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
     },
+    body: JSON.stringify({ organization_id }),
   });
   const data = await response.json();
   if (!response.ok) {
@@ -1693,6 +1707,7 @@ export async function updateCompetitor({
   industry,
   brands_id,
   user,
+  organization_id,
 }: {
   competitor_id: string;
   competitor_name: string;
@@ -1700,6 +1715,7 @@ export async function updateCompetitor({
   industry: string;
   brands_id: string[];
   user: any;
+  organization_id: string;
 }): Promise<any> {
   const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
     method: 'PATCH',
@@ -1713,6 +1729,7 @@ export async function updateCompetitor({
       competitor_description,
       industry,
       brands_id,
+      organization_id,
     }),
   });
   const data = await response.json();
@@ -1722,8 +1739,8 @@ export async function updateCompetitor({
   return data;
 }
 
-export async function getItemsToDeleteByBrand({ brand_id, user }: { brand_id: string; user: any }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}/items-to-delete/`, {
+export async function getItemsToDeleteByBrand({ brand_id, user, organization_id }: { brand_id: string; user: any, organization_id: string }): Promise<any> {
+  const response = await fetch(`/api/voice-customer/organization/${encodeURIComponent(organization_id)}/brands/${encodeURIComponent(brand_id)}/items-to-delete/`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
