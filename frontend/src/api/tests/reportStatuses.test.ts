@@ -1,6 +1,5 @@
 import { fetchReportJobs } from "../api";
 
-// Mock fetch globally
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
