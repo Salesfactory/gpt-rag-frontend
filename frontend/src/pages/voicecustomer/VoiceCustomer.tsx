@@ -30,7 +30,7 @@ interface Brand {
 interface Product {
     id: number;
     name: string;
-    industry: string;
+    category: string;
     description: string;
 }
 
@@ -106,7 +106,7 @@ export default function VoiceCustomerPage() {
     const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null);
 
     const [newBrand, setNewBrand] = useState({ name: "", description: "" });
-    const [newProduct, setNewProduct] = useState({ name: "", description: "", brandId: "", industry: "" });
+    const [newProduct, setNewProduct] = useState({ name: "", description: "", brandId: "", category: "" });
     const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
         name: "",
         industry: "",
@@ -313,7 +313,7 @@ export default function VoiceCustomerPage() {
     const handleAddProduct = async () => {
         if (!organization) return;
 
-        if (newProduct.name.trim().length === 0 || !newProduct.brandId || !newProduct.industry) {
+        if (newProduct.name.trim().length === 0 || !newProduct.brandId || !newProduct.category) {
             setProductError("All fields are required");
             return;
         }
@@ -324,7 +324,7 @@ export default function VoiceCustomerPage() {
                 product_name: newProduct.name,
                 product_description: newProduct.description,
                 brand_id: newProduct.brandId,
-                industry: newProduct.industry,
+                category: newProduct.category,
                 organization_id: organization.id,
                 user
             });
@@ -340,7 +340,7 @@ export default function VoiceCustomerPage() {
             toast.success("Product added successfully");
 
             // Reset form state
-            setNewProduct({ name: "", description: "", brandId: "", industry: "" });
+            setNewProduct({ name: "", description: "", brandId: "", category: "" });
             setProductError("");
             setShowProductModal(false);
         } catch (error) {
@@ -355,7 +355,7 @@ export default function VoiceCustomerPage() {
     const handleEditProduct = async () => {
         if (!organization || !editingProduct) return;
 
-        if (newProduct.name.trim().length === 0 || newProduct.industry.trim().length === 0 || !newProduct.brandId) {
+        if (newProduct.name.trim().length === 0 || newProduct.category.trim().length === 0 || !newProduct.brandId) {
             setProductError("All fields are required");
             return;
         }
@@ -367,7 +367,7 @@ export default function VoiceCustomerPage() {
                 product_name: newProduct.name,
                 product_description: newProduct.description,
                 brand_id: newProduct.brandId,
-                industry: newProduct.industry,
+                category: newProduct.category,
                 user,
                 organization_id: organization.id
             });
@@ -383,7 +383,7 @@ export default function VoiceCustomerPage() {
             toast.success("Product updated successfully");
 
             // Reset form state
-            setNewProduct({ name: "", description: "", brandId: "", industry: "" });
+            setNewProduct({ name: "", description: "", brandId: "", category: "" });
             setProductError("");
             setEditingProduct(null);
             setShowProductModal(false);
@@ -498,7 +498,7 @@ export default function VoiceCustomerPage() {
                 name: (item as any).name,
                 description: item.description,
                 brandId: (item as any).brandId || (brands[0]?.id ? String(brands[0].id) : ""),
-                industry: (item as any).industry
+                category: (item as any).category
             });
             setEditingProduct(item as Product);
             setShowProductModal(true);
@@ -782,7 +782,7 @@ export default function VoiceCustomerPage() {
                                                         <h4 className={styles.itemName} style={{ display: "inline", marginRight: 8 }}>
                                                             {product.name}
                                                         </h4>
-                                                        <span className={styles.itemCategory}>{product.industry}</span>
+                                                        <span className={styles.itemCategory}>{product.category}</span>
                                                         {brandName && <span className={styles.itemBrand}>{brandName}</span>}
                                                     </div>
                                                     {product.description && <p className={styles.itemDescription}>{product.description}</p>}
@@ -1029,7 +1029,7 @@ export default function VoiceCustomerPage() {
                         className={styles.modalOverlay}
                         onClick={() => {
                             setShowProductModal(false);
-                            setNewProduct({ name: "", description: "", brandId: "", industry: "" });
+                            setNewProduct({ name: "", description: "", brandId: "", category: "" });
                             setProductError("");
                             setEditingProduct(null);
                         }}
@@ -1040,7 +1040,7 @@ export default function VoiceCustomerPage() {
                             <button
                                 onClick={() => {
                                     setShowProductModal(false);
-                                    setNewProduct({ name: "", description: "", brandId: "", industry: "" });
+                                    setNewProduct({ name: "", description: "", brandId: "", category: "" });
                                     setProductError("");
                                     setEditingProduct(null);
                                 }}
@@ -1065,15 +1065,15 @@ export default function VoiceCustomerPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className={styles.formLabel}>Industry</label>
+                                    <label className={styles.formLabel}>Category</label>
                                     <input
                                         type="text"
-                                        value={newProduct.industry}
+                                        value={newProduct.category}
                                         onChange={e => {
-                                            setNewProduct({ ...newProduct, industry: e.target.value });
+                                            setNewProduct({ ...newProduct, category: e.target.value });
                                             if (productError) setProductError("");
                                         }}
-                                        placeholder="Enter product industry"
+                                        placeholder="Enter product category"
                                         className={styles.formInput}
                                     />
                                 </div>
@@ -1117,7 +1117,7 @@ export default function VoiceCustomerPage() {
                                 <button
                                     onClick={() => {
                                         setShowProductModal(false);
-                                        setNewProduct({ name: "", description: "", brandId: "", industry: "" });
+                                        setNewProduct({ name: "", description: "", brandId: "", category: "" });
                                         setProductError("");
                                         setEditingProduct(null);
                                     }}

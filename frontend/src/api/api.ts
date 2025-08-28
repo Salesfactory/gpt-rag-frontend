@@ -1492,14 +1492,14 @@ export async function createProduct({
   brand_id,
   organization_id,
   user,
-  industry,
+  category,
 }: {
   product_name: string;
   product_description: string;
   brand_id: string;
   organization_id: string;
   user: any;
-  industry: string;
+  category: string;
 }): Promise<any> {
   const response = await fetch('/api/voice-customer/products', {
     method: 'POST',
@@ -1513,7 +1513,7 @@ export async function createProduct({
       product_description,
       brand_id,
       organization_id,
-      industry,
+      category,
     }),
   });
   const data = await response.json();
@@ -1580,7 +1580,7 @@ export async function updateProduct({
   brand_id,
   user,
   organization_id,
-  industry,
+  category,
 }: {
   product_id: string;
   product_name: string;
@@ -1588,7 +1588,7 @@ export async function updateProduct({
   brand_id: string;
   user: any;
   organization_id: string;
-  industry: string;
+  category: string;
 }): Promise<any> {
   const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
     method: 'PATCH',
@@ -1602,7 +1602,7 @@ export async function updateProduct({
       product_description,
       brand_id,
       organization_id,
-      industry,
+      category,
     }),
   });
   const data = await response.json();
