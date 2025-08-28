@@ -152,8 +152,6 @@ describe("Voice Customer Test Suite", () => {
         cy.get('input[placeholder="Enter competitor name"]').type("Liverpool FC");
         cy.get("input[placeholder='Enter industry']").should("be.visible");
         cy.get("input[placeholder='Enter industry']").type("Football Club");
-        cy.get("input[aria-label='brand-Real Madrid']").should("be.visible");
-        cy.get("input[aria-label='brand-Real Madrid']").check();
 
         cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/competitors", {
             statusCode: 200,
