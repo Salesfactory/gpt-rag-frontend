@@ -1,10 +1,11 @@
 import os
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, jsonify, request
 import logging
 
 from http import HTTPStatus
 
 import pandas as pd
+from shared.cosmo_db import patch_organization_data
 from data_summary.file_utils import detect_extension
 from data_summary.summarize import create_description
 from data_summary.blob_utils import (
@@ -16,6 +17,7 @@ from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
 from utils import create_success_response, create_error_response
 from azure.core.exceptions import ResourceNotFoundError, AzureError
+from werkzeug.exceptions import  NotFound
 
 DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
 BLOB_CONTAINER_NAME = "documents"
@@ -105,3 +107,44 @@ def generate_business_description(organization_id, file_name):
     finally:
         if blob_temp_path and os.path.exists(blob_temp_path):
             os.remove(blob_temp_path)
+
+@bp.route("<org_id>", methods=["PATCH"])
+def patch_organization_info(org_id):
+    """
+    Endpoint to update 'brandInformation', 'industryInformation' and 'segmentSynonyms' and 'additionalInstructions' in an organization document.
+    """
+    try:
+        patch_data = request.get_json()
+
+        if patch_data is None or not isinstance(patch_data, dict):
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+        allowed_fields = {
+            "brandInformation",
+            "industryInformation",
+            "segmentSynonyms",
+            "additionalInstructions",
+        }
+        if not any(field in patch_data for field in allowed_fields):
+            return jsonify({"error": "No valid fields to update"}), 400
+
+        updated_org = patch_organization_data(org_id, patch_data)
+        return (
+            jsonify(
+                {
+                    "message": "Organization data updated successfully",
+                    "data": updated_org,
+                }
+            ),
+            200,
+        )
+
+    except NotFound:
+        return jsonify({"error": f"Organization with ID {org_id} not found."}), 404
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+
+    except Exception as e:
+        logging.exception(f"Error updating organization data for ID {org_id}")
+        return jsonify({"error": "An unexpected error occurred."}), 500
