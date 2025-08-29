@@ -18,6 +18,7 @@ from shared.cosmo_db import (
     update_competitor_by_id,
     update_prod_by_id,
     delete_prod_by_id,
+    get_categories,
 )
 
 bp = Blueprint("voice_customer", __name__, url_prefix="/api/voice-customer")
@@ -469,4 +470,17 @@ def get_items_to_delete(organization_id,brand_id):
         return create_success_response(items, 200)
     except Exception as e:
         logger.exception(f"Error retrieving items to delete: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+
+@bp.route("/categories", methods=["GET"])
+def get_categories_by_org():
+    """
+    Endpoint to retrieve product categories.
+    """
+    try:
+        categories = get_categories()
+        return create_success_response(categories, 200)
+    except Exception as e:
+        logger.exception(f"Error retrieving categories: {e}")
         return create_error_response("Internal Server Error", 500)
