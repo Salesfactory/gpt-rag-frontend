@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, CircleX, Circle } from "lucide-react";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 import styles from "./VoiceCustomer.module.css";
 import { ToastContainer, toast } from "react-toastify";
@@ -18,8 +18,13 @@ import {
     createCompetitor,
     updateCompetitor,
     deleteCompetitor,
-    getItemsToDeleteByBrand
+    getItemsToDeleteByBrand,
+    fetchReportJobs,
 } from "../../api/api";
+
+import type { BackendReportJobDoc } from "../../api/models";
+import { toCanonical } from "../../utils/reportStatus";
+import { statusIcon, statusClass, statusLabel, statusType } from "./reportStatusUi";
 
 interface Brand {
     id: number;
@@ -46,16 +51,6 @@ interface Competitor {
     ];
 }
 
-interface ReportJob {
-    id: number;
-    type: string;
-    target: string;
-    status: "Completed" | "In Progress" | "Pending" | "Failed";
-    progress: number;
-    startDate: string | null;
-    endDate: string | null;
-}
-
 interface DeleteConfirmState {
     show: boolean;
     item: Brand | Product | Competitor | null;
@@ -72,24 +67,6 @@ interface ItemToDelete {
     ];
 }
 
-function generateNextId<T extends { id: number }>(items: T[]): number {
-    return items.length > 0 ? Math.max(...items.map(item => item.id)) + 1 : 1;
-}
-
-function getStatusClass(status: string): string {
-    switch (status) {
-        case "Completed":
-            return styles.Completed;
-        case "In Progress":
-            return styles.InProgress;
-        case "Pending":
-            return styles.Pending;
-        case "Failed":
-            return styles.Failed;
-        default:
-            return styles.Unknown;
-    }
-}
 
 export default function VoiceCustomerPage() {
     const { user, organization } = useAppContext();
@@ -123,13 +100,9 @@ export default function VoiceCustomerPage() {
     const [brands, setBrands] = useState<Brand[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
-    const [reportJobs, setReportJobs] = useState<ReportJob[]>([
-        { id: 1, type: "Brand Analysis", target: "Apple", status: "Completed", progress: 100, startDate: "2024-07-15", endDate: "2024-07-16" },
-        { id: 2, type: "Product Analysis", target: "iPhone 15", status: "In Progress", progress: 65, startDate: "2024-07-16", endDate: null },
-        { id: 3, type: "Competitive Analysis", target: "Samsung vs Apple", status: "Pending", progress: 0, startDate: null, endDate: null },
-        { id: 4, type: "Brand Analysis", target: "Nike", status: "Failed", progress: 30, startDate: "2024-07-14", endDate: null },
-        { id: 5, type: "Product Analysis", target: "MacBook Pro", status: "Completed", progress: 100, startDate: "2024-07-13", endDate: "2024-07-15" }
-    ]);
+    const [rawReportJobs, setRawReportJobs] = useState<BackendReportJobDoc[]>([]);
+    const [isLoadingReports, setIsLoadingReports] = useState(false);
+    const [reportsError, setReportsError] = useState("");
 
     const [isLoadingBrands, setIsLoadingBrands] = useState(true);
     const [isLoadingDelete, setIsLoadingDelete] = useState(false);
@@ -200,6 +173,26 @@ export default function VoiceCustomerPage() {
 
         fetchCompetitors();
     }, [organization, user]);
+
+    useEffect(() => {
+    const fetchReports = async () => {
+        if (!organization) return;
+        try {
+            setReportsError("");
+            setIsLoadingReports(true);
+            const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
+            setRawReportJobs(Array.isArray(data) ? data : []);
+        } catch (e: any) {
+            setReportsError(e?.message || "Failed to fetch report statuses.");
+            toast.error("Failed to fetch report statuses. Please try again.");
+            setRawReportJobs([]);
+        } finally {
+            setIsLoadingReports(false);
+        }
+    };
+    fetchReports();
+    }, [organization, user]);
+
 
     // Uniqueness validation helpers
     const validateBrand = (name: string) => {
@@ -666,28 +659,11 @@ export default function VoiceCustomerPage() {
         }
     };
 
-    const filteredJobs = reportJobs.filter(job => {
-        const matchesSearch = job.type.toLowerCase().includes(searchQuery.toLowerCase()) || job.target.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = selectedStatus === "All Status" || job.status === selectedStatus;
-        return matchesSearch && matchesStatus;
-    });
 
-    const jobsWithEndDate = filteredJobs.filter(job => job.endDate !== null);
-
-    const sortedJobsWithEndDate = jobsWithEndDate.sort((a, b) => {
-        const endDateA = new Date(a.endDate!).getTime();
-        const endDateB = new Date(b.endDate!).getTime();
-        return endDateB - endDateA;
-    });
-
-    const jobsWithoutEndDate = filteredJobs.filter(job => job.endDate === null);
-
-    const jobsToDisplay = [...sortedJobsWithEndDate, ...jobsWithoutEndDate].slice(0, 10);
-    const getStatusIcon = (status: ReportJob["status"]) => {
-        if (status === "Completed") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
-        if (status === "In Progress") return <Clock size={16} style={{ color: "#2563eb" }} />;
-        if (status === "Failed") return <AlertCircle size={16} style={{ color: "#dc2626" }} />;
-        return <Clock size={16} style={{ color: "#6b7280" }} />;
+    const get_brands = (competitor: Competitor) => {
+        const brands_c = competitor.brands.map(b => b.brand_id);
+        const brands_names = brands.filter(b => brands_c.includes(b.id)).map(b => b.name);
+        return brands_names;
     };
 
     useEffect(() => {
@@ -735,11 +711,24 @@ export default function VoiceCustomerPage() {
                                                 {brand.description && <p className={styles.itemDescription}>{brand.description}</p>}
                                             </div>
                                             <div className={styles.itemActions}>
-                                                <button onClick={() => handleEdit(brand, "brand")} className={styles.iconButton}>
-                                                    <Edit size={16} />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEdit(brand, "brand")}
+                                                    className={styles.iconButton}
+                                                    aria-label={`Edit brand ${brand.name}`}
+                                                    title={`Edit brand ${brand.name}`}
+                                                    >
+                                                    <Edit aria-hidden="true" size={16} />
                                                 </button>
-                                                <button onClick={() => handleDelete(brand, "brand")} className={`${styles.iconButton} ${styles.deleteButton}`}>
-                                                    <Trash2 size={16} />
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDelete(brand, "brand")}
+                                                    className={`${styles.iconButton} ${styles.deleteButton}`}
+                                                    aria-label={`Delete brand ${brand.name}`}
+                                                    title={`Delete brand ${brand.name}`}
+                                                    >
+                                                    <Trash2 aria-hidden="true" size={16} />
                                                 </button>
                                             </div>
                                         </div>
@@ -788,14 +777,23 @@ export default function VoiceCustomerPage() {
                                                     {product.description && <p className={styles.itemDescription}>{product.description}</p>}
                                                 </div>
                                                 <div className={styles.itemActions}>
-                                                    <button onClick={() => handleEdit(product, "product")} className={styles.iconButton}>
-                                                        <Edit size={16} />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEdit(product, "product")}
+                                                        className={styles.iconButton}
+                                                        aria-label={`Edit product ${product.name}`}
+                                                        title={`Edit product ${product.name}`}
+                                                        >
+                                                        <Edit aria-hidden="true" size={16} />
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={() => handleDelete(product, "product")}
                                                         className={`${styles.iconButton} ${styles.deleteButton}`}
-                                                    >
-                                                        <Trash2 size={16} />
+                                                        aria-label={`Delete product ${product.name}`}
+                                                        title={`Delete product ${product.name}`}
+                                                        >
+                                                        <Trash2 aria-hidden="true" size={16} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -839,14 +837,23 @@ export default function VoiceCustomerPage() {
                                                     {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                                 </div>
                                                 <div className={styles.itemActions}>
-                                                    <button onClick={() => handleEdit(c, "competitor")} className={styles.iconButton}>
-                                                        <Edit size={16} />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEdit(c, "competitor")}
+                                                        className={styles.iconButton}
+                                                        aria-label={`Edit competitor ${c.name}`}
+                                                        title={`Edit competitor ${c.name}`}
+                                                        >
+                                                        <Edit size={16} aria-hidden="true" focusable="false" />
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={() => handleDelete(c, "competitor")}
                                                         className={`${styles.iconButton} ${styles.deleteButton}`}
-                                                    >
-                                                        <Trash2 size={16} />
+                                                        aria-label={`Delete competitor ${c.name}`}
+                                                        title={`Delete competitor ${c.name}`}
+                                                        >
+                                                        <Trash2 size={16} aria-hidden="true" focusable="false" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -878,8 +885,14 @@ export default function VoiceCustomerPage() {
                                     className={styles.searchInput}
                                 />
                                 {searchQuery && (
-                                    <button onClick={() => setSearchQuery("")} className={styles.clearSearchButton}>
-                                        <X size={16} />
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearchQuery("")}
+                                        className={styles.clearSearchButton}
+                                        aria-label="Clear search"
+                                        title="Clear search"
+                                        >
+                                        <X size={16} aria-hidden="true" focusable="false" />
                                     </button>
                                 )}
                             </div>
@@ -918,32 +931,73 @@ export default function VoiceCustomerPage() {
                     </div>
 
                     <div className={styles.tableContainer}>
+                    {isLoadingReports ? (
+                        <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+                        <Spinner data-testid="reports-loading" size={SpinnerSize.large} label="Loading report statuses..." />
+                        </div>
+                    ) : reportsError ? (
+                        <div data-testid="reports-error" className={styles.errorMessage} aria-live="polite">
+                        <CircleX />
+                        {reportsError}
+                        </div>
+                    ) : (
                         <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th className={styles.tableTh}>Type</th>
-                                    <th className={styles.tableTh}>End Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className={styles.tableBody}>
-                                {jobsToDisplay.map(job => (
-                                    <tr key={job.id} className={styles.tableRow}>
-                                        <td className={styles.tableCell}>
-                                            <div className={styles.statusCell}>
-                                                {getStatusIcon(job.status)}
-                                                <span className={styles.jobType}>{job.type}</span>
-                                                <span className={`${styles.statusBadge} ${getStatusClass(job.status)}`}>{job.status}</span>
-                                            </div>
-                                        </td>
-                                        <td className={styles.tableCell}>{job.endDate || "-"}</td>
+                        <thead>
+                            <tr>
+                            <th className={styles.tableTh}>Type</th>
+                            <th className={styles.tableTh}>Target</th>
+                            <th className={styles.tableTh}>Status</th>
+                            <th className={styles.tableTh}>Progress</th>
+                            <th className={styles.tableTh}>Start Date</th>
+                            <th className={styles.tableTh}>End Date</th>
+                            </tr>
+                        </thead>
+
+                        <tbody className={styles.tableBody}>
+                            {rawReportJobs.map((doc) => {
+                                const c = toCanonical(doc?.status);
+                                const terminal = c === "COMPLETED" || c === "FAILED";
+                                const progress = typeof doc?.progress === "number"
+                                    ? doc.progress
+                                    : c === "COMPLETED" ? 100 : undefined;
+                                const endDate = terminal ? (doc?.updated_at ?? null) : null;
+                                return (
+                                    <tr key={String(doc?.id)} className={styles.tableRow}>
+                                    <td className={styles.tableCell}>
+                                        <span className={styles.jobType}>{statusType(doc?.type) ?? doc?.report_name ?? "Report"}</span>
+                                    </td>
+                                    <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
+                                    <td className={styles.tableCell}>
+                                        <div className={styles.statusCell}>
+                                        {statusIcon(c)}
+                                        <span className={`${styles.statusBadge} ${statusClass(c)}`}>
+                                            {statusLabel(c)}
+                                        </span>
+                                        </div>
+                                    </td>
+                                    <td className={styles.tableCell}>
+                                        {typeof progress === "number" ? `${Math.round(progress)}%` : "-"}
+                                    </td>
+                                    <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
+                                    <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
                                     </tr>
-                                ))}
-                            </tbody>
+                                );
+                                })}
+                            {rawReportJobs.length === 0 && !isLoadingReports && !reportsError && (
+                            <tr>
+                                <td className={styles.tableCell} colSpan={6} data-testid="reports-empty">
+                                No reports found
+                                </td>
+                            </tr>
+                            )}
+                        </tbody>
                         </table>
+                    )}
                     </div>
+
+
                 </div>
             </main>
-
             {showBrandModal && (
                 <div className={styles.modalContainer}>
                     <div
@@ -959,6 +1013,7 @@ export default function VoiceCustomerPage() {
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{editingBrand ? "Edit Brand" : "Add Brand to Track"}</h3>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setShowBrandModal(false);
                                     setNewBrand({ name: "", description: "" });
@@ -966,6 +1021,8 @@ export default function VoiceCustomerPage() {
                                     setEditingBrand(null);
                                 }}
                                 className={styles.modalCloseButton}
+                                aria-label="Close brand modal"
+                                title="Close"
                             >
                                 <X size={24} />
                             </button>
@@ -1038,6 +1095,7 @@ export default function VoiceCustomerPage() {
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{editingProduct ? "Edit Product" : "Add Product to Track"}</h3>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setShowProductModal(false);
                                     setNewProduct({ name: "", description: "", brandId: "", category: "" });
@@ -1045,6 +1103,8 @@ export default function VoiceCustomerPage() {
                                     setEditingProduct(null);
                                 }}
                                 className={styles.modalCloseButton}
+                                aria-label="Close product modal"
+                                title="Close"
                             >
                                 <X size={24} />
                             </button>
@@ -1154,6 +1214,7 @@ export default function VoiceCustomerPage() {
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{editingCompetitor ? "Edit Competitor" : "Add Competitor to Track"}</h3>
                             <button
+                                type="button"
                                 onClick={() => {
                                     setShowCompetitorModal(false);
                                     setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
@@ -1161,8 +1222,10 @@ export default function VoiceCustomerPage() {
                                     setEditingCompetitor(null);
                                 }}
                                 className={styles.modalCloseButton}
-                            >
-                                <X size={24} />
+                                aria-label="Close competitor modal"
+                                title="Close"
+                                >
+                                <X size={24} aria-hidden="true" focusable="false" />
                             </button>
                         </div>
                         <div className={styles.modalContent}>
@@ -1239,9 +1302,12 @@ export default function VoiceCustomerPage() {
                             <div className={styles.deleteModalHeader}>
                                 <h3 className={styles.deleteModalTitle}>Delete {deleteConfirm.type}</h3>
                                 <button
+                                    type="button"
                                     onClick={() => setDeleteConfirm({ show: false, item: null, type: "" })}
                                     className={styles.modalCloseButton}
                                     style={{ color: "#9ca3af" }}
+                                    aria-label="Close delete dialog"
+                                    title="Close"
                                 >
                                     <X size={24} />
                                 </button>
