@@ -1549,16 +1549,3 @@ def delete_brand_by_id(brand_id, organization_id):
         logging.error(f"Error deleting brand with id {brand_id}: {e}")
         raise
 
-def get_categories():
-    """
-    Get all competitors for a specific organization.
-    """
-    container = get_cosmos_container("categories")
-
-    categories = list(container.query_items(
-        query="SELECT * FROM c",
-        enable_cross_partition_query=True,
-    ))
-    logging.info(f"Categories retrieved successfully: {categories}")
-
-    return {"categories": categories}
