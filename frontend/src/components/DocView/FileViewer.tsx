@@ -25,8 +25,6 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileType, page }) => {
         case "docx":
         case "doc":
             return <DocxViewer file={file as Blob} />;
-        case "html":
-            return <HTMLViewer file={file as Blob} />;
         case "txt":
         case "cvs":
             return <TextViewer file={file as Blob} />;

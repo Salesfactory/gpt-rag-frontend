@@ -62,13 +62,11 @@ function truncateString(str: string, maxLength: number): string {
     return str.substring(0, startLength) + "..." + str.substring(str.length - endLength);
 }
 
-
 const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: React.CSSProperties; children: React.ReactNode }> = ({
     level: Tag,
     style,
     children
 }) => <Tag style={style}>{children}</Tag>;
-
 
 export const Answer = ({
     answer,
@@ -180,7 +178,7 @@ export const Answer = ({
     );
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
-    
+
     // Show fallback loading when no content and no progress state
     if (answer.answer === "" && !progressState && isGenerating) {
         return (
@@ -195,7 +193,7 @@ export const Answer = ({
             </Stack>
         );
     }
-    
+
     return (
         <Stack className={`${styles.answerContainer} ${isSelected && styles.selected}`} verticalAlign="space-between">
             <Stack.Item>
@@ -217,15 +215,10 @@ export const Answer = ({
             {progressState && (
                 <Stack.Item>
                     <div className={styles.progressContainer}>
-                        <p className={styles.progressMessage}>
-                            {progressState.message}
-                        </p>
+                        <p className={styles.progressMessage}>{progressState.message}</p>
                         {progressState.progress !== undefined && (
                             <div className={styles.progressBarContainer}>
-                                <div 
-                                    className={styles.progressBar}
-                                    style={{ width: `${progressState.progress}%` }}
-                                />
+                                <div className={styles.progressBar} style={{ width: `${progressState.progress}%` }} />
                             </div>
                         )}
                         <span className={styles.loadingdots} />

@@ -83,7 +83,7 @@ const Chat = () => {
     const triggered = useRef(false);
 
     const [lastAnswer, setLastAnswer] = useState<string>("");
-    const [progressState, setProgressState] = useState<{step: string; message: string; progress?: number; timestamp?: number} | null>(null);
+    const [progressState, setProgressState] = useState<{ step: string; message: string; progress?: number; timestamp?: number } | null>(null);
     const restartChat = useRef<boolean>(false);
 
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
@@ -98,7 +98,7 @@ const Chat = () => {
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
         setLastAnswer("");
-        setProgressState(null); 
+        setProgressState(null);
 
         const agent = isFinancialAssistantActive ? "financial" : "consumer";
 
@@ -185,7 +185,7 @@ const Chat = () => {
                     // ---- plain text / IMAGE_PREVIEW (markdown validation handled in parser) ----
                     result += evt.payload;
                     setLastAnswer(result); // incremental UI update
-                    
+
                     // Clear progress state once we start getting actual response content (not just whitespace)
                     if (progressState && result.trim().length > 0 && evt.payload.trim().length > 0) {
                         setProgressState(null);
@@ -211,10 +211,10 @@ const Chat = () => {
 
             setAnswers(prev => [...prev, [question, botResponse]]);
             setDataConversation(prev => [...prev, { user: question, bot: { message: botResponse.answer, thoughts: botResponse.thoughts } }]);
-            
+
             // Clear progress state when response is complete
             setProgressState(null);
-            
+
             lastQuestionRef.current = "";
         } catch (err) {
             console.error("Error fetching streamed response:", err);
@@ -360,7 +360,7 @@ const Chat = () => {
     };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx") && !citation.endsWith(".html")) {
+        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
             return window.open(citation, "_blank");
         }
         // Extract filepath if necessary
