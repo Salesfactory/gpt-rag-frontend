@@ -13,7 +13,9 @@ from shared.cosmo_db import (
     get_brands_by_organization,
     get_competitors_by_organization,
     get_items_to_delete_by_brand,
+    get_organization_data,
     get_prods_by_organization,
+    patch_organization_data,
     update_brand_by_id,
     update_competitor_by_id,
     update_prod_by_id,
@@ -469,4 +471,61 @@ def get_items_to_delete(organization_id,brand_id):
         return create_success_response(items, 200)
     except Exception as e:
         logger.exception(f"Error retrieving items to delete: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
+@bp.route("/organization/<organization_id>/industry", methods=["POST"])
+def add_industry(organization_id):
+    """
+    Endpoint to add a new industry for a specific organization.
+
+    Expects a JSON payload with the following required fields:
+        - industry_name (str): The name of the industry.
+        - industry_description (str): A description of the industry.
+
+    Returns:
+        JSON response with the created industry object or an error message.
+    """
+    data = request.get_json()
+    if not data:
+        return create_error_response("No JSON data provided", 400)
+    
+    if not data["industry_description"]:
+        return create_error_response("Missing required field: industry_description", 400)
+
+    try:
+        industry_description = data["industry_description"]
+
+        response = patch_organization_data(
+            org_id=organization_id,
+            patch_data={"industry_description": industry_description}
+        )
+
+        return create_success_response(response, 201)
+    
+    except Exception as e:
+        logger.exception(f"Error creating industry: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
+@bp.route("/organization/<organization_id>/industry", methods=["GET"])
+def get_industry_by_organization(organization_id):
+    """
+    Endpoint to add a new industry for a specific organization.
+
+    Expects a JSON payload with the following required fields:
+        - industry_name (str): The name of the industry.
+        - industry_description (str): A description of the industry.
+
+    Returns:
+        JSON response with the created industry object or an error message.
+    """
+    try:
+
+        response = get_organization_data(organization_id)
+
+        data = response["industry_description"] if "industry_description" in response else ""
+
+        return create_success_response(data, 200)
+
+    except Exception as e:
+        logger.exception(f"Error creating industry: {e}")
         return create_error_response("Internal Server Error", 500)
