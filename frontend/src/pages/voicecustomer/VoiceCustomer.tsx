@@ -6,9 +6,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAppContext } from "../../providers/AppProviders";
 import {
-    getBrandsByOrganization,
     createBrand,
-    deleteBrand,
     updateBrand,
     getProductsByOrganization,
     createProduct,
@@ -20,13 +18,69 @@ import {
     deleteCompetitor
 } from "../../api/api";
 
-// Card wrapper component
-interface CardProps {
-    children: React.ReactNode;
-}
+import { useBrands } from "./useBrands";
 
-function Card({ children }: CardProps) {
-    return <div className={styles.card}>{children}</div>;
+// Card Context Pattern
+type CardCtx = {
+    open: boolean;
+    setOpen: (v: boolean) => void;
+    toggle: () => void;
+    count: number;
+    setCount: (count: number) => void;
+};
+
+const CardContext = React.createContext<CardCtx | null>(null);
+
+export const useCard = () => {
+    const v = React.useContext(CardContext);
+    if (!v) throw new Error("useCard must be used inside <Card>");
+    return v;
+};
+
+// Card wrapper with isolated state per instance
+export function Card({
+    children,
+    defaultOpen = false,
+    icon,
+    title,
+    maxCount,
+    disabled = false
+}: {
+    children: React.ReactNode;
+    defaultOpen?: boolean;
+    icon: React.ReactNode;
+    title: string;
+    maxCount: number;
+    disabled?: boolean;
+}) {
+    const [open, setOpen] = React.useState(defaultOpen);
+    const [count, setCount] = React.useState(0);
+    const toggle = React.useCallback(() => setOpen(v => !v), []);
+    const value = React.useMemo(() => ({ open, setOpen, toggle, count, setCount }), [open, toggle, count]);
+
+    return (
+        <CardContext.Provider value={value}>
+            <div className={styles.card}>
+                <div className={styles.cardHeader}>
+                    <div className={styles.cardHeaderTitle}>
+                        {icon}
+                        <h3 className={styles.cardTitle}>
+                            {title} ({count}/{maxCount})
+                        </h3>
+                    </div>
+                    <button
+                        aria-label={`create-${title.toLowerCase()}-button`}
+                        onClick={() => setOpen(true)}
+                        disabled={disabled || count >= maxCount}
+                        className={styles.headerAddButton}
+                    >
+                        <PlusCircle size={16} />
+                    </button>
+                </div>
+                <div className={styles.cardBody}>{children}</div>
+            </div>
+        </CardContext.Provider>
+    );
 }
 
 interface Brand {
@@ -64,8 +118,6 @@ interface ReportJob {
     endDate: string | null;
 }
 
-
-
 function getStatusClass(status: string): string {
     switch (status) {
         case "Completed":
@@ -81,645 +133,509 @@ function getStatusClass(status: string): string {
     }
 }
 
-// Brands component
-function Brands() {
+// Brands - Just displays the list and uses the hook
+export function Brands({ onBrandsChange }: { onBrandsChange: (hasBrands: boolean) => void }) {
     const { user, organization } = useAppContext();
-    const [showBrandModal, setShowBrandModal] = useState(false);
+    const { setOpen, setCount } = useCard();
     const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
-    const [newBrand, setNewBrand] = useState({ name: "", description: "" });
-    const [brandError, setBrandError] = useState("");
-    const [brands, setBrands] = useState<Brand[]>([]);
-    const [isLoadingBrands, setIsLoadingBrands] = useState(true);
+
+    const { brands, isLoading, error, refresh, remove } = useBrands({ organizationId: organization?.id, user });
 
     useEffect(() => {
-        const fetchBrands = async () => {
-            if (!organization) return;
-            try {
-                setIsLoadingBrands(true);
-                const fetchedBrands = await getBrandsByOrganization({
-                    organization_id: organization?.id,
-                    user
-                });
-                setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
-            } catch (error) {
-                console.error("Error fetching brands:", error);
-                setBrands([]);
-            } finally {
-                setIsLoadingBrands(false);
-            }
-        };
-
-        fetchBrands();
-    }, [organization, user]);
-
-    const handleAddBrand = async () => {
-        if (!organization) return;
-        if (newBrand.name.trim().length === 0) {
-            setBrandError("Brand name is required");
-            return;
-        }
-
-        try {
-            setIsLoadingBrands(true);
-            await createBrand({
-                brand_name: newBrand.name,
-                brand_description: newBrand.description,
-                organization_id: organization.id,
-                user
-            });
-
-            // Reload brands from the backend to ensure the new brand is up-to-date
-            const updatedBrands = await getBrandsByOrganization({
-                organization_id: organization.id,
-                user
-            });
-            setBrands(updatedBrands);
-
-            // Show success notification
-            toast.success("Brand added successfully");
-
-            // Reset form state
-            setNewBrand({ name: "", description: "" });
-            setBrandError("");
-            setShowBrandModal(false);
-        } catch (error) {
-            toast.error("Failed to create brand. Please try again.");
-            console.error("Error creating brand:", error);
-            setBrandError("Failed to create brand. Please try again.");
-        } finally {
-            setIsLoadingBrands(false);
-        }
-    };
-
-    const handleEditBrand = async () => {
-        if (!organization || !editingBrand) return;
-
-        if (newBrand.name.trim().length === 0) {
-            setBrandError("Brand name is required");
-            return;
-        }
-
-        try {
-            setIsLoadingBrands(true);
-            await updateBrand({
-                brand_id: String(editingBrand.id),
-                brand_name: newBrand.name,
-                brand_description: newBrand.description,
-                organization_id: organization.id,
-                user
-            });
-
-            // Reload brands from the backend to ensure the updated brand is reflected
-            const updatedBrands = await getBrandsByOrganization({
-                organization_id: organization.id,
-                user
-            });
-            setBrands(updatedBrands);
-
-            // Show success notification
-            toast.success("Brand updated successfully");
-
-            // Reset form state
-            setNewBrand({ name: "", description: "" });
-            setBrandError("");
-            setEditingBrand(null);
-            setShowBrandModal(false);
-        } catch (error) {
-            toast.error("Failed to update brand. Please try again.");
-            console.error("Error updating brand:", error);
-        } finally {
-            setIsLoadingBrands(false);
-        }
-    };
+        setCount(brands.length);
+        onBrandsChange(brands.length > 0);
+    }, [brands.length, onBrandsChange, setCount]);
 
     const handleEdit = (brand: Brand) => {
-        setNewBrand({ name: brand.name, description: brand.description });
         setEditingBrand(brand);
-        setShowBrandModal(true);
+        setOpen(true);
     };
 
     const handleDelete = async (brand: Brand) => {
         if (!organization) return;
-        // Show delete confirmation logic would go here
-        // For now, we'll implement a simple confirm dialog
         if (window.confirm(`Are you sure you want to delete ${brand.name}?`)) {
             try {
-                setIsLoadingBrands(true);
-                await deleteBrand({
-                    brand_id: String(brand.id),
-                    user,
-                    organization_id: organization.id
-                });
-
-                // Reload brands from the backend
-                const updatedBrands = await getBrandsByOrganization({
-                    organization_id: organization.id,
-                    user
-                });
-                setBrands(updatedBrands);
-
+                await remove(brand);
                 toast.success("Brand deleted successfully");
-            } catch (error) {
-                console.error("Error deleting brand:", error);
+            } catch (e) {
+                console.error("Error deleting brand:", e);
                 toast.error("Failed to delete brand. Please try again.");
-            } finally {
-                setIsLoadingBrands(false);
             }
         }
     };
 
     return (
         <>
-            <div className={styles.cardHeader}>
-                <div className={styles.cardHeaderTitle}>
-                    <Building size={20} />
-                    <h3 className={styles.cardTitle}>Brands ({brands.length}/3)</h3>
-                </div>
-                <button
-                    aria-label="create-brand-button"
-                    onClick={() => setShowBrandModal(true)}
-                    disabled={brands.length >= 3}
-                    className={styles.headerAddButton}
-                >
-                    <PlusCircle size={16} />
-                </button>
-            </div>
-            <div className={styles.cardBody}>
-                {isLoadingBrands ? (
-                    <Spinner size={SpinnerSize.large} label="Loading brands..." />
-                ) : brands.length === 0 ? (
-                    <p className={styles.emptyStateText}>No brands added yet</p>
-                ) : (
-                    <div className={styles.itemsList}>
-                        {brands.map(brand => (
-                            <div key={brand.id} className={styles.listItem}>
-                                <div className={styles.itemContent}>
-                                    <h4 className={styles.itemName}>{brand.name}</h4>
-                                    {brand.description && <p className={styles.itemDescription}>{brand.description}</p>}
-                                </div>
-                                <div className={styles.itemActions}>
-                                    <button onClick={() => handleEdit(brand)} className={styles.iconButton}>
-                                        <Edit size={16} />
-                                    </button>
-                                    <button onClick={() => handleDelete(brand)} className={`${styles.iconButton} ${styles.deleteButton}`}>
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+            {isLoading ? (
+                <Spinner size={SpinnerSize.large} label="Loading brands..." />
+            ) : error ? (
+                <p className={styles.errorMessage}>{error}</p>
+            ) : brands.length === 0 ? (
+                <p className={styles.emptyStateText}>No brands added yet</p>
+            ) : (
+                <div className={styles.itemsList}>
+                    {brands.map(brand => (
+                        <div key={brand.id} className={styles.listItem}>
+                            <div className={styles.itemContent}>
+                                <h4 className={styles.itemName}>{brand.name}</h4>
+                                {brand.description && <p className={styles.itemDescription}>{brand.description}</p>}
                             </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {showBrandModal && (
-                <div className={styles.modalContainer}>
-                    <div
-                        className={styles.modalOverlay}
-                        onClick={() => {
-                            setShowBrandModal(false);
-                            setNewBrand({ name: "", description: "" });
-                            setBrandError("");
-                            setEditingBrand(null);
-                        }}
-                    />
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h3 className={styles.modalTitle}>{editingBrand ? "Edit Brand" : "Add Brand to Track"}</h3>
-                            <button
-                                onClick={() => {
-                                    setShowBrandModal(false);
-                                    setNewBrand({ name: "", description: "" });
-                                    setBrandError("");
-                                    setEditingBrand(null);
-                                }}
-                                className={styles.modalCloseButton}
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-                        <div className={styles.modalContent}>
-                            <div className={styles.modalBody}>
-                                <div>
-                                    <label className={styles.formLabel}>Brand Name</label>
-                                    <input
-                                        type="text"
-                                        value={newBrand.name}
-                                        onChange={e => {
-                                            setNewBrand({ ...newBrand, name: e.target.value });
-                                            if (brandError) setBrandError("");
-                                        }}
-                                        placeholder="Enter brand name"
-                                        className={styles.formInput}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={styles.formLabel}>Description (Optional)</label>
-                                    <textarea
-                                        value={newBrand.description}
-                                        onChange={e => setNewBrand({ ...newBrand, description: e.target.value })}
-                                        placeholder="Brief description of the brand"
-                                        rows={3}
-                                        className={styles.formTextarea}
-                                    />
-                                </div>
-                                {brandError && <p className={styles.errorMessage}>{brandError}</p>}
-                            </div>
-                            <div className={styles.modalActions}>
-                                <button
-                                    onClick={() => {
-                                        setShowBrandModal(false);
-                                        setNewBrand({ name: "", description: "" });
-                                        setBrandError("");
-                                        setEditingBrand(null);
-                                    }}
-                                    className={`${styles.button} ${styles.buttonCancel}`}
-                                >
-                                    Cancel
+                            <div className={styles.itemActions}>
+                                <button onClick={() => handleEdit(brand)} className={styles.iconButton}>
+                                    <Edit size={16} />
                                 </button>
-                                <button
-                                    aria-label={editingBrand ? "update-brand-button" : "add-brand-button"}
-                                    onClick={editingBrand ? handleEditBrand : handleAddBrand}
-                                    disabled={isLoadingBrands}
-                                    className={`${styles.button} ${styles.buttonConfirm}`}
-                                >
-                                    {isLoadingBrands ? <Spinner size={SpinnerSize.small} /> : editingBrand ? "Update" : "Add"}
+                                <button onClick={() => handleDelete(brand)} className={`${styles.iconButton} ${styles.deleteButton}`}>
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
             )}
+
+            <ModalBrand
+                editingBrand={editingBrand}
+                onSuccess={() => {
+                    setEditingBrand(null);
+                    refresh();
+                }}
+            />
         </>
     );
 }
 
-// Products component
-function Products() {
+// ModalBrand - Just handles the form and uses the hook
+export function ModalBrand({ editingBrand, onSuccess }: { editingBrand: Brand | null; onSuccess: () => void }) {
     const { user, organization } = useAppContext();
-    const [showProductModal, setShowProductModal] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-    const [newProduct, setNewProduct] = useState({ name: "", description: "", brandId: "", category: "" });
-    const [productError, setProductError] = useState("");
+    const { open, setOpen } = useCard();
+    const [formData, setFormData] = useState({ name: "", description: "" });
+    const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    React.useEffect(() => {
+        if (editingBrand && open) {
+            setFormData({ name: editingBrand.name, description: editingBrand.description });
+        } else if (open) {
+            setFormData({ name: "", description: "" });
+        }
+        setError("");
+    }, [editingBrand, open]);
+
+    const handleSubmit = async () => {
+        if (!organization) return;
+        if (formData.name.trim().length === 0) {
+            setError("Brand name is required");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            if (editingBrand) {
+                await updateBrand({
+                    brand_id: String(editingBrand.id),
+                    brand_name: formData.name,
+                    brand_description: formData.description,
+                    organization_id: organization.id,
+                    user
+                });
+                toast.success("Brand updated successfully");
+            } else {
+                await createBrand({
+                    brand_name: formData.name,
+                    brand_description: formData.description,
+                    organization_id: organization.id,
+                    user
+                });
+                toast.success("Brand added successfully");
+            }
+
+            setOpen(false);
+            onSuccess();
+        } catch (error) {
+            const action = editingBrand ? "update" : "create";
+            toast.error(`Failed to ${action} brand. Please try again.`);
+            console.error(`Error ${action}ing brand:`, error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleClose = () => {
+        setFormData({ name: "", description: "" });
+        setError("");
+        setOpen(false);
+    };
+
+    if (!open) return null;
+
+    return (
+        <div className={styles.modalContainer}>
+            <div className={styles.modalOverlay} onClick={handleClose} />
+            <div className={styles.modal}>
+                <div className={styles.modalHeader}>
+                    <h3 className={styles.modalTitle}>{editingBrand ? "Edit Brand" : "Add Brand to Track"}</h3>
+                    <button onClick={handleClose} className={styles.modalCloseButton}>
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className={styles.modalContent}>
+                    <div className={styles.modalBody}>
+                        <div>
+                            <label className={styles.formLabel}>Brand Name</label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={e => {
+                                    setFormData({ ...formData, name: e.target.value });
+                                    if (error) setError("");
+                                }}
+                                placeholder="Enter brand name"
+                                className={styles.formInput}
+                            />
+                        </div>
+                        <div>
+                            <label className={styles.formLabel}>Description (Optional)</label>
+                            <textarea
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="Brief description of the brand"
+                                rows={3}
+                                className={styles.formTextarea}
+                            />
+                        </div>
+                        {error && <p className={styles.errorMessage}>{error}</p>}
+                    </div>
+                    <div className={styles.modalActions}>
+                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`}>
+                            Cancel
+                        </button>
+                        <button
+                            aria-label={editingBrand ? "update-brand-button" : "add-brand-button"}
+                            onClick={handleSubmit}
+                            disabled={isLoading}
+                            className={`${styles.button} ${styles.buttonConfirm}`}
+                        >
+                            {isLoading ? <Spinner size={SpinnerSize.small} /> : editingBrand ? "Update" : "Add"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Products - Just displays the list and uses the hook
+// Products.tsx
+export function Products() {
+    const { user, organization } = useAppContext();
+    const { setOpen, setCount } = useCard();
+
     const [products, setProducts] = useState<Product[]>([]);
-    const [brands, setBrands] = useState<Brand[]>([]);
-    const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+    // ⬇️ Pull brands via the custom hook
+    const { brands, isLoading: isLoadingBrands, error: brandsError } = useBrands({ organizationId: organization?.id, user });
 
     useEffect(() => {
         const fetchProducts = async () => {
             if (!organization) return;
             try {
-                setIsLoadingProducts(true);
-
+                setIsLoading(true);
                 const fetchedProducts = await getProductsByOrganization({
                     organization_id: organization.id,
                     user
                 });
                 setProducts(fetchedProducts);
+                setCount(fetchedProducts.length);
             } catch (error) {
                 console.error("Error fetching products:", error);
+                setProducts([]);
+                setCount(0);
             } finally {
-                setIsLoadingProducts(false);
+                setIsLoading(false);
             }
         };
-
         fetchProducts();
-    }, [organization, user]);
-
-    useEffect(() => {
-        const fetchBrands = async () => {
-            if (!organization) return;
-            try {
-                const fetchedBrands = await getBrandsByOrganization({
-                    organization_id: organization?.id,
-                    user
-                });
-                setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
-            } catch (error) {
-                console.error("Error fetching brands:", error);
-                setBrands([]);
-            }
-        };
-
-        fetchBrands();
-    }, [organization, user]);
-
-    const handleAddProduct = async () => {
-        if (!organization) return;
-
-        if (newProduct.name.trim().length === 0 || !newProduct.brandId || !newProduct.category) {
-            setProductError("All fields are required");
-            return;
-        }
-
-        try {
-            setIsLoadingProducts(true);
-            await createProduct({
-                product_name: newProduct.name,
-                product_description: newProduct.description,
-                brand_id: newProduct.brandId,
-                category: newProduct.category,
-                organization_id: organization.id,
-                user
-            });
-
-            // Reload products from the backend to ensure the new product is up-to-date
-            const updatedProducts = await getProductsByOrganization({
-                organization_id: organization.id,
-                user
-            });
-            setProducts(updatedProducts);
-
-            // Show success notification
-            toast.success("Product added successfully");
-
-            // Reset form state
-            setNewProduct({ name: "", description: "", brandId: "", category: "" });
-            setProductError("");
-            setShowProductModal(false);
-        } catch (error) {
-            toast.error("Failed to create product. Please try again.");
-            console.error("Error creating product:", error);
-            setProductError("Failed to create product. Please try again.");
-        } finally {
-            setIsLoadingProducts(false);
-        }
-    };
-
-    const handleEditProduct = async () => {
-        if (!organization || !editingProduct) return;
-
-        if (newProduct.name.trim().length === 0 || newProduct.category.trim().length === 0 || !newProduct.brandId) {
-            setProductError("All fields are required");
-            return;
-        }
-
-        try {
-            setIsLoadingProducts(true);
-            await updateProduct({
-                product_id: String(editingProduct.id),
-                product_name: newProduct.name,
-                product_description: newProduct.description,
-                brand_id: newProduct.brandId,
-                category: newProduct.category,
-                user,
-                organization_id: organization.id
-            });
-
-            // Reload products from the backend to ensure the updated product is reflected
-            const updatedProducts = await getProductsByOrganization({
-                organization_id: organization.id,
-                user
-            });
-            setProducts(updatedProducts);
-
-            // Show success notification
-            toast.success("Product updated successfully");
-
-            // Reset form state
-            setNewProduct({ name: "", description: "", brandId: "", category: "" });
-            setProductError("");
-            setEditingProduct(null);
-            setShowProductModal(false);
-        } catch (error) {
-            toast.error("Failed to update product. Please try again.");
-            console.error("Error updating product:", error);
-        } finally {
-            setIsLoadingProducts(false);
-        }
-    };
+    }, [organization, user, setCount]);
 
     const handleEdit = (product: Product) => {
-        setNewProduct({
-            name: (product as any).name,
-            description: product.description,
-            brandId: (product as any).brandId || (brands[0]?.id ? String(brands[0].id) : ""),
-            category: (product as any).category
-        });
         setEditingProduct(product);
-        setShowProductModal(true);
+        setOpen(true);
     };
 
     const handleDelete = async (product: Product) => {
         if (!organization) return;
-
         if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
             try {
-                setIsLoadingProducts(true);
+                setIsLoading(true);
                 await deleteProduct({
                     product_id: String(product.id),
                     user,
                     organization_id: organization.id
                 });
-
-                // Reload products from the backend to ensure the list is up-to-date
                 const updatedProducts = await getProductsByOrganization({
                     organization_id: organization.id,
                     user
                 });
                 setProducts(updatedProducts);
-
-                // Show success notification
+                setCount(updatedProducts.length);
                 toast.success("Product deleted successfully");
             } catch (error) {
                 console.error("Error deleting product:", error);
                 toast.error("Failed to delete product. Please try again.");
             } finally {
-                setIsLoadingProducts(false);
+                setIsLoading(false);
             }
         }
     };
 
+    const refreshProducts = async () => {
+        if (!organization) return;
+        try {
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setProducts(updatedProducts);
+            setCount(updatedProducts.length);
+            // optionally also refresh brands if needed elsewhere
+            // await refreshBrands();
+        } catch (error) {
+            console.error("Error refreshing products:", error);
+        }
+    };
+
+    // Helpful: a memoized map for brand name lookup
+    const brandNameById = React.useMemo(() => {
+        const m = new Map<string, string>();
+        for (const b of brands) m.set(String(b.id), b.name);
+        return m;
+    }, [brands]);
+
     return (
         <>
-            <div className={styles.cardHeader}>
-                <div className={styles.cardHeaderTitle}>
-                    <Package size={20} />
-                    <h3 className={styles.cardTitle}>Products ({products.length}/10)</h3>
-                </div>
-                <button
-                    aria-label="create-product-button"
-                    onClick={() => setShowProductModal(true)}
-                    disabled={products.length >= 10 || brands.length === 0}
-                    className={styles.headerAddButton}
-                >
-                    <PlusCircle size={16} />
-                </button>
-            </div>
-            <div className={styles.cardBody}>
-                {isLoadingProducts ? (
-                    <Spinner size={SpinnerSize.large} label="Loading products..." />
-                ) : products.length === 0 ? (
-                    <p className={styles.emptyStateText}>No products added yet</p>
-                ) : (
-                    <div className={styles.itemsList}>
-                        {products.map(product => {
-                            const brandName = (product as any).brandId
-                                ? brands.find(b => String(b.id) === String((product as any).brandId))?.name
-                                : undefined;
-                            return (
-                                <div key={product.id} className={styles.listItem}>
-                                    <div className={styles.itemContent}>
-                                        <div className={styles.itemHeader}>
-                                            <h4 className={styles.itemName} style={{ display: "inline", marginRight: 8 }}>
-                                                {product.name}
-                                            </h4>
-                                            <span className={styles.itemCategory}>{product.category}</span>
-                                            {brandName && <span className={styles.itemBrand}>{brandName}</span>}
-                                        </div>
-                                        {product.description && <p className={styles.itemDescription}>{product.description}</p>}
+            {isLoading ? (
+                <Spinner size={SpinnerSize.large} label="Loading products..." />
+            ) : products.length === 0 ? (
+                <p className={styles.emptyStateText}>No products added yet</p>
+            ) : (
+                <div className={styles.itemsList}>
+                    {products.map(product => {
+                        const brandId = (product as any).brandId ? String((product as any).brandId) : undefined;
+                        const brandName = brandId ? brandNameById.get(brandId) : undefined;
+                        return (
+                            <div key={product.id} className={styles.listItem}>
+                                <div className={styles.itemContent}>
+                                    <div className={styles.itemHeader}>
+                                        <h4 className={styles.itemName} style={{ display: "inline", marginRight: 8 }}>
+                                            {product.name}
+                                        </h4>
+                                        <span className={styles.itemCategory}>{product.category}</span>
+                                        {brandName && <span className={styles.itemBrand}>{brandName}</span>}
                                     </div>
-                                    <div className={styles.itemActions}>
-                                        <button onClick={() => handleEdit(product)} className={styles.iconButton}>
-                                            <Edit size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(product)}
-                                            className={`${styles.iconButton} ${styles.deleteButton}`}
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
+                                    {product.description && <p className={styles.itemDescription}>{product.description}</p>}
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-
-            {showProductModal && (
-                <div className={styles.modalContainer}>
-                    <div
-                        className={styles.modalOverlay}
-                        onClick={() => {
-                            setShowProductModal(false);
-                            setNewProduct({ name: "", description: "", brandId: "", category: "" });
-                            setProductError("");
-                            setEditingProduct(null);
-                        }}
-                    />
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h3 className={styles.modalTitle}>{editingProduct ? "Edit Product" : "Add Product to Track"}</h3>
-                            <button
-                                onClick={() => {
-                                    setShowProductModal(false);
-                                    setNewProduct({ name: "", description: "", brandId: "", category: "" });
-                                    setProductError("");
-                                    setEditingProduct(null);
-                                }}
-                                className={styles.modalCloseButton}
-                            >
-                                <X size={24} />
-                            </button>
-                        </div>
-                        <div className={styles.modalContent}>
-                            <div className={styles.modalBody}>
-                                <div>
-                                    <label className={styles.formLabel}>Product Name</label>
-                                    <input
-                                        type="text"
-                                        value={newProduct.name}
-                                        onChange={e => {
-                                            setNewProduct({ ...newProduct, name: e.target.value });
-                                            if (productError) setProductError("");
-                                        }}
-                                        placeholder="Enter product name"
-                                        className={styles.formInput}
-                                    />
+                                <div className={styles.itemActions}>
+                                    <button onClick={() => handleEdit(product)} className={styles.iconButton}>
+                                        <Edit size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(product)} className={`${styles.iconButton} ${styles.deleteButton}`}>
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className={styles.formLabel}>Category</label>
-                                    <input
-                                        type="text"
-                                        value={newProduct.category}
-                                        onChange={e => {
-                                            setNewProduct({ ...newProduct, category: e.target.value });
-                                            if (productError) setProductError("");
-                                        }}
-                                        placeholder="Enter product category"
-                                        className={styles.formInput}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={styles.formLabel}>Brand</label>
-                                    <select
-                                        aria-label="brand-select"
-                                        value={newProduct.brandId}
-                                        onChange={e => {
-                                            setNewProduct({ ...newProduct, brandId: e.target.value });
-                                            if (productError) setProductError("");
-                                        }}
-                                        className={styles.formInput}
-                                        style={{ color: !newProduct.brandId ? "#9ca3af" : undefined }}
-                                    >
-                                        {!newProduct.brandId && (
-                                            <option value="" disabled style={{ color: "#9ca3af" }}>
-                                                Select a brand
-                                            </option>
-                                        )}
-                                        {brands.map(brand => (
-                                            <option key={brand.id} value={brand.id} style={{ color: "#111827" }}>
-                                                {brand.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className={styles.formLabel}>Description (Optional)</label>
-                                    <textarea
-                                        value={newProduct.description}
-                                        onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
-                                        placeholder="Brief description of the product"
-                                        rows={3}
-                                        className={styles.formTextarea}
-                                    />
-                                </div>
-                                {productError && <p className={styles.errorMessage}>{productError}</p>}
                             </div>
-                            <div className={styles.modalActions}>
-                                <button
-                                    onClick={() => {
-                                        setShowProductModal(false);
-                                        setNewProduct({ name: "", description: "", brandId: "", category: "" });
-                                        setProductError("");
-                                        setEditingProduct(null);
-                                    }}
-                                    className={`${styles.button} ${styles.buttonCancel}`}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    aria-label={editingProduct ? "update-product-button" : "add-product-button"}
-                                    onClick={editingProduct ? handleEditProduct : handleAddProduct}
-                                    disabled={isLoadingProducts}
-                                    className={`${styles.button} ${styles.buttonConfirm}`}
-                                >
-                                    {isLoadingProducts ? <Spinner size={SpinnerSize.small} /> : editingProduct ? "Update" : "Add"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
             )}
+
+            {/* Keep mounted so the + button works even with empty/loaded states */}
+            <ModalProduct
+                editingProduct={editingProduct}
+                brands={brands}
+                onSuccess={() => {
+                    setEditingProduct(null);
+                    refreshProducts();
+                }}
+            />
         </>
     );
 }
 
-// Competitors component
-function Competitors() {
+// ModalProduct - Just handles the form and uses the hook
+export function ModalProduct({ editingProduct, brands, onSuccess }: { editingProduct: Product | null; brands: Brand[]; onSuccess: () => void }) {
     const { user, organization } = useAppContext();
-    const [showCompetitorModal, setShowCompetitorModal] = useState(false);
-    const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null);
-    const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
-        name: "",
-        industry: "",
-        description: "",
-        brandIds: []
-    });
-    const [competitorError, setCompetitorError] = useState("");
+    const { open, setOpen } = useCard();
+    const [formData, setFormData] = useState({ name: "", description: "", brandId: "", category: "" });
+    const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    React.useEffect(() => {
+        if (editingProduct && open) {
+            setFormData({
+                name: (editingProduct as any).name,
+                description: editingProduct.description,
+                brandId: (editingProduct as any).brandId || (brands[0]?.id ? String(brands[0].id) : ""),
+                category: (editingProduct as any).category
+            });
+        } else if (open) {
+            setFormData({ name: "", description: "", brandId: "", category: "" });
+        }
+        setError("");
+    }, [editingProduct, open, brands]);
+
+    const handleSubmit = async () => {
+        if (!organization) return;
+        if (formData.name.trim().length === 0 || !formData.brandId || !formData.category) {
+            setError("All fields are required");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            if (editingProduct) {
+                await updateProduct({
+                    product_id: String(editingProduct.id),
+                    product_name: formData.name,
+                    product_description: formData.description,
+                    brand_id: formData.brandId,
+                    category: formData.category,
+                    user,
+                    organization_id: organization.id
+                });
+                toast.success("Product updated successfully");
+            } else {
+                await createProduct({
+                    product_name: formData.name,
+                    product_description: formData.description,
+                    brand_id: formData.brandId,
+                    category: formData.category,
+                    organization_id: organization.id,
+                    user
+                });
+                toast.success("Product added successfully");
+            }
+
+            setOpen(false);
+            onSuccess();
+        } catch (error) {
+            const action = editingProduct ? "update" : "create";
+            toast.error(`Failed to ${action} product. Please try again.`);
+            console.error(`Error ${action}ing product:`, error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleClose = () => {
+        setFormData({ name: "", description: "", brandId: "", category: "" });
+        setError("");
+        setOpen(false);
+    };
+
+    if (!open) return null;
+
+    return (
+        <div className={styles.modalContainer}>
+            <div className={styles.modalOverlay} onClick={handleClose} />
+            <div className={styles.modal}>
+                <div className={styles.modalHeader}>
+                    <h3 className={styles.modalTitle}>{editingProduct ? "Edit Product" : "Add Product to Track"}</h3>
+                    <button onClick={handleClose} className={styles.modalCloseButton}>
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className={styles.modalContent}>
+                    <div className={styles.modalBody}>
+                        <div>
+                            <label className={styles.formLabel}>Product Name</label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={e => {
+                                    setFormData({ ...formData, name: e.target.value });
+                                    if (error) setError("");
+                                }}
+                                placeholder="Enter product name"
+                                className={styles.formInput}
+                            />
+                        </div>
+                        <div>
+                            <label className={styles.formLabel}>Category</label>
+                            <input
+                                type="text"
+                                value={formData.category}
+                                onChange={e => {
+                                    setFormData({ ...formData, category: e.target.value });
+                                    if (error) setError("");
+                                }}
+                                placeholder="Enter product category"
+                                className={styles.formInput}
+                            />
+                        </div>
+                        <div>
+                            <label className={styles.formLabel}>Brand</label>
+                            <select
+                                aria-label="brand-select"
+                                value={formData.brandId}
+                                onChange={e => {
+                                    setFormData({ ...formData, brandId: e.target.value });
+                                    if (error) setError("");
+                                }}
+                                className={styles.formInput}
+                                style={{ color: !formData.brandId ? "#9ca3af" : undefined }}
+                            >
+                                {!formData.brandId && (
+                                    <option value="" disabled style={{ color: "#9ca3af" }}>
+                                        Select a brand
+                                    </option>
+                                )}
+                                {brands.map(brand => (
+                                    <option key={brand.id} value={brand.id} style={{ color: "#111827" }}>
+                                        {brand.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={styles.formLabel}>Description (Optional)</label>
+                            <textarea
+                                value={formData.description}
+                                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="Brief description of the product"
+                                rows={3}
+                                className={styles.formTextarea}
+                            />
+                        </div>
+                        {error && <p className={styles.errorMessage}>{error}</p>}
+                    </div>
+                    <div className={styles.modalActions}>
+                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`}>
+                            Cancel
+                        </button>
+                        <button
+                            aria-label={editingProduct ? "update-product-button" : "add-product-button"}
+                            onClick={handleSubmit}
+                            disabled={isLoading}
+                            className={`${styles.button} ${styles.buttonConfirm}`}
+                        >
+                            {isLoading ? <Spinner size={SpinnerSize.small} /> : editingProduct ? "Update" : "Add"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Competitors component
+export function Competitors() {
+    const { user, organization } = useAppContext();
+    const { setOpen, setCount } = useCard();
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
-    const [brands, setBrands] = useState<Brand[]>([]);
     const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
+    const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null);
 
     useEffect(() => {
         const fetchCompetitors = async () => {
@@ -732,6 +648,7 @@ function Competitors() {
                     user
                 });
                 setCompetitors(fetchedCompetitors);
+                setCount(fetchedCompetitors.length);
             } catch (error) {
                 console.error("Error fetching competitors:", error);
                 toast.error("Failed to fetch competitors. Please try again.");
@@ -741,25 +658,106 @@ function Competitors() {
         };
 
         fetchCompetitors();
-    }, [organization, user]);
+    }, [organization, user, setCount]);
 
-    useEffect(() => {
-        const fetchBrands = async () => {
-            if (!organization) return;
+    const handleEdit = (competitor: Competitor) => {
+        setEditingCompetitor(competitor);
+        setOpen(true);
+    };
+
+    const handleDelete = async (competitor: Competitor) => {
+        if (!organization) return;
+
+        if (window.confirm(`Are you sure you want to delete ${competitor.name}?`)) {
             try {
-                const fetchedBrands = await getBrandsByOrganization({
-                    organization_id: organization?.id,
+                setIsLoadingCompetitors(true);
+                await deleteCompetitor({
+                    competitor_id: String(competitor.id),
+                    user,
+                    organization_id: organization.id
+                });
+
+                const updatedCompetitors = await getCompetitorsByOrganization({
+                    organization_id: organization.id,
                     user
                 });
-                setBrands(Array.isArray(fetchedBrands) ? fetchedBrands : []);
-            } catch (error) {
-                console.error("Error fetching brands:", error);
-                setBrands([]);
-            }
-        };
+                setCompetitors(updatedCompetitors);
+                setCount(updatedCompetitors.length);
 
-        fetchBrands();
-    }, [organization, user]);
+                toast.success("Competitor deleted successfully");
+            } catch (error) {
+                console.error("Error deleting competitor:", error);
+                toast.error("Failed to delete competitor. Please try again.");
+            } finally {
+                setIsLoadingCompetitors(false);
+            }
+        }
+    };
+
+    const handleSuccess = async () => {
+        if (!organization) return;
+        try {
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+            setCount(updatedCompetitors.length);
+            setEditingCompetitor(null);
+        } catch (error) {
+            console.error("Error refreshing competitors:", error);
+        }
+    };
+
+    return (
+        <>
+            <div className={styles.cardBody}>
+                {isLoadingCompetitors ? (
+                    <Spinner size={SpinnerSize.large} label="Loading competitors..." />
+                ) : competitors.length === 0 ? (
+                    <p className={styles.emptyStateText}>No competitors added yet</p>
+                ) : (
+                    <div className={styles.itemsList}>
+                        {competitors.map(c => {
+                            return (
+                                <div key={c.id} className={styles.listItem}>
+                                    <div className={styles.itemContent}>
+                                        <div className={styles.itemHeader}>
+                                            <h4 className={styles.itemName}>{c.name}</h4>
+                                            <span className={styles.itemIndustry}>{c.industry}</span>
+                                        </div>
+                                        {c.description && <p className={styles.itemDescription}>{c.description}</p>}
+                                    </div>
+                                    <div className={styles.itemActions}>
+                                        <button onClick={() => handleEdit(c)} className={styles.iconButton}>
+                                            <Edit size={16} />
+                                        </button>
+                                        <button onClick={() => handleDelete(c)} className={`${styles.iconButton} ${styles.deleteButton}`}>
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+            <ModalCompetitor editingCompetitor={editingCompetitor} onSuccess={handleSuccess} />
+        </>
+    );
+}
+
+export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompetitor: Competitor | null; onSuccess: () => void }) {
+    const { user, organization } = useAppContext();
+    const { open, setOpen } = useCard();
+    const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
+        name: "",
+        industry: "",
+        description: "",
+        brandIds: []
+    });
+    const [competitorError, setCompetitorError] = useState("");
+    const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(false);
 
     useEffect(() => {
         if (editingCompetitor) {
@@ -769,22 +767,16 @@ function Competitors() {
                 description: editingCompetitor.description,
                 brandIds: editingCompetitor.brands ? editingCompetitor.brands.map(b => b.brand_id) : []
             });
+        } else {
+            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
         }
-    }, [editingCompetitor]);
+    }, [editingCompetitor, open]);
 
     const handleAddCompetitor = async () => {
         if (!organization) return;
 
         if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
-            setCompetitorError("Competitor name, industry, and brand are required");
-            return;
-        }
-
-        const normalizedName = newCompetitor.name.trim().toLowerCase();
-        const duplicate = competitors.some(c => c.name.trim().toLowerCase() === normalizedName);
-        if (duplicate) {
-            setCompetitorError("A competitor with this name already exists. Please choose a different name.");
-            toast.error("A competitor with this name already exists. Please choose a different name.");
+            setCompetitorError("Competitor name and industry are required");
             return;
         }
 
@@ -799,20 +791,11 @@ function Competitors() {
                 user
             });
 
-            // Reload competitors from the backend to ensure the new competitor is up-to-date
-            const updatedCompetitors = await getCompetitorsByOrganization({
-                organization_id: organization.id,
-                user
-            });
-            setCompetitors(updatedCompetitors);
-
-            // Show success notification
             toast.success("Competitor added successfully");
-
-            // Reset form state
             setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
             setCompetitorError("");
-            setShowCompetitorModal(false);
+            setOpen(false);
+            onSuccess();
         } catch (error) {
             toast.error("Failed to create competitor. Please try again.");
             console.error("Error creating competitor:", error);
@@ -842,21 +825,11 @@ function Competitors() {
                 organization_id: organization.id
             });
 
-            // Reload competitors from the backend to ensure the updated competitor is reflected
-            const updatedCompetitors = await getCompetitorsByOrganization({
-                organization_id: organization.id,
-                user
-            });
-            setCompetitors(updatedCompetitors);
-
-            // Show success notification
             toast.success("Competitor updated successfully");
-
-            // Reset form state
             setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
             setCompetitorError("");
-            setEditingCompetitor(null);
-            setShowCompetitorModal(false);
+            setOpen(false);
+            onSuccess();
         } catch (error) {
             toast.error("Failed to update competitor. Please try again.");
             console.error("Error updating competitor:", error);
@@ -865,185 +838,95 @@ function Competitors() {
         }
     };
 
-    const handleEdit = (competitor: Competitor) => {
-        setNewCompetitor({ name: competitor.name, industry: competitor.industry, description: competitor.description, brandIds: [] });
-        setEditingCompetitor(competitor);
-        setShowCompetitorModal(true);
-    };
-
-    const handleDelete = async (competitor: Competitor) => {
-        if (!organization) return;
-
-        if (window.confirm(`Are you sure you want to delete ${competitor.name}?`)) {
-            try {
-                setIsLoadingCompetitors(true);
-                await deleteCompetitor({
-                    competitor_id: String(competitor.id),
-                    user,
-                    organization_id: organization.id
-                });
-
-                // Reload competitors from the backend to ensure the list is up-to-date
-                const updatedCompetitors = await getCompetitorsByOrganization({
-                    organization_id: organization.id,
-                    user
-                });
-                setCompetitors(updatedCompetitors);
-
-                // Show success notification
-                toast.success("Competitor deleted successfully");
-            } catch (error) {
-                console.error("Error deleting competitor:", error);
-                toast.error("Failed to delete competitor. Please try again.");
-            } finally {
-                setIsLoadingCompetitors(false);
-            }
-        }
-    };
+    if (!open) return null;
 
     return (
-        <>
-            <div className={styles.cardHeader}>
-                <div className={styles.cardHeaderTitle}>
-                    <Users size={20} />
-                    <h3 className={styles.cardTitle}>Competitors ({competitors.length}/5)</h3>
-                </div>
-                <button
-                    aria-label="create-competitor-button"
-                    onClick={() => setShowCompetitorModal(true)}
-                    disabled={competitors.length >= 5 || brands.length === 0}
-                    className={styles.headerAddButton}
-                >
-                    <PlusCircle size={16} />
-                </button>
-            </div>
-            <div className={styles.cardBody}>
-                {isLoadingCompetitors ? (
-                    <Spinner size={SpinnerSize.large} label="Loading competitors..." />
-                ) : competitors.length === 0 ? (
-                    <p className={styles.emptyStateText}>No competitors added yet</p>
-                ) : (
-                    <div className={styles.itemsList}>
-                        {competitors.map(c => {
-                            return (
-                                <div key={c.id} className={styles.listItem}>
-                                    <div className={styles.itemContent}>
-                                        <div className={styles.itemHeader}>
-                                            <h4 className={styles.itemName}>{c.name}</h4>
-                                            <span className={styles.itemIndustry}>{c.industry}</span>
-                                        </div>
-                                        {c.description && <p className={styles.itemDescription}>{c.description}</p>}
-                                    </div>
-                                    <div className={styles.itemActions}>
-                                        <button onClick={() => handleEdit(c)} className={styles.iconButton}>
-                                            <Edit size={16} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(c)}
-                                            className={`${styles.iconButton} ${styles.deleteButton}`}
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-
-            {showCompetitorModal && (
-                <div className={styles.modalContainer}>
-                    <div
-                        className={styles.modalOverlay}
+        <div className={styles.modalContainer}>
+            <div
+                className={styles.modalOverlay}
+                onClick={() => {
+                    setOpen(false);
+                    setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                    setCompetitorError("");
+                }}
+            />
+            <div className={styles.modal}>
+                <div className={styles.modalHeader}>
+                    <h3 className={styles.modalTitle}>{editingCompetitor ? "Edit Competitor" : "Add Competitor to Track"}</h3>
+                    <button
                         onClick={() => {
-                            setShowCompetitorModal(false);
+                            setOpen(false);
                             setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
                             setCompetitorError("");
-                            setEditingCompetitor(null);
                         }}
-                    />
-                    <div className={styles.modal}>
-                        <div className={styles.modalHeader}>
-                            <h3 className={styles.modalTitle}>{editingCompetitor ? "Edit Competitor" : "Add Competitor to Track"}</h3>
-                            <button
-                                onClick={() => {
-                                    setShowCompetitorModal(false);
-                                    setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
-                                    setCompetitorError("");
-                                    setEditingCompetitor(null);
+                        className={styles.modalCloseButton}
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className={styles.modalContent}>
+                    <div className={styles.modalBody}>
+                        <div>
+                            <label className={styles.formLabel}>Competitor Name</label>
+                            <input
+                                type="text"
+                                value={newCompetitor.name}
+                                onChange={e => {
+                                    setNewCompetitor({ ...newCompetitor, name: e.target.value });
+                                    if (competitorError) setCompetitorError("");
                                 }}
-                                className={styles.modalCloseButton}
-                            >
-                                <X size={24} />
-                            </button>
+                                placeholder="Enter competitor name"
+                                className={styles.formInput}
+                            />
                         </div>
-                        <div className={styles.modalContent}>
-                            <div className={styles.modalBody}>
-                                <div>
-                                    <label className={styles.formLabel}>Competitor Name</label>
-                                    <input
-                                        type="text"
-                                        value={newCompetitor.name}
-                                        onChange={e => {
-                                            setNewCompetitor({ ...newCompetitor, name: e.target.value });
-                                            if (competitorError) setCompetitorError("");
-                                        }}
-                                        placeholder="Enter competitor name"
-                                        className={styles.formInput}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={styles.formLabel}>Industry</label>
-                                    <input
-                                        type="text"
-                                        value={newCompetitor.industry}
-                                        onChange={e => {
-                                            setNewCompetitor({ ...newCompetitor, industry: e.target.value });
-                                            if (competitorError) setCompetitorError("");
-                                        }}
-                                        placeholder="Enter industry"
-                                        className={styles.formInput}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={styles.formLabel}>Description (Optional)</label>
-                                    <textarea
-                                        value={newCompetitor.description}
-                                        onChange={e => setNewCompetitor({ ...newCompetitor, description: e.target.value })}
-                                        placeholder="Brief description of the competitor"
-                                        rows={3}
-                                        className={styles.formTextarea}
-                                    />
-                                </div>
-                                {competitorError && <p className={styles.errorMessage}>{competitorError}</p>}
-                            </div>
-                            <div className={styles.modalActions}>
-                                <button
-                                    onClick={() => {
-                                        setShowCompetitorModal(false);
-                                        setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
-                                        setCompetitorError("");
-                                        setEditingCompetitor(null);
-                                    }}
-                                    className={`${styles.button} ${styles.buttonCancel}`}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    aria-label={editingCompetitor ? "update-competitor-button" : "add-competitor-button"}
-                                    onClick={editingCompetitor ? handleEditCompetitor : handleAddCompetitor}
-                                    disabled={isLoadingCompetitors}
-                                    className={`${styles.button} ${styles.buttonConfirm}`}
-                                >
-                                    {isLoadingCompetitors ? <Spinner size={SpinnerSize.small} /> : editingCompetitor ? "Update" : "Add"}
-                                </button>
-                            </div>
+                        <div>
+                            <label className={styles.formLabel}>Industry</label>
+                            <input
+                                type="text"
+                                value={newCompetitor.industry}
+                                onChange={e => {
+                                    setNewCompetitor({ ...newCompetitor, industry: e.target.value });
+                                    if (competitorError) setCompetitorError("");
+                                }}
+                                placeholder="Enter industry"
+                                className={styles.formInput}
+                            />
                         </div>
+                        <div>
+                            <label className={styles.formLabel}>Description (Optional)</label>
+                            <textarea
+                                value={newCompetitor.description}
+                                onChange={e => setNewCompetitor({ ...newCompetitor, description: e.target.value })}
+                                placeholder="Brief description of the competitor"
+                                rows={3}
+                                className={styles.formTextarea}
+                            />
+                        </div>
+                        {competitorError && <p className={styles.errorMessage}>{competitorError}</p>}
+                    </div>
+                    <div className={styles.modalActions}>
+                        <button
+                            onClick={() => {
+                                setOpen(false);
+                                setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                                setCompetitorError("");
+                            }}
+                            className={`${styles.button} ${styles.buttonCancel}`}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            aria-label={editingCompetitor ? "update-competitor-button" : "add-competitor-button"}
+                            onClick={editingCompetitor ? handleEditCompetitor : handleAddCompetitor}
+                            disabled={isLoadingCompetitors}
+                            className={`${styles.button} ${styles.buttonConfirm}`}
+                        >
+                            {isLoadingCompetitors ? <Spinner size={SpinnerSize.small} /> : editingCompetitor ? "Update" : "Add"}
+                        </button>
                     </div>
                 </div>
-            )}
-        </>
+            </div>
+        </div>
     );
 }
 
@@ -1052,7 +935,7 @@ function ReportJobs() {
     const [searchQuery, setSearchQuery] = useState("");
     const [showStatusFilter, setShowStatusFilter] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("All Status");
-    const [reportJobs, setReportJobs] = useState<ReportJob[]>([
+    const [reportJobs] = useState<ReportJob[]>([
         { id: 1, type: "Brand Analysis", target: "Apple", status: "Completed", progress: 100, startDate: "2024-07-15", endDate: "2024-07-16" },
         { id: 2, type: "Product Analysis", target: "iPhone 15", status: "In Progress", progress: 65, startDate: "2024-07-16", endDate: null },
         { id: 3, type: "Competitive Analysis", target: "Samsung vs Apple", status: "Pending", progress: 0, startDate: null, endDate: null },
@@ -1077,7 +960,7 @@ function ReportJobs() {
     const jobsWithoutEndDate = filteredJobs.filter(job => job.endDate === null);
 
     const jobsToDisplay = [...sortedJobsWithEndDate, ...jobsWithoutEndDate].slice(0, 10);
-    
+
     const getStatusIcon = (status: ReportJob["status"]) => {
         if (status === "Completed") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
         if (status === "In Progress") return <Clock size={16} style={{ color: "#2563eb" }} />;
@@ -1174,18 +1057,20 @@ function ReportJobs() {
 }
 
 export default function VoiceCustomerPage() {
+    const [hasBrands, setHasBrands] = useState(false);
+
     return (
         <div className={styles.pageContainer}>
             <ToastContainer />
             <main className={styles.mainContainer}>
                 <div className={styles.cardsGrid}>
-                    <Card>
-                        <Brands />
+                    <Card icon={<Building size={20} />} title="Brands" maxCount={3}>
+                        <Brands onBrandsChange={setHasBrands} />
                     </Card>
-                    <Card>
+                    <Card icon={<Package size={20} />} title="Products" maxCount={10} disabled={!hasBrands}>
                         <Products />
                     </Card>
-                    <Card>
+                    <Card icon={<Users size={20} />} title="Competitors" maxCount={5} disabled={!hasBrands}>
                         <Competitors />
                     </Card>
                 </div>
