@@ -91,82 +91,101 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             divider: true
         },
         {
-            items: [
+        items: [
+            {
+            title: "Control Center",
+            icon: <SlidersHorizontal className={styles.sidebarLinkIcon} />,
+            links: [
                 {
-                    title: "Control Center",
-                    icon: <SlidersHorizontal className={styles.sidebarLinkIcon} />,
-                    links: [
-                        {
-                            title: "Team Management",
-                            href: "/admin",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
-                            roles: ["admin", "platformAdmin"]
-                        },
-                        {
-                            title: "Workspace Governance",
-                            href: "/organization",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
-                            roles: ["admin", "platformAdmin"]
-                        },
-                        {
-                            title: "Knowledge Sources",
-                            href: "/knowledge-sources",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
-                            roles: ["admin", "platformAdmin"]
-                        },
-                        {
-                            title: "Voice of Customer",
-                            href: "/voice-customer",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
-                            roles: ["admin", "platformAdmin"]
-                        },
-                        {
-                            title: "Subscription Plans",
-                            href: "/subscription-management",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
-                            roles: ["admin", "platformAdmin"]
-                        }
-                    ],
-                    tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                    roles: ["admin", "user", "platformAdmin"]
+                title: "Team Management",
+                href: "/admin",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
+                },
+                {
+                title: "Workspace Governance",
+                href: "/organization",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
+                },
+                {
+                title: "Knowledge Sources",
+                href: "/knowledge-sources",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
+                },
+                {
+                title: "Subscription Plans",
+                href: "/subscription-management",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
                 }
-            ]
+            ],
+            tiers: ["Custom","Premium","Custom + Financial Assistant","Premium + Financial Assistant"],
+            roles: ["admin","user","platformAdmin"]
+            },
+            {
+            title: "Voice of Customer",
+            icon: <Headphones className={styles.sidebarLinkIcon} />,
+            links: [
+                {
+                title: "Brands",
+                href: "/voice-customer/brands",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
+                },
+                {
+                title: "Products",
+                href: "/voice-customer/products",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
+                },
+                {
+                title: "Competitors",
+                href: "/voice-customer/competitors",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
+                },
+                {
+                title: "Reports",
+                href: "/voice-customer/reports",
+                tiers: [
+                    "Basic","Custom","Premium",
+                    "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+                ],
+                roles: ["admin","platformAdmin"]
+                }
+            ],
+            tiers: [
+                "Basic","Custom","Premium",
+                "Basic + Financial Assistant","Custom + Financial Assistant","Premium + Financial Assistant"
+            ],
+            roles: ["admin","platformAdmin"]
+            }
+        ]
         },
+
         {
             items: [
                 {

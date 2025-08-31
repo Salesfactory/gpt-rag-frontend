@@ -33,6 +33,14 @@ import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
 import Gallery from "./pages/gallery/Gallery";
 import SubscriptionError from "./pages/SubscriptionError";
 
+import { Navigate } from "react-router-dom";
+import VocPage from "./pages/voicecustomer/VocPage";
+import VocBrands from "./pages/voicecustomer/VocBrands";
+import VocProducts from "./pages/voicecustomer/VocProducts";
+import VocCompetitors from "./pages/voicecustomer/VocCompetitors";
+import VocReports from "./pages/voicecustomer/VocReports";
+
+
 export default function App() {
     return (
         <Routes>
@@ -115,7 +123,13 @@ export default function App() {
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/organization" element={<Organization />} />
                     <Route path="/knowledge-sources" element={<KnowledgeSources />} />
-                    <Route path="/voice-customer" element={<VoiceCustomer />} />
+                    <Route path="/voice-customer" element={<VocPage />}>
+                        <Route path="brands" element={<VocBrands />} />
+                        <Route path="products" element={<VocProducts />} />
+                        <Route path="competitors" element={<VocCompetitors />} />
+                        <Route path="reports" element={<VocReports />} />
+                    </Route>
+
                     <Route path="/subscription-management" element={<SubscriptionManagement />} />
                     <Route path="/manage-email-lists" element={<UserManagement />} />
                 </Route>
