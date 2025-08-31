@@ -30,7 +30,6 @@ function getStatusClass(status: JobStatus): string {
 }
 
 const VocReports: React.FC = () => {
-  // Estado local (puedes reemplazar por datos reales cuando tengas API)
   const [searchQuery, setSearchQuery] = useState("");
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<"All Status" | JobStatus>("All Status");
