@@ -1522,9 +1522,9 @@ def delete_brand_by_id(brand_id, organization_id):
         items_to_delete = get_items_to_delete_by_brand(brand_id, organization_id)
 
         if not items_to_delete["products"]:
-            logging.info(
-                f"No products associated with brand {brand_id}."
-            )
+            logging.info(f"No products associated with brand {brand_id}.")
+            container.delete_item(item=brand_id, partition_key=organization_id)
+            logging.info(f"Brand with id {brand_id} deleted successfully.")
             return {"message": f"Brand with id {brand_id} deleted successfully."}
 
         products_container = get_cosmos_container("products")
