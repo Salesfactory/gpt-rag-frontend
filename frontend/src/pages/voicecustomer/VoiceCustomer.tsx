@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 import styles from "./VoiceCustomer.module.css";
@@ -17,8 +17,13 @@ import {
     updateCompetitor,
     deleteCompetitor,
     getIndustryByOrganization,
-    upsertIndustry
+    upsertIndustry,
+    createCategory,
+    getCategory,
+    getCategoriesByOrganization,
+    deleteCategory
 } from "../../api/api";
+import type { Category } from "../../api/models";
 
 import { useBrands } from "./useBrands";
 
@@ -1184,6 +1189,189 @@ function IndustryDefinition() {
     );
 }
 
+
+
+export function CategoriesDefinition({
+  onChange,
+}: {
+  onChange?: (hasCategories: boolean) => void;
+}) {
+  const { user, organization } = useAppContext();
+  const MAX_CATEGORIES = 10;
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+
+  const [usageByName, setUsageByName] = useState<Record<string, number>>({});
+
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!organization?.id) return;
+      setIsLoading(true);
+      try {
+        const data = await getCategoriesByOrganization({
+            organization_id: organization.id,
+            user,
+            });
+            if (!cancelled) {
+            setCategories(data);
+            setError(data.length === 0 ? "At least one category is required." : "");
+            }
+      } catch (e) {
+        console.error("Error fetching categories:", e);
+        toast.error("Failed to load categories");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [organization?.id, user]);
+
+  useEffect(() => {
+    (async () => {
+      if (!organization?.id) return;
+      try {
+        const prods = await getProductsByOrganization({ organization_id: organization.id, user });
+        const counts: Record<string, number> = {};
+        (prods || []).forEach((p: any) => {
+          const name = p?.category?.toString().trim();
+          if (name) counts[name] = (counts[name] || 0) + 1;
+        });
+        setUsageByName(counts);
+      } catch (e) {
+
+      }
+    })();
+  }, [organization?.id, user]);
+
+ 
+  useEffect(() => {
+    onChange?.(categories.length > 0);
+  }, [categories.length, onChange]);
+
+  const canAddMore = categories.length < MAX_CATEGORIES;
+  const normalized = (s: string) => s.replace(/\s+/g, " ").trim();
+
+  const addCategory = async (raw: string) => {
+    const value = normalized(raw);
+    if (!value) return;
+    if (!canAddMore) {
+      setError(`You can add up to ${MAX_CATEGORIES} categories.`);
+      return;
+    }
+    const exists = categories.some((c) => c.name.toLowerCase() === value.toLowerCase());
+    if (exists) {
+      setError("That category already exists.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+    const created = await createCategory({ organization_id: organization!.id, name: value, user });
+    setCategories(prev => [...prev, created]);
+    setNewCategory("");
+    setError("");
+    toast.success("Category added.");
+    } catch (e) {
+      console.error("Error creating category:", e);
+      toast.error("Failed to add category. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+    const removeCategory = async (category_id: string) => {
+    setIsLoading(true);
+    try {
+        await deleteCategory({ category_id, organization_id: organization!.id, user });
+        setCategories(prev => prev.filter(c => c.id !== category_id));
+        if (categories.length - 1 === 0) setError("At least one category is required.");
+        toast.success("Category removed.");
+    } catch (e) {
+        console.error("Error deleting category:", e);
+        toast.error("Failed to remove category. Please try again.");
+    } finally {
+        setIsLoading(false);
+    }
+    };
+
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addCategory(newCategory);
+    }
+  };
+
+  const counter = useMemo(
+    () => `Categories (${categories.length}/${MAX_CATEGORIES})`,
+    [categories.length]
+  );
+
+  return (
+    <div>
+      <p className={styles.title}>{counter}</p>
+      <p className={styles.description}>
+        Add up to 10 categories to further refine your analysis. Press Enter to add each category.
+      </p>
+
+      <div className={styles.inputRow}>
+        <div className={styles.inputWrap}>
+          <div className={styles.tagInput}>
+            {categories.map(cat => (
+                <span key={cat.id} className={styles.tag}>
+                    <span>{cat.name}</span>
+                    <button
+                    type="button"
+                    className={styles.tagRemove}
+                    onClick={() => removeCategory(cat.id)}
+                    disabled={isLoading}
+                    aria-label={`Remove ${cat.name}`}
+                    title="Remove"
+                    >
+                    ×
+                    </button>
+                </span>
+                ))}
+
+            <input
+              aria-label="category-input"
+              type="text"
+              value={newCategory}
+              onChange={(e) => {
+                setNewCategory(e.target.value);
+                if (error) setError("");
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a category and press Enter..."
+              className={styles.input}
+              disabled={isLoading || !canAddMore}
+            />
+          </div>
+
+          {error ? (
+            <p className={styles.error}>{error}</p>
+          ) : categories.length === 0 ? (
+            <p className={styles.error}>At least one category is required.</p>
+          ) : null}
+        </div>
+
+        {isLoading ? (
+          <div style={{ marginLeft: 12 }}>
+            <Spinner size={SpinnerSize.small} />
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function VoiceCustomerPage() {
     const [hasBrands, setHasBrands] = useState(false);
 
@@ -1194,6 +1382,7 @@ export default function VoiceCustomerPage() {
                 <div className={styles.cardsGrid}>
                     <FormulaeCard title="Industry and Category Definition">
                         <IndustryDefinition />
+                        <CategoriesDefinition />
                     </FormulaeCard>
                     <Card icon={<Building size={20} />} title="Brands" maxCount={3}>
                         <Brands onBrandsChange={setHasBrands} />
