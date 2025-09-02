@@ -15,7 +15,9 @@ import {
     getCompetitorsByOrganization,
     createCompetitor,
     updateCompetitor,
-    deleteCompetitor
+    deleteCompetitor,
+    getIndustryByOrganization,
+    upsertIndustry
 } from "../../api/api";
 
 import { useBrands } from "./useBrands";
@@ -76,6 +78,37 @@ export function Card({
                     >
                         <PlusCircle size={16} />
                     </button>
+                </div>
+                <div className={styles.cardBody}>{children}</div>
+            </div>
+        </CardContext.Provider>
+    );
+}
+
+export function FormulaeCard({
+    children,
+    defaultOpen = false,
+    title,
+}: {
+    children: React.ReactNode;
+    defaultOpen?: boolean;
+    title: string;
+    disabled?: boolean;
+}) {
+    const [open, setOpen] = React.useState(defaultOpen);
+    const [count, setCount] = React.useState(0);
+    const toggle = React.useCallback(() => setOpen(v => !v), []);
+    const value = React.useMemo(() => ({ open, setOpen, toggle, count, setCount }), [open, toggle, count]);
+
+    return (
+        <CardContext.Provider value={value}>
+            <div className={styles.card}>
+                <div className={styles.cardFormulaeHeader}>
+                    <div className={styles.cardHeaderTitle}>
+                        <h3 className={styles.cardTitle}>
+                            {title}
+                        </h3>
+                    </div>
                 </div>
                 <div className={styles.cardBody}>{children}</div>
             </div>
@@ -1056,6 +1089,104 @@ function ReportJobs() {
     );
 }
 
+function IndustryDefinition() {
+    const { user, organization } = useAppContext();
+    const [industryDefinition, setIndustryDefinition] = useState("");
+    const [industryError, setIndustryError] = useState("");
+    const [industrySaved, setIndustrySaved] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        const fetchIndustry = async () => {
+            setIsLoading(true);
+            try {
+                if (organization) {
+                    const data = await getIndustryByOrganization({ organization_id: organization.id, user });
+                    if (!cancelled) {
+                        setIndustryDefinition(data?.industry_description || "");
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching industry definition:", err);
+                toast.error("Failed to load industry definition");
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        fetchIndustry();
+        return () => {
+            cancelled = true;
+        };
+    }, [user]);
+
+    // Parent is only notified when an existing industry is fetched or when a save completes.
+    // This prevents the page from enabling creation actions while the user is still typing.
+
+    const saveIndustry = async () => {
+        if (!organization?.id) return;
+        if (!industryDefinition.trim()) {
+            setIndustryError("Industry definition is required");
+            setIndustrySaved(false);
+            return;
+        }
+        setIndustryError("");
+        setIsLoading(true);
+        try {
+            await upsertIndustry({ organization_id: organization.id, industry_description: industryDefinition.trim(), user });
+            setIndustrySaved(true);
+            toast.success("Industry definition saved successfully.");
+        } catch (err) {
+            console.error("Error saving industry:", err);
+            toast.error("Failed to save industry. Please try again.");
+            setIndustrySaved(false);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+            <div>
+                <p className={styles.title}>Industry</p>
+                <p className={styles.description}>
+                    Define your industry in 2-5 words to help refine the content and analysis for brand and competitor reports.
+                </p>
+                <div className={styles.inputRow}>
+                    <div className={styles.inputWrap}>
+                        <input
+                            aria-label="industry-definition-input"
+                            type="text"
+                            value={industryDefinition}
+                            onChange={e => {
+                                setIndustryDefinition(e.target.value);
+                                if (industryError) setIndustryError("");
+                                setIndustrySaved(false);
+                            }}
+                            placeholder="e.g., Consumer Electronics, Athletic Footwear, B2B SaaS..."
+                            className={styles.input}
+                        />
+                        {industryError && <p className={styles.error}>{industryError}</p>}
+                    </div>
+
+                    <button onClick={saveIndustry} disabled={!industryDefinition.trim() || isLoading} className={styles.saveButton}>
+                        {isLoading ? (
+                            <Spinner size={SpinnerSize.small} />
+                        ) : industrySaved ? (
+                            <>
+                                <CheckCircle size={16} style={{ marginRight: 8 }} />
+                                <span>Saved</span>
+                            </>
+                        ) : (
+                            <span>Save</span>
+                        )}
+                    </button>
+                </div>
+                <p className={styles.examples}>Examples: "Consumer Electronics", "Athletic Footwear", "Financial Services", "B2B SaaS"</p>
+            </div>
+    );
+}
+
 export default function VoiceCustomerPage() {
     const [hasBrands, setHasBrands] = useState(false);
 
@@ -1064,6 +1195,9 @@ export default function VoiceCustomerPage() {
             <ToastContainer />
             <main className={styles.mainContainer}>
                 <div className={styles.cardsGrid}>
+                    <FormulaeCard title="Industry and Category Definition">
+                        <IndustryDefinition />
+                    </FormulaeCard>
                     <Card icon={<Building size={20} />} title="Brands" maxCount={3}>
                         <Brands onBrandsChange={setHasBrands} />
                     </Card>
@@ -1079,3 +1213,4 @@ export default function VoiceCustomerPage() {
         </div>
     );
 }
+

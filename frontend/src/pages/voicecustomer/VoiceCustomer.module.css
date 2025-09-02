@@ -38,6 +38,18 @@
     border-bottom: 1px solid #e5e7eb;
 }
 
+.cardFormulaeHeader {
+    background-color: #16a34a;
+    padding: 1.2rem 1.5rem;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
 .cardHeaderTitle {
     display: flex;
     align-items: center;
@@ -205,7 +217,7 @@
 
 .reportHeader {
     background-color: #16a34a;
-    padding: 0.75rem 1.5rem;
+    padding: 1.2rem 1.5rem;
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
     display: flex;
@@ -672,4 +684,109 @@
     align-items: center;
     justify-content: center;
     margin: 4rem;
+}
+
+
+.industryHeader {
+  background-color: #16a34a;
+  padding: 1rem 1.5rem;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.description {
+  margin-bottom: 12px;
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.inputRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.inputWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #111827;
+  box-sizing: border-box;
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.input:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+.error {
+  margin-top: 6px;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.saveButton {
+  background-color: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 92px;
+  transition: background-color 0.12s ease;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #13823e;
+}
+
+.saveButton:disabled {
+  background-color: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.examples {
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.cardHeaderTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.title{
+  font-weight: 600;
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
 }
