@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps, Category } from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -1838,6 +1838,41 @@ export async function getGalleryItems(organization_id: string, params: { user: a
 
     return data?.data ?? data ?? [];
 }
+
+export async function fetchReportJobs({
+  organization_id,
+  user,
+  limit = 10,
+  status,
+}: {
+  organization_id: string;
+  user: any;
+  limit?: number;
+  status?: BackendReportStatus;
+}): Promise<BackendReportJobDoc[]> {
+  const params = new URLSearchParams({
+    organization_id,
+    limit: String(limit),
+  });
+  if (status) params.set("status", status);
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-MS-CLIENT-PRINCIPAL-ID": user?.id ?? "00000000-0000-0000-0000-000000000000",
+    "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+  };
+
+  const res = await fetch(`/api/report-jobs?${params.toString()}`, { method: "GET", headers });
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const msg = (data && (data.message || data.error)) || `Failed to fetch report jobs (${res.status})`;
+    throw new Error(msg);
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
 
 export async function getIndustryByOrganization({ organization_id, user }: { organization_id: string; user?: any }): Promise<{ industry_description?: string } | null> {
     const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
