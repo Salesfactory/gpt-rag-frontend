@@ -458,7 +458,7 @@ def get_competitors(organization_id):
 
 
 
-@bp.route("/organization/<organization_id>/brands/<brand_id>/items-to-delete/", methods=["GET"])
+@bp.route("/organizations/<organization_id>/brands/<brand_id>/items-to-delete/", methods=["GET"])
 def get_items_to_delete(organization_id,brand_id):
     """
     Endpoint to retrieve items that are marked for deletion.
@@ -473,7 +473,7 @@ def get_items_to_delete(organization_id,brand_id):
         logger.exception(f"Error retrieving items to delete: {e}")
         return create_error_response("Internal Server Error", 500)
     
-@bp.route("/organization/<organization_id>/industry", methods=["POST"])
+@bp.route("/organizations/<organization_id>/industry", methods=["POST"])
 def add_industry(organization_id):
     """
     Endpoint to add a new industry for a specific organization.
@@ -502,7 +502,7 @@ def add_industry(organization_id):
         logger.exception(f"Error creating industry: {e}")
         return create_error_response("Internal Server Error", 500)
     
-@bp.route("/organization/<organization_id>/industry", methods=["GET"])
+@bp.route("/organizations/<organization_id>/industry", methods=["GET"])
 def get_industry_by_organization(organization_id):
     """
     Endpoint to add a new industry for a specific organization.
@@ -520,7 +520,7 @@ def get_industry_by_organization(organization_id):
 
         data = response["industry_description"] if "industry_description" in response else ""
 
-        return create_success_response(data, 200)
+        return create_success_response({ "industry_description": data }, 200)
 
     except Exception as e:
         logger.exception(f"Error creating industry: {e}")
