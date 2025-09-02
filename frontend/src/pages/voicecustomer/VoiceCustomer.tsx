@@ -710,8 +710,7 @@ export function Competitors() {
     };
 
     return (
-        <>
-            <div className={styles.cardBody}>
+        <> 
                 {isLoadingCompetitors ? (
                     <Spinner size={SpinnerSize.large} label="Loading competitors..." />
                 ) : competitors.length === 0 ? (
@@ -741,7 +740,6 @@ export function Competitors() {
                         })}
                     </div>
                 )}
-            </div>
             <ModalCompetitor editingCompetitor={editingCompetitor} onSuccess={handleSuccess} />
         </>
     );
