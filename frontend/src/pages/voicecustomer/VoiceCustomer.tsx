@@ -21,7 +21,7 @@ import {
     createCategory,
     getCategory,
     getCategoriesByOrganization,
-    deleteCategory
+    deleteCategory,
     fetchReportJobs
 } from "../../api/api";
 import type { Category } from "../../api/models";
@@ -1028,22 +1028,22 @@ function ReportJobs() {
     const [reportsError, setReportsError] = useState("");
 
     useEffect(() => {
-    const fetchReports = async () => {
-        if (!organization) return;
-        try {
-            setReportsError("");
-            setIsLoadingReports(true);
-            const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
-            setRawReportJobs(Array.isArray(data) ? data : []);
-        } catch (e: any) {
-            setReportsError(e?.message || "Failed to fetch report statuses.");
-            toast.error("Failed to fetch report statuses. Please try again.");
-            setRawReportJobs([]);
-        } finally {
-            setIsLoadingReports(false);
-        }
-    };
-    fetchReports();
+        const fetchReports = async () => {
+            if (!organization) return;
+            try {
+                setReportsError("");
+                setIsLoadingReports(true);
+                const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
+                setRawReportJobs(Array.isArray(data) ? data : []);
+            } catch (e: any) {
+                setReportsError(e?.message || "Failed to fetch report statuses.");
+                toast.error("Failed to fetch report statuses. Please try again.");
+                setRawReportJobs([]);
+            } finally {
+                setIsLoadingReports(false);
+            }
+        };
+        fetchReports();
     }, [organization, user?.id]);
 
     return (
@@ -1107,69 +1107,63 @@ function ReportJobs() {
             </div>
 
             <div className={styles.tableContainer}>
-                    {isLoadingReports ? (
-                        <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+                {isLoadingReports ? (
+                    <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
                         <Spinner data-testid="reports-loading" size={SpinnerSize.large} label="Loading report statuses..." />
-                        </div>
-                    ) : reportsError ? (
-                        <div data-testid="reports-error" className={styles.errorMessage} aria-live="polite">
+                    </div>
+                ) : reportsError ? (
+                    <div data-testid="reports-error" className={styles.errorMessage} aria-live="polite">
                         <CircleX />
                         {reportsError}
-                        </div>
-                    ) : (
-                        <table className={styles.table}>
+                    </div>
+                ) : (
+                    <table className={styles.table}>
                         <thead>
                             <tr>
-                            <th className={styles.tableTh}>Type</th>
-                            <th className={styles.tableTh}>Target</th>
-                            <th className={styles.tableTh}>Status</th>
-                            <th className={styles.tableTh}>Progress</th>
-                            <th className={styles.tableTh}>Start Date</th>
-                            <th className={styles.tableTh}>End Date</th>
+                                <th className={styles.tableTh}>Type</th>
+                                <th className={styles.tableTh}>Target</th>
+                                <th className={styles.tableTh}>Status</th>
+                                <th className={styles.tableTh}>Progress</th>
+                                <th className={styles.tableTh}>Start Date</th>
+                                <th className={styles.tableTh}>End Date</th>
                             </tr>
                         </thead>
 
                         <tbody className={styles.tableBody}>
-                            {rawReportJobs.map((doc) => {
+                            {rawReportJobs.map(doc => {
                                 const c = toCanonical(doc?.status);
                                 const terminal = c === "COMPLETED" || c === "FAILED";
-                                const progress = typeof doc?.progress === "number"
-                                    ? doc.progress
-                                    : c === "COMPLETED" ? 100 : undefined;
-                                const endDate = terminal ? (doc?.updated_at ?? null) : null;
+                                const progress = typeof doc?.progress === "number" ? doc.progress : c === "COMPLETED" ? 100 : undefined;
+                                const endDate = terminal ? doc?.updated_at ?? null : null;
                                 return (
                                     <tr key={String(doc?.id)} className={styles.tableRow}>
-                                    <td className={styles.tableCell}>
-                                        <span className={styles.jobType}>{statusType(doc?.type) ?? doc?.report_name ?? "Report"}</span>
-                                    </td>
-                                    <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
-                                    <td className={styles.tableCell}>
-                                        <div className={styles.statusCell}>
-                                        {statusIcon(c)}
-                                        <span className={`${styles.statusBadge} ${statusClass(c)}`}>
-                                            {statusLabel(c)}
-                                        </span>
-                                        </div>
-                                    </td>
-                                    <td className={styles.tableCell}>
-                                        {typeof progress === "number" ? `${Math.round(progress)}%` : "-"}
-                                    </td>
-                                    <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
-                                    <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
+                                        <td className={styles.tableCell}>
+                                            <span className={styles.jobType}>{statusType(doc?.type) ?? doc?.report_name ?? "Report"}</span>
+                                        </td>
+                                        <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
+                                        <td className={styles.tableCell}>
+                                            <div className={styles.statusCell}>
+                                                {statusIcon(c)}
+                                                <span className={`${styles.statusBadge} ${statusClass(c)}`}>{statusLabel(c)}</span>
+                                            </div>
+                                        </td>
+                                        <td className={styles.tableCell}>{typeof progress === "number" ? `${Math.round(progress)}%` : "-"}</td>
+                                        <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
+                                        <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
                                     </tr>
                                 );
-                                })}
+                            })}
                             {rawReportJobs.length === 0 && !isLoadingReports && !reportsError && (
-                            <tr>
-                                <td className={styles.tableCell} colSpan={6} data-testid="reports-empty">
-                                No reports found
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td className={styles.tableCell} colSpan={6} data-testid="reports-empty">
+                                        No reports found
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
-                        </table>
-                    )}
-                    </div>
+                    </table>
+                )}
+            </div>
         </div>
     );
 }
