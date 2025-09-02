@@ -111,6 +111,7 @@ from routes.report_jobs import bp as jobs_bp
 from routes.organizations import bp as organizations
 from routes.upload_source_document import bp as upload_source_document
 from routes.voice_customer import bp as voice_customer
+from routes.categories import bp as categories
 
 from _secrets import get_secret
 
@@ -218,6 +219,7 @@ app.register_blueprint(jobs_bp)
 app.register_blueprint(organizations)
 app.register_blueprint(upload_source_document)
 app.register_blueprint(voice_customer)
+app.register_blueprint(categories)
 
 
 def handle_auth_error(func):
