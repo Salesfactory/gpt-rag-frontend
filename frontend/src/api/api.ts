@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps } from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps, Category } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -1873,4 +1873,111 @@ export async function upsertIndustry({ organization_id, industry_description, us
         'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
         'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? '00000000-0000-0000-0000-000000000000',
     };
+}
+
+// Creates a new category.
+export async function createCategory({
+  organization_id,
+  user,
+  name,
+  description,
+  metadata,
+}: {
+  organization_id: string;
+  user: any;
+  name: string;
+  description?: string;
+  metadata?: object;
+}): Promise<Category> {
+  const res = await fetch("/api/categories", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-MS-CLIENT-PRINCIPAL-ID":
+        user?.id ?? "00000000-0000-0000-0000-000000000000",
+      "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+    },
+    body: JSON.stringify({ organization_id, name, description, metadata }),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.message || data?.error || "Error creating category");
+  return data as Category;
+}
+
+// Fetches a single category by its ID.
+export async function getCategory(categoryId: string, organizationId: string): Promise<Category> {
+  const response = await fetch(`/api/categories/${categoryId}?organization_id=${organizationId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || `Error fetching category: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Lists all categories for an organization.
+export async function getCategoriesByOrganization({
+  organization_id,
+  user,
+  limit = 50,
+}: {
+  organization_id: string;
+  user: any;
+  limit?: number;
+}): Promise<Category[]> {
+  const params = new URLSearchParams({
+    organization_id,
+    limit: String(limit),
+  });
+
+  const res = await fetch(`/api/categories?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-MS-CLIENT-PRINCIPAL-ID":
+        user?.id ?? "00000000-0000-0000-0000-000000000000",
+      "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+    },
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || data?.error || "Error fetching categories");
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+// Deletes a category by its ID.
+export async function deleteCategory({
+  category_id,
+  organization_id,
+  user,
+}: {
+  category_id: string;
+  organization_id: string;
+  user: any;
+}): Promise<void> {
+  const res = await fetch(
+    `/api/categories/${encodeURIComponent(category_id)}?organization_id=${encodeURIComponent(organization_id)}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-MS-CLIENT-PRINCIPAL-ID":
+          user?.id ?? "00000000-0000-0000-0000-000000000000",
+        "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+      },
+    }
+  );
+  if (res.status !== 204 && !res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message || data?.error || "Error deleting category");
+  }
 }

@@ -116,3 +116,12 @@ export type SummarizationReportProps = {
     companyTicker: string;
     companyName: string;
 };
+export interface Category {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
