@@ -1104,7 +1104,7 @@ function IndustryDefinition() {
                 if (organization) {
                     const data = await getIndustryByOrganization({ organization_id: organization.id, user });
                     if (!cancelled) {
-                        setIndustryDefinition(data?.data || "");
+                        setIndustryDefinition(data?.industry_description || "");
                     }
                 }
             } catch (err) {
