@@ -125,16 +125,18 @@ def create_job():
     organization_id = _require_organization_id()
 
     job_id = data.get("job_id") or str(uuid.uuid4())
+    report_key = data.get("report_key")
     report_name = data.get("report_name")
     params = data.get("params") or {}
 
-    if not report_name:
-        abort(400, "'report_name' is required")
+    if not report_name or not report_key:
+        abort(400, "'report_name' and 'report_key' are required")
 
     now = _utc_now_iso()
     doc = {
         "id": job_id,  # Cosmos item id
         "organization_id": organization_id,  # PK
+        "report_key": report_key,
         "report_name": report_name,
         "params": params,
         "status": "QUEUED",
