@@ -169,22 +169,34 @@ export function setupTestUserAndOrg() {
         ]
     });
 
+    cy.intercept("GET", "/api/categories?organization_id=0aad82ee-52ec-428e-b211-e9cc34b94457*", {
+        statusCode: 200,
+        body: [
+            {
+                id: "a22515a1-0f54-482a-93cb-d2b6edd7c335",
+                organization_id: "0aad82ee-52ec-428e-b211-e9cc34b94457",
+                name: "Player",
+                created_at: "2025-09-02T18:00:00+00:00",
+                updated_at: "2025-09-02T18:00:00+00:00"
+            },
+            {
+                id: "912515a1-0f54-482a-93cb-d2b6edd7b224",
+                organization_id: "0aad82ee-52ec-428e-b211-e9cc34b94457",
+                name: "smartphones",
+                created_at: "2025-09-02T17:46:41.359841+00:00",
+                updated_at: "2025-09-02T17:46:41.359841+00:00"
+            }
+        ]
+    }).as("getCategories");
+
     cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/brands", {
         statusCode: 200,
         body: {
             data: [
                 {
-                    _attachments: "attachments/",
-                    _etag: '"61027b6d-0000-0100-0000-68839e700000"',
-                    _rid: "piUFAJPb450ZAAAAAAAAAA==",
-                    _self: "dbs/piUFAA==/colls/piUFAJPb450=/docs/piUFAJPb450ZAAAAAAAAAA==/",
-                    _ts: 1753456240,
-                    createdAt: "2025-07-25T15:10:39.576086+00:00",
-                    description: "Best Team of the world",
                     id: "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
                     name: "Real Madrid",
-                    organizationId: "22552b2f-1e98-4bc0-a252-a782d80201d5",
-                    updatedAt: "2025-07-25T15:10:39.576124+00:00"
+                    description: "Best Team of the world"
                 }
             ],
             status: 200
@@ -196,19 +208,9 @@ export function setupTestUserAndOrg() {
         body: {
             data: [
                 {
-                    _attachments: "attachments/",
-                    _etag: '"19004a4c-0000-0100-0000-68839ea40000"',
-                    _rid: "piUFAMwF0lwRAAAAAAAAAA==",
-                    _self: "dbs/piUFAA==/colls/piUFAMwF0lw=/docs/piUFAMwF0lwRAAAAAAAAAA==/",
-                    _ts: 1753456292,
-                    brandId: "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
-                    category: "Player",
-                    createdAt: "2025-07-25T15:11:31.903402+00:00",
-                    description: "A mid level player",
                     id: "9ded4b25-e177-486c-af51-9bb600440b0a",
                     name: "Kylian Mbappe",
-                    organizationId: "22552b2f-1e98-4bc0-a252-a782d80201d5",
-                    updatedAt: "2025-07-25T15:11:31.903421+00:00"
+                    category: "Player"
                 }
             ],
             status: 200
@@ -220,30 +222,9 @@ export function setupTestUserAndOrg() {
         body: {
             data: [
                 {
-                    _attachments: "attachments/",
-                    _etag: '"ca06a92d-0000-0100-0000-68839ecd0000"',
-                    _rid: "piUFAIdpn7QWAAAAAAAAAA==",
-                    _self: "dbs/piUFAA==/colls/piUFAIdpn7Q=/docs/piUFAIdpn7QWAAAAAAAAAA==/",
-                    _ts: 1753456333,
-                    brands: [
-                        {
-                            _attachments: "attachments/",
-                            _etag: '"a6037715-0000-0100-0000-68839ece0000"',
-                            _rid: "piUFAILPYeciAAAAAAAAAA==",
-                            _self: "dbs/piUFAA==/colls/piUFAILPYec=/docs/piUFAILPYeciAAAAAAAAAA==/",
-                            _ts: 1753456334,
-                            brand_id: "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
-                            competitor_id: "e2291c49-d922-46ec-b791-9d677c82eed9",
-                            id: "80488059-89c1-43df-a989-806e6ac1e2d7"
-                        }
-                    ],
-                    createdAt: "2025-07-25T15:12:12.666829+00:00",
-                    description: "A mid level football club",
                     id: "e2291c49-d922-46ec-b791-9d677c82eed9",
-                    industry: "Football",
                     name: "FC Barcelona",
-                    organization_id: "22552b2f-1e98-4bc0-a252-a782d80201d5",
-                    updatedAt: "2025-07-25T15:12:12.666857+00:00"
+                    industry: "Football"
                 }
             ],
             status: 200
@@ -362,32 +343,6 @@ export function setupTestUserAndOrg() {
                     name: "organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Loctite-GE-OSI 24 month construction adhesive rating & reviews_20250730 JH.xlsx",
                     size: 2382475,
                     url: "https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Loctite-GE-OSI 24 month construction adhesive rating & reviews_20250730 JH.xlsx"
-                },
-                {
-                    content_type: "application/octet-stream",
-                    created_on: "2025-08-13T19:15:35+00:00",
-                    last_modified: "2025-08-13T19:15:35+00:00",
-                    metadata: {
-                        description:
-                            "This dataset contains 20,528 rows and 28 columns of product review sentences, including sentiment analysis, product details, and review metadata, intended for analyzing customer feedback and product performance. The most frequent sentiment label is 'None', and the most common product category is 'Construction Adhesive'; key columns include Sentence, Sentence Sentiment, Sentence Sentiment Label, Sentence Theme, Review & Rating ID, Date, Rating, Product, Brand, and Category.",
-                        organization_id: "22552b2f-1e98-4bc0-a252-a782d80201d5"
-                    },
-                    name: "organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Loctite-GE-OSI 24 month construction adhesive rating & reviews_20250730.xlsx",
-                    size: 2762035,
-                    url: "https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Loctite-GE-OSI 24 month construction adhesive rating & reviews_20250730.xlsx"
-                },
-                {
-                    content_type: "application/octet-stream",
-                    created_on: "2025-08-13T19:28:28+00:00",
-                    last_modified: "2025-08-13T19:28:28+00:00",
-                    metadata: {
-                        description:
-                            "This dataset contains 150 rows and 35 columns of digital marketing campaign performance data, including key fields such as Region, Year of Date, Month of Date, Brand, Target Audience (Campaign), Bid Strategy, Objective, Media Channel, Spend (US), Impressions, Clicks, Conversions; it is intended for analyzing campaign effectiveness across regions and time periods. Notable patterns include 'Brand' with 'Loctite' as the most frequent entry, and a maximum US spend of $45210 indicating potential high-investment campaigns.",
-                        organization_id: "22552b2f-1e98-4bc0-a252-a782d80201d5"
-                    },
-                    name: "organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Loctite_Monthly Data by Campaign_Jun2024-Jul2025.xlsx",
-                    size: 39795,
-                    url: "https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Loctite_Monthly Data by Campaign_Jun2024-Jul2025.xlsx"
                 },
                 {
                     content_type: "application/pdf",

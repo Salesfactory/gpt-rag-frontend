@@ -81,12 +81,14 @@ describe("Voice Customer Test Suite", () => {
         cy.url().should("include", "#/voice-customer");
         cy.get('[aria-label="create-products-button"]').should("be.visible");
         cy.get('[aria-label="create-products-button"]').click();
-
+        cy.wait("@getCategories").its("response.statusCode").should("eq", 200);
+        cy.get("select[aria-label='category-select']")
+          .find("option")
+          .should("have.length.greaterThan", 1);
         cy.contains("Add Product to Track").should("be.visible");
         cy.get('input[placeholder="Enter product name"]').should("be.visible");
         cy.get('input[placeholder="Enter product name"]').type("Lionel Messi");
-        cy.get("input[placeholder='Enter product category']").should("be.visible");
-        cy.get("input[placeholder='Enter product category']").type("Forward");
+        cy.get("select[aria-label='category-select']").select("Player");
         cy.get("select[aria-label='brand-select']").should("be.visible");
 
         cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/products", {
@@ -146,8 +148,6 @@ describe("Voice Customer Test Suite", () => {
         cy.contains("Add Competitor to Track").should("be.visible");
         cy.get('input[placeholder="Enter competitor name"]').should("be.visible");
         cy.get('input[placeholder="Enter competitor name"]').type("Liverpool FC");
-        cy.get("input[placeholder='Enter industry']").should("be.visible");
-        cy.get("input[placeholder='Enter industry']").type("Football Club");
 
         cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/competitors", {
             statusCode: 200,
@@ -174,7 +174,6 @@ describe("Voice Customer Test Suite", () => {
                         createdAt: "2025-07-25T15:12:12.666829+00:00",
                         description: "A mid level football club",
                         id: "e2291c49-d922-46ec-b791-9d677c82eed9",
-                        industry: "Football",
                         name: "FC Barcelona",
                         organization_id: "22552b2f-1e98-4bc0-a252-a782d80201d5",
                         updatedAt: "2025-07-25T15:12:12.666857+00:00"
@@ -185,22 +184,9 @@ describe("Voice Customer Test Suite", () => {
                         _rid: "piUFAIdpn7QXAAAAAAAAAA==",
                         _self: "dbs/piUFAA==/colls/piUFAIdpn7Q=/docs/piUFAIdpn7QXAAAAAAAAAA==/",
                         _ts: 1753459528,
-                        brands: [
-                            {
-                                _attachments: "attachments/",
-                                _etag: '"aa03be44-0000-0100-0000-6883ab4b0000"',
-                                _rid: "piUFAILPYecjAAAAAAAAAA==",
-                                _self: "dbs/piUFAA==/colls/piUFAILPYec=/docs/piUFAILPYecjAAAAAAAAAA==/",
-                                _ts: 1753459531,
-                                brand_id: "a0dc8c96-0fc8-4549-8d34-328ada5aa64b",
-                                competitor_id: "acc26e1b-4c87-4b92-b845-e906814d345a",
-                                id: "d0c0838f-7bb4-492e-8ace-66b0eaf06b28"
-                            }
-                        ],
                         createdAt: "2025-07-25T16:05:28.311778+00:00",
                         description: "A top level football club",
                         id: "acc26e1b-4c87-4b92-b845-e906814d345a",
-                        industry: "Football Club",
                         name: "Liverpool FC",
                         organization_id: "22552b2f-1e98-4bc0-a252-a782d80201d5",
                         updatedAt: "2025-07-25T16:05:28.311808+00:00"
