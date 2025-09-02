@@ -88,7 +88,7 @@ export function Card({
 export function FormulaeCard({
     children,
     defaultOpen = false,
-    title,
+    title
 }: {
     children: React.ReactNode;
     defaultOpen?: boolean;
@@ -105,9 +105,7 @@ export function FormulaeCard({
             <div className={styles.card}>
                 <div className={styles.cardFormulaeHeader}>
                     <div className={styles.cardHeaderTitle}>
-                        <h3 className={styles.cardTitle}>
-                            {title}
-                        </h3>
+                        <h3 className={styles.cardTitle}>{title}</h3>
                     </div>
                 </div>
                 <div className={styles.cardBody}>{children}</div>
@@ -744,37 +742,35 @@ export function Competitors() {
 
     return (
         <>
-            <div className={styles.cardBody}>
-                {isLoadingCompetitors ? (
-                    <Spinner size={SpinnerSize.large} label="Loading competitors..." />
-                ) : competitors.length === 0 ? (
-                    <p className={styles.emptyStateText}>No competitors added yet</p>
-                ) : (
-                    <div className={styles.itemsList}>
-                        {competitors.map(c => {
-                            return (
-                                <div key={c.id} className={styles.listItem}>
-                                    <div className={styles.itemContent}>
-                                        <div className={styles.itemHeader}>
-                                            <h4 className={styles.itemName}>{c.name}</h4>
-                                            <span className={styles.itemIndustry}>{c.industry}</span>
-                                        </div>
-                                        {c.description && <p className={styles.itemDescription}>{c.description}</p>}
+            {isLoadingCompetitors ? (
+                <Spinner size={SpinnerSize.large} label="Loading competitors..." />
+            ) : competitors.length === 0 ? (
+                <p className={styles.emptyStateText}>No competitors added yet</p>
+            ) : (
+                <div className={styles.itemsList}>
+                    {competitors.map(c => {
+                        return (
+                            <div key={c.id} className={styles.listItem}>
+                                <div className={styles.itemContent}>
+                                    <div className={styles.itemHeader}>
+                                        <h4 className={styles.itemName}>{c.name}</h4>
+                                        <span className={styles.itemIndustry}>{c.industry}</span>
                                     </div>
-                                    <div className={styles.itemActions}>
-                                        <button onClick={() => handleEdit(c)} className={styles.iconButton}>
-                                            <Edit size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(c)} className={`${styles.iconButton} ${styles.deleteButton}`}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
+                                    {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+                                <div className={styles.itemActions}>
+                                    <button onClick={() => handleEdit(c)} className={styles.iconButton}>
+                                        <Edit size={16} />
+                                    </button>
+                                    <button onClick={() => handleDelete(c)} className={`${styles.iconButton} ${styles.deleteButton}`}>
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
             <ModalCompetitor editingCompetitor={editingCompetitor} onSuccess={handleSuccess} />
         </>
     );
@@ -1144,43 +1140,41 @@ function IndustryDefinition() {
     };
 
     return (
-            <div>
-                <p className={styles.title}>Industry</p>
-                <p className={styles.description}>
-                    Define your industry in 2-5 words to help refine the content and analysis for brand and competitor reports.
-                </p>
-                <div className={styles.inputRow}>
-                    <div className={styles.inputWrap}>
-                        <input
-                            aria-label="industry-definition-input"
-                            type="text"
-                            value={industryDefinition}
-                            onChange={e => {
-                                setIndustryDefinition(e.target.value);
-                                if (industryError) setIndustryError("");
-                                setIndustrySaved(false);
-                            }}
-                            placeholder="e.g., Consumer Electronics, Athletic Footwear, B2B SaaS..."
-                            className={styles.input}
-                        />
-                        {industryError && <p className={styles.error}>{industryError}</p>}
-                    </div>
-
-                    <button onClick={saveIndustry} disabled={!industryDefinition.trim() || isLoading} className={styles.saveButton}>
-                        {isLoading ? (
-                            <Spinner size={SpinnerSize.small} />
-                        ) : industrySaved ? (
-                            <>
-                                <CheckCircle size={16} style={{ marginRight: 8 }} />
-                                <span>Saved</span>
-                            </>
-                        ) : (
-                            <span>Save</span>
-                        )}
-                    </button>
+        <div>
+            <p className={styles.title}>Industry</p>
+            <p className={styles.description}>Define your industry in 2-5 words to help refine the content and analysis for brand and competitor reports.</p>
+            <div className={styles.inputRow}>
+                <div className={styles.inputWrap}>
+                    <input
+                        aria-label="industry-definition-input"
+                        type="text"
+                        value={industryDefinition}
+                        onChange={e => {
+                            setIndustryDefinition(e.target.value);
+                            if (industryError) setIndustryError("");
+                            setIndustrySaved(false);
+                        }}
+                        placeholder="e.g., Consumer Electronics, Athletic Footwear, B2B SaaS..."
+                        className={styles.input}
+                    />
+                    {industryError && <p className={styles.error}>{industryError}</p>}
                 </div>
-                <p className={styles.examples}>Examples: "Consumer Electronics", "Athletic Footwear", "Financial Services", "B2B SaaS"</p>
+
+                <button onClick={saveIndustry} disabled={!industryDefinition.trim() || isLoading} className={styles.saveButton}>
+                    {isLoading ? (
+                        <Spinner size={SpinnerSize.small} />
+                    ) : industrySaved ? (
+                        <>
+                            <CheckCircle size={16} style={{ marginRight: 8 }} />
+                            <span>Saved</span>
+                        </>
+                    ) : (
+                        <span>Save</span>
+                    )}
+                </button>
             </div>
+            <p className={styles.examples}>Examples: "Consumer Electronics", "Athletic Footwear", "Financial Services", "B2B SaaS"</p>
+        </div>
     );
 }
 
@@ -1210,4 +1204,3 @@ export default function VoiceCustomerPage() {
         </div>
     );
 }
-
