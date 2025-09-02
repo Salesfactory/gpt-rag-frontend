@@ -1881,3 +1881,31 @@ export async function fetchReportJobs({
 
   return Array.isArray(data) ? data : [];
 }
+
+
+export async function getIndustryByOrganization({ organization_id, user }: { organization_id: string; user?: any }): Promise<{ industry_description?: string } | null> {
+    const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+            'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? '00000000-0000-0000-0000-000000000000',
+        },
+    });
+
+    if (response.status === 404) return null;
+    const data = await response.json();
+    if (response.status > 299 || !response.ok) throw new Error('Failed to fetch industry');
+    return data;
+}
+
+export async function upsertIndustry({ organization_id, industry_description, user }: { organization_id: string | number; industry_description: string; user?: any }): Promise<any> {
+    const payload = { industry_description };
+    const headers = {
+        'Content-Type': 'application/json',
+        'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+        'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? '00000000-0000-0000-0000-000000000000',
+    };
+}
