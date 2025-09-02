@@ -319,4 +319,5 @@ atexit.register(_shutdown)
 # Convenience exports
 USERS_CONT = CONFIG.users_container
 JOBS_CONT = CONFIG.jobs_container
+CATEGORIES_CONT = CONFIG.categories_container
 REPORT_JOBS_QUEUE_NAME = CONFIG.queue_name

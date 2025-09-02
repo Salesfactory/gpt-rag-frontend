@@ -26,6 +26,7 @@ class Settings:
     # Containers
     users_container: str = os.getenv("COSMOS_CONTAINER_USERS", "users")
     jobs_container: str = os.getenv("COSMOS_CONTAINER_JOBS", "report_jobs")
+    categories_container: str = os.getenv("COSMOS_CONTAINER_CATEGORIES", "categories")
 
     # Azure Queue Storage
     storage_account: str = os.getenv("STORAGE_ACCOUNT", "")
