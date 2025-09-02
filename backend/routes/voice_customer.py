@@ -486,12 +486,8 @@ def add_industry(organization_id):
         JSON response with the created industry object or an error message.
     """
     data = request.get_json()
-    if not data:
-        return create_error_response("No JSON data provided", 400)
-    
-    if not data["industry_description"]:
+    if "industry_description" not in data or not data["industry_description"]:
         return create_error_response("Missing required field: industry_description", 400)
-
     try:
         industry_description = data["industry_description"]
 
