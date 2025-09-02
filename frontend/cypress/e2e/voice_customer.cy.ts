@@ -218,5 +218,133 @@ describe("Voice Customer Test Suite", () => {
 
         cy.wait("@getCompetitors");
         cy.get("h4").contains("Liverpool FC").should("be.visible");
+    
+    })
+
+    it("Should display report jobs in the Report Generation Status section", () => {
+        // Mock backend response for report jobs
+        cy.intercept('GET', /\/api\/report-jobs.*/, {
+            statusCode: 200,
+            body: [
+                {
+                    id: "job-1",
+                    organization_id: "org-123",
+                    report_name: "Brand Analysis",
+                    type: "brand_analysis",
+                    status: "COMPLETED",
+                    progress: 100,
+                    created_at: "2025-08-25T18:20:31Z",
+                    updated_at: "2025-08-26T19:10:00Z",
+                    params: { target: "Apple" }
+                },
+                {
+                    id: "job-2",
+                    organization_id: "org-123",
+                    report_name: "Brand Analysis",
+                    type: "brand_analysis",
+                    status: "RUNNING",
+                    progress: 65,
+                    created_at: "2025-08-25T18:20:31Z",
+                    updated_at: "2025-08-26T19:10:00Z",
+                    params: { target: "Microsoft" }
+                },
+                {
+                    id: "job-3",
+                    organization_id: "org-123",
+                    report_name: "Brand Analysis",
+                    type: "competitor_analysis",
+                    status: "QUEUED",
+                    progress: 65,
+                    created_at: "2025-08-25T18:20:31Z",
+                    updated_at: "2025-08-26T19:10:00Z",
+                    params: { target: "Microsoft" }
+                },
+                {
+                    id: "job-4",
+                    organization_id: "org-123",
+                    report_name: "Brand Analysis",
+                    type: "product_analysis",
+                    status: "FAILED",
+                    progress: 65,
+                    created_at: "2025-08-25T18:20:31Z",
+                    updated_at: "2025-08-27T19:10:00Z",
+                    params: { target: "Microsoft" }
+                }
+            ]
+        }).as('fetchReportJobs');
+
+        cy.reload();
+
+        cy.get("button#headerCollapse").should("be.visible");
+        cy.get("button#headerCollapse").click();
+        cy.get('span').contains("Control Center").click();
+        cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").should("be.visible");
+        cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").click();
+        cy.get("button#headerCollapse").click();
+        cy.contains("Report Generation Status").should("be.visible");
+
+        cy.wait('@fetchReportJobs');
+
+        cy.contains("Brand Analysis").should("exist");
+        cy.contains("Completed").should("exist");
+        cy.contains("Pending").should("exist");
+        cy.contains("In Progress").should("exist");
+        cy.contains("Failed").should("exist");
+
+        cy.contains("Apple").should("exist");
+        cy.contains("Microsoft").should("exist");
+
+        cy.contains("2025-08-25").should("exist");
+        cy.contains("2025-08-26").should("exist");
+        cy.contains("2025-08-27").should("exist");
     });
+    
+    it("Should display the error message when the fetch statuses failed", () => {
+        cy.intercept('GET', /\/api\/report-jobs.*/, {
+            statusCode: 500,
+            body: { error: "Failed to fetch report jobs" }
+        }).as('fetchReportJobsError');
+
+        cy.reload();
+
+        cy.get("button#headerCollapse").should("be.visible");
+        cy.get("button#headerCollapse").click();
+        cy.get('span').contains("Control Center").click();
+        cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").should("be.visible");
+        cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").click();
+        cy.get("button#headerCollapse").click();
+        cy.contains("Report Generation Status").should("be.visible");
+
+        cy.wait('@fetchReportJobsError');
+
+        cy.contains("Failed to fetch report jobs").should("be.visible");
+    });
+
+    it('Should show the spinner when reports are loading', () => {
+        
+        cy.intercept('GET', /\/api\/report-jobs.*/, (req) => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+            resolve(req.reply({ statusCode: 200, body: [] }));
+            }, 1000);
+        });
+        }).as('fetchReportJobsLoading');
+        cy.reload();
+
+        cy.get("button#headerCollapse").should("be.visible");
+        cy.get("button#headerCollapse").click();
+        cy.get('span').contains("Control Center").click();
+        cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").should("be.visible");
+        cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").click();
+        cy.get("button#headerCollapse").click();
+        cy.contains("Report Generation Status").should("be.visible");
+
+        cy.get('[data-testid="reports-loading"]').should('be.visible');
+
+        cy.wait(1000);
+
+        // Verify when there is no jobs found
+        cy.contains("No reports found").should("be.visible");
+    });
+    
 });
