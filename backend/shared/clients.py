@@ -1,6 +1,6 @@
 # backend/shared/clients.py
-import os
 from __future__ import annotations
+import os
 import atexit
 import base64
 import json
