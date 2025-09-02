@@ -24,7 +24,7 @@ export function useBrands({ organizationId, user }: UseBrandsArgs) {
             try {
                 setIsLoading(true);
                 setError("");
-                const res = await getBrandsByOrganization({ organization_id: organizationId!, user, signal });
+                const res = await getBrandsByOrganization({ organization_id: organizationId!, user});
                 setBrands(Array.isArray(res) ? res : []);
             } catch (e: any) {
                 if (e?.name === "AbortError") return;
