@@ -1366,14 +1366,13 @@ def get_prods_by_organization(organization_id):
         return []
 
 
-def create_competitor(name, description, industry, organization_id):
+def create_competitor(name, description, organization_id):
     """
     Creates a new competitor entry in the Cosmos DB 'competitorsContainer'.
 
     Args:
         name (str): The name of the competitor.
         description (str): A description of the competitor.
-        industry (str): The industry the competitor operates in.
         organization_id (str): The ID of the organization to which the competitor belongs.
 
     Returns:
@@ -1387,9 +1386,9 @@ def create_competitor(name, description, industry, organization_id):
 
     if description is None:
         description = ""
-    if not name or not industry or not organization_id:
+    if not name or not organization_id:
         raise ValueError(
-            "Competitor name, industry, and organization ID cannot be empty."
+            "Competitor name and organization ID cannot be empty."
         )
     try:
         result = container.create_item(
@@ -1397,7 +1396,6 @@ def create_competitor(name, description, industry, organization_id):
                 "id": str(uuid.uuid4()),
                 "name": name,
                 "description": description,
-                "industry": industry,
                 "organization_id": organization_id,
                 "createdAt": datetime.now(timezone.utc).isoformat(),
                 "updatedAt": datetime.now(timezone.utc).isoformat(),
@@ -1453,7 +1451,7 @@ def get_competitors_by_organization(organization_id):
     return competitors
 
 
-def update_competitor_by_id(competitor_id, name, description, industry, organization_id):
+def update_competitor_by_id(competitor_id, name, description, organization_id):
     """
     Updates an existing competitor document using its `id` as the partition key.
 
@@ -1481,7 +1479,7 @@ def update_competitor_by_id(competitor_id, name, description, industry, organiza
 
     try:
         current_competitor.update(
-            {"name": name, "description": description, "industry": industry}
+            {"name": name, "description": description}
         )
 
         current_competitor["id"] = competitor_id
@@ -1528,28 +1526,28 @@ def get_items_to_delete_by_brand(brand_id, organization_id):
 
 def delete_brand_by_id(brand_id, organization_id):
     """
-    Deletes a specific brand document using its `id` as partition key.
+    Deletes a specific brand document using its `id` as partition key, and all associated products.
     """
     container = get_cosmos_container("brands")
 
     try:
-        
         items_to_delete = get_items_to_delete_by_brand(brand_id, organization_id)
 
-        if not items_to_delete["products"]:
+        if items_to_delete["products"]:
+            logging.info(f"Found {len(items_to_delete['products'])} products for brand {brand_id} to delete.")
+            products_container = get_cosmos_container("products")
+            # Delete products associated with the brand
+            for product in items_to_delete["products"]:
+                products_container.delete_item(
+                    item=product["id"], partition_key=product["organization_id"]
+                )
+                logging.info(f"Product with id {product['id']} deleted successfully.")
+        else:
             logging.info(
                 f"No products associated with brand {brand_id}."
             )
-            return {"message": f"Brand with id {brand_id} deleted successfully."}
 
-        products_container = get_cosmos_container("products")
-
-        # Delete products associated with the brand
-        for product in items_to_delete["products"]:
-            products_container.delete_item(
-                item=product["id"], partition_key=product["organization_id"]
-            )
-            logging.info(f"Product with id {product['id']} deleted successfully.")
+        # Always delete the brand itself, after handling its products
         container.delete_item(item=brand_id, partition_key=organization_id)
         logging.info(f"Brand with id {brand_id} deleted successfully.")
         return {

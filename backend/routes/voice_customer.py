@@ -304,7 +304,6 @@ def add_competitor():
     Expects a JSON payload with the following required fields:
         - competitor_name (str): Name of the competitor.
         - competitor_description (str): Description of the competitor.
-        - industry (str): Industry of the competitor.
         - brands_id (list): List of brand IDs to associate with the competitor.
         - organization_id (str): ID of the organization.
     Returns:
@@ -320,7 +319,7 @@ def add_competitor():
     if not data:
         return create_error_response("No JSON data provided.", 400)
 
-    required_fields = ["competitor_name", "industry", "organization_id"]
+    required_fields = ["competitor_name", "organization_id"]
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return create_error_response(
@@ -330,13 +329,11 @@ def add_competitor():
     try:
         name = data["competitor_name"]
         description = data.get("competitor_description", "")
-        industry = data["industry"]
         organization_id = data["organization_id"]
 
         competitor = create_competitor(
             name=name,
             description=description,
-            industry=industry,
             organization_id=organization_id,
         )
     
@@ -359,7 +356,6 @@ def update_competitor(competitor_id):
     Request JSON Body:
         competitor_name (str): The name of the competitor.
         competitor_description (str): A description of the competitor.
-        industry (str): The industry in which the competitor operates.
         brands_id (list): A list of brand IDs associated with the competitor.
     Returns:
         Response: A Flask response object containing either the updated competitor data (on success)
@@ -376,7 +372,6 @@ def update_competitor(competitor_id):
     required_fields = [
         "competitor_name",
         "competitor_description",
-        "industry",
         "organization_id",
     ]
     missing_fields = [field for field in required_fields if field not in data]
@@ -388,14 +383,12 @@ def update_competitor(competitor_id):
     try:
         name = data["competitor_name"]
         description = data["competitor_description"]
-        industry = data["industry"]
         organization_id = data["organization_id"]
 
         result = update_competitor_by_id(
             competitor_id=competitor_id,
             name=name,
             description=description,
-            industry=industry,
             organization_id=organization_id
         )
         return create_success_response(result, 200)
