@@ -1121,9 +1121,6 @@ function IndustryDefinition() {
         };
     }, [user]);
 
-    // Parent is only notified when an existing industry is fetched or when a save completes.
-    // This prevents the page from enabling creation actions while the user is still typing.
-
     const saveIndustry = async () => {
         if (!organization?.id) return;
         if (!industryDefinition.trim()) {
