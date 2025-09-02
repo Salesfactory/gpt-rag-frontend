@@ -1852,21 +1852,29 @@ export async function getIndustryByOrganization({ organization_id, user }: { org
 
     if (response.status === 404) return null;
     const data = await response.json();
+    
     if (response.status > 299 || !response.ok) throw new Error('Failed to fetch industry');
     return data;
 }
 
 export async function upsertIndustry({ organization_id, industry_description, user }: { organization_id: string | number; industry_description: string; user?: any }): Promise<any> {
-    const payload = { industry_description };
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-        'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-        'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? '00000000-0000-0000-0000-000000000000',
-    };
+    const payload = { "industry_description":industry_description };
+    const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+            'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? '00000000-0000-0000-0000-000000000000',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (response.status > 299 || !response.ok) throw new Error('Failed to upsert industry');
+    return await response.json();
 }
 
-// Creates a new category.
+
 export async function createCategory({
   organization_id,
   user,
@@ -1896,7 +1904,7 @@ export async function createCategory({
   return data as Category;
 }
 
-// Fetches a single category by its ID.
+
 export async function getCategory(categoryId: string, organizationId: string): Promise<Category> {
   const response = await fetch(`/api/categories/${categoryId}?organization_id=${organizationId}`, {
     method: 'GET',
@@ -1913,7 +1921,7 @@ export async function getCategory(categoryId: string, organizationId: string): P
   return response.json();
 }
 
-// Lists all categories for an organization.
+
 export async function getCategoriesByOrganization({
   organization_id,
   user,
@@ -1945,7 +1953,7 @@ export async function getCategoriesByOrganization({
   return Array.isArray(data) ? data : [];
 }
 
-// Deletes a category by its ID.
+
 export async function deleteCategory({
   category_id,
   organization_id,
