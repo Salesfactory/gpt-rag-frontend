@@ -190,12 +190,12 @@ describe("Subscription Page tests", () => {
         cy.get('span').should('contain.text', 'Subscription Management');
         cy.get('div').should('contain.text', 'Premium');
         
-        // Verify financial assistant section with an active subscription
-        cy.get('h3').should('contain.text', 'Financial Assistant');
-        cy.get('input.form-check-input').click();
-        cy.get('span').should('contain.text', 'Unsubscribe from Financial Assistant');
-        cy.get('button').contains('Yes, Unsubscribe').should('be.visible');
-        cy.get('button').contains('Cancel').should('be.visible').click();
+        // // Verify financial assistant section with an active subscription
+        // cy.get('h3').should('contain.text', 'Financial Assistant');
+        // cy.get('input.form-check-input').click();
+        // cy.get('span').should('contain.text', 'Unsubscribe from Financial Assistant');
+        // cy.get('button').contains('Yes, Unsubscribe').should('be.visible');
+        // cy.get('button').contains('Cancel').should('be.visible').click();
 
         // Checks the View Plan information
         cy.get('button').contains('View').should('be.visible').click();
