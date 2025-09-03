@@ -117,6 +117,17 @@ export type SummarizationReportProps = {
     companyName: string;
 };
 
+export interface Category {
+  id: string;
+  organization_id: string;
+  name: string;
+  description?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+
 // ---- Report Jobs (status) ----
 export type BackendReportStatus = "COMPLETED" | "RUNNING" | "QUEUED" | "FAILED";
 
@@ -130,6 +141,4 @@ export interface BackendReportJobDoc {
   updated_at?: string | null;
   params?: { target?: string };
 }
-
-
 

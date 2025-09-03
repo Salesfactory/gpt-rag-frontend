@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Search, PlusCircle, Edit, Trash2, X, Building, Package, Users, TrendingUp, CircleX, Circle, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 import styles from "./VoiceCustomer.module.css";
@@ -18,8 +18,13 @@ import {
     deleteCompetitor,
     getIndustryByOrganization,
     upsertIndustry,
+    createCategory,
+    getCategory,
+    getCategoriesByOrganization,
+    deleteCategory,
     fetchReportJobs
 } from "../../api/api";
+import type { Category } from "../../api/models";
 
 import { useBrands } from "./useBrands";
 
@@ -130,6 +135,7 @@ interface Product {
     name: string;
     category: string;
     description: string;
+    brand_id: number;
 }
 
 interface Competitor {
@@ -170,7 +176,7 @@ function getStatusClass(status: string): string {
 }
 
 // Brands - Just displays the list and uses the hook
-export function Brands({ onBrandsChange }: { onBrandsChange: (hasBrands: boolean) => void }) {
+export function Brands({ onBrandsChange, onDataRefresh }: { onBrandsChange: (hasBrands: boolean) => void; onDataRefresh: () => void }) {
     const { user, organization } = useAppContext();
     const { setOpen, setCount } = useCard();
     const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
@@ -193,6 +199,7 @@ export function Brands({ onBrandsChange }: { onBrandsChange: (hasBrands: boolean
             try {
                 await remove(brand);
                 toast.success("Brand deleted successfully");
+                onDataRefresh(); // Trigger product refresh
             } catch (e) {
                 console.error("Error deleting brand:", e);
                 toast.error("Failed to delete brand. Please try again.");
@@ -233,7 +240,8 @@ export function Brands({ onBrandsChange }: { onBrandsChange: (hasBrands: boolean
                 editingBrand={editingBrand}
                 onSuccess={() => {
                     setEditingBrand(null);
-                    refresh();
+                    refresh(); // Refreshes brands in this component
+                    onDataRefresh(); // Triggers refresh in other components
                 }}
             />
         </>
@@ -362,38 +370,47 @@ export function ModalBrand({ editingBrand, onSuccess }: { editingBrand: Brand | 
 
 // Products - Just displays the list and uses the hook
 // Products.tsx
-export function Products() {
+export function Products({ refreshKey }: { refreshKey: number }) {
     const { user, organization } = useAppContext();
     const { setOpen, setCount } = useCard();
 
     const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [categories, setCategories] = useState<Category[]>([]);
 
     // ⬇️ Pull brands via the custom hook
     const { brands, isLoading: isLoadingBrands, error: brandsError } = useBrands({ organizationId: organization?.id, user });
 
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchProductsAndCategories = async () => {
             if (!organization) return;
             try {
                 setIsLoading(true);
-                const fetchedProducts = await getProductsByOrganization({
-                    organization_id: organization.id,
-                    user
-                });
+                const [fetchedProducts, fetchedCategories] = await Promise.all([
+                    getProductsByOrganization({
+                        organization_id: organization.id,
+                        user
+                    }),
+                    getCategoriesByOrganization({
+                        organization_id: organization.id,
+                        user
+                    })
+                ]);
                 setProducts(fetchedProducts);
+                setCategories(fetchedCategories);
                 setCount(fetchedProducts.length);
             } catch (error) {
-                console.error("Error fetching products:", error);
+                console.error("Error fetching products or categories:", error);
                 setProducts([]);
+                setCategories([]);
                 setCount(0);
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchProducts();
-    }, [organization, user, setCount]);
+        fetchProductsAndCategories();
+    }, [organization, user, setCount, refreshKey]);
 
     const handleEdit = (product: Product) => {
         setEditingProduct(product);
@@ -458,15 +475,13 @@ export function Products() {
             ) : (
                 <div className={styles.itemsList}>
                     {products.map(product => {
-                        const brandId = (product as any).brandId ? String((product as any).brandId) : undefined;
+                        const brandId = product.brand_id ? String(product.brand_id) : undefined;
                         const brandName = brandId ? brandNameById.get(brandId) : undefined;
                         return (
                             <div key={product.id} className={styles.listItem}>
                                 <div className={styles.itemContent}>
                                     <div className={styles.itemHeader}>
-                                        <h4 className={styles.itemName} style={{ display: "inline", marginRight: 8 }}>
-                                            {product.name}
-                                        </h4>
+                                        <h4 className={styles.itemName}>{product.name}</h4>
                                         <span className={styles.itemCategory}>{product.category}</span>
                                         {brandName && <span className={styles.itemBrand}>{brandName}</span>}
                                     </div>
@@ -490,6 +505,7 @@ export function Products() {
             <ModalProduct
                 editingProduct={editingProduct}
                 brands={brands}
+                categories={categories}
                 onSuccess={() => {
                     setEditingProduct(null);
                     refreshProducts();
@@ -500,7 +516,17 @@ export function Products() {
 }
 
 // ModalProduct - Just handles the form and uses the hook
-export function ModalProduct({ editingProduct, brands, onSuccess }: { editingProduct: Product | null; brands: Brand[]; onSuccess: () => void }) {
+export function ModalProduct({
+    editingProduct,
+    brands,
+    onSuccess,
+    categories
+}: {
+    editingProduct: Product | null;
+    brands: Brand[];
+    onSuccess: () => void;
+    categories: Category[];
+}) {
     const { user, organization } = useAppContext();
     const { open, setOpen } = useCard();
     const [formData, setFormData] = useState({ name: "", description: "", brandId: "", category: "" });
@@ -510,10 +536,10 @@ export function ModalProduct({ editingProduct, brands, onSuccess }: { editingPro
     React.useEffect(() => {
         if (editingProduct && open) {
             setFormData({
-                name: (editingProduct as any).name,
+                name: editingProduct.name,
                 description: editingProduct.description,
-                brandId: (editingProduct as any).brandId || (brands[0]?.id ? String(brands[0].id) : ""),
-                category: (editingProduct as any).category
+                brandId: String(editingProduct.brand_id) || (brands[0]?.id ? String(brands[0].id) : ""),
+                category: editingProduct.category
             });
         } else if (open) {
             setFormData({ name: "", description: "", brandId: "", category: "" });
@@ -599,16 +625,27 @@ export function ModalProduct({ editingProduct, brands, onSuccess }: { editingPro
                         </div>
                         <div>
                             <label className={styles.formLabel}>Category</label>
-                            <input
-                                type="text"
+                            <select
+                                aria-label="category-select"
                                 value={formData.category}
                                 onChange={e => {
                                     setFormData({ ...formData, category: e.target.value });
                                     if (error) setError("");
                                 }}
-                                placeholder="Enter product category"
                                 className={styles.formInput}
-                            />
+                                style={{ color: !formData.category ? "#9ca3af" : undefined }}
+                            >
+                                {!formData.category && (
+                                    <option value="" disabled style={{ color: "#9ca3af" }}>
+                                        Select a category
+                                    </option>
+                                )}
+                                {categories.map(cat => (
+                                    <option key={cat.id} value={cat.name} style={{ color: "#111827" }}>
+                                        {cat.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <label className={styles.formLabel}>Brand</label>
@@ -784,9 +821,8 @@ export function Competitors() {
 export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompetitor: Competitor | null; onSuccess: () => void }) {
     const { user, organization } = useAppContext();
     const { open, setOpen } = useCard();
-    const [newCompetitor, setNewCompetitor] = useState<{ name: string; industry: string; description: string; brandIds: number[] }>({
+    const [newCompetitor, setNewCompetitor] = useState<{ name: string; description: string; brandIds: number[] }>({
         name: "",
-        industry: "",
         description: "",
         brandIds: []
     });
@@ -797,20 +833,19 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
         if (editingCompetitor) {
             setNewCompetitor({
                 name: editingCompetitor.name,
-                industry: editingCompetitor.industry,
                 description: editingCompetitor.description,
                 brandIds: editingCompetitor.brands ? editingCompetitor.brands.map(b => b.brand_id) : []
             });
         } else {
-            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setNewCompetitor({ name: "", description: "", brandIds: [] });
         }
     }, [editingCompetitor, open]);
 
     const handleAddCompetitor = async () => {
         if (!organization) return;
 
-        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
-            setCompetitorError("Competitor name and industry are required");
+        if (newCompetitor.name.trim().length === 0) {
+            setCompetitorError("Competitor name is required");
             return;
         }
 
@@ -819,14 +854,13 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
             await createCompetitor({
                 competitor_name: newCompetitor.name,
                 competitor_description: newCompetitor.description,
-                industry: newCompetitor.industry,
                 brands_id: (newCompetitor.brandIds || []).map(String),
                 organization_id: organization.id,
                 user
             });
 
             toast.success("Competitor added successfully");
-            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setNewCompetitor({ name: "", description: "", brandIds: [] });
             setCompetitorError("");
             setOpen(false);
             onSuccess();
@@ -842,8 +876,8 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
     const handleEditCompetitor = async () => {
         if (!organization || !editingCompetitor) return;
 
-        if (newCompetitor.name.trim().length === 0 || newCompetitor.industry.trim().length === 0) {
-            setCompetitorError("Competitor name and industry are required");
+        if (newCompetitor.name.trim().length === 0) {
+            setCompetitorError("Competitor name is required");
             return;
         }
 
@@ -853,14 +887,12 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
                 competitor_id: String(editingCompetitor.id),
                 competitor_name: newCompetitor.name,
                 competitor_description: newCompetitor.description,
-                industry: newCompetitor.industry,
-                brands_id: (newCompetitor.brandIds || []).map(String),
                 user,
                 organization_id: organization.id
             });
 
             toast.success("Competitor updated successfully");
-            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+            setNewCompetitor({ name: "", description: "", brandIds: [] });
             setCompetitorError("");
             setOpen(false);
             onSuccess();
@@ -880,7 +912,7 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
                 className={styles.modalOverlay}
                 onClick={() => {
                     setOpen(false);
-                    setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                    setNewCompetitor({ name: "", description: "", brandIds: [] });
                     setCompetitorError("");
                 }}
             />
@@ -890,7 +922,7 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
                     <button
                         onClick={() => {
                             setOpen(false);
-                            setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                            setNewCompetitor({ name: "", description: "", brandIds: [] });
                             setCompetitorError("");
                         }}
                         className={styles.modalCloseButton}
@@ -914,19 +946,6 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
                             />
                         </div>
                         <div>
-                            <label className={styles.formLabel}>Industry</label>
-                            <input
-                                type="text"
-                                value={newCompetitor.industry}
-                                onChange={e => {
-                                    setNewCompetitor({ ...newCompetitor, industry: e.target.value });
-                                    if (competitorError) setCompetitorError("");
-                                }}
-                                placeholder="Enter industry"
-                                className={styles.formInput}
-                            />
-                        </div>
-                        <div>
                             <label className={styles.formLabel}>Description (Optional)</label>
                             <textarea
                                 value={newCompetitor.description}
@@ -942,7 +961,7 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
                         <button
                             onClick={() => {
                                 setOpen(false);
-                                setNewCompetitor({ name: "", industry: "", description: "", brandIds: [] });
+                                setNewCompetitor({ name: "", description: "", brandIds: [] });
                                 setCompetitorError("");
                             }}
                             className={`${styles.button} ${styles.buttonCancel}`}
@@ -1009,22 +1028,22 @@ function ReportJobs() {
     const [reportsError, setReportsError] = useState("");
 
     useEffect(() => {
-    const fetchReports = async () => {
-        if (!organization) return;
-        try {
-            setReportsError("");
-            setIsLoadingReports(true);
-            const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
-            setRawReportJobs(Array.isArray(data) ? data : []);
-        } catch (e: any) {
-            setReportsError(e?.message || "Failed to fetch report statuses.");
-            toast.error("Failed to fetch report statuses. Please try again.");
-            setRawReportJobs([]);
-        } finally {
-            setIsLoadingReports(false);
-        }
-    };
-    fetchReports();
+        const fetchReports = async () => {
+            if (!organization) return;
+            try {
+                setReportsError("");
+                setIsLoadingReports(true);
+                const data = await fetchReportJobs({ organization_id: organization.id, user, limit: 10 });
+                setRawReportJobs(Array.isArray(data) ? data : []);
+            } catch (e: any) {
+                setReportsError(e?.message || "Failed to fetch report statuses.");
+                toast.error("Failed to fetch report statuses. Please try again.");
+                setRawReportJobs([]);
+            } finally {
+                setIsLoadingReports(false);
+            }
+        };
+        fetchReports();
     }, [organization, user?.id]);
 
     return (
@@ -1088,69 +1107,63 @@ function ReportJobs() {
             </div>
 
             <div className={styles.tableContainer}>
-                    {isLoadingReports ? (
-                        <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+                {isLoadingReports ? (
+                    <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
                         <Spinner data-testid="reports-loading" size={SpinnerSize.large} label="Loading report statuses..." />
-                        </div>
-                    ) : reportsError ? (
-                        <div data-testid="reports-error" className={styles.errorMessage} aria-live="polite">
+                    </div>
+                ) : reportsError ? (
+                    <div data-testid="reports-error" className={styles.errorMessage} aria-live="polite">
                         <CircleX />
                         {reportsError}
-                        </div>
-                    ) : (
-                        <table className={styles.table}>
+                    </div>
+                ) : (
+                    <table className={styles.table}>
                         <thead>
                             <tr>
-                            <th className={styles.tableTh}>Type</th>
-                            <th className={styles.tableTh}>Target</th>
-                            <th className={styles.tableTh}>Status</th>
-                            <th className={styles.tableTh}>Progress</th>
-                            <th className={styles.tableTh}>Start Date</th>
-                            <th className={styles.tableTh}>End Date</th>
+                                <th className={styles.tableTh}>Type</th>
+                                <th className={styles.tableTh}>Target</th>
+                                <th className={styles.tableTh}>Status</th>
+                                <th className={styles.tableTh}>Progress</th>
+                                <th className={styles.tableTh}>Start Date</th>
+                                <th className={styles.tableTh}>End Date</th>
                             </tr>
                         </thead>
 
                         <tbody className={styles.tableBody}>
-                            {rawReportJobs.map((doc) => {
+                            {rawReportJobs.map(doc => {
                                 const c = toCanonical(doc?.status);
                                 const terminal = c === "COMPLETED" || c === "FAILED";
-                                const progress = typeof doc?.progress === "number"
-                                    ? doc.progress
-                                    : c === "COMPLETED" ? 100 : undefined;
-                                const endDate = terminal ? (doc?.updated_at ?? null) : null;
+                                const progress = typeof doc?.progress === "number" ? doc.progress : c === "COMPLETED" ? 100 : undefined;
+                                const endDate = terminal ? doc?.updated_at ?? null : null;
                                 return (
                                     <tr key={String(doc?.id)} className={styles.tableRow}>
-                                    <td className={styles.tableCell}>
-                                        <span className={styles.jobType}>{statusType(doc?.type) ?? doc?.report_name ?? "Report"}</span>
-                                    </td>
-                                    <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
-                                    <td className={styles.tableCell}>
-                                        <div className={styles.statusCell}>
-                                        {statusIcon(c)}
-                                        <span className={`${styles.statusBadge} ${statusClass(c)}`}>
-                                            {statusLabel(c)}
-                                        </span>
-                                        </div>
-                                    </td>
-                                    <td className={styles.tableCell}>
-                                        {typeof progress === "number" ? `${Math.round(progress)}%` : "-"}
-                                    </td>
-                                    <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
-                                    <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
+                                        <td className={styles.tableCell}>
+                                            <span className={styles.jobType}>{statusType(doc?.type) ?? doc?.report_name ?? "Report"}</span>
+                                        </td>
+                                        <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
+                                        <td className={styles.tableCell}>
+                                            <div className={styles.statusCell}>
+                                                {statusIcon(c)}
+                                                <span className={`${styles.statusBadge} ${statusClass(c)}`}>{statusLabel(c)}</span>
+                                            </div>
+                                        </td>
+                                        <td className={styles.tableCell}>{typeof progress === "number" ? `${Math.round(progress)}%` : "-"}</td>
+                                        <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
+                                        <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
                                     </tr>
                                 );
-                                })}
+                            })}
                             {rawReportJobs.length === 0 && !isLoadingReports && !reportsError && (
-                            <tr>
-                                <td className={styles.tableCell} colSpan={6} data-testid="reports-empty">
-                                No reports found
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td className={styles.tableCell} colSpan={6} data-testid="reports-empty">
+                                        No reports found
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
-                        </table>
-                    )}
-                    </div>
+                    </table>
+                )}
+            </div>
         </div>
     );
 }
@@ -1248,8 +1261,182 @@ function IndustryDefinition() {
     );
 }
 
+export function CategoriesDefinition({ onChange, onDataRefresh }: { onChange?: (hasCategories: boolean) => void; onDataRefresh: () => void }) {
+    const { user, organization } = useAppContext();
+    const MAX_CATEGORIES = 10;
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [newCategory, setNewCategory] = useState("");
+    const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [usageByName, setUsageByName] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            if (!organization?.id) return;
+            setIsLoading(true);
+            try {
+                const data = await getCategoriesByOrganization({
+                    organization_id: organization.id,
+                    user
+                });
+                if (!cancelled) {
+                    setCategories(data);
+                    setError(data.length === 0 ? "At least one category is required." : "");
+                }
+            } catch (e) {
+                console.error("Error fetching categories:", e);
+                toast.error("Failed to load categories");
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, [organization?.id, user]);
+
+    useEffect(() => {
+        (async () => {
+            if (!organization?.id) return;
+            try {
+                const prods = await getProductsByOrganization({ organization_id: organization.id, user });
+                const counts: Record<string, number> = {};
+                (prods || []).forEach((p: any) => {
+                    const name = p?.category?.toString().trim();
+                    if (name) counts[name] = (counts[name] || 0) + 1;
+                });
+                setUsageByName(counts);
+            } catch (e) {}
+        })();
+    }, [organization?.id, user]);
+
+    useEffect(() => {
+        onChange?.(categories.length > 0);
+    }, [categories.length, onChange]);
+
+    const canAddMore = categories.length < MAX_CATEGORIES;
+    const normalized = (s: string) => s.replace(/\s+/g, " ").trim();
+
+    const addCategory = async (raw: string) => {
+        const value = normalized(raw);
+        if (!value) return;
+        if (!canAddMore) {
+            setError(`You can add up to ${MAX_CATEGORIES} categories.`);
+            return;
+        }
+        const exists = categories.some(c => c.name.toLowerCase() === value.toLowerCase());
+        if (exists) {
+            setError("That category already exists.");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const created = await createCategory({ organization_id: organization!.id, name: value, user });
+            setCategories(prev => [...prev, created]);
+            setNewCategory("");
+            setError("");
+            toast.success("Category added.");
+            onDataRefresh();
+        } catch (e) {
+            console.error("Error creating category:", e);
+            toast.error("Failed to add category. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const removeCategory = async (category_id: string) => {
+        setIsLoading(true);
+        try {
+            await deleteCategory({ category_id, organization_id: organization!.id, user });
+            setCategories(prev => prev.filter(c => c.id !== category_id));
+            if (categories.length - 1 === 0) setError("At least one category is required.");
+            toast.success("Category removed.");
+            onDataRefresh();
+        } catch (e) {
+            console.error("Error deleting category:", e);
+            toast.error("Failed to remove category. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            addCategory(newCategory);
+        }
+    };
+
+    const counter = useMemo(() => `Categories (${categories.length}/${MAX_CATEGORIES})`, [categories.length]);
+
+    return (
+        <div>
+            <p className={styles.title}>{counter}</p>
+            <p className={styles.description}>
+                Add up to 10 categories to further refine your analysis. Press Enter to add each category.{" "}
+                {error ? (
+                    <span className={styles.error}>{error}</span>
+                ) : categories.length === 0 ? (
+                    <span className={styles.error}>At least one category is required.</span>
+                ) : null}
+            </p>
+            <div className={styles.inputRow}>
+                <div className={styles.inputWrap}>
+                    <div className={styles.tagInput}>
+                        <input
+                            aria-label="category-input"
+                            type="text"
+                            value={newCategory}
+                            onChange={e => {
+                                setNewCategory(e.target.value);
+                                if (error) setError("");
+                            }}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Type a category and press Enter..."
+                            className={styles.input}
+                            disabled={isLoading || !canAddMore}
+                        />
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    <div style={{ marginLeft: 12 }}>
+                        <Spinner size={SpinnerSize.small} />
+                    </div>
+                ) : null}
+            </div>
+            <div className={styles.tagContainer}>
+                {categories.map(cat => (
+                    <span key={cat.id} className={styles.tag}>
+                        <span>{cat.name}</span>
+                        <button
+                            type="button"
+                            className={styles.tagRemove}
+                            onClick={() => removeCategory(cat.id)}
+                            disabled={isLoading}
+                            aria-label={`Remove ${cat.name}`}
+                            title="Remove"
+                        >
+                            ×
+                        </button>
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function VoiceCustomerPage() {
     const [hasBrands, setHasBrands] = useState(false);
+    const [productRefreshKey, setProductRefreshKey] = useState(0);
+
+    const handleDataRefresh = () => {
+        setProductRefreshKey(prev => prev + 1);
+    };
 
     return (
         <div className={styles.pageContainer}>
@@ -1258,12 +1445,13 @@ export default function VoiceCustomerPage() {
                 <div className={styles.cardsGrid}>
                     <FormulaeCard title="Industry and Category Definition">
                         <IndustryDefinition />
+                        <CategoriesDefinition onDataRefresh={handleDataRefresh} />
                     </FormulaeCard>
                     <Card icon={<Building size={20} />} title="Brands" maxCount={3}>
-                        <Brands onBrandsChange={setHasBrands} />
+                        <Brands onBrandsChange={setHasBrands} onDataRefresh={handleDataRefresh} />
                     </Card>
                     <Card icon={<Package size={20} />} title="Products" maxCount={10} disabled={!hasBrands}>
-                        <Products />
+                        <Products refreshKey={productRefreshKey} />
                     </Card>
                     <Card icon={<Users size={20} />} title="Competitors" maxCount={5} disabled={!hasBrands}>
                         <Competitors />

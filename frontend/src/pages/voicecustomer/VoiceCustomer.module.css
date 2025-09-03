@@ -9,6 +9,60 @@
     }
     
 }
+
+.tagInput {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+.tagContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f3f4f6;
+    color: #1f2937;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.tagRemove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    background: #f3f4f6;
+    color: #6b717f;
+    border: none;
+    width: 16px;
+    height: 16px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: background-color 0.2s;
+}
+
+.tagRemove:hover {
+    background-color: #a6b3c5;
+}
+
+.tagRemove:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 .pageContainer{
     background-color: #f9fafb;
 }
@@ -744,6 +798,7 @@
   margin-top: 6px;
   color: #dc2626;
   font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .saveButton {

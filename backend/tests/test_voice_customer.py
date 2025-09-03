@@ -66,8 +66,8 @@ def test_create_product_success(client, mock_create_prod):
         "product_name": "Widget",
         "product_description": "A test product",
         "brand_id": "b1",
+        "category":"c1",
         "organization_id": "org1",
-        "industry": "tech",
     }
     resp = client.post("/api/voice-customer/products",
                        data=json.dumps(payload),
@@ -109,8 +109,8 @@ def test_update_product_success(client, mock_update_prod):
     payload = {
         "product_name": "New Name",
         "product_description": "Updated description",
-        "industry": "tech",
         "brand_id": "b1",
+        "category":"c1",
         "organization_id": "org1",
     }
     resp = client.patch("/api/voice-customer/products/prod123",
