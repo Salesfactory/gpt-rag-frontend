@@ -111,6 +111,18 @@ describe("removeCitationsBlock()", () => {
         expect(result).toBe(`Text before`);
     });
 
+    it("removes only the Sources block at the end (markdown)", () => {
+        const md = `Text before\nSome content\n**Sources:**\n[[1]](A.pdf)\n[[2]](B.pdf)`;
+        const result = removeCitationsBlock(md);
+        expect(result).toBe(`Text before\nSome content`);
+    });
+
+    it("removes only the Fuentes block at the end (markdown heading)", () => {
+        const md = `Text before\n#### Fuentes\n[[1]](A.pdf)\n[[2]](B.pdf)`;
+        const result = removeCitationsBlock(md);
+        expect(result).toBe(`Text before`);
+    });
+
     it("returns original text if no Citations block is present", () => {
         const md = `Text without citations`;
         const result = removeCitationsBlock(md);
