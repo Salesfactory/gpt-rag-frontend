@@ -380,7 +380,7 @@ export function Products({ refreshKey }: { refreshKey: number }) {
     const [categories, setCategories] = useState<Category[]>([]);
 
     // ⬇️ Pull brands via the custom hook
-    const { brands, isLoading: isLoadingBrands, error: brandsError } = useBrands({ organizationId: organization?.id, user });
+    const { brands, isLoading: isLoadingBrands, error: brandsError, refresh: refreshBrands } = useBrands({ organizationId: organization?.id, user });
 
     useEffect(() => {
         const fetchProductsAndCategories = async () => {
@@ -410,6 +410,7 @@ export function Products({ refreshKey }: { refreshKey: number }) {
             }
         };
         fetchProductsAndCategories();
+        refreshBrands();
     }, [organization, user, setCount, refreshKey]);
 
     const handleEdit = (product: Product) => {
