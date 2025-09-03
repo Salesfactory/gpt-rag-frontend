@@ -42,8 +42,8 @@ describe("Main Page (Chat) Test Suite", () => {
     });
 
     it("Should verify the visibility and functionality of the Settings page", () => {
-        cy.get(":nth-child(3) > ._tooltipWrapper_16w4s_240 > .btn").should("be.visible");
-        cy.get(":nth-child(3) > ._tooltipWrapper_16w4s_240 > .btn").click();
+        cy.get('[data-testid="settings-button"]').should("be.visible");
+        cy.get('[data-testid="settings-button"]').click();
 
         cy.contains("Chat Settings").should("be.visible");
         cy.contains("Font Type").should("be.visible");
