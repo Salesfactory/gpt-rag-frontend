@@ -1168,7 +1168,7 @@ function ReportJobs() {
     );
 }
 
-function IndustryDefinition() {
+function IndustryDefinition({ onIndustryChange }: { onIndustryChange: (hasIndustry: boolean) => void }) {
     const { user, organization } = useAppContext();
     const [industryDefinition, setIndustryDefinition] = useState("");
     const [industryError, setIndustryError] = useState("");
@@ -1183,7 +1183,9 @@ function IndustryDefinition() {
                 if (organization) {
                     const data = await getIndustryByOrganization({ organization_id: organization.id, user });
                     if (!cancelled) {
-                        setIndustryDefinition(data?.industry_description || "");
+                        const definition = data?.industry_description || "";
+                        setIndustryDefinition(definition);
+                        onIndustryChange(!!definition.trim());
                     }
                 }
             } catch (err) {
@@ -1198,7 +1200,7 @@ function IndustryDefinition() {
         return () => {
             cancelled = true;
         };
-    }, [user]);
+    }, [user, organization, onIndustryChange]);
 
     const saveIndustry = async () => {
         if (!organization?.id) return;
@@ -1212,6 +1214,7 @@ function IndustryDefinition() {
         try {
             await upsertIndustry({ organization_id: organization.id, industry_description: industryDefinition.trim(), user });
             setIndustrySaved(true);
+            onIndustryChange(true);
             toast.success("Industry definition saved successfully.");
         } catch (err) {
             console.error("Error saving industry:", err);
@@ -1433,6 +1436,7 @@ export function CategoriesDefinition({ onChange, onDataRefresh }: { onChange?: (
 export default function VoiceCustomerPage() {
     const [hasBrands, setHasBrands] = useState(false);
     const [productRefreshKey, setProductRefreshKey] = useState(0);
+    const [hasIndustry, setHasIndustry] = useState(false);
 
     const handleDataRefresh = () => {
         setProductRefreshKey(prev => prev + 1);
@@ -1444,16 +1448,16 @@ export default function VoiceCustomerPage() {
             <main className={styles.mainContainer}>
                 <div className={styles.cardsGrid}>
                     <FormulaeCard title="Industry and Category Definition">
-                        <IndustryDefinition />
+                        <IndustryDefinition onIndustryChange={setHasIndustry} />
                         <CategoriesDefinition onDataRefresh={handleDataRefresh} />
                     </FormulaeCard>
-                    <Card icon={<Building size={20} />} title="Brands" maxCount={3}>
+                    <Card icon={<Building size={20} />} title="Brands" maxCount={3} disabled={!hasIndustry}>
                         <Brands onBrandsChange={setHasBrands} onDataRefresh={handleDataRefresh} />
                     </Card>
-                    <Card icon={<Package size={20} />} title="Products" maxCount={10} disabled={!hasBrands}>
+                    <Card icon={<Package size={20} />} title="Products" maxCount={10} disabled={!hasBrands || !hasIndustry}>
                         <Products refreshKey={productRefreshKey} />
                     </Card>
-                    <Card icon={<Users size={20} />} title="Competitors" maxCount={5} disabled={!hasBrands}>
+                    <Card icon={<Users size={20} />} title="Competitors" maxCount={5} disabled={!hasBrands || !hasIndustry}>
                         <Competitors />
                     </Card>
                 </div>
