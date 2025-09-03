@@ -45,7 +45,7 @@ export function removeCitationsBlock(input: string): string {
     // Delete only the Citations block at the end of the text.
     let out = input;
     // Markdown: block type “**Citations:**” at the end
-    out = out.replace(/(\n|\r|\r\n)?\s*(\*\*\s*(Citations)\s*:\*\*|####?\s*(Citations))\s*:?[\s\S]*$/gi, "");
+    out = out.replace(/(\n|\r|\r\n)?\s*(\*\*\s*(Citations|Sources|Fuentes)\s*:\*\*|####?\s*(Citations|Sources|Fuentes))\s*:?[\s\S]*$/gi, "");
     return out;
 }
 /* ------------------------------------------------------------------
