@@ -188,8 +188,8 @@
   border-radius: 0.5rem; /* rounded-lg */
   cursor: pointer;
   transition: background-color 0.2s; /* transition-colors */
-  outline: none; /* focus:outline-none */
   margin-top: 1rem;
+  border: none;
 }
 
 .browse_button:hover {
@@ -584,4 +584,108 @@
 
 .message_text strong {
   font-weight: bold;
+}
+
+.excelWarningContainer {
+  text-align: center;
+}
+
+.excelWarningHeader {
+  margin-bottom: 1.5rem;
+}
+
+.iconWrapper {
+  width: 4rem;
+  height: 4rem;
+  background-color: #fff7ed; /* orange-100 */
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem auto;
+}
+
+.icon {
+  width: 2rem;
+  height: 2rem;
+  color: #dc6803; /* orange-600 */
+}
+
+.title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827; /* gray-900 */
+  margin-bottom: 0.5rem;
+}
+
+.warningBox {
+  background-color: #fff7ed; /* orange-50 */
+  border: 1px solid #fed7aa; /* orange-200 */
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.message {
+  font-size: 0.875rem;
+  color: #374151; /* gray-700 */
+  margin-bottom: 0.75rem;
+}
+
+.filesList {
+  font-size: 0.875rem;
+  color: #4b5563; /* gray-600 */
+}
+
+.filesList ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.filesList li {
+  margin-top: 0.25rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.cancelButton {
+  padding: 0.5rem 1rem;
+  color: #374151; /* gray-700 */
+  background-color: #f3f4f6; /* gray-100 */
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  border: none;
+}
+
+.cancelButton:hover {
+  background-color: #e5e7eb; /* gray-200 */
+}
+
+.cancelButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #6b7280, 0 0 0 4px #fff; /* gray-500 ring */
+}
+
+.confirmButton {
+  padding: 0.5rem 1rem;
+  background-color: #dc6803; /* orange-600 */
+  color: white;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  border: none;
+}
+
+.confirmButton:hover {
+  background-color: #c2410c; /* orange-700 */
+}
+
+.confirmButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #f97316, 0 0 0 4px #fff; /* orange-500 ring */
 }
