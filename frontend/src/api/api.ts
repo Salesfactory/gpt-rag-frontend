@@ -352,6 +352,28 @@ export function getCitationFilePath(citation: string): string {
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
 
+export async function getFeedbackUrl(): Promise<string | null> {
+    try {
+        const response = await fetch("/api/get-feedback-url", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        
+        if (response.status > 299 || !response.ok) {
+            console.log("Error getting feedback URL");
+            return null;
+        }
+        
+        const parsedResponse = await response.json();
+        return parsedResponse["feedback_url"] || null;
+    } catch (error) {
+        console.error("Error fetching feedback URL:", error);
+        return null;
+    }
+}
+
 export function getFilePath(fileUrl: string) {
     if (!fileUrl.endsWith(".pdf") || !fileUrl.endsWith(".docx") || fileUrl.endsWith(".doc")) {
         return fileUrl;
