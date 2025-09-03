@@ -389,7 +389,11 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
-                                    <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <button
+                                        onClick={handleShowSettings}
+                                        className="btn btn-white btn-sm d-flex align-items-center gap-1"
+                                        data-testid="settings-button"
+                                    >
                                         <Settings className={styles.iconLarge} />
                                         <span className={styles.tooltipText}>Chat Settings</span>
                                         {/* <span className="d-none d-md-inline">Settings</span> */}
