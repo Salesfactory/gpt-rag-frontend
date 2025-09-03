@@ -288,6 +288,16 @@ export function setupTestUserAndOrg() {
         }
     });
 
+    cy.intercept("GET", "/api/voice-customer/organizations/0aad82ee-52ec-428e-b211-e9cc34b94457/industry", {
+        statusCode: 200,
+        body: {
+            data: {
+                industry_description: "The automotive industry comprises a wide range of companies and organizations involved in the design, development, manufacturing, marketing, and selling of motor vehicles."
+            },
+            status: 200
+        }
+    }).as("getIndustryByOrganization");
+
     cy.intercept("GET", "/api/get-source-documents?organization_id=0aad82ee-52ec-428e-b211-e9cc34b94457", {
         statusCode: 203,
         body: {
