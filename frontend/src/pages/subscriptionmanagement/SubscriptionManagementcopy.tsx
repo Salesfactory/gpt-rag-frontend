@@ -376,12 +376,12 @@ const SubscriptionManagement: React.FC = () => {
                                     </div>
                                 </td>
                             </tr>
-                            <tr key="divider">
+                            {/* <tr key="divider">
                                 <td colSpan={3} className={styles.divider}>
                                     <div className={styles.dividerText}>Additional Services</div>
                                     <div className={styles.addonWrapper}>
                                         <div className={styles.addonCard}>
-                                            {/* Financial Assistant */}
+                                            
                                             <div className={styles.addonItem}>
                                                 <div className={styles.addonInfo}>
                                                     <div className={styles.iconWrapper}>
@@ -410,144 +410,141 @@ const SubscriptionManagement: React.FC = () => {
                                         </div>
                                     </div>
                                 </td>
-                            </tr>
+                            </tr> */}
                         </tbody>
                     </table>
                 )}
                 {isRecentChangesModal && (
                     <div className={styles.modalOverlay}>
-
-                    <div ref={recentChangesModalRef} className={styles.modalAudit}>
-                        <div className={styles.modalHeader}>
-                            <h1 className={styles.titleRecent}>Recent Changes</h1>
-                            <button aria-label="Close" className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
-                                <IconX />
-                            </button>
-                        </div>
-                        <div className={styles.auditFilter}>
-                            <Label className={styles.modalText}>Filter by Action:</Label>
-                            <Dropdown
-                                placeholder="Select action to filter"
-                                options={FilterOptions}
-                                onChange={handleFilterChange}
-                                styles={{
-                                    title: { fontSize: "1rem" },
-                                    dropdownItem: { fontSize: "1rem" },
-                                    dropdownItemSelected: { fontSize: "1rem" },
-                                    root: { fontSize: "1rem" }
-                                }}
-                            />
-                        </div>
-                        {recentChangesLoading ? (
-                            <Spinner styles={{ root: { marginTop: "50px" } }} />
-                        ) : (
-                            <div className={styles.row} style={{ overflowX: "auto", width: "100%" }}>
-                                <div style={{ width: "100%", minWidth: 320 }}>
-                                    <table className={styles.table} style={{ width: "100%", minWidth: 320 }}>
-                                        <thead className={styles.thead}>
-                                            <tr key="types">
-                                                <th className={styles.tableName}>Date</th>
-                                                <th className={styles.tableName}>Action</th>
-                                                <th className={styles.tableName}>Modified by</th>
-                                                <th className={styles.tableName}>Details</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className={styles.auditBody}>
-                                            {(logsToShow || []).map((data: any, index: number) => (
-                                                <tr className={styles.auditRow} key={index}>
-                                                    {data.action === "Subscription Tier Change" && (
-                                                        <>
-                                                            <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                            <td className={styles.tableText2}>Subscription Tier Change</td>
-                                                            <td className={styles.tableText2}>{data.modified_by_name}</td>
-                                                            <td className={styles.tableText2}>
-                                                                {data.previous_plan} → {data.current_plan}
-                                                            </td>
-                                                        </>
-                                                    )}
-                                                    {data.action === "Financial Assistant Change" && (
-                                                        <>
-                                                            <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                            <td className={styles.tableText2}>FA Add-On Toggled</td>
-                                                            <td className={styles.tableText2}>{data.modified_by_name}</td>
-                                                            <td className={styles.tableStatus}>Status: {data.status_financial_assistant}</td>
-                                                        </>
-                                                    )}
-                                                    {data.action === "Subscription Created" && (
-                                                        <>
-                                                            <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                            <td className={styles.tableText2}>Subscription Created</td>
-                                                            <td className={styles.tableText}>{data.modified_by_name}</td>
-                                                            <td className={styles.tableText}>Status: Active</td>
-                                                        </>
-                                                    )}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    {(filteredLogsData?.length === 0 || !filteredLogsData) && (
-                                        <p style={{ textAlign: "center", marginTop: 16 }}>No logs found</p>
-                                    )}
-                                    {/* Mobile Pagination Controls */}
-                                    {isMobile && filteredLogsData && filteredLogsData.length > 5 && (
-                                        <div style={{ display: "flex", justifyContent: "center", marginTop: 12, gap: 8 }}>
-                                            <button
-                                                className={styles.button}
-                                                onClick={() => setMobilePage(p => Math.max(1, p - 1))}
-                                                disabled={mobilePage === 1}
-                                            >
-                                                Prev
-                                            </button>
-                                            <span style={{ alignSelf: "center" }}>
-                                                {mobilePage} / {totalMobilePages}
-                                            </span>
-                                            <button
-                                                className={styles.button}
-                                                onClick={() => setMobilePage(p => Math.min(totalMobilePages, p + 1))}
-                                                disabled={mobilePage === totalMobilePages}
-                                            >
-                                                Next
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            
-                        )}
-                    </div>
-                    </div>
-
-                )}
-                {isViewModal && (
-                    <div className={styles.modalOverlay} >
-                    <div className={styles.modalSubscription} ref={viewModalRef}>
-                        <button aria-label="Close" className={styles.closeButton} onClick={() => setIsViewModal(false)}>
-                            <IconX />
-                        </button>
-                        {prices.map((price, index) => (
-                            <div key={price.id} className={`${price.nickname === subscriptionName ? styles.activePlan : styles.plan}`}>
-                                <ChartPerson48Regular className={styles.planIcon} />
-                                <h2 className={styles.planName}>{price.nickname}</h2>
-                                <p className={styles.planDescription}>{price.description}</p>
-
-                                <p className={styles.planPrice}>
-                                    ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
-                                </p>
-                                <button
-                                    className={styles.planButton}
-                                    onClick={() => handleSelectedSubscription(price.nickname, price.id)}
-                                    role="button"
-                                    aria-label={`Subscribe to ${price.nickname}`}
-                                >
-                                    {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
-                                        ? "Reactivate subscription"
-                                        : organization?.subscriptionStatus === "active" && price.nickname === subscriptionName
-                                        ? "Change payment information"
-                                        : "Subscribe"}
+                        <div ref={recentChangesModalRef} className={styles.modalAudit}>
+                            <div className={styles.modalHeader}>
+                                <h1 className={styles.titleRecent}>Recent Changes</h1>
+                                <button aria-label="Close" className={styles.closeButton} onClick={() => setIsRecentChangesModal(false)}>
+                                    <IconX />
                                 </button>
                             </div>
-                        ))}
+                            <div className={styles.auditFilter}>
+                                <Label className={styles.modalText}>Filter by Action:</Label>
+                                <Dropdown
+                                    placeholder="Select action to filter"
+                                    options={FilterOptions}
+                                    onChange={handleFilterChange}
+                                    styles={{
+                                        title: { fontSize: "1rem" },
+                                        dropdownItem: { fontSize: "1rem" },
+                                        dropdownItemSelected: { fontSize: "1rem" },
+                                        root: { fontSize: "1rem" }
+                                    }}
+                                />
+                            </div>
+                            {recentChangesLoading ? (
+                                <Spinner styles={{ root: { marginTop: "50px" } }} />
+                            ) : (
+                                <div className={styles.row} style={{ overflowX: "auto", width: "100%" }}>
+                                    <div style={{ width: "100%", minWidth: 320 }}>
+                                        <table className={styles.table} style={{ width: "100%", minWidth: 320 }}>
+                                            <thead className={styles.thead}>
+                                                <tr key="types">
+                                                    <th className={styles.tableName}>Date</th>
+                                                    <th className={styles.tableName}>Action</th>
+                                                    <th className={styles.tableName}>Modified by</th>
+                                                    <th className={styles.tableName}>Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className={styles.auditBody}>
+                                                {(logsToShow || []).map((data: any, index: number) => (
+                                                    <tr className={styles.auditRow} key={index}>
+                                                        {data.action === "Subscription Tier Change" && (
+                                                            <>
+                                                                <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
+                                                                <td className={styles.tableText2}>Subscription Tier Change</td>
+                                                                <td className={styles.tableText2}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText2}>
+                                                                    {data.previous_plan} → {data.current_plan}
+                                                                </td>
+                                                            </>
+                                                        )}
+                                                        {data.action === "Financial Assistant Change" && (
+                                                            <>
+                                                                <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
+                                                                <td className={styles.tableText2}>FA Add-On Toggled</td>
+                                                                <td className={styles.tableText2}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableStatus}>Status: {data.status_financial_assistant}</td>
+                                                            </>
+                                                        )}
+                                                        {data.action === "Subscription Created" && (
+                                                            <>
+                                                                <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
+                                                                <td className={styles.tableText2}>Subscription Created</td>
+                                                                <td className={styles.tableText}>{data.modified_by_name}</td>
+                                                                <td className={styles.tableText}>Status: Active</td>
+                                                            </>
+                                                        )}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        {(filteredLogsData?.length === 0 || !filteredLogsData) && (
+                                            <p style={{ textAlign: "center", marginTop: 16 }}>No logs found</p>
+                                        )}
+                                        {/* Mobile Pagination Controls */}
+                                        {isMobile && filteredLogsData && filteredLogsData.length > 5 && (
+                                            <div style={{ display: "flex", justifyContent: "center", marginTop: 12, gap: 8 }}>
+                                                <button
+                                                    className={styles.button}
+                                                    onClick={() => setMobilePage(p => Math.max(1, p - 1))}
+                                                    disabled={mobilePage === 1}
+                                                >
+                                                    Prev
+                                                </button>
+                                                <span style={{ alignSelf: "center" }}>
+                                                    {mobilePage} / {totalMobilePages}
+                                                </span>
+                                                <button
+                                                    className={styles.button}
+                                                    onClick={() => setMobilePage(p => Math.min(totalMobilePages, p + 1))}
+                                                    disabled={mobilePage === totalMobilePages}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
+                )}
+                {isViewModal && (
+                    <div className={styles.modalOverlay}>
+                        <div className={styles.modalSubscription} ref={viewModalRef}>
+                            <button aria-label="Close" className={styles.closeButton} onClick={() => setIsViewModal(false)}>
+                                <IconX />
+                            </button>
+                            {prices.map((price, index) => (
+                                <div key={price.id} className={`${price.nickname === subscriptionName ? styles.activePlan : styles.plan}`}>
+                                    <ChartPerson48Regular className={styles.planIcon} />
+                                    <h2 className={styles.planName}>{price.nickname}</h2>
+                                    <p className={styles.planDescription}>{price.description}</p>
+
+                                    <p className={styles.planPrice}>
+                                        ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()} per {price.recurring?.interval}
+                                    </p>
+                                    <button
+                                        className={styles.planButton}
+                                        onClick={() => handleSelectedSubscription(price.nickname, price.id)}
+                                        role="button"
+                                        aria-label={`Subscribe to ${price.nickname}`}
+                                    >
+                                        {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
+                                            ? "Reactivate subscription"
+                                            : organization?.subscriptionStatus === "active" && price.nickname === subscriptionName
+                                            ? "Change payment information"
+                                            : "Subscribe"}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
                 {isConfirmationModal && (

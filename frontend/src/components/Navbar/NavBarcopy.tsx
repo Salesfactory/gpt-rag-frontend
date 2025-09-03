@@ -323,7 +323,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <ul className="navbar-nav flex-row align-items-center gap-3">
                         {/*Then change the route*/}
                         {/* Financial Assistant Toggle */}
-                        {fastatus && location === "/" && (
+                        {/* {fastatus && location === "/" && (
                             <li className="nav-item">
                                 <div className="d-flex flex-column align-items-start">
                                     <div className={styles.financialToggleContainer}>
@@ -339,7 +339,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                     </div>
                                 </div>
                             </li>
-                        )}
+                        )} */}
                         {/*Then change the route*/}
                         {/* Feedback Panel Button */}
                         {/* {location === "/" && (
@@ -389,7 +389,11 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/" && (
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
-                                    <button onClick={handleShowSettings} className="btn btn-white btn-sm d-flex align-items-center gap-1">
+                                    <button
+                                        onClick={handleShowSettings}
+                                        className="btn btn-white btn-sm d-flex align-items-center gap-1"
+                                        data-testid="settings-button"
+                                    >
                                         <Settings className={styles.iconLarge} />
                                         <span className={styles.tooltipText}>Chat Settings</span>
                                         {/* <span className="d-none d-md-inline">Settings</span> */}
