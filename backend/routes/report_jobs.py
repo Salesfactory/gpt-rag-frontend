@@ -27,7 +27,7 @@ from flask import Blueprint, request, jsonify, abort
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 
 from shared import clients
-from shared.idempotency import canonical_report_name
+from shared.idempotency import weekly_idem_key
 
 bp = Blueprint("report_jobs", __name__, url_prefix="/api/report-jobs")
 log = logging.getLogger(__name__)
@@ -137,7 +137,7 @@ def create_job():
     doc = {
         "id": job_id,  # Cosmos item id
         "organization_id": organization_id,  # PK
-        "idempotency_key": canonical_report_name(report_name),
+        "idempotency_key": weekly_idem_key(organization_id, report_name, now),
         "report_key": report_key,
         "report_name": report_name,
         "params": params,
