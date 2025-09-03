@@ -1886,10 +1886,10 @@ export async function getIndustryByOrganization({ organization_id, user }: { org
     });
 
     if (response.status === 404) return null;
-    const data = await response.json();
-    
+    const res = await response.json();
+
     if (response.status > 299 || !response.ok) throw new Error('Failed to fetch industry');
-    return data;
+    return res.data;
 }
 
 export async function upsertIndustry({ organization_id, industry_description, user }: { organization_id: string | number; industry_description: string; user?: any }): Promise<any> {
