@@ -16,7 +16,7 @@ import { useAppContext } from "../../providers/AppProviders";
 //import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import DownloadButton from "../../components/DownloadButton/DownloadButton";
-import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
+// import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
@@ -100,7 +100,8 @@ const Chat = () => {
         setLastAnswer("");
         setProgressState(null);
 
-        const agent = isFinancialAssistantActive ? "financial" : "consumer";
+        const agent = "consumer";
+        // const agent = isFinancialAssistantActive ? "financial" : "consumer";
 
         let history: ChatTurn[] = [];
         if (dataConversation.length > 0) {
@@ -485,7 +486,7 @@ const Chat = () => {
                 <div>
                     {/* <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div> */}
                 </div>
-                <FinancialPopup />
+                {/* <FinancialPopup /> */}
                 <div className={styles.container}>
                     <div className={styles.chatRoot}>
                         <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "100%" }}>
@@ -505,7 +506,7 @@ const Chat = () => {
                                                 </p>
                                             </div>
                                         )}
-                                        {isFinancialAssistantActive && (
+                                        {/* {isFinancialAssistantActive && (
                                             <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                                 <img height="70px" src={FreddaidLogoFinlAi} alt="FreddAid 4.1"></img>
                                                 <h1>FinlAI</h1>
@@ -515,7 +516,7 @@ const Chat = () => {
                                                     opportunities and threats in an ever-changing financial landscape.
                                                 </p>
                                             </div>
-                                        )}
+                                        )} */}
                                     </div>
                                 ) : (
                                     <div

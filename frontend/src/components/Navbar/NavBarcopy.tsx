@@ -323,7 +323,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <ul className="navbar-nav flex-row align-items-center gap-3">
                         {/*Then change the route*/}
                         {/* Financial Assistant Toggle */}
-                        {fastatus && location === "/" && (
+                        {/* {fastatus && location === "/" && (
                             <li className="nav-item">
                                 <div className="d-flex flex-column align-items-start">
                                     <div className={styles.financialToggleContainer}>
@@ -339,7 +339,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                     </div>
                                 </div>
                             </li>
-                        )}
+                        )} */}
                         {/*Then change the route*/}
                         {/* Feedback Panel Button */}
                         {/* {location === "/" && (
