@@ -1088,7 +1088,7 @@ function ReportJobs() {
                         {showStatusFilter && (
                             <div className={styles.filterMenu}>
                                 <div className={styles.filterMenuItems}>
-                                    {["All Status", "Completed", "In Progress", "Pending", "Failed"].map(status => (
+                                    {["All Status", "SUCCEEDED", "RUNNING", "QUEUED", "FAILED"].map(status => (
                                         <button
                                             key={status}
                                             className={`${styles.filterOption} ${selectedStatus === status ? styles.activeFilter : ""}`}
@@ -1122,7 +1122,6 @@ function ReportJobs() {
                         <thead>
                             <tr>
                                 <th className={styles.tableTh}>Type</th>
-                                <th className={styles.tableTh}>Target</th>
                                 <th className={styles.tableTh}>Status</th>
                                 <th className={styles.tableTh}>Progress</th>
                                 <th className={styles.tableTh}>Start Date</th>
@@ -1133,15 +1132,14 @@ function ReportJobs() {
                         <tbody className={styles.tableBody}>
                             {rawReportJobs.map(doc => {
                                 const c = toCanonical(doc?.status);
-                                const terminal = c === "COMPLETED" || c === "FAILED";
-                                const progress = typeof doc?.progress === "number" ? doc.progress : c === "COMPLETED" ? 100 : undefined;
+                                const terminal = c === "SUCCEEDED" || c === "FAILED";
+                                const progress = typeof doc?.progress === "number" ? doc.progress : c === "SUCCEEDED" ? 100 : undefined;
                                 const endDate = terminal ? doc?.updated_at ?? null : null;
                                 return (
                                     <tr key={String(doc?.id)} className={styles.tableRow}>
                                         <td className={styles.tableCell}>
-                                            <span className={styles.jobType}>{statusType(doc?.type) ?? doc?.report_name ?? "Report"}</span>
+                                            <span className={styles.jobType}>{statusType(doc?.report_key) ?? doc?.report_name ?? "Report"}</span>
                                         </td>
-                                        <td className={styles.tableCell}>{doc?.params?.target ?? "-"}</td>
                                         <td className={styles.tableCell}>
                                             <div className={styles.statusCell}>
                                                 {statusIcon(c)}

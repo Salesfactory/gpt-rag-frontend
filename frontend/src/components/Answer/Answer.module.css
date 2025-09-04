@@ -74,6 +74,38 @@ h2 {
     text-decoration: underline;
 }
 
+/* Loading state for citation links */
+.citation[data-loading="true"] {
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.citation[data-loading="true"]::after {
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 6px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: -2px;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .citation[data-loading="true"]::after {
+        animation: none;
+        border-right-color: currentColor;
+    }
+}
+
 .followupQuestionsList {
     margin-top: 0.625em;
 }

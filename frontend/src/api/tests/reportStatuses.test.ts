@@ -59,10 +59,10 @@ describe("fetchReportJobs", () => {
         await fetchReportJobs({
             organization_id: "org-123",
             user: mockUser,
-            status: "COMPLETED"
+            status: "SUCCEEDED"
         });
 
-        expect(mockFetch).toHaveBeenCalledWith("/api/report-jobs?organization_id=org-123&limit=10&status=COMPLETED", expect.any(Object));
+        expect(mockFetch).toHaveBeenCalledWith("/api/report-jobs?organization_id=org-123&limit=10&status=SUCCEEDED", expect.any(Object));
     });
 
     it("uses default values when user is null", async () => {
