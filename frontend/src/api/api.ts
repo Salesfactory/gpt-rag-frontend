@@ -1834,7 +1834,6 @@ export async function generateExcelDownloadUrl(filePath: string): Promise<{
 
         return await response.json();
     } catch (error) {
-        console.error('Error generating Excel download URL:', error);
         throw error;
     }
 }
