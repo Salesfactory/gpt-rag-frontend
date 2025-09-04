@@ -362,6 +362,7 @@ const Chat = () => {
     };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
+
         // Check if file is Excel (.xlsx, .xls, .csv) 
         const isExcelFile = citation.endsWith(".xlsx") || citation.endsWith(".xls") || citation.endsWith(".csv");
         
@@ -384,6 +385,28 @@ const Chat = () => {
             } catch (error) {
                 setLoadingCitationPath(null);
                 return window.open(citation, "_blank");
+
+        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
+            return window.open(citation, "_blank");
+        }
+        // Extract filepath if necessary
+        const modifiedFilename = extractAfterDomain(fileName);
+
+        const response = await getFileBlobWithState(modifiedFilename, "documents");
+        if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+            setActiveAnalysisPanelTab(undefined);
+        } else {
+            var file = new Blob([response as BlobPart]);
+            readFile(file);
+
+            function readFile(input: Blob) {
+                const fr = new FileReader();
+                fr.readAsDataURL(input);
+                fr.onload = function (event) {
+                    const res: any = event.target ? event.target.result : undefined;
+                    setActiveCitation(res);
+                };
+
             }
         }
         
