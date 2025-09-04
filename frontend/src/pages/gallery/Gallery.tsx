@@ -2,7 +2,7 @@ import { toast, ToastContainer } from "react-toastify";
 import styles from "./Gallery.module.css";
 import { ArrowUpDown, Download, Search, Trash2, Upload, Users } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { deleteSourceFileFromBlob, getFileBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
@@ -50,6 +50,8 @@ const Gallery: React.FC = () => {
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [users, setUsers] = useState<User[]>();
+    const [showUserFilter, setShowUserFilter] = useState<boolean>(false);
+    const [searchQuery, setSearchQuery] = useState<string>("");
 
 
     useEffect(() => {
@@ -77,7 +79,11 @@ const Gallery: React.FC = () => {
 
             setIsLoading(true);
             try {
-                const itemsFromApi = await getGalleryItems(organization.id, { user });
+                const itemsFromApi = await getGalleryItems(organization.id, {
+                user,
+                ...(userFilter ? { uploader_id: userFilter } : {}),
+                ...(selectedStatus ? { order: selectedStatus } : {}), // "newest" | "oldest"
+                });
                 let galleryData: GalleryItem[] = [];
                 if (Array.isArray(itemsFromApi)) {
                     galleryData = itemsFromApi;
@@ -132,7 +138,7 @@ const Gallery: React.FC = () => {
         };
 
 
-    }, [user, organization]);
+    }, [user, organization, userFilter, selectedStatus]);
 
 
     const handleDownload = (item: GalleryItem) => {
@@ -167,6 +173,38 @@ const Gallery: React.FC = () => {
         setImages(base);
     };
 
+    const applyFilters = useCallback((
+    source?: GalleryItem[],
+    qOverride?: string
+    ) => {
+    const base = Array.isArray(source) ? source : (fetchedImages ?? []);
+    let filtered = base;
+
+    // 1) Filtro por usuario (fallback si el backend no filtra)
+    if (userFilter) {
+        filtered = filtered.filter(img => img?.metadata?.user_id === userFilter);
+    }
+
+    // 2) Búsqueda
+    const q = (qOverride ?? searchQuery).trim().toLowerCase();
+    if (q) {
+        filtered = filtered.filter(img => {
+        if (img.name?.toLowerCase().includes(q)) return true;
+        try {
+            const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
+            if (metaString.includes(q)) return true;
+        } catch {}
+        if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
+        if (img.content_type?.toLowerCase().includes(q)) return true;
+        return false;
+        });
+    }
+
+    // 3) Orden
+    setImages(filtered);
+    }, [fetchedImages, userFilter, searchQuery]);
+
+
     const formatFileSize = (bytes: number): string => {
         if (bytes < 1024) return bytes + " B";
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
@@ -189,30 +227,8 @@ const Gallery: React.FC = () => {
 
 
         searchTimeout.current = window.setTimeout(() => {
-            const q = (searchQuery || "").trim().toLowerCase();
-
-            if (!q) {
-                setImages(fetchedImages ?? []);
-                return;
-            }
-
-            const filtered = (fetchedImages ?? []).filter(img => {
-                if (img.name && img.name.toLowerCase().includes(q)) return true;
-
-                try {
-                    const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
-                    if (metaString.includes(q)) return true;
-                } catch (e) {
-                }
-
-                if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
-
-                if (img.content_type && img.content_type.toLowerCase().includes(q)) return true;
-
-                return false;
-            });
-
-            setImages(filtered);
+            setSearchQuery(searchQuery || "");
+            applyFilters(undefined, searchQuery || "");
         }, 200);
     };
 
@@ -225,6 +241,30 @@ const Gallery: React.FC = () => {
     const getUserName = (id: string) => {
         return users?.find(user => user.id === id)?.name
     }
+
+    const userOptions = useMemo((): User[] => {
+   // 1) arranca con TODOS los users traídos por getUsers()
+   const map = new Map<string, string>();
+   (users ?? []).forEach(u => map.set(u.id, u.name));
+
+   // 2) agrega los user_id detectados en las imágenes (por si no están en `users`)
+   (fetchedImages ?? []).forEach(f => {
+     const id = f?.metadata?.user_id;
+     if (id && !map.has(id)) {
+       map.set(id, getUserName(id) ?? id);
+     }
+   });
+
+   // 3) a lista ordenada
+   return Array.from(map, ([id, name]) => ({ id, name }))
+     .sort((a, b) => a.name.localeCompare(b.name));
+ }, [users, fetchedImages]);
+
+    useEffect(() => {
+        applyFilters();
+    }, [userFilter, selectedStatus, fetchedImages, applyFilters]);
+
+
 
     return (
         <div className={styles.page_container}>
@@ -285,6 +325,7 @@ const Gallery: React.FC = () => {
                         }
                     }}
                 />
+            <div className={styles.filtersGroup}>
                 <div className={styles.filter}>
                     <div className={styles.filterContainer}>
                         <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
@@ -301,9 +342,6 @@ const Gallery: React.FC = () => {
                                             className={`${styles.dropdownItem} ${selectedStatus === option.value ? styles.dropdownItemActive : ""}`}
                                             onClick={() => {
                                                 setSelectedStatus(option.value);
-                                                // sort using the fetchedImages as canonical source
-                                                sortImages(option.value);
-                                                setShowStatusFilter(false);
                                             }}
                                         >
                                             {option.label}
@@ -314,7 +352,49 @@ const Gallery: React.FC = () => {
                         )}
                     </div>
                 </div>
+                <div className={styles.filter}>
+                    <div className={styles.filterContainer}>
+                        <button
+                        type="button"
+                        className={styles.filterButton}
+                        onClick={() => setShowUserFilter(!showUserFilter)}
+                        >
+                        <Users size={16} className={styles.filterIcon} />
+                        {userFilter ? (getUserName(userFilter) ?? userFilter) : "All Users"}
+                        </button>
+
+                        {showUserFilter && (
+                        <div className={styles.filterDropdown}>
+                            <div className={styles.dropdownContent}>
+                            <button
+                                className={`${styles.dropdownItem} ${!userFilter ? styles.dropdownItemActive : ""}`}
+                                onClick={() => {
+                                setUserFilter(null);
+                                setShowUserFilter(false);
+                                }}
+                            >
+                                All Users
+                            </button>
+
+                            {userOptions.map(u => (
+                                <button
+                                key={u.id}
+                                className={`${styles.dropdownItem} ${userFilter === u.id ? styles.dropdownItemActive : ""}`}
+                                onClick={() => {
+                                    setUserFilter(u.id);
+                                    setShowUserFilter(false);
+                                }}
+                                >
+                                {u.name}
+                                </button>
+                            ))}
+                            </div>
+                        </div>
+                        )}
+                     </div>
+                </div>
             </div>
+        </div>
             {isLoading ? (
                 <Spinner
                     styles={{
@@ -341,7 +421,9 @@ const Gallery: React.FC = () => {
                             <div className={styles.emptyContent}>
                                 <Upload size={48} className={styles.emptyIcon} />
                                 <p className={styles.emptyTitle}>No charts found</p>
-                                <p className={styles.emptySubtitle}>{userFilter ? `No charts found for ${userFilter}` : "No visualization charts available"}</p>
+                                <p className={styles.emptySubtitle}>
+                                {userFilter ? `No charts found for ${getUserName(userFilter) ?? userFilter}` : "No visualization charts available"}
+                                </p>
                             </div>
                         </div>
                     ) : (
