@@ -63,10 +63,9 @@
 .filtersGroup {
   display: flex;
   align-items: center;
-  gap: 12px; /* ajusta a 8/16 según gusto */
+  gap: 12px;
 }
 
-/* por si tu .filter tenía margin-left: auto y separaba los botones */
 .filtersGroup .filter {
   margin-left: 0 !important;
 }

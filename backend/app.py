@@ -2076,7 +2076,6 @@ def getBlob():
         if conn_str:
             blob_service_client = BlobServiceClient.from_connection_string(conn_str)
         else:
-            # 2) Fallback a AAD (RBAC debe tener Storage Blob Data Reader)
             client_credential = DefaultAzureCredential()
             blob_service_client = BlobServiceClient(
                 f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", client_credential
