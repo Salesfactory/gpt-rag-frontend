@@ -27,6 +27,7 @@ from flask import Blueprint, request, jsonify, abort
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 
 from shared import clients
+from shared.idempotency import weekly_idem_key
 
 bp = Blueprint("report_jobs", __name__, url_prefix="/api/report-jobs")
 log = logging.getLogger(__name__)
@@ -125,16 +126,19 @@ def create_job():
     organization_id = _require_organization_id()
 
     job_id = data.get("job_id") or str(uuid.uuid4())
+    report_key = data.get("report_key")
     report_name = data.get("report_name")
     params = data.get("params") or {}
 
-    if not report_name:
-        abort(400, "'report_name' is required")
+    if not report_name or not report_key:
+        abort(400, "'report_name' and 'report_key' are required")
 
     now = _utc_now_iso()
     doc = {
         "id": job_id,  # Cosmos item id
         "organization_id": organization_id,  # PK
+        "idempotency_key": weekly_idem_key(organization_id, report_name, now),
+        "report_key": report_key,
         "report_name": report_name,
         "params": params,
         "status": "QUEUED",
@@ -186,29 +190,61 @@ def get_job(job_id: str):
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error reading job: {e}")
 
+ALLOWED_STATUSES = {"SUCCEEDED", "RUNNING", "QUEUED", "FAILED"}
 
 @bp.get("")
 def list_jobs():
     """
-    List recent jobs for an organization (most recent first).
+    List recent report jobs for an organization (most recent first).
 
-    Query params:
-        organization_id: Organization/partition id (required; can also be in header/body).
-        limit: Optional integer limit (default: 50, applied client-side).
+    Query parameters:
+        organization_id (str): Required partition key. You may also provide it
+            via the JSON body or the `X-Tenant-Id` header.
+        limit (int, optional): Maximum number of items to return. Defaults to 50.
+        status (str, optional): Filter by status (case-insensitive). One of:
+            SUCCEEDED | FAILED | RUNNING | QUEUED.
 
     Returns:
         200 OK with a JSON array of job documents (max `limit` items).
 
     Errors:
+        400: Invalid query parameters.
         502: Cosmos query errors.
     """
     organization_id = _require_organization_id()
-    limit = int(request.args.get("limit", 50))
-    query = "SELECT * FROM c WHERE c.organization_id = @organization_id ORDER BY c.created_at DESC"
+
+    try:
+        limit = int(request.args.get("limit", 50))
+    except ValueError:
+        abort(400, "Invalid 'limit' (must be an integer).")
+    if limit < 1:
+        limit = 1
+
+    status_raw = request.args.get("status")
+    status = None
+    if status_raw:
+        status_candidate = status_raw.strip().upper()
+        if status_candidate not in ALLOWED_STATUSES:
+            allowed = ", ".join(sorted(ALLOWED_STATUSES))
+            abort(400, f"Invalid status '{status_raw}'. Allowed: {allowed}")
+        status = status_candidate
+
+    status_clause = " AND c.status = @status" if status else ""
+    query = (
+        "SELECT * FROM c "
+        "WHERE c.organization_id = @organization_id" + status_clause + " "
+        "ORDER BY c.created_at DESC"
+    )
+
     params = [{"name": "@organization_id", "value": organization_id}]
+    if status:
+        params.append({"name": "@status", "value": status})
+
     try:
         it: Iterable[Dict[str, Any]] = _jobs_container().query_items(
-            query=query, parameters=params, partition_key=organization_id
+            query=query,
+            parameters=params,
+            partition_key=organization_id,
         )
         out: List[Dict[str, Any]] = []
         for i, item in enumerate(it):
@@ -218,6 +254,7 @@ def list_jobs():
         return jsonify(out)
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error listing jobs: {e}")
+
 
 
 @bp.delete("/<job_id>")

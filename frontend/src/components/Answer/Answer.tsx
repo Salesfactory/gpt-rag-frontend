@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Stack, IconButton } from "@fluentui/react";
+import { Stack, IconButton, TooltipHost } from "@fluentui/react";
 import DOMPurify from "dompurify";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -7,7 +7,7 @@ import rehypeRaw from "rehype-raw";
 
 import styles from "./Answer.module.css";
 
-import { AskResponse, getFilePath } from "../../api";
+import { AskResponse, getFilePath, getFeedbackUrl } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { URLPreviewComponent } from "../URLPreviewComponent";
 import { AnswerIcon } from "./AnswerIcon";
@@ -45,6 +45,7 @@ interface Props {
     isSelected?: boolean;
     isGenerating?: boolean;
     progressState?: ProgressState | null;
+    loadingCitationPath?: string | null;
     onCitationClicked: (filePath: string, filename: string) => void;
     onThoughtProcessClicked: () => void;
     onSupportingContentClicked: () => void;
@@ -73,6 +74,7 @@ export const Answer = ({
     isGenerating,
     isSelected,
     progressState,
+    loadingCitationPath,
     onCitationClicked,
     onThoughtProcessClicked,
     onFollowupQuestionClicked,
@@ -179,6 +181,20 @@ export const Answer = ({
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
+
+    const handleFeedbackClick = async () => {
+        try {
+            const feedbackUrl = await getFeedbackUrl();
+            if (feedbackUrl) {
+                window.open(feedbackUrl, '_blank', 'noopener,noreferrer');
+            } else {
+                console.warn('Feedback URL not configured');
+            }
+        } catch (error) {
+            console.error('Error getting feedback URL:', error);
+        }
+    };
+
     // Show fallback loading when no content and no progress state
     if (answer.answer === "" && !progressState && isGenerating) {
         return (
@@ -242,6 +258,7 @@ export const Answer = ({
                                 !url.startsWith("https://") && !url.endsWith(".pdf") && !url.endsWith(".docx") && !url.endsWith(".doc")
                                     ? "https://" + url
                                     : url;
+                            const isLoadingThis = loadingCitationPath === path;
                             return (
                                 <React.Fragment key={i}>
                                     <div className={styles.citationContainer}>{`[${i + 1}]`}</div>
@@ -254,7 +271,12 @@ export const Answer = ({
                                         tabIndex={0}
                                         className={styles.citation}
                                         title={path}
-                                        onClick={() => onCitationClicked(fullUrl, path)}
+                                        onClick={() => {
+                                            if (!isLoadingThis) onCitationClicked(fullUrl, path);
+                                        }}
+                                        aria-busy={isLoadingThis ? "true" : undefined}
+                                        aria-disabled={isLoadingThis ? "true" : undefined}
+                                        data-loading={isLoadingThis ? "true" : undefined}
                                     >
                                         {truncateString(path, 15)}
                                     </a>
@@ -277,6 +299,37 @@ export const Answer = ({
                     </Stack>
                 </Stack.Item>
             )}
+
+            <Stack.Item>
+                <div className={styles.feedbackButtonRow}>
+                    <TooltipHost content="Leave Feedback">
+                        <button
+                            className={styles.feedbackButton}
+                            onClick={handleFeedbackClick}
+                            aria-label="Leave Feedback"
+                            title="Leave Feedback"
+                        >
+                            <IconButton
+                                iconProps={{ iconName: "Feedback" }}
+                                styles={{
+                                    root: { 
+                                        background: 'transparent', 
+                                        border: 'none',
+                                        minWidth: 'auto',
+                                        width: 'auto',
+                                        height: 'auto',
+                                        padding: 0
+                                    },
+                                    icon: { 
+                                        color: 'inherit',
+                                        fontSize: '16px'
+                                    }
+                                }}
+                            />
+                        </button>
+                    </TooltipHost>
+                </div>
+            </Stack.Item>
         </Stack>
     );
 };

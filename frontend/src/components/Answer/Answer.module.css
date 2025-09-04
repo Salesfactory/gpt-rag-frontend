@@ -74,6 +74,38 @@ h2 {
     text-decoration: underline;
 }
 
+/* Loading state for citation links */
+.citation[data-loading="true"] {
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.citation[data-loading="true"]::after {
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 6px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: -2px;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .citation[data-loading="true"]::after {
+        animation: none;
+        border-right-color: currentColor;
+    }
+}
+
 .followupQuestionsList {
     margin-top: 0.625em;
 }
@@ -198,4 +230,46 @@ sup {
     100% {
         transform: translateX(100%);
     }
+}
+
+/* Feedback button row styles */
+.feedbackButtonRow {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-top: 0.75em;
+    border-top: 1px solid #e0e0e0;
+    margin-top: 1em;
+}
+
+.feedbackButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5em;
+    background: transparent;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375em;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875em;
+    min-width: 2.5em;
+    height: 2.5em;
+}
+
+.feedbackButton:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+.feedbackButton:active {
+    background: #f3f4f6;
+    border-color: #6b7280;
+}
+
+.feedbackButton:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
 }

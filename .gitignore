@@ -1,5 +1,6 @@
 .DS_Store
 CLAUDE.md
+AGENTS.md
 # Azure az webapp deployment details
 .azure
 *_env

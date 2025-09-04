@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps } from "./models";
+import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -350,6 +350,28 @@ export function getCitationFilePath(citation: string): string {
     }
 
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
+}
+
+export async function getFeedbackUrl(): Promise<string | null> {
+    try {
+        const response = await fetch("/api/get-feedback-url", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        
+        if (response.status > 299 || !response.ok) {
+            console.log("Error getting feedback URL");
+            return null;
+        }
+        
+        const parsedResponse = await response.json();
+        return parsedResponse["feedback_url"] || null;
+    } catch (error) {
+        console.error("Error fetching feedback URL:", error);
+        return null;
+    }
 }
 
 export function getFilePath(fileUrl: string) {
@@ -1616,14 +1638,12 @@ export async function updateProduct({
 export async function createCompetitor({
   competitor_name,
   competitor_description,
-  industry,
   brands_id,
   organization_id,
   user,
 }: {
   competitor_name: string;
   competitor_description: string;
-  industry: string;
   brands_id: string[];
   organization_id: string;
   user: any;
@@ -1638,7 +1658,6 @@ export async function createCompetitor({
     body: JSON.stringify({
       competitor_name,
       competitor_description,
-      industry,
       brands_id,
       organization_id,
     }),
@@ -1704,16 +1723,12 @@ export async function updateCompetitor({
   competitor_id,
   competitor_name,
   competitor_description,
-  industry,
-  brands_id,
   user,
   organization_id,
 }: {
   competitor_id: string;
   competitor_name: string;
   competitor_description: string;
-  industry: string;
-  brands_id: string[];
   user: any;
   organization_id: string;
 }): Promise<any> {
@@ -1727,8 +1742,6 @@ export async function updateCompetitor({
     body: JSON.stringify({
       competitor_name,
       competitor_description,
-      industry,
-      brands_id,
       organization_id,
     }),
   });
@@ -1793,6 +1806,38 @@ export async function getFileBlob(fileName: string, container: string = "documen
     }
 }
 
+/**
+ * @param filePath - The file path/URL for the Excel file
+ * @returns Promise with download URL and metadata
+ */
+export async function generateExcelDownloadUrl(filePath: string): Promise<{
+    success: boolean;
+    download_url: string;
+    filename: string;
+    expires_in_days: number;
+}> {
+    try {
+        const response = await fetch('/api/download-excel-citation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                file_path: filePath
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+}
+
 export async function postReportByName(reportName: string): Promise<any> {
     try{
         const response = await fetch(`/api/reports/${encodeURIComponent(reportName)}`, {
@@ -1846,4 +1891,181 @@ export async function getGalleryItems(organization_id: string, params: { user: a
     });
 
     return data?.data ?? data ?? [];
+}
+
+export async function fetchReportJobs({
+  organization_id,
+  user,
+  limit = 10,
+  status,
+}: {
+  organization_id: string;
+  user: any;
+  limit?: number;
+  status?: BackendReportStatus;
+}): Promise<BackendReportJobDoc[]> {
+  const params = new URLSearchParams({
+    organization_id,
+    limit: String(limit),
+  });
+  if (status) params.set("status", status);
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-MS-CLIENT-PRINCIPAL-ID": user?.id ?? "00000000-0000-0000-0000-000000000000",
+    "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+  };
+
+  const res = await fetch(`/api/report-jobs?${params.toString()}`, { method: "GET", headers });
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const msg = (data && (data.message || data.error)) || `Failed to fetch report jobs (${res.status})`;
+    throw new Error(msg);
+  }
+
+  return Array.isArray(data) ? data : [];
+}
+
+
+export async function getIndustryByOrganization({ organization_id, user }: { organization_id: string; user?: any }): Promise<{ industry_description?: string } | null> {
+    const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+            'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? '00000000-0000-0000-0000-000000000000',
+        },
+    });
+
+    if (response.status === 404) return null;
+    const res = await response.json();
+
+    if (response.status > 299 || !response.ok) throw new Error('Failed to fetch industry');
+    return res.data;
+}
+
+export async function upsertIndustry({ organization_id, industry_description, user }: { organization_id: string | number; industry_description: string; user?: any }): Promise<any> {
+    const payload = { "industry_description":industry_description };
+    const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+            'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? '00000000-0000-0000-0000-000000000000',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (response.status > 299 || !response.ok) throw new Error('Failed to upsert industry');
+    return await response.json();
+}
+
+
+export async function createCategory({
+  organization_id,
+  user,
+  name,
+  description,
+  metadata,
+}: {
+  organization_id: string;
+  user: any;
+  name: string;
+  description?: string;
+  metadata?: object;
+}): Promise<Category> {
+  const res = await fetch("/api/categories", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-MS-CLIENT-PRINCIPAL-ID":
+        user?.id ?? "00000000-0000-0000-0000-000000000000",
+      "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+    },
+    body: JSON.stringify({ organization_id, name, description, metadata }),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.message || data?.error || "Error creating category");
+  return data as Category;
+}
+
+
+export async function getCategory(categoryId: string, organizationId: string): Promise<Category> {
+  const response = await fetch(`/api/categories/${categoryId}?organization_id=${organizationId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || `Error fetching category: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+
+export async function getCategoriesByOrganization({
+  organization_id,
+  user,
+  limit = 50,
+}: {
+  organization_id: string;
+  user: any;
+  limit?: number;
+}): Promise<Category[]> {
+  const params = new URLSearchParams({
+    organization_id,
+    limit: String(limit),
+  });
+
+  const res = await fetch(`/api/categories?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-MS-CLIENT-PRINCIPAL-ID":
+        user?.id ?? "00000000-0000-0000-0000-000000000000",
+      "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+    },
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || data?.error || "Error fetching categories");
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+
+export async function deleteCategory({
+  category_id,
+  organization_id,
+  user,
+}: {
+  category_id: string;
+  organization_id: string;
+  user: any;
+}): Promise<void> {
+  const res = await fetch(
+    `/api/categories/${encodeURIComponent(category_id)}?organization_id=${encodeURIComponent(organization_id)}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-MS-CLIENT-PRINCIPAL-ID":
+          user?.id ?? "00000000-0000-0000-0000-000000000000",
+        "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+      },
+    }
+  );
+  if (res.status !== 204 && !res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message || data?.error || "Error deleting category");
+  }
 }

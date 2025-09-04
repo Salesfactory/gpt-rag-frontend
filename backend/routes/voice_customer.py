@@ -13,7 +13,9 @@ from shared.cosmo_db import (
     get_brands_by_organization,
     get_competitors_by_organization,
     get_items_to_delete_by_brand,
+    get_organization_data,
     get_prods_by_organization,
+    patch_organization_data,
     update_brand_by_id,
     update_competitor_by_id,
     update_prod_by_id,
@@ -302,7 +304,6 @@ def add_competitor():
     Expects a JSON payload with the following required fields:
         - competitor_name (str): Name of the competitor.
         - competitor_description (str): Description of the competitor.
-        - industry (str): Industry of the competitor.
         - brands_id (list): List of brand IDs to associate with the competitor.
         - organization_id (str): ID of the organization.
     Returns:
@@ -318,7 +319,7 @@ def add_competitor():
     if not data:
         return create_error_response("No JSON data provided.", 400)
 
-    required_fields = ["competitor_name", "industry", "organization_id"]
+    required_fields = ["competitor_name", "organization_id"]
     missing_fields = [field for field in required_fields if field not in data]
     if missing_fields:
         return create_error_response(
@@ -328,13 +329,11 @@ def add_competitor():
     try:
         name = data["competitor_name"]
         description = data.get("competitor_description", "")
-        industry = data["industry"]
         organization_id = data["organization_id"]
 
         competitor = create_competitor(
             name=name,
             description=description,
-            industry=industry,
             organization_id=organization_id,
         )
     
@@ -357,7 +356,6 @@ def update_competitor(competitor_id):
     Request JSON Body:
         competitor_name (str): The name of the competitor.
         competitor_description (str): A description of the competitor.
-        industry (str): The industry in which the competitor operates.
         brands_id (list): A list of brand IDs associated with the competitor.
     Returns:
         Response: A Flask response object containing either the updated competitor data (on success)
@@ -374,7 +372,6 @@ def update_competitor(competitor_id):
     required_fields = [
         "competitor_name",
         "competitor_description",
-        "industry",
         "organization_id",
     ]
     missing_fields = [field for field in required_fields if field not in data]
@@ -386,14 +383,12 @@ def update_competitor(competitor_id):
     try:
         name = data["competitor_name"]
         description = data["competitor_description"]
-        industry = data["industry"]
         organization_id = data["organization_id"]
 
         result = update_competitor_by_id(
             competitor_id=competitor_id,
             name=name,
             description=description,
-            industry=industry,
             organization_id=organization_id
         )
         return create_success_response(result, 200)
@@ -456,7 +451,7 @@ def get_competitors(organization_id):
 
 
 
-@bp.route("/organization/<organization_id>/brands/<brand_id>/items-to-delete/", methods=["GET"])
+@bp.route("/organizations/<organization_id>/brands/<brand_id>/items-to-delete/", methods=["GET"])
 def get_items_to_delete(organization_id,brand_id):
     """
     Endpoint to retrieve items that are marked for deletion.
@@ -469,4 +464,57 @@ def get_items_to_delete(organization_id,brand_id):
         return create_success_response(items, 200)
     except Exception as e:
         logger.exception(f"Error retrieving items to delete: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
+@bp.route("/organizations/<organization_id>/industry", methods=["POST"])
+def add_industry(organization_id):
+    """
+    Endpoint to add a new industry for a specific organization.
+
+    Expects a JSON payload with the following required fields:
+        - industry_name (str): The name of the industry.
+        - industry_description (str): A description of the industry.
+
+    Returns:
+        JSON response with the created industry object or an error message.
+    """
+    data = request.get_json()
+    if "industry_description" not in data or not data["industry_description"]:
+        return create_error_response("Missing required field: industry_description", 400)
+    try:
+        industry_description = data["industry_description"]
+
+        response = patch_organization_data(
+            org_id=organization_id,
+            patch_data={"industry_description": industry_description}
+        )
+
+        return create_success_response(response, 201)
+    
+    except Exception as e:
+        logger.exception(f"Error creating industry: {e}")
+        return create_error_response("Internal Server Error", 500)
+    
+@bp.route("/organizations/<organization_id>/industry", methods=["GET"])
+def get_industry_by_organization(organization_id):
+    """
+    Endpoint to add a new industry for a specific organization.
+
+    Expects a JSON payload with the following required fields:
+        - industry_name (str): The name of the industry.
+        - industry_description (str): A description of the industry.
+
+    Returns:
+        JSON response with the created industry object or an error message.
+    """
+    try:
+
+        response = get_organization_data(organization_id)
+
+        data = response["industry_description"] if "industry_description" in response else ""
+
+        return create_success_response({ "industry_description": data }, 200)
+
+    except Exception as e:
+        logger.exception(f"Error creating industry: {e}")
         return create_error_response("Internal Server Error", 500)
