@@ -1812,7 +1812,8 @@ def getStorageAccount():
 
 
 @app.route("/api/get-feedback-url", methods=["GET"])
-def getFeedbackUrl():
+@auth.login_required
+def getFeedbackUrl(*, context):
     try:
         feedback_url = os.environ.get("USER_FEEDBACK_URL")
         return jsonify({"feedback_url": feedback_url})
