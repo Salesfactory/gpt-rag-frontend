@@ -216,18 +216,17 @@ describe("Voice Customer Test Suite", () => {
                     id: "job-1",
                     organization_id: "org-123",
                     report_name: "Brand Analysis",
-                    type: "brand_analysis",
-                    status: "COMPLETED",
+                    report_key: "brand_analysis",
+                    status: "SUCCEEDED",
                     progress: 100,
                     created_at: "2025-08-25T18:20:31Z",
                     updated_at: "2025-08-26T19:10:00Z",
-                    params: { target: "Apple" }
                 },
                 {
                     id: "job-2",
                     organization_id: "org-123",
                     report_name: "Brand Analysis",
-                    type: "brand_analysis",
+                    report_key: "brand_analysis",
                     status: "RUNNING",
                     progress: 65,
                     created_at: "2025-08-25T18:20:31Z",
@@ -243,18 +242,16 @@ describe("Voice Customer Test Suite", () => {
                     progress: 65,
                     created_at: "2025-08-25T18:20:31Z",
                     updated_at: "2025-08-26T19:10:00Z",
-                    params: { target: "Microsoft" }
                 },
                 {
                     id: "job-4",
                     organization_id: "org-123",
                     report_name: "Brand Analysis",
-                    type: "product_analysis",
+                    report_key: "product_analysis",
                     status: "FAILED",
                     progress: 65,
                     created_at: "2025-08-25T18:20:31Z",
                     updated_at: "2025-08-27T19:10:00Z",
-                    params: { target: "Microsoft" }
                 }
             ]
         }).as('fetchReportJobs');
@@ -276,9 +273,6 @@ describe("Voice Customer Test Suite", () => {
         cy.contains("Pending").should("exist");
         cy.contains("In Progress").should("exist");
         cy.contains("Failed").should("exist");
-
-        cy.contains("Apple").should("exist");
-        cy.contains("Microsoft").should("exist");
 
         cy.contains("2025-08-25").should("exist");
         cy.contains("2025-08-26").should("exist");
