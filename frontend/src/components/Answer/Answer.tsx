@@ -45,6 +45,7 @@ interface Props {
     isSelected?: boolean;
     isGenerating?: boolean;
     progressState?: ProgressState | null;
+    loadingCitationPath?: string | null;
     onCitationClicked: (filePath: string, filename: string) => void;
     onThoughtProcessClicked: () => void;
     onSupportingContentClicked: () => void;
@@ -73,6 +74,7 @@ export const Answer = ({
     isGenerating,
     isSelected,
     progressState,
+    loadingCitationPath,
     onCitationClicked,
     onThoughtProcessClicked,
     onFollowupQuestionClicked,
@@ -255,6 +257,7 @@ export const Answer = ({
                                 !url.startsWith("https://") && !url.endsWith(".pdf") && !url.endsWith(".docx") && !url.endsWith(".doc")
                                     ? "https://" + url
                                     : url;
+                            const isLoadingThis = loadingCitationPath === path;
                             return (
                                 <React.Fragment key={i}>
                                     <div className={styles.citationContainer}>{`[${i + 1}]`}</div>
@@ -267,7 +270,12 @@ export const Answer = ({
                                         tabIndex={0}
                                         className={styles.citation}
                                         title={path}
-                                        onClick={() => onCitationClicked(fullUrl, path)}
+                                        onClick={() => {
+                                            if (!isLoadingThis) onCitationClicked(fullUrl, path);
+                                        }}
+                                        aria-busy={isLoadingThis ? "true" : undefined}
+                                        aria-disabled={isLoadingThis ? "true" : undefined}
+                                        data-loading={isLoadingThis ? "true" : undefined}
                                     >
                                         {truncateString(path, 15)}
                                     </a>

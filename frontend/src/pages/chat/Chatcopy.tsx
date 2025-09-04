@@ -85,6 +85,7 @@ const Chat = () => {
     const [lastAnswer, setLastAnswer] = useState<string>("");
     const [progressState, setProgressState] = useState<{ step: string; message: string; progress?: number; timestamp?: number } | null>(null);
     const restartChat = useRef<boolean>(false);
+    const [loadingCitationPath, setLoadingCitationPath] = useState<string | null>(null);
 
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
@@ -366,6 +367,7 @@ const Chat = () => {
         
         if (isExcelFile) {
             try {
+                setLoadingCitationPath(fileName);
                 const downloadInfo = await generateExcelDownloadUrl(citation);
                 
                 const downloadLink = document.createElement("a");
@@ -377,9 +379,10 @@ const Chat = () => {
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
-
+                setLoadingCitationPath(null);
                 return;
             } catch (error) {
+                setLoadingCitationPath(null);
                 return window.open(citation, "_blank");
             }
         }
@@ -389,10 +392,11 @@ const Chat = () => {
             // Extract filepath if necessary
             const modifiedFilename = extractAfterDomain(fileName);
 
-            const response = await getFileBlobWithState(modifiedFilename, "documents");
             if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
                 setActiveAnalysisPanelTab(undefined);
             } else {
+                setLoadingCitationPath(fileName);
+                const response = await getFileBlobWithState(modifiedFilename, "documents");
                 var file = new Blob([response as BlobPart]);
                 readFile(file);
 
@@ -405,6 +409,7 @@ const Chat = () => {
                     };
                 }
                 setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+                setLoadingCitationPath(null);
             }
 
             setSelectedAnswer(index);
@@ -489,8 +494,8 @@ const Chat = () => {
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 700) {
-                setAnalysisPanelMinWidth(120); // o el valor que prefieras para móvil
-                setAnalysisPanelMaxWidth(window.innerWidth * 0.98); // 98% del ancho de pantalla
+                setAnalysisPanelMinWidth(120); 
+                setAnalysisPanelMaxWidth(window.innerWidth * 0.98); 
                 if (analysisPanelWidth > window.innerWidth * 0.98) {
                     setAnalysisPanelWidth(window.innerWidth * 0.98);
                 }
@@ -569,6 +574,7 @@ const Chat = () => {
                                                                   answer={response}
                                                                   isGenerating={false}
                                                                   isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                  loadingCitationPath={loadingCitationPath}
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
@@ -592,6 +598,7 @@ const Chat = () => {
                                                                   answer={answer[1]}
                                                                   isGenerating={false}
                                                                   isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                  loadingCitationPath={loadingCitationPath}
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
@@ -634,6 +641,7 @@ const Chat = () => {
                                                         isGenerating={isLoading}
                                                         progressState={progressState}
                                                         isSelected={activeAnalysisPanelTab !== undefined}
+                                                        loadingCitationPath={loadingCitationPath}
                                                         onCitationClicked={(c, n) => {}}
                                                         onThoughtProcessClicked={() => {}}
                                                         onSupportingContentClicked={() => {}}
