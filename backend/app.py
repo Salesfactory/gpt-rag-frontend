@@ -1811,6 +1811,16 @@ def getStorageAccount():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/get-feedback-url", methods=["GET"])
+def getFeedbackUrl():
+    try:
+        feedback_url = os.environ.get("USER_FEEDBACK_URL")
+        return jsonify({"feedback_url": feedback_url})
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/get-feedback-url")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
     price = request.json["priceId"]
