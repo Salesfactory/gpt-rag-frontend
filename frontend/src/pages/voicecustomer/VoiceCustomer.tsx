@@ -1352,21 +1352,35 @@ export function CategoriesDefinition({ onChange, onDataRefresh }: { onChange?: (
         }
     };
 
-    const removeCategory = async (category_id: string) => {
-        setIsLoading(true);
-        try {
-            await deleteCategory({ category_id, organization_id: organization!.id, user });
-            setCategories(prev => prev.filter(c => c.id !== category_id));
-            if (categories.length - 1 === 0) setError("At least one category is required.");
-            toast.success("Category removed.");
-            onDataRefresh();
-        } catch (e) {
-            console.error("Error deleting category:", e);
-            toast.error("Failed to remove category. Please try again.");
-        } finally {
-            setIsLoading(false);
+
+    const removeCategory = async (cat: Category) => {
+    if (!organization?.id) return;
+    setIsLoading(true);
+    try {
+
+        const prods = await getProductsByOrganization({ organization_id: organization.id, user });
+        const inUse = (prods || []).some(
+        (p: any) => (p?.category ?? "").toString().trim().toLowerCase() === cat.name.trim().toLowerCase()
+        );
+
+        if (inUse) {
+        toast.error("This category is assigned to one or more products. Reassign those products before deleting.");
+        return;
         }
+
+        await deleteCategory({ category_id: cat.id, organization_id: organization.id, user });
+        setCategories(prev => prev.filter(c => c.id !== cat.id));
+        if (categories.length - 1 === 0) setError("At least one category is required.");
+        toast.success("Category removed.");
+        onDataRefresh();
+    } catch (e) {
+        console.error("Error deleting category:", e);
+        toast.error("Failed to remove category. Please try again.");
+    } finally {
+        setIsLoading(false);
+    }
     };
+
 
     const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = e => {
         if (e.key === "Enter") {
@@ -1414,22 +1428,28 @@ export function CategoriesDefinition({ onChange, onDataRefresh }: { onChange?: (
                 ) : null}
             </div>
             <div className={styles.tagContainer}>
-                {categories.map(cat => (
-                    <span key={cat.id} className={styles.tag}>
-                        <span>{cat.name}</span>
-                        <button
-                            type="button"
-                            className={styles.tagRemove}
-                            onClick={() => removeCategory(cat.id)}
-                            disabled={isLoading}
-                            aria-label={`Remove ${cat.name}`}
-                            title="Remove"
-                        >
-                            ×
-                        </button>
-                    </span>
-                ))}
+            {categories.map(cat => {
+                const assignedCount = usageByName[cat.name?.toString().trim()] || 0;
+                return (
+                <span key={cat.id} className={styles.tag}>
+                    <span>{cat.name}</span>
+                    <button
+                    type="button"
+                    className={styles.tagRemove}
+                    onClick={() => removeCategory(cat)}
+                    disabled={isLoading || assignedCount > 0}
+                    aria-label={`Remove ${cat.name}`}
+                    title={assignedCount > 0
+                        ? `Cannot delete: ${assignedCount} product(s) assigned`
+                        : "Remove"}
+                    >
+                    ×
+                    </button>
+                </span>
+                );
+            })}
             </div>
+
         </div>
     );
 }
