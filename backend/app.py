@@ -2143,7 +2143,8 @@ def download_document():
 
 
 @app.route("/api/download-excel-citation", methods=["POST"])
-def download_excel_citation():
+@auth.login_required()
+def download_excel_citation(*, context):
     """
     Generate a 2-day SAS token for downloading Excel files from citations.
     This endpoint specifically handles Excel files (.xlsx, .xls, .csv) for citation downloads.
