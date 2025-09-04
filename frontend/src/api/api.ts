@@ -1806,6 +1806,38 @@ export async function getFileBlob(fileName: string, container: string = "documen
     }
 }
 
+/**
+ * @param filePath - The file path/URL for the Excel file
+ * @returns Promise with download URL and metadata
+ */
+export async function generateExcelDownloadUrl(filePath: string): Promise<{
+    success: boolean;
+    download_url: string;
+    filename: string;
+    expires_in_days: number;
+}> {
+    try {
+        const response = await fetch('/api/download-excel-citation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                file_path: filePath
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+}
+
 export async function postReportByName(reportName: string): Promise<any> {
     try{
         const response = await fetch(`/api/reports/${encodeURIComponent(reportName)}`, {

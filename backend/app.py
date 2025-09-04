@@ -27,12 +27,11 @@ import tempfile
 import markdown
 from flask_cors import CORS
 from azure.identity import DefaultAzureCredential
-from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
 import uuid
-
+from urllib.parse import urlparse
 from identity.flask import Auth
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -114,6 +113,13 @@ from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
 
 from _secrets import get_secret
+
+from azure.storage.blob import (
+    BlobServiceClient,
+    generate_blob_sas,
+    BlobSasPermissions,
+)
+from datetime import datetime, timedelta
 
 # Suppress Azure SDK logs (including Key Vault calls)
 logging.getLogger("azure").setLevel(logging.WARNING)
@@ -2113,13 +2119,6 @@ def download_document():
         return jsonify({"error": "Access to this file is not allowed"}), 403
 
     try:
-        from azure.storage.blob import (
-            BlobServiceClient,
-            generate_blob_sas,
-            BlobSasPermissions,
-        )
-        from datetime import datetime, timedelta
-
         blob_service_client = BlobServiceClient.from_connection_string(
             current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
         )
@@ -2132,7 +2131,7 @@ def download_document():
             blob_name=blob_name,
             account_key=blob_service_client.credential.account_key,
             permission=BlobSasPermissions(read=True),
-            expiry=datetime.utcnow() + timedelta(minutes=10),
+            expiry=datetime.now(timezone.utc) + timedelta(minutes=10),
         )
 
         blob_url = f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
@@ -2141,6 +2140,149 @@ def download_document():
     except Exception as e:
         logging.exception("[webbackend] Exception in /api/download")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/download-excel-citation", methods=["POST"])
+@auth.login_required()
+def download_excel_citation(*, context):
+    """
+    Generate a 2-day SAS token for downloading Excel files from citations.
+    This endpoint specifically handles Excel files (.xlsx, .xls, .csv) for citation downloads.
+    """
+    try:
+        data = request.json
+        file_path = data.get("file_path")
+        
+        if not file_path:
+            return jsonify({"error": "Missing file_path parameter"}), 400
+            
+        # Log the received file_path for debugging
+        logging.info(f"Processing file_path: {file_path}")
+        
+        # Handle different citation formats
+        if file_path.startswith("@https://") and file_path.endswith("/"):
+            # Handle citation format like: @https://construction%20adhesives%20pos%202024%202025%20ytd.xlsx/
+            # Extract the filename from between @https:// and the trailing /
+            encoded_filename = file_path[9:-1]  # Remove '@https://' prefix and '/' suffix
+            blob_name = unquote(encoded_filename)  # URL decode the filename
+            logging.info(f"Detected citation format, extracted filename: {blob_name}")
+            
+        elif file_path.startswith("https://") and (file_path.endswith(".xlsx") or file_path.endswith(".xls") or file_path.endswith(".csv")):
+            # Handle citation format like: https://Construction%20Adhesives%20POS%202024%202025%20YTD.xlsx
+            # This is just a URL-encoded filename, not a real URL - remove the https:// prefix
+            encoded_filename = file_path[8:]  # Remove 'https://' prefix
+            blob_name = unquote(encoded_filename)
+            logging.info(f"Detected encoded filename format, extracted: {blob_name}")
+            
+        elif file_path.startswith("https://") and "blob.core.windows.net" in file_path:
+            # Handle full blob URL - extract the blob name after documents/
+            parsed_url = urlparse(file_path)
+            path_parts = [part for part in parsed_url.path.split('/') if part]  
+            
+            if 'documents' in path_parts:
+                docs_index = path_parts.index('documents')
+                blob_name = '/'.join(path_parts[docs_index + 1:]) if docs_index + 1 < len(path_parts) else ''
+            else:
+                # If no 'documents' in path, try to extract filename from the path
+                blob_name = '/'.join(path_parts) if path_parts else ''
+                logging.warning(f"URL doesn't contain 'documents' in path: {file_path}")
+        else:
+            # Handle simple filename or relative path
+            blob_name = unquote(file_path)
+            if blob_name.startswith('documents/'):
+                blob_name = blob_name[10:]  # Remove 'documents/' prefix
+            
+        logging.info(f"Extracted blob_name: {blob_name}")
+        
+        # Additional validation
+        if not blob_name or blob_name.strip() == '':
+            return jsonify({"error": "Unable to extract valid filename from path"}), 400
+            
+        # Validate file extension for Excel files
+        allowed_extensions = ['.xlsx', '.xls', '.csv']
+        if not any(blob_name.lower().endswith(ext) for ext in allowed_extensions):
+            return jsonify({"error": "Only Excel files (.xlsx, .xls, .csv) are supported"}), 400
+
+        # Use connection string for SAS token generation (requires account key)
+        try:
+            blob_service_client = BlobServiceClient.from_connection_string(
+                current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
+            )
+            logging.info("Using connection string for blob service client")
+        except Exception as e:
+            logging.error(f"Failed to create blob service client from connection string: {e}")
+            return jsonify({"error": "Storage service configuration error"}), 500
+        
+        container_name = "documents"
+        
+        # Check if blob exists - first try direct path, then search by filename
+        blob_client = None
+        try:
+            blob_client = blob_service_client.get_blob_client(
+                container=container_name, blob=blob_name
+            )
+            blob_properties = blob_client.get_blob_properties()
+            logging.info(f"Found blob at direct path: {blob_name}")
+        except Exception as e:
+            logging.warning(f"Direct blob path not found: {blob_name}, searching by filename...")
+            
+            # If direct path fails, search for the filename in the container
+            try:
+                container_client = blob_service_client.get_container_client(container_name)
+                filename_only = blob_name.split('/')[-1]  
+                
+                # Search for blobs ending with this filename
+                found_blob = None
+                for blob in container_client.list_blobs():
+                    if blob.name.endswith(filename_only):
+                        found_blob = blob.name
+                        logging.info(f"Found matching blob: {found_blob}")
+                        break
+                
+                if found_blob:
+                    blob_client = blob_service_client.get_blob_client(
+                        container=container_name, blob=found_blob
+                    )
+                    blob_properties = blob_client.get_blob_properties()
+                    blob_name = found_blob  # Update blob_name to the found path
+                else:
+                    logging.warning(f"File not found anywhere in container: {filename_only}")
+                    return jsonify({"error": "File not found"}), 404
+                    
+            except Exception as search_error:
+                logging.error(f"Error searching for blob: {search_error}")
+                return jsonify({"error": "File not found"}), 404
+            
+        # Generate SAS token with 2-day expiry
+        try:
+            sas_token = generate_blob_sas(
+                account_name=blob_service_client.account_name,
+                container_name=container_name,
+                blob_name=blob_name,
+                account_key=blob_service_client.credential.account_key,
+                permission=BlobSasPermissions(read=True),
+                expiry=datetime.now(timezone.utc) + timedelta(days=2),  # 2-day expiry as requested
+            )
+        except Exception as e:
+            logging.error(f"Error generating SAS token: {e}")
+            return jsonify({"error": "Unable to generate download link"}), 500
+
+        # Create the download URL
+        download_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+        
+        # Extract filename for download
+        filename = blob_name.split('/')[-1]
+        
+        return jsonify({
+            "success": True,
+            "download_url": download_url,
+            "filename": filename,
+            "expires_in_days": 2
+        })
+
+    except Exception as e:
+        logging.exception("[webbackend] Exception in /api/download-excel-citation")
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
 @app.route("/api/settings", methods=["POST"])

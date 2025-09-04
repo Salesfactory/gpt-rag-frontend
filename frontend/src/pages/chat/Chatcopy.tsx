@@ -3,7 +3,7 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -85,6 +85,7 @@ const Chat = () => {
     const [lastAnswer, setLastAnswer] = useState<string>("");
     const [progressState, setProgressState] = useState<{ step: string; message: string; progress?: number; timestamp?: number } | null>(null);
     const restartChat = useRef<boolean>(false);
+    const [loadingCitationPath, setLoadingCitationPath] = useState<string | null>(null);
 
     const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
@@ -361,31 +362,62 @@ const Chat = () => {
     };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
-            return window.open(citation, "_blank");
-        }
-        // Extract filepath if necessary
-        const modifiedFilename = extractAfterDomain(fileName);
-
-        const response = await getFileBlobWithState(modifiedFilename, "documents");
-        if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
-            setActiveAnalysisPanelTab(undefined);
-        } else {
-            var file = new Blob([response as BlobPart]);
-            readFile(file);
-
-            function readFile(input: Blob) {
-                const fr = new FileReader();
-                fr.readAsDataURL(input);
-                fr.onload = function (event) {
-                    const res: any = event.target ? event.target.result : undefined;
-                    setActiveCitation(res);
-                };
+        // Check if file is Excel (.xlsx, .xls, .csv) 
+        const isExcelFile = citation.endsWith(".xlsx") || citation.endsWith(".xls") || citation.endsWith(".csv");
+        
+        if (isExcelFile) {
+            try {
+                setLoadingCitationPath(fileName);
+                const downloadInfo = await generateExcelDownloadUrl(citation);
+                
+                const downloadLink = document.createElement("a");
+                downloadLink.href = downloadInfo.download_url;
+                downloadLink.download = downloadInfo.filename;
+                downloadLink.style.display = "none";
+                
+                // Add to DOM, click, and remove
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                setLoadingCitationPath(null);
+                return;
+            } catch (error) {
+                setLoadingCitationPath(null);
+                return window.open(citation, "_blank");
             }
-            setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
         }
+        
+        // Handle PDF/DOC/DOCX files - load in analysis panel for preview
+        if (citation.endsWith(".pdf") || citation.endsWith(".doc") || citation.endsWith(".docx")) {
+            // Extract filepath if necessary
+            const modifiedFilename = extractAfterDomain(fileName);
 
-        setSelectedAnswer(index);
+            if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+                setActiveAnalysisPanelTab(undefined);
+            } else {
+                setLoadingCitationPath(fileName);
+                const response = await getFileBlobWithState(modifiedFilename, "documents");
+                var file = new Blob([response as BlobPart]);
+                readFile(file);
+
+                function readFile(input: Blob) {
+                    const fr = new FileReader();
+                    fr.readAsDataURL(input);
+                    fr.onload = function (event) {
+                        const res: any = event.target ? event.target.result : undefined;
+                        setActiveCitation(res);
+                    };
+                }
+                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+                setLoadingCitationPath(null);
+            }
+
+            setSelectedAnswer(index);
+            return;
+        }
+        
+        // For all other file types, open in new tab 
+        return window.open(citation, "_blank");
     };
 
     const answerFromHistory = dataConversation.map(data => data.bot?.message);
@@ -462,8 +494,8 @@ const Chat = () => {
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 700) {
-                setAnalysisPanelMinWidth(120); // o el valor que prefieras para móvil
-                setAnalysisPanelMaxWidth(window.innerWidth * 0.98); // 98% del ancho de pantalla
+                setAnalysisPanelMinWidth(120); 
+                setAnalysisPanelMaxWidth(window.innerWidth * 0.98); 
                 if (analysisPanelWidth > window.innerWidth * 0.98) {
                     setAnalysisPanelWidth(window.innerWidth * 0.98);
                 }
@@ -542,6 +574,7 @@ const Chat = () => {
                                                                   answer={response}
                                                                   isGenerating={false}
                                                                   isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                  loadingCitationPath={loadingCitationPath}
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
@@ -565,6 +598,7 @@ const Chat = () => {
                                                                   answer={answer[1]}
                                                                   isGenerating={false}
                                                                   isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                  loadingCitationPath={loadingCitationPath}
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
@@ -607,6 +641,7 @@ const Chat = () => {
                                                         isGenerating={isLoading}
                                                         progressState={progressState}
                                                         isSelected={activeAnalysisPanelTab !== undefined}
+                                                        loadingCitationPath={loadingCitationPath}
                                                         onCitationClicked={(c, n) => {}}
                                                         onThoughtProcessClicked={() => {}}
                                                         onSupportingContentClicked={() => {}}
