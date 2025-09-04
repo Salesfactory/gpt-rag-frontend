@@ -190,7 +190,7 @@ def get_job(job_id: str):
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error reading job: {e}")
 
-ALLOWED_STATUSES = {"COMPLETED", "RUNNING", "QUEUED", "FAILED"}
+ALLOWED_STATUSES = {"SUCCEEDED", "RUNNING", "QUEUED", "FAILED"}
 
 @bp.get("")
 def list_jobs():
@@ -202,7 +202,7 @@ def list_jobs():
             via the JSON body or the `X-Tenant-Id` header.
         limit (int, optional): Maximum number of items to return. Defaults to 50.
         status (str, optional): Filter by status (case-insensitive). One of:
-            COMPLETED | FAILED | RUNNING | QUEUED.
+            SUCCEEDED | FAILED | RUNNING | QUEUED.
 
     Returns:
         200 OK with a JSON array of job documents (max `limit` items).

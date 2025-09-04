@@ -217,7 +217,7 @@ describe("Voice Customer Test Suite", () => {
                     organization_id: "org-123",
                     report_name: "Brand Analysis",
                     type: "brand_analysis",
-                    status: "COMPLETED",
+                    status: "SUCCEEDED",
                     progress: 100,
                     created_at: "2025-08-25T18:20:31Z",
                     updated_at: "2025-08-26T19:10:00Z",

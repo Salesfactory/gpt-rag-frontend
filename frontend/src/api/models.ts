@@ -129,11 +129,11 @@ export interface Category {
 
 
 // ---- Report Jobs (status) ----
-export type BackendReportStatus = "COMPLETED" | "RUNNING" | "QUEUED" | "FAILED";
+export type BackendReportStatus = "SUCCEEDED" | "RUNNING" | "QUEUED" | "FAILED";
 
 export interface BackendReportJobDoc {
   id: string;
-  type?: string;
+  report_key?: string;
   report_name?: string;
   status?: BackendReportStatus | string;
   progress?: number;
