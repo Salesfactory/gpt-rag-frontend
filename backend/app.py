@@ -2302,7 +2302,7 @@ def setSettings():
 
         temperature = request_body.get("temperature", 0.0)
         model = request_body.get(
-            "model", "DeepSeek-V3-0324"
+            "model", "gpt-4.1"
         )  # address later since we're adding more models
         font_family = request_body.get("font_family")
         font_size = request_body.get("font_size")
