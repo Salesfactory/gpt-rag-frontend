@@ -143,7 +143,8 @@ const Chat = () => {
                     conversation_id: request.conversation_id,
                     url: request.file_blob_url,
                     agent: request.agent,
-                    documentName: request.documentName
+                    documentName: request.documentName,
+                    user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 })
             });
 
@@ -386,29 +387,6 @@ const Chat = () => {
                 return window.open(citation, "_blank");
             }
         }
-        if (!citation.endsWith(".pdf") && !citation.endsWith(".doc") && !citation.endsWith(".docx")) {
-            return window.open(citation, "_blank");
-        }
-        // Extract filepath if necessary
-        const modifiedFilename = extractAfterDomain(fileName);
-
-        const response = await getFileBlobWithState(modifiedFilename, "documents");
-        if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
-            setActiveAnalysisPanelTab(undefined);
-        } else {
-            var file = new Blob([response as BlobPart]);
-            readFile(file);
-
-            function readFile(input: Blob) {
-                const fr = new FileReader();
-                fr.readAsDataURL(input);
-                fr.onload = function (event) {
-                    const res: any = event.target ? event.target.result : undefined;
-                    setActiveCitation(res);
-                };
-            }
-        }
-
         // Handle PDF/DOC/DOCX files - load in analysis panel for preview
         if (citation.endsWith(".pdf") || citation.endsWith(".doc") || citation.endsWith(".docx")) {
             // Extract filepath if necessary

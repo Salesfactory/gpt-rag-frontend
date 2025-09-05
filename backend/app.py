@@ -760,6 +760,7 @@ def proxy_orc():
     file_blob_url = data.get("url")
     agent = data.get("agent")
     documentName = data.get("documentName")
+    user_timezone = data.get("user_timezone")
 
     if not question:
         return jsonify({"error": "Missing required parameters"}), 400
@@ -806,6 +807,7 @@ def proxy_orc():
             "client_principal_name": client_principal_name,
             "client_principal_organization": client_principal_organization,
             "documentName": documentName,
+            "user_timezone": user_timezone,
         }
     )
 
@@ -1818,7 +1820,8 @@ def getStorageAccount():
 
 
 @app.route("/api/get-feedback-url", methods=["GET"])
-def getFeedbackUrl():
+@auth.login_required
+def getFeedbackUrl(*, context):
     try:
         feedback_url = os.environ.get("USER_FEEDBACK_URL")
         return jsonify({"feedback_url": feedback_url})
