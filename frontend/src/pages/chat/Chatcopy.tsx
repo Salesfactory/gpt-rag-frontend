@@ -387,7 +387,6 @@ const Chat = () => {
                 return window.open(citation, "_blank");
             }
         }
-
         // Handle PDF/DOC/DOCX files - load in analysis panel for preview
         if (citation.endsWith(".pdf") || citation.endsWith(".doc") || citation.endsWith(".docx")) {
             // Extract filepath if necessary
