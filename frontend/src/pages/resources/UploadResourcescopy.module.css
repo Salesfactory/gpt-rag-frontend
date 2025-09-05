@@ -261,7 +261,7 @@
 }
 
 .file_list_container {
-    height: 400px;
+    flex-grow: 1;
     overflow-y: auto;
     border-top: none;
     border-right: none;
