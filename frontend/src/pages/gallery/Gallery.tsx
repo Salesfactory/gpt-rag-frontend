@@ -44,7 +44,7 @@ const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
 
     const [showStatusFilter, setShowStatusFilter] = useState<boolean>(false);
-    const [selectedStatus, setSelectedStatus] = useState<string>();
+    const [selectedStatus, setSelectedStatus] = useState<string>("newest");
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
@@ -83,6 +83,7 @@ const Gallery: React.FC = () => {
                 user,
                 ...(userFilter ? { uploader_id: userFilter } : {}),
                 ...(selectedStatus ? { order: selectedStatus } : {}), // "newest" | "oldest"
+                ...(searchQuery.trim() ? { q: searchQuery.trim() } : {}),
                 });
                 let galleryData: GalleryItem[] = [];
                 if (Array.isArray(itemsFromApi)) {
@@ -138,7 +139,7 @@ const Gallery: React.FC = () => {
         };
 
 
-    }, [user, organization, userFilter, selectedStatus]);
+    }, [user, organization, userFilter, selectedStatus, searchQuery]);
 
 
     const handleDownload = (item: GalleryItem) => {
@@ -180,27 +181,6 @@ const Gallery: React.FC = () => {
     const base = Array.isArray(source) ? source : (fetchedImages ?? []);
     let filtered = base;
 
-    // 1) Filtro por usuario (fallback si el backend no filtra)
-    if (userFilter) {
-        filtered = filtered.filter(img => img?.metadata?.user_id === userFilter);
-    }
-
-    // 2) Búsqueda
-    const q = (qOverride ?? searchQuery).trim().toLowerCase();
-    if (q) {
-        filtered = filtered.filter(img => {
-        if (img.name?.toLowerCase().includes(q)) return true;
-        try {
-            const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
-            if (metaString.includes(q)) return true;
-        } catch {}
-        if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
-        if (img.content_type?.toLowerCase().includes(q)) return true;
-        return false;
-        });
-    }
-
-    // 3) Orden
     setImages(filtered);
     }, [fetchedImages, userFilter, searchQuery]);
 
@@ -228,7 +208,6 @@ const Gallery: React.FC = () => {
 
         searchTimeout.current = window.setTimeout(() => {
             setSearchQuery(searchQuery || "");
-            applyFilters(undefined, searchQuery || "");
         }, 200);
     };
 
@@ -243,11 +222,9 @@ const Gallery: React.FC = () => {
     }
 
     const userOptions = useMemo((): User[] => {
-   // 1) arranca con TODOS los users traídos por getUsers()
-   const map = new Map<string, string>();
-   (users ?? []).forEach(u => map.set(u.id, u.name));
+    const map = new Map<string, string>();
+    (users ?? []).forEach(u => map.set(u.id, u.name));
 
-   // 2) agrega los user_id detectados en las imágenes (por si no están en `users`)
    (fetchedImages ?? []).forEach(f => {
      const id = f?.metadata?.user_id;
      if (id && !map.has(id)) {
@@ -255,7 +232,6 @@ const Gallery: React.FC = () => {
      }
    });
 
-   // 3) a lista ordenada
    return Array.from(map, ([id, name]) => ({ id, name }))
      .sort((a, b) => a.name.localeCompare(b.name));
  }, [users, fetchedImages]);
