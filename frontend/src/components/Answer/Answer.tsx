@@ -181,6 +181,7 @@ export const Answer = ({
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
+
     const handleFeedbackClick = async () => {
         try {
             const feedbackUrl = await getFeedbackUrl();
