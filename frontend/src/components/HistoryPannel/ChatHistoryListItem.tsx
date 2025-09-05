@@ -3,7 +3,7 @@ import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation } 
 import { useContext, useEffect, useState } from "react";
 import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { DeleteRegular, CheckmarkRegular, DismissRegular, ChevronDownRegular, ChevronUpRegular } from "@fluentui/react-icons";
 
@@ -34,7 +34,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
         setChatSelected,
         setNewChatDeleted,
         setShowHistoryPanel,
-        isFinancialAssistantActive,
+        isFinancialAssistantActive
     } = useAppContext();
 
     const handleMouseEnter = (index: string) => {
@@ -177,9 +177,9 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     // either default for usual conversations or financial for financial conversations
     // != "financial" for default conversations
-    const dataDefaultOrFinancial = isFinancialAssistantActive ? 
-        dataHistory.filter(item => item.type == "financial") : 
-        dataHistory.filter(item => item.type != "financial");
+    const dataDefaultOrFinancial = isFinancialAssistantActive
+        ? dataHistory.filter(item => item.type == "financial")
+        : dataHistory.filter(item => item.type != "financial");
     const sortedDataByDate = dataDefaultOrFinancial.sort((a, b) => Number(new Date(a.start_date)) - Number(new Date(b.start_date)));
 
     const uniqueItems = new Set();
@@ -224,7 +224,6 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
 
     return (
         <div className={styles.listContainer}>
-            <ToastContainer />
             {isLoading && (
                 <div className={styles.loaderContainer}>
                     <Spinner size={3} />

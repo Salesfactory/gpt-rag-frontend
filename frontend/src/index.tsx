@@ -10,6 +10,7 @@ import { initializeIcons } from "@fluentui/react";
 
 import "./index.css";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { ToastContainer } from "react-toastify";
 
 initializeIcons();
 
@@ -24,6 +25,7 @@ if (container) {
             <HashRouter>
                 <AppProvider>
                     <App />
+                    <ToastContainer position="top-right" autoClose={3000} style={{ zIndex: 99999 }} />
                 </AppProvider>
             </HashRouter>
         </React.StrictMode>

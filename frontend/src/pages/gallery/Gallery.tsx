@@ -1,4 +1,4 @@
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
 import { ArrowUpDown, Download, Search, Trash2, Upload, Users } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
@@ -25,20 +25,17 @@ type GalleryItem = {
 };
 
 type UserData = {
-    id: string
+    id: string;
     data: {
-        name: string
-    }
-    [key: string]: any
-}
+        name: string;
+    };
+    [key: string]: any;
+};
 
 type User = {
-  id: string
-  name: string
-}
-
-
-
+    id: string;
+    name: string;
+};
 
 const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
@@ -51,24 +48,19 @@ const Gallery: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [users, setUsers] = useState<User[]>();
 
-
     useEffect(() => {
-
         const fetchUsers = async () => {
             try {
-                let userData: UserData[] = await getUsers({ user })
-                const userList = userData.map(item => (
-                    {
-                        "id": item.id,
-                        "name": item.data.name
-                    }
-                ))
-                setUsers(userList)
-            }
-            catch {
+                let userData: UserData[] = await getUsers({ user });
+                const userList = userData.map(item => ({
+                    id: item.id,
+                    name: item.data.name
+                }));
+                setUsers(userList);
+            } catch {
                 console.log("");
             }
-        }
+        };
 
         fetchUsers();
 
@@ -102,9 +94,7 @@ const Gallery: React.FC = () => {
                         const objectUrl = URL.createObjectURL(blob);
 
                         const updateImagesWithBlob = (currentImages: GalleryItem[]) =>
-                            currentImages.map(img =>
-                                img.name === itemToFetch.name ? { ...img, blob: objectUrl } : img
-                            );
+                            currentImages.map(img => (img.name === itemToFetch.name ? { ...img, blob: objectUrl } : img));
 
                         setImages(updateImagesWithBlob);
                         setFetchedImages(updateImagesWithBlob);
@@ -130,10 +120,7 @@ const Gallery: React.FC = () => {
                 return [];
             });
         };
-
-
     }, [user, organization]);
-
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -156,13 +143,12 @@ const Gallery: React.FC = () => {
         }
     };
 
-    
     const sortImages = (order: string, source?: GalleryItem[]) => {
         const base = Array.isArray(source) ? [...source] : [...(images ?? [])];
         base.sort((a, b) => {
-            const ta = Date.parse(a.created_on || a.last_modified || '') || 0;
-            const tb = Date.parse(b.created_on || b.last_modified || '') || 0;
-            return order === 'newest' ? tb - ta : ta - tb;
+            const ta = Date.parse(a.created_on || a.last_modified || "") || 0;
+            const tb = Date.parse(b.created_on || b.last_modified || "") || 0;
+            return order === "newest" ? tb - ta : ta - tb;
         });
         setImages(base);
     };
@@ -187,7 +173,6 @@ const Gallery: React.FC = () => {
             window.clearTimeout(searchTimeout.current);
         }
 
-
         searchTimeout.current = window.setTimeout(() => {
             const q = (searchQuery || "").trim().toLowerCase();
 
@@ -202,8 +187,7 @@ const Gallery: React.FC = () => {
                 try {
                     const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
                     if (metaString.includes(q)) return true;
-                } catch (e) {
-                }
+                } catch (e) {}
 
                 if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
 
@@ -223,12 +207,11 @@ const Gallery: React.FC = () => {
     }, []);
 
     const getUserName = (id: string) => {
-        return users?.find(user => user.id === id)?.name
-    }
+        return users?.find(user => user.id === id)?.name;
+    };
 
     return (
         <div className={styles.page_container}>
-            <ToastContainer />
             <div className={styles.file_list_header}>
                 <SearchBox
                     placeholder="Search files..."
@@ -384,7 +367,9 @@ const Gallery: React.FC = () => {
                                                         <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
                                                     </div>
                                                 </div>
-                                                <span className={styles.userTag}>{file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}</span>
+                                                <span className={styles.userTag}>
+                                                    {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
+                                                </span>
                                                 <p className={styles.fileDate}>Created {new Date(file.created_on).toLocaleDateString()}</p>
                                             </div>
                                         </div>

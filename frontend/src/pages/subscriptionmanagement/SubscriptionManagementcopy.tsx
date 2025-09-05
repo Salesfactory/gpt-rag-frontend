@@ -14,7 +14,7 @@ import {
 } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Bell, Clock, CreditCard, Eye, Info } from "lucide-react";
 
@@ -327,7 +327,6 @@ const SubscriptionManagement: React.FC = () => {
 
     return (
         <div className={styles.pageContainer}>
-            <ToastContainer />
             <div id="options-row" className={styles.row}>
                 <button className={styles.auditButton} onClick={handleRecentChangesModal}>
                     <Clock className={styles.auditIcon} />
