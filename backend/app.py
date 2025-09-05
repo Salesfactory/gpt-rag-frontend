@@ -2077,10 +2077,14 @@ def getBlob():
         return jsonify({"error": "Invalid container"}), 400
 
     try:
-        client_credential = DefaultAzureCredential()
-        blob_service_client = BlobServiceClient(
-            f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", client_credential
-        )
+        conn_str = current_app.config.get("AZURE_STORAGE_CONNECTION_STRING")
+        if conn_str:
+            blob_service_client = BlobServiceClient.from_connection_string(conn_str)
+        else:
+            client_credential = DefaultAzureCredential()
+            blob_service_client = BlobServiceClient(
+                f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", credential=client_credential
+            )
         blob_client = blob_service_client.get_blob_client(
             container=container, blob=blob_name
         )
