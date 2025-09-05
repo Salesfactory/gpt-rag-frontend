@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar, ResponsiveMode, SpinnerSize } from "@fluentui/react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { CirclePlus, Search, SquarePen, Trash2, Filter, X } from "lucide-react";
 
@@ -700,7 +700,6 @@ const Admin = () => {
 
     return (
         <>
-            <ToastContainer />
             <div className={styles.page_container}>
                 <>
                     <div
