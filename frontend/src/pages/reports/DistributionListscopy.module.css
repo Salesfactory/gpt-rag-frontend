@@ -3,6 +3,8 @@
     flex-direction: column;
     width: 100%;
     padding: 20px 100px 100px 150px;
+    background-color: #f9fafb;
+    min-height: 100vh;
 }
 
 @media (max-width: 900px) {
@@ -10,7 +12,6 @@
         padding: 20px 10px 100px 50px;
         width: 90%;
     }
-
 }
 
 @media (max-width: 450px) {
@@ -18,7 +19,6 @@
         padding: 20px 10px 20px 50px;
         width: 80%;
     }
-
 }
 
 .table {
@@ -100,7 +100,7 @@
 
 .text {
     font-size: 0.875rem;
-    color: #6B7280;
+    color: #6b7280;
     text-align: justify;
 }
 
@@ -237,20 +237,17 @@
     width: 100%;
 }
 
-
 @media (max-width: 768px) {
     .responsiveSearch {
         max-width: 260px;
     }
 }
 
-
 @media (max-width: 495px) {
     .responsiveSearch {
         max-width: 140px;
     }
 }
-
 
 .filterButton {
     display: flex;
@@ -274,7 +271,7 @@
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 0.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     z-index: 10;
     min-width: 140px;
 }
