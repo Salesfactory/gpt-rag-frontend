@@ -103,7 +103,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const { user, setSettingsPanel, settingsPanel } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
-    const [selectedModel, setSelectedModel] = useState<string>("DeepSeek-V3-0324");
+    const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1");
     const [loading, setLoading] = useState(true);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
     const [selectedFontSize, setSelectedFontSize] = useState<string>("16");
@@ -116,13 +116,13 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const modelDialog = "Select the underlying language model for generating responses.";
 
     const modelOptions: IDropdownOption[] = [
-        { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
+        // { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
         { key: "gpt-4.1", text: "gpt-4.1" },
         { key: "Claude-4-Sonnet", text: "Claude-4-Sonnet" }
     ];
 
     const modelTemperatureSettings: Record<string, { default: number; min: number; max: number; step: number }> = {
-        "DeepSeek-V3-0324": { default: 0, min: 0, max: 1.5, step: 0.1 },
+        // "DeepSeek-V3-0324": { default: 0, min: 0, max: 1.5, step: 0.1 },
         "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 },
         "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
     };
@@ -177,14 +177,14 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
                 // Temperature
                 if (data.temperature === undefined || data.temperature === null) {
-                    const modelConfig = modelTemperatureSettings[data.model || "DeepSeek-V3-0324"];
+                    const modelConfig = modelTemperatureSettings[data.model || "gpt-4.1"];
                     setTemperature(modelConfig.default.toString());
                 } else {
                     setTemperature(data.temperature);
                 }
 
                 // Model
-                setSelectedModel(data.model || "DeepSeek-V3-0324");
+                setSelectedModel(data.model || "gpt-4.1");
 
                 // Font Size
                 if (typeof data.font_size === "string" && data.font_family.trim() !== "") {
