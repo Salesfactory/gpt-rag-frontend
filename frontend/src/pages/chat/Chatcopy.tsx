@@ -143,7 +143,8 @@ const Chat = () => {
                     conversation_id: request.conversation_id,
                     url: request.file_blob_url,
                     agent: request.agent,
-                    documentName: request.documentName
+                    documentName: request.documentName,
+                    user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 })
             });
 
@@ -362,19 +363,19 @@ const Chat = () => {
     };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        // Check if file is Excel (.xlsx, .xls, .csv) 
+        // Check if file is Excel (.xlsx, .xls, .csv)
         const isExcelFile = citation.endsWith(".xlsx") || citation.endsWith(".xls") || citation.endsWith(".csv");
-        
+
         if (isExcelFile) {
             try {
                 setLoadingCitationPath(fileName);
                 const downloadInfo = await generateExcelDownloadUrl(citation);
-                
+
                 const downloadLink = document.createElement("a");
                 downloadLink.href = downloadInfo.download_url;
                 downloadLink.download = downloadInfo.filename;
                 downloadLink.style.display = "none";
-                
+
                 // Add to DOM, click, and remove
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
@@ -386,7 +387,7 @@ const Chat = () => {
                 return window.open(citation, "_blank");
             }
         }
-        
+
         // Handle PDF/DOC/DOCX files - load in analysis panel for preview
         if (citation.endsWith(".pdf") || citation.endsWith(".doc") || citation.endsWith(".docx")) {
             // Extract filepath if necessary
@@ -415,8 +416,8 @@ const Chat = () => {
             setSelectedAnswer(index);
             return;
         }
-        
-        // For all other file types, open in new tab 
+
+        // For all other file types, open in new tab
         return window.open(citation, "_blank");
     };
 
@@ -494,8 +495,8 @@ const Chat = () => {
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 700) {
-                setAnalysisPanelMinWidth(120); 
-                setAnalysisPanelMaxWidth(window.innerWidth * 0.98); 
+                setAnalysisPanelMinWidth(120);
+                setAnalysisPanelMaxWidth(window.innerWidth * 0.98);
                 if (analysisPanelWidth > window.innerWidth * 0.98) {
                     setAnalysisPanelWidth(window.innerWidth * 0.98);
                 }
