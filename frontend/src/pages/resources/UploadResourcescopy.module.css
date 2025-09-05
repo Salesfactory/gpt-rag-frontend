@@ -131,6 +131,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-bottom: 3rem;
 }
 
 .file_list_actions {
@@ -261,7 +262,7 @@
 }
 
 .file_list_container {
-    height: 400px;
+    flex-grow: 1;
     overflow-y: auto;
     border-top: none;
     border-right: none;

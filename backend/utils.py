@@ -773,7 +773,7 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
 
     # set default values
     temperature = temperature if temperature is not None else 0.0
-    model = model if model is not None else "DeepSeek-V3-0324"
+    model = model if model is not None else "gpt-4.1"
 
     # validate temperature
     if temperature < 0 or temperature > 1:
@@ -898,7 +898,7 @@ def get_setting(client_principal):
         # Return defaults immediately if no user ID
         return {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324",  # Default model
+            "model": "gpt-4.1",  # Default model
             "font_family": "",
             "font_size": "",
         }
@@ -921,7 +921,7 @@ def get_setting(client_principal):
             setting = result[0]
             # Ensure both expected keys exist, provide defaults if missing
             setting["temperature"] = setting.get("temperature", 0.0)
-            setting["model"] = setting.get("model", "DeepSeek-V3-0324")
+            setting["model"] = setting.get("model", "gpt-4.1")
             setting["font_family"] = setting.get("font_family", "")
             setting["font_size"] = setting.get("font_size", "")
             logging.info(f"Settings found for user {user_id}: {setting}")
@@ -931,7 +931,7 @@ def get_setting(client_principal):
             )
             setting = {
                 "temperature": 0.0,
-                "model": "DeepSeek-V3-0324",  # Default model
+                "model": "gpt-4.1",  # Default model
                 "font_family": "",
                 "font_size": "",
             }
@@ -943,7 +943,7 @@ def get_setting(client_principal):
         # Return defaults on error
         setting = {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324",  # Default model
+            "model": "gpt-4.1",  # Default model
             "font_family": "",
             "font_size": "",
         }
@@ -954,7 +954,7 @@ def get_setting(client_principal):
         # Return defaults on unexpected error
         setting = {
             "temperature": 0.0,
-            "model": "DeepSeek-V3-0324",  # Default model
+            "model": "gpt-4.1",  # Default model
             "font_family": "",
             "font_size": "",
         }
