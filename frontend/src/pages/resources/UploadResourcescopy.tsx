@@ -1,21 +1,11 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import styles from "./UploadResourcescopy.module.css";
 
-import {
-    Text,
-    PrimaryButton,
-    Spinner,
-    DetailsList,
-    DetailsListLayoutMode,
-    IColumn,
-    SelectionMode,
-    IconButton,
-    SearchBox,
-} from "@fluentui/react";
+import { Text, PrimaryButton, Spinner, DetailsList, DetailsListLayoutMode, IColumn, SelectionMode, IconButton, SearchBox } from "@fluentui/react";
 
 import { Download, Trash2, RefreshCw, Upload, Search, CirclePlus, AlertTriangle } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 import { uploadSourceFileToBlob, getSourceFileFromBlob, deleteSourceFileFromBlob } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
@@ -62,8 +52,8 @@ const UploadResources: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [filteredItems, setFilteredItems] = useState<BlobItem[]>([]);
 
-    const [showExcelWarning, setShowExcelWarning] = useState<boolean>(false)
-    const [excelFiles, setExcelFiles] = useState<string[]>([])
+    const [showExcelWarning, setShowExcelWarning] = useState<boolean>(false);
+    const [excelFiles, setExcelFiles] = useState<string[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const uploadModalRef = useRef<HTMLDivElement>(null);
@@ -148,7 +138,10 @@ const UploadResources: React.FC = () => {
         }
     };
 
-    const closeUploadDialog = () => { setIsUploadDialogOpen(false); setShowExcelWarning(false) }
+    const closeUploadDialog = () => {
+        setIsUploadDialogOpen(false);
+        setShowExcelWarning(false);
+    };
 
     // #1
     const checkSpreadsheetFileLimit = (newFiles: File[]): boolean => {
@@ -226,7 +219,7 @@ const UploadResources: React.FC = () => {
             setIsUploading(false);
             setSelectedFiles([]);
             if (fileInputRef.current) fileInputRef.current.value = "";
-            setIsUploadDialogOpen(false)
+            setIsUploadDialogOpen(false);
             fetchBlobData();
         },
         [selectedFiles, fetchBlobData]
@@ -234,7 +227,6 @@ const UploadResources: React.FC = () => {
 
     const handleFiles = (fileArray: File[]) => {
         const { validFiles, invalidFiles } = validateFiles(fileArray, ALLOWED_FILE_TYPES);
-
 
         if (invalidFiles.length > 0) {
             toast(`Invalid file type(s): ${invalidFiles.map(f => f.name).join(", ")}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`, {
@@ -254,24 +246,24 @@ const UploadResources: React.FC = () => {
 
         const excelFileNames = validFiles
             .filter(file => {
-                const extension = file.name.split('.').pop()?.toLowerCase();
-                return extension === 'xls' || extension === 'xlsx';
+                const extension = file.name.split(".").pop()?.toLowerCase();
+                return extension === "xls" || extension === "xlsx";
             })
             .map(file => file.name);
 
         if (excelFileNames.length > 0) {
             setExcelFiles(excelFileNames);
             setShowExcelWarning(true);
-            setSelectedFiles(validFiles)
+            setSelectedFiles(validFiles);
             return;
         }
 
         handleUpload(validFiles);
-    }
+    };
 
     const handleExcelWarningConfirm = () => {
         setShowExcelWarning(false);
-        handleUpload(selectedFiles)
+        handleUpload(selectedFiles);
     };
 
     const handleExcelWarningCancel = () => {
@@ -281,12 +273,12 @@ const UploadResources: React.FC = () => {
     };
 
     const onDrop = useCallback((acceptedFiles: any) => {
-        handleFiles(acceptedFiles)
+        handleFiles(acceptedFiles);
     }, []);
 
     const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,
-        noClick: true,
+        noClick: true
     });
 
     const columns: IColumn[] = [
@@ -346,7 +338,6 @@ const UploadResources: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
-            <ToastContainer />
             <div className={styles.file_list_header}>
                 <SearchBox
                     placeholder="Search files..."
@@ -556,7 +547,8 @@ const UploadResources: React.FC = () => {
                                                 <strong>Important:</strong> Only the first sheet of each Excel file will be processed.
                                             </p>
                                             <p className={styles.message}>
-                                                If your Excel files have multiple sheets, we recommend uploading one file per sheet for complete data processing.
+                                                If your Excel files have multiple sheets, we recommend uploading one file per sheet for complete data
+                                                processing.
                                             </p>
                                             <div className={styles.filesList}>
                                                 <strong>Excel files detected:</strong>
