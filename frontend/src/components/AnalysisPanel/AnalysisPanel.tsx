@@ -110,10 +110,10 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         <p className={styles.contentCard}>{meta.modelUsed}</p>
                                     </section>
                                 )}
-                                {meta.toolSelected && (
+                                {meta.mcpToolUsed && (
                                     <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Tool Selected</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
+                                        <h4 className={styles.headerCard}>Tool Used</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolUsed)}</p>
                                     </section>
                                 )}
                                 {meta.originalQuery && (
@@ -122,10 +122,10 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
                                     </section>
                                 )}
-                                {meta.mcpToolUsed && (
+                                {meta.toolSelected && (
                                     <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>MCP Tool Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolUsed)}</p>
+                                        <h4 className={styles.headerCard}>Prompt Instruction Type</h4>
+                                        <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
                                     </section>
                                 )}
                                 {meta.mcpToolsUsed && (
