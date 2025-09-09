@@ -49,87 +49,84 @@ const Gallery: React.FC = () => {
     const [users, setUsers] = useState<User[]>();
     const [showUserFilter, setShowUserFilter] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
+        
+    const orgId = organization?.id ?? "";
+    const userId = user?.id ?? "";
+    const usersErrorShownRef = useRef(false);
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                let userData: UserData[] = await getUsers({ user });
-                const userList = userData.map(item => ({
-                    id: item.id,
-                    name: item.data.name
-                }));
-                setUsers(userList);
-            } catch {
-                console.log("");
-            }
-        };
+    let cancelled = false;
 
-        fetchUsers();
+    const fetchUsers = async () => {
+        try {
+        const userData: UserData[] = await getUsers({ user });
+        if (cancelled) return;
+        setUsers(userData.map(u => ({ id: u.id, name: u.data?.name ?? "Unknown" })));
+        } catch (err) {
+        if (cancelled) return;
+        console.error("[Gallery] getUsers failed:", err);
 
-        const fetchAndProcessGalleryItems = async () => {
-            if (!organization) return;
+        if (!usersErrorShownRef.current) {
+            usersErrorShownRef.current = true;
+            toast.error("Error loading users");
+        }
+        setUsers([]);
+        }
+    };
 
-            setIsLoading(true);
-            try {
-                const itemsFromApi = await getGalleryItems(organization.id, {
-                user,
-                ...(userFilter ? { uploader_id: userFilter } : {}),
-                ...(selectedStatus ? { order: selectedStatus } : {}), // "newest" | "oldest"
-                ...(searchQuery.trim() ? { q: searchQuery.trim() } : {}),
-                });
-                let galleryData: GalleryItem[] = [];
-                if (Array.isArray(itemsFromApi)) {
-                    galleryData = itemsFromApi;
-                } else if (itemsFromApi && typeof itemsFromApi === "object" && "data" in itemsFromApi && Array.isArray((itemsFromApi as any).data)) {
-                    galleryData = (itemsFromApi as { data: GalleryItem[] }).data;
+    fetchUsers();
+    return () => { cancelled = true; };
+    }, [userId]);
+
+    useEffect(() => {
+    const fetchAndProcessGalleryItems = async () => {
+        if (!orgId) return;
+        setIsLoading(true);
+        try {
+        const itemsFromApi = await getGalleryItems(orgId, {
+            user,
+            uploader_id: userFilter ?? undefined,
+            order: selectedStatus as "newest" | "oldest",
+            q: searchQuery.trim() || undefined,
+        });
+
+        const galleryData = (itemsFromApi ?? []) as GalleryItem[];
+
+        setImages(galleryData);
+        setFetchedImages(galleryData);
+
+        if (galleryData.length > 0) {
+            const pairs = await Promise.all(
+            galleryData.map(async (item) => {
+                try {
+                const blob = await getFileBlob(item.name, "documents");
+                return [item.name, URL.createObjectURL(blob)] as const;
+                } catch {
+                return [item.name, null] as const;
                 }
+            })
+            );
 
-                if (galleryData.length === 0) {
-                    setImages([]);
-                    setFetchedImages([]);
-                    setIsLoading(false);
-                    return;
-                }
+            const map = new Map(pairs);
+            setImages((prev) => prev.map((img) => ({ ...img, blob: map.get(img.name) ?? img.blob })));
+            setFetchedImages((prev) => prev.map((img) => ({ ...img, blob: map.get(img.name) ?? img.blob })));
+        }
+        } catch (e) {
+        console.error("Error fetching gallery items:", e);
+        } finally {
+        setIsLoading(false);
+        }
+    };
 
-                setImages(galleryData);
-                setFetchedImages(galleryData);
-                setIsLoading(false);
+    fetchAndProcessGalleryItems();
 
-                galleryData.forEach(async itemToFetch => {
-                    try {
-                        const blob = await getFileBlob(itemToFetch.name, "documents");
-                        const objectUrl = URL.createObjectURL(blob);
-
-                        const updateImagesWithBlob = (currentImages: GalleryItem[]) =>
-                            currentImages.map(img => (img.name === itemToFetch.name ? { ...img, blob: objectUrl } : img));
-
-                        setImages(updateImagesWithBlob);
-                        setFetchedImages(updateImagesWithBlob);
-                    } catch (error) {
-                        console.error(`Failed to get blob for ${itemToFetch.name}:`, error);
-                    }
-                });
-            } catch (error) {
-                console.error("Error fetching gallery items:", error);
-                setIsLoading(false);
-            }
-        };
-
-        fetchAndProcessGalleryItems();
-
-        return () => {
-            setImages(currentImages => {
-                currentImages.forEach(item => {
-                    if (item.blob) {
-                        URL.revokeObjectURL(item.blob);
-                    }
-                });
-                return [];
-            });
-        };
-
-    }, [user, organization, userFilter, selectedStatus, searchQuery]);
-
+    return () => {
+        setImages((curr) => {
+        curr.forEach((it) => it.blob && URL.revokeObjectURL(it.blob));
+        return [];
+        });
+    };
+    }, [orgId, userId, userFilter, selectedStatus, searchQuery]);
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -152,27 +149,6 @@ const Gallery: React.FC = () => {
         }
     };
 
-    const sortImages = (order: string, source?: GalleryItem[]) => {
-        const base = Array.isArray(source) ? [...source] : [...(images ?? [])];
-        base.sort((a, b) => {
-            const ta = Date.parse(a.created_on || a.last_modified || "") || 0;
-            const tb = Date.parse(b.created_on || b.last_modified || "") || 0;
-            return order === "newest" ? tb - ta : ta - tb;
-        });
-        setImages(base);
-    };
-
-    const applyFilters = useCallback((
-    source?: GalleryItem[],
-    qOverride?: string
-    ) => {
-    const base = Array.isArray(source) ? source : (fetchedImages ?? []);
-    let filtered = base;
-
-    setImages(filtered);
-    }, [fetchedImages, userFilter, searchQuery]);
-
-
     const formatFileSize = (bytes: number): string => {
         if (bytes < 1024) return bytes + " B";
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
@@ -188,36 +164,11 @@ const Gallery: React.FC = () => {
 
     const searchTimeout = useRef<number | null>(null);
 
-    const handleSearch = (searchQuery: string) => {
-        if (searchTimeout.current) {
-            window.clearTimeout(searchTimeout.current);
-        }
-
+    const handleSearch = (value: string) => {
+        if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
         searchTimeout.current = window.setTimeout(() => {
-            const q = (searchQuery || "").trim().toLowerCase();
-
-            if (!q) {
-                setImages(fetchedImages ?? []);
-                return;
-            }
-
-            const filtered = (fetchedImages ?? []).filter(img => {
-                if (img.name && img.name.toLowerCase().includes(q)) return true;
-
-                try {
-                    const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
-                    if (metaString.includes(q)) return true;
-                } catch (e) {}
-
-                if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
-
-                if (img.content_type && img.content_type.toLowerCase().includes(q)) return true;
-
-                return false;
-            });
-
-            setImages(filtered);
-        }, 200);
+            setSearchQuery((value || "").trim());
+        }, 250);
     };
 
     useEffect(() => {
@@ -244,11 +195,6 @@ const Gallery: React.FC = () => {
    return Array.from(map, ([id, name]) => ({ id, name }))
      .sort((a, b) => a.name.localeCompare(b.name));
  }, [users, fetchedImages]);
-
-    useEffect(() => {
-        applyFilters();
-    }, [userFilter, selectedStatus, fetchedImages, applyFilters]);
-
 
 
     return (

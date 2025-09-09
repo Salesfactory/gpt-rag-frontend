@@ -5150,37 +5150,30 @@ def get_gallery(organization_id):
         404: If no gallery items are found for the organization.
         500: If an unexpected error occurs during retrieval.
     """
-    if (
-        not organization_id
-        or not isinstance(organization_id, str)
-        or not organization_id.strip()
-    ):
-        return create_error_response(
-            "Organization ID is required and must be a non-empty string.", 400
-        )
+    if not organization_id or not isinstance(organization_id, str) or not organization_id.strip():
+        return create_error_response("Organization ID is required and must be a non-empty string.", 400)
     try:
-        gallery_items = get_gallery_items_by_org(organization_id)
-        if gallery_items is None:
-            return create_error_response(
-                f"No gallery items found for organization {organization_id}.", 404
-            )
-        if isinstance(gallery_items, list) and not gallery_items:
-            return create_success_response([], 204)
-        return create_success_response(gallery_items, 200)
-    except ValueError as ve:
-        logger.error(
-            f"Value error retrieving gallery items for org {organization_id}: {ve}"
+        uploader_id = request.args.get("uploader_id")
+        order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
+        q = request.args.get("q")
+
+        gallery_items = get_gallery_items_by_org(
+            organization_id,
+            uploader_id=uploader_id,
+            order=order,
+            q=q
         )
+
+        return create_success_response(gallery_items or [], 200)
+
+    except ValueError as ve:
+        logger.error(f"Value error retrieving gallery items for org {organization_id}: {ve}")
         return create_error_response(str(ve), 400)
     except CosmosHttpResponseError as ce:
-        logger.error(
-            f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}"
-        )
+        logger.error(f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}")
         return create_error_response("Database error retrieving gallery items.", 500)
     except Exception as e:
-        logger.exception(
-            f"Unexpected error retrieving gallery items for org {organization_id}: {e}"
-        )
+        logger.exception(f"Unexpected error retrieving gallery items for org {organization_id}: {e}")
         return create_error_response("Internal Server Error", 500)
 
 
