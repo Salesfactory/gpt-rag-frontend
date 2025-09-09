@@ -3,7 +3,7 @@ import { Label } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
 import styles from "./Organizationcopy.module.css";
 import { updateOrganizationInfo } from "../../api";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 import { Globe, Save, Search, X, Plus } from "lucide-react";
 import { scrapeUrls } from "../../api";
@@ -16,8 +16,8 @@ const Organization = () => {
     const [industryInformation, setIndustryInformation] = useState(organization?.industryInformation || "");
     const [additionalInstructions, setAdditionalInstructions] = useState(organization?.additionalInstructions || "");
     const [isLoading, setIsLoading] = useState(false);
-    
-    // Web Indexing state 
+
+    // Web Indexing state
     const [urlsToScrape, setUrlsToScrape] = useState<string[]>([]);
     const [currentUrl, setCurrentUrl] = useState("");
     const [isScraping, setIsScraping] = useState(false);
@@ -66,7 +66,7 @@ const Organization = () => {
 
     const addUrl = () => {
         const trimmedUrl = currentUrl.trim();
-        
+
         if (!trimmedUrl) {
             toast("Please enter a URL", { type: "warning" });
             return;
@@ -95,7 +95,7 @@ const Organization = () => {
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
             e.preventDefault();
             addUrl();
         }
@@ -118,19 +118,19 @@ const Organization = () => {
             for (const url of urlsToScrape) {
                 try {
                     const result = await scrapeUrls(url, organization?.id, user);
-                    results.push({ url, result, status: 'success' });
+                    results.push({ url, result, status: "success" });
                     successCount++;
                 } catch (error) {
                     console.error(`Error scraping ${url}:`, error);
                     const errorMessage = error instanceof Error ? error.message : String(error);
-                    results.push({ url, error: errorMessage, status: 'error' });
+                    results.push({ url, error: errorMessage, status: "error" });
                     failureCount++;
                 }
             }
-            
+
             // Debug: Log the aggregated results
-            console.log('Scraping results:', results);
-            
+            console.log("Scraping results:", results);
+
             // Create a summary similar to the old format for consistency
             const scrapingData = {
                 summary: {
@@ -140,11 +140,11 @@ const Organization = () => {
                 },
                 results: results
             };
-            
+
             // Track failed URLs for retry functionality
             const failedUrls: string[] = [];
 
-            console.log('Scraping Summary:', {
+            console.log("Scraping Summary:", {
                 total: scrapingData.summary.total_urls,
                 successful: successCount,
                 failed: failureCount,
@@ -153,20 +153,20 @@ const Organization = () => {
 
             // Process individual results for detailed error reporting and failed URL tracking
             if (scrapingData?.results && Array.isArray(scrapingData.results)) {
-                console.log('Processing individual results:', scrapingData.results);
+                console.log("Processing individual results:", scrapingData.results);
                 scrapingData.results.forEach((urlResult: any, index: number) => {
                     const url = urlResult.url;
                     console.log(`Result ${index + 1}:`, urlResult);
-                    
+
                     if (urlResult.status === "error") {
                         // Add to failed URLs list for retry
                         if (!failedUrls.includes(url)) {
                             failedUrls.push(url);
                         }
-                        
+
                         // Show individual error message
-                        const errorMessage = urlResult.error || 'Unknown error';
-                        toast(`Failed to scrape: ${url} - ${errorMessage}`, { 
+                        const errorMessage = urlResult.error || "Unknown error";
+                        toast(`Failed to scrape: ${url} - ${errorMessage}`, {
                             type: "error",
                             autoClose: 8000,
                             position: "top-right"
@@ -174,15 +174,15 @@ const Organization = () => {
                     }
                 });
             } else {
-                console.log('No individual results available or not an array');
+                console.log("No individual results available or not an array");
             }
 
             // Fallback: if no summary data available, count from individual results
             if (!scrapingData?.summary && scrapingData?.results) {
-                console.log('Using fallback counting from individual results');
+                console.log("Using fallback counting from individual results");
                 successCount = 0;
                 failureCount = 0;
-                
+
                 scrapingData.results.forEach((urlResult: any) => {
                     if (urlResult.status === "success" || urlResult.status === "completed") {
                         successCount++;
@@ -190,12 +190,12 @@ const Organization = () => {
                         failureCount++;
                     }
                 });
-                
-                console.log('Fallback counts - Success:', successCount, 'Failed:', failureCount);
+
+                console.log("Fallback counts - Success:", successCount, "Failed:", failureCount);
             }
 
             // Debug: Log final counts before deciding on message
-            console.log('Final counts before message decision:', {
+            console.log("Final counts before message decision:", {
                 successCount,
                 failureCount,
                 failedUrls,
@@ -204,32 +204,31 @@ const Organization = () => {
 
             // Show overall summary based on actual results
             if (successCount > 0 && failureCount === 0) {
-                console.log('Case: All successful');
+                console.log("Case: All successful");
                 toast(`Successfully scraped all ${successCount} URL(s)`, { type: "success" });
                 // Clear the URLs after successful scraping
                 setUrlsToScrape([]);
             } else if (successCount > 0 && failureCount > 0) {
-                console.log('Case: Mixed results');
-                toast(`Scraped ${successCount} URL(s) successfully, ${failureCount} failed`, { 
+                console.log("Case: Mixed results");
+                toast(`Scraped ${successCount} URL(s) successfully, ${failureCount} failed`, {
                     type: "warning",
                     autoClose: 6000
                 });
                 // Keep only the failed URLs for retry
                 setUrlsToScrape(failedUrls);
             } else if (failureCount > 0) {
-                console.log('Case: All failed');
+                console.log("Case: All failed");
                 toast(`All ${failureCount} URL(s) failed to scrape`, { type: "error" });
                 // Keep failed URLs in the list for retry
                 setUrlsToScrape(failedUrls);
             } else {
-                console.log('Case: Unexpected - no clear success or failure');
+                console.log("Case: Unexpected - no clear success or failure");
                 // Edge case: no clear success or failure data
                 toast("Scraping completed, but unable to determine results", { type: "warning" });
-                console.warn('Unexpected scraping result:', scrapingData);
+                console.warn("Unexpected scraping result:", scrapingData);
             }
-            
         } catch (err: any) {
-            console.error('Scraping error:', err);
+            console.error("Scraping error:", err);
             toast(`Error scraping URLs: ${err.message}`, { type: "error" });
         } finally {
             setIsScraping(false);
@@ -261,7 +260,6 @@ const Organization = () => {
 
     return (
         <div className={styles.page_container}>
-            <ToastContainer />
             <div className={styles.center}>
                 <div className={styles.cardContainer}>
                     <div className={styles.title}>

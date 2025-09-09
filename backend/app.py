@@ -760,6 +760,7 @@ def proxy_orc():
     file_blob_url = data.get("url")
     agent = data.get("agent")
     documentName = data.get("documentName")
+    user_timezone = data.get("user_timezone")
 
     if not question:
         return jsonify({"error": "Missing required parameters"}), 400
@@ -806,6 +807,7 @@ def proxy_orc():
             "client_principal_name": client_principal_name,
             "client_principal_organization": client_principal_organization,
             "documentName": documentName,
+            "user_timezone": user_timezone,
         }
     )
 
@@ -1818,7 +1820,8 @@ def getStorageAccount():
 
 
 @app.route("/api/get-feedback-url", methods=["GET"])
-def getFeedbackUrl():
+@auth.login_required
+def getFeedbackUrl(*, context):
     try:
         feedback_url = os.environ.get("USER_FEEDBACK_URL")
         return jsonify({"feedback_url": feedback_url})
@@ -2303,7 +2306,7 @@ def setSettings():
 
         temperature = request_body.get("temperature", 0.0)
         model = request_body.get(
-            "model", "DeepSeek-V3-0324"
+            "model", "gpt-4.1"
         )  # address later since we're adding more models
         font_family = request_body.get("font_family")
         font_size = request_body.get("font_size")
