@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import styles from "./UploadResourcescopy.module.css";
 
 import { Text, PrimaryButton, Spinner, DetailsList, DetailsListLayoutMode, IColumn, SelectionMode, IconButton, SearchBox } from "@fluentui/react";
+import { Menu, FileText, File, Archive, X, Plus, Folder, Edit2, Clock, ArrowDownAZ, ChevronDown, ArrowUpZA, ArrowUpDown, User } from 'lucide-react';
 
 import { Download, Trash2, RefreshCw, Upload, Search, CirclePlus, AlertTriangle } from "lucide-react";
 import { useDropzone } from "react-dropzone";
@@ -22,6 +23,13 @@ interface BlobItem {
     content_type: string;
     url: string;
     metadata?: Record<string, string>;
+}
+
+interface FolderStructure {
+    [key: string]: {
+        files: BlobItem[];
+        subfolders: FolderStructure;
+    };
 }
 
 const processingMessages = [
@@ -51,6 +59,7 @@ const UploadResources: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [filteredItems, setFilteredItems] = useState<BlobItem[]>([]);
+    const [folderStructure, setFolderStructure] = useState<FolderStructure>({});
 
     const [showExcelWarning, setShowExcelWarning] = useState<boolean>(false);
     const [excelFiles, setExcelFiles] = useState<string[]>([]);
@@ -59,6 +68,65 @@ const UploadResources: React.FC = () => {
     const uploadModalRef = useRef<HTMLDivElement>(null);
 
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState<boolean>(false);
+
+    // Utility function to extract folder path from blob name
+    const extractFolderPath = (blobName: string, organizationId: string): string => {
+        // Remove organization prefix: organization_files/{organizationId}/
+        const prefix = `organization_files/${organizationId}/`;
+        if (!blobName.startsWith(prefix)) return "";
+        
+        const relativePath = blobName.substring(prefix.length);
+        const lastSlashIndex = relativePath.lastIndexOf("/");
+        
+        if (lastSlashIndex === -1) return "Root"; // File is in root folder
+        return relativePath.substring(0, lastSlashIndex);
+    };
+
+    // Build folder structure from blob items
+    const buildFolderStructure = (items: BlobItem[]): FolderStructure => {
+        const structure: FolderStructure = {};
+        
+        items.forEach(item => {
+            const folderPath = extractFolderPath(item.name, user?.organizationId || "");
+            if (!folderPath) return;
+            
+            const pathParts = folderPath === "Root" ? ["Root"] : folderPath.split("/");
+            let current = structure;
+            
+            // Navigate/create folder structure
+            pathParts.forEach((part, index) => {
+                if (!current[part]) {
+                    current[part] = {
+                        files: [],
+                        subfolders: {}
+                    };
+                }
+                
+                // If this is the last part, add the file
+                if (index === pathParts.length - 1) {
+                    current[part].files.push(item);
+                } else {
+                    current = current[part].subfolders;
+                }
+            });
+        });
+        
+        return structure;
+    };
+
+    // Get unique folder paths for indicators
+    const getFolderPaths = (items: BlobItem[]): string[] => {
+        const paths = new Set<string>();
+        
+        items.forEach(item => {
+            const folderPath = extractFolderPath(item.name, user?.organizationId || "");
+            if (folderPath) {
+                paths.add(folderPath);
+            }
+        });
+        
+        return Array.from(paths).sort();
+    };
 
     const fetchBlobData = useCallback(async () => {
         setIsLoading(true);
@@ -71,14 +139,19 @@ const UploadResources: React.FC = () => {
                 content_type: item.content_type,
                 url: item.url
             }));
+            console.log("blobItems", blobItems);
             setBlobItems(blobItems);
             setFilteredItems(blobItems);
+            
+            // Build folder structure
+            const structure = buildFolderStructure(blobItems);
+            setFolderStructure(structure);
         } catch (error) {
             console.error("Error fetching blob data:", error);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [user?.organizationId]);
 
     useEffect(() => {
         fetchBlobData();
@@ -292,6 +365,8 @@ const UploadResources: React.FC = () => {
             onRender: (item: BlobItem) => {
                 const fileName = item.name.split("/").pop() || "";
                 const fileExtension = fileName.split(".").pop()?.toLowerCase();
+                const folderPath = extractFolderPath(item.name, user?.organizationId || "");
+                
                 let displayName = fileName;
                 if (fileName.length > MAX_FILENAME_LENGTH) {
                     const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
@@ -305,6 +380,11 @@ const UploadResources: React.FC = () => {
                             </Text>
                             <div className={styles.file_extension_pill}>{fileExtension?.toUpperCase() || "FILE"}</div>
                             <div className={styles.file_size_pill}>{formatFileSize(item.size)}</div>
+                            {folderPath && folderPath !== "Root" && (
+                                <div className={styles.folder_path_pill} title={`Folder: ${folderPath}`}>
+                                    📁 {folderPath.length > 20 ? `...${folderPath.slice(-17)}` : folderPath}
+                                </div>
+                            )}
                         </div>
                         <span>Uploaded on {formatDate(item.created_on)}</span>
                     </div>
@@ -338,11 +418,28 @@ const UploadResources: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
-            <div className={styles.file_list_header}>
+            {/* Cloud Storage Indicator - Placeholder */}
+            <div className={styles.cloud_storage_section}>
+                <div className={styles.cloud_storage_header}>
+                    <span className={styles.storage_label}>Cloud Storage</span>
+                    <span className={styles.storage_usage}>0%</span>
+                </div>
+                <div className={styles.storage_bar}>
+                    <div className={styles.storage_progress} style={{width: '0.3%'}}></div>
+                </div>
+                <div className={styles.storage_details}>
+                    <span className={styles.storage_used}>0.3 MB used</span>
+                    <span className={styles.storage_total}>999.7 MB free</span>
+                </div>
+                <span className={styles.storage_total_label}>1 TB Total Storage</span>
+            </div>
+
+            {/* Search and Upload Section */}
+            <div className={styles.search_upload_section}>
                 <SearchBox
                     placeholder="Search files..."
                     onChange={(_, newValue) => setSearchQuery(newValue || "")}
-                    className={styles.responsiveSearch}
+                    className={styles.search_box}
                     iconProps={{
                         iconName: undefined,
                         styles: {
@@ -353,7 +450,7 @@ const UploadResources: React.FC = () => {
                         },
                         children: (
                             <Search
-                                size={26}
+                                size={20}
                                 color="#9ca3af"
                                 style={{
                                     paddingBottom: "3px"
@@ -394,66 +491,155 @@ const UploadResources: React.FC = () => {
                         }
                     }}
                 />
-                <div className={styles.file_list_actions}>
-                    <IconButton title="Upload New Files" ariaLabel="Upload New Files" onClick={openUploadDialog} className={styles.upload_button}>
-                        <span className={styles.addIcon}>
-                            <CirclePlus />
-                        </span>
-                        <span className={styles.buttonText}>Upload File</span>
-                    </IconButton>
+                <button className={styles.upload_file_button} onClick={openUploadDialog}>
+                    <Upload size={16} />
+                    Upload File
+                </button>
+            </div>
 
-                    <IconButton title="Reload" ariaLabel="Reload file list" onClick={fetchBlobData} className={styles.refresh_button}>
-                        <RefreshCw size={20} />
-                    </IconButton>
+            {/* Category Filter - Placeholder */}
+            <div className={styles.category_section}>
+                <span className={styles.category_label}>Category</span>
+                <div className={styles.category_filters}>
+                    <button className={`${styles.category_button} ${styles.category_active}`}>
+                        <div className={styles.category_icon}>📄</div>
+                        All
+                    </button>
+                    <button className={styles.category_button}>
+                        <div className={styles.category_icon}>📄</div>
+                        Documents
+                    </button>
+                    <button className={styles.category_button}>
+                        <div className={styles.category_icon}>📊</div>
+                        Spreadsheets
+                    </button>
+                    <button className={styles.category_button}>
+                        <div className={styles.category_icon}>📋</div>
+                        Presentations
+                    </button>
                 </div>
             </div>
-            <div className={styles.content_container} style={{ minHeight: "60vh", height: "65vh", maxHeight: "75vh", overflowY: "auto" }}>
-                {/* File List View Section */}
-                {isLoading ? (
+
+            {/* All Files Section */}
+            <div className={styles.all_files_section}>
+                <div className={styles.section_header}>
+                    <div className={styles.section_title}>
+                        <Folder className={styles.section_icon} size={20} />
+                        All Files
+                    </div>
+                    <div className={styles.section_actions}>
+                        <button className={styles.new_folder_button}>
+                            <Plus size={16} />
+                            New Folder
+                        </button>
+                        <div className={styles.view_options}>
+                            <span className={styles.recent_label}>Recent</span>
+                            <ChevronDown size={16} />
+                        </div>
+                    </div>
+                </div>
+
+            <div className={styles.content_container}>
+                {/* Folder Structure */}
+                {!isLoading && blobItems.length > 0 && (
+                    <div className={styles.folder_structure}>
+                        {getFolderPaths(blobItems).map((folderPath, index) => {
+                            // Count files in this specific folder path
+                            const fileCount = blobItems.filter(item => 
+                                extractFolderPath(item.name, user?.organizationId || "") === folderPath
+                            ).length;
+                            if (folderPath === "Root") return null;
+                            const folderName = folderPath.split("/").pop() || folderPath;
+                            return (
+                                <div key={index} className={styles.folder_item}>
+                                    <div className={styles.folder_icon_section}>
+                                        <Folder className={styles.folder_icon} size={24} color="#f59e0b" />
+                                    </div>
+                                    <div className={styles.folder_details}>
+                                        <div className={styles.folder_name_row}>
+                                            <span className={styles.folder_title}>{folderName}</span>
+                                            <div className={styles.folder_actions}>
+                                                <Edit2 size={16} className={styles.action_icon} />
+                                                <Trash2 size={16} className={styles.action_icon} />
+                                            </div>
+                                        </div>
+                                        <div className={styles.folder_meta}>
+                                            <span className={styles.file_count_text}>{fileCount} files</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Individual Files */}
+                {!isLoading && (
+                    <div className={styles.files_list}>
+                        {filteredItems.length > 0 ? (
+                            filteredItems.map((item, index) => {
+                                const fileName = item.name.split("/").pop() || "";
+                                const fileExtension = fileName.split(".").pop()?.toLowerCase();
+                                const folderPath = extractFolderPath(item.name, user?.organizationId || "");
+                                const uploadDate = new Date(item.created_on);
+                                const formattedDate = uploadDate.toLocaleDateString('en-US', { 
+                                    month: 'numeric', 
+                                    day: 'numeric', 
+                                    year: '2-digit' 
+                                }) + " " + uploadDate.toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                                
+                                let displayName = fileName;
+                                if (fileName.length > MAX_FILENAME_LENGTH) {
+                                    const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
+                                    displayName = fileName.substring(0, MAX_FILENAME_LENGTH - ext.length - 3) + "..." + ext;
+                                }
+
+                                return (
+                                    <div key={index} className={styles.file_item_row}>
+                                        <div className={styles.file_icon_section}>
+                                            <div className={styles.file_type_icon}>
+                                                {fileExtension === 'pdf' ? '📄' : 
+                                                 fileExtension === 'xlsx' || fileExtension === 'xls' || fileExtension === 'csv' ? '📊' :
+                                                 '📄'}
+                                            </div>
+                                        </div>
+                                        <div className={styles.file_details}>
+                                            <div className={styles.file_name_row}>
+                                                <span className={styles.file_title} title={fileName}>{displayName}</span>
+                                                <div className={styles.file_badges}>
+                                                    <span className={styles.file_extension_badge}>{fileExtension?.toUpperCase() || "FILE"}</span>
+                                                    <span className={styles.file_size_text}>{formatFileSize(item.size)}</span>
+                                                </div>
+                                                <div className={styles.file_actions}>
+                                                    <Download size={16} className={styles.action_icon} onClick={() => handleDownload(item)} />
+                                                    <Trash2 size={16} className={styles.action_icon} onClick={() => handleDelete(item)} />
+                                                </div>
+                                            </div>
+                                            <div className={styles.file_meta}>
+                                                <span className={styles.upload_date}>Uploaded on {formattedDate} • John Doe</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className={styles.no_files_message}>
+                                <Text>No files found. Upload files to see them listed here.</Text>
+                            </div>
+                        )}
+                    </div>
+                )}
+                
+                {isLoading && (
                     <div className={styles.loading_container}>
                         <Spinner label="Loading files..." />
                     </div>
-                ) : filteredItems.length > 0 ? (
-                    <div className={styles.file_list_container} style={{ minHeight: "50vh", height: "55vh", maxHeight: "70vh", overflowY: "auto" }}>
-                        <DetailsList
-                            items={filteredItems}
-                            columns={columns}
-                            setKey="set"
-                            layoutMode={DetailsListLayoutMode.justified}
-                            selectionMode={SelectionMode.none}
-                            isHeaderVisible={true}
-                            className={styles.detailsListContainer}
-                            styles={{
-                                root: {
-                                    borderRadius: "8px"
-                                }
-                            }}
-                            onRenderRow={(props, defaultRender) => {
-                                if (!props || !defaultRender) return null;
-
-                                const backgroundColor = "#ffffff";
-
-                                const customStyles = {
-                                    root: {
-                                        backgroundColor
-                                    },
-                                    fields: {
-                                        backgroundColor
-                                    }
-                                };
-
-                                return defaultRender({
-                                    ...props,
-                                    styles: customStyles
-                                });
-                            }}
-                        />
-                    </div>
-                ) : (
-                    <div className={styles.no_files_container}>
-                        <Text>No files found. Upload files to see them listed here.</Text>
-                    </div>
                 )}
+            </div>
             </div>
 
             {/* Upload Dialog */}
