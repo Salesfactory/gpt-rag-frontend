@@ -8,9 +8,9 @@ const initialState: UploadState = {
   status: 'idle',
   initialFiles: [],
   duplicateFiles: [],
-  excelFiles: [],
   filesToUpload: [],
   currentFileIndex: 0,
+  excelFiles: []
 };
 
 function validationReducer(state: UploadState, action: UploadAction): UploadState {
@@ -75,6 +75,15 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
     case 'SHOW_RENAME_MODAL':
       return { ...state, status: 'renameFile' };
 
+    case "EXCEL_WARNING":
+      return { ...state, excelFiles: action.payload, status: "excel_warning"}
+
+    case "UPLOAD":
+      return {...state, status: "uploading"}
+
+    case "UPLOAD_SUCCESS": 
+      return {...state, status: "success"}
+
     case 'CANCEL':
       return initialState;
 
@@ -86,7 +95,6 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
 
 export const useFileUpload = (organizationId: string, onUploadComplete: () => void, existingFiles: BlobItem[]) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
 
   const [state, dispach] = useReducer(validationReducer, initialState)
 
@@ -96,18 +104,17 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
     dispach({ type: 'CANCEL' });
   };
 
-  const startUpload = useCallback(async (files: File[]) => {
-    setIsUploading(true);
+  const startUpload = useCallback(async (files: FileToUpload[]) => {
     try {
       for (const file of files) {
-        await uploadSourceFileToBlob(file, organizationId);
+        await uploadSourceFileToBlob(file.file, organizationId);
       }
       toast.success("Files uploaded successfully!");
       onUploadComplete();
     } catch (error) {
       toast.error("Error uploading files. Please try again.");
     } finally {
-      setIsUploading(false);
+      closeUploadDialog()
     }
   }, [organizationId, onUploadComplete]);
 
@@ -144,27 +151,43 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
     dispach({
       type: 'DUPLICATE_FILES',
       payload: validFiles.filter(file => {
-        console.log(file.name);
         return existingFiles.some(item => item.name.split('/').pop() === file.name);
       })
     });
-
-    
-
   };
+
+  const checkExcelFiles = () => {
+    const files: FileToUpload[] = state.filesToUpload
+    const excelFileNames = files
+    .filter(file => {
+        const extension = file.file.name.split(".").pop()?.toLowerCase();
+        return extension === "xls" || extension === "xlsx";
+    })
+    .map(file => file.file.name);
+
+    if (excelFileNames.length > 0) {
+      dispach({type: "EXCEL_WARNING", payload: excelFileNames})
+  }
+  }
 
   useEffect(() => {
     console.log(state);
     if (state.status === 'validating' && state.initialFiles.length > 0) {
       validate();
     }
+    if (state.status === "readyToUpload" && state.filesToUpload.length > 0) {
+      checkExcelFiles()
+    }
+    if (state.status === "uploading") {
+      startUpload(state.filesToUpload)
+    }
+
   }, [state.status, state.initialFiles]);
 
   return {
     uploadDialogOpen,
     openUploadDialog,
     closeUploadDialog,
-    isUploading,
     state,
     dispach,
     handleDuplicateRename,

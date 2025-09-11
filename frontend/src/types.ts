@@ -9,15 +9,19 @@ interface BlobItem {
     metadata?: Record<string, string>;
 }
 
+type FileToUpload = { file: File; action: 'upload' | 'replace' | 'rename' }
+
 type UploadState = {
-  status: 'idle' | 'validating' |  'duplicateWarning' | 'renameFile' | 'readyToUpload' | 'uploading' | 'success' | 'error';
+  status: 'idle' | 'validating' |  'duplicateWarning' | 'renameFile' | 'readyToUpload' | 'excel_warning' | 'uploading' | 'success' | 'error';
   initialFiles: File[]
   duplicateFiles: File[]
-  excelFiles: File[]
-  filesToUpload: { file: File; action: 'upload' | 'replace' | 'rename' }[]
+  filesToUpload: FileToUpload[]
   currentFileIndex: number
   errorMessage?: string;
+  excelFiles: string[]
 };
+
+
 
 type UploadAction =
   | { type: 'SELECT_FILES'; payload: File[] }
@@ -31,4 +35,5 @@ type UploadAction =
   | { type: 'UPLOAD' }
   | { type: 'UPLOAD_SUCCESS' }
   | { type: 'UPLOAD_ERROR'; payload: string }
+  | {type: 'EXCEL_WARNING'; payload: string[]}
   | { type: 'CANCEL' };

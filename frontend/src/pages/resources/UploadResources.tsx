@@ -12,7 +12,7 @@ import UploadDialogModal from "../../components/UploadResources/UploadDialogModa
 const UploadResources: React.FC = () => {
     const { user } = useAppContext();
     const { isLoading, filteredItems, deleteFile, setSearchQuery, fetchFiles, items } = useSourceFiles(user?.organizationId || "")
-    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, isUploading, dispach, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", fetchFiles, items);
+    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispach, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", fetchFiles, items);
 
 
     return (
@@ -21,8 +21,7 @@ const UploadResources: React.FC = () => {
             <ResourceList filteredItems={filteredItems} isLoading={isLoading} deleteFile={deleteFile} />
             {uploadDialogOpen && (
                 <UploadDialogModal 
-                    closeUploadDialog={closeUploadDialog} 
-                    isUploading={isUploading} 
+                    closeUploadDialog={closeUploadDialog}  
                     uploadState={state} 
                     dispachState={dispach}
                     handleDuplicateRename={handleDuplicateRename}

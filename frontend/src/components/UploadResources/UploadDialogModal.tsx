@@ -1,19 +1,17 @@
-import { useCallback, useEffect, useRef, useState, Dispatch} from "react";
+import { useCallback, useEffect, useRef, useState, Dispatch } from "react";
 import styles from "./UploadResources.module.css";
-import { useDropzone } from "react-dropzone";
-import {  DragFilesContent, DuplicateWarningContent, ExcelWarningContent, RenameFileContent, UploadModalFooter, UploadModalHeader } from "../UploadModal/UploadModal";
+import { DragFilesContent, DuplicateWarningContent, ExcelWarningContent, RenameFileContent, UploadingContent, UploadModalFooter, UploadModalHeader } from "../UploadModal/UploadModal";
 
 
-const UploadDialogModal: React.FC<{ 
-    closeUploadDialog: () => void, 
-    isUploading: boolean, 
-    uploadState: UploadState, 
+const UploadDialogModal: React.FC<{
+    closeUploadDialog: () => void,
+    uploadState: UploadState,
     dispachState: Dispatch<UploadAction>,
     handleDuplicateRename: (newName: string) => void,
     handleDuplicateReplace: () => void,
     handleDuplicateSkip: () => void,
     showRenameModal: () => void
-}> = ({ closeUploadDialog, isUploading, uploadState, dispachState, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal }) => {
+}> = ({ closeUploadDialog, uploadState, dispachState, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal }) => {
     const uploadModalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -38,19 +36,24 @@ const UploadDialogModal: React.FC<{
             case 'idle':
                 return <DragFilesContent onDrop={onDrop} />
             case 'duplicateWarning':
-                return <DuplicateWarningContent 
-                    files={uploadState.duplicateFiles} 
+                return <DuplicateWarningContent
+                    files={uploadState.duplicateFiles}
                     currentFileIndex={uploadState.currentFileIndex}
                     onRename={showRenameModal}
                     onReplace={handleDuplicateReplace}
                     onCancel={handleDuplicateSkip}
                 />
             case 'renameFile':
-                return <RenameFileContent 
+                return <RenameFileContent
                     fileName={uploadState.duplicateFiles[uploadState.currentFileIndex]?.name || ''}
                     onConfirm={handleDuplicateRename}
                     onCancel={() => dispachState({ type: 'DUPLICATE_FILES', payload: uploadState.duplicateFiles })}
                 />
+            case "excel_warning":
+                return <ExcelWarningContent excelFiles={uploadState.excelFiles} onCancel={() => dispachState({type: 'CANCEL'})} onConfirm={() => dispachState({type: "UPLOAD"})} />
+            case "uploading":
+                return <UploadingContent selectedFiles={uploadState.filesToUpload} />
+
             default:
                 return <DragFilesContent onDrop={onDrop} />
         }
@@ -62,11 +65,9 @@ const UploadDialogModal: React.FC<{
                 <UploadModalHeader />
                 <div className={styles.modal_content}>
                     <div className={styles.upload_dialog_content}>
-                    {renderContent()}
+                        {renderContent()}
                     </div>
-                {!isUploading && (
-                    <UploadModalFooter closeUploadDialog={closeUploadDialog} />
-                )}
+                        <UploadModalFooter closeUploadDialog={closeUploadDialog} />
                 </div>
             </div>
         </div>

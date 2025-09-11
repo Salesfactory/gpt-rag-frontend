@@ -67,7 +67,7 @@ const processingMessages = [
 ];
 
 
-export const UploadingContent: React.FC<{ selectedFiles: File[] }> = ({ selectedFiles }) => {
+export const UploadingContent: React.FC<{ selectedFiles: FileToUpload[] }> = ({ selectedFiles }) => {
     const [currentMessage, setCurrentMessage] = useState(0);
 
     if (currentMessage < processingMessages.length - 1) {
@@ -83,7 +83,7 @@ export const UploadingContent: React.FC<{ selectedFiles: File[] }> = ({ selected
                 <span className={styles.processing_files_loader_msg}>Processing Files</span>
                 <div className={styles.processing_files_name}>
                     {selectedFiles.map((file, index) => (
-                        <div key={index}>{file.name}</div>
+                        <div key={index}>{file.file.name}</div>
                     ))}
                 </div>
             </div>
@@ -152,7 +152,7 @@ export const DragFilesContent: React.FC<{onDrop: Callback }> = ({onDrop}) => {
     )
 }
 
-export const ExcelWarningContent: React.FC<{ excelFiles: String[], dispach: React.Dispatch<any> }> = ({ excelFiles, dispach }) => {
+export const ExcelWarningContent: React.FC<{ excelFiles: String[], onConfirm: () => void, onCancel: () => void }> = ({ excelFiles, onConfirm, onCancel }) => {
     return (
         <div className={styles.excelWarningContainer}>
             <div className={styles.excelWarningHeader}>
@@ -181,10 +181,10 @@ export const ExcelWarningContent: React.FC<{ excelFiles: String[], dispach: Reac
             </div>
 
             <div className={styles.actions}>
-                <button className={styles.cancelButton}>
+                <button className={styles.cancelButton} onClick={onCancel}>
                     Cancel Upload
                 </button>
-                <button className={styles.confirmButton}>
+                <button className={styles.confirmButton} onClick={onConfirm}>
                     Continue Anyway
                 </button>
             </div>
