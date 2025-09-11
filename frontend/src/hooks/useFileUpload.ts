@@ -3,6 +3,7 @@ import { uploadSourceFileToBlob } from "../api";
 import { toast } from "react-toastify";
 import { checkSpreadsheetFileLimit, validateFiles } from "../utils/fileUtils";
 import { ALLOWED_FILE_TYPES, SPREADSHEET_FILE_LIMIT } from "../constants";
+import { BlobItem, FileToUpload, UploadState, UploadAction } from "../types";
 
 const initialState: UploadState = {
   status: 'idle',
@@ -36,7 +37,7 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
         lastModified: state.duplicateFiles[state.currentFileIndex].lastModified
       });
       
-      const newFilesToUpload = [...state.filesToUpload, { file: renamedFile, action: 'upload' as const }];
+      const newFilesToUpload: FileToUpload[] = [...state.filesToUpload, { file: renamedFile, action: 'upload' as const }];
       
       if (state.currentFileIndex + 1 >= state.duplicateFiles.length) {
         return { ...state, status: 'readyToUpload', filesToUpload: newFilesToUpload };
@@ -50,7 +51,7 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
 
     case 'HANDLE_DUPLICATE_REPLACE':
       const replaceFile = state.duplicateFiles[state.currentFileIndex];
-      const newFilesToUploadReplace = [...state.filesToUpload, { file: replaceFile, action: 'replace' as const }];
+      const newFilesToUploadReplace: FileToUpload[] = [...state.filesToUpload, { file: replaceFile, action: 'replace' as const }];
       
       if (state.currentFileIndex + 1 >= state.duplicateFiles.length) {
         return { ...state, status: 'readyToUpload', filesToUpload: newFilesToUploadReplace };
@@ -84,6 +85,9 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
     case "UPLOAD_SUCCESS": 
       return {...state, status: "success"}
 
+    case "UPLOAD_ERROR":
+      return {...state, status: "error", errorMessage: action.payload}
+
     case 'CANCEL':
       return initialState;
 
@@ -96,100 +100,116 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
 export const useFileUpload = (organizationId: string, onUploadComplete: () => void, existingFiles: BlobItem[]) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
-  const [state, dispach] = useReducer(validationReducer, initialState)
+  const [state, dispatch] = useReducer(validationReducer, initialState)
 
   const openUploadDialog = () => setUploadDialogOpen(true);
   const closeUploadDialog = () => {
     setUploadDialogOpen(false);
-    dispach({ type: 'CANCEL' });
+    dispatch({ type: 'CANCEL' });
   };
 
   const startUpload = useCallback(async (files: FileToUpload[]) => {
     try {
+      dispatch({ type: 'UPLOAD' });
+      
       for (const file of files) {
         await uploadSourceFileToBlob(file.file, organizationId);
       }
+      
+      dispatch({ type: 'UPLOAD_SUCCESS' });
       toast.success("Files uploaded successfully!");
       onUploadComplete();
     } catch (error) {
-      toast.error("Error uploading files. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      dispatch({ type: 'UPLOAD_ERROR', payload: errorMessage });
+      toast.error(`Error uploading files: ${errorMessage}`);
     } finally {
-      closeUploadDialog()
+      closeUploadDialog();
     }
-  }, [organizationId, onUploadComplete]);
+  }, [organizationId, onUploadComplete, dispatch]);
 
   const handleDuplicateRename = (newName: string) => {
-    dispach({ type: 'HANDLE_DUPLICATE_RENAME', payload: newName });
+    dispatch({ type: 'HANDLE_DUPLICATE_RENAME', payload: newName });
   };
 
   const handleDuplicateReplace = () => {
-    dispach({ type: 'HANDLE_DUPLICATE_REPLACE' });
+    dispatch({ type: 'HANDLE_DUPLICATE_REPLACE' });
   };
 
   const handleDuplicateSkip = () => {
-    dispach({ type: 'HANDLE_DUPLICATE_SKIP' });
+    dispatch({ type: 'HANDLE_DUPLICATE_SKIP' });
   };
 
   const showRenameModal = () => {
-    dispach({ type: 'SHOW_RENAME_MODAL' });
+    dispatch({ type: 'SHOW_RENAME_MODAL' });
   };
 
-  const validate = () => {
+  const validate = useCallback(() => {
+    if (state.initialFiles.length === 0) {
+      dispatch({ type: 'CANCEL' });
+      return;
+    }
+
     const { validFiles, invalidFiles } = validateFiles(state.initialFiles, ALLOWED_FILE_TYPES);
 
     if (!checkSpreadsheetFileLimit(validFiles, existingFiles)) {
-      toast(`Spreadsheet file limit reached: You can only upload up to ${SPREADSHEET_FILE_LIMIT} .csv, .xls, or .xlsx files per organization.`, {
-            type: "error"
-        });
-      closeUploadDialog()
+      toast.error(`Spreadsheet file limit reached: You can only upload up to ${SPREADSHEET_FILE_LIMIT} .csv, .xls, or .xlsx files per organization.`);
+      closeUploadDialog();
+      return;
     }
 
     if (invalidFiles.length > 0) {
       toast.warn(`Invalid file types skipped: ${invalidFiles.map(f => f.name).join(', ')}`);
     }
 
-    dispach({
+    if (validFiles.length === 0) {
+      toast.error("No valid files to upload.");
+      closeUploadDialog();
+      return;
+    }
+
+    dispatch({
       type: 'DUPLICATE_FILES',
       payload: validFiles.filter(file => {
         return existingFiles.some(item => item.name.split('/').pop() === file.name);
       })
     });
-  };
+  }, [state.initialFiles, existingFiles, dispatch]);
 
-  const checkExcelFiles = () => {
-    const files: FileToUpload[] = state.filesToUpload
+  const checkExcelFiles = useCallback(() => {
+    const files: FileToUpload[] = state.filesToUpload;
     const excelFileNames = files
-    .filter(file => {
+      .filter(file => {
         const extension = file.file.name.split(".").pop()?.toLowerCase();
         return extension === "xls" || extension === "xlsx";
-    })
-    .map(file => file.file.name);
+      })
+      .map(file => file.file.name);
 
     if (excelFileNames.length > 0) {
-      dispach({type: "EXCEL_WARNING", payload: excelFileNames})
-  }
-  }
+      dispatch({ type: "EXCEL_WARNING", payload: excelFileNames });
+    } else {
+      dispatch({ type: "UPLOAD" });
+    }
+  }, [state.filesToUpload, dispatch]);
 
   useEffect(() => {
-    console.log(state);
     if (state.status === 'validating' && state.initialFiles.length > 0) {
       validate();
     }
     if (state.status === "readyToUpload" && state.filesToUpload.length > 0) {
-      checkExcelFiles()
+      checkExcelFiles();
     }
     if (state.status === "uploading") {
-      startUpload(state.filesToUpload)
+      startUpload(state.filesToUpload);
     }
-
-  }, [state.status, state.initialFiles]);
+  }, [state.status, state.initialFiles, validate, checkExcelFiles, startUpload, state.filesToUpload]);
 
   return {
     uploadDialogOpen,
     openUploadDialog,
     closeUploadDialog,
     state,
-    dispach,
+    dispatch,
     handleDuplicateRename,
     handleDuplicateReplace,
     handleDuplicateSkip,

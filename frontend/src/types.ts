@@ -1,5 +1,5 @@
 
-interface BlobItem {
+export interface BlobItem {
     name: string;
     size: number;
     created_on: string;
@@ -9,9 +9,9 @@ interface BlobItem {
     metadata?: Record<string, string>;
 }
 
-type FileToUpload = { file: File; action: 'upload' | 'replace' | 'rename' }
+export type FileToUpload = { file: File; action: 'upload' | 'replace' | 'rename' }
 
-type UploadState = {
+export type UploadState = {
   status: 'idle' | 'validating' |  'duplicateWarning' | 'renameFile' | 'readyToUpload' | 'excel_warning' | 'uploading' | 'success' | 'error';
   initialFiles: File[]
   duplicateFiles: File[]
@@ -23,7 +23,7 @@ type UploadState = {
 
 
 
-type UploadAction =
+export type UploadAction =
   | { type: 'SELECT_FILES'; payload: File[] }
   | { type: 'VALIDATION_COMPLETE'; payload: File[] }
   | { type: 'DUPLICATE_FILES'; payload: File[] }

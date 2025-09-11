@@ -616,7 +616,6 @@ export async function uploadSourceFileToBlob(file: any, organizationId: string) 
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
         const result = await response.json();
-        console.log("File uploaded successfully:", result);
         return result;
     } catch (error) {
         console.error("Error uploading file:", error);
@@ -636,7 +635,6 @@ export async function deleteSourceFileFromBlob(blob_name: string) {
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     const result = await response.json();
-    console.log("File deleted successfully:", result);
     return result;
 }
 
@@ -653,7 +651,6 @@ export async function uploadFile(file: any) {
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
         const result = await response.json();
-        console.log("File uploaded successfully:", result);
         return result;
     } catch (error) {
         console.error("Error uploading file:", error);

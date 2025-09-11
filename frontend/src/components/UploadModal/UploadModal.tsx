@@ -7,6 +7,7 @@ import { AlertTriangle, Upload } from 'lucide-react';
 import { Text } from "@fluentui/react/lib/Text";
 import { ALLOWED_FILE_TYPES } from '../../constants';
 import { Callback } from 'microsoft-cognitiveservices-speech-sdk/distrib/lib/src/sdk/Transcription/IConversation';
+import { FileToUpload } from '../../types';
 
 function BoldMessage({ text }: { text: string }) {
     const parts = text.split(/\*\*(.*?)\*\*/g);

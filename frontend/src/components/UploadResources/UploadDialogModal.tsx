@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useRef, useState, Dispatch } from "react";
 import styles from "./UploadResources.module.css";
 import { DragFilesContent, DuplicateWarningContent, ExcelWarningContent, RenameFileContent, UploadingContent, UploadModalFooter, UploadModalHeader } from "../UploadModal/UploadModal";
+import { UploadState, UploadAction } from "../../types";
 
 
 const UploadDialogModal: React.FC<{
     closeUploadDialog: () => void,
     uploadState: UploadState,
-    dispachState: Dispatch<UploadAction>,
+    dispatchState: Dispatch<UploadAction>,
     handleDuplicateRename: (newName: string) => void,
     handleDuplicateReplace: () => void,
     handleDuplicateSkip: () => void,
     showRenameModal: () => void
-}> = ({ closeUploadDialog, uploadState, dispachState, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal }) => {
+}> = ({ closeUploadDialog, uploadState, dispatchState, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal }) => {
     const uploadModalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -27,8 +28,7 @@ const UploadDialogModal: React.FC<{
     }, []);
 
     const onDrop = useCallback((acceptedFiles: any) => {
-        dispachState({ type: 'SELECT_FILES', payload: acceptedFiles });
-        console.log(uploadState);
+        dispatchState({ type: 'SELECT_FILES', payload: acceptedFiles });
     }, []);
 
     const renderContent = () => {
@@ -47,12 +47,23 @@ const UploadDialogModal: React.FC<{
                 return <RenameFileContent
                     fileName={uploadState.duplicateFiles[uploadState.currentFileIndex]?.name || ''}
                     onConfirm={handleDuplicateRename}
-                    onCancel={() => dispachState({ type: 'DUPLICATE_FILES', payload: uploadState.duplicateFiles })}
+                    onCancel={() => dispatchState({ type: 'DUPLICATE_FILES', payload: uploadState.duplicateFiles })}
                 />
             case "excel_warning":
-                return <ExcelWarningContent excelFiles={uploadState.excelFiles} onCancel={() => dispachState({type: 'CANCEL'})} onConfirm={() => dispachState({type: "UPLOAD"})} />
+                return <ExcelWarningContent excelFiles={uploadState.excelFiles} onCancel={() => dispatchState({type: 'CANCEL'})} onConfirm={() => dispatchState({type: "UPLOAD"})} />
             case "uploading":
                 return <UploadingContent selectedFiles={uploadState.filesToUpload} />
+            
+            case "error":
+                return (
+                    <div className={styles.error_container}>
+                        <h4>Upload Error</h4>
+                        <p>{uploadState.errorMessage || "An error occurred during upload"}</p>
+                        <button onClick={() => dispatchState({ type: 'CANCEL' })}>
+                            Close
+                        </button>
+                    </div>
+                )
 
             default:
                 return <DragFilesContent onDrop={onDrop} />

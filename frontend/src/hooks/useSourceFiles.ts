@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSourceFileFromBlob, deleteSourceFileFromBlob } from '../api/api';
 import { toast } from 'react-toastify';
+import { BlobItem } from '../types';
 
 export const useSourceFiles = (organizationId: string) => {
     const [items, setItems] = useState<BlobItem[]>([]);
@@ -12,7 +13,6 @@ export const useSourceFiles = (organizationId: string) => {
         setIsLoading(true);
         try {
             const response = await getSourceFileFromBlob(organizationId);
-            console.log("Fetched blob data:", response.data);
             setItems(response.data);
         } catch (error) {
             console.error("Error fetching blob data:", error);
@@ -33,7 +33,6 @@ export const useSourceFiles = (organizationId: string) => {
                 toast.success(`${item.name.split('/').pop()} marked for deletion.`);
                 fetchFiles(); 
             } catch (error) {
-                console.error("Error deleting file:", error);
                 toast.error("Failed to delete file.");
             }
         }
