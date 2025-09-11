@@ -1192,6 +1192,7 @@ def get_users(organization_id):
             user_roles[owner_id] = {"role": "admin", "active": True}
 
         filtered_users = []
+        existing_emails = set()
         user_ids = list(user_roles.keys())
         BATCH_SIZE = 10
 
@@ -1233,12 +1234,13 @@ def get_users(organization_id):
                 )
                 # If there is an inactive invitation and NOT redeemed, display as a guest.
                 if invitation:
+                    email = invitation.get("invited_user_email", "")
                     filtered_users.append({
                         "id": None,
                         "invitation_id": invitation.get("id"),
                         "data": {
                             "name": invitation.get("nickname", ""),
-                            "email": invitation.get("invited_user_email", "")
+                            "email": email
                         },
                         "role": invitation.get("role"),
                         "active": invitation.get("active", False),
@@ -1246,6 +1248,8 @@ def get_users(organization_id):
                         "token_expiry": invitation.get("token_expiry"),
                         "nickname": invitation.get("nickname", "")
                     })
+                    if email:
+                        existing_emails.add(email)
                 # If there is inactive invitation and YES redeemed, DO NOT add anything (skip this user)
                 elif invitation_redeemed:
                     continue
@@ -1256,22 +1260,25 @@ def get_users(organization_id):
                     user["user_new"] = False
                     user["user_account_created"] = True
                     filtered_users.append(user)
+                    email = user.get("data", {}).get("email")
+                    if email:
+                        existing_emails.add(email)
 
         # 3.5. Add invitations with active+redeemed but no user (user_account_created=False), only once per invitation
-        existing_emails = set(u["data"]["email"] for u in filtered_users if u.get("data", {}).get("email"))
         for item in invitation_result:
+            email = item.get("invited_user_email", "")
             if (
                 not item.get("invited_user_id")
                 and item.get("active")
                 and item.get("redeemed_at")
-                and item.get("invited_user_email") not in existing_emails
+                and email not in existing_emails
             ):
                 filtered_users.append({
                     "id": None,
                     "invitation_id": item.get("id"),
                     "data": {
                         "name": item.get("nickname", ""),
-                        "email": item.get("invited_user_email", "")
+                        "email": email
                     },
                     "role": item.get("role"),
                     "active": item.get("active", False),
@@ -1280,6 +1287,8 @@ def get_users(organization_id):
                     "nickname": item.get("nickname", ""),
                     "user_account_created": False
                 })
+                if email:
+                    existing_emails.add(email)
 
         # 4. Add invitations without invited_user_id as "new" users
         for item in invitation_result:
@@ -1288,13 +1297,13 @@ def get_users(organization_id):
                 and not item.get("redeemed_at")
             ):
                 token_expiry = item.get("token_expiry")
-                
+                email = item.get("invited_user_email", "")
                 filtered_users.append({
                     "id": None,
                     "invitation_id": item.get("id"),
                     "data": {
                         "name": "",
-                        "email": item.get("invited_user_email", "")
+                        "email": email
                     },
                     "role": item.get("role"),
                     "active": item.get("active", False),
@@ -1302,6 +1311,8 @@ def get_users(organization_id):
                     "token_expiry": token_expiry,
                     "nickname": item.get("nickname", "")
                 })
+                if email:
+                    existing_emails.add(email)
 
         return filtered_users
 

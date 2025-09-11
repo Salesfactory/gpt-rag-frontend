@@ -1001,9 +1001,9 @@ const Admin = () => {
                                                     <span
                                                         style={{
                                                             fontSize: "0.75rem",
-                                                            background: "#ffffffff",
-                                                            color: "#000000ff",
-                                                            border: "1px solid #000000ff",
+                                                            background: "#ffffff",
+                                                            color: "#000000",
+                                                            border: "1px solid #000000",
                                                             borderRadius: 8,
                                                             padding: "2px 10px",
                                                             marginLeft: 4,
