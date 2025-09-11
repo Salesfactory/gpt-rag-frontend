@@ -1197,6 +1197,7 @@ def get_users(organization_id):
 
         # 3. Bring active users
         for i in range(0, len(user_ids), BATCH_SIZE):
+            found_user_ids = set()
             batch_ids = user_ids[i : i + BATCH_SIZE]
             in_clause = ", ".join([f'"{uid}"' for uid in batch_ids])
             query = f"""
@@ -1209,6 +1210,7 @@ def get_users(organization_id):
 
             for user in user_batch_result:
                 uid = user["id"]
+                found_user_ids.add(uid)
                 # Look for inactive and NOT redeemed invitation for this user
                 invitation = next(
                     (
@@ -1252,7 +1254,32 @@ def get_users(organization_id):
                     user["role"] = user_roles.get(uid, {}).get("role")
                     user["active"] = user_roles.get(uid, {}).get("active")
                     user["user_new"] = False
+                    user["user_account_created"] = True
                     filtered_users.append(user)
+
+        # 3.5. Add invitations with active+redeemed but no user (user_account_created=False), only once per invitation
+        existing_emails = set(u["data"]["email"] for u in filtered_users if u.get("data", {}).get("email"))
+        for item in invitation_result:
+            if (
+                not item.get("invited_user_id")
+                and item.get("active")
+                and item.get("redeemed_at")
+                and item.get("invited_user_email") not in existing_emails
+            ):
+                filtered_users.append({
+                    "id": None,
+                    "invitation_id": item.get("id"),
+                    "data": {
+                        "name": item.get("nickname", ""),
+                        "email": item.get("invited_user_email", "")
+                    },
+                    "role": item.get("role"),
+                    "active": item.get("active", False),
+                    "user_new": True,
+                    "token_expiry": item.get("token_expiry"),
+                    "nickname": item.get("nickname", ""),
+                    "user_account_created": False
+                })
 
         # 4. Add invitations without invited_user_id as "new" users
         for item in invitation_result:
