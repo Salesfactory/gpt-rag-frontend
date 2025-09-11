@@ -7,7 +7,7 @@ import { deleteSourceFileFromBlob, getFileBlob, getGalleryItems, getUsers } from
 import { useAppContext } from "../../providers/AppProviders";
 
 const statusFilterOptions = [
-    { label: "Newest", value: "newest" },
+    { label: "Latest", value: "latest" },
     { label: "Oldest", value: "oldest" }
 ];
 
@@ -41,7 +41,7 @@ const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
 
     const [showStatusFilter, setShowStatusFilter] = useState<boolean>(false);
-    const [selectedStatus, setSelectedStatus] = useState<string>();
+    const [selectedStatus, setSelectedStatus] = useState<string>("latest");
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
@@ -83,6 +83,12 @@ const Gallery: React.FC = () => {
                     setIsLoading(false);
                     return;
                 }
+
+                galleryData = [...galleryData].sort((a, b) => {
+                    const ta = Date.parse(a.created_on || a.last_modified || "") || 0;
+                    const tb = Date.parse(b.created_on || b.last_modified || "") || 0;
+                    return tb - ta;
+                });
 
                 setImages(galleryData);
                 setFetchedImages(galleryData);
@@ -148,7 +154,7 @@ const Gallery: React.FC = () => {
         base.sort((a, b) => {
             const ta = Date.parse(a.created_on || a.last_modified || "") || 0;
             const tb = Date.parse(b.created_on || b.last_modified || "") || 0;
-            return order === "newest" ? tb - ta : ta - tb;
+            return order === "latest" ? tb - ta : ta - tb;
         });
         setImages(base);
     };
