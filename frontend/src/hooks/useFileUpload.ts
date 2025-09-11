@@ -105,7 +105,9 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
   const openUploadDialog = () => setUploadDialogOpen(true);
   const closeUploadDialog = () => {
     setUploadDialogOpen(false);
-    dispatch({ type: 'CANCEL' });
+    if (state.status !== "uploading") {
+      dispatch({ type: 'CANCEL' });
+    }
   };
 
   const startUpload = useCallback(async (files: FileToUpload[]) => {

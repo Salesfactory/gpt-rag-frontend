@@ -1,4 +1,3 @@
-import React from "react";
 import { DetailsList, DetailsListLayoutMode, IColumn, SelectionMode } from "@fluentui/react/lib/DetailsList";
 import { IconButton } from "@fluentui/react/lib/Button";
 import { Text } from "@fluentui/react/lib/Text";
@@ -6,14 +5,14 @@ import { Spinner } from "@fluentui/react/lib/Spinner";
 import styles from "./UploadResources.module.css";
 import { Download, Trash2, Search } from "lucide-react";
 import { formatDate, formatFileSize } from "../../utils/fileUtils";
-import { useSourceFiles } from "../../hooks/useSourceFiles";
-import { useAppContext } from "../../providers/AppProviders";
 import { MAX_FILENAME_LENGTH } from "../../constants";
+import { BlobItem } from "../../types";
 
-const ResourceList = ({ filteredItems, isLoading, deleteFile }: {
+const ResourceList = ({ filteredItems, isLoading, deleteFile, handleDownload }: {
     filteredItems: BlobItem[];
     isLoading: boolean;
     deleteFile: (item: BlobItem) => void;
+    handleDownload: (item: BlobItem) => void
 }) => {
 
     const columns: IColumn[] = [
@@ -55,7 +54,7 @@ const ResourceList = ({ filteredItems, isLoading, deleteFile }: {
             isPadded: false,
             onRender: (item: BlobItem) => (
                 <div className={styles.actions_cell}>
-                    <IconButton title="Download" ariaLabel="Download">
+                    <IconButton title="Download" ariaLabel="Download" onClick={() => handleDownload(item)}>
                         <Download className={styles.trashIcon} />
                     </IconButton>
                     <IconButton title="Delete" ariaLabel="Delete" onClick={() => deleteFile(item)}>

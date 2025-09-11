@@ -42,6 +42,11 @@ export const useSourceFiles = (organizationId: string) => {
         item.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const handleDownload = (item: BlobItem) => {
+        const downloadUrl = `/api/download?organizationId=${organizationId}&blobName=${encodeURIComponent(item.name)}`;
+        window.open(downloadUrl, "_blank");
+    };
+
     return {
         isLoading,
         items,
@@ -49,6 +54,7 @@ export const useSourceFiles = (organizationId: string) => {
         searchQuery,
         setSearchQuery,
         fetchFiles,
+        handleDownload,
         deleteFile,
     };
 };
