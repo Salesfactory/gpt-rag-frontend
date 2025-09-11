@@ -35,7 +35,7 @@ describe("File Vault Test Suite", () => {
         cy.get("button").contains("Continue Anyway").should("be.visible")
         cy.get("button").contains("Continue Anyway").click()
 
-        cy.contains("Error uploading Electric_Vehicle_Population_Data copy.xlsx. Try again later").should("be.visible");
+        cy.contains("Error uploading files: Server responded with 500: Internal Server Error").should("be.visible");
     });
 
     it("Should verify the functionality of the Upload File Button (500 Error Case)", () => {
@@ -59,6 +59,6 @@ describe("File Vault Test Suite", () => {
         cy.get("button").contains("Continue Anyway").should("be.visible")
         cy.get("button").contains("Continue Anyway").click()
 
-        cy.contains("Your files has been uploaded successfully!").should("be.visible");
+        cy.contains("Files uploaded successfully!").should("be.visible");
     });
 });
