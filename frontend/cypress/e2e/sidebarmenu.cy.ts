@@ -27,7 +27,7 @@ describe("Sidebar Menu Tests", () => {
 
         // Verify the contents of the Premium Features
         cy.get("div").contains("Premium Features").click();
-        cy.get("a[href='#/upload-resources']").contains("Upload Resources").should("be.visible");
+        cy.get("a[href='#/upload-resources']").contains("File Vault").should("be.visible");
         cy.get("a[href='#/request-studies']").contains("Request Studies").should("be.visible");
 
         // Verify the contents of the Reports section

@@ -21,7 +21,7 @@ import Chat from "./pages/chat/Chatcopy";
 import Admin from "./pages/admin/Admincopy";
 import Organization from "./pages/organization/Organizationcopy";
 import DistributionLists from "./pages/reports/DistributionListscopy";
-import UploadResources from "./pages/resources/UploadResourcescopy";
+import UploadResources from "./pages/resources/UploadResources";
 import Reports from "./pages/reports/Reportscopy";
 import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
 

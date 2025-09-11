@@ -3,7 +3,7 @@ import { X, Loader2, AlertCircle } from "lucide-react";
 import styles from "./OrganizationModal.module.css";
 import { fetchUserOrganizations, fetchUserRoleForOrganization, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 type Organization = {
     id: string;
@@ -36,7 +36,6 @@ function setCookie(name: string, value: string | number | boolean, days: number)
     document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
-
 const OrganizationModal = ({ isOpen, onClose }: Props) => {
     const { user } = useAppContext();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -46,9 +45,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
 
     // Sort and limit organizations for display
     const sortedAndLimitedOrganizations = useMemo(() => {
-        return organizations
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .slice(0, MAX_ORGANIZATIONS_DISPLAY);
+        return organizations.sort((a, b) => a.name.localeCompare(b.name)).slice(0, MAX_ORGANIZATIONS_DISPLAY);
     }, [organizations]);
 
     useEffect(() => {
@@ -127,7 +124,6 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
 
     return (
         <div className={styles.overlay} onClick={onClose}>
-            <ToastContainer />
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
@@ -179,7 +175,6 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                             </svg>
                                         </div>
                                         <div>
-                                            
                                             <h3 className={styles.orgTitle}>{org.name}</h3>
                                             <div className={styles.orgDetails}>
                                                 <span className={`${styles.roleBadge} ${roleStyles[org.role.toLowerCase()] || styles.roleUser}`}>
@@ -187,7 +182,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                                 </span>
                                             </div>
                                         </div>
-                                     </div>
+                                    </div>
                                     {selectedOrgId === org.id && (
                                         <div className={styles.check}>
                                             <svg width="12" height="12" fill="white" viewBox="0 0 20 20">

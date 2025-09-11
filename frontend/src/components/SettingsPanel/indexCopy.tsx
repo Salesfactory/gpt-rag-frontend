@@ -7,7 +7,7 @@ import { getSettings, postSettings } from "../../api/api";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { useAppContext } from "../../providers/AppProviders";
 import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 interface Props {
     user: {
@@ -307,7 +307,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     return (
         <div className={styles.overlay}>
             <div ref={panelRef} className={styles.panel} onClick={e => e.stopPropagation()}>
-                <ToastContainer />
                 <ConfirmationDialog
                     loading={isLoadingSettings}
                     isOpen={isDialogOpen}

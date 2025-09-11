@@ -684,3 +684,15 @@
     outline: none;
     box-shadow: 0 0 0 2px #f97316, 0 0 0 4px #fff; /* orange-500 ring */
 }
+
+
+.renameInput {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db; /* gray-300 */
+    border-radius: 0.5rem;
+    width: 60%;
+    max-width: 300px;
+    font-size: 1rem;
+    color: #111827; /* gray-900 */
+    margin-right: 0.5rem;
+}

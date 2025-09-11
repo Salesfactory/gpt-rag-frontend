@@ -17,7 +17,7 @@ import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import DownloadButton from "../../components/DownloadButton/DownloadButton";
 // import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
-import { ToastContainer } from "react-toastify";
+
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
@@ -712,7 +712,6 @@ const Chat = () => {
                     </div>
                 </div>
             </div>
-            <ToastContainer position="top-right" autoClose={3000} />
         </>
     );
 };
