@@ -11,16 +11,25 @@ import UploadDialogModal from "../../components/UploadResources/UploadDialogModa
 
 const UploadResources: React.FC = () => {
     const { user } = useAppContext();
-    const { isLoading, filteredItems, deleteFile, setSearchQuery, searchQuery } = useSourceFiles(user?.organizationId || "")
-    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, isUploading } = useFileUpload();
+    const { isLoading, filteredItems, deleteFile, setSearchQuery, fetchFiles, items } = useSourceFiles(user?.organizationId || "")
+    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, isUploading, dispach, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", fetchFiles, items);
 
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} />
+            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={fetchFiles} />
             <ResourceList filteredItems={filteredItems} isLoading={isLoading} deleteFile={deleteFile} />
             {uploadDialogOpen && (
-                <UploadDialogModal closeUploadDialog={closeUploadDialog} isUploading={isUploading} /> 
+                <UploadDialogModal 
+                    closeUploadDialog={closeUploadDialog} 
+                    isUploading={isUploading} 
+                    uploadState={state} 
+                    dispachState={dispach}
+                    handleDuplicateRename={handleDuplicateRename}
+                    handleDuplicateReplace={handleDuplicateReplace}
+                    handleDuplicateSkip={handleDuplicateSkip}
+                    showRenameModal={showRenameModal}
+                />
             )}
         </div>
     );

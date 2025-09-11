@@ -2,7 +2,7 @@ import { IconButton, SearchBox } from "@fluentui/react";
 import styles from "./UploadResources.module.css"
 import { CirclePlus, RefreshCw, Search } from "lucide-react";
 
-const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUploadDialog: () => void }> = ({ setSearchQuery, openUploadDialog }) => {
+const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUploadDialog: () => void, onRefresh: () => void }> = ({ setSearchQuery, openUploadDialog, onRefresh }) => {
     return (
         <div className={styles.file_list_header}>
             <SearchBox
@@ -68,7 +68,7 @@ const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUp
                     <span className={styles.buttonText}>Upload File</span>
                 </IconButton>
 
-                <IconButton title="Reload" ariaLabel="Reload file list" className={styles.refresh_button}>
+                <IconButton title="Reload" ariaLabel="Reload file list" className={styles.refresh_button} onClick={onRefresh}>
                     <RefreshCw size={20} />
                 </IconButton>
             </div>

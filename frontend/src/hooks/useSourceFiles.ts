@@ -45,6 +45,7 @@ export const useSourceFiles = (organizationId: string) => {
 
     return {
         isLoading,
+        items,
         filteredItems,
         searchQuery,
         setSearchQuery,
