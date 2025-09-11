@@ -5125,7 +5125,6 @@ def update_url():
 @app.get("/healthz")
 def healthz():
     _ = clients.get_cosmos_container(clients.USERS_CONT)
-    _ = clients.sb_client()
     return jsonify(status="ok")
 
 
