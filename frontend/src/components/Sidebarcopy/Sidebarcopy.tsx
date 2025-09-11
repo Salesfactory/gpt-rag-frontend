@@ -174,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <Star className={styles.sidebarLinkIcon} />,
                     links: [
                         {
-                            title: "Upload Resources",
+                            title: "File Vault",
                             href: "/upload-resources",
                             roles: ["admin", "platformAdmin"],
                             tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
