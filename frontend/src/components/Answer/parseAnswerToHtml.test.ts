@@ -99,7 +99,7 @@ describe("parseAnswerToHtml()", () => {
 
     it('handles citations with parentheses in filename', () => {
       mockIsResizing = false;
-      const md = 'Archivo [[1]](megustalaarepa(1).xlsx) and [[2]](file(2).pdf)';
+      const md = 'File [[1]](megustalaarepa(1).xlsx) and [[2]](file(2).pdf)';
       const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
 
       expect(citations).toEqual(['megustalaarepa(1).xlsx', 'file(2).pdf']);
