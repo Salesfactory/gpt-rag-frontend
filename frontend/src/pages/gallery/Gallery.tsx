@@ -41,7 +41,7 @@ const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
 
     const [showStatusFilter, setShowStatusFilter] = useState<boolean>(false);
-    const [selectedStatus, setSelectedStatus] = useState<string>();
+    const [sortOrder, setSortOrder] = useState<string>("newest");
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
@@ -69,7 +69,7 @@ const Gallery: React.FC = () => {
 
             setIsLoading(true);
             try {
-                const itemsFromApi = await getGalleryItems(organization.id, { user });
+                const itemsFromApi = await getGalleryItems(organization.id, { user }, sortOrder);
                 let galleryData: GalleryItem[] = [];
                 if (Array.isArray(itemsFromApi)) {
                     galleryData = itemsFromApi;
@@ -120,7 +120,7 @@ const Gallery: React.FC = () => {
                 return [];
             });
         };
-    }, [user, organization]);
+    }, [user, organization, sortOrder]);
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -141,16 +141,6 @@ const Gallery: React.FC = () => {
                 toast.error(`Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`);
             }
         }
-    };
-
-    const sortImages = (order: string, source?: GalleryItem[]) => {
-        const base = Array.isArray(source) ? [...source] : [...(images ?? [])];
-        base.sort((a, b) => {
-            const ta = Date.parse(a.created_on || a.last_modified || "") || 0;
-            const tb = Date.parse(b.created_on || b.last_modified || "") || 0;
-            return order === "newest" ? tb - ta : ta - tb;
-        });
-        setImages(base);
     };
 
     const formatFileSize = (bytes: number): string => {
@@ -272,7 +262,7 @@ const Gallery: React.FC = () => {
                     <div className={styles.filterContainer}>
                         <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
                             <ArrowUpDown size={16} className={styles.filterIcon} />
-                            {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Sort by order"}
+                            {statusFilterOptions.find(opt => opt.value === sortOrder)?.label || "Sort by order"}
                         </button>
 
                         {showStatusFilter && (
@@ -281,11 +271,9 @@ const Gallery: React.FC = () => {
                                     {statusFilterOptions.map(option => (
                                         <button
                                             key={option.value}
-                                            className={`${styles.dropdownItem} ${selectedStatus === option.value ? styles.dropdownItemActive : ""}`}
+                                            className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
                                             onClick={() => {
-                                                setSelectedStatus(option.value);
-                                                // sort using the fetchedImages as canonical source
-                                                sortImages(option.value);
+                                                setSortOrder(option.value);
                                                 setShowStatusFilter(false);
                                             }}
                                         >

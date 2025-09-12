@@ -1855,8 +1855,8 @@ export async function postReportByName(reportName: string): Promise<any> {
     }
 }
 
-export async function getGalleryItems(organization_id: string, params: { user: any }): Promise<any[]> {
-    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/gallery`, {
+export async function getGalleryItems(organization_id: string, params: { user: any }, sortOrder: string = 'newest'): Promise<any[]> {
+    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/gallery?sort=${sortOrder}`, {
         method: 'GET',
         headers: {
             'X-MS-CLIENT-PRINCIPAL-ID': params.user?.id ?? '00000000-0000-0000-0000-000000000000',
