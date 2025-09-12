@@ -124,19 +124,7 @@ export default function () {
 
         sleep(0.3);
     });
-
-    // Test Group 4: Reports Endpoints
-    group('Reports Management', function () {
-        // Get reports /api/reports REMOVE THIS ENDPOINT
-        sleep(0.3);
-    });
-
-    // Test Group 5: Template Management
-    group('Template Management', function () {
-        // Get summarization templates /api/reports/summarization/templates REMOVE THIS ENDPOINT
-        sleep(0.3);
-    });
-
+    
     // Test Group 6: File and Storage Operations
     group('File Operations', function () {
         // Get source documents
@@ -147,18 +135,6 @@ export default function () {
             'Get source documents completed': (r) => r.status >= 200 && r.status < 500,
         }) || errorRate.add(1);
 
-        sleep(0.3);
-    });
-
-    // Test Group 7: Web Scraping Endpoints
-    group('Web Scraping', function () {
-        // Get organization URLs /api/webscraping/add-url REMOVE THIS ENDPOINT
-        sleep(0.3);
-    });
-
-    // Test Group 8: Search and Utility Endpoints
-    group('Search and Utilities', function () {
-        // Web search /api/web-search REMOVE THIS ENDPOINT
         sleep(0.3);
     });
 
