@@ -41,7 +41,7 @@ const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
 
     const [showStatusFilter, setShowStatusFilter] = useState<boolean>(false);
-    const [selectedStatus, setSelectedStatus] = useState<string>("newest");
+    const [sortOrder, setSortOrder] = useState<string>("newest");
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
@@ -69,7 +69,7 @@ const Gallery: React.FC = () => {
 
             setIsLoading(true);
             try {
-                const itemsFromApi = await getGalleryItems(organization.id, { user }, selectedStatus);
+                const itemsFromApi = await getGalleryItems(organization.id, { user }, sortOrder);
                 let galleryData: GalleryItem[] = [];
                 if (Array.isArray(itemsFromApi)) {
                     galleryData = itemsFromApi;
@@ -120,7 +120,7 @@ const Gallery: React.FC = () => {
                 return [];
             });
         };
-    }, [user, organization, selectedStatus]);
+    }, [user, organization, sortOrder]);
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -262,7 +262,7 @@ const Gallery: React.FC = () => {
                     <div className={styles.filterContainer}>
                         <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
                             <ArrowUpDown size={16} className={styles.filterIcon} />
-                            {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Sort by order"}
+                            {statusFilterOptions.find(opt => opt.value === sortOrder)?.label || "Sort by order"}
                         </button>
 
                         {showStatusFilter && (
@@ -271,9 +271,9 @@ const Gallery: React.FC = () => {
                                     {statusFilterOptions.map(option => (
                                         <button
                                             key={option.value}
-                                            className={`${styles.dropdownItem} ${selectedStatus === option.value ? styles.dropdownItemActive : ""}`}
+                                            className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
                                             onClick={() => {
-                                                setSelectedStatus(option.value);
+                                                setSortOrder(option.value);
                                                 setShowStatusFilter(false);
                                             }}
                                         >
