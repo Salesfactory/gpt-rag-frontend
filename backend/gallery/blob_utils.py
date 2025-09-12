@@ -1,6 +1,6 @@
 from financial_doc_processor import BlobStorageManager
 from logging import getLogger
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = getLogger(__name__)
 
@@ -45,7 +45,7 @@ def get_gallery_items_by_org(organization_id: str, sort_order: str = 'newest'):
                 try:
                     return datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
                 except (ValueError, AttributeError):
-                    return datetime.min if sort_order == 'newest' else datetime.max
+                    return datetime.min.replace(tzinfo=timezone.utc) if sort_order == 'newest' else datetime.max.replace(tzinfo=timezone.utc)
                 
             items.sort(key=get_sort_key, reverse=(sort_order == 'newest'))
             
