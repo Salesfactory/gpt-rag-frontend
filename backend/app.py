@@ -5160,7 +5160,7 @@ def get_gallery(organization_id):
     sort_order = request.args.get('sort', 'newest')
 
     if sort_order not in ['newest', 'oldest']:
-        sort_order = 'newest'  
+        return create_error_response("Invalid sort order. Must be 'newest' or 'oldest'.", 400) 
 
     try:
         gallery_items = get_gallery_items_by_org(organization_id, sort_order=sort_order)
