@@ -65,6 +65,7 @@
 
 .pageContainer{
     background-color: #f9fafb;
+    min-height: 100vh;
 }
 .cardsGrid {
     display: flex;
