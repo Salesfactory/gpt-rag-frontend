@@ -49,6 +49,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
     const meta = parseMeta(preContent);
     const hasAnyMeta = Object.values(meta).some(Boolean);
+    const agentType = meta.mcpToolUsed || meta.mcpToolsUsed;
 
     const filteredThoughts = (thoughts || []).filter((thought: any) => {
         const title = toPlainText(thought?.title).toLowerCase();
@@ -110,28 +111,16 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         <p className={styles.contentCard}>{meta.modelUsed}</p>
                                     </section>
                                 )}
-                                {meta.mcpToolUsed && (
+                                {agentType && (
                                     <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Tool Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolUsed)}</p>
-                                    </section>
-                                )}
-                                {meta.originalQuery && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Original Query</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
+                                        <h4 className={styles.headerCard}>Agent Type</h4>
+                                        <p className={styles.contentCard}>{toPlainText(agentType)}</p>
                                     </section>
                                 )}
                                 {meta.toolSelected && (
                                     <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Prompt Instruction Type</h4>
+                                        <h4 className={styles.headerCard}>Tool Used</h4>
                                         <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
-                                    </section>
-                                )}
-                                {meta.mcpToolsUsed && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>MCP Tools Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolsUsed)}</p>
                                     </section>
                                 )}
                             </div>
