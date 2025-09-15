@@ -74,6 +74,8 @@ const Chat = () => {
     const [error, setError] = useState<unknown>();
 
     const [activeCitation, setActiveCitation] = useState<string>();
+    const [spreadsheetDownloadUrl, setSpreadsheetDownloadUrl] = useState<string | undefined>(undefined);
+    const [spreadsheetFileName, setSpreadsheetFileName] = useState<string | undefined>(undefined);
     const [activeAnalysisPanelTab, setActiveAnalysisPanelTab] = useState<AnalysisPanelTabs | undefined>(undefined);
 
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
@@ -362,28 +364,56 @@ const Chat = () => {
         return url;
     };
 
+    // Treat .xlsx, .xls, and .csv uniformly as spreadsheets for preview
+    const isSpreadsheet = (path: string) => {
+        const p = path.toLowerCase();
+        return p.endsWith(".xlsx") || p.endsWith(".xls") || p.endsWith(".csv");
+    };
+
+    const previewSpreadsheet = async (citation: string, fileName: string, index: number) => {
+        setLoadingCitationPath(fileName);
+        try {
+            const downloadInfo = await generateExcelDownloadUrl(citation);
+            const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+            const isCsv = citation.toLowerCase().endsWith(".csv");
+
+            // Choose the best source for Office Web Viewer
+            let sourceUrl = downloadInfo.preview_url || downloadInfo.download_url;
+            if (isLocalHost) {
+                if (isCsv) {
+                    // On localhost, Office viewer cannot reach our local server; trigger direct download instead
+                    const a = document.createElement("a");
+                    a.href = downloadInfo.download_url; // streams XLSX bytes for CSV
+                    a.download = downloadInfo.filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    return; // do not open preview panel for CSV on localhost
+                }
+                if (downloadInfo.sas_url) {
+                    sourceUrl = downloadInfo.sas_url; // publicly reachable blob URL for Excel
+                }
+            }
+
+            const officeEmbedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(sourceUrl)}`;
+
+            setSpreadsheetDownloadUrl(downloadInfo.download_url);
+            setSpreadsheetFileName(downloadInfo.filename);
+            setActiveCitation(officeEmbedUrl);
+            setFileType("spreadsheet-embed");
+            setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+            setSelectedAnswer(index);
+        } finally {
+            setLoadingCitationPath(null);
+        }
+    };
+
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        // Check if file is Excel (.xlsx, .xls, .csv)
-        const isExcelFile = citation.endsWith(".xlsx") || citation.endsWith(".xls") || citation.endsWith(".csv");
-
-        if (isExcelFile) {
+        if (isSpreadsheet(citation)) {
             try {
-                setLoadingCitationPath(fileName);
-                const downloadInfo = await generateExcelDownloadUrl(citation);
-
-                const downloadLink = document.createElement("a");
-                downloadLink.href = downloadInfo.download_url;
-                downloadLink.download = downloadInfo.filename;
-                downloadLink.style.display = "none";
-
-                // Add to DOM, click, and remove
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
-                setLoadingCitationPath(null);
+                await previewSpreadsheet(citation, fileName, index);
                 return;
             } catch (error) {
-                setLoadingCitationPath(null);
                 return window.open(citation, "_blank");
             }
         }
@@ -447,6 +477,10 @@ const Chat = () => {
 
     const hideTab = () => {
         setActiveAnalysisPanelTab(undefined);
+        setActiveCitation(undefined);
+        setFileType("");
+        setSpreadsheetDownloadUrl(undefined);
+        setSpreadsheetFileName(undefined);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -704,6 +738,8 @@ const Chat = () => {
                                             activeTab={activeAnalysisPanelTab}
                                             fileType={fileType}
                                             onHideTab={hideTab}
+                                            spreadsheetDownloadUrl={spreadsheetDownloadUrl}
+                                            spreadsheetFileName={spreadsheetFileName}
                                         />
                                     </div>
                                 </>
