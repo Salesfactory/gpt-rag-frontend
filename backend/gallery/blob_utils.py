@@ -27,7 +27,7 @@ def get_gallery_items_by_org(organization_id: str, sort_order: str = 'newest'):
 
     Notes:
         - Uses BlobStorageManager to interact with blob storage.
-        - Items are sorted by last_modified timestamp if available, otherwise by created_on.
+        - Items are sorted by last_modified timestamp (newest first by default).
         - Logs exceptions and returns an empty list if an error occurs.
     """
     try:
@@ -40,11 +40,9 @@ def get_gallery_items_by_org(organization_id: str, sort_order: str = 'newest'):
         )
 
         if items:
-            def get_sort_key(item):
-                timestamp = item.get('last_modified') or item.get('created_on')
-                return datetime.fromisoformat(timestamp)
-            items.sort(key=get_sort_key, reverse=(sort_order == 'newest'))
-
+            items.sort(key=lambda item: datetime.fromisoformat(item['last_modified']), 
+            reverse=(sort_order == 'newest'))
+            
         return items
     
     except Exception as e:
