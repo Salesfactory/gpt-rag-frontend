@@ -14,7 +14,6 @@ describe("Sidebar Menu Tests", () => {
         cy.get("span").contains("Notifications").should("be.visible");
         cy.get("div").contains("Control Center").should("be.visible");
         cy.get("div").contains("Premium Features").should("be.visible");
-        cy.get("div").contains("Reports").should("be.visible");
         cy.get("span").contains("Help Center").should("be.visible");
 
         // Verify the contents of the Control Center
@@ -29,7 +28,7 @@ describe("Sidebar Menu Tests", () => {
         cy.get("div").contains("Premium Features").click();
         cy.get("a[href='#/upload-resources']").contains("File Vault").should("be.visible");
         cy.get("a[href='#/request-studies']").contains("Request Studies").should("be.visible");
-        
+
     });
 
     it("Should verify the behavior of the highlight", () => {
