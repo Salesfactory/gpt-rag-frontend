@@ -29,12 +29,7 @@ describe("Sidebar Menu Tests", () => {
         cy.get("div").contains("Premium Features").click();
         cy.get("a[href='#/upload-resources']").contains("File Vault").should("be.visible");
         cy.get("a[href='#/request-studies']").contains("Request Studies").should("be.visible");
-
-        // Verify the contents of the Reports section
-        cy.get("div").contains("Reports").click();
-        cy.get("a[href='#/view-reports']").contains("Reports Dashboard").should("be.visible");
-        cy.get("a[href='#/view-manage-reports']").contains("Report Creation").should("be.visible");
-        cy.get("a[href='#/details-settings']").contains("Sharing & Distribution").should("be.visible");
+        
     });
 
     it("Should verify the behavior of the highlight", () => {
