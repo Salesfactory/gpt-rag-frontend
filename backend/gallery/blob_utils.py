@@ -1,6 +1,6 @@
 from financial_doc_processor import BlobStorageManager
 from logging import getLogger
-from datetime import datetime, timezone
+from datetime import datetime
 
 logger = getLogger(__name__)
 
@@ -27,7 +27,7 @@ def get_gallery_items_by_org(organization_id: str, sort_order: str = 'newest'):
 
     Notes:
         - Uses BlobStorageManager to interact with blob storage.
-        - Items are sorted by created_on timestamp (newest first by default).
+        - Items are sorted by last_modified timestamp if available, otherwise by created_on.
         - Logs exceptions and returns an empty list if an error occurs.
     """
     try:
@@ -41,14 +41,10 @@ def get_gallery_items_by_org(organization_id: str, sort_order: str = 'newest'):
 
         if items:
             def get_sort_key(item):
-                timestamp = item.get('created_on') or item.get('last_modified') or ''
-                try:
-                    return datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
-                except (ValueError, AttributeError):
-                    return datetime.min.replace(tzinfo=timezone.utc) if sort_order == 'newest' else datetime.max.replace(tzinfo=timezone.utc)
-                
+                timestamp = item.get('last_modified') or item.get('created_on')
+                return datetime.fromisoformat(timestamp)
             items.sort(key=get_sort_key, reverse=(sort_order == 'newest'))
-            
+
         return items
     
     except Exception as e:
