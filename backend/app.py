@@ -4954,6 +4954,9 @@ def get_gallery(organization_id):
     """
     Retrieve gallery items for a specific organization.
 
+    Query Parameters:
+        sort (str, optional): Sort order - 'newest' or 'oldest'. Defaults to 'newest'.
+
     Args:
         organization_id (str): The unique identifier of the organization.
 
@@ -4974,8 +4977,13 @@ def get_gallery(organization_id):
         return create_error_response(
             "Organization ID is required and must be a non-empty string.", 400
         )
+    sort_order = request.args.get('sort', 'newest')
+
+    if sort_order not in ['newest', 'oldest']:
+        return create_error_response("Invalid sort order. Must be 'newest' or 'oldest'.", 400) 
+
     try:
-        gallery_items = get_gallery_items_by_org(organization_id)
+        gallery_items = get_gallery_items_by_org(organization_id, sort_order=sort_order)
         if gallery_items is None:
             return create_error_response(
                 f"No gallery items found for organization {organization_id}.", 404
