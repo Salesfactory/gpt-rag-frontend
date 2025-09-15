@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Stack, IconButton, TooltipHost } from "@fluentui/react";
 import DOMPurify from "dompurify";
-import MarkdownRenderer from "./MarkdownRenderer";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 import styles from "./Answer.module.css";
 
@@ -179,17 +181,16 @@ export const Answer = ({
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
-
     const handleFeedbackClick = async () => {
         try {
             const feedbackUrl = await getFeedbackUrl();
             if (feedbackUrl) {
-                window.open(feedbackUrl, '_blank', 'noopener,noreferrer');
+                window.open(feedbackUrl, "_blank", "noopener,noreferrer");
             } else {
-                console.warn('Feedback URL not configured');
+                console.warn("Feedback URL not configured");
             }
         } catch (error) {
-            console.error('Error getting feedback URL:', error);
+            console.error("Error getting feedback URL:", error);
         }
     };
 
@@ -241,7 +242,9 @@ export const Answer = ({
             )}
 
             <Stack.Item>
-                <MarkdownRenderer content={sanitizedAnswerHtml} />
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+                    {sanitizedAnswerHtml}
+                </ReactMarkdown>
             </Stack.Item>
 
             {!!parsedAnswer.citations.length && showSources && (
