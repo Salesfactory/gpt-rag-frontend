@@ -1732,7 +1732,9 @@ export async function getFileBlob(fileName: string, container: string = "documen
  */
 export async function generateExcelDownloadUrl(filePath: string): Promise<{
     success: boolean;
-    download_url: string;
+    download_url: string; 
+    preview_url?: string; 
+    sas_url?: string;     // fallback public blob SAS (Excel only)
     filename: string;
     expires_in_days: number;
 }> {
