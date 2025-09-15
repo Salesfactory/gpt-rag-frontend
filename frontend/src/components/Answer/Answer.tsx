@@ -1,9 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Stack, IconButton, TooltipHost } from "@fluentui/react";
 import DOMPurify from "dompurify";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 import styles from "./Answer.module.css";
 
@@ -243,9 +241,7 @@ export const Answer = ({
             )}
 
             <Stack.Item>
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
-                    {sanitizedAnswerHtml}
-                </ReactMarkdown>
+                <MarkdownRenderer content={sanitizedAnswerHtml} />
             </Stack.Item>
 
             {!!parsedAnswer.citations.length && showSources && (
