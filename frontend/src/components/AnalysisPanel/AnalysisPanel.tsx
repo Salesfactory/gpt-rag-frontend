@@ -48,8 +48,8 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
 
     const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
     const meta = parseMeta(preContent);
-    const hasAnyMeta = Object.values(meta).some(Boolean);
     const agentType = meta.mcpToolUsed || meta.mcpToolsUsed;
+    const hasAnyMeta = !!(meta.modelUsed || agentType || meta.toolSelected); // only show meta section if the agent type is available
 
     const filteredThoughts = (thoughts || []).filter((thought: any) => {
         const title = toPlainText(thought?.title).toLowerCase();
@@ -125,7 +125,8 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                 )}
                             </div>
                         )}
-                        {filteredThoughts &&
+                        {agentType &&
+                            filteredThoughts &&
                             filteredThoughts.length > 0 &&
                             filteredThoughts.map((p: any, index: number) => (
                                 <div
