@@ -98,8 +98,7 @@ def get_gallery_items_by_org(
                 "name": item.get("name"),
                 "size": item.get("size"),
                 "content_type": item.get("content_type"),
-                # SDK-defined fields only: prefer creation_time, fallback to last_modified
-                "created_on": item.get("creation_time") or item.get("last_modified"),
+                "created_on": item.get("last_modified"),
                 "last_modified": item.get("last_modified"),
                 "metadata": metadata,
                 "url": item.get("url")
@@ -110,28 +109,28 @@ def get_gallery_items_by_org(
             uid = ("" if uploader_id is None else str(uploader_id)).casefold()
             items = [
                 it for it in items
-                if (it.get("metadata", {}).get("user_id", "") or "").casefold() == uid
+                if it.get("metadata", {}).get("user_id", "").casefold() == uid
             ]
 
         # Backend search (no date text search)
         if query:
-            ql = ("" if query is None else str(query)).casefold()
-            filtered = []
-            for it in items:
-                name_ok = ql in (it.get("name", "") or "").casefold()
-                ct_ok = ql in (it.get("content_type", "") or "").casefold()
-                meta_str = (" ".join(f"{k}:{v}" for k, v in (it.get("metadata") or {}).items())).casefold()
-                if name_ok or ct_ok or (ql in meta_str):
-                    filtered.append(it)
+            query_list = ("" if query is None else str(query)).casefold()
+            filtered: List[Dict[str, Any]] = []
+            for item in items:
+                name_ok = query_list in item.get("name", "").casefold()
+                content_type_ok   = query_list in item.get("content_type", "").casefold()
+                metadata_string = " ".join(f"{k}:{v}" for k, v in item.get("metadata", {}).items()).casefold()
+                if name_ok or content_type_ok or (query_list in metadata_string):
+                    filtered.append(item)
             items = filtered
 
         # Stable sort by created_on, fallback last_modified; tie-breaker by name
         def sort_key(it: Dict[str, Any]) -> datetime:
-            co = _coerce_dt(it.get("created_on"))
-            return co if co != _MIN else _coerce_dt(it.get("last_modified"))
+            created = _coerce_dt(it.get("created_on"))
+            return created if created != _MIN else _coerce_dt(it.get("last_modified"))
 
         reverse = (order or "newest").lower() == "newest"
-        items.sort(key=lambda i: (sort_key(i), (i.get("name", "") or "")), reverse=reverse)
+        items.sort(key=lambda i: (sort_key(i), i.get("name", "")), reverse=reverse)
 
         return items
 

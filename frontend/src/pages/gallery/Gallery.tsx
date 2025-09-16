@@ -399,7 +399,9 @@ const Gallery: React.FC = () => {
                                                 <span className={styles.userTag}>
                                                     {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
                                                 </span>
-                                                <p className={styles.fileDate}>Created {new Date(file.created_on).toLocaleDateString()}</p>
+                                                    <p className={styles.fileDate}>
+                                                        Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
+                                                    </p>
                                             </div>
                                         </div>
                                     ))}
