@@ -13,6 +13,7 @@ const SuccessPayment: React.FC = () => {
                     onClick={() => {
                         window.location.href = "/";
                     }}
+                    aria-label="Continue Home"
                 >
                     Go to Home
                 </button>

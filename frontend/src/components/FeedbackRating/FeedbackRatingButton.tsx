@@ -15,7 +15,7 @@ export const FeedbackRatingButton = ({ className, disabled, onClick }: Props) =>
     const { showFeedbackRatingPanel } = useAppContext();
     const buttonContent = showFeedbackRatingPanel ? "Hide feedback panel" : "Show feedback panel";
     return (
-        <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={onClick}>
+        <button aria-label="Feedback and Rating" className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={onClick}>
             <ChatBubblesQuestionRegular className={styles.button} />
             <Text className={styles.buttonText}>{buttonContent}</Text>
         </button>

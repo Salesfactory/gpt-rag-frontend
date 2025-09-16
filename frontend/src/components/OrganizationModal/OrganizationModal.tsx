@@ -128,7 +128,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <h2 className={styles.title}>Switch Organization</h2>
-                        <button onClick={onClose} className={styles.closeButton}>
+                        <button onClick={onClose} className={styles.closeButton} aria-label="Close">
                             <X size={20} />
                         </button>
                     </div>
@@ -209,7 +209,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
 
                 {!loading && (
                     <div className={styles.footer}>
-                        <button onClick={handleContinue} disabled={!selectedOrgId} className={styles.closeModalBtn}>
+                        <button onClick={handleContinue} disabled={!selectedOrgId} className={styles.closeModalBtn} aria-label="Continue">
                             Continue
                         </button>
                     </div>

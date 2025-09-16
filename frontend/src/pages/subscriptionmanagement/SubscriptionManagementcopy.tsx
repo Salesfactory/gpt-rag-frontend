@@ -328,7 +328,7 @@ const SubscriptionManagement: React.FC = () => {
     return (
         <div className={styles.pageContainer}>
             <div id="options-row" className={styles.row}>
-                <button className={styles.auditButton} onClick={handleRecentChangesModal}>
+                <button className={styles.auditButton} onClick={handleRecentChangesModal} aria-label="Recent Changes" >
                     <Clock className={styles.auditIcon} />
                     <Label className={styles.auditText}>Recent Changes</Label>
                 </button>
@@ -493,6 +493,7 @@ const SubscriptionManagement: React.FC = () => {
                                                     className={styles.button}
                                                     onClick={() => setMobilePage(p => Math.max(1, p - 1))}
                                                     disabled={mobilePage === 1}
+                                                    aria-label="Previous"
                                                 >
                                                     Prev
                                                 </button>
@@ -503,6 +504,7 @@ const SubscriptionManagement: React.FC = () => {
                                                     className={styles.button}
                                                     onClick={() => setMobilePage(p => Math.min(totalMobilePages, p + 1))}
                                                     disabled={mobilePage === totalMobilePages}
+                                                    aria-label="Next"
                                                 >
                                                     Next
                                                 </button>
@@ -552,7 +554,7 @@ const SubscriptionManagement: React.FC = () => {
                             <div className={styles.modalContent}>
                                 {selectedSubscriptionName === subscriptionName ? (
                                     <>
-                                        <button className={styles.closeButtonNew} onClick={() => setIsConfirmationModal(false)}>
+                                        <button className={styles.closeButtonNew} onClick={() => setIsConfirmationModal(false)} aria-label="Close">
                                             <IconX />
                                         </button>
                                         <span className={styles.modalTitle}>Payment Detail Change</span>
@@ -561,12 +563,13 @@ const SubscriptionManagement: React.FC = () => {
                                             information.
                                         </Label>
                                         <div className={styles.buttonContainerNew}>
-                                            <button onClick={() => setIsConfirmationModal(false)} className={styles.cancelButton}>
+                                            <button onClick={() => setIsConfirmationModal(false)} className={styles.cancelButton} aria-label="Cancel">
                                                 Cancel
                                             </button>
                                             <button
                                                 onClick={() => handleCreateCustomerPortal()}
                                                 className={`${styles.confirmButton} ${styles.subscribeButton}`}
+                                                aria-label="Confirm change"
                                             >
                                                 Confirm Change
                                             </button>
@@ -574,7 +577,7 @@ const SubscriptionManagement: React.FC = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <button className={styles.closeButtonNew} onClick={() => setIsConfirmationModal(false)}>
+                                        <button className={styles.closeButtonNew} onClick={() => setIsConfirmationModal(false)} aria-label="Close">
                                             <IconX />
                                         </button>
                                         <Label className={styles.modalTitle}>Subscription Confirmation</Label>
@@ -583,13 +586,14 @@ const SubscriptionManagement: React.FC = () => {
                                             new subscription fee.
                                         </Label>
                                         <div className={styles.buttonContainerNew}>
-                                            <button onClick={() => setIsConfirmationModal(false)} className={styles.cancelButton}>
+                                            <button onClick={() => setIsConfirmationModal(false)} className={styles.cancelButton} aria-label="Cancel" >
                                                 Cancel
                                             </button>
                                             <button
                                                 onClick={() => handleChangeSubscription(selectedSubscriptionID)}
                                                 className={`${styles.confirmButton} ${styles.subscribeButton}`}
                                                 disabled={isLoading}
+                                                aria-label={isLoading ? "Loading..." : "Confirm Subscription"}
                                             >
                                                 {isLoading ? <Spinner size={SpinnerSize.small} labelPosition="right" /> : "Confirm Subscription"}
                                             </button>
@@ -605,17 +609,17 @@ const SubscriptionManagement: React.FC = () => {
                         <div className={styles.modalContainer}>
                             <div className={styles.modalContent}>
                                 <div className={styles.modalHeader}>
-                                    <button className={styles.closeButtonNew} onClick={() => setIsSubscriptionModal(false)}>
+                                    <button className={styles.closeButtonNew} onClick={() => setIsSubscriptionModal(false)} aria-label="Close">
                                         <IconX />
                                     </button>
                                     <span className={styles.modalTitle}>Subscribe to Financial Assistant</span>
                                 </div>
                                 <Label className={styles.modalText}>Are you sure you want to add the Financial Assistant to your subscription?</Label>
                                 <div className={styles.buttonContainerNew}>
-                                    <button onClick={() => setIsSubscriptionModal(false)} className={styles.cancelButton}>
+                                    <button onClick={() => setIsSubscriptionModal(false)} className={styles.cancelButton} aria-label="Cancel">
                                         Cancel
                                     </button>
-                                    <button onClick={handleSubscribe} className={`${styles.confirmButton} ${styles.subscribeButton}`}>
+                                    <button onClick={handleSubscribe} className={`${styles.confirmButton} ${styles.subscribeButton}`} aria-label="Confirm Subscription" >
                                         Confirm Subscription
                                     </button>
                                 </div>
@@ -628,17 +632,17 @@ const SubscriptionManagement: React.FC = () => {
                         <div className={styles.modalContainer}>
                             <div className={styles.modalContent}>
                                 <div className={styles.modalHeader}>
-                                    <button className={styles.closeButtonNew} onClick={() => setIsUnsubscriptionModal(false)}>
+                                    <button className={styles.closeButtonNew} onClick={() => setIsUnsubscriptionModal(false)} aria-label="Close">
                                         <IconX />
                                     </button>
                                     <span className={styles.modalTitle}>Unsubscribe from Financial Assistant</span>
                                 </div>
                                 <Label className={styles.modalText}>Are you sure you want to remove the Financial Assistant from your subscription?</Label>
                                 <div className={styles.buttonContainerNew}>
-                                    <button onClick={() => setIsUnsubscriptionModal(false)} className={styles.cancelButton}>
+                                    <button onClick={() => setIsUnsubscriptionModal(false)} className={styles.cancelButton} aria-label="Cancel" >
                                         Cancel
                                     </button>
-                                    <button onClick={handleUnsubscribe} className={`${styles.confirmButton} ${styles.unsubscribeButton}`}>
+                                    <button onClick={handleUnsubscribe} className={`${styles.confirmButton} ${styles.unsubscribeButton}`} aria-label="Unsubscribe" >
                                         <span>Yes, Unsubscribe</span>
                                     </button>
                                 </div>
@@ -649,7 +653,7 @@ const SubscriptionManagement: React.FC = () => {
                 {isErrorModal && (
                     <div className={styles.modalOverlay}>
                         <div className={`${styles.modalContainer} ${styles.errorModal}`}>
-                            <button className={styles.closeButtonNew} onClick={() => setIsErrorModal(false)}>
+                            <button className={styles.closeButtonNew} onClick={() => setIsErrorModal(false)} aria-label="Close">
                                 <IconX />
                             </button>
                             <div className={styles.modalContent}>

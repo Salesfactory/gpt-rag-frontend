@@ -204,6 +204,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                     <div>Conversation exported successfully!</div>
                     <div style={{ display: "flex", gap: "8px" }}>
                         <button
+                            aria-label="Copy to Clipboard"
                             onClick={() => {
                                 navigator.clipboard.writeText(result.share_url);
                                 toast("Link copied to clipboard!", { type: "success" });
@@ -221,10 +222,11 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                 gap: "4px"
                             }}
                         >
-                            <Copy size={12} />
+                            <Copy size={12} aria-hidden="true" />
                             Copy Link
                         </button>
                         <button
+                            aria-label="Open Conversation"
                             onClick={() => {
                                 window.open(result.share_url, "_blank");
                             }}
@@ -241,7 +243,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                 gap: "4px"
                             }}
                         >
-                            <ExternalLink size={12} />
+                            <ExternalLink size={12} aria-hidden="true" />
                             Open
                         </button>
                     </div>

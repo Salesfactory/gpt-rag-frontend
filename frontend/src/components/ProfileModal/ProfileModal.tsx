@@ -64,7 +64,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                 <div className={styles.header}>
                     <div className={styles.headerContent}>
                         <h2 className={styles.title}>User Profile</h2>
-                        <button onClick={onClose} className={styles.closeButton} disabled={isSaving}>
+                        <button onClick={onClose} className={styles.closeButton} disabled={isSaving} aria-label="close">
                             <X size={20} />
                         </button>
                     </div>
@@ -95,7 +95,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
 
                     {/* Reset Password Button */}
                     <div className={styles.field2}>
-                        <button className={styles.saveButton} onClick={handleChangePassword} disabled={isSaving}>
+                        <button className={styles.saveButton} onClick={handleChangePassword} disabled={isSaving} aria-label="Change Password">
                             Change Password
                         </button>
                     </div>
@@ -103,16 +103,16 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
 
                 {/* Modal Footer */}
                 <div className={styles.footer}>
-                    <button onClick={onClose} className={styles.cancelButton} disabled={isSaving}>
+                    <button onClick={onClose} className={styles.cancelButton} disabled={isSaving} aria-label="Cancel">
                         Cancel
                     </button>
 
                     {isSaving ? (
-                        <button className={styles.saveButton} disabled>
+                        <button className={styles.saveButton} disabled aria-label="Loading...">
                             <Spinner size={SpinnerSize.small} />
                         </button>
                     ) : (
-                        <button onClick={handleSave} className={styles.saveButton} disabled={!userName.trim()}>
+                        <button onClick={handleSave} className={styles.saveButton} disabled={!userName.trim()} aria-label="Save Changes">
                             Save Changes
                         </button>
                     )}
