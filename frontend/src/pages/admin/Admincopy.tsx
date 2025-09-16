@@ -187,10 +187,10 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                             </div>
                             {errorMessage && <div className={styles.errorMessageE}>{errorMessage}</div>}
                             <div className={styles.buttonContainerE}>
-                                <button type="button" onClick={onDismiss} className={styles.cancelButtonE}>
+                                <button type="button" onClick={onDismiss} aria-label="Cancel" className={styles.cancelButtonE}>
                                     Cancel
                                 </button>
-                                <button type="submit" className={styles.saveButtonE} disabled={loading}>
+                                <button type="submit" className={styles.saveButtonE} aria-label="Send Invitation"  disabled={loading}>
                                     Send Invitation
                                 </button>
                             </div>
@@ -202,7 +202,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                 An invitation has been sent to <strong>{email}</strong>. They will receive an email with a link to create an account.
                             </p>
                             <div className={styles.buttonContainerE}>
-                                <button type="button" className={styles.saveButtonE} onClick={onDismiss}>
+                                <button type="button" className={styles.saveButtonE} aria-label="Close" onClick={onDismiss}>
                                     Close
                                 </button>
                             </div>
@@ -248,10 +248,10 @@ export const DeleteUserDialog = ({
 
                     {/* Buttons */}
                     <div className={styles.buttonContainerD}>
-                        <button onClick={onDismiss} className={styles.cancelButtonD} disabled={isDeletingUser}>
+                        <button onClick={onDismiss} className={styles.cancelButtonD} disabled={isDeletingUser} aria-label="Cancel" >
                             Cancel
                         </button>
-                        <button onClick={onConfirm} className={styles.deleteButtonD} disabled={isDeletingUser}>
+                        <button onClick={onConfirm} className={styles.deleteButtonD} disabled={isDeletingUser} aria-label={isDeletingUser ? "loading..." : "Delete Button"}>
                             {isDeletingUser ? <Spinner size={SpinnerSize.small} /> : "Yes, Delete"}
                         </button>
                     </div>
@@ -298,10 +298,10 @@ export const DeleteInvitationDialog = ({
 
                     {/* Buttons */}
                     <div className={styles.buttonContainerD}>
-                        <button onClick={onDismiss} className={styles.cancelButtonD}>
+                        <button onClick={onDismiss} className={styles.cancelButtonD} aria-label="Cancel">
                             Cancel
                         </button>
-                        <button onClick={handleConfirm} className={styles.deleteButtonD} disabled={isDeletingUser}>
+                        <button onClick={handleConfirm} className={styles.deleteButtonD} disabled={isDeletingUser} aria-label={isDeletingUser ? "loading" : "Delete Invitation"}>
                             {isDeletingUser ? <Spinner size={SpinnerSize.small} /> : "Delete invitation"}
                         </button>
                     </div>
@@ -449,14 +449,14 @@ export const EditUserDialog = ({
 
                         {/* Change Password Button */}
                         <div className={styles.passwordSectionE}>
-                            <button type="button" className={styles.changePasswordButtonE} onClick={handleResetPassword} disabled={isResettingPassword}>
+                            <button type="button" className={styles.changePasswordButtonE} onClick={handleResetPassword} disabled={isResettingPassword} aria-label={isResettingPassword ? "Loading" : "Reset Password"}>
                                 {isResettingPassword ? <Spinner size={SpinnerSize.small} /> : "Reset Password"}
                             </button>
                         </div>
 
                         {/* Buttons */}
                         <div className={styles.buttonContainerE}>
-                            <button type="button" onClick={handleCancel} className={styles.cancelButtonE}>
+                            <button type="button" onClick={handleCancel} className={styles.cancelButtonE} aria-label="Cancel" >
                                 Cancel
                             </button>
                             <button
@@ -468,6 +468,7 @@ export const EditUserDialog = ({
                                     (inputUserName === (selectedUser.data.name || "") && categorySelection === (selectedUser.role || "")) ||
                                     inputUserName.trim() === ""
                                 }
+                                aria-label={isSavingUser ? "Loading..." : "Save Changes"}
                             >
                                 {isSavingUser ? <Spinner size={SpinnerSize.small} /> : "Save Changes"}
                             </button>
@@ -806,7 +807,7 @@ const Admin = () => {
                             </div>
 
                             <div style={{ position: "relative" }}>
-                                <button className={styles.filterButton} type="button" onClick={() => setShowRoleDropdown(v => !v)}>
+                                <button className={styles.filterButton} type="button" onClick={() => setShowRoleDropdown(v => !v)} aria-label="Filter">
                                     <Filter className={styles.addIcon2} />
                                     <span className={styles.hideOnMobile}>{roleFilterOptions.find(opt => opt.value === roleFilter)?.label || "Filter"}</span>
                                 </button>

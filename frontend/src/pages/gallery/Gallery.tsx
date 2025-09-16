@@ -260,7 +260,7 @@ const Gallery: React.FC = () => {
                 />
                 <div className={styles.filter}>
                     <div className={styles.filterContainer}>
-                        <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
+                        <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)} aria-label="Sort By Order">
                             <ArrowUpDown size={16} className={styles.filterIcon} />
                             {statusFilterOptions.find(opt => opt.value === sortOrder)?.label || "Sort by order"}
                         </button>
@@ -270,6 +270,7 @@ const Gallery: React.FC = () => {
                                 <div className={styles.dropdownContent}>
                                     {statusFilterOptions.map(option => (
                                         <button
+                                            aria-label={option.value}
                                             key={option.value}
                                             className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
                                             onClick={() => {
@@ -335,10 +336,10 @@ const Gallery: React.FC = () => {
                                                 {/* Hover Actions Overlay */}
                                                 <div className={styles.overlay}>
                                                     <div className={styles.actions}>
-                                                        <button className={styles.actionButton} title="Download" onClick={() => handleDownload(file)}>
+                                                        <button className={styles.actionButton} aria-label="Download" title="Download" onClick={() => handleDownload(file)}>
                                                             <Download size={16} className={styles.downloadIcon} />
                                                         </button>
-                                                        <button className={styles.actionButton} title="Delete" onClick={() => handleDelete(file)}>
+                                                        <button className={styles.actionButton} aria-label="Delete" title="Delete" onClick={() => handleDelete(file)}>
                                                             <Trash2 size={16} className={styles.deleteIcon} />
                                                         </button>
                                                     </div>

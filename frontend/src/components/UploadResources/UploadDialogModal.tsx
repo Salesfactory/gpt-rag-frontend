@@ -59,7 +59,7 @@ const UploadDialogModal: React.FC<{
                     <div className={styles.error_container}>
                         <h4>Upload Error</h4>
                         <p>{uploadState.errorMessage || "An error occurred during upload"}</p>
-                        <button onClick={() => dispatchState({ type: 'CANCEL' })}>
+                        <button aria-label="Close" onClick={() => dispatchState({ type: 'CANCEL' })}>
                             Close
                         </button>
                     </div>

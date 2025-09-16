@@ -15,7 +15,7 @@ export const ChatHistoryButton = ({ className, disabled, onClick }: Props) => {
     const { showHistoryPanel } = useAppContext();
     const buttonContent = showHistoryPanel ? "Hide chat history" : "Show chat history";
     return (
-        <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} onClick={onClick}>
+        <button className={`${styles.container} ${className ?? ""} ${disabled && styles.disabled}`} aria-label="Chat History Button" onClick={onClick}>
             <HistoryRegular className={styles.button} />
             <Text className={styles.buttonText}>{buttonContent}</Text>
         </button>

@@ -254,6 +254,7 @@ export const ChatHistoryPanelList: React.FC<ChatHistoryPanelProps> = ({ onDelete
                                                 onMouseLeave={handleMouseLeave}
                                             >
                                                 <button
+                                                    aria-label="Delete Confirmation"
                                                     className={
                                                         isConfirmationDelete(conversation.id) ? styles.buttonConversationSelected : styles.buttonConversation
                                                     }
