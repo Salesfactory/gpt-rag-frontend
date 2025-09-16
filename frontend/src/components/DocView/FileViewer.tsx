@@ -1,9 +1,10 @@
-import PDFViewer from "./PDFViewer";
-import TextViewer from "./TextViewer";
-import DocxViewer from "./DocxViewer";
-import IMGViewer from "./IMGViewer";
-import PptxViewer from "./PPTXViewer";
-import HTMLViewer from "./HTMLViewer";
+import { lazy } from "react";
+const PDFViewer = lazy(() => import("./PDFViewer"));
+const TextViewer = lazy(() => import("./TextViewer"));
+const DocxViewer = lazy(() => import("./DocxViewer"));
+const IMGViewer = lazy(() => import("./IMGViewer"));
+const PptxViewer = lazy(() => import("./PPTXViewer"));
+const HTMLViewer = lazy(() => import("./HTMLViewer"));
 import { useAppContext } from "../../providers/AppProviders";
 
 interface FileViewerProps {
