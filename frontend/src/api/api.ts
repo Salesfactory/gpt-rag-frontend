@@ -616,7 +616,6 @@ export async function uploadSourceFileToBlob(file: any, organizationId: string) 
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
         const result = await response.json();
-        console.log("File uploaded successfully:", result);
         return result;
     } catch (error) {
         console.error("Error uploading file:", error);
@@ -636,7 +635,6 @@ export async function deleteSourceFileFromBlob(blob_name: string) {
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     const result = await response.json();
-    console.log("File deleted successfully:", result);
     return result;
 }
 
@@ -653,7 +651,6 @@ export async function uploadFile(file: any) {
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
         const result = await response.json();
-        console.log("File uploaded successfully:", result);
         return result;
     } catch (error) {
         console.error("Error uploading file:", error);
@@ -898,50 +895,6 @@ export async function getFilteredReports(type?: string) {
 
     const reports = await response.json();
     return reports;
-}
-
-// Summarization reports 
-export async function getSummarizationTemplates() {
-    const response = await fetch('/api/reports/summarization/templates', {method: 'GET', headers: {'Content-Type': 'application/json'}});
-    if (response.status > 299 || !response.ok) {
-        throw Error('Error getting summarization templates');
-    }
-    const reports = await response.json();
-    return reports.data;
-}
-
-export async function getSummarizationReportTemplateByID(templateID: string) {
-    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {method: 'GET', headers: {'Content-Type': 'application/json'}});
-    const report = await response.json();
-    return report.data;
-}
-
-export async function createSummarizationReport(templateData: SummarizationReportProps) {
-    const response = await fetch('/api/reports/summarization/templates', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(templateData),
-    });
-
-    if (response.status > 299 || !response.ok) {
-        throw Error('Error creating a new summarization report');
-    }
-
-    const newReport = await response.json();
-    return newReport;
-}
-
-export async function deleteSummarizationReportTemplate(templateID: string) {
-    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {
-        method: 'DELETE',
-        headers: {'Content-Type': 'application/json'},
-    });
-
-    if (response.status > 299 || !response.ok) {
-        throw Error('Error deleting summarization report');
-    }
-    const deletedReport = await response.json();
-    return deletedReport;
 }
 
 export async function deleteReport(reportId: string) {
@@ -1248,39 +1201,6 @@ export async function getOrganizationUrls(organizationId: string): Promise<any> 
         return result;
     } catch (error) {
         console.error("Error fetching organization URLs:", error);
-        throw error;
-    }
-}
-
-export async function addOrganizationUrl(organizationId: string, url: string, user?: any): Promise<any> {
-    try {
-        const headers: any = {
-            "Content-Type": "application/json",
-        };
-        
-        // Add user authentication headers if user is provided
-        if (user) {
-            headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
-            headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
-        }
-        
-        const response = await fetch("/api/webscraping/add-url", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-                organization_id: organizationId,
-                url: url
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error("Error adding organization URL:", error);
         throw error;
     }
 }
@@ -1812,7 +1732,9 @@ export async function getFileBlob(fileName: string, container: string = "documen
  */
 export async function generateExcelDownloadUrl(filePath: string): Promise<{
     success: boolean;
-    download_url: string;
+    download_url: string; 
+    preview_url?: string; 
+    sas_url?: string;     // fallback public blob SAS (Excel only)
     filename: string;
     expires_in_days: number;
 }> {
@@ -1858,6 +1780,7 @@ export async function postReportByName(reportName: string): Promise<any> {
     }
 }
 
+
 export async function getGalleryItems(
   organization_id: string,
   params: {
@@ -1871,6 +1794,7 @@ export async function getGalleryItems(
   if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
   if (params.order)       qs.set("order", params.order);
   if (params.q)           qs.set("q", params.q);
+
 
   const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;
 

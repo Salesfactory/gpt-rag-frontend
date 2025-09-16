@@ -5,29 +5,23 @@ import AccessDenied from "./pages/AccesDenied";
 import Onboarding from "./pages/onboarding/Onboarding";
 import HelpCenter from "./pages/helpcenter/HelpCenter";
 import RequestStudies from "./pages/studies/RequestStudies";
-import ReportManagement from "./pages/reports/ReportManagement";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
 import UserManagement from "./pages/usermanagement/UserManagement";
 import { PaymentGateway } from "./components/PaymentGateway/PaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
-import CurationReports from "./pages/reports/CurationReports";
-import CurationCreation from "./pages/reports/ReportCreation/CurationCreation";
-import SummarizationReports from "./pages/reports/SummarizationReports";
 // New Routes
 
 import Layout from "./pages/layout/_Layoutcopy";
 import Chat from "./pages/chat/Chatcopy";
 import Admin from "./pages/admin/Admincopy";
 import Organization from "./pages/organization/Organizationcopy";
-import DistributionLists from "./pages/reports/DistributionListscopy";
-import UploadResources from "./pages/resources/UploadResourcescopy";
-import Reports from "./pages/reports/Reportscopy";
+
+import UploadResources from "./pages/resources/UploadResources";
+
 import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
 
-import SummarizationCreation from "./pages/reports/ReportCreation/SummarizationCreation";
-import { TemplateCreation } from "./pages/reports/ReportCreation/ReportTemplateCreation";
-import { TemplateReports } from "./pages/reports/ReportTemplates";
+
 import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
 import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
 import Gallery from "./pages/gallery/Gallery";
@@ -146,9 +140,6 @@ export default function App() {
                 }
             >
                 <Route element={<Layout />}>
-                    <Route path="/view-reports" element={<Reports />} />
-                    <Route path="/view-manage-reports" element={<ReportManagement />} />
-                    <Route path="/details-settings" element={<DistributionLists />} />
                 </Route>
             </Route>
 
@@ -161,12 +152,6 @@ export default function App() {
                 }
             >
                 <Route element={<Layout />}>
-                    <Route path="/curation-reports" element={<CurationReports />} />
-                    <Route path="/create-curation-report" element={<CurationCreation />} />
-                    <Route path="/summarization-reports" element={<SummarizationReports />} />
-                    <Route path="/create-summarization-report" element={<SummarizationCreation />} />
-                    <Route path="/report-templates" element={<TemplateReports />} />
-                    <Route path="/create-template-report" element={<TemplateCreation />} />
                 </Route>
             </Route>
 

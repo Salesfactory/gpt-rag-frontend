@@ -1,3 +1,6 @@
+import {  EXCEL_FILES, SPREADSHEET_FILE_LIMIT } from "../constants";
+import { BlobItem } from "../types";
+
 export const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
@@ -7,4 +10,30 @@ export const formatFileSize = (bytes: number): string => {
 export const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
+
+export const validateFiles = (files: File[], allowedTypes: string[]) => {
+    const invalidFiles = files.filter(file => {
+        const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+        return !allowedTypes.includes(ext);
+    });
+    const validFiles = files.filter(f => !invalidFiles.includes(f));
+
+    return { validFiles, invalidFiles };
+};
+
+export const checkSpreadsheetFileLimit = (newFiles: File[], Files: BlobItem[]): boolean => {
+    const existingSpreadsheetCount = Files.filter(item => {
+        const ext = item.name.split(".").pop()?.toLowerCase();
+        return EXCEL_FILES.includes(ext || "");
+    }).length;
+    const newSpreadsheetCount = newFiles.filter(file => {
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        return EXCEL_FILES.includes(ext || "");
+    }).length;
+
+    if (existingSpreadsheetCount + newSpreadsheetCount > SPREADSHEET_FILE_LIMIT) {
+        return false;
+    }
+    return true;
 };

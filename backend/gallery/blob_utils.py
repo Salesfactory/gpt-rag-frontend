@@ -3,11 +3,13 @@ from typing import Optional, List, Dict, Any
 from email.utils import parsedate_to_datetime
 from financial_doc_processor import BlobStorageManager
 from logging import getLogger
+from datetime import datetime
 
 logger = getLogger(__name__)
 
 class GalleryRetrievalError(Exception):
     """Custom exception for gallery retrieval errors."""
+
 
 def _to_lower(x: Any) -> str:
     try:

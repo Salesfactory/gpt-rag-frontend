@@ -22,6 +22,8 @@ interface Props {
     answer: AskResponse;
     fileType: string;
     onHideTab: () => void;
+    spreadsheetDownloadUrl?: string;
+    spreadsheetFileName?: string;
 }
 
 const pivotItemDisabledStyle = { disabled: true, style: { color: "grey" } };
@@ -39,7 +41,7 @@ const closeButtonStyle = {
     }
 };
 
-export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab }: Props) => {
+export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
@@ -48,7 +50,8 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
 
     const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
     const meta = parseMeta(preContent);
-    const hasAnyMeta = Object.values(meta).some(Boolean);
+    const agentType = meta.mcpToolUsed || meta.mcpToolsUsed;
+    const hasAnyMeta = !!(meta.modelUsed || agentType || meta.toolSelected); // only show meta section if the agent type is available
 
     const filteredThoughts = (thoughts || []).filter((thought: any) => {
         const title = toPlainText(thought?.title).toLowerCase();
@@ -110,33 +113,22 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         <p className={styles.contentCard}>{meta.modelUsed}</p>
                                     </section>
                                 )}
-                                {meta.mcpToolUsed && (
+                                {agentType && (
                                     <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Tool Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolUsed)}</p>
-                                    </section>
-                                )}
-                                {meta.originalQuery && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Original Query</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
+                                        <h4 className={styles.headerCard}>Agent Type</h4>
+                                        <p className={styles.contentCard}>{toPlainText(agentType)}</p>
                                     </section>
                                 )}
                                 {meta.toolSelected && (
                                     <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Prompt Instruction Type</h4>
+                                        <h4 className={styles.headerCard}>Tool Used</h4>
                                         <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
-                                    </section>
-                                )}
-                                {meta.mcpToolsUsed && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>MCP Tools Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolsUsed)}</p>
                                     </section>
                                 )}
                             </div>
                         )}
-                        {filteredThoughts &&
+                        {agentType &&
+                            filteredThoughts &&
                             filteredThoughts.length > 0 &&
                             filteredThoughts.map((p: any, index: number) => (
                                 <div
@@ -230,9 +222,42 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                         </span>
                     )}
                 >
-                    <Suspense fallback={<p>Loading...</p>}>
-                        <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
-                    </Suspense>
+                    {fileType?.toLowerCase() === "spreadsheet-embed" && activeCitation ? (
+                        <div style={{ height: citationHeight, display: "flex", flexDirection: "column" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                                <div style={{ fontSize: 14, color: "#111827" }}>{spreadsheetFileName || "Excel Preview"}</div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    {spreadsheetDownloadUrl && (
+                                        <a
+                                            href={spreadsheetDownloadUrl}
+                                            download={spreadsheetFileName || true}
+                                            style={{
+                                                fontSize: 13,
+                                                padding: "6px 10px",
+                                                background: "#fff",
+                                                border: "1px solid #d1d5db",
+                                                borderRadius: 6,
+                                                color: "#111827",
+                                                textDecoration: "none"
+                                            }}
+                                        >
+                                            Download
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                            <iframe
+                                title={spreadsheetFileName || "Excel Preview"}
+                                src={activeCitation}
+                                style={{ border: 0, width: "100%", flex: 1 }}
+                                allowFullScreen
+                            />
+                        </div>
+                    ) : (
+                        <Suspense fallback={<p>Loading...</p>}>
+                            <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
+                        </Suspense>
+                    )}
                 </PivotItem>
                 <PivotItem
                     // @ts-ignore

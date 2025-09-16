@@ -27,7 +27,7 @@ import tempfile
 import markdown
 from flask_cors import CORS
 from azure.identity import DefaultAzureCredential
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse, urlencode, urljoin
 import uuid
 from urllib.parse import urlparse
 from identity.flask import Auth
@@ -120,6 +120,8 @@ from azure.storage.blob import (
     BlobSasPermissions,
 )
 from datetime import datetime, timedelta
+from io import BytesIO
+import pandas as pd
 
 # Suppress Azure SDK logs (including Key Vault calls)
 logging.getLogger("azure").setLevel(logging.WARNING)
@@ -1647,140 +1649,6 @@ def getFilteredType(*, context):
         logging.exception(f"Error retrieving reports.")
         return jsonify({"error": "Internal Server Error"}), 500
 
-
-@app.route("/api/reports/summarization/templates", methods=["POST"])
-@auth.login_required()
-def addSummarizationReport(*, context):
-    """
-    Endpoint to add a summarization report template.
-
-    This endpoint expects a JSON payload with the following fields:
-    - name: The name of the report template. Must be one of ["10-K", "10-Q", "8-K", "DEF 14A"].
-    - description: A description of the report template.
-
-    MissingJSONPayloadError: If the JSON payload is missing.
-    MissingRequiredFieldError: If the 'name' or 'description' field is missing.
-    InvalidParameterError: If the 'name' field is not one of the valid names.
-
-    JSON response with the created report template if successful.
-    JSON error response with appropriate HTTP status code if an error occurs.
-    """
-    try:
-        data = request.get_json()
-        if not data:
-            raise MissingJSONPayloadError("Missing JSON payload")
-        if not "templateType" in data:
-            raise MissingRequiredFieldError("templateType")
-        if not "description" in data:
-            raise MissingRequiredFieldError("description")
-        if not "companyTicker" in data:
-            raise MissingRequiredFieldError("companyTicker")
-        if not "companyName" in data:
-            raise MissingRequiredFieldError("companyName")
-        if not data["templateType"] in ALLOWED_FILING_TYPES:
-            raise InvalidParameterError(
-                "templateType", f"Must be one of: {', '.join(ALLOWED_FILING_TYPES)}"
-            )
-        new_template = {
-            "templateType": data["templateType"],
-            "description": data["description"],
-            "companyTicker": data["companyTicker"],
-            "companyName": data["companyName"],
-            "status": "active",
-            "type": "summarization",
-        }
-        # add to cosmosDB container
-        result = create_template(new_template)
-        return create_success_response(result)
-    except MissingJSONPayloadError as e:
-        return create_error_response(
-            "Invalid or Missing JSON payload", HTTPStatus.BAD_REQUEST
-        )
-    except MissingRequiredFieldError as field:
-        return create_error_response(
-            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
-        )
-    except InvalidParameterError as e:
-        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
-    except Exception as e:
-        logging.exception(e)
-        return (
-            jsonify({"error": "An unexpected error occurred. Please try again later."}),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-
-@app.route("/api/reports/summarization/templates/<template_id>", methods=["DELETE"])
-@auth.login_required()
-def removeSummarizationReport(*, context, template_id):
-    """
-    Endpoint to remove a summarization report template by ID.
-
-    This endpoint expects the following URL parameter:
-    - template_id: The ID of the report template to be removed.
-
-    NotFound: If the report template with the specified ID does not exist.
-    Exception: For any other unexpected errors.
-
-    JSON response with appropriate HTTP status code:
-    - 204 No Content: If the report template is successfully deleted.
-    - 404 Not Found: If the report template with the specified ID does not exist.
-    - 500 Internal Server Error: If an unexpected error occurs.
-    """
-    try:
-        if not template_id:
-            raise MissingRequiredFieldError("template_id")
-        # delete from cosmosDB container
-        result = delete_template(template_id)
-        return create_success_response(result)
-    except NotFound as e:
-        return create_error_response(
-            f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND
-        )
-    except MissingRequiredFieldError as field:
-        return create_error_response(
-            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
-        )
-    except Exception as e:
-        return create_error_response(
-            "An unexpected error occurred. Please try again later.",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-
-@app.route("/api/reports/summarization/templates/", methods=["GET"])
-@auth.login_required()
-def getSummarizationReports(*, context):
-    try:
-        result = get_templates()
-        return create_success_response(result)
-    except Exception as e:
-        return create_error_response(
-            "An unexpected error occurred. Please try again later.",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-
-@app.route("/api/reports/summarization/templates/<template_id>", methods=["GET"])
-@auth.login_required()
-def getSummarizationReport(*, context, template_id):
-    try:
-        result = get_template_by_ID(template_id)
-        return create_success_response(result)
-    except NotFound as e:
-        return create_error_response(
-            f"Template with id '{template_id}' not found", HTTPStatus.NOT_FOUND
-        )
-    except Exception as e:
-        return create_error_response(
-            "An unexpected error occurred. Please try again later.",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-
-# methods to provide access to speech services and blob storage account blobs
-
-
 @app.route("/api/get-speech-token", methods=["GET"])
 def getGptSpeechToken():
     try:
@@ -2210,85 +2078,160 @@ def download_excel_citation(*, context):
         if not any(blob_name.lower().endswith(ext) for ext in allowed_extensions):
             return jsonify({"error": "Only Excel files (.xlsx, .xls, .csv) are supported"}), 400
 
-        # Use connection string for SAS token generation (requires account key)
+        # Build a streaming preview URL 
+        q = urlencode({"file_path": file_path})
+        preview_url = urljoin(request.url_root, f"preview/spreadsheet?{q}")
+
+        # Derive filename for download button; normalize CSV to .xlsx
+        try:
+            if file_path.startswith("@https://") and file_path.endswith("/"):
+                encoded_filename = file_path[9:-1]
+                name = unquote(encoded_filename)
+            elif file_path.startswith("https://") and "blob.core.windows.net" in file_path:
+                parsed_url = urlparse(file_path)
+                parts = [p for p in parsed_url.path.split('/') if p]
+                name = parts[-1] if parts else "file"
+            else:
+                name = unquote(file_path.split('/')[-1])
+        except Exception:
+            name = "file"
+        # Keep original filename extension for downloads (CSV remains .csv)
+        # Try to generate a SAS URL to the original blob for dev fallback (Excel files)
+        sas_url = None
         try:
             blob_service_client = BlobServiceClient.from_connection_string(
                 current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
             )
-            logging.info("Using connection string for blob service client")
-        except Exception as e:
-            logging.error(f"Failed to create blob service client from connection string: {e}")
-            return jsonify({"error": "Storage service configuration error"}), 500
-        
-        container_name = "documents"
-        
-        # Check if blob exists - first try direct path, then search by filename
-        blob_client = None
-        try:
-            blob_client = blob_service_client.get_blob_client(
-                container=container_name, blob=blob_name
-            )
-            blob_properties = blob_client.get_blob_properties()
-            logging.info(f"Found blob at direct path: {blob_name}")
-        except Exception as e:
-            logging.warning(f"Direct blob path not found: {blob_name}, searching by filename...")
-            
-            # If direct path fails, search for the filename in the container
+            container_name = "documents"
+            _blob_name = blob_name
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=_blob_name)
             try:
+                blob_client.get_blob_properties()
+            except Exception:
+                filename_only = _blob_name.split('/')[-1]
                 container_client = blob_service_client.get_container_client(container_name)
-                filename_only = blob_name.split('/')[-1]  
-                
-                # Search for blobs ending with this filename
                 found_blob = None
-                for blob in container_client.list_blobs():
-                    if blob.name.endswith(filename_only):
-                        found_blob = blob.name
-                        logging.info(f"Found matching blob: {found_blob}")
+                for b in container_client.list_blobs():
+                    if b.name.endswith(filename_only):
+                        found_blob = b.name
                         break
-                
                 if found_blob:
-                    blob_client = blob_service_client.get_blob_client(
-                        container=container_name, blob=found_blob
-                    )
-                    blob_properties = blob_client.get_blob_properties()
-                    blob_name = found_blob  # Update blob_name to the found path
+                    _blob_name = found_blob
                 else:
-                    logging.warning(f"File not found anywhere in container: {filename_only}")
-                    return jsonify({"error": "File not found"}), 404
-                    
-            except Exception as search_error:
-                logging.error(f"Error searching for blob: {search_error}")
-                return jsonify({"error": "File not found"}), 404
-            
-        # Generate SAS token with 2-day expiry
-        try:
-            sas_token = generate_blob_sas(
-                account_name=blob_service_client.account_name,
-                container_name=container_name,
-                blob_name=blob_name,
-                account_key=blob_service_client.credential.account_key,
-                permission=BlobSasPermissions(read=True),
-                expiry=datetime.now(timezone.utc) + timedelta(days=2),  # 2-day expiry as requested
-            )
+                    _blob_name = None
+            if _blob_name:
+                sas_token = generate_blob_sas(
+                    account_name=blob_service_client.account_name,
+                    container_name=container_name,
+                    blob_name=_blob_name,
+                    account_key=blob_service_client.credential.account_key,
+                    permission=BlobSasPermissions(read=True),
+                    expiry=datetime.now(timezone.utc) + timedelta(days=2),
+                )
+                sas_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{container_name}/{_blob_name}?{sas_token}"
         except Exception as e:
-            logging.error(f"Error generating SAS token: {e}")
-            return jsonify({"error": "Unable to generate download link"}), 500
+            logging.warning(f"[download-excel-citation] SAS fallback generation failed: {e}")
 
-        # Create the download URL
-        download_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
-        
-        # Extract filename for download
-        filename = blob_name.split('/')[-1]
-        
         return jsonify({
             "success": True,
-            "download_url": download_url,
-            "filename": filename,
+            "download_url": sas_url or preview_url, # Download should return the ORIGINAL file (CSV remains CSV)
+            "preview_url": preview_url, # Preview uses streaming endpoint (converted XLSX for CSV)
+            "sas_url": sas_url,
+            "filename": name,
             "expires_in_days": 2
         })
 
     except Exception as e:
         logging.exception("[webbackend] Exception in /api/download-excel-citation")
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
+@app.route("/preview/spreadsheet", methods=["GET"])
+def preview_spreadsheet():
+    try:
+        file_path = request.args.get("file_path")
+        if not file_path:
+            return jsonify({"error": "Missing file_path parameter"}), 400
+
+        # Resolve blob name from various citation formats
+        if file_path.startswith("@https://") and file_path.endswith("/"):
+            encoded_filename = file_path[9:-1]
+            blob_name = unquote(encoded_filename)
+        elif file_path.startswith("https://") and file_path.endswith((".xlsx", ".xls", ".csv")):
+            blob_name = unquote(file_path[8:])
+        elif file_path.startswith("https://") and "blob.core.windows.net" in file_path:
+            parsed_url = urlparse(file_path)
+            parts = [p for p in parsed_url.path.split('/') if p]
+            if 'documents' in parts:
+                idx = parts.index('documents')
+                blob_name = '/'.join(parts[idx + 1:]) if idx + 1 < len(parts) else ''
+            else:
+                blob_name = '/'.join(parts) if parts else ''
+        else:
+            blob_name = unquote(file_path)
+            if blob_name.startswith('documents/'):
+                blob_name = blob_name[10:]
+
+        if not blob_name:
+            return jsonify({"error": "Unable to extract valid filename from path"}), 400
+
+        # Connect to blob store
+        blob_service_client = BlobServiceClient.from_connection_string(
+            current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
+        )
+        container_name = "documents"
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+
+        # Verify existence; if not, try to locate by filename
+        try:
+            blob_client.get_blob_properties()
+        except Exception:
+            filename_only = blob_name.split('/')[-1]
+            container_client = blob_service_client.get_container_client(container_name)
+            found_blob = None
+            for blob in container_client.list_blobs():
+                if blob.name.endswith(filename_only):
+                    found_blob = blob.name
+                    break
+            if not found_blob:
+                return jsonify({"error": "File not found"}), 404
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=found_blob)
+            blob_name = found_blob
+
+        lower = blob_name.lower()
+        if lower.endswith('.csv'):
+            csv_bytes = blob_client.download_blob().readall()
+            try:
+                df = pd.read_csv(BytesIO(csv_bytes))
+            except UnicodeDecodeError:
+                df = pd.read_csv(BytesIO(csv_bytes), encoding='latin1')
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="Sheet1")
+            output.seek(0)
+            resp = Response(output.getvalue(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            base = blob_name.split('/')[-1].rsplit('.', 1)[0]
+            resp.headers['Content-Disposition'] = f'inline; filename="{base}.xlsx"'
+            resp.headers['Cache-Control'] = 'no-store'
+            return resp
+        elif lower.endswith('.xlsx'):
+            data = blob_client.download_blob().readall()
+            resp = Response(data, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            base = blob_name.split('/')[-1]
+            resp.headers['Content-Disposition'] = f'inline; filename="{base}"'
+            resp.headers['Cache-Control'] = 'no-store'
+            return resp
+        elif lower.endswith('.xls'):
+            data = blob_client.download_blob().readall()
+            resp = Response(data, mimetype="application/vnd.ms-excel")
+            base = blob_name.split('/')[-1]
+            resp.headers['Content-Disposition'] = f'inline; filename="{base}"'
+            resp.headers['Cache-Control'] = 'no-store'
+            return resp
+        else:
+            return jsonify({"error": "Unsupported file type for preview"}), 400
+    except Exception as e:
+        logging.exception("[webbackend] Exception in /preview/spreadsheet")
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
@@ -3530,95 +3473,6 @@ def process_edgar_document():
 
 
 from tavily_tool import TavilySearch
-
-
-@app.route("/api/web-search", methods=["POST"])
-def web_search():
-    """
-    Endpoint for multiple web search
-
-    Expected Json body:
-    {
-        "query": "search query", //required
-        "mode": "news" or "general", default is "news" //required
-        "max_results": optional int, default = 2 //optional
-        "include_domains": optional list of strings, default = None //
-        "search_days": optional int, default = 30 //
-    }
-    """
-    try:
-        data = request.get_json()
-
-        # validate required fields:
-        if not data or "query" not in data:
-            logger.error("Missing required field: 'query'")
-            return jsonify({"error": "Missing required field: 'query'"}), 400
-
-        # get optional parameters
-        mode = data.get("mode", "news")
-        max_results = data.get("max_results", 2)
-        if not isinstance(max_results, int) or max_results < 1:
-            logger.error(f"Invalid max_results: {max_results}")
-            return (
-                jsonify(
-                    {"error": "Invalid max_results. Please provide a positive integer."}
-                ),
-                400,
-            )
-        include_domains = data.get("include_domains", None)
-        if include_domains is not None and not isinstance(include_domains, list):
-            logger.error(f"Invalid include_domains: {include_domains}")
-            return (
-                jsonify(
-                    {
-                        "error": "Invalid include_domains. Please provide a list of strings."
-                    }
-                ),
-                400,
-            )
-
-        search_days = data.get("search_days", 30)
-
-        # initialize searcher
-        logger.info("Initializing TavilySearch")
-        try:
-            searcher = TavilySearch(
-                max_results=max_results,
-                include_domains=include_domains,
-                search_days=search_days,
-            )
-        except ValueError as e:
-            logger.error(f"Error initializing TavilySearch: {e}")
-            return jsonify({"error": f"Invalid configuration: {str(e)}"}), 400
-
-        # perform search based on mode. If mode is not provided, default to news
-        if mode.lower() == "news":
-            logger.info("Performing news search")
-            results = searcher.search_news(data["query"])
-        elif mode.lower() == "general":
-            logger.info("Performing general search")
-            results = searcher.search_general(data["query"])
-        else:
-            logger.error("Invalid mode. Please use 'news' or 'general'.")
-            return (
-                jsonify({"error": "Invalid mode. Please use 'news' or 'general'."}),
-                400,
-            )
-
-        # format results
-        logger.info("Formatting search results")
-        formatted_results = searcher.format_result(results)
-
-        logger.info("Search completed successfully")
-        return jsonify(formatted_results)
-
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
-        return (
-            jsonify({"error": "An error occurred while processing the request."}),
-            500,
-        )
-
 
 from app_config import IMAGE_PATH
 from summarization import DocumentSummarizer
@@ -4995,39 +4849,6 @@ def get_organization_urls_endpoint():
         return create_error_response("Internal Server Error", 500)
 
 
-@app.route("/api/webscraping/add-url", methods=["POST"])
-def add_organization_url_endpoint():
-    try:
-        data = request.get_json()
-        if not data:
-            return create_error_response("No JSON data provided", 400)
-
-        organization_id = data.get("organization_id")
-        url = data.get("url")
-
-        if not organization_id:
-            return create_error_response("Organization ID is required", 400)
-        if not url:
-            return create_error_response("URL is required", 400)
-
-        # Validate URL format
-        is_valid, error_msg = validate_url(url)
-        if not is_valid:
-            return create_error_response(f"Invalid URL: {error_msg}", 400)
-
-        # Extract user information from request headers
-        added_by_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-        added_by_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-        result = add_or_update_organization_url(
-            organization_id, url, None, added_by_id, added_by_name
-        )
-        return create_success_response(result, 200)
-    except Exception as e:
-        logger.exception(f"Unexpected error in add_organization_url: {e}")
-        return create_error_response("Internal Server Error", 500)
-
-
 @app.route("/api/webscraping/delete-url", methods=["DELETE"])
 def delete_url_endpoint():
     try:
@@ -5129,7 +4950,6 @@ def update_url():
 @app.get("/healthz")
 def healthz():
     _ = clients.get_cosmos_container(clients.USERS_CONT)
-    _ = clients.sb_client()
     return jsonify(status="ok")
 
 
@@ -5137,6 +4957,9 @@ def healthz():
 def get_gallery(organization_id):
     """
     Retrieve gallery items for a specific organization.
+
+    Query Parameters:
+        sort (str, optional): Sort order - 'newest' or 'oldest'. Defaults to 'newest'.
 
     Args:
         organization_id (str): The unique identifier of the organization.
@@ -5162,6 +4985,7 @@ def get_gallery(organization_id):
             uploader_id=uploader_id,
             order=order,
             q=q
+
         )
 
         return create_success_response(gallery_items or [], 200)

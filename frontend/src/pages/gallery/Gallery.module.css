@@ -5,6 +5,8 @@
     height: 100%;
     padding: 50px 50px 50px 50px;
     gap: 30px;
+    background-color: #f9fafb;
+    min-height: 100vh;
 }
 
 .file_list_header {

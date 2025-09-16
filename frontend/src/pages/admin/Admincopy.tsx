@@ -946,8 +946,9 @@ const Admin = () => {
                                 const userName = isNew ? user.nickname : user.data.name;
                                 const userEmail = isNew ? user.data.email : user.data.email;
                                 const userRole = user.role;
+                                const hasCreatedAccount = user.user_account_created;
 
-                                // Verifica si el usuario invitado tiene el token expirado
+                                // Verify if the invited user has accepted the invitation
                                 let userStatus = "Active";
                                 let statusColor = "#e5e7eb";
                                 let statusTextColor = "#1e2939";
@@ -996,6 +997,22 @@ const Admin = () => {
                                                 >
                                                     {userStatus}
                                                 </span>
+                                                {!hasCreatedAccount && (
+                                                    <span
+                                                        style={{
+                                                            fontSize: "0.75rem",
+                                                            background: "#ffffff",
+                                                            color: "#000000",
+                                                            border: "1px solid #000000",
+                                                            borderRadius: 8,
+                                                            padding: "2px 10px",
+                                                            marginLeft: 4,
+                                                            fontWeight: 600
+                                                        }}
+                                                    >
+                                                        No Account
+                                                    </span>
+                                                )}
                                             </div>
                                             <span style={{ color: "#6B7280", fontSize: "14px" }}>{userEmail}</span>
                                         </div>
