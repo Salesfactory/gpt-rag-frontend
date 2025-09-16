@@ -1,13 +1,56 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import compression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [react()],
+    plugins: [
+        react(),
+        // Generate gzipped versions of assets
+        compression({
+            algorithm: 'gzip',
+            ext: '.gz',
+            threshold: 1024, // Only compress files larger than 1KB
+            deleteOriginFile: false
+        }),
+        // Generate brotli versions of assets (better compression)
+        compression({
+            algorithm: 'brotliCompress',
+            ext: '.br',
+            threshold: 1024,
+            deleteOriginFile: false
+        })
+    ],
     build: {
         outDir: "../backend/static",
         emptyOutDir: true,
-        sourcemap: true
+        sourcemap: true,
+        cssCodeSplit: true,
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // Separate vendor libraries
+                    vendor: ['react', 'react-dom'],
+                    // Separate UI components that might not be needed immediately
+                    ui: ['@fluentui/react'],
+                },
+                // Optimize asset file names for better caching
+                assetFileNames: (assetInfo) => {
+                    const info = assetInfo.name?.split('.') || [];
+                    const ext = info[info.length - 1];
+                    if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+                        return `assets/images/[name]-[hash][extname]`;
+                    } else if (/css/i.test(ext)) {
+                        return `assets/css/[name]-[hash][extname]`;
+                    }
+                    return `assets/[name]-[hash][extname]`;
+                },
+                chunkFileNames: 'assets/js/[name]-[hash].js',
+                entryFileNames: 'assets/js/[name]-[hash].js'
+            }
+        },
+        // Optimize chunk size
+        chunkSizeWarningLimit: 1000
     },
     server: {
         proxy: {

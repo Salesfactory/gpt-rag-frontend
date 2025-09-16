@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState, Dispatch } from "react";
 import styles from "./UploadResources.module.css";
-import { DragFilesContent, DuplicateWarningContent, ExcelWarningContent, RenameFileContent, UploadingContent, UploadModalFooter, UploadModalHeader } from "../UploadModal/UploadModal";
+import { 
+  LazyDragFilesContent, 
+  LazyDuplicateWarningContent, 
+  LazyExcelWarningContent, 
+  LazyRenameFileContent, 
+  LazyUploadingContent, 
+  LazyUploadModalFooter, 
+  LazyUploadModalHeader 
+} from "../UploadModal/LazyUploadModal";
 import { UploadState, UploadAction } from "../../types";
 
 
@@ -34,9 +42,9 @@ const UploadDialogModal: React.FC<{
     const renderContent = () => {
         switch (uploadState.status) {
             case 'idle':
-                return <DragFilesContent onDrop={onDrop} />
+                return <LazyDragFilesContent onDrop={onDrop} />
             case 'duplicateWarning':
-                return <DuplicateWarningContent
+                return <LazyDuplicateWarningContent
                     files={uploadState.duplicateFiles}
                     currentFileIndex={uploadState.currentFileIndex}
                     onRename={showRenameModal}
@@ -44,15 +52,15 @@ const UploadDialogModal: React.FC<{
                     onCancel={handleDuplicateSkip}
                 />
             case 'renameFile':
-                return <RenameFileContent
+                return <LazyRenameFileContent
                     fileName={uploadState.duplicateFiles[uploadState.currentFileIndex]?.name || ''}
                     onConfirm={handleDuplicateRename}
                     onCancel={() => dispatchState({ type: 'DUPLICATE_FILES', payload: uploadState.duplicateFiles })}
                 />
             case "excel_warning":
-                return <ExcelWarningContent excelFiles={uploadState.excelFiles} onCancel={() => dispatchState({type: 'CANCEL'})} onConfirm={() => dispatchState({type: "UPLOAD"})} />
+                return <LazyExcelWarningContent excelFiles={uploadState.excelFiles} onCancel={() => dispatchState({type: 'CANCEL'})} onConfirm={() => dispatchState({type: "UPLOAD"})} />
             case "uploading":
-                return <UploadingContent selectedFiles={uploadState.filesToUpload} />
+                return <LazyUploadingContent selectedFiles={uploadState.filesToUpload} />
             
             case "error":
                 return (
@@ -66,19 +74,19 @@ const UploadDialogModal: React.FC<{
                 )
 
             default:
-                return <DragFilesContent onDrop={onDrop} />
+                return <LazyDragFilesContent onDrop={onDrop} />
         }
     }
 
     return (
         <div className={styles.custom_modal_overlay}>
             <div className={styles.custom_modal} ref={uploadModalRef}>
-                <UploadModalHeader />
+                <LazyUploadModalHeader />
                 <div className={styles.modal_content}>
                     <div className={styles.upload_dialog_content}>
                         {renderContent()}
                     </div>
-                        <UploadModalFooter closeUploadDialog={closeUploadDialog} />
+                        <LazyUploadModalFooter closeUploadDialog={closeUploadDialog} />
                 </div>
             </div>
         </div>

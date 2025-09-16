@@ -8,8 +8,6 @@ import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
-import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
-import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 // import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";

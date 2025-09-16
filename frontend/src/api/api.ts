@@ -1790,7 +1790,6 @@ export async function getGalleryItems(organization_id: string, params: { user: a
         },
     });
 
-    console.log('getGalleryItems response status:', response.status, response.statusText);
 
     // If server returned non-2xx, read text to capture HTML error pages and throw meaningful error
     if (!response.ok) {
