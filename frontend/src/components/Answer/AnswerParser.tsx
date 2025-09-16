@@ -20,7 +20,7 @@ import { useAppContext } from "../../providers/AppProviders";
  * ---------------------------------------------------------------- */
 const RX_MARKDOWN_LINK = /(?<!!)\[([^\]]+)\]\(([^)]+)\)/g; // skip image markdown
 const RX_WRONG_NUMBERS = /\[\^(\d+)\^\]/g; // ↳ [^1^] ➜ [1]
-const RX_CITATION_BLOCK = /\[\[([^\]]+)\]\]\(([^)]+)\)/g; // [[1]](url)
+const RX_CITATION_BLOCK = /\[\[([^\]]+)\]\]\(((?:[^\(\)]|\([^\(\)]*\))+)\)/g; // [[1]](url) allows simple balanced parentheses
 
 /* ------------------------------------------------------------------
  * Types
