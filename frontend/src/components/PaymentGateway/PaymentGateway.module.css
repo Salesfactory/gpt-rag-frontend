@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+/* Font will be loaded via preload in HTML head */
 
 .subscriptionPlan {
     display: flex;
