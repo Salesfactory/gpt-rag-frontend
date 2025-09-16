@@ -11,50 +11,59 @@ class GalleryRetrievalError(Exception):
 
 _MIN = datetime.min.replace(tzinfo=timezone.utc)
 
-def _coerce_dt(v: Any) -> datetime:
-    """Return a timezone-aware datetime. Falls back to datetime.min(UTC) on failure."""
-    if v is None:
+def _coerce_dt(value: Any) -> datetime:
+    """
+    Coerce different date/time representations into a timezone-aware datetime (UTC).
+    Accepted inputs:
+      - datetime (aware or naive)
+      - int/float epoch (seconds or milliseconds)
+      - str in ISO-8601 (with or without 'Z'), RFC 1123, or numeric epoch
+    On failure, returns _MIN (datetime.min in UTC).
+    """
+    if value is None:
         return _MIN
 
-    if isinstance(v, datetime):
-        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    # Already a datetime
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
-    # epoch number (seconds or ms)
-    if isinstance(v, (int, float)):
+    # Epoch number (seconds or milliseconds)
+    if isinstance(value, (int, float)):
         try:
-            # detect ms range and convert
-            ts = v / 1000.0 if v > 1e12 else float(v)
-            return datetime.fromtimestamp(ts, tz=timezone.utc)
+            timestamp = value / 1000.0 if value > 1e12 else float(value)
+            return datetime.fromtimestamp(timestamp, tz=timezone.utc)
         except Exception:
             return _MIN
 
-    if isinstance(v, str):
-        s = v.strip()
-        if not s:
+    # String inputs
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
             return _MIN
 
-        # Try ISO-8601
+        # Try ISO-8601 (handle trailing 'Z')
         try:
-            iso = s[:-1] + "+00:00" if s.endswith("Z") else s
-            dt = datetime.fromisoformat(iso)
-            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            normalized = text[:-1] + "+00:00" if text.endswith("Z") else text
+            parsed_iso = datetime.fromisoformat(normalized)
+            return parsed_iso if parsed_iso.tzinfo else parsed_iso.replace(tzinfo=timezone.utc)
         except Exception:
             pass
 
         # Try RFC 1123 (e.g., "Wed, 04 Sep 2024 13:22:10 GMT")
         try:
-            dt = parsedate_to_datetime(s)
-            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+            parsed_rfc = parsedate_to_datetime(text)
+            return parsed_rfc if parsed_rfc.tzinfo else parsed_rfc.replace(tzinfo=timezone.utc)
         except Exception:
             pass
 
-        # Try epoch in string (seconds or ms)
+        # Try numeric epoch in string (seconds or milliseconds)
         try:
-            if s.replace(".", "", 1).isdigit():
-                val = float(s)
-                if val > 1e12:  # likely ms
-                    val = val / 1000.0
-                return datetime.fromtimestamp(val, tz=timezone.utc)
+            # allow one decimal point
+            if text.replace(".", "", 1).isdigit():
+                epoch_value = float(text)
+                if epoch_value > 1e12:  # likely milliseconds
+                    epoch_value = epoch_value / 1000.0
+                return datetime.fromtimestamp(epoch_value, tz=timezone.utc)
         except Exception:
             pass
 
@@ -64,12 +73,12 @@ def get_gallery_items_by_org(
     organization_id: str,
     uploader_id: Optional[str] = None,
     order: str = "newest",
-    q: Optional[str] = None
+    query: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
     List the organization's blobs and apply server-side filtering/sorting.
     - Filter by metadata.user_id == uploader_id (case-insensitive).
-    - Search by q across name, content_type, serialized metadata, and date fields.
+    - Search by query across name, content_type, and serialized metadata.
     - Sort by created_on (fallback: last_modified). order: 'newest' | 'oldest'.
     Always returns a list (possibly empty).
     """
@@ -83,44 +92,46 @@ def get_gallery_items_by_org(
         ) or []
 
         items: List[Dict[str, Any]] = []
-        for it in raw_items:
-            metadata = it.get("metadata") or {}
+        for item in raw_items:
+            metadata = item.get("metadata") or {}
             items.append({
-                "name": it.get("name"),
-                "size": it.get("size"),
-                "content_type": it.get("content_type"),
-                "created_on": it.get("creation_time") or it.get("last_modified"),
-                "last_modified": it.get("last_modified"),
+                "name": item.get("name"),
+                "size": item.get("size"),
+                "content_type": item.get("content_type"),
+                # SDK-defined fields only: prefer creation_time, fallback to last_modified
+                "created_on": item.get("creation_time") or item.get("last_modified"),
+                "last_modified": item.get("last_modified"),
                 "metadata": metadata,
-                "url": it.get("url")
+                "url": item.get("url")
             })
+
+        # Backend-only user filter
         if uploader_id:
             uid = ("" if uploader_id is None else str(uploader_id)).casefold()
             items = [
                 it for it in items
-                if ((it.get("metadata") or {}).get("user_id", "") or "").casefold() == uid
+                if (it.get("metadata", {}).get("user_id", "") or "").casefold() == uid
             ]
-        if q:
-            ql = ("" if q is None else str(q)).casefold()
+
+        # Backend search (no date text search)
+        if query:
+            ql = ("" if query is None else str(query)).casefold()
             filtered = []
             for it in items:
                 name_ok = ql in (it.get("name", "") or "").casefold()
                 ct_ok = ql in (it.get("content_type", "") or "").casefold()
-                metadata = it.get("metadata") or {}
-                metadata_str = (" ".join(f"{k}:{v}" for k, v in metadata.items())).casefold()
-                metadata_ok = ql in metadata_str
-                if name_ok or ct_ok or metadata_ok:
+                meta_str = (" ".join(f"{k}:{v}" for k, v in (it.get("metadata") or {}).items())).casefold()
+                if name_ok or ct_ok or (ql in meta_str):
                     filtered.append(it)
             items = filtered
 
+        # Stable sort by created_on, fallback last_modified; tie-breaker by name
         def sort_key(it: Dict[str, Any]) -> datetime:
-            created_on = _coerce_dt(it.get("created_on"))
-            if created_on == datetime.min.replace(tzinfo=timezone.utc):
-                return _coerce_dt(it.get("last_modified"))
-            return created_on
+            co = _coerce_dt(it.get("created_on"))
+            return co if co != _MIN else _coerce_dt(it.get("last_modified"))
 
         reverse = (order or "newest").lower() == "newest"
-        items.sort(key=sort_key, reverse=reverse)
+        items.sort(key=lambda i: (sort_key(i), (i.get("name", "") or "")), reverse=reverse)
 
         return items
 

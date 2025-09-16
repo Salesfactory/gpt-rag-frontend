@@ -1780,20 +1780,19 @@ export async function postReportByName(reportName: string): Promise<any> {
     }
 }
 
-
 export async function getGalleryItems(
   organization_id: string,
   params: {
     user: any;
     uploader_id?: string | null;
     order?: "newest" | "oldest";
-    q?: string;
+    query?: string;
   }
 ): Promise<any[]> {
   const qs = new URLSearchParams();
   if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
   if (params.order)       qs.set("order", params.order);
-  if (params.q)           qs.set("q", params.q);
+  if (params.query)           qs.set("query", params.query);
 
 
   const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;

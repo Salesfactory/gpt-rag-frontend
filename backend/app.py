@@ -4978,13 +4978,13 @@ def get_gallery(organization_id):
     try:
         uploader_id = request.args.get("uploader_id")
         order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
-        q = request.args.get("q")
+        search_query = request.args.get("query") or request.args.get("q")
 
         gallery_items = get_gallery_items_by_org(
             organization_id,
             uploader_id=uploader_id,
             order=order,
-            q=q
+            query=search_query
 
         )
 

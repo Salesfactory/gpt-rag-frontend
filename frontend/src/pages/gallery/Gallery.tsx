@@ -41,7 +41,7 @@ const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
 
     const [showStatusFilter, setShowStatusFilter] = useState<boolean>(false);
-    const [selectedStatus, setSelectedStatus] = useState<string>("newest");
+    const [sortOrder, setSortOrder] = useState<string>("newest");
 
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [images, setImages] = useState<GalleryItem[]>([]);
@@ -87,8 +87,8 @@ const Gallery: React.FC = () => {
         const itemsFromApi = await getGalleryItems(orgId, {
             user,
             uploader_id: userFilter ?? undefined,
-            order: selectedStatus as "newest" | "oldest",
-            q: searchQuery.trim() || undefined,
+            order: sortOrder as "newest" | "oldest",
+            query: searchQuery.trim() || undefined,
         });
 
         const galleryData = (itemsFromApi ?? []) as GalleryItem[];
@@ -126,7 +126,7 @@ const Gallery: React.FC = () => {
         return [];
         });
     };
-    }, [orgId, userId, userFilter, selectedStatus, searchQuery]);
+    }, [orgId, userId, userFilter, sortOrder, searchQuery]);
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -260,7 +260,7 @@ const Gallery: React.FC = () => {
                     <div className={styles.filterContainer}>
                         <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
                             <ArrowUpDown size={16} className={styles.filterIcon} />
-                            {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Sort by order"}
+                            {statusFilterOptions.find(opt => opt.value === sortOrder)?.label || "Sort by order"}
                         </button>
 
                         {showStatusFilter && (
@@ -269,9 +269,9 @@ const Gallery: React.FC = () => {
                                     {statusFilterOptions.map(option => (
                                         <button
                                             key={option.value}
-                                            className={`${styles.dropdownItem} ${selectedStatus === option.value ? styles.dropdownItemActive : ""}`}
+                                            className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
                                             onClick={() => {
-                                                setSelectedStatus(option.value);
+                                                setSortOrder(option.value);
                                             }}
                                         >
                                             {option.label}
