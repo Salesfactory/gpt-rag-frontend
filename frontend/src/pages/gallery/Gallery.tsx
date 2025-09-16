@@ -75,7 +75,6 @@ const Gallery: React.FC = () => {
         }
     };
 
-
     fetchUsers();
     return () => { cancelled = true; };
     }, [userId]);
@@ -121,7 +120,6 @@ const Gallery: React.FC = () => {
     };
 
     fetchAndProcessGalleryItems();
-
     return () => {
         setImages((curr) => {
         curr.forEach((it) => it.blob && URL.revokeObjectURL(it.blob));
@@ -129,7 +127,6 @@ const Gallery: React.FC = () => {
         });
     };
     }, [orgId, userId, userFilter, selectedStatus, searchQuery]);
-
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -263,7 +260,7 @@ const Gallery: React.FC = () => {
                     <div className={styles.filterContainer}>
                         <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
                             <ArrowUpDown size={16} className={styles.filterIcon} />
-                            {statusFilterOptions.find(opt => opt.value === sortOrder)?.label || "Sort by order"}
+                            {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Sort by order"}
                         </button>
 
                         {showStatusFilter && (
@@ -272,7 +269,7 @@ const Gallery: React.FC = () => {
                                     {statusFilterOptions.map(option => (
                                         <button
                                             key={option.value}
-                                            className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
+                                            className={`${styles.dropdownItem} ${selectedStatus === option.value ? styles.dropdownItemActive : ""}`}
                                             onClick={() => {
                                                 setSelectedStatus(option.value);
                                             }}

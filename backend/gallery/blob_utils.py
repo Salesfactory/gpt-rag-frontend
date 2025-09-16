@@ -3,7 +3,6 @@ from typing import Optional, List, Dict, Any
 from email.utils import parsedate_to_datetime
 from financial_doc_processor import BlobStorageManager
 from logging import getLogger
-from datetime import datetime
 
 logger = getLogger(__name__)
 
@@ -11,11 +10,9 @@ class GalleryRetrievalError(Exception):
     """Custom exception for gallery retrieval errors."""
 
 
-def _to_lower(x: Any) -> str:
-    try:
-        return str(x or "").lower()
-    except Exception:
-        return ""
+def _lower(x: Any) -> str:
+    """Normalize to string and lowercase using built-in casefold (Unicode-aware)."""
+    return ("" if x is None else str(x)).casefold()
 
 _MIN = datetime.min.replace(tzinfo=timezone.utc)
 
@@ -83,8 +80,8 @@ def get_gallery_items_by_org(
     """
     try:
         prefix = f"organization_files/{organization_id}/generated_images"
-        bsm = BlobStorageManager()
-        raw_items: List[Dict[str, Any]] = bsm.list_blobs_in_container_for_upload_files(
+        blob_storage_manager = BlobStorageManager()
+        raw_items: List[Dict[str, Any]] = blob_storage_manager.list_blobs_in_container_for_upload_files(
             container_name="documents",
             prefix=prefix,
             include_metadata="yes"
@@ -92,39 +89,37 @@ def get_gallery_items_by_org(
 
         items: List[Dict[str, Any]] = []
         for it in raw_items:
-            meta = it.get("metadata") or {}
+            metadata = it.get("metadata") or {}
             items.append({
                 "name": it.get("name"),
                 "size": it.get("size"),
                 "content_type": it.get("content_type"),
-                "created_on": it.get("created_on") or it.get("creation_time") or it.get("created"),
+                "created_on": it.get("creation_time") or it.get("last_modified"),
                 "last_modified": it.get("last_modified"),
-                "metadata": meta,
+                "metadata": metadata,
                 "url": it.get("url")
             })
         if uploader_id:
-            uid = _to_lower(uploader_id)
-            items = [it for it in items if _to_lower((it.get("metadata") or {}).get("user_id")) == uid]
+            uid = _lower(uploader_id)
+            items = [it for it in items if _lower((it.get("metadata") or {}).get("user_id")) == uid]
         if q:
-            ql = _to_lower(q)
+            ql = _lower(q)
             filtered = []
             for it in items:
-                name_ok = ql in _to_lower(it.get("name"))
-                ct_ok = ql in _to_lower(it.get("content_type"))
-                meta = it.get("metadata") or {}
-                meta_str = _to_lower(" ".join(f"{k}:{v}" for k, v in meta.items()))
-                meta_ok = ql in meta_str
-                created_ok = ql in _to_lower(it.get("created_on"))
-                modified_ok = ql in _to_lower(it.get("last_modified"))
-                if name_ok or ct_ok or meta_ok or created_ok or modified_ok:
+                name_ok = ql in _lower(it.get("name"))
+                ct_ok = ql in _lower(it.get("content_type"))
+                metadata = it.get("metadata") or {}
+                metadata_str = _lower(" ".join(f"{k}:{v}" for k, v in metadata.items()))
+                metadata_ok = ql in metadata_str
+                if name_ok or ct_ok or metadata_ok:
                     filtered.append(it)
             items = filtered
 
         def sort_key(it: Dict[str, Any]) -> datetime:
-            co = _coerce_dt(it.get("created_on"))
-            if co == datetime.min.replace(tzinfo=timezone.utc):
+            created_on = _coerce_dt(it.get("created_on"))
+            if created_on == datetime.min.replace(tzinfo=timezone.utc):
                 return _coerce_dt(it.get("last_modified"))
-            return co
+            return created_on
 
         reverse = (order or "newest").lower() == "newest"
         items.sort(key=sort_key, reverse=reverse)
