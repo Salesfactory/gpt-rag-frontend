@@ -26,6 +26,7 @@ import tempfile
 
 import markdown
 from flask_cors import CORS
+from flask_compress import Compress
 from azure.identity import DefaultAzureCredential
 from urllib.parse import unquote, urlparse, urlencode, urljoin
 import uuid
@@ -176,6 +177,9 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(app_config)
 CORS(app)
+
+# Enable compression for all responses
+Compress(app)
 
 
 def setup_llm() -> PandasAIClient:
