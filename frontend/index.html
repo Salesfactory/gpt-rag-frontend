@@ -5,6 +5,84 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>FreddAid</title>
+    
+    <!-- DNS prefetch and preconnect for faster resource loading -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/index.tsx">
+    <link rel="modulepreload" href="/src/App.tsx">
+    
+    <!-- Preload critical font files -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"></noscript>
+    
+    <!-- Preload main CSS file for faster loading -->
+    <link rel="preload" as="style" href="/src/index.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/src/index.css"></noscript>
+    
+    <!-- Critical CSS - Inlined to prevent render blocking -->
+    <style>
+      /* Critical layout styles */
+      * { box-sizing: border-box; }
+      html, body { 
+        height: 100%; 
+        margin: 0; 
+        padding: 0;
+        background: #f2f2f2;
+        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      #root { height: 100%; }
+      
+      /* Critical layout wrapper styles to prevent layout shift */
+      .bodyWrapper {
+        position: relative;
+        height: 88vh;
+        transition: margin-left 0.2s ease-in-out;
+        background-color: #f9fafb;
+      }
+      .bodyWrapperInner {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        height: 100%;
+        background-color: #f9fafb;
+      }
+      .appHeader {
+        z-index: 50;
+        background-color: white;
+        padding: 0 25px;
+        top: 0;
+      }
+      
+      /* Font fallback while Poppins loads */
+      .font-poppins {
+        font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+      }
+      
+      /* Loading spinner to show while CSS loads */
+      .css-loading {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
