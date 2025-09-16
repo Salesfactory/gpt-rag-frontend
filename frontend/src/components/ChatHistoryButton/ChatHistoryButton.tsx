@@ -3,7 +3,6 @@ import { HistoryRegular } from "@fluentui/react-icons";
 
 import styles from "./ChatHistoryButton.module.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { useContext } from "react";
 
 interface Props {
     className?: string;

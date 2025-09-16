@@ -42,6 +42,6 @@
        
         
     },
-    "include": ["src", "vite-env.d.ts"],
+    "include": ["frontend/src", "frontend/vite-env.d.ts", "src", "vite-env.d.ts"],
     "exclude": ["cypress"]
 }

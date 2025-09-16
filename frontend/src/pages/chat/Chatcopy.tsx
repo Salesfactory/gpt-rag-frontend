@@ -3,24 +3,20 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
+import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
-import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
-import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
-// import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
-//import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import DownloadButton from "../../components/DownloadButton/DownloadButton";
 // import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
-import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
+// import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
 import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
