@@ -9,11 +9,6 @@ logger = getLogger(__name__)
 class GalleryRetrievalError(Exception):
     """Custom exception for gallery retrieval errors."""
 
-
-def _lower(x: Any) -> str:
-    """Normalize to string and lowercase using built-in casefold (Unicode-aware)."""
-    return ("" if x is None else str(x)).casefold()
-
 _MIN = datetime.min.replace(tzinfo=timezone.utc)
 
 def _coerce_dt(v: Any) -> datetime:
@@ -100,16 +95,19 @@ def get_gallery_items_by_org(
                 "url": it.get("url")
             })
         if uploader_id:
-            uid = _lower(uploader_id)
-            items = [it for it in items if _lower((it.get("metadata") or {}).get("user_id")) == uid]
+            uid = ("" if uploader_id is None else str(uploader_id)).casefold()
+            items = [
+                it for it in items
+                if ((it.get("metadata") or {}).get("user_id", "") or "").casefold() == uid
+            ]
         if q:
-            ql = _lower(q)
+            ql = ("" if q is None else str(q)).casefold()
             filtered = []
             for it in items:
-                name_ok = ql in _lower(it.get("name"))
-                ct_ok = ql in _lower(it.get("content_type"))
+                name_ok = ql in (it.get("name", "") or "").casefold()
+                ct_ok = ql in (it.get("content_type", "") or "").casefold()
                 metadata = it.get("metadata") or {}
-                metadata_str = _lower(" ".join(f"{k}:{v}" for k, v in metadata.items()))
+                metadata_str = (" ".join(f"{k}:{v}" for k, v in metadata.items())).casefold()
                 metadata_ok = ql in metadata_str
                 if name_ok or ct_ok or metadata_ok:
                     filtered.append(it)
