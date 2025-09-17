@@ -2,7 +2,7 @@ import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
 import { ArrowUpDown, Download, Search, Trash2, Upload, Users } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { deleteSourceFileFromBlob, getFileBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
@@ -42,85 +42,91 @@ const Gallery: React.FC = () => {
 
     const [showStatusFilter, setShowStatusFilter] = useState<boolean>(false);
     const [sortOrder, setSortOrder] = useState<string>("newest");
+
     const [userFilter, setUserFilter] = useState<string | null>(null);
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [users, setUsers] = useState<User[]>();
+    const [showUserFilter, setShowUserFilter] = useState<boolean>(false);
+    const [searchQuery, setSearchQuery] = useState<string>("");
+        
+    const orgId = organization?.id ?? "";
+    const userId = user?.id ?? "";
+    const usersErrorShownRef = useRef(false);
 
     useEffect(() => {
-        const fetchUsers = async () => {
-            try {
-                let userData: UserData[] = await getUsers({ user });
-                const userList = userData.map(item => ({
-                    id: item.id,
-                    name: item.data.name
-                }));
-                setUsers(userList);
-            } catch {
-                console.log("");
-            }
-        };
+    let cancelled = false;
 
-        fetchUsers();
+    const fetchUsers = async () => {
+        try {
+        const userData: UserData[] = await getUsers({ user });
+        if (cancelled) return;
+        setUsers(userData.map(u => ({ id: u.id, name: u.data?.name ?? "Unknown" })));
+        } catch (err) {
+        if (cancelled) return;
+        console.error("[Gallery] getUsers failed:", err);
 
-        const fetchAndProcessGalleryItems = async () => {
-            if (!organization) return;
+        if (!usersErrorShownRef.current) {
+            usersErrorShownRef.current = true;
+            toast.error("Error loading users");
+        }
+        setUsers([]);
+        }
+    };
 
-            setIsLoading(true);
-            try {
-                const itemsFromApi = await getGalleryItems(organization.id, { user }, sortOrder);
-                let galleryData: GalleryItem[] = [];
-                if (Array.isArray(itemsFromApi)) {
-                    galleryData = itemsFromApi;
-                } else if (itemsFromApi && typeof itemsFromApi === "object" && "data" in itemsFromApi && Array.isArray((itemsFromApi as any).data)) {
-                    galleryData = (itemsFromApi as { data: GalleryItem[] }).data;
+    fetchUsers();
+    return () => { cancelled = true; };
+    }, [userId]);
+
+    useEffect(() => {
+    const fetchAndProcessGalleryItems = async () => {
+        if (!orgId) return;
+        setIsLoading(true);
+        try {
+        const itemsFromApi = await getGalleryItems(orgId, {
+            user,
+            uploader_id: userFilter ?? undefined,
+            order: sortOrder as "newest" | "oldest",
+            query: searchQuery.trim() || undefined,
+        });
+
+        const galleryData = (itemsFromApi ?? []) as GalleryItem[];
+
+        setImages(galleryData);
+        setFetchedImages(galleryData);
+
+        if (galleryData.length > 0) {
+            const pairs = await Promise.all(
+            galleryData.map(async (item) => {
+                try {
+                const blob = await getFileBlob(item.name, "documents");
+                return [item.name, URL.createObjectURL(blob)] as const;
+                } catch {
+                return [item.name, null] as const;
                 }
+            })
+            );
 
-                if (galleryData.length === 0) {
-                    setImages([]);
-                    setFetchedImages([]);
-                    setIsLoading(false);
-                    return;
-                }
+            const map = new Map(pairs);
+            setImages((prev) => prev.map((img) => ({ ...img, blob: map.get(img.name) ?? img.blob })));
+            setFetchedImages((prev) => prev.map((img) => ({ ...img, blob: map.get(img.name) ?? img.blob })));
+        }
+        } catch (e) {
+        console.error("Error fetching gallery items:", e);
+        } finally {
+        setIsLoading(false);
+        }
+    };
 
-                setImages(galleryData);
-                setFetchedImages(galleryData);
-                setIsLoading(false);
-
-                galleryData.forEach(async itemToFetch => {
-                    try {
-                        const blob = await getFileBlob(itemToFetch.name, "documents");
-                        const objectUrl = URL.createObjectURL(blob);
-
-                        const updateImagesWithBlob = (currentImages: GalleryItem[]) =>
-                            currentImages.map(img => (img.name === itemToFetch.name ? { ...img, blob: objectUrl } : img));
-
-                        setImages(updateImagesWithBlob);
-                        setFetchedImages(updateImagesWithBlob);
-                    } catch (error) {
-                        console.error(`Failed to get blob for ${itemToFetch.name}:`, error);
-                    }
-                });
-            } catch (error) {
-                console.error("Error fetching gallery items:", error);
-                setIsLoading(false);
-            }
-        };
-
-        fetchAndProcessGalleryItems();
-
-        return () => {
-            setImages(currentImages => {
-                currentImages.forEach(item => {
-                    if (item.blob) {
-                        URL.revokeObjectURL(item.blob);
-                    }
-                });
-                return [];
-            });
-        };
-    }, [user, organization, sortOrder]);
+    fetchAndProcessGalleryItems();
+    return () => {
+        setImages((curr) => {
+        curr.forEach((it) => it.blob && URL.revokeObjectURL(it.blob));
+        return [];
+        });
+    };
+    }, [orgId, userId, userFilter, sortOrder, searchQuery]);
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -158,36 +164,11 @@ const Gallery: React.FC = () => {
 
     const searchTimeout = useRef<number | null>(null);
 
-    const handleSearch = (searchQuery: string) => {
-        if (searchTimeout.current) {
-            window.clearTimeout(searchTimeout.current);
-        }
-
+    const handleSearch = (value: string) => {
+        if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
         searchTimeout.current = window.setTimeout(() => {
-            const q = (searchQuery || "").trim().toLowerCase();
-
-            if (!q) {
-                setImages(fetchedImages ?? []);
-                return;
-            }
-
-            const filtered = (fetchedImages ?? []).filter(img => {
-                if (img.name && img.name.toLowerCase().includes(q)) return true;
-
-                try {
-                    const metaString = img.metadata ? JSON.stringify(img.metadata).toLowerCase() : "";
-                    if (metaString.includes(q)) return true;
-                } catch (e) {}
-
-                if (img.created_on && new Date(img.created_on).toLocaleDateString().toLowerCase().includes(q)) return true;
-
-                if (img.content_type && img.content_type.toLowerCase().includes(q)) return true;
-
-                return false;
-            });
-
-            setImages(filtered);
-        }, 200);
+            setSearchQuery((value || "").trim());
+        }, 250);
     };
 
     useEffect(() => {
@@ -199,6 +180,22 @@ const Gallery: React.FC = () => {
     const getUserName = (id: string) => {
         return users?.find(user => user.id === id)?.name;
     };
+
+    const userOptions = useMemo((): User[] => {
+    const map = new Map<string, string>();
+    (users ?? []).forEach(u => map.set(u.id, u.name));
+
+   (fetchedImages ?? []).forEach(f => {
+     const id = f?.metadata?.user_id;
+     if (id && !map.has(id)) {
+       map.set(id, getUserName(id) ?? id);
+     }
+   });
+
+   return Array.from(map, ([id, name]) => ({ id, name }))
+     .sort((a, b) => a.name.localeCompare(b.name));
+ }, [users, fetchedImages]);
+
 
     return (
         <div className={styles.page_container}>
@@ -258,6 +255,7 @@ const Gallery: React.FC = () => {
                         }
                     }}
                 />
+            <div className={styles.filtersGroup}>
                 <div className={styles.filter}>
                     <div className={styles.filterContainer}>
                         <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
@@ -274,7 +272,6 @@ const Gallery: React.FC = () => {
                                             className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
                                             onClick={() => {
                                                 setSortOrder(option.value);
-                                                setShowStatusFilter(false);
                                             }}
                                         >
                                             {option.label}
@@ -285,7 +282,49 @@ const Gallery: React.FC = () => {
                         )}
                     </div>
                 </div>
+                <div className={styles.filter}>
+                    <div className={styles.filterContainer}>
+                        <button
+                        type="button"
+                        className={styles.filterButton}
+                        onClick={() => setShowUserFilter(!showUserFilter)}
+                        >
+                        <Users size={16} className={styles.filterIcon} />
+                        {userFilter ? (getUserName(userFilter) ?? userFilter) : "All Users"}
+                        </button>
+
+                        {showUserFilter && (
+                        <div className={styles.filterDropdown}>
+                            <div className={styles.dropdownContent}>
+                            <button
+                                className={`${styles.dropdownItem} ${!userFilter ? styles.dropdownItemActive : ""}`}
+                                onClick={() => {
+                                setUserFilter(null);
+                                setShowUserFilter(false);
+                                }}
+                            >
+                                All Users
+                            </button>
+
+                            {userOptions.map(u => (
+                                <button
+                                key={u.id}
+                                className={`${styles.dropdownItem} ${userFilter === u.id ? styles.dropdownItemActive : ""}`}
+                                onClick={() => {
+                                    setUserFilter(u.id);
+                                    setShowUserFilter(false);
+                                }}
+                                >
+                                {u.name}
+                                </button>
+                            ))}
+                            </div>
+                        </div>
+                        )}
+                     </div>
+                </div>
             </div>
+        </div>
             {isLoading ? (
                 <Spinner
                     styles={{
@@ -312,7 +351,9 @@ const Gallery: React.FC = () => {
                             <div className={styles.emptyContent}>
                                 <Upload size={48} className={styles.emptyIcon} />
                                 <p className={styles.emptyTitle}>No charts found</p>
-                                <p className={styles.emptySubtitle}>{userFilter ? `No charts found for ${userFilter}` : "No visualization charts available"}</p>
+                                <p className={styles.emptySubtitle}>
+                                {userFilter ? `No charts found for ${getUserName(userFilter) ?? userFilter}` : "No visualization charts available"}
+                                </p>
                             </div>
                         </div>
                     ) : (
@@ -358,7 +399,9 @@ const Gallery: React.FC = () => {
                                                 <span className={styles.userTag}>
                                                     {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
                                                 </span>
-                                                <p className={styles.fileDate}>Created {new Date(file.created_on).toLocaleDateString()}</p>
+                                                    <p className={styles.fileDate}>
+                                                        Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
+                                                    </p>
                                             </div>
                                         </div>
                                     ))}

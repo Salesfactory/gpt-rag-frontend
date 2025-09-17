@@ -1780,38 +1780,51 @@ export async function postReportByName(reportName: string): Promise<any> {
     }
 }
 
-export async function getGalleryItems(organization_id: string, params: { user: any }, sortOrder: string = 'newest'): Promise<any[]> {
-    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/gallery?sort=${sortOrder}`, {
-        method: 'GET',
-        headers: {
-            'X-MS-CLIENT-PRINCIPAL-ID': params.user?.id ?? '00000000-0000-0000-0000-000000000000',
-            'X-MS-CLIENT-PRINCIPAL-NAME': params.user?.name ?? 'anonymous',
-            'Accept': 'application/json'
-        },
-    });
+export async function getGalleryItems(
+  organization_id: string,
+  params: {
+    user: any;
+    uploader_id?: string | null;
+    order?: "newest" | "oldest";
+    query?: string;
+  }
+): Promise<any[]> {
+  const qs = new URLSearchParams();
+  if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
+  if (params.order)       qs.set("order", params.order);
+  if (params.query)           qs.set("query", params.query);
 
 
-    // If server returned non-2xx, read text to capture HTML error pages and throw meaningful error
-    if (!response.ok) {
-        const bodyText = await response.text().catch(() => '');
-        console.error(`Failed to fetch gallery items: ${response.status} ${response.statusText}`, bodyText);
-        throw new Error(`Failed to fetch gallery items: ${response.status}`);
+  const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "X-MS-CLIENT-PRINCIPAL-ID": params.user?.id ?? "00000000-0000-0000-0000-000000000000",
+      "X-MS-CLIENT-PRINCIPAL-NAME": params.user?.name ?? "anonymous",
+      Accept: "application/json"
     }
+  });
 
-    // Ensure response is JSON before parsing to avoid "Unexpected token '<'"
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-        const bodyText = await response.text().catch(() => '');
-        console.error('Unexpected non-JSON response from gallery API:', bodyText);
-        throw new Error('Invalid response from gallery API (expected JSON)');
-    }
+  if (!response.ok) {
+    const bodyText = await response.text().catch(() => "");
+    console.error(`Failed to fetch gallery items: ${response.status} ${response.statusText}`, bodyText);
+    throw new Error(`Failed to fetch gallery items: ${response.status}`);
+  }
 
-    const data = await response.json().catch((err) => {
-        console.error('Error parsing gallery JSON response:', err);
-        throw new Error('Invalid JSON from gallery API');
-    });
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const bodyText = await response.text().catch(() => "");
+    console.error("Unexpected non-JSON response from gallery API:", bodyText);
+    throw new Error("Invalid response from gallery API (expected JSON)");
+  }
 
-    return data?.data ?? data ?? [];
+  const data = await response.json().catch((err) => {
+    console.error("Error parsing gallery JSON response:", err);
+    throw new Error("Invalid JSON from gallery API");
+  });
+
+  return data?.data ?? data ?? [];
 }
 
 export async function fetchReportJobs({

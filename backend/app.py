@@ -1949,10 +1949,14 @@ def getBlob():
         return jsonify({"error": "Invalid container"}), 400
 
     try:
-        client_credential = DefaultAzureCredential()
-        blob_service_client = BlobServiceClient(
-            f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", client_credential
-        )
+        conn_str = current_app.config.get("AZURE_STORAGE_CONNECTION_STRING")
+        if conn_str:
+            blob_service_client = BlobServiceClient.from_connection_string(conn_str)
+        else:
+            client_credential = DefaultAzureCredential()
+            blob_service_client = BlobServiceClient(
+                f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", credential=client_credential
+            )
         blob_client = blob_service_client.get_blob_client(
             container=container, blob=blob_name
         )
@@ -4973,42 +4977,31 @@ def get_gallery(organization_id):
         404: If no gallery items are found for the organization.
         500: If an unexpected error occurs during retrieval.
     """
-    if (
-        not organization_id
-        or not isinstance(organization_id, str)
-        or not organization_id.strip()
-    ):
-        return create_error_response(
-            "Organization ID is required and must be a non-empty string.", 400
-        )
-    sort_order = request.args.get('sort', 'newest')
-
-    if sort_order not in ['newest', 'oldest']:
-        return create_error_response("Invalid sort order. Must be 'newest' or 'oldest'.", 400) 
-
+    if not organization_id or not isinstance(organization_id, str) or not organization_id.strip():
+        return create_error_response("Organization ID is required and must be a non-empty string.", 400)
     try:
-        gallery_items = get_gallery_items_by_org(organization_id, sort_order=sort_order)
-        if gallery_items is None:
-            return create_error_response(
-                f"No gallery items found for organization {organization_id}.", 404
-            )
-        if isinstance(gallery_items, list) and not gallery_items:
-            return create_success_response([], 204)
-        return create_success_response(gallery_items, 200)
-    except ValueError as ve:
-        logger.error(
-            f"Value error retrieving gallery items for org {organization_id}: {ve}"
+        uploader_id = request.args.get("uploader_id")
+        order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
+        search_query = request.args.get("query") or request.args.get("q")
+
+        gallery_items = get_gallery_items_by_org(
+            organization_id,
+            uploader_id=uploader_id,
+            order=order,
+            query=search_query
+
         )
+
+        return create_success_response(gallery_items or [], 200)
+
+    except ValueError as ve:
+        logger.error(f"Value error retrieving gallery items for org {organization_id}: {ve}")
         return create_error_response(str(ve), 400)
     except CosmosHttpResponseError as ce:
-        logger.error(
-            f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}"
-        )
+        logger.error(f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}")
         return create_error_response("Database error retrieving gallery items.", 500)
     except Exception as e:
-        logger.exception(
-            f"Unexpected error retrieving gallery items for org {organization_id}: {e}"
-        )
+        logger.exception(f"Unexpected error retrieving gallery items for org {organization_id}: {e}")
         return create_error_response("Internal Server Error", 500)
 
 
