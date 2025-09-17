@@ -4,7 +4,6 @@ import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import styles from "./Sidebarcopy.module.css";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-
 interface SidebarItemProps {
     title: string;
     icon: JSX.Element;
@@ -16,7 +15,6 @@ interface SidebarItemProps {
     activeSubItem?: string | null;
     setActiveSubItem?: (href: string) => void;
 }
-
 
 const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onClick, isActive, setIsActive, activeSubItem, setActiveSubItem }) => {
     const toggleSubmenu = (e: React.MouseEvent) => {
@@ -38,6 +36,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
                 <>
                     <div
                         className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
+                        role="button"
+                        tabIndex={0}
                         aria-expanded={isActive}
                         onClick={toggleSubmenu}
                         id="submenubutton"
@@ -56,11 +56,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
                     >
                         {links.map((linkItem, index) => (
                             <li key={index} className={`${styles.submenuItem} ${activeSubItem === linkItem.href ? styles.sidebarLinkActive : ""}`}>
-                                <Link
-                                    className={`${styles.submenuLink}`}
-                                    to={linkItem.href}
-                                    onClick={() => handleSubItemClick(linkItem.href)}
-                                >
+                                <Link className={`${styles.submenuLink}`} to={linkItem.href} onClick={() => handleSubItemClick(linkItem.href)}>
                                     {linkItem.title}
                                 </Link>
                             </li>
