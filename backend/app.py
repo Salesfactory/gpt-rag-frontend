@@ -2170,7 +2170,6 @@ def download_excel_citation(*, context):
 
 
 @app.route("/preview/spreadsheet", methods=["GET"])
-@auth.login_required
 def preview_spreadsheet(*, context):
     try:
         file_path = request.args.get("file_path")
