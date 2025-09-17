@@ -759,7 +759,8 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
 
 @app.route("/stream_chatgpt", methods=["POST"])
-def proxy_orc():
+@auth.login_required
+def proxy_orc(*, context):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
     question = data.get("question")
@@ -842,7 +843,8 @@ def proxy_orc():
 
 
 @app.route("/chatgpt", methods=["POST"])
-def chatgpt():
+@auth.login_required
+def chatgpt(*, context):
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
     file_blob_url = request.json["url"]
@@ -918,7 +920,8 @@ def chatgpt():
 
 
 @app.route("/api/chat-history", methods=["GET"])
-def getChatHistory():
+@auth.login_required
+def getChatHistory(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
 
     if not client_principal_id:
@@ -936,7 +939,8 @@ def getChatHistory():
 
 
 @app.route("/api/chat-conversation/<chat_id>", methods=["GET"])
-def getChatConversation(chat_id):
+@auth.login_required
+def getChatConversation(*, context, chat_id):
 
     if chat_id is None:
         return jsonify({"error": "Missing conversation_id parameter"}), 400
@@ -955,7 +959,8 @@ def getChatConversation(chat_id):
 
 
 @app.route("/api/chat-conversations/<chat_id>", methods=["DELETE"])
-def deleteChatConversation(chat_id):
+@auth.login_required
+def deleteChatConversation(*, context, chat_id):
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
 
@@ -971,7 +976,8 @@ def deleteChatConversation(chat_id):
 
 
 @app.route("/api/conversations/export", methods=["POST"])
-def exportConversation():
+@auth.login_required
+def exportConversation(*, context):
     """
     Export a conversation by calling the orchestrator endpoint with proper authentication.
 
@@ -1294,7 +1300,8 @@ def updateUser(*, context, user_id):
 
 
 @app.route("/api/organization/<org_id>", methods=["PATCH"])
-def patch_organization_info(org_id):
+@auth.login_required
+def patch_organization_info(*, context, org_id):
     """
     Endpoint to update 'brandInformation', 'industryInformation' and 'segmentSynonyms' and 'additionalInstructions' in an organization document.
     """
@@ -1339,7 +1346,8 @@ def patch_organization_info(org_id):
 
 
 @app.route("/api/user/<user_id>", methods=["PATCH"])
-def patchUserData(user_id):
+@auth.login_required
+def patchUserData(*, context, user_id):
     """
     Endpoint to update the 'name', role and 'email' fields of a user's 'data'
     """
@@ -1372,7 +1380,8 @@ def patchUserData(user_id):
 
 
 @app.route("/api/user/<user_id>/reset-password", methods=["PATCH"])
-def reset_user_password(user_id):
+@auth.login_required
+def reset_user_password(*, context, user_id):
     """
     Endpoint to reset a user's password and send a notification email.
     """
@@ -1654,7 +1663,8 @@ def getFilteredType(*, context):
         return jsonify({"error": "Internal Server Error"}), 500
 
 @app.route("/api/get-speech-token", methods=["GET"])
-def getGptSpeechToken():
+@auth.login_required
+def getGptSpeechToken(*, context):
     try:
         SPEECH_KEY = current_app.config["SPEECH_KEY"]
         fetch_token_url = (
@@ -1681,7 +1691,8 @@ def getGptSpeechToken():
 
 
 @app.route("/api/get-storage-account", methods=["GET"])
-def getStorageAccount():
+@auth.login_required
+def getStorageAccount(*, context):
     if STORAGE_ACCOUNT is None or STORAGE_ACCOUNT == "":
         return jsonify({"error": "Add STORAGE_ACCOUNT to frontend app settings"}), 500
     try:
@@ -1703,7 +1714,8 @@ def getFeedbackUrl(*, context):
 
 
 @app.route("/create-checkout-session", methods=["POST"])
-def create_checkout_session():
+@auth.login_required
+def create_checkout_session(*, context):
     price = request.json["priceId"]
     userId = request.json["userId"]
     success_url = request.json["successUrl"]
@@ -1745,7 +1757,8 @@ def create_checkout_session():
 
 
 @app.route("/get-customer", methods=["POST"])
-def get_customer():
+@auth.login_required
+def get_customer(*, context):
 
     subscription_id = request.json["subscription_id"]
 
@@ -1782,7 +1795,8 @@ def get_customer():
 
 
 @app.route("/create-customer-portal-session", methods=["POST"])
-def create_customer_portal_session():
+@auth.login_required
+def create_customer_portal_session(*, context):
     customer = request.json.get("customer")
     return_url = request.json.get("return_url")
     subscription_id = request.json.get("subscription_id")
@@ -1818,7 +1832,8 @@ def create_customer_portal_session():
 
 
 @app.route("/api/stripe", methods=["GET"])
-def getStripe():
+@auth.login_required
+def getStripe(*, context):
     try:
         keySecretName = "stripeKey"
         functionKey = clients.get_azure_key_vault_secret(keySecretName)
@@ -1908,7 +1923,8 @@ def webhook():
 
 
 @app.route("/api/upload-blob", methods=["POST"])
-def uploadBlob():
+@auth.login_required
+def uploadBlob(*, context):
     if "file" not in request.files:
         print("No file sent")
         return jsonify({"error": "No file sent"}), 400
@@ -1940,7 +1956,8 @@ def uploadBlob():
 
 
 @app.route("/api/get-blob", methods=["POST"])
-def getBlob():
+@auth.login_required
+def getBlob(*, context):
     blob_name = unquote(request.json["blob_name"])
     container = request.json["container"]
     # White list of containers
@@ -1970,7 +1987,8 @@ def getBlob():
 
 
 @app.route("/api/settings", methods=["GET"])
-def getSettings():
+@auth.login_required
+def getSettings(*, context):
     client_principal, error_response, status_code = get_client_principal()
     if error_response:
         return error_response, status_code
@@ -1985,7 +2003,8 @@ def getSettings():
 
 
 @app.route("/api/download", methods=["GET"])
-def download_document():
+@auth.login_required
+def download_document(*, context):
 
     organization_id = request.args.get("organizationId")
     blob_name = request.args.get("blobName")
@@ -2151,7 +2170,8 @@ def download_excel_citation(*, context):
 
 
 @app.route("/preview/spreadsheet", methods=["GET"])
-def preview_spreadsheet():
+@auth.login_required
+def preview_spreadsheet(*, context):
     try:
         file_path = request.args.get("file_path")
         if not file_path:
@@ -2240,7 +2260,8 @@ def preview_spreadsheet():
 
 
 @app.route("/api/settings", methods=["POST"])
-def setSettings():
+@auth.login_required
+def setSettings(*, context):
 
     client_principal, error_response, status_code = get_client_principal()
     if error_response:
@@ -2286,7 +2307,8 @@ def setSettings():
 
 
 @app.route("/api/feedback", methods=["POST"])
-def setFeedback():
+@auth.login_required
+def setFeedback(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
 
@@ -2349,7 +2371,8 @@ def setFeedback():
 
 
 @app.route("/api/getusers", methods=["GET"])
-def getUsers():
+@auth.login_required
+def getUsers(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
 
@@ -2379,7 +2402,8 @@ def getUsers():
 
 
 @app.route("/api/deleteuser", methods=["DELETE"])
-def deleteUser():
+@auth.login_required
+def deleteUser(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
 
     if not client_principal_id:
@@ -2427,7 +2451,8 @@ def logout():
 
 
 @app.route("/api/inviteUser", methods=["POST"])
-def sendEmail():
+@auth.login_required
+def sendEmail(*, context):
     if (
         not request.json
         or "username" not in request.json
@@ -2570,7 +2595,8 @@ def sendEmail():
 
 
 @app.route("/api/getInvitations", methods=["GET"])
-def getInvitations():
+@auth.login_required
+def getInvitations(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
@@ -2597,7 +2623,8 @@ def getInvitations():
 
 
 @app.route("/api/createInvitation", methods=["POST"])
-def createInvitation():
+@auth.login_required
+def createInvitation(*, context):
     try:
         client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
         if not client_principal_id:
@@ -2632,7 +2659,8 @@ def createInvitation():
 
 
 @app.route("/api/deleteInvitation", methods=["DELETE"])
-def deleteInvitation():
+@auth.login_required
+def deleteInvitation(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
@@ -2653,7 +2681,8 @@ def deleteInvitation():
 
 
 @app.route("/api/checkuser", methods=["POST"])
-def checkUser():
+@auth.login_required
+def checkUser(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     if not client_principal_id or not client_principal_name:
@@ -2721,7 +2750,8 @@ def checkUser():
 
 
 @app.route("/api/get-organization-subscription", methods=["GET"])
-def getOrganization():
+@auth.login_required
+def getOrganization(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     organizationId = request.args.get("organizationId")
     if not client_principal_id:
@@ -2749,7 +2779,8 @@ def getOrganization():
 
 
 @app.route("/api/get-user-organizations", methods=["GET"])
-def getUserOrganizations():
+@auth.login_required
+def getUserOrganizations(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return create_error_response(
@@ -2764,7 +2795,8 @@ def getUserOrganizations():
 
 
 @app.route("/api/get-users-organizations-role", methods=["GET"])
-def getUserOrganizationsRole():
+@auth.login_required
+def getUserOrganizationsRole(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     organization_id = request.args.get("organization_id")
 
@@ -2785,7 +2817,8 @@ def getUserOrganizationsRole():
 
 
 @app.route("/api/create-organization", methods=["POST"])
-def createOrganization():
+@auth.login_required
+def createOrganization(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
@@ -2818,7 +2851,8 @@ def createOrganization():
 
 
 @app.route("/api/getUser", methods=["GET"])
-def getUser():
+@auth.login_required
+def getUser(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
 
@@ -2861,7 +2895,8 @@ def get_product_prices(product_id):
 
 
 @app.route("/api/prices", methods=["GET"])
-def get_product_prices_endpoint():
+@auth.login_required
+def get_product_prices_endpoint(*, context):
     product_id = request.args.get("product_id", PRODUCT_ID_DEFAULT)
 
     if not product_id:
@@ -3292,7 +3327,8 @@ def determine_subscription_tiers(subscription):
 
 
 @app.route("/api/subscriptions/<subscription_id>/change", methods=["PUT"])
-def change_subscription(subscription_id):
+@auth.login_required
+def change_subscription(*, context, subscription_id):
     try:
 
         data = request.json
@@ -3355,7 +3391,8 @@ def change_subscription(subscription_id):
 
 
 @app.route("/api/subscriptions/<subscription_id>/cancel", methods=["DELETE"])
-def cancel_subscription(subscription_id):
+@auth.login_required
+def cancel_subscription(*, context, subscription_id):
     try:
 
         subscription = stripe.Subscription.retrieve(subscription_id)
@@ -3389,7 +3426,8 @@ doc_processor = FinancialDocumentProcessor()  # from financial_doc_processor
 
 
 @app.route("/api/SECEdgar/financialdocuments", methods=["GET"])
-def process_edgar_document():
+@auth.login_required
+def process_edgar_document(*, context):
     """
     Process a single financial document from SEC EDGAR.
 
@@ -3483,7 +3521,8 @@ from summarization import DocumentSummarizer
 
 
 @app.route("/api/SECEdgar/financialdocuments/summary", methods=["POST"])
-def generate_summary():
+@auth.login_required
+def generate_summary(*, context):
     """
     Endpoint to generate a summary of financial documents from SEC Edgar.
 
@@ -3700,7 +3739,8 @@ from utils import _extract_response_data
 
 
 @app.route("/api/SECEdgar/financialdocuments/process-and-summarize", methods=["POST"])
-def process_and_summarize_document():
+@auth.login_required
+def process_and_summarize_document(*, context):
     """
     Process and summarize a financial document in sequence.
 
@@ -3921,7 +3961,8 @@ from financial_agent_utils.curation_report_config import (
 
 
 @app.route("/api/reports/generate/curation", methods=["POST"])
-def generate_report():
+@auth.login_required
+def generate_report(*, context):
     try:
         data = request.get_json()
         report_topic_rqst = data["report_topic"]  # Will raise KeyError if missing
@@ -4086,7 +4127,8 @@ from utils import EmailServiceError, EmailService
 
 
 @app.route("/api/reports/email", methods=["POST"])
-def send_email_endpoint():
+@auth.login_required
+def send_email_endpoint(*, context):
     """Send an email with optional attachments.
     Note: currently attachment path has to be in the same directory as the app.py file.
 
@@ -4248,7 +4290,8 @@ from rp2email import process_and_send_email, ReportProcessor
 
 
 @app.route("/api/reports/digest", methods=["POST"])
-def digest_report():
+@auth.login_required
+def digest_report(*, context):
     """
     Process report and send email .
 
@@ -4318,7 +4361,8 @@ def digest_report():
 
 
 @app.route("/api/reports/storage/files", methods=["GET"])
-def list_blobs():
+@auth.login_required
+def list_blobs(*, context):
     """
     List blobs i nteh container with optional filtering
 
@@ -4379,7 +4423,8 @@ def list_blobs():
 
 
 @app.route("/api/logs/", methods=["POST"])
-def get_logs():
+@auth.login_required
+def get_logs(*, context):
     try:
         data = request.get_json()
         if data == None:
@@ -4402,7 +4447,8 @@ def get_logs():
 
 
 @app.route("/api/companydata", methods=["GET"])
-def get_company_data():
+@auth.login_required
+def get_company_data(*, context):
     try:
         data = get_company_list()
         return create_success_response(data, 200)
@@ -4415,7 +4461,8 @@ def get_company_data():
 
 
 @app.route("/api/get-source-documents", methods=["GET"])
-def get_source_documents():
+@auth.login_required
+def get_source_documents(*, context):
     organization_id = request.args.get("organization_id", "").strip()
 
     logger.info(f"Getting source documents for organization {organization_id}")
@@ -4453,7 +4500,8 @@ def get_source_documents():
 
 
 @app.route("/api/delete-source-document", methods=["DELETE"])
-def delete_source_document():
+@auth.login_required
+def delete_source_document(*, context):
     try:
         # Get blob name from query parameters
         blob_name = request.args.get("blob_name")
@@ -4488,7 +4536,8 @@ def delete_source_document():
 
 
 @app.route("/api/get-password-reset-url", methods=["GET"])
-def get_password_reset_url():
+@auth.login_required
+def get_password_reset_url(*, context):
     tenant = os.getenv("AAD_TENANT_NAME")
     policy = os.getenv("ADD_CHANGE_PASSWORD")
     client_id = os.getenv("AAD_CLIENT_ID")
@@ -4504,7 +4553,8 @@ def get_password_reset_url():
 
 
 @app.route("/api/webscraping/scrape-url", methods=["POST"])
-def scrape_url():
+@auth.login_required
+def scrape_url(*, context):
     """
     Endpoint to scrape a single URL using the external web scraping service.
     Expects a JSON payload with a 'url' string and optionally 'organization_id'.
@@ -4663,7 +4713,8 @@ def scrape_url():
 
 
 @app.route("/api/webscraping/multipage-scrape", methods=["POST"])
-def multipage_scrape():
+@auth.login_required
+def multipage_scrape(*, context):
     """
     Endpoint to scrape URLs using the external multipage scraping service.
     This is a proxy endpoint that forwards requests to the orchestrator's multipage-scrape endpoint.
@@ -4841,7 +4892,8 @@ def multipage_scrape():
 
 
 @app.route("/api/webscraping/get-urls", methods=["GET"])
-def get_organization_urls_endpoint():
+@auth.login_required
+def get_organization_urls_endpoint(*, context):
     try:
         organization_id = request.args.get("organization_id")
         if not organization_id:
@@ -4854,7 +4906,8 @@ def get_organization_urls_endpoint():
 
 
 @app.route("/api/webscraping/delete-url", methods=["DELETE"])
-def delete_url_endpoint():
+@auth.login_required
+def delete_url_endpoint(*, context):
     try:
         url_id = request.args.get("url_id")
         organization_id = request.args.get("organization_id")
@@ -4870,7 +4923,8 @@ def delete_url_endpoint():
 
 
 @app.route("/api/webscraping/search-urls", methods=["GET"])
-def filter_urls():
+@auth.login_required
+def filter_urls(*, context):
     try:
         search_term = request.args.get("search_term")
         organization_id = request.args.get("organization_id")
@@ -4886,7 +4940,8 @@ def filter_urls():
 
 
 @app.route("/api/webscraping/modify-url", methods=["PUT"])
-def update_url():
+@auth.login_required
+def update_url(*, context):
     """
     Update a URL for web scraping in an organization.
 
@@ -4958,7 +5013,8 @@ def healthz():
 
 
 @app.route("/api/organization/<organization_id>/gallery", methods=["GET"])
-def get_gallery(organization_id):
+@auth.login_required
+def get_gallery(*, context, organization_id):
     """
     Retrieve gallery items for a specific organization.
 
