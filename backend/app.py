@@ -4442,6 +4442,12 @@ def get_source_documents():
             ):
                 organization_blobs.append(blob)
 
+        if organization_blobs:
+            organization_blobs.sort(
+                key=lambda x: datetime.fromisoformat(x['created_on']),
+                reverse=True
+            )
+
         logger.info(
             f"Found {len(organization_blobs)} source documents for organization {organization_id}"
         )
