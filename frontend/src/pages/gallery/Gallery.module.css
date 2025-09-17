@@ -62,6 +62,16 @@
     z-index: 10;
 }
 
+.filtersGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filtersGroup .filter {
+  margin-left: 0 !important;
+}
+
 .dropdownContent {
     padding: 4px 0;
 }
