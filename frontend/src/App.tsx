@@ -7,7 +7,6 @@ import HelpCenter from "./pages/helpcenter/HelpCenter";
 import RequestStudies from "./pages/studies/RequestStudies";
 import Logout from "./pages/logout/Logout";
 import Notifications from "./pages/notifications/Notifications";
-import UserManagement from "./pages/usermanagement/UserManagement";
 import { LazyPaymentGateway } from "./components/PaymentGateway/LazyPaymentGateway";
 import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 // New Routes
@@ -20,7 +19,6 @@ import Organization from "./pages/organization/Organizationcopy";
 import UploadResources from "./pages/resources/UploadResources";
 
 import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
-
 
 import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
 import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
@@ -111,7 +109,6 @@ export default function App() {
                     <Route path="/knowledge-sources" element={<KnowledgeSources />} />
                     <Route path="/voice-customer" element={<VoiceCustomer />} />
                     <Route path="/subscription-management" element={<SubscriptionManagement />} />
-                    <Route path="/manage-email-lists" element={<UserManagement />} />
                 </Route>
             </Route>
 
@@ -139,8 +136,7 @@ export default function App() {
                     />
                 }
             >
-                <Route element={<Layout />}>
-                </Route>
+                <Route element={<Layout />}></Route>
             </Route>
 
             <Route
@@ -151,8 +147,7 @@ export default function App() {
                     />
                 }
             >
-                <Route element={<Layout />}>
-                </Route>
+                <Route element={<Layout />}></Route>
             </Route>
 
             {/* Catch-All Route for Undefined Paths */}
