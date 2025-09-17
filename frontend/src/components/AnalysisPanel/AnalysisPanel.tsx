@@ -76,15 +76,15 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                 aria-label="Analysis Panel"
                 styles={{
                     linkIsSelected: {
-                        color: "#159244",
+                        color: "#0E7C3A",
                         fontSize: "15px",
                         selectors: {
                             ":before": {
-                                backgroundColor: "#008236"
+                                backgroundColor: "#0E7C3A"
                             },
                             ":hover": {
-                                color: "#159244",
-                                backgroundColor: "#f0fdf4"
+                                color: "#0E7C3A",
+                                backgroundColor: "#E8F5ED"
                             }
                         }
                     }

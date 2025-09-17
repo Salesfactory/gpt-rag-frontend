@@ -82,26 +82,26 @@
 }
 
 .cardHeader {
-    background-color: #16a34a;
+    background-color: #008431;
     padding: 0.75rem 1.5rem;
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: #fff;
+    color: #ffffff;
     border-bottom: 1px solid #e5e7eb;
 }
 
 .cardFormulaeHeader {
-    background-color: #16a34a;
+    background-color: #008431;
+    color: #ffffff;
     padding: 1.2rem 1.5rem;
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: #fff;
     border-bottom: 1px solid #e5e7eb;
 }
 
@@ -271,7 +271,8 @@
 }
 
 .reportHeader {
-    background-color: #16a34a;
+    background-color: #008431;
+    color: #ffffff;
     padding: 1.2rem 1.5rem;
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
@@ -279,7 +280,6 @@
     align-items: center;
     gap: 0.5rem;
     border-bottom: 1px solid #e5e7eb;
-    color: white;
 }
 
 .reportTitle {
@@ -749,14 +749,14 @@
 
 
 .industryHeader {
-  background-color: #16a34a;
+  background-color: #008431;
+  color: #ffffff;
   padding: 1rem 1.5rem;
   border-top-left-radius: 0.5rem;
   border-top-right-radius: 0.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #fff;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -803,7 +803,7 @@
 }
 
 .saveButton {
-  background-color: #16a34a;
+  background-color: #008431;
   color: #ffffff;
   border: none;
   padding: 10px 16px;
@@ -820,7 +820,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background-color: #13823e;
+  background-color: #006e2c;
 }
 
 .saveButton:disabled {
