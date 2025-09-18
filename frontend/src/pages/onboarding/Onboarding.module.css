@@ -9,23 +9,6 @@
     text-align: center;
 }
 
-.card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 420px;
-    min-height: 380px;
-    padding: 2rem;
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    gap: 1rem;
-}
-
-
-
 .logo {
     width: 100%;
     z-index: 2;
@@ -34,15 +17,6 @@
 .logo img {
     max-width: 180px;
     height: auto;
-}
-
-.containerStep {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-evenly;
-    flex-grow: 1;
-    gap: 1rem;
 }
 
 .iconMoney {

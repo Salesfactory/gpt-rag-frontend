@@ -110,13 +110,6 @@ export type PostSettingsProps = {
     font_size: string;
 };
 
-export type SummarizationReportProps = {
-    templateType: string;
-    description: string;
-    companyTicker: string;
-    companyName: string;
-};
-
 export interface Category {
   id: string;
   organization_id: string;
