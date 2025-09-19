@@ -27,6 +27,8 @@ import tempfile
 import markdown
 from flask_cors import CORS
 from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from azure.identity import DefaultAzureCredential
 from urllib.parse import unquote, urlparse, urlencode, urljoin
 import uuid
@@ -180,6 +182,15 @@ CORS(app)
 
 # Enable compression for all responses
 Compress(app)
+
+# Initialize Flask-Limiter with basic configuration
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["1000 per hour", "100 per minute"],
+    storage_uri="memory://",
+    strategy="fixed-window"
+)
 
 
 def setup_llm() -> PandasAIClient:
