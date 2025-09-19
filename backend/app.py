@@ -4363,22 +4363,26 @@ def digest_report(*, context):
 @auth.login_required
 def list_blobs(*, context):
     """
-    List blobs i nteh container with optional filtering
+    List blobs in the container with optional filtering and pagination
 
     Query params:
     - prefix(str): filter blobs by prefix
     - include_metadata(str): include metadata in results
-    - max_results(int): maximum number of results to return
+    - page_size(int): number of results per page (default: 10, max: 100)
+    - page(int): page number (1-based, default: 1)
+    - continuation_token(str): token for continuing pagination from a specific point
     - container_name(str): name of the container to list blobs from
 
     Returns:
-        JSON response with list of blobs
+        JSON response with list of blobs and pagination metadata
 
     Example Payload:
     {
         "prefix": "Reports/Curation_Reports/Monthly_Economics/",
         "include_metadata": "yes",
-        "max_results": 10,
+        "page_size": 20,
+        "page": 1,
+        "continuation_token": null,
         "container_name": "documents"
     }
     """
@@ -4389,11 +4393,12 @@ def list_blobs(*, context):
 
         container_name = data.get("container_name")
         prefix = data.get("prefix", None)
-
         include_metadata = data.get("include_metadata", "no").lower()
-
-        # convert max_results to int
-        max_results = data.get("max_results", 10)
+        
+        # Pagination parameters
+        page_size = min(data.get("page_size", 10), 100)  # Cap at 100 for performance
+        page = max(data.get("page", 1), 1)  # Ensure page is at least 1
+        continuation_token = data.get("continuation_token")
 
         if not container_name:
             return (
@@ -4403,15 +4408,36 @@ def list_blobs(*, context):
                 400,
             )
 
+        if page_size <= 0:
+            return (
+                jsonify(
+                    {"status": "error", "message": "page_size must be greater than 0"}
+                ),
+                400,
+            )
+
         blob_storage_manager = BlobStorageManager()
-        blobs = blob_storage_manager.list_blobs_in_container(
+        result = blob_storage_manager.list_blobs_in_container_paginated(
             container_name=container_name,
             prefix=prefix,
             include_metadata=include_metadata,
-            max_results=max_results,
+            page_size=page_size,
+            page=page,
+            continuation_token=continuation_token,
         )
 
-        return jsonify({"status": "success", "data": blobs, "count": len(blobs)}), 200
+        return jsonify({
+            "status": "success", 
+            "data": result["blobs"], 
+            "pagination": {
+                "current_page": result["current_page"],
+                "page_size": result["page_size"],
+                "total_count": result["total_count"],
+                "has_more": result["has_more"],
+                "next_continuation_token": result.get("next_continuation_token"),
+                "total_pages": result.get("total_pages")
+            }
+        }), 200
 
     except ValueError as e:
         return jsonify({"status": "error", "message": str(e)}), 400

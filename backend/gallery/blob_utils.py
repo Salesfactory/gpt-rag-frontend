@@ -110,7 +110,8 @@ def get_gallery_items_by_org(
     order: str = "newest",
     query: Optional[str] = None,
     page: int = 1,
-    limit: int = 10
+    limit: int = 10,
+    continuation_token: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     List the organization's blobs and apply server-side filtering/sorting with pagination.
@@ -123,12 +124,18 @@ def get_gallery_items_by_org(
     try:
         prefix = f"organization_files/{organization_id}/generated_images"
         blob_storage_manager = BlobStorageManager()
-        raw_items: List[Dict[str, Any]] = blob_storage_manager.list_blobs_in_container_for_upload_files(
+        
+        # Use the new paginated method
+        paginated_result = blob_storage_manager.list_blobs_in_container_for_upload_files_paginated(
             container_name="documents",
             prefix=prefix,
             include_metadata="yes",
-            max_results=limit
-        ) or []
+            page_size=limit,
+            page=page,
+            continuation_token=continuation_token
+        )
+        
+        raw_items: List[Dict[str, Any]] = paginated_result.get("blobs", [])
 
         items: List[Dict[str, Any]] = []
         for item in raw_items:
@@ -176,24 +183,33 @@ def get_gallery_items_by_org(
         reverse = (order or "newest").lower() == "newest"
         items.sort(key=lambda i: (sort_key(i), i.get("name", "")), reverse=reverse)
 
-        # Apply pagination
-        total_items = len(items)
-        start_index = (page - 1) * limit
-        end_index = start_index + limit
-        paginated_items = items[start_index:end_index]
+        # Apply pagination - items are already paginated from blob storage,
+        # but we may need to further filter/sort them
+        total_items_after_filtering = len(items)
         
-        total_pages = (total_items + limit - 1) // limit  # Ceiling division
+        # Since we're already getting paginated results from blob storage,
+        # we don't need to re-paginate unless we filtered items
+        paginated_items = items
         
-        logger.info("RETURNED PAGINATED ITEMS")
+        # Use pagination info from the blob storage result, but adjust for any filtering we did
+        blob_pagination = {
+            "current_page": paginated_result.get("current_page", page),
+            "page_size": paginated_result.get("page_size", limit),
+            "total_count": paginated_result.get("total_count", total_items_after_filtering),
+            "has_more": paginated_result.get("has_more", False),
+            "next_continuation_token": paginated_result.get("next_continuation_token"),
+            "total_pages": paginated_result.get("total_pages", 1)
+        }
 
         return {
             "items": paginated_items,
-            "total": total_items,
-            "page": page,
-            "limit": limit,
-            "total_pages": total_pages,
-            "has_next": page < total_pages,
-            "has_prev": page > 1
+            "total": total_items_after_filtering,
+            "page": blob_pagination["current_page"],
+            "limit": blob_pagination["page_size"],
+            "total_pages": blob_pagination["total_pages"],
+            "has_next": blob_pagination["has_more"],
+            "has_prev": page > 1,
+            "next_continuation_token": blob_pagination["next_continuation_token"]
         }
 
     except Exception as e:
