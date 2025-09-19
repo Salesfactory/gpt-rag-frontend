@@ -110,7 +110,7 @@ def get_gallery_items_by_org(
     order: str = "newest",
     query: Optional[str] = None,
     page: int = 1,
-    limit: int = 20
+    limit: int = 10
 ) -> Dict[str, Any]:
     """
     List the organization's blobs and apply server-side filtering/sorting with pagination.
@@ -126,7 +126,8 @@ def get_gallery_items_by_org(
         raw_items: List[Dict[str, Any]] = blob_storage_manager.list_blobs_in_container_for_upload_files(
             container_name="documents",
             prefix=prefix,
-            include_metadata="yes"
+            include_metadata="yes",
+            max_results=limit
         ) or []
 
         items: List[Dict[str, Any]] = []
@@ -183,6 +184,8 @@ def get_gallery_items_by_org(
         
         total_pages = (total_items + limit - 1) // limit  # Ceiling division
         
+        logger.info("RETURNED PAGINATED ITEMS")
+
         return {
             "items": paginated_items,
             "total": total_items,
