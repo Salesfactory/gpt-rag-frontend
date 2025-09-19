@@ -125,7 +125,6 @@
     align-items: center;
 }
 
-
 .chatAnalysisPanel {
     flex: 1;
     height: 100%;
@@ -185,9 +184,14 @@
 
 .chatDisclaimer {
     margin-top: 5px;
-    color: #8d8d8d;
+    background: #F9FAFB;
     font-size: 0.8em;
     text-align: center;
+}
+
+.chatDisclaimer,
+.chatDisclaimer p {
+  color: #374151;
 }
 
 @media only screen and (max-height: 999px) {
@@ -207,6 +211,7 @@
 }
 
 .noMargin {
+    color: #111827;
     margin-top: 0;
     margin-bottom: 0;
 }

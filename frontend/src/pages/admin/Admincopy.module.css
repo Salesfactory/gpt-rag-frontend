@@ -91,6 +91,18 @@
     margin-right: 5px;
 }
 
+.headerRow{
+  background: #008431;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 16px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 0;
+}
+
+
 @media (max-width: 768px) {
     .button {
         width: 100%;
@@ -406,7 +418,7 @@
 }
 
 .headerE {
-    background-color: #16a34a;
+    background-color: #008431;
     color: white;
     display: flex;
     align-items: center;
@@ -464,7 +476,7 @@
 
 .inputE:focus {
     outline: none;
-    border-color: #16a34a;
+    border-color: #008431;
     box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
@@ -488,7 +500,7 @@
 
 .dropdownE:focus {
     outline: none;
-    border-color: #16a34a;
+    border-color: #008431;
     box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
@@ -505,7 +517,7 @@
 }
 
 .changePasswordButtonE {
-    background-color: #16a34a;
+    background-color: #008431;
     color: white;
     border: none;
     padding: 0.5rem 1rem;
@@ -517,7 +529,7 @@
 }
 
 .changePasswordButtonE:hover {
-    background-color: #15803d;
+    background-color: #006e2c;
 }
 
 .errorMessageE {
@@ -554,7 +566,7 @@
 
 .saveButtonE {
     padding: 0.5rem 1rem;
-    background-color: #16a34a;
+    background-color: #008431;
     color: white;
     border: none;
     border-radius: 6px;

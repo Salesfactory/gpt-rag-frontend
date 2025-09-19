@@ -380,13 +380,13 @@
     padding-top: 4px !important;
     padding-bottom: 4px !important;
     height: 42px;
-    background-color: #00a63e;
+    background-color: #008431;
     border-top: none !important;
 }
 
 .detailsListContainer :global(.ms-DetailsHeader-cell) {
-    color: white !important;
-    background-color: #00a63e !important;
+    background-color: #008431;
+    color: #ffffff !important;
     text-align: left !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
@@ -395,15 +395,15 @@
 
 .detailsListContainer :global(.ms-DetailsHeader-cellTitle),
 .detailsListContainer :global(.ms-DetailsHeader-cellName) {
-    color: white !important;
+    color: #ffffff !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
     border-top: none !important;
 }
 
 .detailsListContainer :global(.ms-DetailsHeader-cell:hover) {
-    background-color: #00a63e !important;
-    color: white !important;
+    background-color: #006e2c !important;
+    color: #ffffff !important;
 }
 
 .detailsListContainer :global(.ms-DetailsRow) {

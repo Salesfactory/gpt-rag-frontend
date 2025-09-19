@@ -19,7 +19,7 @@
 }
 
 .title {
-    background-color: #00a63e;
+    background-color: #008431;
     color: white;
     font-size: 1.25rem;
     font-weight: bold;
@@ -81,7 +81,7 @@
     padding: 5px 10px;
     border: 2px solid #e5e7eb;
     border-radius: 0.5rem;
-    color: #6a7280;
+    color: #111827; 
     height: 40px;
     align-items: center;
     background-color: #f3f4f6;
@@ -127,19 +127,19 @@
 }
 
 .saveButton:hover {
-    background-color: #008236;
+    background-color: #006e2c;
 }
 
 .saveButton:focus {
-    box-shadow: 0 0 0 2px #22c55e;
-    outline: none;
-    box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #22c55e;
+    outline: 3px solid #111;
+    outline-offset: 2px;
+    box-shadow: none;
 }
 
 .saveButton {
     margin-top: 10px;
     padding: 10px 20px;
-    background-color: #00a63e;
+    background-color: #008431;
     color: white;
     border: none;
     border-radius: 6px;
@@ -157,6 +157,7 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    color: #111827;
 }
 
 .statusDotActive,

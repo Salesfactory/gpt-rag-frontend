@@ -120,7 +120,7 @@ export const Answer = ({
                     rel="noopener noreferrer"
                     style={{
                         ...baseTextStyle,
-                        color: "#85a717",
+                        color: "#0E7C3A",
                         textDecoration: "none",
                         overflowWrap: "break-word",
                         wordBreak: "break-word",

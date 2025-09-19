@@ -113,7 +113,7 @@
 }
 
 .header {
-  background: #139443;
+  background: #008431;
   padding: 1rem 1.5rem;
 }
 
@@ -126,13 +126,13 @@
 .headerTitle {
   font-size: 1.2rem;
   font-weight: 500;
-  color: white;
+  color: #ffffff;
 }
 
 .headerCount {
   font-size: 1rem;
   font-weight: 500;
-  color: white;
+  color: #ffffff;
 }
 
 /* Empty State */
@@ -324,7 +324,7 @@
 }
 
 .placeholder {
-  color: #9ca3af;
+  color: #374151;
   font-size: 0.875rem;
   text-align: center;
   padding: 1rem;
