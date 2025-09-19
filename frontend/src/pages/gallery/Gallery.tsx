@@ -3,7 +3,7 @@ import styles from "./Gallery.module.css";
 import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import { deleteSourceFileFromBlob, getFileBlob, getGalleryItems, getUsers } from "../../api";
+import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
 const statusFilterOptions = [
@@ -21,7 +21,6 @@ type GalleryItem = {
     name: string;
     size: number;
     url: string;
-    blob?: string;
 };
 
 type UserData = {
@@ -110,22 +109,6 @@ const Gallery: React.FC = () => {
                 setImages(galleryData);
                 setFetchedImages(galleryData);
 
-                if (galleryData.length > 0) {
-                    const pairs = await Promise.all(
-                        galleryData.map(async item => {
-                            try {
-                                const blob = await getFileBlob(item.name, "documents");
-                                return [item.name, URL.createObjectURL(blob)] as const;
-                            } catch {
-                                return [item.name, null] as const;
-                            }
-                        })
-                    );
-
-                    const map = new Map(pairs);
-                    setImages(prev => prev.map(img => ({ ...img, blob: map.get(img.name) ?? img.blob })));
-                    setFetchedImages(prev => prev.map(img => ({ ...img, blob: map.get(img.name) ?? img.blob })));
-                }
             } catch (e) {
                 console.error("Error fetching gallery items:", e);
             } finally {
@@ -134,12 +117,6 @@ const Gallery: React.FC = () => {
         };
 
         fetchAndProcessGalleryItems();
-        return () => {
-            setImages(curr => {
-                curr.forEach(it => it.blob && URL.revokeObjectURL(it.blob));
-                return [];
-            });
-        };
     }, [orgId, userId, userFilter, sortOrder, searchQuery, currentPage, itemsPerPage]);
 
     const handleDownload = (item: GalleryItem) => {
@@ -210,13 +187,6 @@ const Gallery: React.FC = () => {
         return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
     }, [users, fetchedImages]);
 
-    console.log(totalPages);
-    console.log(totalItems);
-    console.log(images.length);
-    console.log(currentPage);
-    console.log(totalPages);
-    console.log(totalItems);
-    console.log(images.length);
 
     return (
         <div className={styles.page_container}>
@@ -386,11 +356,22 @@ const Gallery: React.FC = () => {
                                                 {/* Image Preview */}
                                                 <div className={styles.preview}>
                                                     <div className={styles.previewContent}>
-                                                        {file.blob ? (
-                                                            <img src={file.blob} alt="Chart Preview" width={32} height={32} className={styles.previewImage} />
-                                                        ) : (
-                                                            <div className={styles.placeholder}>No Preview Available</div>
-                                                        )}
+                                                        {file.url ? (
+                                                            <img 
+                                                                src={file.url} 
+                                                                alt="Chart Preview" 
+                                                                width={32} 
+                                                                height={32} 
+                                                                className={styles.previewImage}
+                                                                onError={(e) => {
+                                                                    e.currentTarget.style.display = 'none';
+                                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                }}
+                                                            />
+                                                        ) : null}
+                                                        <div className={`${styles.placeholder} ${file.url ? 'hidden' : ''}`}>
+                                                            No Preview Available
+                                                        </div>
                                                     </div>
 
                                                     {/* Hover Actions Overlay */}

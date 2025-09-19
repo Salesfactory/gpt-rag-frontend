@@ -1,8 +1,10 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
 from email.utils import parsedate_to_datetime
 from financial_doc_processor import BlobStorageManager
 from logging import getLogger
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from flask import current_app
 
 logger = getLogger(__name__)
 
@@ -69,6 +71,39 @@ def _coerce_dt(value: Any) -> datetime:
 
     return _MIN
 
+def _generate_sas_url(blob_name: str, container_name: str = "documents", expiry_hours: int = 24) -> Optional[str]:
+    """
+    Generate a SAS URL for a blob with read permissions.
+    
+    Args:
+        blob_name: Name of the blob
+        container_name: Name of the container (default: "documents")
+        expiry_hours: Hours until the SAS URL expires (default: 24)
+    
+    Returns:
+        SAS URL string or None if generation fails
+    """
+    try:
+        blob_service_client = BlobServiceClient.from_connection_string(
+            current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
+        )
+        account_name = blob_service_client.account_name
+        
+        sas_token = generate_blob_sas(
+            account_name=account_name,
+            container_name=container_name,
+            blob_name=blob_name,
+            account_key=blob_service_client.credential.account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.now(timezone.utc) + timedelta(hours=expiry_hours),
+        )
+        
+        return f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+        
+    except Exception as e:
+        logger.warning(f"Failed to generate SAS URL for blob {blob_name}: {e}")
+        return None
+
 def get_gallery_items_by_org(
     organization_id: str,
     uploader_id: Optional[str] = None,
@@ -97,14 +132,19 @@ def get_gallery_items_by_org(
         items: List[Dict[str, Any]] = []
         for item in raw_items:
             metadata = item.get("metadata") or {}
+            blob_name = item.get("name")
+            
+            # Generate SAS URL instead of using direct URL
+            sas_url = _generate_sas_url(blob_name, container_name="documents") if blob_name else None
+            
             items.append({
-                "name": item.get("name"),
+                "name": blob_name,
                 "size": item.get("size"),
                 "content_type": item.get("content_type"),
                 "created_on": item.get("last_modified"),
                 "last_modified": item.get("last_modified"),
                 "metadata": metadata,
-                "url": item.get("url")
+                "url": sas_url or item.get("url")  # Fallback to original URL if SAS generation fails
             })
 
         # Backend-only user filter

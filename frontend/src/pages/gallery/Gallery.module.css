@@ -478,4 +478,8 @@
     font-size: 0.7rem;
     padding: 0.15rem 0.5rem;
   }
+
+  .hidden {
+    display: none !important;
+  }
 }
