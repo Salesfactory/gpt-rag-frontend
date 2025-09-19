@@ -1589,13 +1589,24 @@ export async function getGalleryItems(
     uploader_id?: string | null;
     order?: "newest" | "oldest";
     query?: string;
+    page?: number;
+    limit?: number;
   }
-): Promise<any[]> {
+): Promise<{
+  items: any[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}> {
   const qs = new URLSearchParams();
   if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
   if (params.order)       qs.set("order", params.order);
-  if (params.query)           qs.set("query", params.query);
-
+  if (params.query)       qs.set("query", params.query);
+  if (params.page)        qs.set("page", params.page.toString());
+  if (params.limit)       qs.set("limit", params.limit.toString());
 
   const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;
 
@@ -1626,7 +1637,16 @@ export async function getGalleryItems(
     throw new Error("Invalid JSON from gallery API");
   });
 
-  return data?.data ?? data ?? [];
+  const result = data?.data ?? data ?? {};
+  return {
+    items: result.items ?? [],
+    total: result.total ?? 0,
+    page: result.page ?? 1,
+    limit: result.limit ?? 10,
+    total_pages: result.total_pages ?? 0,
+    has_next: result.has_next ?? false,
+    has_prev: result.has_prev ?? false
+  };
 }
 
 export async function fetchReportJobs({

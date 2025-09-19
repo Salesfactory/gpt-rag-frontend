@@ -4471,7 +4471,6 @@ def get_source_documents(*, context):
 
     try:
         blob_storage_manager = BlobStorageManager()
-
         # Search only the blobs under that organization's specific folder
         prefix = f"organization_files/{organization_id}/"
         blobs = blob_storage_manager.list_blobs_in_container_for_upload_files(
@@ -5019,12 +5018,14 @@ def get_gallery(*, context, organization_id):
 
     Query Parameters:
         sort (str, optional): Sort order - 'newest' or 'oldest'. Defaults to 'newest'.
+        page (int, optional): Page number (1-based). Defaults to 1.
+        limit (int, optional): Items per page. Defaults to 20, max 100.
 
     Args:
         organization_id (str): The unique identifier of the organization.
 
     Returns:
-        Response: JSON response containing a list of gallery items (HTTP 200),
+        Response: JSON response containing paginated gallery items (HTTP 200),
                   or an error response with an appropriate message and status code.
 
     Error Codes:
@@ -5038,16 +5039,21 @@ def get_gallery(*, context, organization_id):
         uploader_id = request.args.get("uploader_id")
         order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
         search_query = request.args.get("query") or request.args.get("q")
+        
+        # Pagination parameters
+        page = max(1, int(request.args.get("page", 1)))
+        limit = min(100, max(1, int(request.args.get("limit", 20))))
 
-        gallery_items = get_gallery_items_by_org(
+        result = get_gallery_items_by_org(
             organization_id,
             uploader_id=uploader_id,
             order=order,
-            query=search_query
-
+            query=search_query,
+            page=page,
+            limit=limit
         )
 
-        return create_success_response(gallery_items or [], 200)
+        return create_success_response(result, 200)
 
     except ValueError as ve:
         logger.error(f"Value error retrieving gallery items for org {organization_id}: {ve}")

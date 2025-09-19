@@ -73,14 +73,17 @@ def get_gallery_items_by_org(
     organization_id: str,
     uploader_id: Optional[str] = None,
     order: str = "newest",
-    query: Optional[str] = None
-) -> List[Dict[str, Any]]:
+    query: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20
+) -> Dict[str, Any]:
     """
-    List the organization's blobs and apply server-side filtering/sorting.
+    List the organization's blobs and apply server-side filtering/sorting with pagination.
     - Filter by metadata.user_id == uploader_id (case-insensitive).
     - Search by query across name, content_type, and serialized metadata.
     - Sort by created_on (fallback: last_modified). order: 'newest' | 'oldest'.
-    Always returns a list (possibly empty).
+    - Apply pagination with page and limit parameters.
+    Returns a dictionary with items, total count, and pagination info.
     """
     try:
         prefix = f"organization_files/{organization_id}/generated_images"
@@ -132,7 +135,23 @@ def get_gallery_items_by_org(
         reverse = (order or "newest").lower() == "newest"
         items.sort(key=lambda i: (sort_key(i), i.get("name", "")), reverse=reverse)
 
-        return items
+        # Apply pagination
+        total_items = len(items)
+        start_index = (page - 1) * limit
+        end_index = start_index + limit
+        paginated_items = items[start_index:end_index]
+        
+        total_pages = (total_items + limit - 1) // limit  # Ceiling division
+        
+        return {
+            "items": paginated_items,
+            "total": total_items,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1
+        }
 
     except Exception as e:
         logger.exception(f"Error retrieving gallery items for org {organization_id}: {e}")
