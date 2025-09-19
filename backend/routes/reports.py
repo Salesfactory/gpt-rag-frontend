@@ -1,18 +1,50 @@
 from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import NotFound
-from shared.cosmo_db import get_report, create_report, update_report, deleteReport
+from shared.cosmo_db import get_report, create_report, update_report, delete_report, get_filtered_reports
+from functools import wraps
 import logging
 
-bp = Blueprint("reports", __name__, url_prefix="/api/reports/")
+bp = Blueprint("reports", __name__, url_prefix="/api/reports")
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-auth = current_app["auth"]
+def auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_instance = current_app.config.get("auth")
+        return auth_instance.login_required(f)(*args, **kwargs)
+    return decorated_function
+
+@bp.route("/api/reports", methods=["GET"])
+@auth_required
+def getFilteredType(*, context):
+    """
+    Endpoint to obtain reports by type or retrieve all reports if no type is specified.
+    """
+    report_type = request.args.get("type")
+
+    try:
+        if report_type:
+            reports = get_filtered_reports(report_type)
+        else:
+            reports = get_filtered_reports()
+
+        return jsonify(reports), 200
+
+    except NotFound as e:
+        logging.warning(f"No reports found for type '{report_type}'.")
+        return jsonify({"error": f"No reports found for type '{report_type}'."}), 404
+
+    except Exception as e:
+        logging.exception(f"Error retrieving reports.")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+
 
 # get report by id argument from Container Reports
-@bp.route("/api/reports/<report_id>", methods=["GET"])
-@auth.login_required()
+@bp.route("/<report_id>", methods=["GET"])
+@auth_required
 def getReport(*, context, report_id):
     """
     Endpoint to get a report by ID.
@@ -31,8 +63,8 @@ def getReport(*, context, report_id):
 
 
 # create Reports curation and companySummarization container Reports
-@bp.route("/api/reports", methods=["POST"])
-@auth.login_required()
+@bp.route("/", methods=["POST"])
+@auth_required
 def createReport(*, context):
     """
     Endpoint to create a new report.
@@ -140,8 +172,8 @@ def createReport(*, context):
 
 
 # update Reports curation and companySummarization container Reports
-@bp.route("/api/reports/<report_id>", methods=["PUT"])
-@auth.login_required()
+@bp.route("/<report_id>", methods=["PUT"])
+@auth_required
 def updateReport(*, context, report_id):
     """
     Endpoint to update a report by ID.
@@ -177,8 +209,8 @@ def updateReport(*, context, report_id):
 
 
 # delete report from Container Reports
-@bp.route("/api/reports/<report_id>", methods=["DELETE"])
-@auth.login_required()
+@bp.route("/<report_id>", methods=["DELETE"])
+@auth_required
 def deleteReport(*, context, report_id):
     """
     Endpoint to delete a report by ID.
