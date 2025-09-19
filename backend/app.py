@@ -4374,22 +4374,26 @@ def digest_report(*, context):
 @auth.login_required
 def list_blobs(*, context):
     """
-    List blobs i nteh container with optional filtering
+    List blobs in the container with optional filtering and pagination
 
     Query params:
     - prefix(str): filter blobs by prefix
     - include_metadata(str): include metadata in results
-    - max_results(int): maximum number of results to return
+    - page_size(int): number of results per page (default: 10, max: 100)
+    - page(int): page number (1-based, default: 1)
+    - continuation_token(str): token for continuing pagination from a specific point
     - container_name(str): name of the container to list blobs from
 
     Returns:
-        JSON response with list of blobs
+        JSON response with list of blobs and pagination metadata
 
     Example Payload:
     {
         "prefix": "Reports/Curation_Reports/Monthly_Economics/",
         "include_metadata": "yes",
-        "max_results": 10,
+        "page_size": 20,
+        "page": 1,
+        "continuation_token": null,
         "container_name": "documents"
     }
     """
@@ -4400,11 +4404,12 @@ def list_blobs(*, context):
 
         container_name = data.get("container_name")
         prefix = data.get("prefix", None)
-
         include_metadata = data.get("include_metadata", "no").lower()
-
-        # convert max_results to int
-        max_results = data.get("max_results", 10)
+        
+        # Pagination parameters
+        page_size = min(data.get("page_size", 10), 100)  # Cap at 100 for performance
+        page = max(data.get("page", 1), 1)  # Ensure page is at least 1
+        continuation_token = data.get("continuation_token")
 
         if not container_name:
             return (
@@ -4414,15 +4419,36 @@ def list_blobs(*, context):
                 400,
             )
 
+        if page_size <= 0:
+            return (
+                jsonify(
+                    {"status": "error", "message": "page_size must be greater than 0"}
+                ),
+                400,
+            )
+
         blob_storage_manager = BlobStorageManager()
-        blobs = blob_storage_manager.list_blobs_in_container(
+        result = blob_storage_manager.list_blobs_in_container_paginated(
             container_name=container_name,
             prefix=prefix,
             include_metadata=include_metadata,
-            max_results=max_results,
+            page_size=page_size,
+            page=page,
+            continuation_token=continuation_token,
         )
 
-        return jsonify({"status": "success", "data": blobs, "count": len(blobs)}), 200
+        return jsonify({
+            "status": "success", 
+            "data": result["blobs"], 
+            "pagination": {
+                "current_page": result["current_page"],
+                "page_size": result["page_size"],
+                "total_count": result["total_count"],
+                "has_more": result["has_more"],
+                "next_continuation_token": result.get("next_continuation_token"),
+                "total_pages": result.get("total_pages")
+            }
+        }), 200
 
     except ValueError as e:
         return jsonify({"status": "error", "message": str(e)}), 400
@@ -4482,7 +4508,6 @@ def get_source_documents(*, context):
 
     try:
         blob_storage_manager = BlobStorageManager()
-
         # Search only the blobs under that organization's specific folder
         prefix = f"organization_files/{organization_id}/"
         blobs = blob_storage_manager.list_blobs_in_container_for_upload_files(
@@ -5030,12 +5055,14 @@ def get_gallery(*, context, organization_id):
 
     Query Parameters:
         sort (str, optional): Sort order - 'newest' or 'oldest'. Defaults to 'newest'.
+        page (int, optional): Page number (1-based). Defaults to 1.
+        limit (int, optional): Items per page. Defaults to 20, max 100.
 
     Args:
         organization_id (str): The unique identifier of the organization.
 
     Returns:
-        Response: JSON response containing a list of gallery items (HTTP 200),
+        Response: JSON response containing paginated gallery items (HTTP 200),
                   or an error response with an appropriate message and status code.
 
     Error Codes:
@@ -5049,16 +5076,21 @@ def get_gallery(*, context, organization_id):
         uploader_id = request.args.get("uploader_id")
         order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
         search_query = request.args.get("query") or request.args.get("q")
+        
+        # Pagination parameters
+        page = max(1, int(request.args.get("page", 1)))
+        limit = min(100, max(1, int(request.args.get("limit", 20))))
 
-        gallery_items = get_gallery_items_by_org(
+        result = get_gallery_items_by_org(
             organization_id,
             uploader_id=uploader_id,
             order=order,
-            query=search_query
-
+            query=search_query,
+            page=page,
+            limit=limit
         )
 
-        return create_success_response(gallery_items or [], 200)
+        return create_success_response(result, 200)
 
     except ValueError as ve:
         logger.error(f"Value error retrieving gallery items for org {organization_id}: {ve}")

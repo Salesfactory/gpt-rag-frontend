@@ -1053,6 +1053,335 @@ class BlobStorageManager:
             logger.error(f"Error listing blobs in container: {str(e)}")
             raise
 
+    def list_blobs_in_container_paginated(
+        self,
+        container_name: str,
+        prefix: str = None,
+        include_metadata: str = "no",
+        page_size: int = 10,
+        page: int = 1,
+        continuation_token: str = None,
+    ) -> Dict[str, Any]:
+        """
+        List blobs in a container with proper pagination support using continuation tokens.
+
+        Args:
+            container_name (str): Name of the container to list blobs from
+            prefix (str, optional): Filter results to blob with this prefix
+            include_metadata (str, optional): Include metadata in results ("yes" or "no")
+            page_size (int): Number of results per page (default: 10, max: 100)
+            page (int): Page number (1-based, default: 1)
+            continuation_token (str, optional): Token for continuing pagination from a specific point
+
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - blobs: List of blob information dictionaries
+                - current_page: Current page number
+                - page_size: Number of results per page
+                - total_count: Total number of blobs (estimated)
+                - has_more: Whether there are more results available
+                - next_continuation_token: Token for the next page (if available)
+                - total_pages: Estimated total pages (if total_count is available)
+
+        Raises:
+            ValueError: If container_name is empty or page_size is invalid
+            ContainerNotFoundError: If container doesn't exist
+            BlobAuthenticationError: If authentication fails
+        """
+        if not container_name or not container_name.strip():
+            raise ValueError("Container name is required and cannot be empty")
+
+        if page_size <= 0 or page_size > 100:
+            raise ValueError("page_size must be between 1 and 100")
+
+        if page < 1:
+            raise ValueError("page must be greater than 0")
+
+        try:
+            container_client = self.blob_service_client.get_container_client(container_name)
+
+            # Verify container exists
+            if not container_client.exists():
+                raise ContainerNotFoundError(f"Container not found: {container_name}")
+
+            # Build list params
+            list_params = {
+                "name_starts_with": prefix if prefix else None,
+                "results_per_page": page_size,
+            }
+
+            # List blobs with params
+            blobs = container_client.list_blobs(
+                **{k: v for k, v in list_params.items() if v is not None}
+            )
+
+            # Get pages iterator
+            pages = blobs.by_page(continuation_token=continuation_token)
+            
+            # For page-based navigation (when no continuation_token is provided)
+            if not continuation_token and page > 1:
+                # Skip to the desired page
+                for _ in range(page - 1):
+                    try:
+                        next(pages)
+                    except StopIteration:
+                        # No more pages available
+                        return {
+                            "blobs": [],
+                            "current_page": page,
+                            "page_size": page_size,
+                            "total_count": 0,
+                            "has_more": False,
+                            "next_continuation_token": None,
+                            "total_pages": 0
+                        }
+
+            # Get the current page
+            try:
+                current_page_data = next(pages)
+                blob_list = []
+                
+                for blob in current_page_data:
+                    blob_info = {
+                        "name": blob.name,
+                        "size": blob.size,
+                        "created_on": blob.creation_time.isoformat(),
+                        "last_modified": blob.last_modified.isoformat(),
+                        "content_type": blob.content_settings.content_type,
+                        "url": f"{self.blob_service_client.url}{container_name}/{blob.name}",
+                    }
+                    
+                    if include_metadata == "yes":
+                        try:
+                            blob_client = container_client.get_blob_client(blob.name)
+                            properties = blob_client.get_blob_properties()
+                            blob_info["metadata"] = properties.metadata
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to retrieve metadata for {blob.name}: {str(e)}"
+                            )
+                            blob_info["metadata"] = None
+
+                    blob_list.append(blob_info)
+
+                # Check if there are more pages
+                next_continuation_token = None
+                has_more = False
+                try:
+                    next_page = next(pages)
+                    has_more = True
+                    next_continuation_token = next_page.continuation_token if hasattr(next_page, 'continuation_token') else None
+                except StopIteration:
+                    has_more = False
+
+                # Estimate total count (this is approximate since Azure Blob Storage doesn't provide exact counts efficiently)
+                # We can only provide an estimate based on what we know
+                estimated_total = len(blob_list)
+                if has_more:
+                    estimated_total = page * page_size + 1  # At least one more page exists
+                elif page > 1:
+                    estimated_total = (page - 1) * page_size + len(blob_list)
+
+                estimated_total_pages = max(1, (estimated_total + page_size - 1) // page_size) if estimated_total > 0 else 0
+
+                return {
+                    "blobs": blob_list,
+                    "current_page": page,
+                    "page_size": page_size,
+                    "total_count": estimated_total,
+                    "has_more": has_more,
+                    "next_continuation_token": next_continuation_token,
+                    "total_pages": estimated_total_pages
+                }
+
+            except StopIteration:
+                # No data for this page
+                return {
+                    "blobs": [],
+                    "current_page": page,
+                    "page_size": page_size,
+                    "total_count": 0,
+                    "has_more": False,
+                    "next_continuation_token": None,
+                    "total_pages": 0
+                }
+
+        except Exception as e:
+            if "AuthenticationFailed" in str(e):
+                raise BlobAuthenticationError(
+                    f"Error authenticating with blob storage: {str(e)}"
+                )
+            logger.error(f"Error listing blobs in container with pagination: {str(e)}")
+            raise
+
+    def list_blobs_in_container_for_upload_files_paginated(
+        self,
+        container_name: str,
+        prefix: str = None,
+        include_metadata: str = "no",
+        page_size: int = 10,
+        page: int = 1,
+        continuation_token: str = None,
+    ) -> Dict[str, Any]:
+        """
+        List blobs in a container for upload files with proper pagination support using continuation tokens.
+        This method includes additional filtering logic for upload files.
+
+        Args:
+            container_name (str): Name of the container to list blobs from
+            prefix (str, optional): Filter results to blob with this prefix
+            include_metadata (str, optional): Include metadata in results ("yes" or "no")
+            page_size (int): Number of results per page (default: 10, max: 100)
+            page (int): Page number (1-based, default: 1)
+            continuation_token (str, optional): Token for continuing pagination from a specific point
+
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - blobs: List of blob information dictionaries
+                - current_page: Current page number
+                - page_size: Number of results per page
+                - total_count: Total number of blobs (estimated)
+                - has_more: Whether there are more results available
+                - next_continuation_token: Token for the next page (if available)
+                - total_pages: Estimated total pages (if total_count is available)
+
+        Raises:
+            ValueError: If container_name is empty or page_size is invalid
+            ContainerNotFoundError: If container doesn't exist
+            BlobAuthenticationError: If authentication fails
+        """
+        if not container_name or not container_name.strip():
+            raise ValueError("Container name is required and cannot be empty")
+
+        if page_size <= 0 or page_size > 100:
+            raise ValueError("page_size must be between 1 and 100")
+
+        if page < 1:
+            raise ValueError("page must be greater than 0")
+
+        try:
+            container_client = self.blob_service_client.get_container_client(container_name)
+
+            # Verify container exists
+            if not container_client.exists():
+                raise ContainerNotFoundError(f"Container not found: {container_name}")
+
+            # Build list params
+            list_params = {
+                "name_starts_with": prefix if prefix else None,
+                "results_per_page": page_size,
+            }
+
+            # List blobs with params
+            blobs = container_client.list_blobs(
+                **{k: v for k, v in list_params.items() if v is not None}
+            )
+
+            # Get pages iterator
+            pages = blobs.by_page(continuation_token=continuation_token)
+            
+            # Effective prefix for additional filtering (from original method)
+            effective_prefix = prefix if prefix else ""
+            
+            # For page-based navigation (when no continuation_token is provided)
+            if not continuation_token and page > 1:
+                # Skip to the desired page
+                for _ in range(page - 1):
+                    try:
+                        next(pages)
+                    except StopIteration:
+                        # No more pages available
+                        return {
+                            "blobs": [],
+                            "current_page": page,
+                            "page_size": page_size,
+                            "total_count": 0,
+                            "has_more": False,
+                            "next_continuation_token": None,
+                            "total_pages": 0
+                        }
+
+            # Get the current page
+            try:
+                current_page_data = next(pages)
+                blob_list = []
+                
+                for blob in current_page_data:
+                    # Apply the same prefix filtering as the original method
+                    if effective_prefix and not blob.name.startswith(effective_prefix):
+                        continue
+                        
+                    blob_info = {
+                        "name": blob.name,
+                        "size": blob.size,
+                        "created_on": blob.creation_time.isoformat(),
+                        "last_modified": blob.last_modified.isoformat(),
+                        "content_type": blob.content_settings.content_type,
+                        "url": f"{self.blob_service_client.url}{container_name}/{blob.name}",
+                    }
+                    
+                    if include_metadata == "yes":
+                        try:
+                            blob_client = container_client.get_blob_client(blob.name)
+                            properties = blob_client.get_blob_properties()
+                            blob_info["metadata"] = properties.metadata
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to retrieve metadata for {blob.name}: {str(e)}"
+                            )
+                            blob_info["metadata"] = None
+
+                    blob_list.append(blob_info)
+
+                # Check if there are more pages
+                next_continuation_token = None
+                has_more = False
+                try:
+                    next_page = next(pages)
+                    has_more = True
+                    next_continuation_token = next_page.continuation_token if hasattr(next_page, 'continuation_token') else None
+                except StopIteration:
+                    has_more = False
+
+                # Estimate total count (this is approximate since Azure Blob Storage doesn't provide exact counts efficiently)
+                estimated_total = len(blob_list)
+                if has_more:
+                    estimated_total = page * page_size + 1  # At least one more page exists
+                elif page > 1:
+                    estimated_total = (page - 1) * page_size + len(blob_list)
+
+                estimated_total_pages = max(1, (estimated_total + page_size - 1) // page_size) if estimated_total > 0 else 0
+
+                return {
+                    "blobs": blob_list,
+                    "current_page": page,
+                    "page_size": page_size,
+                    "total_count": estimated_total,
+                    "has_more": has_more,
+                    "next_continuation_token": next_continuation_token,
+                    "total_pages": estimated_total_pages
+                }
+
+            except StopIteration:
+                # No data for this page
+                return {
+                    "blobs": [],
+                    "current_page": page,
+                    "page_size": page_size,
+                    "total_count": 0,
+                    "has_more": False,
+                    "next_continuation_token": None,
+                    "total_pages": 0
+                }
+
+        except Exception as e:
+            if "AuthenticationFailed" in str(e):
+                raise BlobAuthenticationError(
+                    f"Error authenticating with blob storage: {str(e)}"
+                )
+            logger.error(f"Error listing blobs in container for upload files with pagination: {str(e)}")
+            raise
+
 
 from sec_edgar_downloader import Downloader
 from utils import cleanup_resources
