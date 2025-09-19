@@ -7,9 +7,50 @@ on:
       - develop
 
 jobs:
+  perf-locust:
+    name: Performance - Locust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Locust
+        run: pip install locust
+
+      - name: Run Locust (headless with thresholds)
+        env:
+          LOCUST_HOST: ${{ secrets.PERF_TARGET_HOST }}
+          USERS: ${{ vars.PERF_USERS || 100 }}
+          SPAWN_RATE: ${{ vars.PERF_SPAWN_RATE || 20 }}
+          RUN_TIME: ${{ vars.PERF_RUN_TIME || '5m' }}
+        run: |
+          test -n "$LOCUST_HOST"
+          mkdir -p perf_reports
+          locust \
+            --headless \
+            --locustfile backend/tests/perf/locustfile.py \
+            --users ${USERS} \
+            --spawn-rate ${SPAWN_RATE} \
+            --run-time ${RUN_TIME} \
+            --host "$LOCUST_HOST" \
+            --stop-timeout 30 \
+            --html perf_reports/report.html \
+            --csv  perf_reports/results
+
+      - name: Upload Locust reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-reports
+          path: perf_reports/
+
   build-and-deploy:
     runs-on: ubuntu-latest
-
+    needs: perf-locust
     steps:
       # 1. Checkout Code
       - name: Checkout Code
@@ -62,11 +103,6 @@ jobs:
         run: |
           rm -rf backend_env
           zip -r ../deploy.zip *
-      - name: Debug Secrets
-        run: |
-          echo "Subscription ID: ${{ secrets.AZURE_PROD_SUBSCRIPTION_ID }}"
-          echo "Resource Group: ${{ secrets.AZURE_PROD_RESOURCE_GROUP }}"
-          echo "Web App Name: ${{ secrets.AZURE_PROD_WEBAPP_NAME }}"
 
       # 7. Deploy to Azure
       - name: Deploy to Azure

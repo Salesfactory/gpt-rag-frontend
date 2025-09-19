@@ -5059,6 +5059,9 @@ def get_gallery(*, context, organization_id):
         logger.exception(f"Unexpected error retrieving gallery items for org {organization_id}: {e}")
         return create_error_response("Internal Server Error", 500)
 
+@app.get("/api/health")
+def health():
+    return "", 204
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
