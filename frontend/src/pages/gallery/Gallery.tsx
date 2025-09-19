@@ -53,7 +53,6 @@ const Gallery: React.FC = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(0);
-    const [totalItems, setTotalItems] = useState<number>(0);
     const [itemsPerPage] = useState<number>(10);
 
     const orgId = organization?.id ?? "";
@@ -104,11 +103,9 @@ const Gallery: React.FC = () => {
 
                 // Update pagination state
                 setTotalPages(result.total_pages);
-                setTotalItems(result.total);
 
                 setImages(galleryData);
                 setFetchedImages(galleryData);
-
             } catch (e) {
                 console.error("Error fetching gallery items:", e);
             } finally {
@@ -186,7 +183,6 @@ const Gallery: React.FC = () => {
 
         return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
     }, [users, fetchedImages]);
-
 
     return (
         <div className={styles.page_container}>
@@ -324,94 +320,91 @@ const Gallery: React.FC = () => {
                     }}
                 />
             ) : (
-                <div className={styles.container}>
-                    {/* Green Header */}
-                    <div className={styles.header}>
-                        <div className={styles.headerContent}>
-                            <h2 className={styles.headerTitle}>Charts</h2>
-                            <span className={styles.headerCount}>
-                                {totalItems} chart{totalItems !== 1 ? "s" : ""} (showing {images.length})
-                            </span>
-                        </div>
-                    </div>
-
-                    {images.length === 0 ? (
-                        <div className={styles.emptyState}>
-                            <div className={styles.emptyContent}>
-                                <Upload size={48} className={styles.emptyIcon} />
-                                <p className={styles.emptyTitle}>No charts found</p>
-                                <p className={styles.emptySubtitle}>
-                                    {userFilter ? `No charts found for ${getUserName(userFilter) ?? userFilter}` : "No visualization charts available"}
-                                </p>
+                <>
+                    <div className={styles.container}>
+                        {/* Green Header */}
+                        <div className={styles.header}>
+                            <div className={styles.headerContent}>
+                                <h2 className={styles.headerTitle}>Charts</h2>
+                                <span className={styles.headerCount}>Actual page: {images.length}</span>
                             </div>
                         </div>
-                    ) : (
-                        <>
-                            <div className={styles.content}>
-                                {/* Scrollable grid wrapper: limits height and enables vertical scrolling when needed */}
-                                <div className={styles.gridScrollable}>
-                                    <div className={styles.grid}>
-                                        {images.map(file => (
-                                            <div key={file.name} className={styles.card}>
-                                                {/* Image Preview */}
-                                                <div className={styles.preview}>
-                                                    <div className={styles.previewContent}>
-                                                        {file.url ? (
-                                                            <img 
-                                                                src={file.url} 
-                                                                alt="Chart Preview" 
-                                                                width={32} 
-                                                                height={32} 
-                                                                className={styles.previewImage}
-                                                                onError={(e) => {
-                                                                    e.currentTarget.style.display = 'none';
-                                                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                                                }}
-                                                            />
-                                                        ) : null}
-                                                        <div className={`${styles.placeholder} ${file.url ? 'hidden' : ''}`}>
-                                                            No Preview Available
-                                                        </div>
-                                                    </div>
 
-                                                    {/* Hover Actions Overlay */}
-                                                    <div className={styles.overlay}>
-                                                        <div className={styles.actions}>
-                                                            <button className={styles.actionButton} title="Download" onClick={() => handleDownload(file)}>
-                                                                <Download size={16} className={styles.downloadIcon} />
-                                                            </button>
-                                                            <button className={styles.actionButton} title="Delete" onClick={() => handleDelete(file)}>
-                                                                <Trash2 size={16} className={styles.deleteIcon} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Chart Info */}
-                                                <div className={styles.cardInfo}>
-                                                    <div className={styles.cardHeader}>
-                                                        <h3 className={styles.fileName} title={file.name}>
-                                                            {createFileName(file.name)}
-                                                        </h3>
-                                                        <div className={styles.fileMeta}>
-                                                            <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
-                                                        </div>
-                                                    </div>
-                                                    <span className={styles.userTag}>
-                                                        {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
-                                                    </span>
-                                                    <p className={styles.fileDate}>
-                                                        Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                        {images.length === 0 ? (
+                            <div className={styles.emptyState}>
+                                <div className={styles.emptyContent}>
+                                    <Upload size={48} className={styles.emptyIcon} />
+                                    <p className={styles.emptyTitle}>No charts found</p>
+                                    <p className={styles.emptySubtitle}>
+                                        {userFilter ? `No charts found for ${getUserName(userFilter) ?? userFilter}` : "No visualization charts available"}
+                                    </p>
                                 </div>
                             </div>
-                        </>
-                    )}
-                    {/* Pagination Controls */}
+                        ) : (
+                            <>
+                                <div className={styles.content}>
+                                    {/* Scrollable grid wrapper: limits height and enables vertical scrolling when needed */}
+                                    <div className={styles.gridScrollable}>
+                                        <div className={styles.grid}>
+                                            {images.map(file => (
+                                                <div key={file.name} className={styles.card}>
+                                                    {/* Image Preview */}
+                                                    <div className={styles.preview}>
+                                                        <div className={styles.previewContent}>
+                                                            {file.url ? (
+                                                                <img
+                                                                    src={file.url}
+                                                                    alt="Chart Preview"
+                                                                    width={32}
+                                                                    height={32}
+                                                                    className={styles.previewImage}
+                                                                    onError={e => {
+                                                                        e.currentTarget.style.display = "none";
+                                                                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                                                                    }}
+                                                                />
+                                                            ) : null}
+                                                            <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>No Preview Available</div>
+                                                        </div>
+
+                                                        {/* Hover Actions Overlay */}
+                                                        <div className={styles.overlay}>
+                                                            <div className={styles.actions}>
+                                                                <button className={styles.actionButton} title="Download" onClick={() => handleDownload(file)}>
+                                                                    <Download size={16} className={styles.downloadIcon} />
+                                                                </button>
+                                                                <button className={styles.actionButton} title="Delete" onClick={() => handleDelete(file)}>
+                                                                    <Trash2 size={16} className={styles.deleteIcon} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Chart Info */}
+                                                    <div className={styles.cardInfo}>
+                                                        <div className={styles.cardHeader}>
+                                                            <h3 className={styles.fileName} title={file.name}>
+                                                                {createFileName(file.name)}
+                                                            </h3>
+                                                            <div className={styles.fileMeta}>
+                                                                <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
+                                                            </div>
+                                                        </div>
+                                                        <span className={styles.userTag}>
+                                                            {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
+                                                        </span>
+                                                        <p className={styles.fileDate}>
+                                                            Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
                     <div className={styles.paginationContainer}>
                         <div className={styles.pagination}>
                             <button
@@ -458,7 +451,7 @@ const Gallery: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );
