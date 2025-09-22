@@ -4,3 +4,4 @@ pytest-asyncio
 pytest-snapshot
 pytest-mock
 pytest-env
+locust
