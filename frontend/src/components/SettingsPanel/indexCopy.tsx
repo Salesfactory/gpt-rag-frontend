@@ -218,7 +218,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
     
 
-    // Inline CSS-module tooltip matching the lightweight style used in test.tsx
     const InfoTooltip: React.FC<{ title: string }> = ({ title }) => {
         const [open, setOpen] = useState(false);
         const wrapperRef = useRef<HTMLSpanElement | null>(null);
