@@ -53,7 +53,7 @@ const Gallery: React.FC = () => {
     // Pagination state
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [totalPages, setTotalPages] = useState<number>(0);
-    const [itemsPerPage] = useState<number>(10);
+    const [itemsPerPage] = useState<number>(12);
 
     const orgId = organization?.id ?? "";
     const userId = user?.id ?? "";
