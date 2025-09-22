@@ -33,27 +33,43 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
       key: "files",
       name: "Files",
       fieldName: "files",
-      minWidth: 500,
-      maxWidth: 1300,
+      minWidth: 200,
+      maxWidth: 600,
       isResizable: true,
+      isMultiline: false,
       onRender: (item: BlobItem) => {
         const fileName = item.name.split("/").pop() || "";
         const fileExtension = fileName.split(".").pop()?.toLowerCase();
+        
+        // Improved truncation logic
         let displayName = fileName;
-        if (fileName.length > MAX_FILENAME_LENGTH) {
+        const maxLength = 40; // Reduced from MAX_FILENAME_LENGTH for better table fit
+        
+        if (fileName.length > maxLength) {
           const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
-          displayName = fileName.substring(0, MAX_FILENAME_LENGTH - ext.length - 3) + "..." + ext;
+          const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf(".")) || fileName;
+          const truncatedName = nameWithoutExt.substring(0, maxLength - ext.length - 3);
+          displayName = truncatedName + "..." + ext;
         }
+        
         return (
           <div className={styles.file_name_cell}>
-            <div className={styles.file_info_row}>
-              <Text className={styles.file_text} title={fileName}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <Text className={styles.file_text} title={fileName} style={{ 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                whiteSpace: 'nowrap',
+                maxWidth: '250px',
+                flex: '1 1 auto'
+              }}>
                 {displayName}
               </Text>
               <div className={styles.file_extension_pill}>{fileExtension?.toUpperCase() || "FILE"}</div>
               <div className={styles.file_size_pill}>{formatFileSize(item.size)}</div>
             </div>
-            <span>Uploaded on {formatDate(item.created_on)}</span>
+            <Text variant="small" style={{ color: '#6b7280', marginTop: '4px' }}>
+              Uploaded on {formatDate(item.created_on)}
+            </Text>
           </div>
         );
       }
@@ -61,17 +77,45 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     {
       key: "actions",
       name: "Actions",
-      minWidth: 100,
-      maxWidth: 70,
+      minWidth: 120,
+      maxWidth: 120,
       isResizable: false,
       isPadded: false,
       onRender: (item: BlobItem) => (
-        <div className={styles.actions_cell}>
-          <IconButton title="Download" ariaLabel="Download" onClick={() => handleDownload(item)}>
-            <Download className={styles.trashIcon} />
+        <div className={styles.actions_cell} style={{ 
+          display: 'flex', 
+          gap: '8px', 
+          justifyContent: 'center',
+          alignItems: 'center',
+          width: '100%'
+        }}>
+          <IconButton 
+            title="Download" 
+            ariaLabel="Download" 
+            onClick={() => handleDownload(item)}
+            styles={{
+              root: {
+                minWidth: '32px',
+                width: '32px',
+                height: '32px'
+              }
+            }}
+          >
+            <Download size={16} className={styles.trashIcon} />
           </IconButton>
-          <IconButton title="Delete" ariaLabel="Delete" onClick={() => deleteFile(item)}>
-            <Trash2 className={styles.trashIcon} />
+          <IconButton 
+            title="Delete" 
+            ariaLabel="Delete" 
+            onClick={() => deleteFile(item)}
+            styles={{
+              root: {
+                minWidth: '32px',
+                width: '32px',
+                height: '32px'
+              }
+            }}
+          >
+            <Trash2 size={16} className={styles.trashIcon} />
           </IconButton>
         </div>
       )
@@ -79,14 +123,28 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   ];
 
   return (
-    <div className={styles.content_container} style={{ minHeight: "60vh", height: "65vh", maxHeight: "75vh", overflowY: "auto" }}>
+    <div className={styles.content_container} style={{ 
+      minHeight: "60vh", 
+      height: "65vh", 
+      maxHeight: "75vh", 
+      overflowY: "auto",
+      width: "100%",
+      maxWidth: "100%"
+    }}>
       {/* File List View Section */}
       {isLoading ? (
         <div className={styles.loading_container}>
           <Spinner label="Loading files..." />
         </div>
       ) : filteredItems.length > 0 ? (
-        <div className={styles.file_list_container} style={{ minHeight: "50vh", height: "55vh", maxHeight: "70vh", overflowY: "auto" }}>
+        <div className={styles.file_list_container} style={{ 
+          minHeight: "50vh", 
+          height: "55vh", 
+          maxHeight: "70vh", 
+          overflowY: "auto",
+          overflowX: "hidden",
+          width: "100%"
+        }}>
           <LazyDetailsList
             items={filteredItems}
             columns={columns}
@@ -97,7 +155,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
             className={styles.detailsListContainer}
             styles={{
               root: {
-                borderRadius: "8px"
+                borderRadius: "8px",
+                width: "100%",
+                maxWidth: "100%",
+                overflowX: "hidden"
               }
             }}
             onRenderRow={(props: any, defaultRender: any) => {
@@ -107,10 +168,13 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
 
               const customStyles = {
                 root: {
-                  backgroundColor
+                  backgroundColor,
+                  width: "100%",
+                  maxWidth: "100%"
                 },
                 fields: {
-                  backgroundColor
+                  backgroundColor,
+                  width: "100%"
                 }
               };
 
