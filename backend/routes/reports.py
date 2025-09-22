@@ -1,7 +1,7 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import NotFound
+from routes.decorators.auth_decorator import auth_required
 from shared.cosmo_db import get_report, create_report, update_report, delete_report, get_filtered_reports
-from functools import wraps
 import logging
 
 bp = Blueprint("reports", __name__, url_prefix="/api/reports")
@@ -9,16 +9,11 @@ bp = Blueprint("reports", __name__, url_prefix="/api/reports")
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def auth_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        auth_instance = current_app.config.get("auth")
-        return auth_instance.login_required(f)(*args, **kwargs)
-    return decorated_function
+
 
 @bp.route("/api/reports", methods=["GET"])
 @auth_required
-def getFilteredType(*, context):
+def getFilteredType():
     """
     Endpoint to obtain reports by type or retrieve all reports if no type is specified.
     """
@@ -45,7 +40,7 @@ def getFilteredType(*, context):
 # get report by id argument from Container Reports
 @bp.route("/<report_id>", methods=["GET"])
 @auth_required
-def getReport(*, context, report_id):
+def getReport(report_id):
     """
     Endpoint to get a report by ID.
     """
@@ -65,7 +60,7 @@ def getReport(*, context, report_id):
 # create Reports curation and companySummarization container Reports
 @bp.route("/", methods=["POST"])
 @auth_required
-def createReport(*, context):
+def createReport():
     """
     Endpoint to create a new report.
     """
@@ -174,7 +169,7 @@ def createReport(*, context):
 # update Reports curation and companySummarization container Reports
 @bp.route("/<report_id>", methods=["PUT"])
 @auth_required
-def updateReport(*, context, report_id):
+def updateReport(report_id):
     """
     Endpoint to update a report by ID.
     """
@@ -211,7 +206,7 @@ def updateReport(*, context, report_id):
 # delete report from Container Reports
 @bp.route("/<report_id>", methods=["DELETE"])
 @auth_required
-def deleteReport(*, context, report_id):
+def deleteReport(report_id):
     """
     Endpoint to delete a report by ID.
     """
