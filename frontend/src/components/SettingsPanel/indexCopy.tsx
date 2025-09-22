@@ -102,7 +102,7 @@ interface ChatSettingsProps {
 export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const { user, setSettingsPanel, settingsPanel } = useAppContext();
 
-    const [temperature, setTemperature] = useState("0");
+    const [temperature, setTemperature] = useState<number>(0);
     const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1");
     const [loading, setLoading] = useState(true);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
@@ -178,7 +178,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                 // Temperature
                 if (data.temperature === undefined || data.temperature === null) {
                     const modelConfig = modelTemperatureSettings[data.model || "gpt-4.1"];
-                    setTemperature(modelConfig.default.toString());
+                    setTemperature(Number(modelConfig.default))
                 } else {
                     setTemperature(data.temperature);
                 }
@@ -197,7 +197,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
             } catch (error) {
                 console.error("Error fetching settings:", error);
                 const modelConfig = modelTemperatureSettings[selectedModel];
-                setTemperature(modelConfig.default.toString());
+                setTemperature(Number(modelConfig.default))
             } finally {
                 setLoading(false);
             }
@@ -207,7 +207,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     }, [user]);
 
     const handleSubmit = () => {
-        const parsedTemperature = parseFloat(temperature);
+        const parsedTemperature = temperature;
         const modelConfig = modelTemperatureSettings[selectedModel];
         const parsedFontSize = selectedFontSize;
         const parsedFontSeleted = selectedFont;
@@ -225,16 +225,16 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
             font_size: parsedFontSize
         })
             .then(data => {
-                setTemperature(data.temperature);
+                setTemperature(data.temperature.toString());
                 setSelectedModel(data.model);
                 setSelectedFont(data.font_family);
                 setSelectedFontSize(data.font_size);
+                try { localStorage.setItem("chat_creativity", String(data.temperature)); } catch {}
+                if (typeof setTemperature === "function") setTemperature(Number(data.temperature))
                 setIsDialogOpen(false);
                 setIsLoadingSettings(false);
-                toast("Successfully saved data. The page will reload in 2 seconds.", { type: "success" });
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                toast("Settings saved. Creativity will apply to new messages.", { type: "success" });
+                onClose();
             })
             .catch(error => {
                 console.error("Error saving settings:", error);
@@ -256,11 +256,9 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         return true;
     };
 
-    const handleSetTemperature = (val: any) => {
-        const value = String(val);
-        if (validateValue(value, setTemperature)) {
-            setTemperature(value);
-        }
+    const handleSetTemperature = (val: number) => {
+        if (Number.isNaN(val)) return;
+        setTemperature(val);
     };
 
     const onRenderLabel = (dialog: string, title: string) => (
@@ -555,10 +553,10 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                                             min={modelTemperatureSettings[selectedModel].min}
                                             max={modelTemperatureSettings[selectedModel].max}
                                             step={modelTemperatureSettings[selectedModel].step}
-                                            value={parseFloat(temperature)}
+                                            value={temperature}
                                             showValue
                                             snapToStep
-                                            onChange={e => setTemperature(e.toString())}
+                                            onChange={handleSetTemperature}
                                             aria-labelledby="temperature-slider"
                                             styles={{
                                                 root: { width: "90%" }
