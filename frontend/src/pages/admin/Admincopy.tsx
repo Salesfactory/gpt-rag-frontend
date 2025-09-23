@@ -852,12 +852,12 @@ const Admin = () => {
                             disabled={loading}
                             styles={{
                                 root: {
-                                    backgroundColor: "#16a34a",
+                                    backgroundColor: "#008431",
                                     color: "white",
                                     border: "none"
                                 },
                                 rootHovered: {
-                                    backgroundColor: "#15803d",
+                                    backgroundColor: "#006e2c",
                                     color: "white"
                                 },
                                 rootFocused: {
@@ -865,7 +865,7 @@ const Admin = () => {
                                     boxShadow: "0 0 0 2px white, 0 0 0 4px #22c55e"
                                 },
                                 rootPressed: {
-                                    backgroundColor: "#15803d",
+                                    backgroundColor: "#006e2c",
                                     color: "white"
                                 }
                             }}
@@ -926,21 +926,9 @@ const Admin = () => {
                             }}
                         />
                     ) : (
+                        <div className={styles.tableScroll}>
                         <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                            <li
-                                style={{
-                                    background: "#00a63e",
-                                    color: "white",
-                                    fontWeight: 600,
-                                    fontSize: 16,
-                                    borderTopLeftRadius: 8,
-                                    borderTopRightRadius: 8,
-                                    padding: "12px 16px",
-                                    marginBottom: 0
-                                }}
-                            >
-                                Team Members
-                            </li>
+                            <li className={styles.headerRow}>Team Members</li>
                             {filteredUsers.map((user: any, index) => {
                                 const isNew = user.user_new;
                                 const userName = isNew ? user.nickname : user.data.name;
@@ -1057,6 +1045,7 @@ const Admin = () => {
                                 );
                             })}
                         </ul>
+                        </div>
                     )}
                 </>
             </div>

@@ -505,6 +505,18 @@ const Chat = () => {
         const startWidth = analysisPanelWidth;
         document.body.style.userSelect = "none";
 
+        // Create overlay to prevent iframe from capturing mouse events
+        const overlay = document.createElement("div");
+        overlay.style.position = "fixed";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.width = "100%";
+        overlay.style.height = "100%";
+        overlay.style.zIndex = "9999";
+        overlay.style.cursor = "col-resize";
+        overlay.style.backgroundColor = "transparent";
+        document.body.appendChild(overlay);
+
         const onMouseMove = (moveEvent: MouseEvent) => {
             const newWidth = Math.max(analysisPanelMinWidth, Math.min(analysisPanelMaxWidth, startWidth - (moveEvent.clientX - startX)));
             setAnalysisPanelWidth(newWidth);
@@ -515,6 +527,10 @@ const Chat = () => {
             document.removeEventListener("mouseup", onMouseUp);
             document.body.style.userSelect = "";
             setisResizingAnalysisPanel(false);
+            // Remove overlay
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
         };
 
         document.addEventListener("mousemove", onMouseMove);
@@ -541,6 +557,19 @@ const Chat = () => {
         handleResize();
         return () => window.removeEventListener("resize", handleResize);
     }, [analysisPanelWidth]);
+
+    // Cleanup effect to remove any leftover resize overlays on component unmount
+    useEffect(() => {
+        return () => {
+            // Remove any resize overlay that might still be in the DOM
+            const overlays = document.querySelectorAll('div[style*="z-index: 9999"][style*="cursor: col-resize"]');
+            overlays.forEach(overlay => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            });
+        };
+    }, []);
 
     return (
         <>
