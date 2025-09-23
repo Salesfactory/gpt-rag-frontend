@@ -581,9 +581,11 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                                             snapToStep
                                             onChange={e => setTemperature(e.toString())}
                                             aria-labelledby="temperature-slider"
-                                            styles={{
-                                                root: { width: "90%" }
-                                            }}
+                                              styles={{
+                                                    root: { width: "100%" },
+                                                    slideBox: { padding: 0 },
+                                                    line: { width: "100%" }
+                                                }}
                                             className={styles.sliderCustom}
                                         />
                                     </div>

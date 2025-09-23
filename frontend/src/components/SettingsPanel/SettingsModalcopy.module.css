@@ -112,14 +112,70 @@
     background-color: #059669;
 }
 
-.sliderCustom :global(.ms-Slider-active) {
-    background-color: #016630;
+.sliderCustom :global(.ms-Slider-line) {
+  position: relative;
+  height: 12px;
+  border-radius: 9999px;
+  overflow: visible;
+  border: 1px solid #e5e7eb;
+  background: transparent !important;
 }
 
+.sliderCustom {
+  --blend: 6%;
+}
+
+.sliderCustom :global(.ms-Slider-line)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 0;
+  background: linear-gradient(
+    to right,
+
+
+    #e5e7eb 0%,
+    #e5e7eb calc(10% - var(--blend)),
+    #ffffff calc(10% + var(--blend)),
+
+
+    #ffffff calc(30% - var(--blend)),
+    #d1fae5  calc(30% + var(--blend)),
+
+
+    #d1fae5  calc(50% - var(--blend)),
+    #166534  calc(50% + var(--blend)),
+
+
+    #166534 100%
+  );
+}
+
+.sliderCustom :global(.ms-Slider-active),
 .sliderCustom :global(.ms-Slider-inactive) {
-    background-color: #d1d5db;
+  background: transparent !important;
+  border: 0 !important;
+  z-index: 1;
 }
 
+.sliderCustom :global(.ms-Slider-thumb) {
+  background-color: #10b981;
+  border: 1px solid #ffffff;
+  transition: all 0.2s ease;
+  z-index: 2;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.sliderCustom :global(.ms-Slider-thumb:hover) {
+  background-color: #059669;
+}
+
+
+.sliderCustom :global(.ms-Slider-container) {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
 
 .buttons {
     display: flex;
