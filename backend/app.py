@@ -81,8 +81,7 @@ from shared.cosmo_db import (
     patch_organization_data,
     get_audit_logs,
     get_organization_subscription,
-    create_organization,
-    get_company_list,
+    create_organization
 )
 from shared import clients
 from data_summary.config import get_azure_openai_config
@@ -2978,20 +2977,6 @@ def get_logs(*, context):
         return create_error_response(str(e), 400)
     except Exception as e:
         logger.exception("Unexpected error in get_logs")
-        return create_error_response("Internal Server Error", 500)
-
-
-@app.route("/api/companydata", methods=["GET"])
-@auth.login_required
-def get_company_data(*, context):
-    try:
-        data = get_company_list()
-        return create_success_response(data, 200)
-    except CosmosHttpResponseError as e:
-        logger.exception(f"Unexpected error in with cosmos db: {e}")
-        return create_error_response("Internal Server Error", 500)
-    except Exception as e:
-        logger.exception("Unexpected error in get_company_analysis")
         return create_error_response("Internal Server Error", 500)
 
 
