@@ -1,0 +1,4 @@
+[bandit]
+exclude_dirs: backend_env, .venv, venv, tests, node_modules, __pycache__, .git, **/migrations/*
+# si en tus tests usas 'assert', puedes saltarte B101; si no, borra esta línea
+skips: B101
