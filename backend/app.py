@@ -92,7 +92,6 @@ from routes.organizations import bp as organizations
 from routes.upload_source_document import bp as upload_source_document
 from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
-from routes.reports import bp as reports
 from routes.invitations import bp as invitations
 from routes.users import bp as users
 
@@ -225,7 +224,6 @@ app.register_blueprint(organizations)
 app.register_blueprint(upload_source_document)
 app.register_blueprint(voice_customer)
 app.register_blueprint(categories)
-app.register_blueprint(reports)
 app.register_blueprint(invitations)
 app.register_blueprint(users)
 
