@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import styles from "./ProfileModal.module.css";
 import { useAppContext } from "../../providers/AppProviders";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { getUserById, updateUserData } from "../../api";
 import { Spinner, SpinnerSize } from "@fluentui/react";
 
@@ -59,7 +59,6 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
 
     return (
         <div className={styles.overlay} onClick={onClose}>
-            <ToastContainer />
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 {/* Modal Header */}
                 <div className={styles.header}>
@@ -83,7 +82,14 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     {/* Username */}
                     <div className={styles.field}>
                         <label className={styles.label}>Username</label>
-                        <input type="text" aria-label="Username Input" value={userName} onChange={e => setUserName(e.target.value)} className={styles.input} disabled={isSaving} />
+                        <input
+                            type="text"
+                            aria-label="Username Input"
+                            value={userName}
+                            onChange={e => setUserName(e.target.value)}
+                            className={styles.input}
+                            disabled={isSaving}
+                        />
                         <p className={styles.helpText}>This name will be displayed to other users</p>
                     </div>
 

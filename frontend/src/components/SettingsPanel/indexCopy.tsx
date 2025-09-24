@@ -1,37 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
-import { SaveFilled, ErrorCircleFilled } from "@fluentui/react-icons";
-import { X } from "lucide-react";
-import { TooltipHost, TooltipDelay, DirectionalHint, DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption } from "@fluentui/react";
+import { SaveFilled } from "@fluentui/react-icons";
+import { X, Info } from "lucide-react";
+import { DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption } from "@fluentui/react";
 import styles from "./SettingsModalcopy.module.css";
 import { getSettings, postSettings } from "../../api/api";
-import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { useAppContext } from "../../providers/AppProviders";
 import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
-interface Props {
-    user: {
-        id: string;
-        name: string;
-    } | null;
-}
-
-const iconClass = mergeStyles({
-    fontSize: 25,
-    height: 25,
-    width: 25,
-    margin: "0",
-    padding: "5px 0 0 0px",
-    cursor: "pointer"
-});
-
-const itemClass = mergeStyles({
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "10px 0",
-    width: "85%"
-});
+//
 
 const ConfirmationDialog = ({ loading, isOpen, onDismiss, onConfirm }: { loading: boolean; isOpen: boolean; onDismiss: () => void; onConfirm: () => void }) => {
     return (
@@ -100,7 +77,7 @@ interface ChatSettingsProps {
 }
 
 export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
-    const { user, setSettingsPanel, settingsPanel } = useAppContext();
+    const { user } = useAppContext();
 
     const [temperature, setTemperature] = useState("0");
     const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1");
@@ -111,18 +88,14 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const temperatureDialog =
-        "It adjusts the balance between creativity and predictability in responses. Lower settings yield straightforward answers, while higher settings introduce originality and diversity, perfect for creative tasks and factual inquiries.";
-    const modelDialog = "Select the underlying language model for generating responses.";
+    
 
     const modelOptions: IDropdownOption[] = [
-        // { key: "DeepSeek-V3-0324", text: "DeepSeek-V3-0324" },
         { key: "gpt-4.1", text: "gpt-4.1" },
         { key: "Claude-4-Sonnet", text: "Claude-4-Sonnet" }
     ];
 
     const modelTemperatureSettings: Record<string, { default: number; min: number; max: number; step: number }> = {
-        // "DeepSeek-V3-0324": { default: 0, min: 0, max: 1.5, step: 0.1 },
         "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 },
         "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
     };
@@ -243,43 +216,90 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
             });
     };
 
-    const validateValue = (val: any, func: any) => {
-        if (val.match(/^[0]+$/)) {
-            func("0");
-            return false;
-        }
+    
 
-        if (val.match(/[^0-9.]/) || val < 0 || val > 1 || val.split(".").length > 2 || val === "1." || val.length > 4) {
-            return false;
-        }
+    const InfoTooltip: React.FC<{ title: string }> = ({ title }) => {
+        const [open, setOpen] = useState(false);
+        const wrapperRef = useRef<HTMLSpanElement | null>(null);
 
-        return true;
-    };
+        useEffect(() => {
+            const handleDocClick = (e: MouseEvent) => {
+                if (!wrapperRef.current) return;
+                if (!wrapperRef.current.contains(e.target as Node)) {
+                    setOpen(false);
+                }
+            };
+            const handleEsc = (e: KeyboardEvent) => {
+                if (e.key === "Escape") setOpen(false);
+            };
+            document.addEventListener("mousedown", handleDocClick);
+            document.addEventListener("keydown", handleEsc);
+            return () => {
+                document.removeEventListener("mousedown", handleDocClick);
+                document.removeEventListener("keydown", handleEsc);
+            };
+        }, []);
 
-    const handleSetTemperature = (val: any) => {
-        const value = String(val);
-        if (validateValue(value, setTemperature)) {
-            setTemperature(value);
-        }
-    };
-
-    const onRenderLabel = (dialog: string, title: string) => (
-        <TooltipHost
-            tooltipProps={{
-                onRenderContent: () => (
-                    <div>
-                        <h3>{title}</h3>
-                        {dialog}
+        return (
+            <span
+                ref={wrapperRef}
+                className={`${styles.tooltipWrapper} ${open ? styles.tooltipOpen : ""}`}
+                aria-label={`${title} info`}
+            >
+                <button
+                    type="button"
+                    className={`${styles.infoButton} ${open ? styles.infoButtonActive : ""}`}
+                    aria-expanded={open}
+                    aria-haspopup="dialog"
+                    onClick={() => setOpen(v => !v)}
+                    onKeyDown={e => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setOpen(v => !v);
+                        }
+                    }}
+                >
+                    <Info size={20} className={styles.infoIcon} aria-hidden="true" />
+                </button>
+                <div className={styles.tooltipBoxLarge} role="dialog" aria-modal="false">
+                    <div className={styles.scaleGrid}>
+                        <div>
+                            <div className={styles.scaleItemHeader}>
+                                <span className={`${styles.scaleDot} ${styles.dotGray}`} />
+                                <span className={styles.scaleTitle}>Factual</span>
+                            </div>
+                            <div className={styles.scaleRange}>0.0–0.1</div>
+                            <div className={styles.scaleDesc}>Highly consistent and predictable output</div>
+                        </div>
+                        <div>
+                            <div className={styles.scaleItemHeader}>
+                                <span className={`${styles.scaleDot} ${styles.dotGrayLight}`} />
+                                <span className={styles.scaleTitle}>Professional</span>
+                            </div>
+                            <div className={styles.scaleRange}>0.2–0.3</div>
+                            <div className={styles.scaleDesc}>Structured responses for business contexts</div>
+                        </div>
+                        <div>
+                            <div className={styles.scaleItemHeader}>
+                                <span className={`${styles.scaleDot} ${styles.dotGreenLight}`} />
+                                <span className={styles.scaleTitle}>Conversational</span>
+                            </div>
+                            <div className={styles.scaleRange}>0.4–0.5</div>
+                            <div className={styles.scaleDesc}>Natural, engaging dialogue for exploration</div>
+                        </div>
+                        <div>
+                            <div className={styles.scaleItemHeader}>
+                                <span className={`${styles.scaleDot} ${styles.dotGreen}`} />
+                                <span className={styles.scaleTitle}>Creative</span>
+                            </div>
+                            <div className={styles.scaleRange}>0.6+</div>
+                            <div className={styles.scaleDesc}>Diverse and innovative responses</div>
+                        </div>
                     </div>
-                )
-            }}
-            delay={TooltipDelay.zero}
-            directionalHint={DirectionalHint.bottomCenter}
-            styles={{ root: { display: "inline-block" } }}
-        >
-            <ErrorCircleFilled className={iconClass} />
-        </TooltipHost>
-    );
+                </div>
+            </span>
+        );
+    };
 
     const handleClosePanel = () => {
         onClose();
@@ -303,11 +323,10 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [setSettingsPanel]);
+    }, [onClose]);
     return (
         <div className={styles.overlay}>
             <div ref={panelRef} className={styles.panel} onClick={e => e.stopPropagation()}>
-                <ToastContainer />
                 <ConfirmationDialog
                     loading={isLoadingSettings}
                     isOpen={isDialogOpen}
@@ -549,6 +568,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                                 <div className={styles["w-100"]}>
                                     <div className={styles.item}>
                                         <span>Creativity Scale</span>
+                                        <InfoTooltip title="Creativity Scale" />
                                     </div>
                                     <div className={styles.sliderContainer}>
                                         <Slider

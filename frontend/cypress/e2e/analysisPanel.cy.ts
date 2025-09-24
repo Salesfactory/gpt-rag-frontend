@@ -41,7 +41,7 @@ describe('AnalysisPanel Component', () => {
         cy.get("button[aria-label='Show thought process']").should("be.visible");
         cy.get("button[aria-label='Show thought process']").click();
 
-        cy.contains("MCP Tools Used").should("be.visible");
+        cy.contains("Agent Type").should("be.visible");
 
         cy.contains("Consumer Pulse Segmentation Description").should("be.visible");
         cy.contains("Consumer Pulse Segmentation Summary").should("be.visible");
@@ -83,7 +83,7 @@ describe('AnalysisPanel Component', () => {
         cy.get("button[aria-label='Show thought process']").should("be.visible");
         cy.get("button[aria-label='Show thought process']").click();
 
-        cy.contains("MCP Tools Used").should("be.visible");
+        cy.contains("Agent Type").should("be.visible");
 
         cy.contains("33.3% of surveyed customers quit due to bad customer service").should("be.visible");
     });

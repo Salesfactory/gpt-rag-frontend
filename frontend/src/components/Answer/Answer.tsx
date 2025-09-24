@@ -120,7 +120,7 @@ export const Answer = ({
                     rel="noopener noreferrer"
                     style={{
                         ...baseTextStyle,
-                        color: "#85a717",
+                        color: "#0E7C3A",
                         textDecoration: "none",
                         overflowWrap: "break-word",
                         wordBreak: "break-word",
@@ -181,17 +181,16 @@ export const Answer = ({
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
-
     const handleFeedbackClick = async () => {
         try {
             const feedbackUrl = await getFeedbackUrl();
             if (feedbackUrl) {
-                window.open(feedbackUrl, '_blank', 'noopener,noreferrer');
+                window.open(feedbackUrl, "_blank", "noopener,noreferrer");
             } else {
-                console.warn('Feedback URL not configured');
+                console.warn("Feedback URL not configured");
             }
         } catch (error) {
-            console.error('Error getting feedback URL:', error);
+            console.error("Error getting feedback URL:", error);
         }
     };
 

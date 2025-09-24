@@ -7,30 +7,42 @@ describe("Agent Section Tests", () => {
             statusCode: 200,
             body: [
                 {
-                id: '1',
-                data: { name: 'Albert Wesker', email: 'albertumbrella@example.com' },
-                role: 'admin'
+                    id: '1',
+                    data: { name: 'Albert Wesker', email: 'albertumbrella@example.com' },
+                    role: 'admin',
+                    user_account_created: true
                 },
                 {
-                id: '2',
-                data: { name: 'Alyx Vance', email: 'halflife3isreal@example.com' },
-                role: 'user'
+                    id: '2',
+                    data: { name: 'Alyx Vance', email: 'halflife3isreal@example.com' },
+                    role: 'user',
+                    user_account_created: true
                 },
                 {
-                id: '3',
-                user_new: true,
-                nickname: 'Carl Johnson',
-                data: { email: 'grovestreet4life@invited.com' },
-                role: 'platformAdmin',
-                token_expiry: Math.floor(Date.now() / 1000) + 3600
+                    id: '3',
+                    user_new: true,
+                    nickname: 'Carl Johnson',
+                    data: { email: 'grovestreet4life@invited.com' },
+                    role: 'platformAdmin',
+                    token_expiry: Math.floor(Date.now() / 1000) + 3600,
+                    user_account_created: true
                 },
                 {
-                id: '4',
-                user_new: true,
-                nickname: 'Geralt of Rivia',
-                data: { email: 'imawitcher@expired.com' },
-                role: 'user',
-                token_expiry: Math.floor(Date.now() / 1000) - 3600
+                    id: '4',
+                    user_new: true,
+                    nickname: 'Geralt of Rivia',
+                    data: { email: 'imawitcher@expired.com' },
+                    role: 'user',
+                    token_expiry: Math.floor(Date.now() / 1000) - 3600,
+                    user_account_created: true
+                },
+                {
+                    id: '5',
+                    user_new: true,
+                    nickname: 'Adamska',
+                    data: { email: 'rocelot@noaccount.com' },
+                    role: 'user',
+                    user_account_created: false
                 }
             ]
             }).as('getUsers');
@@ -58,6 +70,10 @@ describe("Agent Section Tests", () => {
         cy.get('span').should('contain.text', 'Albert Wesker');
         cy.get('span').should('contain.text', 'Admin');
         cy.get('span').should('contain.text', 'Active');
+
+        // Check for invited user without account created
+        cy.get('span').should('contain.text', 'Adamska');
+        cy.get('span').should('contain.text', 'No Account');
 
         //Test for the Create User Modal
         cy.get('button').contains("Create User").click();
@@ -90,6 +106,5 @@ describe("Agent Section Tests", () => {
         cy.get('button').contains("Platform Admin").click();
         cy.contains('div', 'All Roles').click({ force: true });
         cy.get('span').should('contain.text', 'Albert Wesker');
-
     });
 });

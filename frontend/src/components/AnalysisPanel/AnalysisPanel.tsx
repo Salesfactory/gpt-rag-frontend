@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
-import DOMPurify from "dompurify";
 import styles from "./AnalysisPanel.module.css";
 import { AskResponse } from "../../api";
 import { AnalysisPanelTabs } from "./AnalysisPanelTabs";
@@ -22,6 +21,8 @@ interface Props {
     answer: AskResponse;
     fileType: string;
     onHideTab: () => void;
+    spreadsheetDownloadUrl?: string;
+    spreadsheetFileName?: string;
 }
 
 const pivotItemDisabledStyle = { disabled: true, style: { color: "grey" } };
@@ -39,16 +40,16 @@ const closeButtonStyle = {
     }
 };
 
-export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab }: Props) => {
+export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
-    const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
     let thoughts = parseThoughts(answer.thoughts);
 
     const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
     const meta = parseMeta(preContent);
-    const hasAnyMeta = Object.values(meta).some(Boolean);
+    const agentType = meta.mcpToolUsed || meta.mcpToolsUsed;
+    const hasAnyMeta = !!(meta.modelUsed || agentType || meta.toolSelected); // only show meta section if the agent type is available
 
     const filteredThoughts = (thoughts || []).filter((thought: any) => {
         const title = toPlainText(thought?.title).toLowerCase();
@@ -73,15 +74,15 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                 aria-label="Analysis Panel"
                 styles={{
                     linkIsSelected: {
-                        color: "#159244",
+                        color: "#0E7C3A",
                         fontSize: "15px",
                         selectors: {
                             ":before": {
-                                backgroundColor: "#008236"
+                                backgroundColor: "#0E7C3A"
                             },
                             ":hover": {
-                                color: "#159244",
-                                backgroundColor: "#f0fdf4"
+                                color: "#0E7C3A",
+                                backgroundColor: "#E8F5ED"
                             }
                         }
                     }
@@ -110,33 +111,22 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                         <p className={styles.contentCard}>{meta.modelUsed}</p>
                                     </section>
                                 )}
+                                {agentType && (
+                                    <section className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>Agent Type</h4>
+                                        <p className={styles.contentCard}>{toPlainText(agentType)}</p>
+                                    </section>
+                                )}
                                 {meta.toolSelected && (
                                     <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Tool Selected</h4>
+                                        <h4 className={styles.headerCard}>Tool Used</h4>
                                         <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
-                                    </section>
-                                )}
-                                {meta.originalQuery && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Original Query</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.originalQuery)}</p>
-                                    </section>
-                                )}
-                                {meta.mcpToolUsed && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>MCP Tool Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolUsed)}</p>
-                                    </section>
-                                )}
-                                {meta.mcpToolsUsed && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>MCP Tools Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.mcpToolsUsed)}</p>
                                     </section>
                                 )}
                             </div>
                         )}
-                        {filteredThoughts &&
+                        {agentType &&
+                            filteredThoughts &&
                             filteredThoughts.length > 0 &&
                             filteredThoughts.map((p: any, index: number) => (
                                 <div
@@ -230,9 +220,42 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                         </span>
                     )}
                 >
-                    <Suspense fallback={<p>Loading...</p>}>
-                        <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
-                    </Suspense>
+                    {fileType?.toLowerCase() === "spreadsheet-embed" && activeCitation ? (
+                        <div style={{ height: citationHeight, display: "flex", flexDirection: "column" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                                <div style={{ fontSize: 14, color: "#111827" }}>{spreadsheetFileName || "Excel Preview"}</div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                    {spreadsheetDownloadUrl && (
+                                        <a
+                                            href={spreadsheetDownloadUrl}
+                                            download={spreadsheetFileName || true}
+                                            style={{
+                                                fontSize: 13,
+                                                padding: "6px 10px",
+                                                background: "#fff",
+                                                border: "1px solid #d1d5db",
+                                                borderRadius: 6,
+                                                color: "#111827",
+                                                textDecoration: "none"
+                                            }}
+                                        >
+                                            Download
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                            <iframe
+                                title={spreadsheetFileName || "Excel Preview"}
+                                src={activeCitation}
+                                style={{ border: 0, width: "100%", flex: 1 }}
+                                allowFullScreen
+                            />
+                        </div>
+                    ) : (
+                        <Suspense fallback={<p>Loading...</p>}>
+                            <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
+                        </Suspense>
+                    )}
                 </PivotItem>
                 <PivotItem
                     // @ts-ignore

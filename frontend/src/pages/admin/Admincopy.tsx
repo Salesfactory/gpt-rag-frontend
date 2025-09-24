@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar, ResponsiveMode, SpinnerSize } from "@fluentui/react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
 import { CirclePlus, Search, SquarePen, Trash2, Filter, X } from "lucide-react";
 
@@ -700,7 +700,6 @@ const Admin = () => {
 
     return (
         <>
-            <ToastContainer />
             <div className={styles.page_container}>
                 <>
                     <div
@@ -853,12 +852,12 @@ const Admin = () => {
                             disabled={loading}
                             styles={{
                                 root: {
-                                    backgroundColor: "#16a34a",
+                                    backgroundColor: "#008431",
                                     color: "white",
                                     border: "none"
                                 },
                                 rootHovered: {
-                                    backgroundColor: "#15803d",
+                                    backgroundColor: "#006e2c",
                                     color: "white"
                                 },
                                 rootFocused: {
@@ -866,7 +865,7 @@ const Admin = () => {
                                     boxShadow: "0 0 0 2px white, 0 0 0 4px #22c55e"
                                 },
                                 rootPressed: {
-                                    backgroundColor: "#15803d",
+                                    backgroundColor: "#006e2c",
                                     color: "white"
                                 }
                             }}
@@ -927,28 +926,17 @@ const Admin = () => {
                             }}
                         />
                     ) : (
+                        <div className={styles.tableScroll}>
                         <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                            <li
-                                style={{
-                                    background: "#00a63e",
-                                    color: "white",
-                                    fontWeight: 600,
-                                    fontSize: 16,
-                                    borderTopLeftRadius: 8,
-                                    borderTopRightRadius: 8,
-                                    padding: "12px 16px",
-                                    marginBottom: 0
-                                }}
-                            >
-                                Team Members
-                            </li>
+                            <li className={styles.headerRow}>Team Members</li>
                             {filteredUsers.map((user: any, index) => {
                                 const isNew = user.user_new;
                                 const userName = isNew ? user.nickname : user.data.name;
                                 const userEmail = isNew ? user.data.email : user.data.email;
                                 const userRole = user.role;
+                                const hasCreatedAccount = user.user_account_created;
 
-                                // Verifica si el usuario invitado tiene el token expirado
+                                // Verify if the invited user has accepted the invitation
                                 let userStatus = "Active";
                                 let statusColor = "#e5e7eb";
                                 let statusTextColor = "#1e2939";
@@ -997,6 +985,22 @@ const Admin = () => {
                                                 >
                                                     {userStatus}
                                                 </span>
+                                                {!hasCreatedAccount && (
+                                                    <span
+                                                        style={{
+                                                            fontSize: "0.75rem",
+                                                            background: "#ffffff",
+                                                            color: "#000000",
+                                                            border: "1px solid #000000",
+                                                            borderRadius: 8,
+                                                            padding: "2px 10px",
+                                                            marginLeft: 4,
+                                                            fontWeight: 600
+                                                        }}
+                                                    >
+                                                        No Account
+                                                    </span>
+                                                )}
                                             </div>
                                             <span style={{ color: "#6B7280", fontSize: "14px" }}>{userEmail}</span>
                                         </div>
@@ -1041,6 +1045,7 @@ const Admin = () => {
                                 );
                             })}
                         </ul>
+                        </div>
                     )}
                 </>
             </div>

@@ -4,6 +4,8 @@ azure-cosmos==4.5.1
 azure-identity==1.15.0
 flask==2.2.2
 flask-cors==3.0.10
+flask-compress==1.18
+flask-limiter==3.13
 werkzeug==2.2.2
 requests
 python-dotenv==1.0.0
@@ -39,3 +41,4 @@ azure-ai-inference==1.0.0b9
 pandasai==3.0.0b19
 pandasai-openai==0.1.6
 azure-storage-queue
+openpyxl

@@ -1,4 +1,4 @@
-import { AskResponseGpt, ChatRequestGpt, GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, SummarizationReportProps, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -217,47 +217,6 @@ export async function postSettings({ user, temperature, model, font_family, font
         console.error("Error posting settings", error);
         return {};
     }
-}
-
-export async function chatApiGpt(options: ChatRequestGpt, user: any): Promise<AskResponseGpt> {
-    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
-    const user_name = user ? user.name : "anonymous";
-    const user_organization = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
-    const response = await fetch("/chatgpt", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-MS-CLIENT-PRINCIPAL-ID": user_id,
-            "X-MS-CLIENT-PRINCIPAL-NAME": user_name,
-            "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_organization
-        },
-        body: JSON.stringify({
-            history: options.history,
-            approach: options.approach,
-            conversation_id: options.conversation_id,
-            query: options.query,
-            url: options.file_blob_url,
-            agent: options.agent,
-            documentName: options.documentName,
-            overrides: {
-                semantic_ranker: options.overrides?.semanticRanker,
-                semantic_captions: options.overrides?.semanticCaptions,
-                top: options.overrides?.top,
-                temperature: options.overrides?.temperature,
-                prompt_template: options.overrides?.promptTemplate,
-                prompt_template_prefix: options.overrides?.promptTemplatePrefix,
-                prompt_template_suffix: options.overrides?.promptTemplateSuffix,
-                exclude_category: options.overrides?.excludeCategory,
-                suggest_followup_questions: options.overrides?.suggestFollowupQuestions
-            }
-        })
-    });
-
-    const parsedResponse: AskResponseGpt = await response.json();
-    if (response.status > 299 || !response.ok) {
-        throw Error(parsedResponse.error || "Unknown error");
-    }
-    return parsedResponse;
 }
 
 export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<ChatTurn[]> {
@@ -616,7 +575,6 @@ export async function uploadSourceFileToBlob(file: any, organizationId: string) 
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
         const result = await response.json();
-        console.log("File uploaded successfully:", result);
         return result;
     } catch (error) {
         console.error("Error uploading file:", error);
@@ -636,7 +594,6 @@ export async function deleteSourceFileFromBlob(blob_name: string) {
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     const result = await response.json();
-    console.log("File deleted successfully:", result);
     return result;
 }
 
@@ -653,7 +610,6 @@ export async function uploadFile(file: any) {
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
         const result = await response.json();
-        console.log("File uploaded successfully:", result);
         return result;
     } catch (error) {
         console.error("Error uploading file:", error);
@@ -822,145 +778,6 @@ export async function getInvitations({ user }: any): Promise<any> {
     }
 }
 
-//create report type "curation" or "companySummarization"
-export async function createReport(reportData: object) {
-    const response = await fetch(`/api/reports`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(reportData),
-    });
-
-    if (response.status > 299 || !response.ok) {
-        throw Error("Error creating a new report");
-    }
-
-    const newReport = await response.json();
-    return newReport;
-}
-
-export async function getReportBlobs({
-    container_name,
-    prefix,
-    include_metadata,
-    max_results,
-}: {
-    container_name: string;
-    prefix: string;
-    include_metadata: string;
-    max_results: string;
-}) {
-    const params = new URLSearchParams({
-        container_name,
-        prefix,
-        include_metadata,
-        max_results,
-    });
-
-    try {
-        const response = await fetch(`/api/reports/storage/files?${params}`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-    
-        if (response.status > 299 || !response.ok) {
-            throw Error("Error getting report blobs");
-        }
-    
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Error getting report blobs", error);
-        return { data: [] };
-    }
-}
-
-//This function, if sent with the "type" parameter, receives a request with the required report. If nothing is sent, it will receive all the reports from the container.
-export async function getFilteredReports(type?: string) {
-    const url = type 
-        ? `/api/reports?type=${encodeURIComponent(type)}` 
-        : `/api/reports`;
-
-    const response = await fetch(url, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
-
-    if (response.status > 299 || !response.ok) {
-        const errorType = type ? `type ${type}` : "all reports";
-        throw new Error(`Error getting reports for ${errorType}`);
-    }
-
-    const reports = await response.json();
-    return reports;
-}
-
-// Summarization reports 
-export async function getSummarizationTemplates() {
-    const response = await fetch('/api/reports/summarization/templates', {method: 'GET', headers: {'Content-Type': 'application/json'}});
-    if (response.status > 299 || !response.ok) {
-        throw Error('Error getting summarization templates');
-    }
-    const reports = await response.json();
-    return reports.data;
-}
-
-export async function getSummarizationReportTemplateByID(templateID: string) {
-    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {method: 'GET', headers: {'Content-Type': 'application/json'}});
-    const report = await response.json();
-    return report.data;
-}
-
-export async function createSummarizationReport(templateData: SummarizationReportProps) {
-    const response = await fetch('/api/reports/summarization/templates', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(templateData),
-    });
-
-    if (response.status > 299 || !response.ok) {
-        throw Error('Error creating a new summarization report');
-    }
-
-    const newReport = await response.json();
-    return newReport;
-}
-
-export async function deleteSummarizationReportTemplate(templateID: string) {
-    const response = await fetch(`/api/reports/summarization/templates/${templateID}`, {
-        method: 'DELETE',
-        headers: {'Content-Type': 'application/json'},
-    });
-
-    if (response.status > 299 || !response.ok) {
-        throw Error('Error deleting summarization report');
-    }
-    const deletedReport = await response.json();
-    return deletedReport;
-}
-
-export async function deleteReport(reportId: string) {
-    const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
-
-    if (response.status === 404) {
-        throw Error(`Report with ID ${reportId} not found`);
-    }
-
-    if (response.status > 299 || !response.ok) {
-        throw Error(`Error deleting report with ID ${reportId}`);
-    }
-}
-
 export async function updateUser({ userId, updatedData }: { userId: string; updatedData: object }) {
     const response = await fetch(`/api/user/${encodeURIComponent(userId)}`, {
         method: "PUT",
@@ -1071,34 +888,6 @@ export async function changeSubscription({ subscriptionId, newPlanId, user}: {su
     }
 }
 
-export async function cancelSubscription({ subscriptionId, user }: {subscriptionId: string; user:any}): Promise<void> {
-    const userId = user ? user.id : "00000000-0000-0000-0000-000000000000";
-    const userName = user ? user.name : "anonymous";
-    try {
-        const response = await fetch(`/api/subscriptions/${subscriptionId}/cancel`, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID":userId,
-                "X-MS-CLIENT-PRINCIPAL-NAME": userName,
-            },
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Subscription cancellation failed: ${response.status} ${response.statusText} - ${errorText}`);
-        }
-
-        console.log("Subscription canceled successfully");
-    } catch (error) {
-        console.error(
-            "Error canceling subscription:",
-            error instanceof Error ? error.message : error
-        );
-        throw error;
-    }
-}
-
 export async function getLogs(organizationId: string): Promise<any> {
     try {
         const response = await fetch('/api/logs/', {method:'POST',
@@ -1134,21 +923,6 @@ export async function getLogs(organizationId: string): Promise<any> {
         }
         console.error("API request failed:", error)
         throw new Error(error.message || "Unexpected error fetching logs.")
-    }
-}
-
-export async function getCompanyData() {
-    try {
-        const response = await fetch("/api/companydata", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        });
-        const companydata = await response.json()
-        return companydata.data
-    } catch {
-        console.error("API request failed")
     }
 }
 
@@ -1248,39 +1022,6 @@ export async function getOrganizationUrls(organizationId: string): Promise<any> 
         return result;
     } catch (error) {
         console.error("Error fetching organization URLs:", error);
-        throw error;
-    }
-}
-
-export async function addOrganizationUrl(organizationId: string, url: string, user?: any): Promise<any> {
-    try {
-        const headers: any = {
-            "Content-Type": "application/json",
-        };
-        
-        // Add user authentication headers if user is provided
-        if (user) {
-            headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
-            headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
-        }
-        
-        const response = await fetch("/api/webscraping/add-url", {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-                organization_id: organizationId,
-                url: url
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error("Error adding organization URL:", error);
         throw error;
     }
 }
@@ -1752,6 +1493,7 @@ export async function updateCompetitor({
   return data;
 }
 
+// This needs to be implemented in the future with a Delete Modal in Voice of Customer. DO NOT DELETE
 export async function getItemsToDeleteByBrand({ brand_id, user, organization_id }: { brand_id: string; user: any, organization_id: string }): Promise<any> {
   const response = await fetch(`/api/voice-customer/organization/${encodeURIComponent(organization_id)}/brands/${encodeURIComponent(brand_id)}/items-to-delete/`, {
     method: 'GET',
@@ -1812,7 +1554,9 @@ export async function getFileBlob(fileName: string, container: string = "documen
  */
 export async function generateExcelDownloadUrl(filePath: string): Promise<{
     success: boolean;
-    download_url: string;
+    download_url: string; 
+    preview_url?: string; 
+    sas_url?: string;     // fallback public blob SAS (Excel only)
     filename: string;
     expires_in_days: number;
 }> {
@@ -1838,59 +1582,71 @@ export async function generateExcelDownloadUrl(filePath: string): Promise<{
     }
 }
 
-export async function postReportByName(reportName: string): Promise<any> {
-    try{
-        const response = await fetch(`/api/reports/${encodeURIComponent(reportName)}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-        });
+export async function getGalleryItems(
+  organization_id: string,
+  params: {
+    user: any;
+    uploader_id?: string | null;
+    order?: "newest" | "oldest";
+    query?: string;
+    page?: number;
+    limit?: number;
+  }
+): Promise<{
+  items: any[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}> {
+  const qs = new URLSearchParams();
+  if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
+  if (params.order)       qs.set("order", params.order);
+  if (params.query)       qs.set("query", params.query);
+  if (params.page)        qs.set("page", params.page.toString());
+  if (params.limit)       qs.set("limit", params.limit.toString());
 
-        if (!response.ok) {
-            throw new Error(`Error creating report: ${response.status} ${response.statusText}`);
-        }
+  const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;
 
-        return await response.json();
-    } catch (error) {
-        console.error('Error creating report: ', error);
-        throw new Error('Error creating report.');
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "X-MS-CLIENT-PRINCIPAL-ID": params.user?.id ?? "00000000-0000-0000-0000-000000000000",
+      "X-MS-CLIENT-PRINCIPAL-NAME": params.user?.name ?? "anonymous",
+      Accept: "application/json"
     }
-}
+  });
 
-export async function getGalleryItems(organization_id: string, params: { user: any }): Promise<any[]> {
-    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/gallery`, {
-        method: 'GET',
-        headers: {
-            'X-MS-CLIENT-PRINCIPAL-ID': params.user?.id ?? '00000000-0000-0000-0000-000000000000',
-            'X-MS-CLIENT-PRINCIPAL-NAME': params.user?.name ?? 'anonymous',
-            'Accept': 'application/json'
-        },
-    });
+  if (!response.ok) {
+    const bodyText = await response.text().catch(() => "");
+    console.error(`Failed to fetch gallery items: ${response.status} ${response.statusText}`, bodyText);
+    throw new Error(`Failed to fetch gallery items: ${response.status}`);
+  }
 
-    console.log('getGalleryItems response status:', response.status, response.statusText);
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const bodyText = await response.text().catch(() => "");
+    console.error("Unexpected non-JSON response from gallery API:", bodyText);
+    throw new Error("Invalid response from gallery API (expected JSON)");
+  }
 
-    // If server returned non-2xx, read text to capture HTML error pages and throw meaningful error
-    if (!response.ok) {
-        const bodyText = await response.text().catch(() => '');
-        console.error(`Failed to fetch gallery items: ${response.status} ${response.statusText}`, bodyText);
-        throw new Error(`Failed to fetch gallery items: ${response.status}`);
-    }
+  const data = await response.json().catch((err) => {
+    console.error("Error parsing gallery JSON response:", err);
+    throw new Error("Invalid JSON from gallery API");
+  });
 
-    // Ensure response is JSON before parsing to avoid "Unexpected token '<'"
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-        const bodyText = await response.text().catch(() => '');
-        console.error('Unexpected non-JSON response from gallery API:', bodyText);
-        throw new Error('Invalid response from gallery API (expected JSON)');
-    }
-
-    const data = await response.json().catch((err) => {
-        console.error('Error parsing gallery JSON response:', err);
-        throw new Error('Invalid JSON from gallery API');
-    });
-
-    return data?.data ?? data ?? [];
+  const result = data?.data ?? data ?? {};
+  return {
+    items: result.items ?? [],
+    total: result.total ?? 0,
+    page: result.page ?? 1,
+    limit: result.limit ?? 10,
+    total_pages: result.total_pages ?? 0,
+    has_next: result.has_next ?? false,
+    has_prev: result.has_prev ?? false
+  };
 }
 
 export async function fetchReportJobs({

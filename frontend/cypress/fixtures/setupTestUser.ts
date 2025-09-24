@@ -337,7 +337,7 @@ export function setupTestUserAndOrg() {
                             "This dataset contains 28 rows and 17 columns of electric vehicle registration details, with key fields such as VIN (1-10), County, City, State, Model Year, Make, Model, Electric Vehicle Type, Clean Alternative Fuel Vehicle (CAFV) Eligibility, Electric Range. Most vehicles are 'Battery Electric Vehicle (BEV)', with 'TESLA' as a frequent make and 'Kitsap' county commonly represented.",
                         organization_id: "22552b2f-1e98-4bc0-a252-a782d80201d5"
                     },
-                    name: "organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Electric_Vehicle_Population_Data copy.xlsx",
+                    name: "organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Electric_Veh_Population_Data copy.xlsx",
                     size: 9685,
                     url: "https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/Electric_Vehicle_Population_Data copy.xlsx"
                 },

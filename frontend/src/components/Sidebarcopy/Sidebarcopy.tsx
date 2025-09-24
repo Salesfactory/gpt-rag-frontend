@@ -174,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <Star className={styles.sidebarLinkIcon} />,
                     links: [
                         {
-                            title: "Upload Resources",
+                            title: "File Vault",
                             href: "/upload-resources",
                             roles: ["admin", "platformAdmin"],
                             tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
@@ -198,24 +198,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     title: "Reports",
                     icon: <FileText className={styles.sidebarLinkIcon} />,
                     links: [
-                        {
-                            title: "Reports Dashboard",
-                            href: "/view-reports",
-                            tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                            roles: ["admin", "platformAdmin"]
-                        },
-                        {
-                            title: "Report Creation",
-                            href: "/view-manage-reports",
-                            tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                            roles: ["admin", "platformAdmin"]
-                        },
-                        {
-                            title: "Sharing & Distribution",
-                            href: "/details-settings",
-                            tiers: ["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
-                            roles: ["admin", "platformAdmin"]
-                        }
                     ],
                     tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
                     roles: ["admin", "user", "platformAdmin"]
