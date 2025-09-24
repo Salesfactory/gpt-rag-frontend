@@ -58,7 +58,7 @@ def app(monkeypatch):
     clients_mod = __import__("shared.clients", fromlist=["*"])
 
     # Cosmos container handle
-    monkeypatch.setattr(clients_mod, "JOBS_CONT", "report_jobs", raising=False)
+    monkeypatch.setattr(clients_mod, "JOBS_CONT", "reportJobs", raising=False)
     monkeypatch.setattr(
         clients_mod, "get_cosmos_container", lambda name: fake_container, raising=True
     )
