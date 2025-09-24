@@ -6,6 +6,8 @@ from data_summary.summarize import create_description
 from utils import create_success_response, create_error_response
 
 DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
+ALLOWED_MIME_TYPES = ["application/pdf","text/csv","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-excel"]
+
 BLOB_CONTAINER_NAME = "documents"
 ORG_FILES_PREFIX = "organization_files"
 
@@ -20,10 +22,26 @@ def upload_source_document():
     llm = current_app.config["llm"]
     temp_file_path = None
     try:
+        # Get organization ID from form data, query parameters, or headers
+        organization_id = request.form.get("organization_id")
+        file_mime = request.form.get("MIME_type")
+
+        if not organization_id:
+            logger.error("Organization ID not provided in request")
+            return create_error_response("Organization ID is required", 400)
+        
+        if not file_mime:
+            logger.error("File type not provided in request")
+            return create_error_response("File type is required", 400)
+
         # Check if file is in the request
         if "file" not in request.files:
             logger.error("No file part in the request")
             return create_error_response("No file part in the request", 400)
+        
+        if not file_mime in ALLOWED_MIME_TYPES:
+            logger.error("No file type in this request")
+            return create_error_response("Invalid file type", 422)
 
         file = request.files["file"]
 
@@ -31,14 +49,7 @@ def upload_source_document():
         if file.filename == "":
             logger.error("No file selected")
             return create_error_response("No file selected", 400)
-
-        # Get organization ID from form data, query parameters, or headers
-        organization_id = request.form.get("organization_id")
-
-        if not organization_id:
-            logger.error("Organization ID not provided in request")
-            return create_error_response("Organization ID is required", 400)
-
+        
         logger.info(
             f"Uploading file '{file.filename}' for organization '{organization_id}'"
         )
