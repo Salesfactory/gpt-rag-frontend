@@ -16,6 +16,7 @@ interface Props {
     clearOnSend?: boolean;
     extraButtonNewChat?: React.ReactNode;
     extraButtonDownload?: React.ReactNode;
+    extraButtonAttach?: React.ReactNode;
 }
 
 import { useFilePicker } from "use-file-picker";
@@ -171,7 +172,7 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
     );
 };
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat, extraButtonDownload }: Props) => {
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat, extraButtonDownload, extraButtonAttach, }: Props) => {
     const { organization } = useAppContext();
     const [question, setQuestion] = useState<string>("");
 
@@ -256,6 +257,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
             <div className={styles.questionInputButtonsContainer}>
                 {extraButtonNewChat}
                 {extraButtonDownload}
+                {extraButtonAttach}
             </div>
             <TextField
                 className={styles.questionInputTextArea}
@@ -269,6 +271,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
                 autoAdjustHeight
             />
             <div className={styles.leftButtons}>
+                
                 {/*
                     <div
                         className={`${styles.questionInputSendButton}`}

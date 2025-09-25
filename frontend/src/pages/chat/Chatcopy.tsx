@@ -12,6 +12,10 @@ import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import DownloadButton from "../../components/DownloadButton/DownloadButton";
+import AttachButton from "../../components/AttachButton/AttachButton";
+import { uploadSourceFileToBlob, deleteSourceFileFromBlob } from "../../api";
+import { ALLOWED_FILE_TYPES } from "../../constants";
+
 // import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -42,6 +46,15 @@ const Chat = () => {
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
+    const [pendingFileBlobUrl, setPendingFileBlobUrl] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const ATTACH_ACCEPT = ALLOWED_FILE_TYPES.join(",");
+    const [pendingFile, setPendingFile] = useState<{ name: string; url: string; blobName?: string } | null>(null);
+
+    const [isDragOver, setIsDragOver] = useState(false);
+
+    const uploadAbortRef = useRef<AbortController | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -404,6 +417,77 @@ const Chat = () => {
         }
     };
 
+    const handleAttachFiles = async (files: File[]) => {
+        if (!files?.length) return;
+
+        const name = files[0].name.toLowerCase();
+        const allowed = ALLOWED_FILE_TYPES.map(ext => ext.toLowerCase());
+        if (!allowed.some(ext => name.endsWith(ext))) {
+            console.error("Tipo no permitido por ALLOWED_FILE_TYPES");
+            return;
+        }
+
+ 
+        setPendingFile({ name: files[0].name, url: "" });
+        setIsUploading(true);
+
+        try {
+            const resp = await uploadSourceFileToBlob(files[0], user?.organizationId || "");
+
+            const blobUrl   = resp?.blob_url || resp?.url || resp?.sas_url || resp?.public_url || "";
+            const blobName  = resp?.blob_name || resp?.name || resp?.blobName || undefined;
+
+            setPendingFile(prev => (prev
+            ? { ...prev, url: blobUrl, blobName }
+            : { name: files[0].name, url: blobUrl, blobName }
+            ));
+            setPendingFileBlobUrl(blobUrl || null);
+
+        } catch (e) {
+            console.error(e);
+            setPendingFile(null);
+            setPendingFileBlobUrl(null);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    function inferBlobNameFromUrl(url: string) {
+        try {
+            const u = new URL(url);            
+            let path = u.pathname.replace(/^\/+/, "");
+            const parts = path.split("/");
+            if (parts.length > 1 && (parts[0] === "documents" || parts[0] === "sourcefiles")) {
+            path = parts.slice(1).join("/");
+            }
+            return decodeURIComponent(path);
+        } catch {
+            return url;
+        }
+    }
+
+    async function handleRemoveAttachment() {
+ 
+        if (isUploading && uploadAbortRef.current) {
+            uploadAbortRef.current.abort();
+        }
+
+        try {
+            setIsDeleting(true);
+
+            if (pendingFile?.url) {
+            const blobName = pendingFile.blobName || inferBlobNameFromUrl(pendingFile.url);
+            await deleteSourceFileFromBlob(blobName);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsDeleting(false);
+            setPendingFile(null);
+            setPendingFileBlobUrl(null);
+        }
+    }
+
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (isSpreadsheet(citation)) {
             try {
@@ -714,24 +798,74 @@ const Chat = () => {
                                         <div ref={chatMessageStreamEnd} />
                                     </div>
                                 )}
-                                <div className={styles.chatInputContainer}>
-                                    <div className={styles.chatInput}>
+                               <div className={styles.chatInputContainer}>
+                                    <div
+                                        className={`${styles.chatInput} ${isDragOver ? styles.chatInputDragOver : ""}`}
+                                        onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setIsDragOver(true);
+                                        }}
+                                        onDragLeave={() => setIsDragOver(false)}
+                                        onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsDragOver(false);
+                                        const files = Array.from(e.dataTransfer?.files || []);
+                                        if (files.length) handleAttachFiles(files);
+                                        }}
+                                        
+                                    >
+                                        {(pendingFile || isUploading) && (
+                                        <div className={styles.attachmentChip} role="status" aria-live="polite">
+                                            <span className={styles.attachmentName}>
+                                            {isUploading ? "Uploading…" : isDeleting ? "Deleting…" : `${pendingFile?.name || "Attached"} ✓`}
+                                            </span>
+                                            <button
+                                            type="button"
+                                            className={styles.removeChipBtn}
+                                            aria-label={isUploading ? "Cancel upload" : "Remove attachment"}
+                                            onClick={handleRemoveAttachment}
+                                            disabled={isDeleting}
+                                            >
+                                            {isDeleting ? "…" : "×"}
+                                            </button>
+
+                                        </div>
+                                        )}
+
+
                                         <QuestionInput
-                                            clearOnSend
-                                            placeholder={placeholderText}
-                                            disabled={isLoading}
-                                            onSend={(question, fileBlobUrl) => {
-                                                streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
-                                            }}
-                                            extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                                            extraButtonDownload={
-                                                <DownloadButton
-                                                    isEnabled={dataConversation.length > 0 || answers.length > 0}
-                                                    isLoading={isDownloading}
-                                                    onClick={handleDownloadConversation}
-                                                />
-                                            }
+                                        clearOnSend
+                                        placeholder={placeholderText}
+                                        disabled={isLoading}
+                                        onSend={(question /*, fileBlobUrl*/) => {
+                                            streamResponse(
+                                            question,
+                                            chatId !== "" ? chatId : null,
+                                            pendingFile?.url || null
+                                            );
+                                            setPendingFile(null);
+                                            setPendingFileBlobUrl(null);
+                                        }}
+                                        extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
+                                        extraButtonDownload={
+                                            <DownloadButton
+                                            isEnabled={dataConversation.length > 0 || answers.length > 0}
+                                            isLoading={isDownloading}
+                                            onClick={handleDownloadConversation}
+                                            />
+                                        }
+                                        extraButtonAttach={
+                                            <AttachButton
+                                            isEnabled={!isLoading}
+                                            isUploading={isUploading}
+                                            onFilesSelected={handleAttachFiles}
+                                            accept={ATTACH_ACCEPT}
+                                            multiple={false}
+                                            ariaLabel="Attach file"
+                                            />
+                                        }
                                         />
+                           
                                     </div>
                                     <div className={styles.chatDisclaimer}>
                                         <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
