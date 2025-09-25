@@ -757,9 +757,7 @@ def proxy_orc(*, context):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
     question = data.get("question")
-    file_blob_url = data.get("url")
     agent = data.get("agent")
-    documentName = data.get("documentName")
     user_timezone = data.get("user_timezone")
 
     if not question:
@@ -802,11 +800,9 @@ def proxy_orc(*, context):
         {
             "conversation_id": conversation_id,
             "question": question,
-            "url": file_blob_url,
             "client_principal_id": client_principal_id,
             "client_principal_name": client_principal_name,
             "client_principal_organization": client_principal_organization,
-            "documentName": documentName,
             "user_timezone": user_timezone,
         }
     )
@@ -840,9 +836,7 @@ def proxy_orc(*, context):
 def chatgpt(*, context):
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
-    file_blob_url = request.json["url"]
     agent = request.json["agent"]
-    documentName = request.json["documentName"]
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
@@ -851,7 +845,6 @@ def chatgpt(*, context):
     )
     logging.info("[webbackend] conversation_id: " + conversation_id)
     logging.info("[webbackend] question: " + question)
-    logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
     logging.info(f"[webbackend] User organization: {client_principal_organization}")
@@ -889,11 +882,9 @@ def chatgpt(*, context):
             {
                 "conversation_id": conversation_id,
                 "question": question,
-                "url": file_blob_url,
                 "client_principal_id": client_principal_id,
                 "client_principal_name": client_principal_name,
                 "client_principal_organization": client_principal_organization,
-                "documentName": documentName,
             }
         )
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
