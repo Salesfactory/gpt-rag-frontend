@@ -95,7 +95,7 @@ def fake_azure(monkeypatch):
         cosmos_account="ignored-when-url-present",
         cosmos_db_name="mydb",
         users_container="users",
-        jobs_container="report_jobs",
+        jobs_container="reportJobs",
         storage_account="mystorageacct",
         queue_name="report-jobs",
         _queue_account_url="",  # force derivation from storage_account
@@ -129,11 +129,11 @@ def test_warm_up_initializes_cosmos_users_and_queue(fake_azure):
 
 
 def test_get_cosmos_container_is_cached(fake_azure):
-    c1 = clients.get_cosmos_container("report_jobs")
-    c2 = clients.get_cosmos_container("report_jobs")
+    c1 = clients.get_cosmos_container("reportJobs")
+    c2 = clients.get_cosmos_container("reportJobs")
     assert c1 is c2, "Expected lru_cache to cache containers by name"
     # Only one DB call for that container
-    assert fake_azure["cosmos"].db.calls.count("report_jobs") == 1
+    assert fake_azure["cosmos"].db.calls.count("reportJobs") == 1
 
 
 def test_queue_client_none_when_not_configured(monkeypatch, fake_azure):

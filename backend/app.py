@@ -81,8 +81,7 @@ from shared.cosmo_db import (
     patch_organization_data,
     get_audit_logs,
     get_organization_subscription,
-    create_organization,
-    get_company_list,
+    create_organization
 )
 from shared import clients
 from data_summary.config import get_azure_openai_config
@@ -93,7 +92,6 @@ from routes.organizations import bp as organizations
 from routes.upload_source_document import bp as upload_source_document
 from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
-from routes.reports import bp as reports
 from routes.invitations import bp as invitations
 from routes.users import bp as users
 
@@ -226,7 +224,6 @@ app.register_blueprint(organizations)
 app.register_blueprint(upload_source_document)
 app.register_blueprint(voice_customer)
 app.register_blueprint(categories)
-app.register_blueprint(reports)
 app.register_blueprint(invitations)
 app.register_blueprint(users)
 
@@ -760,9 +757,7 @@ def proxy_orc(*, context):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
     question = data.get("question")
-    file_blob_url = data.get("url")
     agent = data.get("agent")
-    documentName = data.get("documentName")
     user_timezone = data.get("user_timezone")
 
     if not question:
@@ -805,11 +800,9 @@ def proxy_orc(*, context):
         {
             "conversation_id": conversation_id,
             "question": question,
-            "url": file_blob_url,
             "client_principal_id": client_principal_id,
             "client_principal_name": client_principal_name,
             "client_principal_organization": client_principal_organization,
-            "documentName": documentName,
             "user_timezone": user_timezone,
         }
     )
@@ -843,9 +836,7 @@ def proxy_orc(*, context):
 def chatgpt(*, context):
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
-    file_blob_url = request.json["url"]
     agent = request.json["agent"]
-    documentName = request.json["documentName"]
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
@@ -854,7 +845,6 @@ def chatgpt(*, context):
     )
     logging.info("[webbackend] conversation_id: " + conversation_id)
     logging.info("[webbackend] question: " + question)
-    logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
     logging.info(f"[webbackend] User organization: {client_principal_organization}")
@@ -892,11 +882,9 @@ def chatgpt(*, context):
             {
                 "conversation_id": conversation_id,
                 "question": question,
-                "url": file_blob_url,
                 "client_principal_id": client_principal_id,
                 "client_principal_name": client_principal_name,
                 "client_principal_organization": client_principal_organization,
-                "documentName": documentName,
             }
         )
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
@@ -2978,20 +2966,6 @@ def get_logs(*, context):
         return create_error_response(str(e), 400)
     except Exception as e:
         logger.exception("Unexpected error in get_logs")
-        return create_error_response("Internal Server Error", 500)
-
-
-@app.route("/api/companydata", methods=["GET"])
-@auth.login_required
-def get_company_data(*, context):
-    try:
-        data = get_company_list()
-        return create_success_response(data, 200)
-    except CosmosHttpResponseError as e:
-        logger.exception(f"Unexpected error in with cosmos db: {e}")
-        return create_error_response("Internal Server Error", 500)
-    except Exception as e:
-        logger.exception("Unexpected error in get_company_analysis")
         return create_error_response("Internal Server Error", 500)
 
 
