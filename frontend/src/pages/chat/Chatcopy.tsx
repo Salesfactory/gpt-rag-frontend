@@ -3,7 +3,7 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
+import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -81,12 +81,38 @@ const Chat = () => {
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
+    const [conversationId, setConversationId] = useState<string>(""); // Pre-generated conversation ID for new chats
     const triggered = useRef(false);
 
     const [lastAnswer, setLastAnswer] = useState<string>("");
     const [progressState, setProgressState] = useState<{ step: string; message: string; progress?: number; timestamp?: number } | null>(null);
     const restartChat = useRef<boolean>(false);
     const [loadingCitationPath, setLoadingCitationPath] = useState<string | null>(null);
+
+    // Function to generate UUID with fallback for older browsers
+    const generateUUID = (): string => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback for older browsers
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
+    // Function to get or create a conversation ID
+    const getOrCreateConversationId = (): string => {
+        if (chatId) return chatId; // prioritize existing chatId if available
+        if (!conversationId) {
+            // Generate new UUID for new conversation (typically happens before the first message)
+            const newId = generateUUID();
+            setConversationId(newId);
+            return newId;
+        }
+        return conversationId;
+    };
 
     const streamResponse = async (question: string, chatId: string | null) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
@@ -111,10 +137,11 @@ const Chat = () => {
             history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
         }
         history.push({ user: question, bot: undefined });
+        const activeConversationId = getOrCreateConversationId();
         const request: ChatRequestGpt = {
             history: history,
             approach: Approaches.ReadRetrieveRead,
-            conversation_id: chatId !== null ? chatId : userId,
+            conversation_id: activeConversationId,
             query: question,
             agent,
             overrides: {
@@ -237,6 +264,30 @@ const Chat = () => {
         }
     };
 
+    // Example function for uploading user documents
+    const handleUploadUserDocument = async (file: File) => {
+        try {
+            if (!user?.organizationId) {
+                throw new Error("Organization ID not available");
+            }
+
+            const activeConversationId = getOrCreateConversationId();
+
+            const result = await uploadUserDocument({
+                file,
+                organizationId: user.organizationId,
+                conversationId: activeConversationId,
+                user
+            });
+
+            console.log("Document uploaded successfully:", result.blob_url);
+            // You can add UI feedback here, like a toast notification
+        } catch (error) {
+            console.error("Failed to upload document:", error);
+            // You can add error handling UI here
+        }
+    };
+
     const handleNewChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             restartChat.current = true;
@@ -248,6 +299,7 @@ const Chat = () => {
             setDataConversation([]);
             setChatId("");
             setUserId("");
+            setConversationId(""); // Reset conversation ID for new chat
             setChatSelected("");
             setChatIsCleaned(false);
         } else {

@@ -1382,6 +1382,51 @@ class BlobStorageManager:
             logger.error(f"Error listing blobs in container for upload files with pagination: {str(e)}")
             raise
 
+    def delete_blob(self, blob_name: str, container_name: str) -> Dict[str, Any]:
+        """
+        Delete a blob from Azure storage.
+
+        Args:
+            blob_name (str): Name/path of the blob to delete
+            container_name (str): Name of the container
+
+        Returns:
+            Dict[str, Any]: Status dictionary with success/error information
+        """
+        try:
+            container_client = self.blob_service_client.get_container_client(container_name)
+
+            # Check if container exists
+            if not container_client.exists():
+                raise ContainerNotFoundError(f"Container not found: {container_name}")
+
+            # Delete the blob
+            container_client.delete_blob(blob_name)
+
+            logger.info(f"Successfully deleted blob '{blob_name}' from container '{container_name}'")
+            return {
+                "status": "success",
+                "message": f"Blob {blob_name} deleted successfully"
+            }
+
+        except Exception as e:
+            if "BlobNotFound" in str(e):
+                logger.warning(f"Blob '{blob_name}' not found in container '{container_name}'")
+                return {
+                    "status": "error",
+                    "error": f"Blob not found: {blob_name}"
+                }
+            elif "AuthenticationFailed" in str(e):
+                raise BlobAuthenticationError(
+                    f"Error authenticating with blob storage: {str(e)}"
+                )
+            else:
+                logger.error(f"Error deleting blob '{blob_name}': {str(e)}")
+                return {
+                    "status": "error",
+                    "error": str(e)
+                }
+
 
 from sec_edgar_downloader import Downloader
 from utils import cleanup_resources
