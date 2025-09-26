@@ -567,7 +567,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       onChange={handleSetTemperature}
                       aria-labelledby="temperature-slider"
                       styles={{
-                        root: { width: "100%" } // más largo
+                        root: { width: "100%" }
                       }}
                       className={styles.sliderCustom}
                     />
