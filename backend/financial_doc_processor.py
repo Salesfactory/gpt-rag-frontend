@@ -457,6 +457,9 @@ class BlobStorageManager:
             self.container_client_financial = (
                 self.blob_service_client.get_container_client(FINANCIAL_AGENT_CONTAINER)
             )
+            self.container_client_user_documents = (
+                self.blob_service_client.get_container_client("user-documents")
+            )
             self.blob_base_folder = "financial"
         except ValueError as e:
             raise BlobConnectionError(f"Invalid connection string: {str(e)}")
@@ -744,33 +747,27 @@ class BlobStorageManager:
                     content_type = "application/octet-stream"
                 with open(file_path, "rb") as data:
                     try:
-                        if container == os.getenv(
-                            "BLOB_CONTAINER_NAME"
-                        ):  # this is our marketing container, already been defined in the env
-                            self.container_client.upload_blob(
-                                name=blob_path,
-                                data=data,
-                                overwrite=True,
-                                content_settings=ContentSettings(
-                                    content_type=content_type
-                                ),
-                                metadata=metadata,
-                            )
+                        if container == os.getenv("BLOB_CONTAINER_NAME"):
+                            container_client = self.container_client
+                        elif container == "user-documents":
+                            container_client = self.container_client_user_documents
                         else:
-                            self.container_client_financial.upload_blob(
-                                name=blob_path,
-                                data=data,
-                                overwrite=True,
-                                content_settings=ContentSettings(
-                                    content_type=content_type
-                                ),
-                                metadata=metadata,
-                            )
+                            container_client = self.container_client_financial
+
+                        container_client.upload_blob(
+                            name=blob_path,
+                            data=data,
+                            overwrite=True,
+                            content_settings=ContentSettings(
+                                content_type=content_type
+                            ),
+                            metadata=metadata,
+                        )
                     except Exception as e:
                         raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
 
                 # get the blob url for the uploaded file
-                blob_url = f"{self.blob_service_client.url}{os.getenv('FINANCIAL_AGENT_CONTAINER')}/{blob_path}?{blob_sas_token}"
+                blob_url = f"{self.blob_service_client.url}{container}/{blob_path}?{blob_sas_token}"
 
                 result = {
                     "status": "success",
@@ -896,7 +893,7 @@ class BlobStorageManager:
         if not container_name or not container_name.strip():
             raise ValueError("Container name is required and cannot be empty")
 
-        if max_results is None and max_results <= 0:
+        if max_results is not None and max_results <= 0:
             raise ValueError("max_results must be greater than 0")
 
         try:
