@@ -1,0 +1,92 @@
+.tooltipContainer {
+    position: relative;
+    display: inline-block;
+}
+
+.attachButton {
+    display: flex;
+    align-items: center;
+    color: #6b7280;
+    padding: 6px;
+    border-radius: 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 5px;
+}
+
+.attachButton:hover {
+    color: #047857;
+    transform: scale(1.1);
+}
+
+.attachButtonDisabled {
+    display: flex;
+    align-items: center;
+    color: #d1d5db;
+    padding: 6px;
+    border-radius: 4px;
+    border: none;
+    background: none;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    margin-right: 5px;
+    opacity: 0.5;
+}
+
+.tooltipText {
+    visibility: hidden;
+    background-color: white;
+    color: black;
+    text-align: center;
+    padding: 5px;
+    border-radius: 6px;
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    border: 1px solid #016630;
+}
+
+.tooltipContainer:hover .tooltipText {
+    visibility: visible;
+    opacity: 1;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .tooltipContainer:hover .tooltipText {
+        visibility: hidden;
+        opacity: 0;
+    }
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.attachButton:focus-visible,
+.attachButtonDisabled:focus-visible {
+    outline: 2px solid #047857;
+    outline-offset: 2px;
+}
+
+.attachButton > svg,
+.attachButtonDisabled > svg {
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+}

@@ -309,6 +309,7 @@ export const Answer = ({
                             title="Leave Feedback"
                         >
                             <IconButton
+                                aria-hidden="true"
                                 iconProps={{ iconName: "Feedback" }}
                                 styles={{
                                     root: { 

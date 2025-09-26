@@ -13,6 +13,54 @@
     overflow: hidden;
 }
 
+.chatInputDragOver {
+  outline: 2px dashed #047857;
+  outline-offset: 4px;
+}
+
+.attachmentChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 12px;
+  line-height: 1;
+  width: max-content;
+}
+
+.attachmentDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #10b981;
+}
+
+
+.attachmentName {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeChipBtn {
+  background: transparent;
+  border: none;
+  color: #065f46;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.removeChipBtn:hover {
+  color: #047857;
+}
+
 .chatRoot {
     flex: 1;
     display: flex;

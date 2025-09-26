@@ -563,7 +563,7 @@ export async function uploadSourceFileToBlob(file: any, organizationId: string) 
     const formdata = new FormData();
     formdata.append("file", file);
     formdata.append("organization_id", organizationId);
-    
+
     try {
         const response = await fetch("/api/upload-source-document", {
             method: "POST",
@@ -1591,6 +1591,7 @@ export async function getGalleryItems(
     query?: string;
     page?: number;
     limit?: number;
+    signal?: AbortSignal;
   }
 ): Promise<{
   items: any[];
@@ -1616,7 +1617,8 @@ export async function getGalleryItems(
       "X-MS-CLIENT-PRINCIPAL-ID": params.user?.id ?? "00000000-0000-0000-0000-000000000000",
       "X-MS-CLIENT-PRINCIPAL-NAME": params.user?.name ?? "anonymous",
       Accept: "application/json"
-    }
+    },
+    signal: params.signal
   });
 
   if (!response.ok) {
