@@ -6,7 +6,16 @@ from data_summary.summarize import create_description
 from utils import create_success_response, create_error_response
 
 DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
-ALLOWED_MIME_TYPES = ["application/pdf","text/csv","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.ms-excel"]
+ALLOWED_MIME_TYPES = [
+  "application/pdf", 
+  "text/csv",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-excel",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+];
 
 BLOB_CONTAINER_NAME = "documents"
 ORG_FILES_PREFIX = "organization_files"
