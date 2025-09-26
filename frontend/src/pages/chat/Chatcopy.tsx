@@ -11,15 +11,12 @@ import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel
 import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
-import DownloadButton from "../../components/DownloadButton/DownloadButton";
 import AttachButton from "../../components/AttachButton/AttachButton";
-import { ALLOWED_FILE_TYPES } from "../../constants";
-
-// import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
+import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES} from "../../constants";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
-// import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
+
 import React from "react";
 import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
@@ -45,8 +42,9 @@ const Chat = () => {
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
-    const ATTACH_ACCEPT = ALLOWED_FILE_TYPES.join(",");
-    const [attachedFile, setAttachedFile] = useState<{ file: File; name: string; previewUrl: string } | null>(null);
+    const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
+    const [attachedFiles, setAttachedFiles] = useState<{ file: File; name: string; previewUrl: string }[]>([]);
+    const [fileUploadError, setFileUploadError] = useState<string>("");
 
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -344,9 +342,11 @@ const Chat = () => {
 
     useEffect(() => {
         return () => {
-            if (attachedFile?.previewUrl) URL.revokeObjectURL(attachedFile.previewUrl);
+            attachedFiles.forEach(file => {
+                if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+            });
         };
-    }, [attachedFile]);
+    }, [attachedFiles]);
 
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
@@ -411,23 +411,48 @@ const Chat = () => {
     const handleAttachFiles = async (files: File[]) => {
         if (!files?.length) return;
 
-        const file = files[0];
-        const name = file.name.toLowerCase();
-        const allowed = ALLOWED_FILE_TYPES.map(ext => ext.toLowerCase());
-        if (!allowed.some(ext => name.endsWith(ext))) {
-            console.error("File type not allowed");
+        // Clear any previous error
+        setFileUploadError("");
+
+        // AC3: Max 3 documents validation
+        if (attachedFiles.length + files.length > CHAT_MAX_ATTACHED_FILES) {
+            setFileUploadError(`Too many files. You can attach up to 3 documents maximum.`);
             return;
         }
 
-        if (attachedFile?.previewUrl) URL.revokeObjectURL(attachedFile.previewUrl);
+        const validFiles: { file: File; name: string; previewUrl: string }[] = [];
 
-        const previewUrl = URL.createObjectURL(file);
-        setAttachedFile({ file, name: file.name, previewUrl });
+        for (const file of files) {
+            const name = file.name.toLowerCase();
+            const allowed = CHAT_ATTACHMENT_ALLOWED_TYPES.map(ext => ext.toLowerCase());
+            
+            // AC1: Supported types validation - PDF only
+            if (!allowed.some(ext => name.endsWith(ext))) {
+                const fileExtension = name.split('.').pop() || 'unknown';
+                setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF`);
+                return;
+            }
+
+            // AC2: Max size validation - 10MB
+            const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSizeInBytes) {
+                setFileUploadError(`File too large (10 MB max). Try splitting your document.`);
+                return;
+            }
+
+            const previewUrl = URL.createObjectURL(file);
+            validFiles.push({ file, name: file.name, previewUrl });
+        }
+
+        // Add valid files to the existing attachments
+        setAttachedFiles(prev => [...prev, ...validFiles]);
     };
 
-    function handleRemoveAttachment() {
-        if (attachedFile?.previewUrl) URL.revokeObjectURL(attachedFile.previewUrl);
-        setAttachedFile(null);
+    function handleRemoveAttachment(index: number) {
+        const fileToRemove = attachedFiles[index];
+        if (fileToRemove?.previewUrl) URL.revokeObjectURL(fileToRemove.previewUrl);
+        setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+        setFileUploadError(""); // Clear error when removing attachment
     }
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
@@ -741,6 +766,27 @@ const Chat = () => {
                                     </div>
                                 )}
                                 <div className={styles.chatInputContainer}>
+                                    {/* File upload error message */}
+
+                                    {/* Attachment display - outside of chat input */}
+                                    {attachedFiles.length > 0 && (
+                                        <div className={styles.attachmentDisplay} role="status" aria-live="polite">
+                                            {attachedFiles.map((file, index) => (
+                                                <div key={index} className={styles.attachmentChip}>
+                                                    <span className={styles.attachmentName}>{file.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.removeChipBtn}
+                                                        aria-label={`Remove attachment ${file.name}`}
+                                                        onClick={() => handleRemoveAttachment(index)}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     <div
                                         className={`${styles.chatInput} ${isDragOver ? styles.chatInputDragOver : ""}`}
                                         onDragOver={e => {
@@ -755,43 +801,27 @@ const Chat = () => {
                                             if (files.length) handleAttachFiles(files);
                                         }}
                                     >
-                                        {attachedFile && (
-                                            <div className={styles.attachmentChip} role="status" aria-live="polite">
-                                                <span className={styles.attachmentName}>{`${attachedFile.name} ✓`}</span>
-                                                <button
-                                                    type="button"
-                                                    className={styles.removeChipBtn}
-                                                    aria-label="Remove attachment"
-                                                    onClick={handleRemoveAttachment}
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        )}
-
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
                                             disabled={isLoading}
                                             onSend={question => {
                                                 streamResponse(question, chatId !== "" ? chatId : null);
-                                                setAttachedFile(null);
+                                                // Clear all attachments after sending
+                                                attachedFiles.forEach(file => {
+                                                    if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+                                                });
+                                                setAttachedFiles([]);
+                                                setFileUploadError(""); // Clear error when sending
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                                            extraButtonDownload={
-                                                <DownloadButton
-                                                    isEnabled={dataConversation.length > 0 || answers.length > 0}
-                                                    isLoading={isDownloading}
-                                                    onClick={handleDownloadConversation}
-                                                />
-                                            }
                                             extraButtonAttach={
                                                 <AttachButton
-                                                    isEnabled={!isLoading}
+                                                    isEnabled={!isLoading && attachedFiles.length < CHAT_MAX_ATTACHED_FILES}
                                                     isUploading={false}
                                                     onFilesSelected={handleAttachFiles}
                                                     accept={ATTACH_ACCEPT}
-                                                    multiple={false}
+                                                    multiple={attachedFiles.length < CHAT_MAX_ATTACHED_FILES}
                                                     ariaLabel="Attach file"
                                                 />
                                             }
@@ -800,6 +830,12 @@ const Chat = () => {
                                     <div className={styles.chatDisclaimer}>
                                         <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
                                     </div>
+                                    {fileUploadError && (
+                                        <div className={styles.fileUploadError} role="alert" aria-live="assertive">
+                                            <span className={styles.errorIcon}>✕</span>
+                                            <span>{fileUploadError}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer]) ||
