@@ -103,7 +103,7 @@
 }
 
 .sliderCustom{
-
+  --rail-h: 10px;
   --s1: 12%;
   --s2: 28%;
   --s3: 45%;
@@ -124,7 +124,8 @@
 .sliderCustom :global(.ms-Slider-line),
 .sliderCustom :global(.fui-Slider__rail){
   position: relative;
-  height: 12px;
+  height: var(--rail-h);
+  block-size: var(--rail-h);
   border-radius: 9999px;
   box-shadow: inset 0 0 0 1px #e5e7eb;
 
@@ -181,21 +182,19 @@
 .sliderCustom :global(.fui-Slider__thumb){
   background-color: #10b981;
   border: 1px solid #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,.15), 0 0 0 2px #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #ffffff;
   transition: transform .15s ease, background-color .15s ease;
   z-index: 2;
 }
 .sliderCustom :global(.ms-Slider-thumb:hover),
 .sliderCustom :global(.fui-Slider__thumb:hover){ background-color:#059669; }
 
-.sliderCustom :global(.ms-Slider-container){ padding:6px 0; }
+.sliderCustom :global(.ms-Slider-container){ padding:10px 0; }
 
 @media (forced-colors: active){
   .sliderCustom :global(.ms-Slider-line),
   .sliderCustom :global(.fui-Slider__rail){ background: CanvasText; }
 }
-
-
 
 .buttons {
     display: flex;
