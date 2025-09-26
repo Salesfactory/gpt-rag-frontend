@@ -33,7 +33,10 @@ describe("Main Page (Chat) Test Suite", () => {
 
         // Type a message into the chat input
         cy.get('textarea[placeholder="Write your question here"]').type("Hello, how can I improve my home?");
-        cy.get("._questionInputSendButton_116us_37").should("be.visible");
+        
+        // Scroll the send button into view and verify it's visible
+        cy.get("._questionInputSendButton_116us_37").scrollIntoView().should("be.visible");
+        
         // Click the send button
         cy.get("._questionInputSendButton_116us_37").click();
 
