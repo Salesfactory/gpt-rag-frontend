@@ -11,7 +11,6 @@ import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel
 import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
-import DownloadButton from "../../components/DownloadButton/DownloadButton";
 import AttachButton from "../../components/AttachButton/AttachButton";
 import { ALLOWED_FILE_TYPES } from "../../constants";
 
@@ -778,13 +777,6 @@ const Chat = () => {
                                                 setAttachedFile(null);
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                                            extraButtonDownload={
-                                                <DownloadButton
-                                                    isEnabled={dataConversation.length > 0 || answers.length > 0}
-                                                    isLoading={isDownloading}
-                                                    onClick={handleDownloadConversation}
-                                                />
-                                            }
                                             extraButtonAttach={
                                                 <AttachButton
                                                     isEnabled={!isLoading}
