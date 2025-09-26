@@ -12,6 +12,9 @@ import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import DownloadButton from "../../components/DownloadButton/DownloadButton";
+import AttachButton from "../../components/AttachButton/AttachButton";
+import { ALLOWED_FILE_TYPES } from "../../constants";
+
 // import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -42,6 +45,10 @@ const Chat = () => {
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
+    const ATTACH_ACCEPT = ALLOWED_FILE_TYPES.join(",");
+    const [attachedFile, setAttachedFile] = useState<{ file: File; name: string; previewUrl: string } | null>(null);
+
+    const [isDragOver, setIsDragOver] = useState(false);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -335,6 +342,12 @@ const Chat = () => {
         );
     }, [isLoading, dataConversation]);
 
+    useEffect(() => {
+        return () => {
+            if (attachedFile?.previewUrl) URL.revokeObjectURL(attachedFile.previewUrl);
+        };
+    }, [attachedFile]);
+
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
 
@@ -394,6 +407,28 @@ const Chat = () => {
             setLoadingCitationPath(null);
         }
     };
+
+    const handleAttachFiles = async (files: File[]) => {
+        if (!files?.length) return;
+
+        const file = files[0];
+        const name = file.name.toLowerCase();
+        const allowed = ALLOWED_FILE_TYPES.map(ext => ext.toLowerCase());
+        if (!allowed.some(ext => name.endsWith(ext))) {
+            console.error("File type not allowed");
+            return;
+        }
+
+        if (attachedFile?.previewUrl) URL.revokeObjectURL(attachedFile.previewUrl);
+
+        const previewUrl = URL.createObjectURL(file);
+        setAttachedFile({ file, name: file.name, previewUrl });
+    };
+
+    function handleRemoveAttachment() {
+        if (attachedFile?.previewUrl) URL.revokeObjectURL(attachedFile.previewUrl);
+        setAttachedFile(null);
+    }
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (isSpreadsheet(citation)) {
@@ -629,7 +664,7 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question =>
-                                                                    streamResponse(question, chatId !== "" ? chatId : null)
+                                                                      streamResponse(question, chatId !== "" ? chatId : null)
                                                                   }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -653,7 +688,7 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question =>
-                                                                    streamResponse(question, chatId !== "" ? chatId : null)
+                                                                      streamResponse(question, chatId !== "" ? chatId : null)
                                                                   }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -706,13 +741,41 @@ const Chat = () => {
                                     </div>
                                 )}
                                 <div className={styles.chatInputContainer}>
-                                    <div className={styles.chatInput}>
+                                    <div
+                                        className={`${styles.chatInput} ${isDragOver ? styles.chatInputDragOver : ""}`}
+                                        onDragOver={e => {
+                                            e.preventDefault();
+                                            setIsDragOver(true);
+                                        }}
+                                        onDragLeave={() => setIsDragOver(false)}
+                                        onDrop={e => {
+                                            e.preventDefault();
+                                            setIsDragOver(false);
+                                            const files = Array.from(e.dataTransfer?.files || []);
+                                            if (files.length) handleAttachFiles(files);
+                                        }}
+                                    >
+                                        {attachedFile && (
+                                            <div className={styles.attachmentChip} role="status" aria-live="polite">
+                                                <span className={styles.attachmentName}>{`${attachedFile.name} ✓`}</span>
+                                                <button
+                                                    type="button"
+                                                    className={styles.removeChipBtn}
+                                                    aria-label="Remove attachment"
+                                                    onClick={handleRemoveAttachment}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        )}
+
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
                                             disabled={isLoading}
                                             onSend={question => {
                                                 streamResponse(question, chatId !== "" ? chatId : null);
+                                                setAttachedFile(null);
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                                             extraButtonDownload={
@@ -720,6 +783,16 @@ const Chat = () => {
                                                     isEnabled={dataConversation.length > 0 || answers.length > 0}
                                                     isLoading={isDownloading}
                                                     onClick={handleDownloadConversation}
+                                                />
+                                            }
+                                            extraButtonAttach={
+                                                <AttachButton
+                                                    isEnabled={!isLoading}
+                                                    isUploading={false}
+                                                    onFilesSelected={handleAttachFiles}
+                                                    accept={ATTACH_ACCEPT}
+                                                    multiple={false}
+                                                    ariaLabel="Attach file"
                                                 />
                                             }
                                         />

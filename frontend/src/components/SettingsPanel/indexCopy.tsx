@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SaveFilled } from "@fluentui/react-icons";
 import { X, Info } from "lucide-react";
-import { DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption } from "@fluentui/react";
+import { DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption, Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 import styles from "./SettingsModalcopy.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
-import { Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 import { toast } from "react-toastify";
 
 const ConfirmationDialog = ({
@@ -54,23 +53,12 @@ const ConfirmationDialog = ({
           >
             <DefaultButton onClick={onDismiss} text="Cancel" />
             <PrimaryButton
-              onClick={() => {
-                onConfirm();
-              }}
+              onClick={onConfirm}
               text="Save"
               styles={{
-                root: {
-                  backgroundColor: "#16a34a",
-                  borderColor: "#16a34a"
-                },
-                rootHovered: {
-                  backgroundColor: "#15803d",
-                  borderColor: "#15803d"
-                },
-                rootPressed: {
-                  backgroundColor: "#15803d",
-                  borderColor: "#15803d"
-                }
+                root: { backgroundColor: "#16a34a", borderColor: "#16a34a" },
+                rootHovered: { backgroundColor: "#15803d", borderColor: "#15803d" },
+                rootPressed: { backgroundColor: "#15803d", borderColor: "#15803d" }
               }}
             />
           </div>
@@ -108,7 +96,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
   };
 
-  const fontSizeOptions = [
+  const fontSizeOptions: IDropdownOption[] = [
     { key: "10", text: "10" },
     { key: "10.5", text: "10.5" },
     { key: "11", text: "11" },
@@ -147,31 +135,24 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       }
 
       setLoading(true);
-
       try {
         const data = await getSettings({
-          user: {
-            id: user.id,
-            name: user.name
-          }
+          user: { id: user.id, name: user.name }
         });
 
-        // Temperature
+        const model = data.model || "gpt-4.1";
+        setSelectedModel(model);
+
+        const modelConfig = modelTemperatureSettings[model] || modelTemperatureSettings["gpt-4.1"];
         if (data.temperature === undefined || data.temperature === null) {
-          const modelConfig = modelTemperatureSettings[data.model || "gpt-4.1"];
           setTemperature(Number(modelConfig.default));
         } else {
           setTemperature(Number(data.temperature));
         }
 
-        // Model
-        setSelectedModel(data.model || "gpt-4.1");
-
-        // Font Size
-        if (typeof data.font_size === "string" && data.font_family.trim() !== "") {
+        if (typeof data.font_size === "string" && data.font_size.trim() !== "") {
           setSelectedFontSize(data.font_size.toString());
         }
-        // Font Family
         if (typeof data.font_family === "string" && data.font_family.trim() !== "") {
           setSelectedFont(data.font_family.trim());
         }
@@ -185,7 +166,8 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     };
 
     fetchData();
-  }, [user, selectedModel]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const handleSubmit = () => {
     const parsedTemperature = temperature;
@@ -193,9 +175,9 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const parsedFontSize = selectedFontSize;
     const parsedFontSeleted = selectedFont;
 
-    if (parsedTemperature < modelConfig.min || parsedTemperature > modelConfig.max) {
+    if (!modelConfig || parsedTemperature < modelConfig.min || parsedTemperature > modelConfig.max) {
       console.error(
-        `Invalid temperature for ${selectedModel}. Must be between ${modelConfig.min} and ${modelConfig.max}.`
+        `Invalid temperature for ${selectedModel}. Must be between ${modelConfig?.min} and ${modelConfig?.max}.`
       );
       return;
     }
@@ -217,9 +199,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         } catch {}
         setIsDialogOpen(false);
         setIsLoadingSettings(false);
-        toast("Settings saved. Creativity will apply to new messages.", {
-          type: "success"
-        });
+        toast("Settings saved. Creativity will apply to new messages.", { type: "success" });
         onClose();
       })
       .catch(error => {
@@ -229,7 +209,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       });
   };
 
-  /** Tooltip simple para la escala */
   const InfoTooltip: React.FC<{ title: string }> = ({ title }) => {
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLSpanElement | null>(null);
@@ -237,9 +216,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     useEffect(() => {
       const handleDocClick = (e: MouseEvent) => {
         if (!wrapperRef.current) return;
-        if (!wrapperRef.current.contains(e.target as Node)) {
-          setOpen(false);
-        }
+        if (!wrapperRef.current.contains(e.target as Node)) setOpen(false);
       };
       const handleEsc = (e: KeyboardEvent) => {
         if (e.key === "Escape") setOpen(false);
@@ -253,11 +230,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     }, []);
 
     return (
-      <span
-        ref={wrapperRef}
-        className={`${styles.tooltipWrapper} ${open ? styles.tooltipOpen : ""}`}
-        aria-label={`${title} info`}
-      >
+      <span ref={wrapperRef} className={`${styles.tooltipWrapper} ${open ? styles.tooltipOpen : ""}`} aria-label={`${title} info`}>
         <button
           type="button"
           className={`${styles.infoButton} ${open ? styles.infoButtonActive : ""}`}
@@ -313,7 +286,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     );
   };
 
-  /** Slider change handler (number) */
   const handleSetTemperature = (val: number) => {
     if (Number.isNaN(val)) return;
     setTemperature(val);
@@ -324,7 +296,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
   };
 
   if (!user) {
-    setLoading(false);
     return <div>Please log in to view your settings.</div>;
   }
 
@@ -337,7 +308,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -349,15 +319,14 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         <ConfirmationDialog
           loading={isLoadingSettings}
           isOpen={isDialogOpen}
-          onDismiss={() => {
-            setIsDialogOpen(false);
-          }}
+          onDismiss={() => setIsDialogOpen(false)}
           onConfirm={() => {
             setIsLoadingSettings(true);
             handleSubmit();
           }}
         />
-        <Stack className={`${styles.answerContainer}`} verticalAlign="space-between">
+
+        <Stack className={styles.answerContainer} verticalAlign="space-between">
           <Stack.Item grow className={styles["w-100"]}>
             <div className={styles.header2}>
               <div className={styles.title}>Chat Settings</div>
@@ -374,13 +343,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
             {loading ? (
               <div>
                 <h3 style={{ textAlign: "center", fontSize: "16px", marginTop: "20px" }}>Loading your settings</h3>
-                <Spinner
-                  styles={{
-                    root: {
-                      marginBottom: "30px"
-                    }
-                  }}
-                />
+                <Spinner styles={{ root: { marginBottom: "30px" } }} />
               </div>
             ) : (
               <div className={styles.content}>
@@ -392,20 +355,14 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                     placeholder="Select font"
                     options={fontOptions}
                     selectedKey={selectedFont}
-                    onChange={(_event, option) => {
-                      if (option) setSelectedFont(option.key as string);
-                    }}
+                    onChange={(_event, option) => option && setSelectedFont(option.key as string)}
                     aria-labelledby="font-dropdown"
                     onRenderOption={option => <span style={{ fontFamily: option!.text }}>{option!.text}</span>}
                     onRenderTitle={options => {
                       if (!options || options.length === 0) return null;
                       return <span style={{ fontFamily: options[0].text }}>{options[0].text}</span>;
                     }}
-                    calloutProps={{
-                      directionalHint: 4,
-                      isBeakVisible: false,
-                      styles: { root: { maxHeight: 200, overflowY: "auto" } }
-                    }}
+                    calloutProps={{ directionalHint: 4, isBeakVisible: false, styles: { root: { maxHeight: 200, overflowY: "auto" } } }}
                     styles={{
                       root: { width: "90%" },
                       dropdown: {
@@ -429,8 +386,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       callout: {
                         borderRadius: "8px",
                         border: "1px solid #d1d5db",
-                        boxShadow:
-                          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
                       }
                     }}
                   />
@@ -442,15 +398,9 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                     placeholder="Select font size"
                     options={fontSizeOptions}
                     selectedKey={selectedFontSize}
-                    onChange={(_event, option) => {
-                      if (option) setSelectedFontSize(option.key as string);
-                    }}
+                    onChange={(_event, option) => option && setSelectedFontSize(option.key as string)}
                     aria-labelledby="font-size-dropdown"
-                    calloutProps={{
-                      directionalHint: 4,
-                      isBeakVisible: false,
-                      styles: { root: { maxHeight: 200, overflowY: "auto" } }
-                    }}
+                    calloutProps={{ directionalHint: 4, isBeakVisible: false, styles: { root: { maxHeight: 200, overflowY: "auto" } } }}
                     styles={{
                       root: { width: "90%" },
                       dropdown: {
@@ -488,8 +438,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       callout: {
                         borderRadius: "8px",
                         border: "1px solid #d1d5db",
-                        boxShadow:
-                          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
                       }
                     }}
                   />
@@ -501,9 +450,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                     placeholder="Select a model"
                     options={modelOptions}
                     selectedKey={selectedModel}
-                    onChange={(_event, option) => {
-                      if (option) setSelectedModel(option.key as string);
-                    }}
+                    onChange={(_event, option) => option && setSelectedModel(option.key as string)}
                     aria-labelledby="model-dropdown"
                     styles={{
                       root: { width: "90%" },
@@ -542,8 +489,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       callout: {
                         borderRadius: "8px",
                         border: "1px solid #d1d5db",
-                        boxShadow:
-                          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
                       }
                     }}
                   />
@@ -565,20 +511,14 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       snapToStep
                       onChange={handleSetTemperature}
                       aria-labelledby="temperature-slider"
-                      styles={{
-                        root: { width: "100%" } // más largo
-                      }}
+                      styles={{ root: { width: "100%" } }}
                       className={styles.sliderCustom}
                     />
                   </div>
                 </div>
 
                 <div className={styles["w-100"]} style={{ marginTop: "30px", textAlign: "center" }}>
-                  <DefaultButton
-                    className={styles.saveButton}
-                    onClick={() => setIsDialogOpen(true)}
-                    aria-label="Save settings"
-                  >
+                  <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
                     <SaveFilled className={styles.saveIcon} />
                     &#8202;&#8202;Save
                   </DefaultButton>
