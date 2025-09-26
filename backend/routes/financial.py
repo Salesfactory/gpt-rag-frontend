@@ -10,19 +10,12 @@ from flask import (
     request,
     jsonify,
 )
+from routes.decorators.auth_decorator import auth_required
 bp = Blueprint("users", __name__)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-
-def auth_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        auth_instance = current_app.config.get("auth")
-        return auth_instance.login_required(f)(*args, **kwargs)
-
-    return decorated_function
 
 
 doc_processor = FinancialDocumentProcessor()  # from financial_doc_processor
