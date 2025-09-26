@@ -33,15 +33,15 @@ describe("Main Page (Chat) Test Suite", () => {
 
         // Type a message into the chat input
         cy.get('textarea[placeholder="Write your question here"]').type("Hello, how can I improve my home?");
-        
+
         // Scroll the send button into view and verify it's visible
-        cy.get("._questionInputSendButton_116us_37").scrollIntoView().should("be.visible");
-        
+        cy.get('[aria-label="Ask a question button"]').scrollIntoView().should("be.visible");
+
         // Click the send button
-        cy.get("._questionInputSendButton_116us_37").click();
+        cy.get('[aria-label="Ask a question button"]').click();
 
         // Verify the message appears in the chat
-        cy.get("._message_1nwfo_9").first().should("contain.text", "Hello, how can I improve my home?");
+        cy.contains("Hello, how can I improve my home?").should("be.visible");
     });
 
     it("Should verify the visibility and functionality of the Settings page", () => {
