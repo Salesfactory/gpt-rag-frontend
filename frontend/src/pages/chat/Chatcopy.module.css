@@ -108,6 +108,7 @@
     gap: 0.3rem;
     max-width: 600px;
     position: fixed;
+    margin-bottom: 125px;
 }
 
 .conversationIsLoading {
@@ -132,6 +133,7 @@
     margin: 0 auto;
     padding-left: 2px;
     padding-right: 2px;
+    padding-bottom: 125px;
 }
 
 .chatMessageGpt {
@@ -171,6 +173,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: fixed;
+    bottom: 0;
 }
 
 .chatAnalysisPanel {
