@@ -7,7 +7,6 @@ import { getSettings, postSettings } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast } from "react-toastify";
 
-/* ---------- Confirmation Dialog ---------- */
 const ConfirmationDialog = ({
   loading,
   isOpen,
@@ -128,7 +127,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     { key: "Lucida Console", text: "Lucida Console" }
   ];
 
-  /* ---------- Carga inicial de settings ---------- */
   useEffect(() => {
     const fetchData = async () => {
       if (!user) {
@@ -142,11 +140,9 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
           user: { id: user.id, name: user.name }
         });
 
-        // Modelo
         const model = data.model || "gpt-4.1";
         setSelectedModel(model);
 
-        // Temperatura
         const modelConfig = modelTemperatureSettings[model] || modelTemperatureSettings["gpt-4.1"];
         if (data.temperature === undefined || data.temperature === null) {
           setTemperature(Number(modelConfig.default));
@@ -154,7 +150,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
           setTemperature(Number(data.temperature));
         }
 
-        // Fuente y tamaño
         if (typeof data.font_size === "string" && data.font_size.trim() !== "") {
           setSelectedFontSize(data.font_size.toString());
         }
@@ -174,7 +169,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  /* ---------- Guardado ---------- */
   const handleSubmit = () => {
     const parsedTemperature = temperature;
     const modelConfig = modelTemperatureSettings[selectedModel];
@@ -215,7 +209,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       });
   };
 
-  /* ---------- Tooltip de info ---------- */
   const InfoTooltip: React.FC<{ title: string }> = ({ title }) => {
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLSpanElement | null>(null);
@@ -293,7 +286,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     );
   };
 
-  /* ---------- Handlers ---------- */
   const handleSetTemperature = (val: number) => {
     if (Number.isNaN(val)) return;
     setTemperature(val);
