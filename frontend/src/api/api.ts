@@ -1827,3 +1827,42 @@ export async function deleteCategory({
     throw new Error(data?.message || data?.error || "Error deleting category");
   }
 }
+
+export async function uploadUserDocument({
+  file,
+  organizationId,
+  conversationId,
+  user
+}: {
+  file: File;
+  organizationId: string;
+  conversationId: string;
+  user: any;
+}): Promise<{ blob_url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('organization_id', organizationId);
+  formData.append('conversation_id', conversationId);
+
+  try {
+    const response = await fetch('/api/upload-user-document', {
+      method: 'POST',
+      headers: {
+        'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+        'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous'
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error?.message || `Upload failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error uploading user document:', error);
+    throw error;
+  }
+}
