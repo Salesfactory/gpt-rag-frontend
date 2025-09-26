@@ -132,9 +132,3 @@ export interface BackendReportJobDoc {
   updated_at?: string | null;
   params?: { target?: string };
 }
-
-export interface UploadSourceFileResult {
-  blobUrl: string;
-  blobName: string;
-  filename?: string;
-}
