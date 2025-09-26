@@ -135,3 +135,8 @@ export interface BackendReportJobDoc {
   params?: { target?: string };
 }
 
+export interface UploadSourceFileResult {
+  blobUrl: string;
+  blobName: string;
+  filename?: string;
+}

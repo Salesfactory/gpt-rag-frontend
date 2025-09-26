@@ -1,4 +1,4 @@
-import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category, UploadSourceFileResult } from "./models";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -559,27 +559,45 @@ export async function getSourceFileFromBlob(organizationId: string) {
     return result;
 }
 
-export async function uploadSourceFileToBlob(file: any, organizationId: string) {
-    const formdata = new FormData();
-    formdata.append("file", file);
-    formdata.append("organization_id", organizationId);
-    
-    try {
-        const response = await fetch("/api/upload-source-document", {
-            method: "POST",
-            body: formdata,
-            redirect: "follow"
-        });
-        if (!response.ok) {
-            console.log("Error uploading file:", response.statusText);
-            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-        }
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error("Error uploading file:", error);
-        throw error;
-    }
+function lastSegment(p: string) {
+  const clean = p.replace(/^\/+/, "");
+  const parts = clean.split("/");
+  return parts[parts.length - 1] || clean;
+}
+
+export async function uploadSourceFileToBlob(
+  file: File,
+  organizationId: string,
+  signal?: AbortSignal
+): Promise<UploadSourceFileResult> {
+  const formdata = new FormData();
+  formdata.append("file", file);
+  formdata.append("organization_id", organizationId);
+
+  const res = await fetch("/api/upload-source-document", { method: "POST", body: formdata, signal });
+  if (!res.ok) throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+
+  const raw = await res.json();
+
+  const urlLike =
+    raw.blobUrl ?? raw.blob_url ?? raw.url ?? raw.sas_url ?? raw.public_url ?? undefined;
+
+  const pathLike =
+    raw.blobPath ?? raw.blob_path ?? raw.path ?? raw.document_path ?? raw.blob_name ?? raw.name ?? undefined;
+
+  const blobUrl = urlLike ?? pathLike ?? "";
+  const blobName =
+    raw.blobName ??
+    raw.blob_name ??
+    raw.name ??
+    (urlLike ? lastSegment(new URL(urlLike).pathname) :
+     pathLike ? lastSegment(pathLike) : file.name);
+
+  return {
+    blobUrl,
+    blobName,
+    filename: raw.filename ?? raw.name ?? file.name
+  };
 }
 
 export async function deleteSourceFileFromBlob(blob_name: string) {

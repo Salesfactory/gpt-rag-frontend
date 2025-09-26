@@ -172,7 +172,7 @@ export const FileAttachmentInput = ({ setFileBlobUrl }: { setFileBlobUrl: (url: 
     );
 };
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat, extraButtonDownload, extraButtonAttach, }: Props) => {
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extraButtonNewChat, extraButtonDownload, extraButtonAttach }: Props) => {
     const { organization } = useAppContext();
     const [question, setQuestion] = useState<string>("");
 
@@ -271,7 +271,6 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, extr
                 autoAdjustHeight
             />
             <div className={styles.leftButtons}>
-                
                 {/*
                     <div
                         className={`${styles.questionInputSendButton}`}

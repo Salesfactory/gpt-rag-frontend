@@ -88,8 +88,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    
-
     const modelOptions: IDropdownOption[] = [
         { key: "gpt-4.1", text: "gpt-4.1" },
         { key: "Claude-4-Sonnet", text: "Claude-4-Sonnet" }
@@ -216,8 +214,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
             });
     };
 
-    
-
     const InfoTooltip: React.FC<{ title: string }> = ({ title }) => {
         const [open, setOpen] = useState(false);
         const wrapperRef = useRef<HTMLSpanElement | null>(null);
@@ -241,11 +237,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         }, []);
 
         return (
-            <span
-                ref={wrapperRef}
-                className={`${styles.tooltipWrapper} ${open ? styles.tooltipOpen : ""}`}
-                aria-label={`${title} info`}
-            >
+            <span ref={wrapperRef} className={`${styles.tooltipWrapper} ${open ? styles.tooltipOpen : ""}`} aria-label={`${title} info`}>
                 <button
                     type="button"
                     className={`${styles.infoButton} ${open ? styles.infoButtonActive : ""}`}
