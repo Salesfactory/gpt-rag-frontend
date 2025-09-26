@@ -290,6 +290,18 @@
     flex-direction: column;
     gap: 7px;
     padding: 0.8rem;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.file_info_row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
 }
 
 .file_extension_pill {
@@ -345,9 +357,13 @@
 .actions_cell {
     color: #71b33b;
     display: flex;
-    gap: 5px;
-    justify-content: flex-start;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
     margin-left: 0;
+    width: 100%;
+    min-width: 120px;
+    flex-shrink: 0;
 }
 
 /* Ensure the DetailsList inside the file list container looks good */
@@ -374,6 +390,9 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     border-radius: 0 0 8px 8px;
     overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
 }
 
 .detailsListContainer :global(.ms-DetailsHeader) {
@@ -416,6 +435,16 @@
 
 .detailsListContainer :global(.ms-DetailsRow:nth-child(odd)) {
     background-color: #fff;
+}
+
+.detailsListContainer :global(.ms-DetailsRow-cell) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.detailsListContainer :global(.ms-DetailsRow-fields) {
+    width: 100%;
+    max-width: 100%;
 }
 
 .processing_container {

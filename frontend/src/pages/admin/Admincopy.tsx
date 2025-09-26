@@ -926,6 +926,7 @@ const Admin = () => {
                             }}
                         />
                     ) : (
+                        <div className={styles.tableScroll}>
                         <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
                             <li className={styles.headerRow}>Team Members</li>
                             {filteredUsers.map((user: any, index) => {
@@ -1044,6 +1045,7 @@ const Admin = () => {
                                 );
                             })}
                         </ul>
+                        </div>
                     )}
                 </>
             </div>
