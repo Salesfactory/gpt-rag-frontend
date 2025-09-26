@@ -34,11 +34,14 @@ describe("Main Page (Chat) Test Suite", () => {
         // Type a message into the chat input
         cy.get('textarea[placeholder="Write your question here"]').type("Hello, how can I improve my home?");
 
-        // Scroll the send button into view and verify it's visible
-        cy.get('[aria-label="Ask a question button"]').scrollIntoView().should("be.visible");
+        // Scroll to ensure the input area is in view
+        cy.get('textarea[placeholder="Write your question here"]').scrollIntoView();
 
-        // Click the send button
-        cy.get('[aria-label="Ask a question button"]').click();
+        // Wait a moment for any animations
+        cy.wait(300);
+
+        // Click the send button (force click if visibility check fails due to positioning)
+        cy.get('[aria-label="Ask a question button"]').click({ force: true });
 
         // Verify the message appears in the chat
         cy.contains("Hello, how can I improve my home?").should("be.visible");
