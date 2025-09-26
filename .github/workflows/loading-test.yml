@@ -26,7 +26,7 @@ jobs:
 
       - name: Run Locust test
         run: |
-          locust -f your_locust_file.py --host https://webgpt0-vm2b2htvuuclm.azurewebsites.net --headless -u 100 -r 10 --run-time 5m --html locust_report.html
+          locust -f backend/locustfile.py --host https://webgpt0-vm2b2htvuuclm.azurewebsites.net --headless -u 100 -r 10 --run-time 5m --html locust_report.html
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
