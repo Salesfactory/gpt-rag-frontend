@@ -3,24 +3,20 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { chatApiGpt, Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
+import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
-import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
-import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
-// import { ChatHistoryPanel } from "../../components/HistoryPannel/ChatHistoryPanel";
-//import { FeedbackRating } from "../../components/FeedbackRating/FeedbackRating";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import DownloadButton from "../../components/DownloadButton/DownloadButton";
 // import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
-import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
+// import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
 import React from "react";
 import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
@@ -61,12 +57,10 @@ const Chat = () => {
         chatIsCleaned,
         user,
         isFinancialAssistantActive,
-        documentName,
         setisResizingAnalysisPanel
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
-    const lastFileBlobUrl = useRef<string | null>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -89,10 +83,9 @@ const Chat = () => {
     const restartChat = useRef<boolean>(false);
     const [loadingCitationPath, setLoadingCitationPath] = useState<string | null>(null);
 
-    const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
+    const streamResponse = async (question: string, chatId: string | null) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
-        lastFileBlobUrl.current = fileBlobUrl;
         restartChat.current = false;
         if (error) {
             setError(undefined);
@@ -118,8 +111,6 @@ const Chat = () => {
             approach: Approaches.ReadRetrieveRead,
             conversation_id: chatId !== null ? chatId : userId,
             query: question,
-            file_blob_url: fileBlobUrl || "",
-            documentName,
             agent,
             overrides: {
                 promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
@@ -143,9 +134,7 @@ const Chat = () => {
                 body: JSON.stringify({
                     question: request.query,
                     conversation_id: request.conversation_id,
-                    url: request.file_blob_url,
                     agent: request.agent,
-                    documentName: request.documentName,
                     user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 })
             });
@@ -232,7 +221,6 @@ const Chat = () => {
     const clearChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
             lastQuestionRef.current = "";
-            lastFileBlobUrl.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
@@ -248,7 +236,6 @@ const Chat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             restartChat.current = true;
             lastQuestionRef.current = "";
-            lastFileBlobUrl.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
@@ -509,6 +496,18 @@ const Chat = () => {
         const startWidth = analysisPanelWidth;
         document.body.style.userSelect = "none";
 
+        // Create overlay to prevent iframe from capturing mouse events
+        const overlay = document.createElement("div");
+        overlay.style.position = "fixed";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.width = "100%";
+        overlay.style.height = "100%";
+        overlay.style.zIndex = "9999";
+        overlay.style.cursor = "col-resize";
+        overlay.style.backgroundColor = "transparent";
+        document.body.appendChild(overlay);
+
         const onMouseMove = (moveEvent: MouseEvent) => {
             const newWidth = Math.max(analysisPanelMinWidth, Math.min(analysisPanelMaxWidth, startWidth - (moveEvent.clientX - startX)));
             setAnalysisPanelWidth(newWidth);
@@ -519,6 +518,10 @@ const Chat = () => {
             document.removeEventListener("mouseup", onMouseUp);
             document.body.style.userSelect = "";
             setisResizingAnalysisPanel(false);
+            // Remove overlay
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
         };
 
         document.addEventListener("mousemove", onMouseMove);
@@ -545,6 +548,19 @@ const Chat = () => {
         handleResize();
         return () => window.removeEventListener("resize", handleResize);
     }, [analysisPanelWidth]);
+
+    // Cleanup effect to remove any leftover resize overlays on component unmount
+    useEffect(() => {
+        return () => {
+            // Remove any resize overlay that might still be in the DOM
+            const overlays = document.querySelectorAll('div[style*="z-index: 9999"][style*="cursor: col-resize"]');
+            overlays.forEach(overlay => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            });
+        };
+    }, []);
 
     return (
         <>
@@ -613,7 +629,7 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question =>
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                    streamResponse(question, chatId !== "" ? chatId : null)
                                                                   }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -637,7 +653,7 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question =>
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                    streamResponse(question, chatId !== "" ? chatId : null)
                                                                   }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -653,7 +669,7 @@ const Chat = () => {
                                                     <AnswerError
                                                         error={error_message_text + error.toString()}
                                                         onRetry={() => {
-                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current);
+                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null);
                                                         }}
                                                     />
                                                 </div>
@@ -695,8 +711,8 @@ const Chat = () => {
                                             clearOnSend
                                             placeholder={placeholderText}
                                             disabled={isLoading}
-                                            onSend={(question, fileBlobUrl) => {
-                                                streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                            onSend={question => {
+                                                streamResponse(question, chatId !== "" ? chatId : null);
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                                             extraButtonDownload={

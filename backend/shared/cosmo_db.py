@@ -991,45 +991,6 @@ def create_organization(user_id, organization_name):
 
     return result
 
-    return invitation
-
-
-def get_company_list():
-    """
-    Retrieve all companies from the CosmosDB 'companyAnalysis' container.
-
-    Returns:
-        list: A list of company records from the database.
-
-    Raises:
-        NotFound: If no companies are found in the container.
-        Exception: For any unexpected errors during retrieval.
-    """
-
-    container = get_cosmos_container("companyAnalysis")
-
-    try:
-        items = list(
-            container.query_items(
-                query="SELECT * FROM c",
-                enable_cross_partition_query=True,
-            )
-        )
-
-        if not items:
-            logging.warning(f"No companies found in the 'companyAnalysis' container.")
-            return []
-
-        return items
-
-    except CosmosResourceNotFoundError:
-        logging.warning(f"CosmosDB container not found or inaccessible.")
-        raise NotFound
-
-    except Exception as e:
-        logging.error(f"Unexpected error retrieving Companies: {e}")
-        raise
-
 
 def create_new_brand(brand_name, brand_description, organization_id):
     """

@@ -1,19 +1,3 @@
-.button {
-    display: flex;
-    align-items: center;
-    margin-top: 5px;
-    gap: 6px;
-    cursor: pointer;
-    border: 1.5px solid rgb(231, 231, 231);
-    border-radius: 5px;
-    padding: 4px 12px;
-    transition: 0.2s;
-    background-color: white;
-    font-size: 24px;
-    width: 100%;
-    height: 35px;
-}
-
 .overlay {
     position: fixed;
     top: 0;
@@ -31,6 +15,8 @@
 .item {
     margin: 15px 0;
     display: flex;
+    align-items: center;
+    gap: 0; /* pull icon tight to label */
     font-weight: 600;
     color: #374151;
     width: 100%;
@@ -43,15 +29,6 @@
 
 .button:active {
     background-color: white;
-}
-
-.buttonText {
-    font-weight: 500;
-    padding-left: 10px;
-}
-
-.disabled {
-    opacity: 0.4;
 }
 
 .answerContainer {
@@ -98,27 +75,6 @@
     margin-right: 5px;
 }
 
-.closeButton {
-    background: rgb(249, 249, 249);
-    color: rgb(0, 0, 0);
-    font-size: 20px;
-    border: none;
-    cursor: pointer;
-    position: absolute;
-    top: 1rem;
-    right: 0;
-}
-
-.closeButton:hover {
-    background: rgb(249, 249, 249);
-    color: rgb(0, 0, 0, 0.8);
-}
-
-.closeButton:focus {
-    outline: none;
-    border: none;
-}
-
 .header2 {
     display: flex;
     justify-content: space-between;
@@ -131,29 +87,8 @@
     border-top-right-radius: 0.5rem;
 }
 
-.modal-title {
-    font-size: 24px;
-    font-weight: 500;
-    padding-left: 10px;
-    color: red;
-}
-
-.infoIcon {
-    font-size: 50;
-    height: 50;
-    width: 50;
-    margin: "0 25px";
-}
-
 .w-100 {
     width: 100%;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
 }
 
 .title {
@@ -219,4 +154,130 @@
         opacity: 1;
         transform: scale(1);
     }
+}
+
+.tooltipWrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin-left: -2px; /* nudge icon further left into label space */
+}
+
+
+
+.infoButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px; /* adjusted size */
+    width: 30px;
+    border: 2px solid transparent; /* hidden until active */
+    border-radius: 6px;
+    background-color: transparent;
+    color: #6b7280; /* gray-500 */
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    box-sizing: border-box; /* keep size consistent when border appears */
+    position: relative; /* anchor pseudo-element */
+}
+
+.infoButton:hover {
+    color: #374151; /* gray-700 */
+}
+
+.infoIcon {
+    display: block;
+}
+
+.infoButtonActive {
+    background-color: transparent; /* avoid white overlay on label */
+    border-color: transparent; /* draw smaller square via pseudo-element */
+    color: #2563eb;
+    border-radius: 6px;
+}
+
+.infoButtonActive::after {
+    content: "";
+    position: absolute;
+    width: 18px; 
+    height: 18px;
+    border: 2px solid #2563eb; 
+    border-radius: 6px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+
+
+.tooltipBoxLarge {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    transform: translateX(-170px);
+    padding: 10px 12px;
+    width: 320px;
+    max-width: min(92vw, 340px);
+    background-color: #ffffff;
+    color: #111827; /* gray-900 */
+    border-radius: 12px; /* slightly smaller radius */
+    border: 1px solid #e5e7eb; /* gray-200 */
+    box-shadow: 0 16px 36px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.tooltipOpen .tooltipBoxLarge,
+.tooltipWrapper:hover .tooltipBoxLarge,
+.tooltipWrapper:focus-within .tooltipBoxLarge {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+
+.scaleGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 14px; /* tighter spacing for narrow card */
+    row-gap: 6px; /* reduce vertical height */
+}
+
+.scaleItemHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.scaleDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+}
+
+.dotGray { background-color: #9ca3af; }
+.dotGrayLight { background-color: #d1d5db; }
+.dotGreenLight { background-color: #86efac; }
+.dotGreen { background-color: #22c55e; }
+
+.scaleTitle {
+    font-size: 14px; /* reduced title size */
+    line-height: 1.1;
+    font-weight: 700;
+    color: #111827;
+}
+
+.scaleRange {
+    font-size: 12px; /* reduced range size */
+    color: #6b7280; /* gray-500 */
+    margin: 1px 0 3px; /* tighter spacing */
+}
+
+.scaleDesc {
+    font-size: 12px; /* reduced description size */
+    color: #4b5563; /* gray-600 */
+    line-height: 1.25; /* tighten lines */
 }

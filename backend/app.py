@@ -17,15 +17,14 @@ import os
 from dotenv import load_dotenv
 
 
-import re
 import logging
 import requests
 import json
 import stripe
-import tempfile
-
-import markdown
 from flask_cors import CORS
+from flask_compress import Compress
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from azure.identity import DefaultAzureCredential
 from urllib.parse import unquote, urlparse, urlencode, urljoin
 import uuid
@@ -33,14 +32,10 @@ from urllib.parse import urlparse
 from identity.flask import Auth
 from datetime import timedelta, datetime, timezone
 
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
 from http import HTTPStatus  # Best Practice: Use standard HTTP status codes
-from azure.cosmos.exceptions import CosmosHttpResponseError
-import smtplib
+from azure.cosmos.exceptions import CosmosHttpResponseError, CosmosResourceNotFoundError
 from werkzeug.exceptions import BadRequest, Unauthorized, NotFound
 
 from gallery.blob_utils import get_gallery_items_by_org
@@ -51,66 +46,54 @@ import app_config
 
 from shared.error_handling import (
     IncompleteConfigurationError,
-    MissingJSONPayloadError,
     MissingRequiredFieldError,
     InvalidParameterError,
     MissingParameterError,
-    InvalidFileType,
 )
 
 from utils import (
     create_error_response,
     create_success_response,
+    delete_url_by_id,
+    get_client_principal,
+    get_set_user,
+    get_setting,
+    modify_url,
     require_client_principal,
     get_conversations,
     get_conversation,
     delete_conversation,
     get_organization_urls,
     add_or_update_organization_url,
+    search_urls,
+    set_feedback,
+    set_settings,
     validate_url,
-    delete_invitation,
 )
 
 import stripe.error
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
 from shared.cosmo_db import (
-    create_report,
-    get_invitation_by_email_and_org,
+    get_cosmos_container,
     get_invitation_role,
-    get_items_to_delete_by_brand,
-    get_report,
-    get_user_container,
     get_user_organizations,
     patch_organization_data,
-    patch_user_data,
-    update_report,
-    delete_report,
-    get_filtered_reports,
-    create_template,
-    delete_template,
-    get_templates,
-    get_template_by_ID,
-    update_user,
     get_audit_logs,
     get_organization_subscription,
-    create_invitation,
-    set_user,
-    create_organization,
-    get_company_list,
-    get_items_to_delete_by_brand,
+    create_organization
 )
 from shared import clients
-from data_summary.file_utils import detect_extension
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
-from data_summary.summarize import create_description
 
 from routes.report_jobs import bp as jobs_bp
 from routes.organizations import bp as organizations
 from routes.upload_source_document import bp as upload_source_document
 from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
+from routes.invitations import bp as invitations
+from routes.users import bp as users
 
 from _secrets import get_secret
 
@@ -177,6 +160,18 @@ app = Flask(__name__)
 app.config.from_object(app_config)
 CORS(app)
 
+# Enable compression for all responses
+Compress(app)
+
+# Initialize Flask-Limiter with basic configuration
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["1000 per hour", "100 per minute"],
+    storage_uri="memory://",
+    strategy="fixed-window"
+)
+
 
 def setup_llm() -> PandasAIClient:
     cfg = get_azure_openai_config(deployment_name="gpt-4.1")
@@ -203,6 +198,7 @@ def setup_clients():
     clients.warm_up()  # idempotent
     current_app.config["llm"] = setup_llm()  # todo move to a client for panda AI
     current_app.config["blob_storage_manager"] = BlobStorageManager()  # TODO implement the new BlobStorageManager in the upload_sources.py (this is the only way that there is no pytest import issue) The issue was that when running all tests together, there was a complex import resolution problem where the utils module was not being found properly due to module caching issues and conflicts between test fixtures.
+    current_app.config["auth"] = auth
 
 
 @app.before_first_request
@@ -228,6 +224,8 @@ app.register_blueprint(organizations)
 app.register_blueprint(upload_source_document)
 app.register_blueprint(voice_customer)
 app.register_blueprint(categories)
+app.register_blueprint(invitations)
+app.register_blueprint(users)
 
 
 def handle_auth_error(func):
@@ -587,7 +585,6 @@ def get_auth_config():
 
 # Constants and Configuration
 
-
 @app.route("/api/auth/user")
 @auth.login_required
 @handle_auth_error
@@ -755,13 +752,12 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
 
 @app.route("/stream_chatgpt", methods=["POST"])
-def proxy_orc():
+@auth.login_required
+def proxy_orc(*, context):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
     question = data.get("question")
-    file_blob_url = data.get("url")
     agent = data.get("agent")
-    documentName = data.get("documentName")
     user_timezone = data.get("user_timezone")
 
     if not question:
@@ -804,11 +800,9 @@ def proxy_orc():
         {
             "conversation_id": conversation_id,
             "question": question,
-            "url": file_blob_url,
             "client_principal_id": client_principal_id,
             "client_principal_name": client_principal_name,
             "client_principal_organization": client_principal_organization,
-            "documentName": documentName,
             "user_timezone": user_timezone,
         }
     )
@@ -838,12 +832,11 @@ def proxy_orc():
 
 
 @app.route("/chatgpt", methods=["POST"])
-def chatgpt():
+@auth.login_required
+def chatgpt(*, context):
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
-    file_blob_url = request.json["url"]
     agent = request.json["agent"]
-    documentName = request.json["documentName"]
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
@@ -852,7 +845,6 @@ def chatgpt():
     )
     logging.info("[webbackend] conversation_id: " + conversation_id)
     logging.info("[webbackend] question: " + question)
-    logging.info(f"[webbackend] file_blob_url: {file_blob_url}")
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
     logging.info(f"[webbackend] User organization: {client_principal_organization}")
@@ -890,11 +882,9 @@ def chatgpt():
             {
                 "conversation_id": conversation_id,
                 "question": question,
-                "url": file_blob_url,
                 "client_principal_id": client_principal_id,
                 "client_principal_name": client_principal_name,
                 "client_principal_organization": client_principal_organization,
-                "documentName": documentName,
             }
         )
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
@@ -914,7 +904,8 @@ def chatgpt():
 
 
 @app.route("/api/chat-history", methods=["GET"])
-def getChatHistory():
+@auth.login_required
+def getChatHistory(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
 
     if not client_principal_id:
@@ -932,7 +923,8 @@ def getChatHistory():
 
 
 @app.route("/api/chat-conversation/<chat_id>", methods=["GET"])
-def getChatConversation(chat_id):
+@auth.login_required
+def getChatConversation(*, context, chat_id):
 
     if chat_id is None:
         return jsonify({"error": "Missing conversation_id parameter"}), 400
@@ -951,7 +943,8 @@ def getChatConversation(chat_id):
 
 
 @app.route("/api/chat-conversations/<chat_id>", methods=["DELETE"])
-def deleteChatConversation(chat_id):
+@auth.login_required
+def deleteChatConversation(*, context, chat_id):
 
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
 
@@ -967,7 +960,8 @@ def deleteChatConversation(chat_id):
 
 
 @app.route("/api/conversations/export", methods=["POST"])
-def exportConversation():
+@auth.login_required
+def exportConversation(*, context):
     """
     Export a conversation by calling the orchestrator endpoint with proper authentication.
 
@@ -1042,255 +1036,9 @@ def exportConversation():
         logging.exception("[webbackend] exception in /api/conversations/export")
         return jsonify({"error": str(e)}), 500
 
-
-# get report by id argument from Container Reports
-@app.route("/api/reports/<report_id>", methods=["GET"])
-@auth.login_required()
-def getReport(*, context, report_id):
-    """
-    Endpoint to get a report by ID.
-    """
-    try:
-        report = get_report(report_id)
-        return jsonify(report), 200
-    except NotFound as e:
-        logging.warning(f"Report with id {report_id} not found.")
-        return jsonify({"error": f"Report with this id {report_id} not found"}), 404
-    except Exception as e:
-        logging.exception(
-            f"An error occurred retrieving the report with id {report_id}"
-        )
-        return jsonify({"error": "Internal Server Error"}), 500
-
-
-# create Reports curation and companySummarization container Reports
-@app.route("/api/reports", methods=["POST"])
-@auth.login_required()
-def createReport(*, context):
-    """
-    Endpoint to create a new report.
-    """
-    try:
-        data = request.get_json()
-
-        if not data:
-            return jsonify({"error": "Invalid or missing JSON payload"}), 400
-
-        # Validate the 'name' field
-        if "name" not in data:
-            return jsonify({"error": "Field 'name' is required"}), 400
-
-        # Validate the 'type' field
-        if "type" not in data:
-            return jsonify({"error": "Field 'type' is required"}), 400
-
-        if data["type"] not in ["curation", "companySummarization"]:
-            return (
-                jsonify(
-                    {
-                        "error": "Invalid 'type'. Must be 'curation' or 'companySummarization'"
-                    }
-                ),
-                400,
-            )
-
-        # Validate fields according to type
-        if data["type"] == "companySummarization":
-            required_fields = ["reportTemplate", "companyTickers"]
-            missing_fields = [field for field in required_fields if field not in data]
-
-            if missing_fields:
-                return (
-                    jsonify(
-                        {
-                            "error": f"Missing required fields: {', '.join(missing_fields)}"
-                        }
-                    ),
-                    400,
-                )
-
-            # Validate 'reportTemplate'
-            valid_templates = ["10-K", "10-Q", "8-K", "DEF 14A"]
-            if data["reportTemplate"] not in valid_templates:
-                return (
-                    jsonify(
-                        {
-                            "error": f"'reportTemplate' must be one of: {', '.join(valid_templates)}"
-                        }
-                    ),
-                    400,
-                )
-
-        elif data["type"] == "curation":
-            required_fields = ["category"]
-            missing_fields = [field for field in required_fields if field not in data]
-
-            if missing_fields:
-                return (
-                    jsonify(
-                        {
-                            "error": f"Missing required fields: {', '.join(missing_fields)}"
-                        }
-                    ),
-                    400,
-                )
-
-            # Validate 'category'
-            valid_categories = ["Ecommerce", "Weekly Economic", "Monthly Economic"]
-            if data["category"] not in valid_categories:
-                return (
-                    jsonify(
-                        {
-                            "error": f"'category' must be one of: {', '.join(valid_categories)}"
-                        }
-                    ),
-                    400,
-                )
-
-        # Validar the 'status' field
-        if "status" not in data:
-            return jsonify({"error": "Field 'status' is required"}), 400
-
-        valid_statuses = ["active", "archived"]
-        if data["status"] not in valid_statuses:
-            return (
-                jsonify(
-                    {"error": f"'status' must be one of: {', '.join(valid_statuses)}"}
-                ),
-                400,
-            )
-
-        # Delegate report creation
-        new_report = create_report(data)
-        return jsonify(new_report), 201
-
-    except Exception as e:
-        logging.exception("Error creating report")
-        return (
-            jsonify({"error": "An unexpected error occurred. Please try again later."}),
-            500,
-        )
-
-
-# update Reports curation and companySummarization container Reports
-@app.route("/api/reports/<report_id>", methods=["PUT"])
-@auth.login_required()
-def updateReport(*, context, report_id):
-    """
-    Endpoint to update a report by ID.
-    """
-    try:
-        updated_data = request.get_json()
-
-        if updated_data is None:
-            return jsonify({"error": "Invalid or missing JSON payload"}), 400
-
-        updated_report = update_report(report_id, updated_data)
-        return "", 204
-
-    except NotFound as e:
-        logging.warning(f"Tried to update a report that doesn't exist: {report_id}")
-        return (
-            jsonify(
-                {
-                    "error": f"Tried to update a report with this id {report_id} that does not exist"
-                }
-            ),
-            404,
-        )
-
-    except Exception as e:
-        logging.exception(
-            f"Error updating report with ID {report_id}"
-        )  # Logs the full exception
-        return (
-            jsonify({"error": "An unexpected error occurred. Please try again later."}),
-            500,
-        )
-
-
-# delete report from Container Reports
-@app.route("/api/reports/<report_id>", methods=["DELETE"])
-@auth.login_required()
-def deleteReport(*, context, report_id):
-    """
-    Endpoint to delete a report by ID.
-    """
-    try:
-        delete_report(report_id)
-
-        return "", 204
-
-    except NotFound as e:
-        # If the report does not exist, return 404 Not Found
-        logging.warning(f"Report with id {report_id} not found.")
-        return jsonify({"error": f"Report with id {report_id} not found."}), 404
-
-    except Exception as e:
-        logging.exception(f"Error deleting report with id {report_id}")
-        return (
-            jsonify({"error": "An unexpected error occurred. Please try again later."}),
-            500,
-        )
-
-
-# Get User for email receivers
-@app.route("/api/user/<user_id>", methods=["GET"])
-@auth.login_required()
-def getUserid(*, context, user_id):
-    """
-    Endpoint to get a user by ID.
-    """
-    try:
-        user = get_user_container(user_id)
-        return jsonify(user), 200
-    except NotFound as e:
-        logging.warning(f"Report with id {user_id} not found.")
-        return jsonify({"error": f"Report with this id {user_id} not found"}), 404
-    except Exception as e:
-        logging.exception(f"An error occurred retrieving the report with id {user_id}")
-        return jsonify({"error": "Internal Server Error"}), 500
-
-
-# Update Users
-@app.route("/api/user/<user_id>", methods=["PUT"])
-@auth.login_required()
-def updateUser(*, context, user_id):
-    """
-    Endpoint to update a user
-    """
-    try:
-        updated_data = request.get_json()
-
-        if updated_data is None:
-            return jsonify({"error": "Invalid or missing JSON payload"}), 400
-
-        updated_data = update_user(user_id, updated_data)
-        return "", 204
-
-    except NotFound as e:
-        logging.warning(f"Tried to update a user that doesn't exist: {user_id}")
-        return (
-            jsonify(
-                {
-                    "error": f"Tried to update a user with this id {user_id} that does not exist"
-                }
-            ),
-            404,
-        )
-
-    except Exception as e:
-        logging.exception(
-            f"Error updating user with ID {user_id}"
-        )  # Logs the full exception
-        return (
-            jsonify({"error": "An unexpected error occurred. Please try again later."}),
-            500,
-        )
-
-
 @app.route("/api/organization/<org_id>", methods=["PATCH"])
-def patch_organization_info(org_id):
+@auth.login_required
+def patch_organization_info(*, context, org_id):
     """
     Endpoint to update 'brandInformation', 'industryInformation' and 'segmentSynonyms' and 'additionalInstructions' in an organization document.
     """
@@ -1331,326 +1079,9 @@ def patch_organization_info(org_id):
         return jsonify({"error": "An unexpected error occurred."}), 500
 
 
-# Update User data info
-
-
-@app.route("/api/user/<user_id>", methods=["PATCH"])
-def patchUserData(user_id):
-    """
-    Endpoint to update the 'name', role and 'email' fields of a user's 'data'
-    """
-    try:
-        patch_data = request.get_json()
-
-        if patch_data is None or not isinstance(patch_data, dict):
-            return jsonify({"error": "Invalid or missing JSON payload"}), 400
-
-        patch_data = patch_user_data(user_id, patch_data)
-        return jsonify({"message": "User data updated successfully"}), 200
-
-    except NotFound as nf:
-        logging.error(f"User with ID {user_id} not found.")
-        return jsonify({"error": str(e)}), 404
-
-    except ValueError as ve:
-        logging.error(f"Validation error for user ID {user_id}: {str(ve)}")
-        return jsonify({"error": str(ve)}), 400
-
-    except Exception as e:
-        logging.exception(f"Error updating user data for user ID {user_id}")
-        return (
-            jsonify({"error": "An unexpected error occurred. Please try again later."}),
-            500,
-        )
-
-
-# Reset Password
-
-
-@app.route("/api/user/<user_id>/reset-password", methods=["PATCH"])
-def reset_user_password(user_id):
-    """
-    Endpoint to reset a user's password and send a notification email.
-    """
-    try:
-        data = request.get_json()
-        if not data or "new_password" not in data:
-            return jsonify({"error": "Invalid or missing JSON payload"}), 400
-
-        reset_password(user_id, data["new_password"])
-        user = get_user_container(user_id)
-        user_email = user["data"]["email"]
-        user_name = user["data"].get("name", "User")
-
-        # Email details
-        subject = "Your FreddAid password has been changed"
-        html_content = f"""
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Password Changed - FreddAid</title>
-            <style>
-                body {{
-                    margin: 0;
-                    padding: 0;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                    background-color: #F9FAFB;
-                    line-height: 1.6;
-                }}
-                .email-container {{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background-color: #FFFFFF;
-                    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-                }}
-                .header {{
-                    background-color: #FFFFFF;
-                    padding: 24px 32px;
-                    border-bottom: 1px solid #E5E7EB;
-                }}
-                .logo-section {{
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                }}
-                .logo {{
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }}
-                .header-image {{
-                    max-width: 200px;
-                    max-height: 60px;
-                    height: auto;
-                }}
-                .logo-text {{
-                    font-size: 28px;
-                    font-weight: bold;
-                    color: #1F2937;
-                }}
-                .logo-sparkle {{
-                    color: #10B981;
-                    font-size: 32px;
-                }}
-                .version {{
-                    font-size: 14px;
-                    color: #6B7280;
-                    font-weight: 500;
-                }}
-                .timestamp {{
-                    font-size: 12px;
-                    color: #9CA3AF;
-                }}
-                .content {{
-                    padding: 40px 32px;
-                }}
-                .greeting {{
-                    font-size: 24px;
-                    font-weight: 600;
-                    color: #1F2937;
-                    margin-bottom: 24px;
-                }}
-                .main-title {{
-                    font-size: 20px;
-                    font-weight: 600;
-                    color: #1F2937;
-                    margin-bottom: 16px;
-                }}
-                .description {{
-                    font-size: 16px;
-                    color: #4B5563;
-                    margin-bottom: 24px;
-                }}
-                .password-label {{
-                    font-size: 16px;
-                    font-weight: 500;
-                    color: #1F2937;
-                    margin-bottom: 12px;
-                }}
-                .password-box {{
-                    background-color: #F3F4F6;
-                    border: 2px solid #E5E7EB;
-                    border-radius: 8px;
-                    padding: 16px 20px;
-                    font-family: 'Courier New', monospace;
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #1F2937;
-                    letter-spacing: 1px;
-                    margin-bottom: 32px;
-                    text-align: center;
-                }}
-                .security-notice {{
-                    background-color: #ECFDF5;
-                    border: 1px solid #D1FAE5;
-                    border-radius: 8px;
-                    padding: 16px;
-                    margin-bottom: 24px;
-                }}
-                .security-notice-title {{
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: #059669;
-                    margin-bottom: 4px;
-                }}
-                .security-notice-text {{
-                    font-size: 14px;
-                    color: #065F46;
-                }}
-                .footer {{
-                    background-color: #F9FAFB;
-                    padding: 24px 32px;
-                    border-top: 1px solid #E5E7EB;
-                    text-align: center;
-                }}
-                .footer-text {{
-                    font-size: 14px;
-                    color: #6B7280;
-                    margin-bottom: 8px;
-                }}
-                .footer-link {{
-                    color: #10B981;
-                    text-decoration: none;
-                }}
-                .footer-link:hover {{
-                    text-decoration: underline;
-                }}
-                @media (max-width: 640px) {{
-                    .email-container {{
-                        margin: 0;
-                        box-shadow: none;
-                    }}
-                    .header,
-                    .content,
-                    .footer {{
-                        padding-left: 20px;
-                        padding-right: 20px;
-                    }}
-                    .logo-section {{
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 8px;
-                    }}
-                    .greeting {{
-                        font-size: 20px;
-                    }}
-                    .main-title {{
-                        font-size: 18px;
-                    }}
-                    .password-box {{
-                        font-size: 16px;
-                        padding: 14px 16px;
-                    }}
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="email-container">
-                <!-- Header -->
-                <div class="header" style="text-align:center;">
-                    <img src="https://clewcsvstorage.blob.core.windows.net/images/header_logo.png.png" 
-                    alt="Sales Factory Logo"
-                    style="max-width:220px; height:auto; margin:0 auto; display:block;" />
-                </div>
-                <!-- Main Content -->
-                <div class="content">
-                    <div class="greeting">Hello {user_name},</div>
-                    <div class="main-title">Your password has been changed</div>
-                    <div class="description">
-                        This is a confirmation that the password for your FreddAid account has been successfully changed.
-                    </div>
-                    <div class="password-label">Your new password is:</div>
-                    <div class="password-box">
-                        {data["new_password"]}
-                    </div>
-                    <div class="security-notice">
-                        <div class="security-notice-title">🔒 Security Reminder</div>
-                        <div class="security-notice-text">
-                            Please store this password securely and consider changing it to something more memorable after your first login.
-                        </div>
-                    </div>
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="font-size: 16px; color: #4B5563; margin-bottom: 16px;">
-                            We recommend logging in to change your password to something more memorable.
-                        </div>
-                        <a href="{INVITATION_LINK}"
-                            style="display: inline-block; background-color: #10B981; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.2s;">
-                            Login to FreddAid
-                        </a>
-                    </div>
-                </div>
-                <!-- Footer -->
-                <div class="footer">
-                    <div class="footer-text">
-                        This email was sent from Sales Factory's app FreddAid
-                    </div>
-                    <div class="footer-text">
-                        Need help? <a href="#" class="footer-link">Contact Support</a>
-                    </div>
-                    <div class="footer-text" style="margin-top: 16px; font-size: 12px;">
-                        © {datetime.now().year} Sales Factory AI. All rights reserved.
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-
-        email_config = {
-            "smtp_server": EMAIL_HOST,
-            "smtp_port": EMAIL_PORT,
-            "username": EMAIL_USER,
-            "password": EMAIL_PASS,
-        }
-
-        email_service = EmailService(**email_config)
-        try:
-            email_service.send_email(
-                subject=subject, html_content=html_content, recipients=[user_email]
-            )
-            logging.info(f"Password reset email sent to {user_email}")
-        except EmailServiceError as e:
-            logging.error(f"Failed to send password reset email: {str(e)}")
-
-        return jsonify({"message": "Password reset successfully and email sent"}), 200
-
-    except NotFound as e:
-        logging.warning(f"User with id {user_id} not found.")
-        return jsonify({"error": f"User with id {user_id} not found."}), 404
-
-    except Exception as e:
-        logging.exception(f"Error resetting password for user with id {user_id}")
-        return jsonify({"error": "Internal Server Error"}), 500
-
-
-@app.route("/api/reports", methods=["GET"])
-@auth.login_required()
-def getFilteredType(*, context):
-    """
-    Endpoint to obtain reports by type or retrieve all reports if no type is specified.
-    """
-    report_type = request.args.get("type")
-
-    try:
-        if report_type:
-            reports = get_filtered_reports(report_type)
-        else:
-            reports = get_filtered_reports()
-
-        return jsonify(reports), 200
-
-    except NotFound as e:
-        logging.warning(f"No reports found for type '{report_type}'.")
-        return jsonify({"error": f"No reports found for type '{report_type}'."}), 404
-
-    except Exception as e:
-        logging.exception(f"Error retrieving reports.")
-        return jsonify({"error": "Internal Server Error"}), 500
-
 @app.route("/api/get-speech-token", methods=["GET"])
-def getGptSpeechToken():
+@auth.login_required
+def getGptSpeechToken(*, context):
     try:
         SPEECH_KEY = current_app.config["SPEECH_KEY"]
         fetch_token_url = (
@@ -1677,7 +1108,8 @@ def getGptSpeechToken():
 
 
 @app.route("/api/get-storage-account", methods=["GET"])
-def getStorageAccount():
+@auth.login_required
+def getStorageAccount(*, context):
     if STORAGE_ACCOUNT is None or STORAGE_ACCOUNT == "":
         return jsonify({"error": "Add STORAGE_ACCOUNT to frontend app settings"}), 500
     try:
@@ -1699,7 +1131,8 @@ def getFeedbackUrl(*, context):
 
 
 @app.route("/create-checkout-session", methods=["POST"])
-def create_checkout_session():
+@auth.login_required
+def create_checkout_session(*, context):
     price = request.json["priceId"]
     userId = request.json["userId"]
     success_url = request.json["successUrl"]
@@ -1741,7 +1174,8 @@ def create_checkout_session():
 
 
 @app.route("/get-customer", methods=["POST"])
-def get_customer():
+@auth.login_required
+def get_customer(*, context):
 
     subscription_id = request.json["subscription_id"]
 
@@ -1778,7 +1212,8 @@ def get_customer():
 
 
 @app.route("/create-customer-portal-session", methods=["POST"])
-def create_customer_portal_session():
+@auth.login_required
+def create_customer_portal_session(*, context):
     customer = request.json.get("customer")
     return_url = request.json.get("return_url")
     subscription_id = request.json.get("subscription_id")
@@ -1814,7 +1249,8 @@ def create_customer_portal_session():
 
 
 @app.route("/api/stripe", methods=["GET"])
-def getStripe():
+@auth.login_required
+def getStripe(*, context):
     try:
         keySecretName = "stripeKey"
         functionKey = clients.get_azure_key_vault_secret(keySecretName)
@@ -1904,7 +1340,8 @@ def webhook():
 
 
 @app.route("/api/upload-blob", methods=["POST"])
-def uploadBlob():
+@auth.login_required
+def uploadBlob(*, context):
     if "file" not in request.files:
         print("No file sent")
         return jsonify({"error": "No file sent"}), 400
@@ -1936,7 +1373,8 @@ def uploadBlob():
 
 
 @app.route("/api/get-blob", methods=["POST"])
-def getBlob():
+@auth.login_required
+def getBlob(*, context):
     blob_name = unquote(request.json["blob_name"])
     container = request.json["container"]
     # White list of containers
@@ -1945,10 +1383,14 @@ def getBlob():
         return jsonify({"error": "Invalid container"}), 400
 
     try:
-        client_credential = DefaultAzureCredential()
-        blob_service_client = BlobServiceClient(
-            f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", client_credential
-        )
+        conn_str = current_app.config.get("AZURE_STORAGE_CONNECTION_STRING")
+        if conn_str:
+            blob_service_client = BlobServiceClient.from_connection_string(conn_str)
+        else:
+            client_credential = DefaultAzureCredential()
+            blob_service_client = BlobServiceClient(
+                f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", credential=client_credential
+            )
         blob_client = blob_service_client.get_blob_client(
             container=container, blob=blob_name
         )
@@ -1962,7 +1404,8 @@ def getBlob():
 
 
 @app.route("/api/settings", methods=["GET"])
-def getSettings():
+@auth.login_required
+def getSettings(*, context):
     client_principal, error_response, status_code = get_client_principal()
     if error_response:
         return error_response, status_code
@@ -1977,7 +1420,8 @@ def getSettings():
 
 
 @app.route("/api/download", methods=["GET"])
-def download_document():
+@auth.login_required
+def download_document(*, context):
 
     organization_id = request.args.get("organizationId")
     blob_name = request.args.get("blobName")
@@ -2232,7 +1676,8 @@ def preview_spreadsheet():
 
 
 @app.route("/api/settings", methods=["POST"])
-def setSettings():
+@auth.login_required
+def setSettings(*, context):
 
     client_principal, error_response, status_code = get_client_principal()
     if error_response:
@@ -2278,7 +1723,8 @@ def setSettings():
 
 
 @app.route("/api/feedback", methods=["POST"])
-def setFeedback():
+@auth.login_required
+def setFeedback(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
 
@@ -2340,70 +1786,6 @@ def setFeedback():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/getusers", methods=["GET"])
-def getUsers():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
-    user_id = request.args.get("user_id")
-    organization_id = request.args.get("organizationId")
-
-    try:
-
-        if user_id:
-            user = get_user_by_id(user_id)
-            return user
-        users = get_users(organization_id)
-        return jsonify(users)
-
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/checkUser")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/deleteuser", methods=["DELETE"])
-def deleteUser():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
-
-    user_id = request.args.get("userId")
-    organization_id = request.args.get("organizationId")
-    if not user_id or not organization_id:
-        return (
-            jsonify(
-                {"error": "Missing required parameter: user_id or organization_id"}
-            ),
-            400,
-        )
-
-    try:
-        success = delete_user(user_id, organization_id)
-        if not success:
-            return jsonify({"error": "User not found or already deleted"}), 404
-        return "", 204
-    except NotFound:
-        return jsonify({"error": "User not found"}), 404
-    except Exception as e:
-        logging.exception(
-            f"[webbackend] exception in /api/deleteuser for user {user_id}"
-        )
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/logout")
 def logout():
     # Clear the user's session
@@ -2418,302 +1800,9 @@ def logout():
     return redirect(logout_url)
 
 
-@app.route("/api/inviteUser", methods=["POST"])
-def sendEmail():
-    if (
-        not request.json
-        or "username" not in request.json
-        or "email" not in request.json
-        or "organizationName" not in request.json
-        or "organizationId" not in request.json
-    ):
-        return jsonify({"error": "Missing username or email"}), 400
-
-    username = request.json["username"]
-    email = request.json["email"]
-    organizationName = request.json["organizationName"]
-    organizationId = request.json["organizationId"]
-
-    invitation = get_invitation_by_email_and_org(email, organizationId)
-    if invitation:
-        unique_id = invitation["id"]
-        token = invitation["token"]
-        if unique_id and token:
-            activation_link = (
-                f"{INVITATION_LINK}/api/invitations/{unique_id}/redeemed?token={token}"
-            )
-    else:
-        return jsonify({"error": "No invitation found"}), 404
-
-    # Validate email format
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-        return jsonify({"error": "Invalid email format"}), 400
-
-    try:
-        # Email account credentials
-        gmail_user = EMAIL_USER
-        gmail_password = EMAIL_PASS
-
-        # Email details
-        sent_from = gmail_user
-        to = [email]
-        subject = "SalesFactory Chatbot Invitation"
-        body = (
-            """
-        <html lang="en">
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to FreddAid - Your Marketing Powerhouse</title>
-        <style>
-            body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            }
-            .container {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            }
-            h1, h2 {
-            margin: 10px 0;
-            color: #000000;
-            }
-            p {
-            line-height: 1.5;
-            color: #000000;
-            }
-            a {
-            color: #337ab7;
-            text-decoration: none;
-            }
-            .cta-button {
-            background-color: #337ab7;
-            color: #fff !important;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-align: center;
-            display: inline-block;
-            }
-            .cta-button:hover {
-            background-color: #23527c;
-            }
-            .cta-button a {
-            color: #fff !important;
-            }
-                       .cta-button a:visited {
-            color: #fff !important;
-            }
-            .ii a[href] {
-            color: #fff !important;
-            }
-            .footer {
-            text-align: center;
-            margin-top: 20px;
-            }
-        </style>
-        </head>
-        <body>
-        <div class="container">
-            <h1>Dear [Recipient's Name],</h1>
-            <h2>Congratulations and Welcome to FreddAid!</h2>
-            <p>You now have exclusive access to <strong>[Recipient's Organization]'s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
-            <h2>Ready to Get Started?</h2>
-            <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
-            <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
-            <p>Unlock FreddAid's full potential and start enjoying unparalleled insights, real-time data, and a high-speed advantage in all your marketing efforts.</p>
-            <p>If you need any assistance, our support team is here to help you every step of the way.</p>
-            <p>Welcome to the future of marketing. Welcome to FreddAid.</p>
-            <p class="footer">Best regards,<br>Juan Hernandez<br>Chief Technology Officer<br>Sales Factory AI<br>juan.hernandez@salesfactory.com</p>
-        </div>
-        </body>
-        </html>
-        """.replace(
-                "[Recipient's Name]", username
-            )
-            .replace("[link to activate account]", activation_link)
-            .replace("[Recipient's Organization]", organizationName)
-        )
-
-        # Create a multipart message and set headers
-        message = MIMEMultipart()
-        message["From"] = sent_from
-        message["To"] = ", ".join(to)
-        message["Subject"] = subject
-
-        # Add body to email
-        message.attach(MIMEText(body, "html"))
-
-        # Connect to Gmail's SMTP server
-        server = smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT)
-        server.ehlo()
-        server.login(gmail_user, gmail_password)
-
-        # Send email
-        server.sendmail(sent_from, to, message.as_string())
-        server.close()
-
-        logging.error("Email sent!")
-        return jsonify({"message": "Email sent!"})
-    except Exception as e:
-        logging.error("Something went wrong...", e)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/getInvitations", methods=["GET"])
-def getInvitations():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
-
-    user_id = request.args.get("user_id")
-    organization_id = request.args.get("organizationId")
-
-    if not organization_id and not user_id:
-        return (
-            jsonify({"error": "Either 'organization_id' or 'user_id' is required"}),
-            400,
-        )
-
-    try:
-        if organization_id:
-            return jsonify(get_invitations(organization_id))
-        return get_invitation(user_id)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /getInvitation")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/createInvitation", methods=["POST"])
-def createInvitation():
-    try:
-        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-        if not client_principal_id:
-            raise MissingRequiredFieldError("client_principal_id")
-        data = request.get_json()
-        if not data:
-            raise MissingJSONPayloadError()
-        if not "invitedUserEmail" in data:
-            raise MissingRequiredFieldError("invitedUserEmail")
-        if not "organizationId" in data:
-            raise MissingRequiredFieldError("organizationId")
-        if not "role" in data:
-            raise MissingRequiredFieldError("role")
-        if not "nickname" in data:
-            raise MissingRequiredFieldError("nickname")
-        invitedUserEmail = data["invitedUserEmail"]
-        organizationId = data["organizationId"]
-        role = data["role"]
-        nickname = data["nickname"]
-        response = create_invitation(invitedUserEmail, organizationId, role, nickname)
-        return jsonify(response), HTTPStatus.CREATED
-    except MissingRequiredFieldError as field:
-        return create_error_response(
-            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
-        )
-    except Exception as e:
-        logging.exception(str(e))
-        return create_error_response(
-            f"An unexpected error occurred. Please try again later. {e}",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-
-@app.route("/api/deleteInvitation", methods=["DELETE"])
-def deleteInvitation():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            create_error_response("Missing required parameters, client_principal_id"),
-            400,
-        )
-
-    invitation_id = request.args.get("invitationId")
-    if not invitation_id:
-        return create_error_response("Missing required parameters, invitationId"), 400
-
-    try:
-        response = delete_invitation(invitation_id)
-        return jsonify(response), HTTPStatus.OK
-    except Exception as e:
-        logging.exception("[webbackend] exception in /deleteInvitation")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/checkuser", methods=["POST"])
-def checkUser():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-    if not client_principal_id or not client_principal_name:
-        return create_error_response(
-            "Missing authentication headers", HTTPStatus.UNAUTHORIZED
-        )
-
-    if not request.json or "email" not in request.json:
-        return create_error_response("Email is required", HTTPStatus.BAD_REQUEST)
-
-    email = request.json["email"]
-
-    try:
-        response = set_user(
-            {
-                "id": client_principal_id,
-                "email": email,
-                "role": "user",
-                "name": client_principal_name,
-            }
-        )
-
-        if not response or "user_data" not in response:
-            return create_error_response(
-                "Failed to set user", HTTPStatus.INTERNAL_SERVER_ERROR
-            )
-
-        return response["user_data"]
-
-    except MissingRequiredFieldError as field:
-        return create_error_response(
-            f"Field '{field}' is required", HTTPStatus.BAD_REQUEST
-        )
-
-    except CosmosHttpResponseError as cosmos_error:
-        logging.error(f"[webbackend] Cosmos DB error in /api/checkUser: {cosmos_error}")
-        return create_error_response(
-            "Database error in CosmosDB", HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
-    try:
-        email = request.json["email"]
-        url = CHECK_USER_ENDPOINT
-        payload = json.dumps(
-            {
-                "client_principal_id": client_principal_id,
-                "client_principal_name": client_principal_name,
-                "id": client_principal_id,
-                "name": client_principal_name,
-                "email": email,
-            }
-        )
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-        response = requests.request("POST", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")
-
-        if response.status_code != 200:
-            logging.error(f"[webbackend] Error from orchestrator: {response.text}")
-            return jsonify({"error": "Error contacting orchestrator"}), 500
-
-        return response.text
-    except Exception as e:
-        logging.exception("[webbackend] Unexpected exception in /api/checkUser")
-        return jsonify({"error": "An unexpected error occurred"}), 500
-
-
 @app.route("/api/get-organization-subscription", methods=["GET"])
-def getOrganization():
+@auth.login_required
+def getOrganization(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     organizationId = request.args.get("organizationId")
     if not client_principal_id:
@@ -2741,7 +1830,8 @@ def getOrganization():
 
 
 @app.route("/api/get-user-organizations", methods=["GET"])
-def getUserOrganizations():
+@auth.login_required
+def getUserOrganizations(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return create_error_response(
@@ -2756,7 +1846,8 @@ def getUserOrganizations():
 
 
 @app.route("/api/get-users-organizations-role", methods=["GET"])
-def getUserOrganizationsRole():
+@auth.login_required
+def getUserOrganizationsRole(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     organization_id = request.args.get("organization_id")
 
@@ -2777,7 +1868,8 @@ def getUserOrganizationsRole():
 
 
 @app.route("/api/create-organization", methods=["POST"])
-def createOrganization():
+@auth.login_required
+def createOrganization(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
@@ -2809,33 +1901,6 @@ def createOrganization():
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
-@app.route("/api/getUser", methods=["GET"])
-def getUser():
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
-
-    try:
-        user = get_user_container(client_principal_id)
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        return jsonify(user), 200
-    except Exception as e:
-        logging.exception("[webbackend] exception in /getUser")
-        return jsonify({"error": str(e)}), 500
-    except NotFound as e:
-        return jsonify({"error": str(e)}), 404
-
-
 def get_product_prices(product_id):
 
     if not product_id:
@@ -2853,7 +1918,8 @@ def get_product_prices(product_id):
 
 
 @app.route("/api/prices", methods=["GET"])
-def get_product_prices_endpoint():
+@auth.login_required
+def get_product_prices_endpoint(*, context):
     product_id = request.args.get("product_id", PRODUCT_ID_DEFAULT)
 
     if not product_id:
@@ -3284,7 +2350,8 @@ def determine_subscription_tiers(subscription):
 
 
 @app.route("/api/subscriptions/<subscription_id>/change", methods=["PUT"])
-def change_subscription(subscription_id):
+@auth.login_required
+def change_subscription(*, context, subscription_id):
     try:
 
         data = request.json
@@ -3347,7 +2414,8 @@ def change_subscription(subscription_id):
 
 
 @app.route("/api/subscriptions/<subscription_id>/cancel", methods=["DELETE"])
-def cancel_subscription(subscription_id):
+@auth.login_required
+def cancel_subscription(*, context, subscription_id):
     try:
 
         subscription = stripe.Subscription.retrieve(subscription_id)
@@ -3371,534 +2439,11 @@ def cancel_subscription(subscription_id):
 # Financial Doc Ingestion
 ################################################
 
-from financial_doc_processor import *
-from utils import *
-from sec_edgar_downloader import Downloader
-from app_config import FILING_TYPES, BASE_FOLDER
-
-
-doc_processor = FinancialDocumentProcessor()  # from financial_doc_processor
-
-
-@app.route("/api/SECEdgar/financialdocuments", methods=["GET"])
-def process_edgar_document():
-    """
-    Process a single financial document from SEC EDGAR.
-
-    Args for payload:
-        equity_id (str): Stock symbol/ticker (e.g., 'AAPL')
-        filing_type (str): SEC filing type (e.g., '10-K')
-        after_date (str, optional): Filter for filings after this date (YYYY-MM-DD)
-
-    Returns:
-        JSON Response with processing status and results
-
-    Raises:
-        400: Invalid request parameters
-        404: Document not found
-        500: Internal server error
-    """
-    try:
-        # Validate request and setup
-        if not check_and_install_wkhtmltopdf():
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "message": "Failed to install required dependency wkhtmltopdf",
-                        "code": 500,
-                    }
-                ),
-                500,
-            )
-
-        # Get and validate parameters
-        data = request.get_json()
-        if not data:
-            return (
-                jsonify(
-                    {"status": "error", "message": "No data provided", "code": 400}
-                ),
-                400,
-            )
-
-        # Extract and validate parameters
-        equity_id = data.get("equity_id")
-        filing_type = data.get("filing_type")
-        after_date = data.get("after_date", None)
-
-        if not equity_id or not filing_type:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "message": "Both equity_id and filing_type are required",
-                        "code": 400,
-                    }
-                ),
-                400,
-            )
-
-        if filing_type not in FILING_TYPES:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "message": f"Invalid filing type. Must be one of: {FILING_TYPES}",
-                        "code": 400,
-                    }
-                ),
-                400,
-            )
-
-        # Download filing
-        download_result = doc_processor.download_filing(
-            equity_id, filing_type, after_date
-        )
-
-        if download_result.get("status") != "success":
-            return jsonify(download_result), download_result.get("code", 500)
-
-        # Process and upload document
-        upload_result = doc_processor.process_and_upload(equity_id, filing_type)
-        return jsonify(upload_result), upload_result.get("code", 500)
-
-    except Exception as e:
-        logger.error(f"API execution failed: {str(e)}")
-        return jsonify({"status": "error", "message": str(e), "code": 500}), 500
-
-
-from tavily_tool import TavilySearch
-
-from app_config import IMAGE_PATH
-from summarization import DocumentSummarizer
-
-
-@app.route("/api/SECEdgar/financialdocuments/summary", methods=["POST"])
-def generate_summary():
-    """
-    Endpoint to generate a summary of financial documents from SEC Edgar.
-
-    Request Payload Example:
-    {
-        "equity_name": "MS",          # The name of the equity (e.g., 'MS' for Morgan Stanley)
-        "financial_type": "10-K"      # The type of financial document (e.g., '10-K' for annual reports)
-    }
-
-    Required Fields:
-    - equity_name (str): The name of the equity.
-    - financial_type (str): The type of financial document.
-
-    Both fields must be non-empty strings.
-    """
-    try:
-        try:
-            data = request.get_json()
-            if not data:
-                return (
-                    jsonify(
-                        {
-                            "error": "Invalid request",
-                            "details": "Request body is requred and must be a valid JSON object",
-                        }
-                    ),
-                    400,
-                )
-            equity_name = data.get("equity_name")
-            financial_type = data.get("financial_type")
-
-            if not all([equity_name, financial_type]):
-                return (
-                    jsonify(
-                        {
-                            "error": "Missing required fields",
-                            "details": "equity_name and financial_type are required",
-                        }
-                    ),
-                    400,
-                )
-
-            if not isinstance(equity_name, str) or not isinstance(financial_type, str):
-                return (
-                    jsonify(
-                        {
-                            "error": "Invalid input type",
-                            "details": "equity_name and financial_type must be strings",
-                        }
-                    ),
-                    400,
-                )
-
-            if not equity_name.strip() or not financial_type.strip():
-                return (
-                    jsonify(
-                        {
-                            "error": "Empty input",
-                            "details": "equity_name and financial_type cannot be empty",
-                        }
-                    ),
-                    400,
-                )
-
-        except ValueError as e:
-            return (
-                jsonify(
-                    {
-                        "error": "Invalid input",
-                        "details": f"Failed to parse request body: {str(e)}",
-                    }
-                ),
-                400,
-            )
-
-        # Initialize components with error handling
-        try:
-            blob_manager = BlobStorageManager()
-            summarizer = DocumentSummarizer()
-        except ConnectionError as e:
-            logging.error(f"Failed to connect to blob storage: {e}")
-            return (
-                jsonify(
-                    {
-                        "error": "Connection error",
-                        "details": "Failed to connect to storage service",
-                    }
-                ),
-                503,
-            )
-        except Exception as e:
-            logging.error(f"Failed to initialize components: {e}")
-            return (
-                jsonify({"error": "Service initialization failed", "details": str(e)}),
-                500,
-            )
-
-        # Reset directories
-        try:
-            reset_local_dirs()
-        except PermissionError as e:
-            logging.error(f"Permission error while cleaning up directories: {str(e)}")
-            return (
-                jsonify(
-                    {
-                        "error": "Permission error",
-                        "details": "Failed to clean up directories due to permission issues",
-                    }
-                ),
-                500,
-            )
-        except OSError as e:
-            logging.error(f"OS error while reseting directories: {str(e)}")
-            return (
-                jsonify(
-                    {
-                        "error": "System error",
-                        "details": "Failed to prepare working directories",
-                    }
-                ),
-                500,
-            )
-        except Exception as e:
-            logging.error(f"Failed to clean up directories: {e}")
-            return (
-                jsonify(
-                    {
-                        "error": "Cleanup failed",
-                        "details": "Failed to clean up directories to prepare for processing",
-                    }
-                ),
-                500,
-            )
-
-        # Download documents
-
-        downloaded_files = blob_manager.download_documents(
-            equity_name=equity_name, financial_type=financial_type
-        )
-
-        # Process documents
-        for file_path in downloaded_files:
-            doc_id = extract_pdf_pages_to_images(file_path, IMAGE_PATH)
-
-        # Generate summaries
-        all_summaries = summarizer.process_document_images(IMAGE_PATH)
-        final_summary = summarizer.generate_final_summary(all_summaries)
-
-        # note from Nam: we don't need to format the summary anymore since we instructed the LLM to format the final summary in the prompt already
-        html_output = markdown.markdown(final_summary)
-
-        # Save the summary locally
-        # save_str_to_pdf(formatted_summary, local_output_path)
-
-        local_output_path = f"pdf/{equity_name}_{financial_type}_{datetime.now().strftime('%b %d %y')}_summary.pdf"
-
-        try:
-            report_processor = ReportProcessor()
-
-            pdf_path = report_processor.html_to_pdf(html_output, local_output_path)
-            if not pdf_path:
-                return jsonify({"error": "PDF creation failed"}), 500
-        except Exception as e:
-            logger.error(f"Failed to create PDF: {str(e)}")
-            return jsonify({"error": "PDF creation failed: " + str(e)}), 500
-
-        # Upload summary to blob
-        document_paths = create_document_paths(
-            local_output_path, equity_name, financial_type
-        )
-
-        # upload to blob and get the blob path/remote links
-        upload_results = blob_manager.upload_to_blob(document_paths)
-
-        blob_path = upload_results[equity_name][financial_type]["blob_path"]
-        blob_url = upload_results[equity_name][financial_type]["blob_url"]
-
-        # Clean up local directories
-        try:
-            reset_local_dirs()
-        except Exception as e:
-            logging.error(f"Failed to clean up directories: {e}")
-
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "equity_name": equity_name,
-                    "financial_type": financial_type,
-                    "blob_path": blob_path,
-                    "remote_blob_url": blob_url,
-                    "summary": final_summary,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logging.error(f"Unexpected error: {e}", exc_info=True)
-        return jsonify({"error": "Internal server error", "details": str(e)}), 500
-    finally:
-        # Ensure cleanup happens
-        try:
-            reset_local_dirs()
-        except PermissionError as e:
-            logging.error(f"Permission error while cleaning up directories: {str(e)}")
-        except OSError as e:
-            logging.error(f"OS error while reseting directories: {str(e)}")
-        except Exception as e:
-            logging.error(f"Failed to clean up: {e}")
-
-
-from utils import _extract_response_data
-
-
-@app.route("/api/SECEdgar/financialdocuments/process-and-summarize", methods=["POST"])
-def process_and_summarize_document():
-    """
-    Process and summarize a financial document in sequence.
-
-    Args:
-        equity_id (str): Stock symbol/ticker (e.g., 'AAPL')
-        filing_type (str): SEC filing type (e.g., '10-K')
-        after_date (str, optional): Filter for filings after this date (YYYY-MM-DD)
-
-    Returns:
-        JSON Response with structure:
-        {
-            "status": "success",
-            "edgar_data_process": {...},
-            "summary_process": {...}
-        }
-
-    Raises:
-        400: Invalid request parameters
-        404: Document not found
-        500: Internal server error
-    """
-    # Input validation
-    try:
-        data = request.get_json()
-        if not data:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "error": "Invalid request",
-                        "details": "Request body is requred and must be a valid JSON object",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    }
-                ),
-                400,
-            )
-
-        # Validate required fields
-        required_fields = ["equity_id", "filing_type"]
-        if not all(field in data for field in required_fields):
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "error": "Missing required fields",
-                        "details": f"Missing required fields: {', '.join(required_fields)}",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    }
-                ),
-                400,
-            )
-
-        # Validate filing type
-        if data["filing_type"] not in FILING_TYPES:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "error": "Invalid filing type",
-                        "details": f"Invalid filing type. Must be one of: {', '.join(FILING_TYPES)}",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    }
-                ),
-                400,
-            )
-
-        # Validate date format if provided
-        if "after_date" in data:
-            try:
-                datetime.strptime(data["after_date"], "%Y-%m-%d")
-            except ValueError:
-                return (
-                    jsonify(
-                        {
-                            "status": "error",
-                            "error": "Invalid date format",
-                            "details": "Use YYYY-MM-DD",
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                        }
-                    ),
-                    400,
-                )
-
-    except ValueError as e:
-        logger.error(f"Invalid request data: {str(e)}")
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "error": "Invalid request data",
-                    "details": str(e),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
-            ),
-            400,
-        )
-
-    try:
-        # Step 1: Process document
-        logger.info(
-            f"Starting document processing for {data['equity_id']} {data['filing_type']}"
-        )
-        with app.test_request_context(
-            "/api/SECEdgar/financialdocuments", method="GET", json=data
-        ) as ctx:
-            process_result = process_edgar_document()
-            process_data = _extract_response_data(process_result)
-
-            if process_data.get("status") != "success":
-                logger.error(
-                    f"Document processing failed: {process_data.get('message')}"
-                )
-                if process_data.get("code") == 404:
-                    return (
-                        jsonify(
-                            {
-                                "status": "not_found",
-                                "error": process_data.get("message"),
-                                "code": process_data.get("code"),
-                                "timestamp": datetime.now(timezone.utc).isoformat(),
-                            }
-                        ),
-                        404,
-                    )
-                else:
-                    return (
-                        jsonify(
-                            {
-                                "status": "error",
-                                "error": process_data.get("message"),
-                                "code": process_data.get(
-                                    "code", HTTPStatus.INTERNAL_SERVER_ERROR
-                                ),
-                                "timestamp": datetime.now(timezone.utc).isoformat(),
-                            }
-                        ),
-                        500,
-                    )
-
-        # Step 2: Generate summary
-        logger.info(
-            f"Starting summary generation for {data['equity_id']} {data['filing_type']}"
-        )
-        summary_payload = {
-            "equity_name": data["equity_id"],
-            "financial_type": data["filing_type"],
-        }
-
-        with app.test_request_context(
-            "/api/SECEdgar/financialdocuments/summary",
-            method="POST",
-            json=summary_payload,
-        ) as ctx:
-            summary_result = generate_summary()
-            summary_data = _extract_response_data(summary_result)
-
-            if summary_data.get("status") != "success":
-                logger.error(
-                    f"Summary generation failed: {summary_data.get('message')}"
-                )
-                return (
-                    jsonify(
-                        {
-                            "status": "error",
-                            "error": summary_data.get("message"),
-                            "details": summary_data.get(
-                                "code", HTTPStatus.INTERNAL_SERVER_ERROR
-                            ),
-                            "timestamp": datetime.now(timezone.utc).isoformat(),
-                        }
-                    ),
-                    500,
-                )
-
-        # Return combined results
-        response_data = {
-            "status": "success",
-            "edgar_data_process": process_data,
-            "summary_process": summary_data,
-        }
-
-        logger.info(
-            f"Successfully processed and summarized document for {data['equity_id']}"
-        )
-        return jsonify(response_data), 200
-
-    except Exception as e:
-        logger.exception(
-            f"Unexpected error in process_and_summarize_document: {str(e)}"
-        )
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "error": "An unexpected error occurred while processing the document",
-                    "details": str(e),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                }
-            ),
-            500,
-        )
 
 
 from pathlib import Path
 from curation_report_generator import graph
-from financial_doc_processor import markdown_to_html, BlobStorageManager
+from financial_doc_processor import BlobUploadError, markdown_to_html, BlobStorageManager
 from financial_agent_utils.curation_report_utils import (
     REPORT_TOPIC_PROMPT_DICT,
     InvalidReportTypeError,
@@ -3913,7 +2458,8 @@ from financial_agent_utils.curation_report_config import (
 
 
 @app.route("/api/reports/generate/curation", methods=["POST"])
-def generate_report():
+@auth.login_required
+def generate_report(*, context):
     try:
         data = request.get_json()
         report_topic_rqst = data["report_topic"]  # Will raise KeyError if missing
@@ -4078,7 +2624,8 @@ from utils import EmailServiceError, EmailService
 
 
 @app.route("/api/reports/email", methods=["POST"])
-def send_email_endpoint():
+@auth.login_required
+def send_email_endpoint(*, context):
     """Send an email with optional attachments.
     Note: currently attachment path has to be in the same directory as the app.py file.
 
@@ -4240,7 +2787,8 @@ from rp2email import process_and_send_email, ReportProcessor
 
 
 @app.route("/api/reports/digest", methods=["POST"])
-def digest_report():
+@auth.login_required
+def digest_report(*, context):
     """
     Process report and send email .
 
@@ -4310,24 +2858,29 @@ def digest_report():
 
 
 @app.route("/api/reports/storage/files", methods=["GET"])
-def list_blobs():
+@auth.login_required
+def list_blobs(*, context):
     """
-    List blobs i nteh container with optional filtering
+    List blobs in the container with optional filtering and pagination
 
     Query params:
     - prefix(str): filter blobs by prefix
     - include_metadata(str): include metadata in results
-    - max_results(int): maximum number of results to return
+    - page_size(int): number of results per page (default: 10, max: 100)
+    - page(int): page number (1-based, default: 1)
+    - continuation_token(str): token for continuing pagination from a specific point
     - container_name(str): name of the container to list blobs from
 
     Returns:
-        JSON response with list of blobs
+        JSON response with list of blobs and pagination metadata
 
     Example Payload:
     {
         "prefix": "Reports/Curation_Reports/Monthly_Economics/",
         "include_metadata": "yes",
-        "max_results": 10,
+        "page_size": 20,
+        "page": 1,
+        "continuation_token": null,
         "container_name": "documents"
     }
     """
@@ -4338,11 +2891,12 @@ def list_blobs():
 
         container_name = data.get("container_name")
         prefix = data.get("prefix", None)
-
         include_metadata = data.get("include_metadata", "no").lower()
-
-        # convert max_results to int
-        max_results = data.get("max_results", 10)
+        
+        # Pagination parameters
+        page_size = min(data.get("page_size", 10), 100)  # Cap at 100 for performance
+        page = max(data.get("page", 1), 1)  # Ensure page is at least 1
+        continuation_token = data.get("continuation_token")
 
         if not container_name:
             return (
@@ -4352,15 +2906,36 @@ def list_blobs():
                 400,
             )
 
+        if page_size <= 0:
+            return (
+                jsonify(
+                    {"status": "error", "message": "page_size must be greater than 0"}
+                ),
+                400,
+            )
+
         blob_storage_manager = BlobStorageManager()
-        blobs = blob_storage_manager.list_blobs_in_container(
+        result = blob_storage_manager.list_blobs_in_container_paginated(
             container_name=container_name,
             prefix=prefix,
             include_metadata=include_metadata,
-            max_results=max_results,
+            page_size=page_size,
+            page=page,
+            continuation_token=continuation_token,
         )
 
-        return jsonify({"status": "success", "data": blobs, "count": len(blobs)}), 200
+        return jsonify({
+            "status": "success", 
+            "data": result["blobs"], 
+            "pagination": {
+                "current_page": result["current_page"],
+                "page_size": result["page_size"],
+                "total_count": result["total_count"],
+                "has_more": result["has_more"],
+                "next_continuation_token": result.get("next_continuation_token"),
+                "total_pages": result.get("total_pages")
+            }
+        }), 200
 
     except ValueError as e:
         return jsonify({"status": "error", "message": str(e)}), 400
@@ -4371,7 +2946,8 @@ def list_blobs():
 
 
 @app.route("/api/logs/", methods=["POST"])
-def get_logs():
+@auth.login_required
+def get_logs(*, context):
     try:
         data = request.get_json()
         if data == None:
@@ -4393,21 +2969,9 @@ def get_logs():
         return create_error_response("Internal Server Error", 500)
 
 
-@app.route("/api/companydata", methods=["GET"])
-def get_company_data():
-    try:
-        data = get_company_list()
-        return create_success_response(data, 200)
-    except CosmosHttpResponseError as e:
-        logger.exception(f"Unexpected error in with cosmos db: {e}")
-        return create_error_response("Internal Server Error", 500)
-    except Exception as e:
-        logger.exception("Unexpected error in get_company_analysis")
-        return create_error_response("Internal Server Error", 500)
-
-
 @app.route("/api/get-source-documents", methods=["GET"])
-def get_source_documents():
+@auth.login_required
+def get_source_documents(*, context):
     organization_id = request.args.get("organization_id", "").strip()
 
     logger.info(f"Getting source documents for organization {organization_id}")
@@ -4417,7 +2981,6 @@ def get_source_documents():
 
     try:
         blob_storage_manager = BlobStorageManager()
-
         # Search only the blobs under that organization's specific folder
         prefix = f"organization_files/{organization_id}/"
         blobs = blob_storage_manager.list_blobs_in_container_for_upload_files(
@@ -4434,6 +2997,12 @@ def get_source_documents():
             ):
                 organization_blobs.append(blob)
 
+        if organization_blobs:
+            organization_blobs.sort(
+                key=lambda x: datetime.fromisoformat(x['created_on']),
+                reverse=True
+            )
+
         logger.info(
             f"Found {len(organization_blobs)} source documents for organization {organization_id}"
         )
@@ -4445,7 +3014,8 @@ def get_source_documents():
 
 
 @app.route("/api/delete-source-document", methods=["DELETE"])
-def delete_source_document():
+@auth.login_required
+def delete_source_document(*, context):
     try:
         # Get blob name from query parameters
         blob_name = request.args.get("blob_name")
@@ -4480,7 +3050,8 @@ def delete_source_document():
 
 
 @app.route("/api/get-password-reset-url", methods=["GET"])
-def get_password_reset_url():
+@auth.login_required
+def get_password_reset_url(*, context):
     tenant = os.getenv("AAD_TENANT_NAME")
     policy = os.getenv("ADD_CHANGE_PASSWORD")
     client_id = os.getenv("AAD_CLIENT_ID")
@@ -4496,7 +3067,8 @@ def get_password_reset_url():
 
 
 @app.route("/api/webscraping/scrape-url", methods=["POST"])
-def scrape_url():
+@auth.login_required
+def scrape_url(*, context):
     """
     Endpoint to scrape a single URL using the external web scraping service.
     Expects a JSON payload with a 'url' string and optionally 'organization_id'.
@@ -4655,7 +3227,8 @@ def scrape_url():
 
 
 @app.route("/api/webscraping/multipage-scrape", methods=["POST"])
-def multipage_scrape():
+@auth.login_required
+def multipage_scrape(*, context):
     """
     Endpoint to scrape URLs using the external multipage scraping service.
     This is a proxy endpoint that forwards requests to the orchestrator's multipage-scrape endpoint.
@@ -4833,7 +3406,8 @@ def multipage_scrape():
 
 
 @app.route("/api/webscraping/get-urls", methods=["GET"])
-def get_organization_urls_endpoint():
+@auth.login_required
+def get_organization_urls_endpoint(*, context):
     try:
         organization_id = request.args.get("organization_id")
         if not organization_id:
@@ -4846,7 +3420,8 @@ def get_organization_urls_endpoint():
 
 
 @app.route("/api/webscraping/delete-url", methods=["DELETE"])
-def delete_url_endpoint():
+@auth.login_required
+def delete_url_endpoint(*, context):
     try:
         url_id = request.args.get("url_id")
         organization_id = request.args.get("organization_id")
@@ -4862,7 +3437,8 @@ def delete_url_endpoint():
 
 
 @app.route("/api/webscraping/search-urls", methods=["GET"])
-def filter_urls():
+@auth.login_required
+def filter_urls(*, context):
     try:
         search_term = request.args.get("search_term")
         organization_id = request.args.get("organization_id")
@@ -4878,7 +3454,8 @@ def filter_urls():
 
 
 @app.route("/api/webscraping/modify-url", methods=["PUT"])
-def update_url():
+@auth.login_required
+def update_url(*, context):
     """
     Update a URL for web scraping in an organization.
 
@@ -4950,18 +3527,21 @@ def healthz():
 
 
 @app.route("/api/organization/<organization_id>/gallery", methods=["GET"])
-def get_gallery(organization_id):
+@auth.login_required
+def get_gallery(*, context, organization_id):
     """
     Retrieve gallery items for a specific organization.
 
     Query Parameters:
         sort (str, optional): Sort order - 'newest' or 'oldest'. Defaults to 'newest'.
+        page (int, optional): Page number (1-based). Defaults to 1.
+        limit (int, optional): Items per page. Defaults to 20, max 100.
 
     Args:
         organization_id (str): The unique identifier of the organization.
 
     Returns:
-        Response: JSON response containing a list of gallery items (HTTP 200),
+        Response: JSON response containing paginated gallery items (HTTP 200),
                   or an error response with an appropriate message and status code.
 
     Error Codes:
@@ -4969,42 +3549,36 @@ def get_gallery(organization_id):
         404: If no gallery items are found for the organization.
         500: If an unexpected error occurs during retrieval.
     """
-    if (
-        not organization_id
-        or not isinstance(organization_id, str)
-        or not organization_id.strip()
-    ):
-        return create_error_response(
-            "Organization ID is required and must be a non-empty string.", 400
-        )
-    sort_order = request.args.get('sort', 'newest')
-
-    if sort_order not in ['newest', 'oldest']:
-        return create_error_response("Invalid sort order. Must be 'newest' or 'oldest'.", 400) 
-
+    if not organization_id or not isinstance(organization_id, str) or not organization_id.strip():
+        return create_error_response("Organization ID is required and must be a non-empty string.", 400)
     try:
-        gallery_items = get_gallery_items_by_org(organization_id, sort_order=sort_order)
-        if gallery_items is None:
-            return create_error_response(
-                f"No gallery items found for organization {organization_id}.", 404
-            )
-        if isinstance(gallery_items, list) and not gallery_items:
-            return create_success_response([], 204)
-        return create_success_response(gallery_items, 200)
-    except ValueError as ve:
-        logger.error(
-            f"Value error retrieving gallery items for org {organization_id}: {ve}"
+        uploader_id = request.args.get("uploader_id")
+        order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
+        search_query = request.args.get("query") or request.args.get("q")
+        
+        # Pagination parameters
+        page = max(1, int(request.args.get("page", 1)))
+        limit = min(100, max(1, int(request.args.get("limit", 20))))
+
+        result = get_gallery_items_by_org(
+            organization_id,
+            uploader_id=uploader_id,
+            order=order,
+            query=search_query,
+            page=page,
+            limit=limit
         )
+
+        return create_success_response(result, 200)
+
+    except ValueError as ve:
+        logger.error(f"Value error retrieving gallery items for org {organization_id}: {ve}")
         return create_error_response(str(ve), 400)
     except CosmosHttpResponseError as ce:
-        logger.error(
-            f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}"
-        )
+        logger.error(f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}")
         return create_error_response("Database error retrieving gallery items.", 500)
     except Exception as e:
-        logger.exception(
-            f"Unexpected error retrieving gallery items for org {organization_id}: {e}"
-        )
+        logger.exception(f"Unexpected error retrieving gallery items for org {organization_id}: {e}")
         return create_error_response("Internal Server Error", 500)
 
 

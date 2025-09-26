@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
-import DOMPurify from "dompurify";
 import styles from "./AnalysisPanel.module.css";
 import { AskResponse } from "../../api";
 import { AnalysisPanelTabs } from "./AnalysisPanelTabs";
@@ -43,7 +42,6 @@ const closeButtonStyle = {
 
 export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
-    const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
     let thoughts = parseThoughts(answer.thoughts);
@@ -76,15 +74,15 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                 aria-label="Analysis Panel"
                 styles={{
                     linkIsSelected: {
-                        color: "#159244",
+                        color: "#0E7C3A",
                         fontSize: "15px",
                         selectors: {
                             ":before": {
-                                backgroundColor: "#008236"
+                                backgroundColor: "#0E7C3A"
                             },
                             ":hover": {
-                                color: "#159244",
-                                backgroundColor: "#f0fdf4"
+                                color: "#0E7C3A",
+                                backgroundColor: "#E8F5ED"
                             }
                         }
                     }

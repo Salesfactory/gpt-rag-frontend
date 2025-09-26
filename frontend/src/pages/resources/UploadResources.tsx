@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import styles from "./UploadResourcescopy.module.css";
 
 import FileListHeader from "../../components/UploadResources/FileHeaderList";
-import ResourceList from "../../components/UploadResources/ResourceList";
+import LazyResourceList from "../../components/UploadResources/LazyResourceList";
 import { useSourceFiles } from "../../hooks/useSourceFiles";
 import { useAppContext } from "../../providers/AppProviders";
 import { useFileUpload } from "../../hooks/useFileUpload";
@@ -18,7 +18,7 @@ const UploadResources: React.FC = () => {
     return (
         <div className={styles.page_container}>
             <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={fetchFiles} />
-            <ResourceList filteredItems={filteredItems} isLoading={isLoading} deleteFile={deleteFile} handleDownload={handleDownload} />
+            <LazyResourceList filteredItems={filteredItems} isLoading={isLoading} deleteFile={deleteFile} handleDownload={handleDownload} />
             {uploadDialogOpen && (
                 <UploadDialogModal 
                     closeUploadDialog={closeUploadDialog}  

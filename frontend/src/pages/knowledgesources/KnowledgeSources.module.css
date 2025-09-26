@@ -45,7 +45,7 @@
 
 .urlInput:focus {
     outline: none;
-    border-color: #16a34a;
+    border-color: #008431;
     box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
@@ -66,8 +66,8 @@
     justify-content: center;
     gap: 8px;
     padding: 10px 24px;
-    background-color: #16a34a;
-    color: white;
+    background-color: #008431;
+    color: #ffffff;
     border: none;
     border-radius: 8px;
     font-size: 16px;
@@ -79,7 +79,7 @@
 }
 
 .addButton:hover:not(:disabled) {
-    background-color: #15803d;
+    background-color: #006e2c;
 }
 
 .addButton:focus {
@@ -278,7 +278,7 @@
 
 .searchInput:focus {
     outline: none;
-    border-color: #16a34a;
+    border-color: #008431;
     box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
@@ -386,7 +386,7 @@
 
 /* Card Header */
 .cardHeader {
-    background-color: #16a34a;
+    background-color: #008431;
     color: white;
     border-radius: 8px 8px 0 0;
     padding: 16px 24px;
@@ -398,7 +398,7 @@
 }
 .resultsCount {
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.8);
+    color: #ffffff;
     font-size: 12px;
     margin-left: 8px;
 }

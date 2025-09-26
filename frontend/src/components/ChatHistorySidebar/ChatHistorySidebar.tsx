@@ -3,7 +3,7 @@ import styles from "./ChatHistorySidebar.module.css";
 import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation, exportConversation } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Trash2, Check, X, ChevronDown, ChevronUp, Upload, ExternalLink, Copy } from "lucide-react";
 

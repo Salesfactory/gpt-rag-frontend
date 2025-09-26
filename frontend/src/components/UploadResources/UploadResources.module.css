@@ -290,6 +290,18 @@
     flex-direction: column;
     gap: 7px;
     padding: 0.8rem;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.file_info_row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    max-width: 100%;
 }
 
 .file_extension_pill {
@@ -345,9 +357,13 @@
 .actions_cell {
     color: #71b33b;
     display: flex;
-    gap: 5px;
-    justify-content: flex-start;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
     margin-left: 0;
+    width: 100%;
+    min-width: 120px;
+    flex-shrink: 0;
 }
 
 /* Ensure the DetailsList inside the file list container looks good */
@@ -374,19 +390,22 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     border-radius: 0 0 8px 8px;
     overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
 }
 
 .detailsListContainer :global(.ms-DetailsHeader) {
     padding-top: 4px !important;
     padding-bottom: 4px !important;
     height: 42px;
-    background-color: #00a63e;
+    background-color: #008431;
     border-top: none !important;
 }
 
 .detailsListContainer :global(.ms-DetailsHeader-cell) {
-    color: white !important;
-    background-color: #00a63e !important;
+    background-color: #008431;
+    color: #ffffff !important;
     text-align: left !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
@@ -395,15 +414,15 @@
 
 .detailsListContainer :global(.ms-DetailsHeader-cellTitle),
 .detailsListContainer :global(.ms-DetailsHeader-cellName) {
-    color: white !important;
+    color: #ffffff !important;
     font-size: 1rem !important;
     font-weight: 600 !important;
     border-top: none !important;
 }
 
 .detailsListContainer :global(.ms-DetailsHeader-cell:hover) {
-    background-color: #00a63e !important;
-    color: white !important;
+    background-color: #006e2c !important;
+    color: #ffffff !important;
 }
 
 .detailsListContainer :global(.ms-DetailsRow) {
@@ -416,6 +435,16 @@
 
 .detailsListContainer :global(.ms-DetailsRow:nth-child(odd)) {
     background-color: #fff;
+}
+
+.detailsListContainer :global(.ms-DetailsRow-cell) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.detailsListContainer :global(.ms-DetailsRow-fields) {
+    width: 100%;
+    max-width: 100%;
 }
 
 .processing_container {

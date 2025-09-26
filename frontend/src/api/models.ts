@@ -86,10 +86,8 @@ export type ChatRequestGpt = {
     approach: Approaches;
     conversation_id: string;
     query: string;
-    file_blob_url: string;
     overrides?: AskRequestOverrides;
     agent: string;
-    documentName: string;
 };
 
 export type GetSettingsProps = {
@@ -108,13 +106,6 @@ export type PostSettingsProps = {
     model: string;
     font_family: string;
     font_size: string;
-};
-
-export type SummarizationReportProps = {
-    templateType: string;
-    description: string;
-    companyTicker: string;
-    companyName: string;
 };
 
 export interface Category {
