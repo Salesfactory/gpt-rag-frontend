@@ -14,11 +14,9 @@ import StartNewChatButton from "../../components/StartNewChatButton/StartNewChat
 import AttachButton from "../../components/AttachButton/AttachButton";
 import { ALLOWED_FILE_TYPES } from "../../constants";
 
-// import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
-
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
-// import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
+
 import React from "react";
 import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
@@ -46,6 +44,7 @@ const Chat = () => {
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
     const ATTACH_ACCEPT = ALLOWED_FILE_TYPES.join(",");
     const [attachedFile, setAttachedFile] = useState<{ file: File; name: string; previewUrl: string } | null>(null);
+    const [fileUploadError, setFileUploadError] = useState<string>("Theres AN ERROR AHHHHHH");
 
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -410,11 +409,15 @@ const Chat = () => {
     const handleAttachFiles = async (files: File[]) => {
         if (!files?.length) return;
 
+        // Clear any previous error
+        setFileUploadError("");
+
         const file = files[0];
         const name = file.name.toLowerCase();
         const allowed = ALLOWED_FILE_TYPES.map(ext => ext.toLowerCase());
         if (!allowed.some(ext => name.endsWith(ext))) {
-            console.error("File type not allowed");
+            const allowedTypesString = ALLOWED_FILE_TYPES.join(", ");
+            setFileUploadError(`Unsupported file type! Please upload: ${allowedTypesString} (max 50MB)`);
             return;
         }
 
@@ -427,6 +430,7 @@ const Chat = () => {
     function handleRemoveAttachment() {
         if (attachedFile?.previewUrl) URL.revokeObjectURL(attachedFile.previewUrl);
         setAttachedFile(null);
+        setFileUploadError(""); // Clear error when removing attachment
     }
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
@@ -740,6 +744,25 @@ const Chat = () => {
                                     </div>
                                 )}
                                 <div className={styles.chatInputContainer}>
+                                    {/* File upload error message */}
+
+                                    {/* Attachment display - outside of chat input */}
+                                    {attachedFile && (
+                                        <div className={styles.attachmentDisplay} role="status" aria-live="polite">
+                                            <div className={styles.attachmentChip}>
+                                                <span className={styles.attachmentName}>{attachedFile.name}</span>
+                                                <button
+                                                    type="button"
+                                                    className={styles.removeChipBtn}
+                                                    aria-label="Remove attachment"
+                                                    onClick={handleRemoveAttachment}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div
                                         className={`${styles.chatInput} ${isDragOver ? styles.chatInputDragOver : ""}`}
                                         onDragOver={e => {
@@ -754,20 +777,6 @@ const Chat = () => {
                                             if (files.length) handleAttachFiles(files);
                                         }}
                                     >
-                                        {attachedFile && (
-                                            <div className={styles.attachmentChip} role="status" aria-live="polite">
-                                                <span className={styles.attachmentName}>{`${attachedFile.name} ✓`}</span>
-                                                <button
-                                                    type="button"
-                                                    className={styles.removeChipBtn}
-                                                    aria-label="Remove attachment"
-                                                    onClick={handleRemoveAttachment}
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        )}
-
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
@@ -775,6 +784,7 @@ const Chat = () => {
                                             onSend={question => {
                                                 streamResponse(question, chatId !== "" ? chatId : null);
                                                 setAttachedFile(null);
+                                                setFileUploadError(""); // Clear error when sending
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                                             extraButtonAttach={
@@ -792,6 +802,12 @@ const Chat = () => {
                                     <div className={styles.chatDisclaimer}>
                                         <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
                                     </div>
+                                    {fileUploadError && (
+                                        <div className={styles.fileUploadError} role="alert" aria-live="assertive">
+                                            <span className={styles.errorIcon}>✕</span>
+                                            <span>{fileUploadError}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer]) ||
