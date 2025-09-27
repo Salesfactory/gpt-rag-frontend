@@ -761,6 +761,7 @@ def proxy_orc(*, context):
     question = data.get("question")
     agent = data.get("agent")
     user_timezone = data.get("user_timezone")
+    user_document_blob_names = data.get("user_document_blob_names")
 
     if not question:
         return jsonify({"error": "Missing required parameters"}), 400
@@ -798,16 +799,17 @@ def proxy_orc(*, context):
         FINANCIAL_ASSISTANT_ENDPOINT if agent == "financial" else ORCHESTRATOR_ENDPOINT
     )
 
-    payload = json.dumps(
-        {
-            "conversation_id": conversation_id,
-            "question": question,
-            "client_principal_id": client_principal_id,
-            "client_principal_name": client_principal_name,
-            "client_principal_organization": client_principal_organization,
-            "user_timezone": user_timezone,
-        }
-    )
+    payload_dict = {
+        "conversation_id": conversation_id,
+        "question": question,
+        "client_principal_id": client_principal_id,
+        "client_principal_name": client_principal_name,
+        "client_principal_organization": client_principal_organization,
+        "user_timezone": user_timezone,
+    }
+    if isinstance(user_document_blob_names, list) and len(user_document_blob_names) > 0:
+        payload_dict["blob_names"] = user_document_blob_names
+    payload = json.dumps(payload_dict)
 
     headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}
 
