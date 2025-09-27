@@ -21,7 +21,7 @@ export const ButtonPaymentGateway = () => {
     }
 
     return (
-        <button className={styles.container} onClick={handleRedirect}>
+        <button className={styles.container} onClick={handleRedirect} aria-label="Subscription Button">
             <GuestFilled className={styles.button} />
             <Text className={styles.buttonText}>Subscription</Text>
         </button>

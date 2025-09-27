@@ -86,10 +86,8 @@ export type ChatRequestGpt = {
     approach: Approaches;
     conversation_id: string;
     query: string;
-    file_blob_url: string;
     overrides?: AskRequestOverrides;
     agent: string;
-    documentName: string;
 };
 
 export type GetSettingsProps = {
@@ -134,4 +132,3 @@ export interface BackendReportJobDoc {
   updated_at?: string | null;
   params?: { target?: string };
 }
-

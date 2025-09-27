@@ -3,7 +3,7 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
+import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -11,12 +11,12 @@ import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel
 import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
-import DownloadButton from "../../components/DownloadButton/DownloadButton";
-// import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
+import AttachButton from "../../components/AttachButton/AttachButton";
+import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES} from "../../constants";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
-// import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
+
 import React from "react";
 import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
@@ -42,6 +42,11 @@ const Chat = () => {
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
+    const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
+    const [attachedFiles, setAttachedFiles] = useState<{ file: File; name: string; previewUrl: string }[]>([]);
+    const [fileUploadError, setFileUploadError] = useState<string>("");
+
+    const [isDragOver, setIsDragOver] = useState(false);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -57,12 +62,10 @@ const Chat = () => {
         chatIsCleaned,
         user,
         isFinancialAssistantActive,
-        documentName,
         setisResizingAnalysisPanel
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
-    const lastFileBlobUrl = useRef<string | null>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -78,6 +81,7 @@ const Chat = () => {
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
+    const [conversationId, setConversationId] = useState<string>(""); // Pre-generated conversation ID for new chats
     const triggered = useRef(false);
 
     const [lastAnswer, setLastAnswer] = useState<string>("");
@@ -85,10 +89,34 @@ const Chat = () => {
     const restartChat = useRef<boolean>(false);
     const [loadingCitationPath, setLoadingCitationPath] = useState<string | null>(null);
 
-    const streamResponse = async (question: string, chatId: string | null, fileBlobUrl: string | null) => {
+    // Function to generate UUID with fallback for older browsers
+    const generateUUID = (): string => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback for older browsers
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
+    // Function to get or create a conversation ID
+    const getOrCreateConversationId = (): string => {
+        if (chatId) return chatId; // prioritize existing chatId if available
+        if (!conversationId) {
+            // Generate new UUID for new conversation (typically happens before the first message)
+            const newId = generateUUID();
+            setConversationId(newId);
+            return newId;
+        }
+        return conversationId;
+    };
+
+    const streamResponse = async (question: string, chatId: string | null) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
-        lastFileBlobUrl.current = fileBlobUrl;
         restartChat.current = false;
         if (error) {
             setError(undefined);
@@ -109,13 +137,12 @@ const Chat = () => {
             history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
         }
         history.push({ user: question, bot: undefined });
+        const activeConversationId = getOrCreateConversationId();
         const request: ChatRequestGpt = {
             history: history,
             approach: Approaches.ReadRetrieveRead,
-            conversation_id: chatId !== null ? chatId : userId,
+            conversation_id: activeConversationId,
             query: question,
-            file_blob_url: fileBlobUrl || "",
-            documentName,
             agent,
             overrides: {
                 promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
@@ -139,9 +166,7 @@ const Chat = () => {
                 body: JSON.stringify({
                     question: request.query,
                     conversation_id: request.conversation_id,
-                    url: request.file_blob_url,
                     agent: request.agent,
-                    documentName: request.documentName,
                     user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 })
             });
@@ -228,7 +253,6 @@ const Chat = () => {
     const clearChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
             lastQuestionRef.current = "";
-            lastFileBlobUrl.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
@@ -240,11 +264,34 @@ const Chat = () => {
         }
     };
 
+    // Example function for uploading user documents
+    const handleUploadUserDocument = async (file: File) => {
+        try {
+            if (!user?.organizationId) {
+                throw new Error("Organization ID not available");
+            }
+
+            const activeConversationId = getOrCreateConversationId();
+
+            const result = await uploadUserDocument({
+                file,
+                organizationId: user.organizationId,
+                conversationId: activeConversationId,
+                user
+            });
+
+            console.log("Document uploaded successfully:", result.blob_url);
+            // You can add UI feedback here, like a toast notification
+        } catch (error) {
+            console.error("Failed to upload document:", error);
+            // You can add error handling UI here
+        }
+    };
+
     const handleNewChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             restartChat.current = true;
             lastQuestionRef.current = "";
-            lastFileBlobUrl.current = "";
             error && setError(undefined);
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
@@ -252,6 +299,7 @@ const Chat = () => {
             setDataConversation([]);
             setChatId("");
             setUserId("");
+            setConversationId(""); // Reset conversation ID for new chat
             setChatSelected("");
             setChatIsCleaned(false);
         } else {
@@ -344,6 +392,14 @@ const Chat = () => {
         );
     }, [isLoading, dataConversation]);
 
+    useEffect(() => {
+        return () => {
+            attachedFiles.forEach(file => {
+                if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+            });
+        };
+    }, [attachedFiles]);
+
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
 
@@ -403,6 +459,53 @@ const Chat = () => {
             setLoadingCitationPath(null);
         }
     };
+
+    const handleAttachFiles = async (files: File[]) => {
+        if (!files?.length) return;
+
+        // Clear any previous error
+        setFileUploadError("");
+
+        // AC3: Max 3 documents validation
+        if (attachedFiles.length + files.length > CHAT_MAX_ATTACHED_FILES) {
+            setFileUploadError(`Too many files. You can attach up to 3 documents maximum.`);
+            return;
+        }
+
+        const validFiles: { file: File; name: string; previewUrl: string }[] = [];
+
+        for (const file of files) {
+            const name = file.name.toLowerCase();
+            const allowed = CHAT_ATTACHMENT_ALLOWED_TYPES.map(ext => ext.toLowerCase());
+            
+            // AC1: Supported types validation - PDF only
+            if (!allowed.some(ext => name.endsWith(ext))) {
+                const fileExtension = name.split('.').pop() || 'unknown';
+                setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF`);
+                return;
+            }
+
+            // AC2: Max size validation - 10MB
+            const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSizeInBytes) {
+                setFileUploadError(`File too large (10 MB max). Try splitting your document.`);
+                return;
+            }
+
+            const previewUrl = URL.createObjectURL(file);
+            validFiles.push({ file, name: file.name, previewUrl });
+        }
+
+        // Add valid files to the existing attachments
+        setAttachedFiles(prev => [...prev, ...validFiles]);
+    };
+
+    function handleRemoveAttachment(index: number) {
+        const fileToRemove = attachedFiles[index];
+        if (fileToRemove?.previewUrl) URL.revokeObjectURL(fileToRemove.previewUrl);
+        setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+        setFileUploadError(""); // Clear error when removing attachment
+    }
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (isSpreadsheet(citation)) {
@@ -638,7 +741,7 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question =>
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                      streamResponse(question, chatId !== "" ? chatId : null)
                                                                   }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -662,7 +765,7 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question =>
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, null)
+                                                                      streamResponse(question, chatId !== "" ? chatId : null)
                                                                   }
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -678,7 +781,7 @@ const Chat = () => {
                                                     <AnswerError
                                                         error={error_message_text + error.toString()}
                                                         onRetry={() => {
-                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, lastFileBlobUrl.current);
+                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null);
                                                         }}
                                                     />
                                                 </div>
@@ -715,20 +818,63 @@ const Chat = () => {
                                     </div>
                                 )}
                                 <div className={styles.chatInputContainer}>
-                                    <div className={styles.chatInput}>
+                                    {/* File upload error message */}
+
+                                    {/* Attachment display - outside of chat input */}
+                                    {attachedFiles.length > 0 && (
+                                        <div className={styles.attachmentDisplay} role="status" aria-live="polite">
+                                            {attachedFiles.map((file, index) => (
+                                                <div key={index} className={styles.attachmentChip}>
+                                                    <span className={styles.attachmentName}>{file.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.removeChipBtn}
+                                                        aria-label={`Remove attachment ${file.name}`}
+                                                        onClick={() => handleRemoveAttachment(index)}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div
+                                        className={`${styles.chatInput} ${isDragOver ? styles.chatInputDragOver : ""}`}
+                                        onDragOver={e => {
+                                            e.preventDefault();
+                                            setIsDragOver(true);
+                                        }}
+                                        onDragLeave={() => setIsDragOver(false)}
+                                        onDrop={e => {
+                                            e.preventDefault();
+                                            setIsDragOver(false);
+                                            const files = Array.from(e.dataTransfer?.files || []);
+                                            if (files.length) handleAttachFiles(files);
+                                        }}
+                                    >
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
                                             disabled={isLoading}
-                                            onSend={(question, fileBlobUrl) => {
-                                                streamResponse(question, chatId !== "" ? chatId : null, fileBlobUrl || null);
+                                            onSend={question => {
+                                                streamResponse(question, chatId !== "" ? chatId : null);
+                                                // Clear all attachments after sending
+                                                attachedFiles.forEach(file => {
+                                                    if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
+                                                });
+                                                setAttachedFiles([]);
+                                                setFileUploadError(""); // Clear error when sending
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                                            extraButtonDownload={
-                                                <DownloadButton
-                                                    isEnabled={dataConversation.length > 0 || answers.length > 0}
-                                                    isLoading={isDownloading}
-                                                    onClick={handleDownloadConversation}
+                                            extraButtonAttach={
+                                                <AttachButton
+                                                    isEnabled={!isLoading && attachedFiles.length < CHAT_MAX_ATTACHED_FILES}
+                                                    isUploading={false}
+                                                    onFilesSelected={handleAttachFiles}
+                                                    accept={ATTACH_ACCEPT}
+                                                    multiple={attachedFiles.length < CHAT_MAX_ATTACHED_FILES}
+                                                    ariaLabel="Attach file"
                                                 />
                                             }
                                         />
@@ -736,6 +882,12 @@ const Chat = () => {
                                     <div className={styles.chatDisclaimer}>
                                         <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
                                     </div>
+                                    {fileUploadError && (
+                                        <div className={styles.fileUploadError} role="alert" aria-live="assertive">
+                                            <span className={styles.errorIcon}>✕</span>
+                                            <span>{fileUploadError}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer]) ||

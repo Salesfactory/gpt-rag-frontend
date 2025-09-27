@@ -13,6 +13,86 @@
     overflow: hidden;
 }
 
+.chatInputDragOver {
+  outline: 2px dashed #047857;
+  outline-offset: 4px;
+}
+
+/* File upload error message */
+.fileUploadError {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 14px;
+  width: 80%;
+  max-width: 80%;
+}
+
+.errorIcon {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Attachment display container */
+.attachmentDisplay {
+  width: 80%;
+  max-width: 80%;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.attachmentChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  background: #ecfdf5;
+  border: 1px solid #d1fae5;
+  color: #065f46;
+  font-size: 13px;
+  line-height: 1.2;
+  width: max-content;
+  max-width: 400px;
+}
+
+.attachmentName {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.removeChipBtn {
+  background: transparent;
+  border: none;
+  color: #065f46;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.removeChipBtn:hover {
+  background: #d1fae5;
+  color: #047857;
+}
+
 .chatRoot {
     flex: 1;
     display: flex;
@@ -60,6 +140,7 @@
     gap: 0.3rem;
     max-width: 600px;
     position: fixed;
+    margin-bottom: 125px;
 }
 
 .conversationIsLoading {
@@ -84,6 +165,7 @@
     margin: 0 auto;
     padding-left: 2px;
     padding-right: 2px;
+    padding-bottom: 125px;
 }
 
 .chatMessageGpt {
@@ -123,6 +205,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: fixed;
+    bottom: 0;
+    gap: 0;
 }
 
 .chatAnalysisPanel {
