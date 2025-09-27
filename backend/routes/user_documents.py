@@ -103,14 +103,12 @@ def upload_user_document():
             f"Uploading file '{file.filename}' for user '{safe_user_id}' in organization '{safe_org_id}' conversation '{safe_conversation_id}'"
         )
 
-        # Generate timestamped filename for blob storage
-        safe_filename = os.path.basename(file.filename)  # Remove any path components
+        safe_filename = os.path.basename(file.filename) 
         base_name, ext = os.path.splitext(safe_filename)
-        timestamp = int(time.time())
-        timestamped_filename = f"{base_name}_{timestamp}{ext}"
+        timestamp_ms = int(time.time() * 1000)
+        timestamped_filename = f"{base_name}_{timestamp_ms}{ext}"
 
-        # Create a secure temporary file with the timestamped name
-        temp_filename = f"{secrets.token_hex(16)}_{timestamped_filename}"
+        temp_filename = timestamped_filename
         temp_file_path = os.path.join(tempfile.gettempdir(), temp_filename)
         file.save(temp_file_path)
 
@@ -120,7 +118,8 @@ def upload_user_document():
         metadata = {
             "organization_id": organization_id,
             "user_id": user_id,
-            "conversation_id": conversation_id
+            "conversation_id": conversation_id,
+            "original_filename": safe_filename,
         }
 
         # Initialize blob storage manager and upload file
@@ -137,7 +136,13 @@ def upload_user_document():
             logger.info(
                 f"Successfully uploaded file '{file.filename}' to '{blob_folder}' in container '{BLOB_CONTAINER_NAME}'"
             )
-            return create_success_response({"blob_url": result["blob_url"]}, 200)
+            blob_path = result.get("blob_path", f"{blob_folder}/{timestamped_filename}")
+            return create_success_response({
+                "blob_url": result.get("blob_url"),
+                "blob_name": blob_path,
+                "saved_filename": os.path.basename(blob_path),
+                "original_filename": safe_filename,
+            }, 200)
         else:
             error_msg = f"Error uploading file: {result.get('error', 'Unknown error')}"
             logger.error(error_msg)
@@ -193,16 +198,20 @@ def list_user_documents():
         blobs = blob_storage_manager.list_blobs_in_container(
             container_name=BLOB_CONTAINER_NAME,
             prefix=prefix,
-            include_metadata="no"
+            include_metadata="yes"
         )
 
         files = []
         for blob in blobs:
-            filename = blob["name"].split("/")[-1] # tbd if we need the full path or not
+            saved_filename = blob["name"].split("/")[-1]
+            metadata = blob.get("metadata") or {}
+            original_filename = metadata.get("original_filename") or saved_filename
             files.append({
-                "filename": filename,
-                "size": blob["size"],
-                "uploaded_at": blob["last_modified"]
+                "blob_name": blob["name"],
+                "saved_filename": saved_filename,
+                "original_filename": original_filename,
+                "size": blob.get("size"),
+                "uploaded_at": blob.get("last_modified") or blob.get("created_on")
             })
 
         logger.info(f"Found {len(files)} files for conversation '{safe_conversation_id}'")
@@ -226,13 +235,14 @@ def delete_user_document():
             logger.error("No JSON data provided in request body")
             return create_error_response("JSON body is required", 400)
 
+        blob_name = data.get("blob_name")
         filename = data.get("filename")
         organization_id = data.get("organization_id")
         conversation_id = data.get("conversation_id")
 
-        if not filename:
-            logger.error("Filename not provided in request")
-            return create_error_response("filename is required", 400)
+        if not blob_name and not filename:
+            logger.error("Neither blob_name nor filename provided in request")
+            return create_error_response("blob_name or filename is required", 400)
 
         if not organization_id:
             logger.error("Organization ID not provided in request")
@@ -249,13 +259,27 @@ def delete_user_document():
         safe_org_id = sanitize_path_component(organization_id)
         safe_user_id = sanitize_path_component(user_id)
         safe_conversation_id = sanitize_path_component(conversation_id)
-        safe_filename = os.path.basename(filename) 
+        safe_filename = os.path.basename(filename) if filename else None
 
-        if not safe_org_id or not safe_user_id or not safe_conversation_id or not safe_filename:
+        if not safe_org_id or not safe_user_id or not safe_conversation_id:
             logger.error("Invalid characters in path components")
             return create_error_response("Invalid characters in identifiers", 400)
 
-        blob_path = f"{safe_org_id}/{safe_user_id}/{safe_conversation_id}/{safe_filename}"
+        prefix = f"{safe_org_id}/{safe_user_id}/{safe_conversation_id}/"
+        if blob_name:
+            if not re.match(r'^[A-Za-z0-9/_\-.]+$', blob_name):
+                logger.error("Invalid characters in blob_name")
+                return create_error_response("Invalid characters in blob_name", 400)
+            if not blob_name.startswith(prefix):
+                logger.error("blob_name does not match provided identifiers")
+                return create_error_response("blob_name does not match provided identifiers", 400)
+            blob_path = blob_name
+            safe_filename = os.path.basename(blob_name)
+        else:
+            if not safe_filename:
+                logger.error("Filename not provided after validation")
+                return create_error_response("filename is required", 400)
+            blob_path = f"{prefix}{safe_filename}"
 
         logger.info(f"Deleting file '{safe_filename}' for user '{safe_user_id}' in organization '{safe_org_id}' conversation '{safe_conversation_id}'")
 
