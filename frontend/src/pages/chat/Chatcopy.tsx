@@ -62,6 +62,7 @@ const Chat = () => {
         chatIsCleaned,
         user,
         isFinancialAssistantActive,
+        isResizingAnalysisPanel,
         setisResizingAnalysisPanel
     } = useAppContext();
 
@@ -636,6 +637,7 @@ const Chat = () => {
     const [analysisPanelWidth, setAnalysisPanelWidth] = useState<number>(500);
     const [analysisPanelMinWidth, setAnalysisPanelMinWidth] = useState(350);
     const [analysisPanelMaxWidth, setAnalysisPanelMaxWidth] = useState(1000);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setisResizingAnalysisPanel(true);
@@ -677,6 +679,7 @@ const Chat = () => {
 
     useEffect(() => {
         const handleResize = () => {
+            setWindowWidth(window.innerWidth);
             if (window.innerWidth < 700) {
                 setAnalysisPanelMinWidth(120);
                 setAnalysisPanelMaxWidth(window.innerWidth * 0.98);
@@ -855,7 +858,12 @@ const Chat = () => {
                                         <div ref={chatMessageStreamEnd} />
                                     </div>
                                 )}
-                                <div className={styles.chatInputContainer}>
+                                <div 
+                                    className={styles.chatInputContainer}
+                                    style={{ 
+                                        width: activeAnalysisPanelTab ? windowWidth - analysisPanelWidth : "100%",
+                                    }}
+                                >
                                     {/* File upload error message */}
 
                                     {/* Attachment display - outside of chat input */}
@@ -930,6 +938,7 @@ const Chat = () => {
                             (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
                                 <>
                                     <div className={styles.analysisResizeHandle} onMouseDown={handleResizeMouseDown} style={{ cursor: "col-resize" }} />
+                                    
                                     <div
                                         style={{
                                             width: analysisPanelWidth,
@@ -940,6 +949,16 @@ const Chat = () => {
                                             height: "100%"
                                         }}
                                     >
+                                        {isResizingAnalysisPanel && (
+                                            <div style={{ width: "100%", height: "100%", background: "#fff",
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center"
+                                             }} >
+                                                <h4>Resizing...</h4>
+                                            </div>
+                                        )}
+                                        {!isResizingAnalysisPanel && (
                                         <AnalysisPanel
                                             className={styles.chatAnalysisPanel}
                                             activeCitation={activeCitation}
@@ -954,6 +973,7 @@ const Chat = () => {
                                             spreadsheetDownloadUrl={spreadsheetDownloadUrl}
                                             spreadsheetFileName={spreadsheetFileName}
                                         />
+                                        )}
                                     </div>
                                 </>
                             ) : null}
