@@ -198,7 +198,6 @@
 }
 
 .chatInputContainer {
-    width: 100%;
     padding-top: 10px;
     background-color: #fff;
     border-top: 1px solid #ddd;
@@ -288,6 +287,18 @@
 @media (max-width: 650px) {
     .flexDescription {
         max-width: 70%;
+    }
+    
+    .chatInputContainer {
+        /* On mobile, always use full width to avoid complex overlapping */
+        right: 0 !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .chatContainer {
+        /* On smaller screens, don't add margin to avoid layout issues */
+        margin-right: 0 !important;
     }
 }
 
