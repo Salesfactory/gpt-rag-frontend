@@ -112,8 +112,6 @@ interface AppContextType {
     setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>; // Setter for subscriptionTiers
     isFinancialAssistantActive: boolean;
     setIsFinancialAssistantActive: Dispatch<SetStateAction<boolean>>;
-    documentName: string;
-    setDocumentName: Dispatch<SetStateAction<string>>;
     agentType: string;
     setAgentType: Dispatch<SetStateAction<string>>;
     // New loading states
@@ -179,9 +177,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const params = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
 
     const agentParam = params["agent"];
-    const documentParam = params["document"];
-
-    const [documentName, setDocumentName] = useState<string>(documentParam || "defaultDocument");
     const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
     const [isResizingAnalysisPanel, setisResizingAnalysisPanel] = useState<boolean>(false);
     const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
@@ -528,8 +523,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setSubscriptionTiers, // Setter for subscriptionTiers
             isFinancialAssistantActive,
             setIsFinancialAssistantActive,
-            documentName,
-            setDocumentName,
             agentType,
             setAgentType,
             isOrganizationLoading, // New loading state
@@ -562,7 +555,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isLoading,
             subscriptionTiers,
             isFinancialAssistantActive,
-            documentName,
             agentType,
             isOrganizationLoading,
             isSubscriptionTiersLoading,
