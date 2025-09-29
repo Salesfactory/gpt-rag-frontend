@@ -75,11 +75,12 @@ def upload_source_document():
 
         if file.filename.endswith((".csv", ".xls", ".xlsx")):
             logger.info(f"Gen AI description for file '{file.filename}'")
-            description = str(create_description(temp_file_path, llm=llm))
+            description = create_description(temp_file_path, llm=llm)
             logger.info(
                 f"Generated Description of file {temp_file_path}: {description}"
             )
-            metadata["description"] = description
+            metadata["description"] = description["file_description"]
+            metadata["description_source"] = description["source"] 
 
         # Initialize blob storage manager and upload file
         blob_storage_manager = current_app.config["blob_storage_manager"]
