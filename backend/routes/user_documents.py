@@ -73,8 +73,14 @@ def upload_user_document():
             logger.error("User ID not provided in headers")
             return create_error_response("User authentication required", 401)
 
-        # Get required parameters from form data
+        org_from_header = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
         organization_id = request.form.get("organization_id")
+
+        if org_from_header and organization_id and sanitize_path_component(org_from_header) != sanitize_path_component(organization_id):
+            logger.error("Organization header does not match provided organization_id")
+            return create_error_response("Organization mismatch between header and payload", 403)
+        if org_from_header:
+            organization_id = org_from_header
         conversation_id = request.form.get("conversation_id")
 
         if not organization_id:
@@ -165,7 +171,13 @@ def list_user_documents():
             logger.error("User ID not provided in headers")
             return create_error_response("User authentication required", 401)
 
+        org_from_header = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
         organization_id = request.args.get("organization_id")
+        if org_from_header and organization_id and sanitize_path_component(org_from_header) != sanitize_path_component(organization_id):
+            logger.error("Organization header does not match provided organization_id")
+            return create_error_response("Organization mismatch between header and query", 403)
+        if org_from_header:
+            organization_id = org_from_header
         conversation_id = request.args.get("conversation_id")
 
         if not organization_id:
@@ -237,7 +249,13 @@ def delete_user_document():
 
         blob_name = data.get("blob_name")
         filename = data.get("filename")
+        org_from_header = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
         organization_id = data.get("organization_id")
+        if org_from_header and organization_id and sanitize_path_component(org_from_header) != sanitize_path_component(organization_id):
+            logger.error("Organization header does not match provided organization_id")
+            return create_error_response("Organization mismatch between header and payload", 403)
+        if org_from_header:
+            organization_id = org_from_header
         conversation_id = data.get("conversation_id")
 
         if not blob_name and not filename:
