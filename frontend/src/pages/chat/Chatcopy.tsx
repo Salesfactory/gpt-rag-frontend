@@ -775,9 +775,10 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={question =>
-                                                                      streamResponse(question, chatId !== "" ? chatId : null)
-                                                                  }
+                                                                  onFollowupQuestionClicked={question => {
+                                                                      const blobNames = attachedDocs.map(d => d.blobName);
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                  }}
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />
@@ -799,9 +800,10 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={question =>
-                                                                      streamResponse(question, chatId !== "" ? chatId : null)
-                                                                  }
+                                                                  onFollowupQuestionClicked={question => {
+                                                                      const blobNames = attachedDocs.map(d => d.blobName);
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                  }}
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />
@@ -816,7 +818,8 @@ const Chat = () => {
                                                     <AnswerError
                                                         error={error_message_text + error.toString()}
                                                         onRetry={() => {
-                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null);
+                                                            const blobNames = attachedDocs.map(d => d.blobName);
+                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, blobNames);
                                                         }}
                                                     />
                                                 </div>

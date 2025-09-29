@@ -1,4 +1,5 @@
 import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import type { BlobItem } from "../types";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -544,7 +545,7 @@ export async function getApiKeyPayment(): Promise<string> {
     return apiKey;
 }
 
-export async function getSourceFileFromBlob(organizationId: string) {
+export async function getSourceFileFromBlob(organizationId: string): Promise<BlobItem[]> {
     const response = await fetch(`/api/get-source-documents?organization_id=${organizationId}`, {
         method: "GET",
         headers: {
