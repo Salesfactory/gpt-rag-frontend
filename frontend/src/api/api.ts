@@ -556,7 +556,7 @@ export async function getSourceFileFromBlob(organizationId: string) {
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     const result = await response.json();
-    return result;
+    return result?.data ?? result;
 }
 
 export async function uploadSourceFileToBlob(file: any, organizationId: string) {
@@ -1831,18 +1831,15 @@ export async function deleteCategory({
 
 export async function uploadUserDocument({
   file,
-  organizationId,
   conversationId,
   user
 }: {
   file: File;
-  organizationId: string;
   conversationId: string;
   user: any;
-}): Promise<{ blob_url: string }> {
+}): Promise<{ blob_url: string; blob_name: string; saved_filename: string; original_filename: string }> {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('organization_id', organizationId);
   formData.append('conversation_id', conversationId);
 
   try {
@@ -1850,7 +1847,8 @@ export async function uploadUserDocument({
       method: 'POST',
       headers: {
         'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-        'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous'
+        'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
       },
       body: formData
     });
@@ -1861,9 +1859,68 @@ export async function uploadUserDocument({
     }
 
     const result = await response.json();
-    return result;
+    const payload = result?.data ?? result; //{ data: { ... }, status }
+    return payload;
   } catch (error) {
     console.error('Error uploading user document:', error);
     throw error;
   }
+}
+
+export async function deleteUserDocument({
+  blobName,
+  conversationId,
+  user
+}: {
+  blobName: string;
+  conversationId: string;
+  user: any;
+}): Promise<{ message: string }> {
+  const res = await fetch('/api/delete-user-document', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+      'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+    },
+    body: JSON.stringify({
+      blob_name: blobName,
+      conversation_id: conversationId
+    })
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error || data?.message || 'Error deleting user document');
+  }
+  return data?.data ?? data;
+}
+
+export async function listUserDocuments({
+  conversationId,
+  user
+}: {
+  conversationId: string;
+  user: any;
+}): Promise<Array<{ blob_name: string; saved_filename: string; original_filename: string; size?: number; uploaded_at?: string }>> {
+  const params = new URLSearchParams({
+    conversation_id: conversationId,
+  });
+
+  const res = await fetch(`/api/list-user-documents?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+      'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+    }
+  });
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(json?.error?.message || json?.message || 'Error listing user documents');
+  }
+  const files = json?.data?.files ?? [];
+  return Array.isArray(files) ? files : [];
 }
