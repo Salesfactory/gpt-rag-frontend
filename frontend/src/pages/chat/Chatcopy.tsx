@@ -3,7 +3,7 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument } from "../../api";
+import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument, deleteUserDocument, listUserDocuments } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -43,7 +43,7 @@ const Chat = () => {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
     const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
-    const [attachedFiles, setAttachedFiles] = useState<{ file: File; name: string; previewUrl: string }[]>([]);
+    const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string }[]>([]);
     const [fileUploadError, setFileUploadError] = useState<string>("");
 
     const [isDragOver, setIsDragOver] = useState(false);
@@ -70,6 +70,7 @@ const Chat = () => {
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
+    const [isUploadingDocs, setIsUploadingDocs] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
 
     const [activeCitation, setActiveCitation] = useState<string>();
@@ -114,7 +115,7 @@ const Chat = () => {
         return conversationId;
     };
 
-    const streamResponse = async (question: string, chatId: string | null) => {
+    const streamResponse = async (question: string, chatId: string | null, userDocumentBlobNames?: string[]) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         restartChat.current = false;
@@ -167,7 +168,8 @@ const Chat = () => {
                     question: request.query,
                     conversation_id: request.conversation_id,
                     agent: request.agent,
-                    user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                    user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    user_document_blob_names: Array.isArray(userDocumentBlobNames) && userDocumentBlobNames.length > 0 ? userDocumentBlobNames : undefined
                 })
             });
 
@@ -264,29 +266,6 @@ const Chat = () => {
         }
     };
 
-    // Example function for uploading user documents
-    const handleUploadUserDocument = async (file: File) => {
-        try {
-            if (!user?.organizationId) {
-                throw new Error("Organization ID not available");
-            }
-
-            const activeConversationId = getOrCreateConversationId();
-
-            const result = await uploadUserDocument({
-                file,
-                organizationId: user.organizationId,
-                conversationId: activeConversationId,
-                user
-            });
-
-            console.log("Document uploaded successfully:", result.blob_url);
-            // You can add UI feedback here, like a toast notification
-        } catch (error) {
-            console.error("Failed to upload document:", error);
-            // You can add error handling UI here
-        }
-    };
 
     const handleNewChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
@@ -302,6 +281,7 @@ const Chat = () => {
             setConversationId(""); // Reset conversation ID for new chat
             setChatSelected("");
             setChatIsCleaned(false);
+            setAttachedDocs([]); // clear attachments for a fresh chat
         } else {
             return;
         }
@@ -392,13 +372,6 @@ const Chat = () => {
         );
     }, [isLoading, dataConversation]);
 
-    useEffect(() => {
-        return () => {
-            attachedFiles.forEach(file => {
-                if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
-            });
-        };
-    }, [attachedFiles]);
 
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
@@ -467,45 +440,107 @@ const Chat = () => {
         setFileUploadError("");
 
         // AC3: Max 3 documents validation
-        if (attachedFiles.length + files.length > CHAT_MAX_ATTACHED_FILES) {
+        if (attachedDocs.length + files.length > CHAT_MAX_ATTACHED_FILES) {
             setFileUploadError(`Too many files. You can attach up to 3 documents maximum.`);
             return;
         }
 
-        const validFiles: { file: File; name: string; previewUrl: string }[] = [];
-
-        for (const file of files) {
-            const name = file.name.toLowerCase();
+        try {
+            setIsUploadingDocs(true);
             const allowed = CHAT_ATTACHMENT_ALLOWED_TYPES.map(ext => ext.toLowerCase());
-            
-            // AC1: Supported types validation - PDF only
-            if (!allowed.some(ext => name.endsWith(ext))) {
-                const fileExtension = name.split('.').pop() || 'unknown';
-                setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF`);
-                return;
-            }
-
-            // AC2: Max size validation - 10MB
             const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
-            if (file.size > maxSizeInBytes) {
-                setFileUploadError(`File too large (10 MB max). Try splitting your document.`);
+            const activeConversationId = getOrCreateConversationId();
+            if (!user?.organizationId) {
+                setFileUploadError("Organization ID not available");
                 return;
             }
 
-            const previewUrl = URL.createObjectURL(file);
-            validFiles.push({ file, name: file.name, previewUrl });
-        }
+            for (const file of files) {
+                const name = file.name.toLowerCase();
+                if (!allowed.some(ext => name.endsWith(ext))) {
+                    const fileExtension = name.split('.').pop() || 'unknown';
+                    setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF`);
+                    return;
+                }
+                if (file.size > maxSizeInBytes) {
+                    setFileUploadError(`File too large (10 MB max). Try splitting your document.`);
+                    return;
+                }
 
-        // Add valid files to the existing attachments
-        setAttachedFiles(prev => [...prev, ...validFiles]);
+                const result = await uploadUserDocument({
+                    file,
+                    conversationId: activeConversationId,
+                    user
+                });
+                if (result?.blob_name) {
+                    setAttachedDocs(prev => [
+                        ...prev,
+                        {
+                            blobName: result.blob_name,
+                            originalFilename: result.original_filename || file.name,
+                            savedFilename: result.saved_filename || file.name,
+                        },
+                    ]);
+                }
+            }
+        } catch (err) {
+            console.error('Error uploading user docs:', err);
+            setFileUploadError('Failed to upload one or more documents.');
+        } finally {
+            setIsUploadingDocs(false);
+        }
     };
 
-    function handleRemoveAttachment(index: number) {
-        const fileToRemove = attachedFiles[index];
-        if (fileToRemove?.previewUrl) URL.revokeObjectURL(fileToRemove.previewUrl);
-        setAttachedFiles(prev => prev.filter((_, i) => i !== index));
-        setFileUploadError(""); // Clear error when removing attachment
+    async function handleRemoveAttachment(index: number) {
+        const doc = attachedDocs[index];
+        if (!doc) return;
+        try {
+            setIsUploadingDocs(true);
+            const activeConversationId = getOrCreateConversationId();
+            if (!user?.organizationId) {
+                setFileUploadError("Organization ID not available");
+                return;
+            }
+            await deleteUserDocument({
+                blobName: doc.blobName,
+                conversationId: activeConversationId,
+                user,
+            });
+        } catch (err) {
+            console.error('Error deleting user doc:', err);
+        } finally {
+            setIsUploadingDocs(false);
+            setAttachedDocs(prev => prev.filter((_, i) => i !== index));
+            setFileUploadError("");
+        }
     }
+
+    // Rehydrate attachment chips when conversation is available
+    useEffect(() => {
+        const convId = chatId || conversationId;
+        if (!user?.organizationId || !convId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const files = await listUserDocuments({
+                    conversationId: convId,
+                    user,
+                });
+                if (cancelled) return;
+                const mapped = files.map(f => ({
+                    blobName: f.blob_name,
+                    originalFilename: f.original_filename || f.saved_filename,
+                    savedFilename: f.saved_filename,
+                }));
+                setAttachedDocs(mapped);
+            } catch (e) {
+                // do not block chat on rehydrate errors
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.organizationId, chatId, conversationId]);
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (isSpreadsheet(citation)) {
@@ -821,15 +856,15 @@ const Chat = () => {
                                     {/* File upload error message */}
 
                                     {/* Attachment display - outside of chat input */}
-                                    {attachedFiles.length > 0 && (
+                                    {attachedDocs.length > 0 && (
                                         <div className={styles.attachmentDisplay} role="status" aria-live="polite">
-                                            {attachedFiles.map((file, index) => (
+                                            {attachedDocs.map((doc, index) => (
                                                 <div key={index} className={styles.attachmentChip}>
-                                                    <span className={styles.attachmentName}>{file.name}</span>
+                                                    <span className={styles.attachmentName}>{doc.originalFilename}</span>
                                                     <button
                                                         type="button"
                                                         className={styles.removeChipBtn}
-                                                        aria-label={`Remove attachment ${file.name}`}
+                                                        aria-label={`Remove attachment ${doc.originalFilename}`}
                                                         onClick={() => handleRemoveAttachment(index)}
                                                     >
                                                         ×
@@ -856,24 +891,22 @@ const Chat = () => {
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
-                                            disabled={isLoading}
+                                            disabled={isLoading || isUploadingDocs}
                                             onSend={question => {
-                                                streamResponse(question, chatId !== "" ? chatId : null);
-                                                // Clear all attachments after sending
-                                                attachedFiles.forEach(file => {
-                                                    if (file?.previewUrl) URL.revokeObjectURL(file.previewUrl);
-                                                });
-                                                setAttachedFiles([]);
-                                                setFileUploadError(""); // Clear error when sending
+                                                (async () => {
+                                                    const blobNames = attachedDocs.map(d => d.blobName);
+                                                    await streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                    setFileUploadError("");
+                                                })();
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                                             extraButtonAttach={
                                                 <AttachButton
-                                                    isEnabled={!isLoading && attachedFiles.length < CHAT_MAX_ATTACHED_FILES}
-                                                    isUploading={false}
+                                                    isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES}
+                                                    isUploading={isUploadingDocs}
                                                     onFilesSelected={handleAttachFiles}
                                                     accept={ATTACH_ACCEPT}
-                                                    multiple={attachedFiles.length < CHAT_MAX_ATTACHED_FILES}
+                                                    multiple={attachedDocs.length < CHAT_MAX_ATTACHED_FILES}
                                                     ariaLabel="Attach file"
                                                 />
                                             }
