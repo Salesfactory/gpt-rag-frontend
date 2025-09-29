@@ -118,6 +118,9 @@
   --c-green-dark: #16a34a;
   position: relative;
   padding-bottom: 22px;
+
+  --thumb-d: 18px;
+  --thumb-nudge: 1px;
 }
 
 
@@ -185,6 +188,9 @@
   box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #ffffff;
   transition: transform .15s ease, background-color .15s ease;
   z-index: 2;
+  top: 50%;
+
+  transform: translate(-50%, calc(-50% + var(--thumb-nudge)));
 }
 .sliderCustom :global(.ms-Slider-thumb:hover),
 .sliderCustom :global(.fui-Slider__thumb:hover){ background-color:#059669; }
