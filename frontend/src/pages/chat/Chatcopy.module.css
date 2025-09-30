@@ -18,46 +18,78 @@
   outline-offset: 4px;
 }
 
+/* File upload error message */
+.fileUploadError {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 14px;
+  width: 80%;
+  max-width: 80%;
+}
+
+.errorIcon {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Attachment display container */
+.attachmentDisplay {
+  width: 80%;
+  max-width: 80%;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: flex-start;
+}
+
 .attachmentChip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
-  padding: 4px 8px;
-  border-radius: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
   background: #ecfdf5;
+  border: 1px solid #d1fae5;
   color: #065f46;
-  font-size: 12px;
-  line-height: 1;
+  font-size: 13px;
+  line-height: 1.2;
   width: max-content;
+  max-width: 400px;
 }
-
-.attachmentDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: #10b981;
-}
-
 
 .attachmentName {
-  max-width: 260px;
+  max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
 
 .removeChipBtn {
   background: transparent;
   border: none;
   color: #065f46;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 2px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .removeChipBtn:hover {
+  background: #d1fae5;
   color: #047857;
 }
 
@@ -108,6 +140,7 @@
     gap: 0.3rem;
     max-width: 600px;
     position: fixed;
+    margin-bottom: 125px;
 }
 
 .conversationIsLoading {
@@ -132,6 +165,7 @@
     margin: 0 auto;
     padding-left: 2px;
     padding-right: 2px;
+    padding-bottom: 125px;
 }
 
 .chatMessageGpt {
@@ -164,13 +198,15 @@
 }
 
 .chatInputContainer {
-    width: 100%;
     padding-top: 10px;
     background-color: #fff;
     border-top: 1px solid #ddd;
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: fixed;
+    bottom: 0;
+    gap: 0;
 }
 
 .chatAnalysisPanel {
@@ -251,6 +287,18 @@
 @media (max-width: 650px) {
     .flexDescription {
         max-width: 70%;
+    }
+    
+    .chatInputContainer {
+        /* On mobile, always use full width to avoid complex overlapping */
+        right: 0 !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .chatContainer {
+        /* On smaller screens, don't add margin to avoid layout issues */
+        margin-right: 0 !important;
     }
 }
 

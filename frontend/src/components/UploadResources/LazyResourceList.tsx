@@ -5,7 +5,6 @@ import { Spinner } from "@fluentui/react/lib/Spinner";
 import styles from "./UploadResources.module.css";
 import { Download, Trash2 } from "lucide-react";
 import { formatDate, formatFileSize } from "../../utils/fileUtils";
-import { MAX_FILENAME_LENGTH } from "../../constants";
 import { BlobItem } from "../../types";
 import { 
   LazyDetailsList, 
@@ -34,27 +33,14 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
       name: "Files",
       fieldName: "files",
       minWidth: 200,
-      maxWidth: 600,
       isResizable: true,
       isMultiline: false,
+      flexGrow: 1,
       onRender: (item: BlobItem) => {
         const fileName = item.name.split("/").pop() || "";
-        const fileExtension = fileName.split(".").pop()?.toLowerCase();
-        
-        // Improved truncation logic
-        let displayName = fileName;
-        const maxLength = 40; // Reduced from MAX_FILENAME_LENGTH for better table fit
-        
-        if (fileName.length > maxLength) {
-          const ext = fileName.includes(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
-          const nameWithoutExt = fileName.substring(0, fileName.lastIndexOf(".")) || fileName;
-          const truncatedName = nameWithoutExt.substring(0, maxLength - ext.length - 3);
-          displayName = truncatedName + "..." + ext;
-        }
-        
         return (
           <div className={styles.file_name_cell}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div>
               <Text className={styles.file_text} title={fileName} style={{ 
                 overflow: 'hidden', 
                 textOverflow: 'ellipsis', 
@@ -62,14 +48,29 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                 maxWidth: '250px',
                 flex: '1 1 auto'
               }}>
-                {displayName}
+                {fileName}
               </Text>
-              <div className={styles.file_extension_pill}>{fileExtension?.toUpperCase() || "FILE"}</div>
-              <div className={styles.file_size_pill}>{formatFileSize(item.size)}</div>
             </div>
             <Text variant="small" style={{ color: '#6b7280', marginTop: '4px' }}>
               Uploaded on {formatDate(item.created_on)}
             </Text>
+          </div>
+        );
+      }
+    },
+    {
+      key: "details",
+      name: "",
+      fieldName: "",
+      minWidth: 150,
+      maxWidth: 150,
+      onRender: (item: BlobItem) => {
+        const fileName = item.name.split("/").pop() || "";
+        const fileExtension = fileName.split(".").pop()?.toLowerCase(); 
+        return (
+          <div className={styles.file_name_cell_details}>
+              <div className={styles.file_extension_pill}>{fileExtension?.toUpperCase() || "FILE"}</div>
+              <div className={styles.file_size_pill}>{formatFileSize(item.size)}</div>
           </div>
         );
       }

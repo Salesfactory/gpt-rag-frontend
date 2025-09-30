@@ -90,6 +90,7 @@ from data_summary.llm import PandasAIClient
 from routes.report_jobs import bp as jobs_bp
 from routes.organizations import bp as organizations
 from routes.upload_source_document import bp as upload_source_document
+from routes.user_documents import bp as user_documents
 from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
 from routes.invitations import bp as invitations
@@ -222,6 +223,7 @@ def _load_secrets_once():
 app.register_blueprint(jobs_bp)
 app.register_blueprint(organizations)
 app.register_blueprint(upload_source_document)
+app.register_blueprint(user_documents)
 app.register_blueprint(voice_customer)
 app.register_blueprint(categories)
 app.register_blueprint(invitations)
@@ -759,6 +761,7 @@ def proxy_orc(*, context):
     question = data.get("question")
     agent = data.get("agent")
     user_timezone = data.get("user_timezone")
+    user_document_blob_names = data.get("user_document_blob_names")
 
     if not question:
         return jsonify({"error": "Missing required parameters"}), 400
@@ -796,16 +799,17 @@ def proxy_orc(*, context):
         FINANCIAL_ASSISTANT_ENDPOINT if agent == "financial" else ORCHESTRATOR_ENDPOINT
     )
 
-    payload = json.dumps(
-        {
-            "conversation_id": conversation_id,
-            "question": question,
-            "client_principal_id": client_principal_id,
-            "client_principal_name": client_principal_name,
-            "client_principal_organization": client_principal_organization,
-            "user_timezone": user_timezone,
-        }
-    )
+    payload_dict = {
+        "conversation_id": conversation_id,
+        "question": question,
+        "client_principal_id": client_principal_id,
+        "client_principal_name": client_principal_name,
+        "client_principal_organization": client_principal_organization,
+        "user_timezone": user_timezone,
+    }
+    if isinstance(user_document_blob_names, list) and len(user_document_blob_names) > 0:
+        payload_dict["blob_names"] = user_document_blob_names
+    payload = json.dumps(payload_dict)
 
     headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}
 
