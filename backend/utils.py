@@ -783,7 +783,7 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
         return
 
     # Add validation for model if necessary
-    allowed_models = ["gpt-4.1", "DeepSeek-V3-0324", "Claude-4-Sonnet"]
+    allowed_models = ["gpt-4.1", "Claude-4.5-Sonnet"]
     if model not in allowed_models:
         logging.error(f"[util__module] set_settings: invalid model value {model}.")
         return
