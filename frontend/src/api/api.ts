@@ -1122,13 +1122,11 @@ export async function exportConversation(conversationId: string, userId: string,
             format: format
         };
         
-        console.log("Exporting conversation with payload:", requestBody);
-        
         const response = await fetch("/api/conversations/export", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
             },
             body: JSON.stringify(requestBody)
         });

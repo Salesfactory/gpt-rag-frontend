@@ -911,7 +911,6 @@ def chatgpt(*, context):
 @auth.login_required
 def getChatHistory(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-
     if not client_principal_id:
         return jsonify({"error": "Missing client principal ID"}), 400
 

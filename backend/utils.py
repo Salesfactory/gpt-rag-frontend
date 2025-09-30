@@ -548,7 +548,7 @@ def get_conversation(conversation_id, user_id):
         container = get_cosmos_container("conversations")
 
         conversation = container.read_item(
-            item=conversation_id, partition_key=conversation_id
+            item=conversation_id, partition_key=user_id
         )
         if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
             return {}
@@ -588,13 +588,13 @@ def delete_conversation(conversation_id, user_id):
         container = get_cosmos_container("conversations")
 
         conversation = container.read_item(
-            item=conversation_id, partition_key=conversation_id
+            item=conversation_id, partition_key=user_id
         )
 
         if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
             raise Exception("User does not have permission to delete this conversation")
 
-        container.delete_item(item=conversation_id, partition_key=conversation_id)
+        container.delete_item(item=conversation_id, partition_key=user_id)
 
         return True
     except Exception as e:
@@ -630,7 +630,7 @@ def get_conversations(user_id):
                 container.query_items(
                     query=query,
                     parameters=parameters,
-                    enable_cross_partition_query=True,
+                    partition_key=user_id,
                 )
             )
         except CosmosHttpResponseError as e:
