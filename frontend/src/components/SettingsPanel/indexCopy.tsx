@@ -85,7 +85,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
   const modelOptions: IDropdownOption[] = [
     { key: "gpt-4.1", text: "gpt-4.1" },
-    { key: "Claude-4-Sonnet", text: "Claude-4-Sonnet" }
+    { key: "Claude-4.5-Sonnet", text: "Claude-4.5-Sonnet" }
   ];
 
   const modelTemperatureSettings: Record<
@@ -93,7 +93,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     { default: number; min: number; max: number; step: number }
   > = {
     "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 },
-    "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
+    "Claude-4.5-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
   };
 
   const fontSizeOptions: IDropdownOption[] = [
@@ -141,9 +141,11 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         });
 
         const model = data.model || "gpt-4.1";
-        setSelectedModel(model);
+        // If the saved model doesn't exist in our settings, default to gpt-4.1
+        const validModel = modelTemperatureSettings[model] ? model : "gpt-4.1";
+        setSelectedModel(validModel);
 
-        const modelConfig = modelTemperatureSettings[model] || modelTemperatureSettings["gpt-4.1"];
+        const modelConfig = modelTemperatureSettings[validModel];
         if (data.temperature === undefined || data.temperature === null) {
           setTemperature(Number(modelConfig.default));
         } else {
