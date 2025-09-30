@@ -102,6 +102,13 @@
     justify-content: center;
 }
 
+.sliderCustom :global(.ms-Slider-slideBox),
+.sliderCustom :global(.fui-Slider__sliderWrapper){
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
 .sliderCustom{
   --rail-h: 10px;
   --s1: 12%;
@@ -120,7 +127,7 @@
   padding-bottom: 22px;
 
   --thumb-d: 18px;
-  --thumb-nudge: 1px;
+  --thumb-nudge: 0.5px;
 }
 
 
