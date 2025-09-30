@@ -81,6 +81,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const modelTemperatureSettings: Record<string, { default: number; min: number; max: number; step: number }> = {
         "gpt-4.1": { default: 0, min: 0, max: 1, step: 0.1 },
         "Claude-4-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
+
     };
 
     const fontSizeOptions: IDropdownOption[] = [

@@ -294,7 +294,15 @@ export async function getChatHistory(userId: string): Promise<ConversationHistor
     return parsedResponse;
 }
 
+// Cache the storage account to avoid repeated API calls
+let storageAccountCache: string | null = null;
+
 export function getCitationFilePath(citation: string): string {
+    // Return cached value if available
+    if (storageAccountCache) {
+        return `https://${storageAccountCache}.blob.core.windows.net/documents/${citation}`;
+    }
+
     var storage_account = "please_check_if_storage_account_is_in_frontend_app_settings";
 
     const xhr = new XMLHttpRequest();
@@ -307,6 +315,7 @@ export function getCitationFilePath(citation: string): string {
     } else {
         const parsedResponse = JSON.parse(xhr.responseText);
         storage_account = parsedResponse["storageaccount"];
+        storageAccountCache = storage_account;
     }
 
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
