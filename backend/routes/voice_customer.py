@@ -1,6 +1,7 @@
 # /routes/voice-customer.py
 
 from flask import Blueprint, current_app, request
+from pydantic import ValidationError
 import logging
 
 from utils import (create_success_response, create_error_response)
@@ -22,6 +23,8 @@ from shared.cosmo_db import (
     delete_prod_by_id,
 )
 
+from schemas import BrandCreateSchema, BrandUpdateSchema, ProductCreateSchema, ProductUpdateSchema, CompetitorCreateSchema, CompetitorUpdateSchema
+
 bp = Blueprint("voice_customer", __name__, url_prefix="/api/voice-customer")
 
 logging.basicConfig(level=logging.DEBUG)
@@ -42,24 +45,21 @@ def create_brand():
         - On success: A JSON response with the created brand data and HTTP status 201.
         - On failure: A JSON error response with an appropriate error message and HTTP status code.
     """
-    data = request.get_json()
-    if not data:
+    json_data = request.get_json()
+    if not json_data:
         return create_error_response("No JSON data provided", 400)
-    required_fields = ["brand_name", "organization_id"]
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return create_error_response(
-            f"Missing required fields: {', '.join(missing_fields)}", 400
-        )
+    
     try:
-        brand_name = data["brand_name"]
-        brand_description = data.get("brand_description", "")
-        organization_id = data["organization_id"]
+        brand_data = BrandCreateSchema(**json_data)
+        print(brand_data)
+    except ValidationError as e:
+        return create_error_response(e.errors(), 422)
 
+    try:
         result = create_new_brand(
-            brand_name=brand_name,
-            brand_description=brand_description,
-            organization_id=organization_id,
+            brand_name=brand_data.brand_name,
+            brand_description=brand_data.brand_description,
+            organization_id=brand_data.organization_id,
         )
         return create_success_response(result, 201)
     except Exception as e:
@@ -103,28 +103,23 @@ def update_brand(brand_id):
                   or an error message with the appropriate HTTP status code if the request is invalid
                   or an error occurs during the update process.
     """
-    data = request.get_json()
+    json_data = request.get_json()
     
-    if not data:
+    if not json_data:
         return create_error_response("No JSON data provided", 400)
-
-    required_fields = ["brand_name", "brand_description", "organization_id"]
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return create_error_response(
-            f"Missing required fields: {', '.join(missing_fields)}", 400
-        )
+    
+    try:
+        brand_data = BrandUpdateSchema(brand_id=brand_id, **json_data)
+    except ValidationError as e:
+        return create_error_response(e.errors(), 422)
 
     try:
-        brand_name = data["brand_name"]
-        brand_description = data["brand_description"]
-        organization_id = data["organization_id"]
 
         result = update_brand_by_id(
             brand_id=brand_id,
-            brand_name=brand_name,
-            brand_description=brand_description,
-            organization_id=organization_id
+            brand_name=brand_data.brand_name,
+            brand_description=brand_data.brand_description,
+            organization_id=brand_data.organization_id
         )
         return create_success_response(result, 200)
     except Exception as e:
@@ -175,25 +170,23 @@ def create_product():
         - On success: A JSON response with the created product data and HTTP status 201.
         - On failure: A JSON error response with an appropriate error message and HTTP status code.
     """
-    data = request.get_json()
-    if not data:
+    json_data = request.get_json()
+    if not json_data:
         return create_error_response("No JSON data provided", 400)
-
-    required_fields = ["product_name", "brand_id", "organization_id", "category"]
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return create_error_response(
-            f"Missing required fields: {', '.join(missing_fields)}", 400
-        )
+    
+    try:
+        product_data = ProductCreateSchema(**json_data)
+    except ValidationError as e:
+        return create_error_response(e.errors(), 422)
 
     try:
-        name = data["product_name"]
-        description = data.get("product_description", "")
-        brand_id = data["brand_id"]
-        organization_id = data["organization_id"]
-        category = data["category"]
-
-        result = create_prod(name, description, category, brand_id, organization_id)
+        result = create_prod(
+            product_data.product_name,
+            product_data.product_description,
+            product_data.category,
+            product_data.brand_id,
+            product_data.organization_id
+            )
         return create_success_response(result, 201)
     except Exception as e:
         return create_error_response(f"Error creating product: {str(e)}", 500)
@@ -241,30 +234,25 @@ def update_product(product_id):
         400: If no JSON data is provided or required fields are missing.
         500: If an unexpected error occurs during the update process.
     """
-    data = request.get_json()
-    if not data:
+    json_data = request.get_json()
+    if not json_data:
         return create_error_response("No JSON data provided", 400)
 
-    required_fields = ["product_name", "product_description", "category", "brand_id", "organization_id"]
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return create_error_response(
-            f"Missing required fields: {', '.join(missing_fields)}", 400
-        )
+    try:
+        product_data = ProductUpdateSchema(product_id=product_id, **json_data)
+    except ValidationError as e:
+        return create_error_response(e.errors(), 422)
 
     try:
-        name = data["product_name"]
-        description = data["product_description"]
-        category = data["category"]
-        brand_id = data["brand_id"]
+
 
         result = update_prod_by_id(
-            product_id=product_id,
-            name=name,
-            category=category,
-            brand_id=brand_id,
-            description=description,
-            organization_id=data["organization_id"]
+            product_id=product_data.product_id,
+            name=product_data.product_name,
+            category=product_data.category,
+            brand_id=product_data.brand_id,
+            description=product_data.product_description,
+            organization_id=product_data.organization_id
         )
         return create_success_response(result, 200)
     except Exception as e:
@@ -314,27 +302,21 @@ def add_competitor():
         - Returns 400 for value errors during competitor creation.
         - Returns 500 for database or unexpected errors.
     """
-    data = request.get_json()
+    json_data = request.get_json()
 
-    if not data:
+    if not json_data:
         return create_error_response("No JSON data provided.", 400)
-
-    required_fields = ["competitor_name", "organization_id"]
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return create_error_response(
-            f"Missing required fields: {', '.join(missing_fields)}", 400
-        )
+    
+    try:
+        competitor_data = CompetitorCreateSchema(**json_data)
+    except ValidationError as e:
+        return create_error_response(e.errors(), 422)
 
     try:
-        name = data["competitor_name"]
-        description = data.get("competitor_description", "")
-        organization_id = data["organization_id"]
-
         competitor = create_competitor(
-            name=name,
-            description=description,
-            organization_id=organization_id,
+            name=competitor_data.competitor_name,
+            description=competitor_data.competitor_description,
+            organization_id=competitor_data.organization_id,
         )
     
         return create_success_response(competitor, 201)
@@ -364,32 +346,23 @@ def update_competitor(competitor_id):
         400: If required data is missing or invalid.
         500: If an internal server error occurs during the update process.
     """
-    data = request.get_json()
-    if not data:
+    json_data = request.get_json()
+    if not json_data:
         return create_error_response("No JSON data provided", 400)
     if not competitor_id:
         return create_error_response("Competitor ID is required", 400)
-    required_fields = [
-        "competitor_name",
-        "competitor_description",
-        "organization_id",
-    ]
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return create_error_response(
-            f"Missing required fields: {', '.join(missing_fields)}", 400
-        )
+    
+    try:
+        competitor_data = CompetitorUpdateSchema(competitor_id=competitor_id ,**json_data)
+    except ValidationError as e:
+        return create_error_response(e.errors(), 422)
 
     try:
-        name = data["competitor_name"]
-        description = data["competitor_description"]
-        organization_id = data["organization_id"]
-
         result = update_competitor_by_id(
-            competitor_id=competitor_id,
-            name=name,
-            description=description,
-            organization_id=organization_id
+            competitor_id=competitor_data.competitor_id,
+            name=competitor_data.competitor_name,
+            description=competitor_data.competitor_description,
+            organization_id=competitor_data.organization_id
         )
         return create_success_response(result, 200)
     except Exception as e:

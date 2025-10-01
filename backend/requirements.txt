@@ -43,3 +43,4 @@ pandasai-openai==0.1.6
 azure-storage-queue
 openpyxl
 bandit~=1.7
+pydantic
