@@ -9,8 +9,7 @@ from flask import (
     url_for,
     session,
     render_template,
-    stream_with_context,
-    current_app,
+    stream_with_context
 )
 from functools import wraps
 import os
@@ -18,6 +17,17 @@ from dotenv import load_dotenv
 
 
 import logging
+
+for _n in (
+    "azure",
+    "azure.identity",
+    "azure.keyvault",
+    "azure.core",
+    "azure.core.pipeline.policies.http_logging_policy",
+    "urllib3",
+):
+    logging.getLogger(_n).setLevel(logging.WARNING)
+
 import requests
 import json
 import stripe
@@ -112,6 +122,9 @@ logging.getLogger("azure").setLevel(logging.WARNING)
 logging.getLogger("azure.identity").setLevel(logging.WARNING)
 logging.getLogger("azure.keyvault").setLevel(logging.WARNING)
 logging.getLogger("azure.core").setLevel(logging.WARNING)
+logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)  
+logging.getLogger("urllib3").setLevel(logging.WARNING)                                            
+logging.getLogger("werkzeug").setLevel(logging.WARNING) 
 
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
@@ -154,7 +167,6 @@ AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 ORCH_MASTER_KEY = "orchestrator-host--functionKey"
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
