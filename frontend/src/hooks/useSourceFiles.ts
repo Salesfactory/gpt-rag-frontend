@@ -13,7 +13,7 @@ export const useSourceFiles = (organizationId: string) => {
         setIsLoading(true);
         try {
             const response = await getSourceFileFromBlob(organizationId);
-            setItems(response.data);
+            setItems(response);
         } catch (error) {
             console.error("Error fetching blob data:", error);
             toast.error("Failed to load files.");

@@ -3,7 +3,7 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl } from "../../api";
+import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument, deleteUserDocument, listUserDocuments } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -11,12 +11,12 @@ import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel
 import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
-import DownloadButton from "../../components/DownloadButton/DownloadButton";
-// import FinancialPopup from "../../components/FinancialAssistantPopup/FinancialAssistantPopup";
+import AttachButton from "../../components/AttachButton/AttachButton";
+import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES} from "../../constants";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
-// import FreddaidLogoFinlAi from "../../img/FreddAidFinlAi.png";
+
 import React from "react";
 import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
 
@@ -42,6 +42,11 @@ const Chat = () => {
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
+    const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
+    const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string }[]>([]);
+    const [fileUploadError, setFileUploadError] = useState<string>("");
+
+    const [isDragOver, setIsDragOver] = useState(false);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +62,7 @@ const Chat = () => {
         chatIsCleaned,
         user,
         isFinancialAssistantActive,
+        isResizingAnalysisPanel,
         setisResizingAnalysisPanel
     } = useAppContext();
 
@@ -65,6 +71,7 @@ const Chat = () => {
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
+    const [isUploadingDocs, setIsUploadingDocs] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
 
     const [activeCitation, setActiveCitation] = useState<string>();
@@ -76,6 +83,7 @@ const Chat = () => {
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
     const [userId, setUserId] = useState<string>(""); // this is more like a conversation id instead of a user id
+    const [conversationId, setConversationId] = useState<string>(""); // Pre-generated conversation ID for new chats
     const triggered = useRef(false);
 
     const [lastAnswer, setLastAnswer] = useState<string>("");
@@ -83,7 +91,32 @@ const Chat = () => {
     const restartChat = useRef<boolean>(false);
     const [loadingCitationPath, setLoadingCitationPath] = useState<string | null>(null);
 
-    const streamResponse = async (question: string, chatId: string | null) => {
+    // Function to generate UUID with fallback for older browsers
+    const generateUUID = (): string => {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // Fallback for older browsers
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    };
+
+    // Function to get or create a conversation ID
+    const getOrCreateConversationId = (): string => {
+        if (chatId) return chatId; // prioritize existing chatId if available
+        if (!conversationId) {
+            // Generate new UUID for new conversation (typically happens before the first message)
+            const newId = generateUUID();
+            setConversationId(newId);
+            return newId;
+        }
+        return conversationId;
+    };
+
+    const streamResponse = async (question: string, chatId: string | null, userDocumentBlobNames?: string[]) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         restartChat.current = false;
@@ -106,10 +139,11 @@ const Chat = () => {
             history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
         }
         history.push({ user: question, bot: undefined });
+        const activeConversationId = getOrCreateConversationId();
         const request: ChatRequestGpt = {
             history: history,
             approach: Approaches.ReadRetrieveRead,
-            conversation_id: chatId !== null ? chatId : userId,
+            conversation_id: activeConversationId,
             query: question,
             agent,
             overrides: {
@@ -135,7 +169,8 @@ const Chat = () => {
                     question: request.query,
                     conversation_id: request.conversation_id,
                     agent: request.agent,
-                    user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                    user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    user_document_blob_names: Array.isArray(userDocumentBlobNames) && userDocumentBlobNames.length > 0 ? userDocumentBlobNames : undefined
                 })
             });
 
@@ -232,6 +267,7 @@ const Chat = () => {
         }
     };
 
+
     const handleNewChat = () => {
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             restartChat.current = true;
@@ -243,8 +279,10 @@ const Chat = () => {
             setDataConversation([]);
             setChatId("");
             setUserId("");
+            setConversationId(""); // Reset conversation ID for new chat
             setChatSelected("");
             setChatIsCleaned(false);
+            setAttachedDocs([]); // clear attachments for a fresh chat
         } else {
             return;
         }
@@ -335,6 +373,7 @@ const Chat = () => {
         );
     }, [isLoading, dataConversation]);
 
+
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
 
@@ -394,6 +433,115 @@ const Chat = () => {
             setLoadingCitationPath(null);
         }
     };
+
+    const handleAttachFiles = async (files: File[]) => {
+        if (!files?.length) return;
+
+        // Clear any previous error
+        setFileUploadError("");
+
+        // AC3: Max 3 documents validation
+        if (attachedDocs.length + files.length > CHAT_MAX_ATTACHED_FILES) {
+            setFileUploadError(`Too many files. You can attach up to 3 documents maximum.`);
+            return;
+        }
+
+        try {
+            setIsUploadingDocs(true);
+            const allowed = CHAT_ATTACHMENT_ALLOWED_TYPES.map(ext => ext.toLowerCase());
+            const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+            const activeConversationId = getOrCreateConversationId();
+            if (!user?.organizationId) {
+                setFileUploadError("Organization ID not available");
+                return;
+            }
+
+            for (const file of files) {
+                const name = file.name.toLowerCase();
+                if (!allowed.some(ext => name.endsWith(ext))) {
+                    const fileExtension = name.split('.').pop() || 'unknown';
+                    setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF`);
+                    return;
+                }
+                if (file.size > maxSizeInBytes) {
+                    setFileUploadError(`File too large (10 MB max). Try splitting your document.`);
+                    return;
+                }
+
+                const result = await uploadUserDocument({
+                    file,
+                    conversationId: activeConversationId,
+                    user
+                });
+                if (result?.blob_name) {
+                    setAttachedDocs(prev => [
+                        ...prev,
+                        {
+                            blobName: result.blob_name,
+                            originalFilename: result.original_filename || file.name,
+                            savedFilename: result.saved_filename || file.name,
+                        },
+                    ]);
+                }
+            }
+        } catch (err) {
+            console.error('Error uploading user docs:', err);
+            setFileUploadError('Failed to upload one or more documents.');
+        } finally {
+            setIsUploadingDocs(false);
+        }
+    };
+
+    async function handleRemoveAttachment(index: number) {
+        const doc = attachedDocs[index];
+        if (!doc) return;
+        try {
+            setIsUploadingDocs(true);
+            const activeConversationId = getOrCreateConversationId();
+            if (!user?.organizationId) {
+                setFileUploadError("Organization ID not available");
+                return;
+            }
+            await deleteUserDocument({
+                blobName: doc.blobName,
+                conversationId: activeConversationId,
+                user,
+            });
+        } catch (err) {
+            console.error('Error deleting user doc:', err);
+        } finally {
+            setIsUploadingDocs(false);
+            setAttachedDocs(prev => prev.filter((_, i) => i !== index));
+            setFileUploadError("");
+        }
+    }
+
+    // Rehydrate attachment chips when conversation is available
+    useEffect(() => {
+        const convId = chatId || conversationId;
+        if (!user?.organizationId || !convId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const files = await listUserDocuments({
+                    conversationId: convId,
+                    user,
+                });
+                if (cancelled) return;
+                const mapped = files.map(f => ({
+                    blobName: f.blob_name,
+                    originalFilename: f.original_filename || f.saved_filename,
+                    savedFilename: f.saved_filename,
+                }));
+                setAttachedDocs(mapped);
+            } catch (e) {
+                // do not block chat on rehydrate errors
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [user?.organizationId, chatId, conversationId]);
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (isSpreadsheet(citation)) {
@@ -489,6 +637,7 @@ const Chat = () => {
     const [analysisPanelWidth, setAnalysisPanelWidth] = useState<number>(500);
     const [analysisPanelMinWidth, setAnalysisPanelMinWidth] = useState(350);
     const [analysisPanelMaxWidth, setAnalysisPanelMaxWidth] = useState(1000);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         setisResizingAnalysisPanel(true);
@@ -530,6 +679,7 @@ const Chat = () => {
 
     useEffect(() => {
         const handleResize = () => {
+            setWindowWidth(window.innerWidth);
             if (window.innerWidth < 700) {
                 setAnalysisPanelMinWidth(120);
                 setAnalysisPanelMaxWidth(window.innerWidth * 0.98);
@@ -628,9 +778,10 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={question =>
-                                                                    streamResponse(question, chatId !== "" ? chatId : null)
-                                                                  }
+                                                                  onFollowupQuestionClicked={question => {
+                                                                      const blobNames = attachedDocs.map(d => d.blobName);
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                  }}
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />
@@ -652,9 +803,10 @@ const Chat = () => {
                                                                   onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={question =>
-                                                                    streamResponse(question, chatId !== "" ? chatId : null)
-                                                                  }
+                                                                  onFollowupQuestionClicked={question => {
+                                                                      const blobNames = attachedDocs.map(d => d.blobName);
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                  }}
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
                                                               />
@@ -669,7 +821,8 @@ const Chat = () => {
                                                     <AnswerError
                                                         error={error_message_text + error.toString()}
                                                         onRetry={() => {
-                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null);
+                                                            const blobNames = attachedDocs.map(d => d.blobName);
+                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, blobNames);
                                                         }}
                                                     />
                                                 </div>
@@ -705,21 +858,67 @@ const Chat = () => {
                                         <div ref={chatMessageStreamEnd} />
                                     </div>
                                 )}
-                                <div className={styles.chatInputContainer}>
-                                    <div className={styles.chatInput}>
+                                <div 
+                                    className={styles.chatInputContainer}
+                                    style={{ 
+                                        width: activeAnalysisPanelTab ? windowWidth - analysisPanelWidth : "100%",
+                                    }}
+                                >
+                                    {/* File upload error message */}
+
+                                    {/* Attachment display - outside of chat input */}
+                                    {attachedDocs.length > 0 && (
+                                        <div className={styles.attachmentDisplay} role="status" aria-live="polite">
+                                            {attachedDocs.map((doc, index) => (
+                                                <div key={index} className={styles.attachmentChip}>
+                                                    <span className={styles.attachmentName}>{doc.originalFilename}</span>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.removeChipBtn}
+                                                        aria-label={`Remove attachment ${doc.originalFilename}`}
+                                                        onClick={() => handleRemoveAttachment(index)}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div
+                                        className={`${styles.chatInput} ${isDragOver ? styles.chatInputDragOver : ""}`}
+                                        onDragOver={e => {
+                                            e.preventDefault();
+                                            setIsDragOver(true);
+                                        }}
+                                        onDragLeave={() => setIsDragOver(false)}
+                                        onDrop={e => {
+                                            e.preventDefault();
+                                            setIsDragOver(false);
+                                            const files = Array.from(e.dataTransfer?.files || []);
+                                            if (files.length) handleAttachFiles(files);
+                                        }}
+                                    >
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
-                                            disabled={isLoading}
+                                            disabled={isLoading || isUploadingDocs}
                                             onSend={question => {
-                                                streamResponse(question, chatId !== "" ? chatId : null);
+                                                (async () => {
+                                                    const blobNames = attachedDocs.map(d => d.blobName);
+                                                    await streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                    setFileUploadError("");
+                                                })();
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
-                                            extraButtonDownload={
-                                                <DownloadButton
-                                                    isEnabled={dataConversation.length > 0 || answers.length > 0}
-                                                    isLoading={isDownloading}
-                                                    onClick={handleDownloadConversation}
+                                            extraButtonAttach={
+                                                <AttachButton
+                                                    isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES}
+                                                    isUploading={isUploadingDocs}
+                                                    onFilesSelected={handleAttachFiles}
+                                                    accept={ATTACH_ACCEPT}
+                                                    multiple={attachedDocs.length < CHAT_MAX_ATTACHED_FILES}
+                                                    ariaLabel="Attach file"
                                                 />
                                             }
                                         />
@@ -727,12 +926,19 @@ const Chat = () => {
                                     <div className={styles.chatDisclaimer}>
                                         <p className={styles.noMargin}>This app is in beta. Responses may not be fully accurate.</p>
                                     </div>
+                                    {fileUploadError && (
+                                        <div className={styles.fileUploadError} role="alert" aria-live="assertive">
+                                            <span className={styles.errorIcon}>✕</span>
+                                            <span>{fileUploadError}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer]) ||
                             (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
                                 <>
                                     <div className={styles.analysisResizeHandle} onMouseDown={handleResizeMouseDown} style={{ cursor: "col-resize" }} />
+                                    
                                     <div
                                         style={{
                                             width: analysisPanelWidth,
@@ -743,6 +949,16 @@ const Chat = () => {
                                             height: "100%"
                                         }}
                                     >
+                                        {isResizingAnalysisPanel && (
+                                            <div style={{ width: "100%", height: "100%", background: "#fff",
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center"
+                                             }} >
+                                                <h4>Resizing...</h4>
+                                            </div>
+                                        )}
+                                        {!isResizingAnalysisPanel && (
                                         <AnalysisPanel
                                             className={styles.chatAnalysisPanel}
                                             activeCitation={activeCitation}
@@ -757,6 +973,7 @@ const Chat = () => {
                                             spreadsheetDownloadUrl={spreadsheetDownloadUrl}
                                             spreadsheetFileName={spreadsheetFileName}
                                         />
+                                        )}
                                     </div>
                                 </>
                             ) : null}

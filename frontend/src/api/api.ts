@@ -1,4 +1,5 @@
 import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import type { BlobItem } from "../types";
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -293,7 +294,15 @@ export async function getChatHistory(userId: string): Promise<ConversationHistor
     return parsedResponse;
 }
 
+// Cache the storage account to avoid repeated API calls
+let storageAccountCache: string | null = null;
+
 export function getCitationFilePath(citation: string): string {
+    // Return cached value if available
+    if (storageAccountCache) {
+        return `https://${storageAccountCache}.blob.core.windows.net/documents/${citation}`;
+    }
+
     var storage_account = "please_check_if_storage_account_is_in_frontend_app_settings";
 
     const xhr = new XMLHttpRequest();
@@ -306,6 +315,7 @@ export function getCitationFilePath(citation: string): string {
     } else {
         const parsedResponse = JSON.parse(xhr.responseText);
         storage_account = parsedResponse["storageaccount"];
+        storageAccountCache = storage_account;
     }
 
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
@@ -544,7 +554,7 @@ export async function getApiKeyPayment(): Promise<string> {
     return apiKey;
 }
 
-export async function getSourceFileFromBlob(organizationId: string) {
+export async function getSourceFileFromBlob(organizationId: string): Promise<BlobItem[]> {
     const response = await fetch(`/api/get-source-documents?organization_id=${organizationId}`, {
         method: "GET",
         headers: {
@@ -556,14 +566,15 @@ export async function getSourceFileFromBlob(organizationId: string) {
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
     const result = await response.json();
-    return result;
+    return result?.data ?? result;
 }
 
 export async function uploadSourceFileToBlob(file: any, organizationId: string) {
     const formdata = new FormData();
     formdata.append("file", file);
     formdata.append("organization_id", organizationId);
-    
+    formdata.append("MIME_type", file.type)
+  
     try {
         const response = await fetch("/api/upload-source-document", {
             method: "POST",
@@ -1111,13 +1122,11 @@ export async function exportConversation(conversationId: string, userId: string,
             format: format
         };
         
-        console.log("Exporting conversation with payload:", requestBody);
-        
         const response = await fetch("/api/conversations/export", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId,
+                "X-MS-CLIENT-PRINCIPAL-ID": userId
             },
             body: JSON.stringify(requestBody)
         });
@@ -1591,6 +1600,7 @@ export async function getGalleryItems(
     query?: string;
     page?: number;
     limit?: number;
+    signal?: AbortSignal;
   }
 ): Promise<{
   items: any[];
@@ -1616,7 +1626,8 @@ export async function getGalleryItems(
       "X-MS-CLIENT-PRINCIPAL-ID": params.user?.id ?? "00000000-0000-0000-0000-000000000000",
       "X-MS-CLIENT-PRINCIPAL-NAME": params.user?.name ?? "anonymous",
       Accept: "application/json"
-    }
+    },
+    signal: params.signal
   });
 
   if (!response.ok) {
@@ -1824,4 +1835,100 @@ export async function deleteCategory({
     const data = await res.json().catch(() => null);
     throw new Error(data?.message || data?.error || "Error deleting category");
   }
+}
+
+export async function uploadUserDocument({
+  file,
+  conversationId,
+  user
+}: {
+  file: File;
+  conversationId: string;
+  user: any;
+}): Promise<{ blob_url: string; blob_name: string; saved_filename: string; original_filename: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('conversation_id', conversationId);
+
+  try {
+    const response = await fetch('/api/upload-user-document', {
+      method: 'POST',
+      headers: {
+        'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+        'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.error?.message || `Upload failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const payload = result?.data ?? result; //{ data: { ... }, status }
+    return payload;
+  } catch (error) {
+    console.error('Error uploading user document:', error);
+    throw error;
+  }
+}
+
+export async function deleteUserDocument({
+  blobName,
+  conversationId,
+  user
+}: {
+  blobName: string;
+  conversationId: string;
+  user: any;
+}): Promise<{ message: string }> {
+  const res = await fetch('/api/delete-user-document', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+      'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+    },
+    body: JSON.stringify({
+      blob_name: blobName,
+      conversation_id: conversationId
+    })
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error || data?.message || 'Error deleting user document');
+  }
+  return data?.data ?? data;
+}
+
+export async function listUserDocuments({
+  conversationId,
+  user
+}: {
+  conversationId: string;
+  user: any;
+}): Promise<Array<{ blob_name: string; saved_filename: string; original_filename: string; size?: number; uploaded_at?: string }>> {
+  const params = new URLSearchParams({
+    conversation_id: conversationId,
+  });
+
+  const res = await fetch(`/api/list-user-documents?${params.toString()}`, {
+    method: 'GET',
+    headers: {
+      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+      'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+    }
+  });
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(json?.error?.message || json?.message || 'Error listing user documents');
+  }
+  const files = json?.data?.files ?? [];
+  return Array.isArray(files) ? files : [];
 }

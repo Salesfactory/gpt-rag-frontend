@@ -290,9 +290,15 @@
     flex-direction: column;
     gap: 7px;
     padding: 0.8rem;
-    width: 100%;
-    max-width: 100%;
     overflow: hidden;
+}
+
+.file_name_cell_details {
+    display: flex;
+    flex-direction: row;
+    align-items: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .file_info_row {

@@ -132,7 +132,7 @@ export function setupTestUserAndOrg() {
             client_principal_name: "Victor Maldonado",
             font_family: "Arial",
             font_size: "16",
-            model: "Claude-4-Sonnet",
+            model: "Claude-4.5-Sonnet",
             temperature: 0
         }
     }).as("updateSettings");
