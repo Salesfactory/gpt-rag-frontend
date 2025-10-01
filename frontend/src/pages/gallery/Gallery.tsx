@@ -58,7 +58,6 @@ const Gallery: React.FC = () => {
     const orgId = organization?.id ?? "";
     const userId = user?.id ?? "";
     const usersErrorShownRef = useRef(false);
-    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -89,16 +88,6 @@ const Gallery: React.FC = () => {
     useEffect(() => {
         const fetchAndProcessGalleryItems = async () => {
             if (!orgId) return;
-            
-            // Abort any previous request
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-            
-            // Create new AbortController for this request
-            const abortController = new AbortController();
-            abortControllerRef.current = abortController;
-            
             setIsLoading(true);
             try {
                 const result = await getGalleryItems(orgId, {
@@ -107,41 +96,24 @@ const Gallery: React.FC = () => {
                     order: sortOrder as "newest" | "oldest",
                     query: searchQuery.trim() || undefined,
                     page: currentPage,
-                    limit: itemsPerPage,
-                    signal: abortController.signal
+                    limit: itemsPerPage
                 });
 
-                // Only update state if this request wasn't aborted
-                if (!abortController.signal.aborted) {
-                    const galleryData = result.items as GalleryItem[];
+                const galleryData = result.items as GalleryItem[];
 
-                    // Update pagination state
-                    setTotalPages(result.total_pages);
+                // Update pagination state
+                setTotalPages(result.total_pages);
 
-                    setImages(galleryData);
-                    setFetchedImages(galleryData);
-                }
+                setImages(galleryData);
+                setFetchedImages(galleryData);
             } catch (e) {
-                // Don't log errors for aborted requests
-                if (e instanceof Error && e.name !== 'AbortError') {
-                    console.error("Error fetching gallery items:", e);
-                }
+                console.error("Error fetching gallery items:", e);
             } finally {
-                // Only set loading to false if this request wasn't aborted
-                if (!abortController.signal.aborted) {
-                    setIsLoading(false);
-                }
+                setIsLoading(false);
             }
         };
 
         fetchAndProcessGalleryItems();
-        
-        // Cleanup function to abort request on unmount
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-        };
     }, [orgId, userId, userFilter, sortOrder, searchQuery, currentPage, itemsPerPage]);
 
     const handleDownload = (item: GalleryItem) => {

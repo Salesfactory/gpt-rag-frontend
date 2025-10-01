@@ -224,10 +224,10 @@ export function Brands({ onBrandsChange, onDataRefresh }: { onBrandsChange: (has
                                 {brand.description && <p className={styles.itemDescription}>{brand.description}</p>}
                             </div>
                             <div className={styles.itemActions}>
-                                <button onClick={() => handleEdit(brand)} className={styles.iconButton} aria-label="Edit">
+                                <button onClick={() => handleEdit(brand)} className={styles.iconButton}>
                                     <Edit size={16} />
                                 </button>
-                                <button onClick={() => handleDelete(brand)} className={`${styles.iconButton} ${styles.deleteButton}`} aria-label="Delete">
+                                <button onClick={() => handleDelete(brand)} className={`${styles.iconButton} ${styles.deleteButton}`}>
                                     <Trash2 size={16} />
                                 </button>
                             </div>
@@ -318,7 +318,7 @@ export function ModalBrand({ editingBrand, onSuccess }: { editingBrand: Brand | 
             <div className={styles.modal}>
                 <div className={styles.modalHeader}>
                     <h3 className={styles.modalTitle}>{editingBrand ? "Edit Brand" : "Add Brand to Track"}</h3>
-                    <button onClick={handleClose} className={styles.modalCloseButton} aria-label="Close">
+                    <button onClick={handleClose} className={styles.modalCloseButton}>
                         <X size={24} />
                     </button>
                 </div>
@@ -350,7 +350,7 @@ export function ModalBrand({ editingBrand, onSuccess }: { editingBrand: Brand | 
                         {error && <p className={styles.errorMessage}>{error}</p>}
                     </div>
                     <div className={styles.modalActions}>
-                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`} aria-label="Cancel" >
+                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`}>
                             Cancel
                         </button>
                         <button
@@ -489,10 +489,10 @@ export function Products({ refreshKey }: { refreshKey: number }) {
                                     {product.description && <p className={styles.itemDescription}>{product.description}</p>}
                                 </div>
                                 <div className={styles.itemActions}>
-                                    <button onClick={() => handleEdit(product)} className={styles.iconButton} aria-label="Edit">
+                                    <button onClick={() => handleEdit(product)} className={styles.iconButton}>
                                         <Edit size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(product)} className={`${styles.iconButton} ${styles.deleteButton}`} aria-label="Delete">
+                                    <button onClick={() => handleDelete(product)} className={`${styles.iconButton} ${styles.deleteButton}`}>
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -605,7 +605,7 @@ export function ModalProduct({
             <div className={styles.modal}>
                 <div className={styles.modalHeader}>
                     <h3 className={styles.modalTitle}>{editingProduct ? "Edit Product" : "Add Product to Track"}</h3>
-                    <button onClick={handleClose} className={styles.modalCloseButton} aria-label="Close">
+                    <button onClick={handleClose} className={styles.modalCloseButton}>
                         <X size={24} />
                     </button>
                 </div>
@@ -685,7 +685,7 @@ export function ModalProduct({
                         {error && <p className={styles.errorMessage}>{error}</p>}
                     </div>
                     <div className={styles.modalActions}>
-                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`} aria-label="Cancel">
+                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`}>
                             Cancel
                         </button>
                         <button
@@ -802,10 +802,10 @@ export function Competitors() {
                                     {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                 </div>
                                 <div className={styles.itemActions}>
-                                    <button onClick={() => handleEdit(c)} className={styles.iconButton} aria-label="Edit">
+                                    <button onClick={() => handleEdit(c)} className={styles.iconButton}>
                                         <Edit size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(c)} className={`${styles.iconButton} ${styles.deleteButton}`} aria-label="Delete">
+                                    <button onClick={() => handleDelete(c)} className={`${styles.iconButton} ${styles.deleteButton}`}>
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -927,7 +927,6 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
                             setCompetitorError("");
                         }}
                         className={styles.modalCloseButton}
-                        aria-label="Close"
                     >
                         <X size={24} />
                     </button>
@@ -967,7 +966,6 @@ export function ModalCompetitor({ editingCompetitor, onSuccess }: { editingCompe
                                 setCompetitorError("");
                             }}
                             className={`${styles.button} ${styles.buttonCancel}`}
-                            aria-label="Cancel"
                         >
                             Cancel
                         </button>
@@ -1070,13 +1068,13 @@ function ReportJobs() {
                             className={styles.searchInput}
                         />
                         {searchQuery && (
-                            <button onClick={() => setSearchQuery("")} className={styles.clearSearchButton} aria-label="Cancel">
+                            <button onClick={() => setSearchQuery("")} className={styles.clearSearchButton}>
                                 <X size={16} />
                             </button>
                         )}
                     </div>
                     <div className={styles.filterDropdown}>
-                        <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)} aria-label="Filter">
+                        <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path
                                     strokeLinecap="round"
@@ -1092,7 +1090,6 @@ function ReportJobs() {
                                 <div className={styles.filterMenuItems}>
                                     {["All Status", "SUCCEEDED", "RUNNING", "QUEUED", "FAILED"].map(status => (
                                         <button
-                                            aria-label={status}
                                             key={status}
                                             className={`${styles.filterOption} ${selectedStatus === status ? styles.activeFilter : ""}`}
                                             onClick={() => {
@@ -1248,7 +1245,7 @@ function IndustryDefinition({ onIndustryChange }: { onIndustryChange: (hasIndust
                     {industryError && <p className={styles.error}>{industryError}</p>}
                 </div>
 
-                <button onClick={saveIndustry} disabled={!industryDefinition.trim() || isLoading} className={styles.saveButton} aria-label="Saved">
+                <button onClick={saveIndustry} disabled={!industryDefinition.trim() || isLoading} className={styles.saveButton}>
                     {isLoading ? (
                         <Spinner size={SpinnerSize.small} />
                     ) : industrySaved ? (

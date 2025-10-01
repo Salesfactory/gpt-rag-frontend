@@ -148,10 +148,10 @@ const Onboarding: React.FC = () => {
 
                             {/* Buttons Step 0 */}
                             <div className={styles.buttonContainer}>
-                                <button className={styles.buttonPrev} type="button" onClick={handleLogOut} aria-label="Cancel">
+                                <button className={styles.buttonPrev} type="button" onClick={handleLogOut}>
                                     <ChevronLeftRegular className={`${styles.icon} ${styles.iconLeft}`} /> Cancel
                                 </button>
-                                <button className={styles.button} type="button" onClick={handleNextClick} disabled={isLoadingStep} aria-label="Next">
+                                <button className={styles.button} type="button" onClick={handleNextClick} disabled={isLoadingStep}>
                                     Next <ChevronRightRegular className={`${styles.icon} ${styles.iconRight}`} />
                                 </button>
                             </div>
@@ -185,7 +185,7 @@ const Onboarding: React.FC = () => {
 
                             {/* Buttons Step 1 */}
                             <div className={styles.buttonContainer}>
-                                <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick} disabled={isLoadingStep} aria-label="Previous">
+                                <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick} disabled={isLoadingStep}>
                                     <ChevronLeftRegular className={`${styles.icon} ${styles.iconLeft}`} /> Previous
                                 </button>
                                 <button
@@ -193,7 +193,6 @@ const Onboarding: React.FC = () => {
                                     type="button"
                                     onClick={handleNextClick}
                                     disabled={isLoadingStep || organizationName.trim() === ""}
-                                    aria-label="Next"
                                 >
                                     Next <ChevronRightRegular className={`${styles.icon} ${styles.iconRight}`} />
                                 </button>
@@ -221,10 +220,10 @@ const Onboarding: React.FC = () => {
 
                             {/* Buttons Step 2 */}
                             <div className={styles.buttonContainer}>
-                                <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick} disabled={isLoadingStep} aria-label="Previous">
+                                <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick} disabled={isLoadingStep}>
                                     <ChevronLeftRegular className={`${styles.icon} ${styles.iconLeft}`} /> Previous
                                 </button>
-                                <button className={styles.button} style={{ width: "auto", padding: "10px 15px" }} onClick={handleSubscriptionRedirect} aria-label="Subscribe Now" >
+                                <button className={styles.button} style={{ width: "auto", padding: "10px 15px" }} onClick={handleSubscriptionRedirect}>
                                     Subscribe Now!
                                 </button>
                             </div>

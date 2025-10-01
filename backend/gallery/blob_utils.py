@@ -5,7 +5,6 @@ from financial_doc_processor import BlobStorageManager
 from logging import getLogger
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from flask import current_app
-import math
 
 logger = getLogger(__name__)
 
@@ -105,136 +104,6 @@ def _generate_sas_url(blob_name: str, container_name: str = "documents", expiry_
         logger.warning(f"Failed to generate SAS URL for blob {blob_name}: {e}")
         return None
 
-def get_blobs_with_custom_filtering_paginated(
-    container_name: str,
-    prefix: str = None,
-    include_metadata: str = "no",
-    requested_page: int = 1,
-    requested_limit: int = 10,
-    filter_criteria: Optional[Dict[str, Any]] = None,
-    query: Optional[str] = None,
-    internal_page_size: int = 30
-) -> Dict[str, Any]:
-    """
-    Get blobs with custom filtering and pagination.
-
-    This function fetches blobs in pages of internal_page_size, applies filtering,
-    and builds custom pages that match the requested page size and number.
-
-    Args:
-        container_name: Name of the container to list blobs from
-        prefix: Filter results to blob names starting with this prefix
-        include_metadata: Whether to include metadata ("yes" or "no")
-        requested_page: The page number the user wants (1-based)
-        requested_limit: Number of items per page the user wants
-        filter_criteria: Dict of metadata filters (e.g., {"user_id": "some_value"})
-        query: Search string to match across name, content_type, and metadata
-        internal_page_size: Internal page size for fetching from blob storage (default: 30)
-
-    Returns:
-        Dict containing paginated results with filtering applied
-    """
-    try:
-        blob_storage_manager = BlobStorageManager()
-        all_filtered_items: List[Dict[str, Any]] = []
-        continuation_token = None
-        current_page = 1
-        max_pages_to_fetch = 100  # Safety limit to prevent infinite loops
-
-        # Fetch pages until we have enough items for the requested page or hit max pages
-        while len(all_filtered_items) < (requested_page * requested_limit) and current_page <= max_pages_to_fetch:
-            try:
-                paginated_result = blob_storage_manager.list_blobs_in_container_for_upload_files_paginated(
-                    container_name=container_name,
-                    prefix=prefix,
-                    include_metadata=include_metadata,
-                    page_size=internal_page_size,
-                    page=current_page,
-                    continuation_token=continuation_token
-                )
-
-                raw_items = paginated_result.get("blobs", [])
-
-                # Apply metadata filtering
-                if filter_criteria:
-                    filtered_items = []
-                    for item in raw_items:
-                        metadata = item.get("metadata", {})
-                        matches = True
-                        for key, value in filter_criteria.items():
-                            if key not in metadata or str(metadata[key]).casefold() != str(value).casefold():
-                                matches = False
-                                break
-                        if matches:
-                            filtered_items.append(item)
-                    raw_items = filtered_items
-
-                # Apply query filtering (search across name, content_type, metadata)
-                if query:
-                    query_lower = query.lower()
-                    filtered_items = []
-                    for item in raw_items:
-                        # Check name
-                        name_match = query_lower in item.get("name", "").lower()
-                        # Check content_type
-                        content_type_match = query_lower in item.get("content_type", "").lower()
-                        # Check metadata
-                        metadata_match = False
-                        metadata = item.get("metadata", {})
-                        if metadata:
-                            metadata_string = " ".join(f"{k}:{v}" for k, v in metadata.items()).lower()
-                            metadata_match = query_lower in metadata_string
-
-                        if name_match or content_type_match or metadata_match:
-                            filtered_items.append(item)
-
-                    raw_items = filtered_items
-
-                all_filtered_items.extend(raw_items)
-
-                # Check if we have more pages
-                if not paginated_result.get("has_more", False):
-                    break
-
-                continuation_token = paginated_result.get("next_continuation_token")
-                current_page += 1
-
-            except StopIteration:
-                # No more pages available
-                break
-
-        # Calculate pagination for the filtered results
-        total_filtered_items = len(all_filtered_items)
-        total_pages = math.ceil(total_filtered_items / requested_limit) if total_filtered_items > 0 else 0
-
-        # Extract the specific page requested
-        start_index = (requested_page - 1) * requested_limit
-        end_index = start_index + requested_limit
-        page_items = all_filtered_items[start_index:end_index]
-
-        # Generate SAS URLs for the items
-        for item in page_items:
-            blob_name = item.get("name")
-            if blob_name:
-                sas_url = _generate_sas_url(blob_name, container_name=container_name)
-                if sas_url:
-                    item["url"] = sas_url
-
-        return {
-            "blobs": page_items,
-            "current_page": requested_page,
-            "page_size": requested_limit,
-            "total_count": total_filtered_items,
-            "has_more": requested_page < total_pages,
-            "next_continuation_token": None,  # Custom pagination doesn't use continuation tokens
-            "total_pages": total_pages
-        }
-
-    except Exception as e:
-        logger.exception(f"Error in custom paginated blob retrieval: {e}")
-        raise GalleryRetrievalError(f"Failed to retrieve blobs with custom filtering: {str(e)}")
-
-
 def get_gallery_items_by_org(
     organization_id: str,
     uploader_id: Optional[str] = None,
@@ -253,36 +122,22 @@ def get_gallery_items_by_org(
     Returns a dictionary with items, total count, and pagination info.
     """
     try:
-        items: List[Dict[str, Any]] = []
         prefix = f"organization_files/{organization_id}/generated_images"
+        blob_storage_manager = BlobStorageManager()
+        
+        # Use the new paginated method
+        paginated_result = blob_storage_manager.list_blobs_in_container_for_upload_files_paginated(
+            container_name="documents",
+            prefix=prefix,
+            include_metadata="yes",
+            page_size=limit,
+            page=page,
+            continuation_token=continuation_token
+        )
+        
+        raw_items: List[Dict[str, Any]] = paginated_result.get("blobs", [])
 
-        # Use custom filtering pagination if uploader_id or query is provided
-        if uploader_id or query:
-            filter_criteria = {"user_id": uploader_id} if uploader_id else None
-
-            paginated_result = get_blobs_with_custom_filtering_paginated(
-                container_name="documents",
-                prefix=prefix,
-                include_metadata="yes",
-                requested_page=page,
-                requested_limit=limit,
-                filter_criteria=filter_criteria,
-                query=query
-            )
-        else:
-            # Use the original paginated method when no filtering is needed
-            blob_storage_manager = BlobStorageManager()
-            paginated_result = blob_storage_manager.list_blobs_in_container_for_upload_files_paginated(
-                container_name="documents",
-                prefix=prefix,
-                include_metadata="yes",
-                page_size=limit,
-                page=page,
-                continuation_token=continuation_token
-            )
-
-        raw_items = paginated_result.get("blobs", [])
-
+        items: List[Dict[str, Any]] = []
         for item in raw_items:
             metadata = item.get("metadata") or {}
             blob_name = item.get("name")
@@ -300,9 +155,16 @@ def get_gallery_items_by_org(
                 "url": sas_url or item.get("url")  # Fallback to original URL if SAS generation fails
             })
 
-        # Backend search is already handled in the custom function when query is provided,
-        # but we still need to apply it if we're using the original method
-        if query and not uploader_id:
+        # Backend-only user filter
+        if uploader_id:
+            uid = ("" if uploader_id is None else str(uploader_id)).casefold()
+            items = [
+                it for it in items
+                if it.get("metadata", {}).get("user_id", "").casefold() == uid
+            ]
+
+        # Backend search (no date text search)
+        if query:
             query_list = ("" if query is None else str(query)).casefold()
             filtered: List[Dict[str, Any]] = []
             for item in items:
@@ -321,34 +183,23 @@ def get_gallery_items_by_org(
         reverse = (order or "newest").lower() == "newest"
         items.sort(key=lambda i: (sort_key(i), i.get("name", "")), reverse=reverse)
 
-        # Apply pagination - for the original method, we may need to slice the results
+        # Apply pagination - items are already paginated from blob storage,
+        # but we may need to further filter/sort them
         total_items_after_filtering = len(items)
-
-        if uploader_id or query:
-            # Custom pagination already handled the pagination
-            paginated_items = items
-            blob_pagination = {
-                "current_page": paginated_result.get("current_page", page),
-                "page_size": paginated_result.get("page_size", limit),
-                "total_count": paginated_result.get("total_count", total_items_after_filtering),
-                "has_more": paginated_result.get("has_more", False),
-                "next_continuation_token": paginated_result.get("next_continuation_token"),
-                "total_pages": paginated_result.get("total_pages", 1)
-            }
-        else:
-            # Original method - need to slice the results for pagination
-            start_index = (page - 1) * limit
-            end_index = start_index + limit
-            paginated_items = items[start_index:end_index]
-
-            blob_pagination = {
-                "current_page": paginated_result.get("current_page", page),
-                "page_size": paginated_result.get("page_size", limit),
-                "total_count": paginated_result.get("total_count", total_items_after_filtering),
-                "has_more": paginated_result.get("has_more", False),
-                "next_continuation_token": paginated_result.get("next_continuation_token"),
-                "total_pages": paginated_result.get("total_pages", 1)
-            }
+        
+        # Since we're already getting paginated results from blob storage,
+        # we don't need to re-paginate unless we filtered items
+        paginated_items = items
+        
+        # Use pagination info from the blob storage result, but adjust for any filtering we did
+        blob_pagination = {
+            "current_page": paginated_result.get("current_page", page),
+            "page_size": paginated_result.get("page_size", limit),
+            "total_count": paginated_result.get("total_count", total_items_after_filtering),
+            "has_more": paginated_result.get("has_more", False),
+            "next_continuation_token": paginated_result.get("next_continuation_token"),
+            "total_pages": paginated_result.get("total_pages", 1)
+        }
 
         return {
             "items": paginated_items,

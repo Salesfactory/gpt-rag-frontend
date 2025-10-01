@@ -548,7 +548,7 @@ def get_conversation(conversation_id, user_id):
         container = get_cosmos_container("conversations")
 
         conversation = container.read_item(
-            item=conversation_id, partition_key=user_id
+            item=conversation_id, partition_key=conversation_id
         )
         if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
             return {}
@@ -588,13 +588,13 @@ def delete_conversation(conversation_id, user_id):
         container = get_cosmos_container("conversations")
 
         conversation = container.read_item(
-            item=conversation_id, partition_key=user_id
+            item=conversation_id, partition_key=conversation_id
         )
 
         if conversation["conversation_data"]["interaction"]["user_id"] != user_id:
             raise Exception("User does not have permission to delete this conversation")
 
-        container.delete_item(item=conversation_id, partition_key=user_id)
+        container.delete_item(item=conversation_id, partition_key=conversation_id)
 
         return True
     except Exception as e:
@@ -630,7 +630,7 @@ def get_conversations(user_id):
                 container.query_items(
                     query=query,
                     parameters=parameters,
-                    partition_key=user_id,
+                    enable_cross_partition_query=True,
                 )
             )
         except CosmosHttpResponseError as e:
@@ -783,7 +783,7 @@ def set_settings(client_principal, temperature, model, font_family, font_size):
         return
 
     # Add validation for model if necessary
-    allowed_models = ["gpt-4.1", "Claude-4.5-Sonnet"]
+    allowed_models = ["gpt-4.1", "DeepSeek-V3-0324", "Claude-4-Sonnet"]
     if model not in allowed_models:
         logging.error(f"[util__module] set_settings: invalid model value {model}.")
         return

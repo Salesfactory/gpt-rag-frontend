@@ -351,7 +351,7 @@ const Organization = () => {
                                         onChange={e => setSegmentSynonyms(e.target.value)}
                                     />
                                 </div>
-                                <button className={styles.saveButton} onClick={handleSaveChanges} disabled={isLoading} aria-label="Save Changes">
+                                <button className={styles.saveButton} onClick={handleSaveChanges} disabled={isLoading}>
                                     {isLoading ? (
                                         <Spinner size={SpinnerSize.small} label="Saving..." labelPosition="right" />
                                     ) : (

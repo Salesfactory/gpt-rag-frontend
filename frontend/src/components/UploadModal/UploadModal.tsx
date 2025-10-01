@@ -145,7 +145,7 @@ export const DragFilesContent: React.FC<{onDrop: Callback }> = ({onDrop}) => {
                         Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}
                     </Text>
                 </label>
-                <button type="button" aria-label='Browse Files' onClick={open} className={styles.browse_button}>
+                <button type="button" onClick={open} className={styles.browse_button}>
                     Browse Files
                 </button>
             </div>
@@ -182,10 +182,10 @@ export const ExcelWarningContent: React.FC<{ excelFiles: String[], onConfirm: ()
             </div>
 
             <div className={styles.actions}>
-                <button aria-label='Cancel upload' className={styles.cancelButton} onClick={onCancel}>
+                <button className={styles.cancelButton} onClick={onCancel}>
                     Cancel Upload
                 </button>
-                <button aria-label='Continue Anyway' className={styles.confirmButton} onClick={onConfirm}>
+                <button className={styles.confirmButton} onClick={onConfirm}>
                     Continue Anyway
                 </button>
             </div>
@@ -227,13 +227,13 @@ export const DuplicateWarningContent: React.FC<{
             </div>
 
             <div className={styles.actions}>
-                <button aria-label='Rename File' className={styles.confirmButton} onClick={onRename}>
+                <button className={styles.confirmButton} onClick={onRename}>
                     Rename
                 </button>
-                <button aria-label='Cancel Upload' className={styles.cancelButton} onClick={onCancel}>
+                <button className={styles.cancelButton} onClick={onCancel}>
                     Cancel
                 </button>
-                <button aria-label='Replace File' className={styles.confirmButton} onClick={onReplace}>
+                <button className={styles.confirmButton} onClick={onReplace}>
                     Replace
                 </button>
             </div>
@@ -288,16 +288,14 @@ export const RenameFileContent: React.FC<{
                 <span className={styles.file_extension}>{extension}</span>
             </div>
             <div className={styles.actions}>
-                <button
-                    aria-label='Confirm Rename'
+                <button 
                     className={styles.confirmButton}
                     onClick={handleConfirm}
                     disabled={!newName.trim()}
                 >
                     Rename
                 </button>
-                <button
-                    aria-label='Cancel Rename'
+                <button 
                     className={styles.cancelButton}
                     onClick={onCancel}
                 >
