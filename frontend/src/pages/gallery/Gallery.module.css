@@ -74,6 +74,8 @@
 
 .dropdownContent {
     padding: 4px 0;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .dropdownItem {

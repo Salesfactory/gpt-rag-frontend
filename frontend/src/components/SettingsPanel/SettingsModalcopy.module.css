@@ -102,24 +102,112 @@
     justify-content: center;
 }
 
-.sliderCustom :global(.ms-Slider-thumb) {
-    background-color: #10b981;
-    border: 1px solid white;
-    transition: all 0.2s ease;
+.sliderCustom :global(.ms-Slider-slideBox),
+.sliderCustom :global(.fui-Slider__sliderWrapper){
+  display: flex;
+  align-items: center;
+  position: relative;
 }
 
-.sliderCustom :global(.ms-Slider-thumb:hover) {
-    background-color: #059669;
+.sliderCustom{
+  --rail-h: 10px;
+  --s1: 12%;
+  --s2: 28%;
+  --s3: 45%;
+  --s4: 63%;
+
+  --mix: 3%;
+
+  --c-gray: #e5e7eb;
+  --c-white: #ffffff;
+  --c-mint: #dcfce7;
+  --c-green: #34d399;
+  --c-green-dark: #16a34a;
+  position: relative;
+  padding-bottom: 22px;
+
+  --thumb-d: 18px;
+  --thumb-nudge: 0.5px;
 }
 
-.sliderCustom :global(.ms-Slider-active) {
-    background-color: #016630;
+
+.sliderCustom :global(.ms-Slider-line),
+.sliderCustom :global(.fui-Slider__rail){
+  position: relative;
+  height: var(--rail-h);
+  block-size: var(--rail-h);
+  border-radius: 9999px;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+
+  background: linear-gradient(
+    to right,
+    var(--c-gray) 0%,
+    var(--c-gray) calc(var(--s1) - var(--mix)),
+    var(--c-white) calc(var(--s1) + var(--mix)),
+    var(--c-white) calc(var(--s2) - var(--mix)),
+    var(--c-mint)  calc(var(--s2) + var(--mix)),
+    var(--c-mint)  calc(var(--s3) - var(--mix)),
+    var(--c-green) calc(var(--s3) + var(--mix)),
+    var(--c-green) calc(var(--s4) - var(--mix)),
+    var(--c-green-dark) calc(var(--s4) + var(--mix)),
+    var(--c-green-dark) 100%
+  );
+  background-repeat: no-repeat;
 }
 
-.sliderCustom :global(.ms-Slider-inactive) {
-    background-color: #d1d5db;
+@supports (color: color-mix(in oklab, white, black)) {
+  .sliderCustom :global(.ms-Slider-line),
+  .sliderCustom :global(.fui-Slider__rail){
+    background: linear-gradient(
+      to right,
+      var(--c-gray) 0%,
+      var(--c-gray) calc(var(--s1) - var(--mix)),
+      color-mix(in oklab, var(--c-gray) 50%, var(--c-white) 50%) var(--s1),
+      var(--c-white) calc(var(--s1) + var(--mix)),
+
+      var(--c-white) calc(var(--s2) - var(--mix)),
+      color-mix(in oklab, var(--c-white) 50%, var(--c-mint) 50%) var(--s2),
+      var(--c-mint)  calc(var(--s2) + var(--mix)),
+
+      var(--c-mint)  calc(var(--s3) - var(--mix)),
+      color-mix(in oklab, var(--c-mint) 50%, var(--c-green) 50%) var(--s3),
+      var(--c-green) calc(var(--s3) + var(--mix)),
+
+      var(--c-green) calc(var(--s4) - var(--mix)),
+      color-mix(in oklab, var(--c-green) 45%, var(--c-green-dark) 55%) var(--s4),
+      var(--c-green-dark) calc(var(--s4) + var(--mix)),
+      var(--c-green-dark) 100%
+    );
+  }
 }
 
+.sliderCustom :global(.ms-Slider-active),
+.sliderCustom :global(.ms-Slider-inactive),
+.sliderCustom :global(.fui-Slider__track){
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.sliderCustom :global(.ms-Slider-thumb),
+.sliderCustom :global(.fui-Slider__thumb){
+  background-color: #10b981;
+  border: 1px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #ffffff;
+  transition: transform .15s ease, background-color .15s ease;
+  z-index: 2;
+  top: 50%;
+
+  transform: translate(-50%, calc(-50% + var(--thumb-nudge)));
+}
+.sliderCustom :global(.ms-Slider-thumb:hover),
+.sliderCustom :global(.fui-Slider__thumb:hover){ background-color:#059669; }
+
+.sliderCustom :global(.ms-Slider-container){ padding:10px 0; }
+
+@media (forced-colors: active){
+  .sliderCustom :global(.ms-Slider-line),
+  .sliderCustom :global(.fui-Slider__rail){ background: CanvasText; }
+}
 
 .buttons {
     display: flex;

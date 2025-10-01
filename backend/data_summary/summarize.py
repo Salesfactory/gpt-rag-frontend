@@ -15,6 +15,11 @@ Key Dimensions: Main data categories/columns (do not include details of individu
 Time Scope: Date range covered, if applicable
 Output: Plain text description only.
 Purpose: Help a coding agent understand what each file contains without opening it, enabling efficient file selection for analysis tasks."""
+
+FALLBACK_PROMPT = """
+Analyze the data and provide a brief explanation of the file in 2 sentences, focusing on optimized computations.
+"""
+
 STALL_MSG = "Unfortunately, I was not able to get your answer. Please try again."
 
 
@@ -72,7 +77,7 @@ def sanitize_metadata_value(value: str) -> str:
 
 def create_description(
     path: str, llm: LLMClient, prompt: str = DEFAULT_PROMPT, max_retries: int = 3
-) -> str:
+) -> dict:
     try:
         preview, _ = read_preview(path)
         if preview is not None:
@@ -85,7 +90,12 @@ def create_description(
         last_err: Optional[Exception] = None
         for attempt in range(1, max_retries + 1):
             try:
-                resp = llm.summarize_dataframe(pai_df, prompt)
+                if attempt == 1:
+                    resp = llm.summarize_dataframe(pai_df, prompt)
+                    description_source = "primary_llm"
+                else:
+                    resp = llm.summarize_dataframe(pai_df, FALLBACK_PROMPT)
+                    description_source = "fallback_llm"
 
 
                 # Handle PandasAI StringResponse
@@ -103,13 +113,14 @@ def create_description(
                 safe_text = sanitize_metadata_value(text)
                 logger.info("Sanitized metadata: %s", safe_text)
 
-                return safe_text
+                return {"file_description": safe_text, "source": description_source}
             except Exception as e:
                 logger.exception("LLM error attempt %d: %s", attempt, e)
                 last_err = e
 
         logger.warning("Falling back to manual description.")
-        return _manual_description(full_df)
+        manual_description = _manual_description(full_df)
+        return {"file_description": sanitize_metadata_value(manual_description), "source": "manual_summary" }
 
     except Exception as e:
         logger.exception("Critical error in create_description: %s", e)
