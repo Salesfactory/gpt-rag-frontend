@@ -120,7 +120,6 @@ const DocxPreviewViewer: React.FC<DocxPreviewViewerProps> = ({ file, className =
                 <div className={styles.errorOverlay}>
                     <p className={styles.errorText}>❌ {error}</p>
                     <button
-                        aria-label="Re-try"
                         className={styles.retryButton}
                         onClick={() => {
                             setError("");

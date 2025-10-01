@@ -152,7 +152,6 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     <div>Conversation exported successfully!</div>
                     <div style={{ display: "flex", gap: "8px" }}>
                         <button
-                            aria-label="Copy Link in the keyboard"
                             onClick={() => {
                                 navigator.clipboard.writeText(result.share_url);
                                 toast("Link copied to clipboard!", { type: "success" });
@@ -174,7 +173,6 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             Copy Link
                         </button>
                         <button
-                            aria-label="Open Link in the Keyboard"
                             onClick={() => {
                                 window.open(result.share_url, "_blank");
                             }}
@@ -280,11 +278,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 <ul className="navbar-nav mr-4">
                     <li className="nav-item d-flex align-items-center">
                         <button
-                            aria-label="Show Menu"
                             onClick={handleOnClickShowSidebar}
                             className={`nav-link d-flex align-items-center ${styles.sidebartoggler}`}
                             id="headerCollapse"
-
                         >
                             <Menu className={styles.iconLarge} />
                         </button>
@@ -359,7 +355,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {/* Share Button - only show when there's an active conversation */}
                         {location === "/" && (chatId || dataConversation.length > 0) && (
                             <li className="nav-item">
-                                <button aria-label="Export Conversation" onClick={handleExportConversation} disabled={isExporting} className={styles.shareButton}>
+                                <button onClick={handleExportConversation} disabled={isExporting} className={styles.shareButton}>
                                     {isExporting ? (
                                         <>
                                             <Spinner size={1} />
@@ -394,7 +390,6 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             <li className="nav-item">
                                 <div className={styles.tooltipWrapper}>
                                     <button
-                                        aria-label="Chat Settings"
                                         onClick={handleShowSettings}
                                         className="btn btn-white btn-sm d-flex align-items-center gap-1"
                                         data-testid="settings-button"

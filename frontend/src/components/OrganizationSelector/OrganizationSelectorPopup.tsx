@@ -68,7 +68,7 @@ const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({ o
                 </select>
             </div>
             <div className={styles.actions}>
-                <button className={styles.continueButton} onClick={handleContinue} disabled={!selectedOrgId} aria-label="Continue">
+                <button className={styles.continueButton} onClick={handleContinue} disabled={!selectedOrgId}>
                     Continue
                 </button>
             </div>

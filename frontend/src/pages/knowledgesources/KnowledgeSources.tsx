@@ -562,7 +562,6 @@ const KnowledgeSources: React.FC = () => {
                                 }}
                                 title="Clear URL"
                                 disabled={isAdding}
-                                aria-label="Clear URL"
                             >
                                 <X size={16} />
                             </button>
@@ -608,7 +607,7 @@ const KnowledgeSources: React.FC = () => {
                     </div>
                 </div>
 
-                <button onClick={handleAddUrl} disabled={!newUrl.trim() || !!urlError || isAdding} className={styles.addButton} aria-label={isAdding ? "Adding" : "Add URL"}>
+                <button onClick={handleAddUrl} disabled={!newUrl.trim() || !!urlError || isAdding} className={styles.addButton}>
                     <Plus size={18} />
                     <span>{isAdding ? "Adding..." : "Add URL"}</span>
                 </button>
@@ -629,7 +628,7 @@ const KnowledgeSources: React.FC = () => {
                         className={styles.searchInput}
                     />
                     {searchQuery && (
-                        <button type="button" className={styles.clearSearchButton} onClick={() => updateSearchQuery("")} title="Clear search" aria-label="Clear Search" >
+                        <button type="button" className={styles.clearSearchButton} onClick={() => updateSearchQuery("")} title="Clear search">
                             <X size={16} />
                         </button>
                     )}
@@ -637,7 +636,7 @@ const KnowledgeSources: React.FC = () => {
 
                 {/* Status Filter Dropdown */}
                 <div className={styles.filterContainer}>
-                    <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)} aria-label="Filter">
+                    <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
                         <Filter size={16} className={styles.filterIcon} />
                         {statusFilterOptions.find(opt => opt.value === selectedStatus)?.label || "Filter"}
                     </button>
@@ -647,7 +646,6 @@ const KnowledgeSources: React.FC = () => {
                             <div className={styles.dropdownContent}>
                                 {statusFilterOptions.map(option => (
                                     <button
-                                        aria-label={option.value}
                                         key={option.value}
                                         className={`${styles.dropdownItem} ${selectedStatus === option.value ? styles.dropdownItemActive : ""}`}
                                         onClick={() => {
@@ -718,11 +716,10 @@ const KnowledgeSources: React.FC = () => {
                                                             disabled={!editingUrl.trim() || !!editingError || isUpdating}
                                                             className={styles.saveButton}
                                                             title="Save URL changes. Previous scraped data will be removed."
-                                                            aria-label={isUpdating ? "loading..." : "save"}
                                                         >
                                                             {isUpdating ? "Saving..." : "Save"}
                                                         </button>
-                                                        <button onClick={handleCancelEdit} disabled={isUpdating} className={styles.cancelButton} aria-label="Cancel">
+                                                        <button onClick={handleCancelEdit} disabled={isUpdating} className={styles.cancelButton}>
                                                             Cancel
                                                         </button>
                                                     </div>
@@ -754,7 +751,6 @@ const KnowledgeSources: React.FC = () => {
                                                 className={styles.actionButton}
                                                 title="Refresh source"
                                                 disabled={editingId === source.id}
-                                                aria-label="Refresh"
                                             >
                                                 <RefreshCw size={16} />
                                             </button>
@@ -763,7 +759,6 @@ const KnowledgeSources: React.FC = () => {
                                                 className={styles.actionButton}
                                                 title="Edit source"
                                                 disabled={editingId !== null}
-                                                aria-label="Edit Source"
                                             >
                                                 <Edit size={16} />
                                             </button>
@@ -772,7 +767,6 @@ const KnowledgeSources: React.FC = () => {
                                                 className={`${styles.actionButton} ${styles.deleteButton}`}
                                                 title="Delete source"
                                                 disabled={editingId === source.id}
-                                                aria-label="Delete source"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
