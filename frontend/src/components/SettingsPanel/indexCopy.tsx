@@ -1,11 +1,26 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SaveFilled } from "@fluentui/react-icons";
-import { X, Info } from "lucide-react";
+import { X, Info, FileText, List, BookOpen } from "lucide-react";
 import { DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption, Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 import styles from "./SettingsModalcopy.module.css";
 import { getSettings, postSettings } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast } from "react-toastify";
+
+type DetailLevelUI = "high" | "balanced" | "very";
+type DetailLevelAPI = "brief" | "balanced" | "detailed";
+
+const UI_TO_API: Record<DetailLevelUI, DetailLevelAPI> = {
+  high: "brief",
+  balanced: "balanced",
+  very: "detailed"
+};
+const API_TO_UI: Record<DetailLevelAPI, DetailLevelUI> = {
+  brief: "high",
+  balanced: "balanced",
+  detailed: "very"
+};
+
 
 const ConfirmationDialog = ({
   loading,
@@ -54,6 +69,7 @@ const ConfirmationDialog = ({
             <DefaultButton onClick={onDismiss} text="Cancel" />
             <PrimaryButton
               onClick={onConfirm}
+              data-testid="confirm-save"
               text="Save"
               styles={{
                 root: { backgroundColor: "#16a34a", borderColor: "#16a34a" },
@@ -82,6 +98,8 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
   const [selectedFontSize, setSelectedFontSize] = useState<string>("16");
   const [selectedFont, setSelectedFont] = useState<string>("Arial");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const [detailLevel, setDetailLevel] = useState<DetailLevelUI>("balanced");
 
   const modelOptions: IDropdownOption[] = [
     { key: "gpt-4.1", text: "gpt-4.1" },
@@ -158,14 +176,39 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         if (typeof data.font_family === "string" && data.font_family.trim() !== "") {
           setSelectedFont(data.font_family.trim());
         }
+      let initial: DetailLevelUI = "balanced";
+      const fromBackend = (data as any)?.detail_level as DetailLevelAPI | undefined;
+      if (fromBackend && API_TO_UI[fromBackend]) {
+        initial = API_TO_UI[fromBackend];
+      } else {
+        try {
+          const ls = localStorage.getItem("detail_level");
+          if (ls === "brief" || ls === "balanced" || ls === "detailed") {
+            initial = API_TO_UI[ls];
+          }
+        } catch {}
+      }
+      setDetailLevel(initial);
       } catch (error) {
         console.error("Error fetching settings:", error);
         const modelConfig = modelTemperatureSettings[selectedModel];
         setTemperature(Number(modelConfig.default));
+        try {
+        const ls = localStorage.getItem("detail_level");
+        if (ls === "brief" || ls === "balanced" || ls === "detailed") {
+          setDetailLevel(API_TO_UI[ls]);
+        } else {
+          setDetailLevel("balanced");
+        }
+      } catch {
+        setDetailLevel("balanced");
+      }
       } finally {
         setLoading(false);
       }
     };
+
+
 
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,6 +219,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const modelConfig = modelTemperatureSettings[selectedModel];
     const parsedFontSize = selectedFontSize;
     const parsedFontSeleted = selectedFont;
+    const apiDetailLevel: DetailLevelAPI = UI_TO_API[detailLevel];
 
     if (!modelConfig || parsedTemperature < modelConfig.min || parsedTemperature > modelConfig.max) {
       console.error(
@@ -183,13 +227,14 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       );
       return;
     }
-
+    
     postSettings({
       user,
       temperature: parsedTemperature,
       model: selectedModel,
       font_family: parsedFontSeleted,
-      font_size: parsedFontSize
+      font_size: parsedFontSize,
+      detail_level: apiDetailLevel
     })
       .then(data => {
         setTemperature(Number(data.temperature));
@@ -198,6 +243,10 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         setSelectedFontSize(data.font_size);
         try {
           localStorage.setItem("chat_creativity", String(data.temperature));
+          const saved = (data as any)?.detail_level as DetailLevelAPI | undefined;
+          const toStore =
+            saved === "brief" || saved === "balanced" || saved === "detailed" ? saved : apiDetailLevel;
+          localStorage.setItem("detail_level", toStore);
         } catch {}
         setIsDialogOpen(false);
         setIsLoadingSettings(false);
@@ -364,7 +413,13 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       if (!options || options.length === 0) return null;
                       return <span style={{ fontFamily: options[0].text }}>{options[0].text}</span>;
                     }}
-                    calloutProps={{ directionalHint: 4, isBeakVisible: false, styles: { root: { maxHeight: 200, overflowY: "auto" } } }}
+                    calloutProps={{
+                      directionalHint: 4,
+                      isBeakVisible: false,
+                      doNotLayer: false,
+                      preventDismissOnScroll: true,
+                      styles: { root: { zIndex: 100000 } }
+                    }}
                     styles={{
                       root: { width: "90%" },
                       dropdown: {
@@ -402,7 +457,13 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                     selectedKey={selectedFontSize}
                     onChange={(_event, option) => option && setSelectedFontSize(option.key as string)}
                     aria-labelledby="font-size-dropdown"
-                    calloutProps={{ directionalHint: 4, isBeakVisible: false, styles: { root: { maxHeight: 200, overflowY: "auto" } } }}
+                    calloutProps={{
+                      directionalHint: 4,
+                      isBeakVisible: false,
+                      doNotLayer: false,
+                      preventDismissOnScroll: true,
+                      styles: { root: { zIndex: 100000 } }
+                    }}
                     styles={{
                       root: { width: "90%" },
                       dropdown: {
@@ -454,6 +515,13 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                     selectedKey={selectedModel}
                     onChange={(_event, option) => option && setSelectedModel(option.key as string)}
                     aria-labelledby="model-dropdown"
+                    calloutProps={{
+                      directionalHint: 4,
+                      isBeakVisible: false,
+                      doNotLayer: false,
+                      preventDismissOnScroll: true,
+                      styles: { root: { zIndex: 100000 } }
+                    }}
                     styles={{
                       root: { width: "90%" },
                       dropdown: {
@@ -495,6 +563,49 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       }
                     }}
                   />
+                </div>
+                {/* Detail Level */}
+                <div className={styles.item}>
+                  <span>Detail Level</span>
+                </div>
+                <div
+                    role="group"
+                    aria-label="Detail Level"
+                    className={styles.segmentedGroup}
+                    data-testid="detail-level-group"
+                >
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${detailLevel === "high" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "high"}
+                    onClick={() => setDetailLevel("high")}
+                  >
+                    <FileText className={styles.segmentIcon} aria-hidden="true" />
+                    <span className={styles.segmentTitle}>High-Level</span>
+                    <span className={styles.segmentSub}>Brief overview</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${detailLevel === "balanced" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "balanced"}
+                    onClick={() => setDetailLevel("balanced")}
+                  >
+                    <List className={styles.segmentIcon} aria-hidden="true" />
+                    <span className={styles.segmentTitle}>Balanced</span>
+                    <span className={styles.segmentSub}>Moderate depth</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${detailLevel === "very" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "very"}
+                    onClick={() => setDetailLevel("very")}
+                  >
+                    <BookOpen className={styles.segmentIcon} aria-hidden="true" />
+                    <span className={styles.segmentTitle}>Very Detailed</span>
+                    <span className={styles.segmentSub}>Comprehensive</span>
+                  </button>
                 </div>
 
                 <div className={styles["w-100"]}>
