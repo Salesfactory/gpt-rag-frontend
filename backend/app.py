@@ -1697,6 +1697,7 @@ def setSettings(*, context):
         )  # address later since we're adding more models
         font_family = request_body.get("font_family")
         font_size = request_body.get("font_size")
+        detail_level = request_body.get("detail_level")
 
         set_settings(
             client_principal=client_principal,
@@ -1704,6 +1705,7 @@ def setSettings(*, context):
             model=model,
             font_family=font_family,
             font_size=font_size,
+            detail_level=detail_level,
         )
 
         # Return all saved settings, including the model
@@ -1716,6 +1718,7 @@ def setSettings(*, context):
                     "model": model,
                     "font_family": font_family,
                     "font_size": font_size,
+                    "detail_level": detail_level,
                 }
             ),
             200,

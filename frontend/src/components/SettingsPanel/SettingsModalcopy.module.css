@@ -13,7 +13,7 @@
 }
 
 .item {
-    margin: 15px 0;
+    margin: 12px 0 6px 0;
     display: flex;
     align-items: center;
     gap: 0; /* pull icon tight to label */
@@ -39,21 +39,25 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
  }
 
 .content {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
-  padding: 16px 20px 24px 20px;
+  padding: 16px 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }  
 
 .saveButton {
     width: 8rem;
     background-color: #16a34a;
-    margin: 0 auto;
+    margin: 0;
     color: white;
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
@@ -96,9 +100,19 @@
 .w-100 {
     width: 100%;
     display: flex;
-   flex-direction: column;  
-   flex: 1 1 auto;
+   flex-direction: column;
+   flex: 0 1 auto;
    min-height: 0;
+}
+
+.saveRow {
+    width: 100%;
+    margin-top: 12px;
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
 }
 
 .title {
@@ -109,7 +123,10 @@
 
 .sliderContainer {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
+    align-items: center;
+    width: calc(100% + 28px);
+    margin-right: -20px;
 }
 
 .sliderCustom :global(.ms-Slider-slideBox),
@@ -120,6 +137,7 @@
 }
 
 .sliderCustom{
+  width: 100%;
   --rail-h: 10px;
   --s1: 12%;
   --s2: 28%;
@@ -134,10 +152,15 @@
   --c-green: #34d399;
   --c-green-dark: #16a34a;
   position: relative;
-  padding-bottom: 22px;
+  padding-bottom: 2px;
 
   --thumb-d: 18px;
   --thumb-nudge: 0.5px;
+}
+
+.sliderCustom :global(.ms-Slider),
+.sliderCustom :global(.fui-Slider){
+  width: 100%;
 }
 
 
@@ -212,7 +235,11 @@
 .sliderCustom :global(.ms-Slider-thumb:hover),
 .sliderCustom :global(.fui-Slider__thumb:hover){ background-color:#059669; }
 
-.sliderCustom :global(.ms-Slider-container){ padding:10px 0; }
+.sliderCustom :global(.ms-Slider-container),
+.sliderCustom :global(.fui-Slider__container){
+  padding:2px 0;
+  width: 100%;
+}
 
 @media (forced-colors: active){
   .sliderCustom :global(.ms-Slider-line),
@@ -311,11 +338,11 @@
 .tooltipBoxLarge {
     position: absolute;
     top: calc(100% + 6px);
-    left: 0;
-    transform: translateX(-170px);
+    left: 50%;
+    transform: translateX(calc(-50% + clamp(64px, 10vw, 110px)));
     padding: 10px 12px;
-    width: 320px;
-    max-width: min(92vw, 340px);
+    width: min(300px, 92vw);
+    max-width: 340px;
     background-color: #ffffff;
     color: #111827; /* gray-900 */
     border-radius: 12px; /* slightly smaller radius */
@@ -384,79 +411,100 @@
    background-color: #fff;
    border-radius: 8px;
    box-shadow: 0 4px 12px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.05);
-   width: 420px;               
-   max-width: calc(100vw - 40px);        
-   height: calc(100vh - 40px);
-   max-height: 90vh;                
-   overflow: hidden;                
+   width: 380px;
+   max-width: calc(100vw - 40px);
+   height: auto;
+   max-height: calc(100vh - 40px);
+   overflow: visible;
    display: flex;
    flex-direction: column;
    box-sizing: border-box;
  }
 
- .segmentedGroup{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:0;
-  width:100%;
-  margin-bottom:20px;
-  margin-top: 12px;
-  border-radius:12px;
-  padding:10px;                
-  align-items:stretch;
-  position: relative;     
+.segmentedGroup {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 8px 0;
+  align-self: flex-start;
+  padding: 4px;
+  background-color: #f1f5f9;
+  border-radius: 8px;
+  position: relative;
+}
+
+.slidingIndicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background-color: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 2px solid #6FDCB7;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
   z-index: 0;
 }
 
-.segmentBtn{
-  display:flex; flex-direction:column; gap:4px;
-  padding:12px 14px;
-  border:2px solid transparent;
-  background:transparent;
-  box-sizing:border-box;
-  cursor:pointer; text-align:left; outline:none;
-  transition:border-radius .15s ease, box-shadow .15s ease,
-             border-color .15s ease, background-color .15s ease;
-  border-radius:0;
-  background:#F1F5F9;
-}
-.segmentBtn:hover{ background:#e9eef5; }
-
-
-.segmentBtnActive{
-  background:#fff;
-  border:2px solid #6FDCB7;
-  box-shadow:none;
-  border-radius:10px;               
+.segmentBtn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  transition: background-color 200ms ease;
+  z-index: 1;
 }
 
-.segmentTitle{ font-weight:600; line-height:1.1; }
-.segmentSub{ font-size:12px; color:#6b7280; }
-
-
-.segmentBtn:not(.segmentBtnActive) .segmentTitle,
-.segmentBtn:not(.segmentBtnActive) .segmentSub{ color:#98969C; }
-.segmentBtnActive .segmentTitle{ color:#111827; }
-
-.segmentBtn:focus-visible{ box-shadow:0 0 0 3px rgba(111,220,183,.35); }
-
-.segmentIcon{
-  width:20px; height:20px; margin-bottom:6px; flex-shrink:0;
-  color:#98969C;
+.segmentBtn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
 }
-.segmentBtnActive .segmentIcon{ color:#6FDCB7; }
 
-@media (max-width:520px){ .segmentedGroup{ grid-template-columns:1fr; } }
-
+.segmentBtnActive {
+  background-color: transparent;
+}
 
 .segmentIcon {
   width: 20px;
   height: 20px;
-  margin-bottom: 6px;
-  color: #98969C;
   flex-shrink: 0;
+  color: #98969C;
+  transition: color 200ms ease;
 }
 
 .segmentBtnActive .segmentIcon {
   color: #6FDCB7;
+}
+
+.segmentTitle {
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  color: #98969C;
+  transition: color 200ms ease;
+}
+
+.segmentBtnActive .segmentTitle {
+  color: #111827;
+}
+
+.segmentSub {
+  font-size: 12px;
+  text-align: center;
+  color: #98969C;
+  margin-top: 2px;
+}
+
+@media (max-width: 520px) {
+  .segmentedGroup {
+    grid-template-columns: 1fr;
+  }
 }

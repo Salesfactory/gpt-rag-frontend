@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SaveFilled } from "@fluentui/react-icons";
-import { X, Info, FileText, List, BookOpen } from "lucide-react";
+import { X, Info, FileText, AlignLeft, BookOpen } from "lucide-react";
 import { DefaultButton, Stack, Spinner, Slider, Dropdown, IDropdownOption, Dialog, DialogContent, PrimaryButton } from "@fluentui/react";
 import styles from "./SettingsModalcopy.module.css";
 import { getSettings, postSettings } from "../../api/api";
@@ -398,7 +398,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
               </div>
             ) : (
               <div className={styles.content}>
-                <div className={styles["w-100"]}>
+                <div>
                   <div className={styles.item}>
                     <span>Font Type</span>
                   </div>
@@ -421,7 +421,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       styles: { root: { zIndex: 100000 } }
                     }}
                     styles={{
-                      root: { width: "90%" },
+                      root: { width: "100%" },
                       dropdown: {
                         borderRadius: "8px",
                         border: "1px solid #d1d5db",
@@ -465,7 +465,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       styles: { root: { zIndex: 100000 } }
                     }}
                     styles={{
-                      root: { width: "90%" },
+                      root: { width: "100%" },
                       dropdown: {
                         borderRadius: "8px",
                         border: "1px solid #d1d5db",
@@ -523,7 +523,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       styles: { root: { zIndex: 100000 } }
                     }}
                     styles={{
-                      root: { width: "90%" },
+                      root: { width: "100%" },
                       dropdown: {
                         borderRadius: "8px",
                         border: "1px solid #d1d5db",
@@ -564,51 +564,8 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                     }}
                   />
                 </div>
-                {/* Detail Level */}
-                <div className={styles.item}>
-                  <span>Detail Level</span>
-                </div>
-                <div
-                    role="group"
-                    aria-label="Detail Level"
-                    className={styles.segmentedGroup}
-                    data-testid="detail-level-group"
-                >
-                  <button
-                    type="button"
-                    className={`${styles.segmentBtn} ${detailLevel === "high" ? styles.segmentBtnActive : ""}`}
-                    aria-pressed={detailLevel === "high"}
-                    onClick={() => setDetailLevel("high")}
-                  >
-                    <FileText className={styles.segmentIcon} aria-hidden="true" />
-                    <span className={styles.segmentTitle}>High-Level</span>
-                    <span className={styles.segmentSub}>Brief overview</span>
-                  </button>
 
-                  <button
-                    type="button"
-                    className={`${styles.segmentBtn} ${detailLevel === "balanced" ? styles.segmentBtnActive : ""}`}
-                    aria-pressed={detailLevel === "balanced"}
-                    onClick={() => setDetailLevel("balanced")}
-                  >
-                    <List className={styles.segmentIcon} aria-hidden="true" />
-                    <span className={styles.segmentTitle}>Balanced</span>
-                    <span className={styles.segmentSub}>Moderate depth</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`${styles.segmentBtn} ${detailLevel === "very" ? styles.segmentBtnActive : ""}`}
-                    aria-pressed={detailLevel === "very"}
-                    onClick={() => setDetailLevel("very")}
-                  >
-                    <BookOpen className={styles.segmentIcon} aria-hidden="true" />
-                    <span className={styles.segmentTitle}>Very Detailed</span>
-                    <span className={styles.segmentSub}>Comprehensive</span>
-                  </button>
-                </div>
-
-                <div className={styles["w-100"]}>
+                <div>
                   <div className={styles.item}>
                     <span>Creativity Scale</span>
                     <InfoTooltip title="Creativity Scale" />
@@ -624,13 +581,70 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                       snapToStep
                       onChange={handleSetTemperature}
                       aria-labelledby="temperature-slider"
-                      styles={{ root: { width: "100%" } }}
+                      styles={{
+                        root: { width: "100%" },
+                        slideBox: { width: "100%" },
+                        valueLabel: { marginLeft: 8, minWidth: "auto" }
+                      }}
                       className={styles.sliderCustom}
                     />
                   </div>
                 </div>
 
-                <div className={styles["w-100"]} style={{ marginTop: "30px", textAlign: "center" }}>
+                {/* Detail Level */}
+                <div className={styles.item}>
+                  <span>Detail Level</span>
+                </div>
+                <div
+                    role="group"
+                    aria-label="Detail Level"
+                    className={styles.segmentedGroup}
+                    data-testid="detail-level-group"
+                >
+                  <div
+                    className={styles.slidingIndicator}
+                    style={{
+                      width: 'calc((100% - 16px) / 3)',
+                      transform: detailLevel === "high" ? 'translateX(0%)' :
+                                 detailLevel === "balanced" ? 'translateX(calc(100% + 8px))' :
+                                 'translateX(calc(200% + 16px))'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${detailLevel === "high" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "high"}
+                    onClick={() => setDetailLevel("high")}
+                  >
+                    <FileText className={styles.segmentIcon} aria-hidden="true" />
+                    <span className={styles.segmentTitle}>Succinct</span>
+                    <span className={styles.segmentSub}>Brief overview</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${detailLevel === "balanced" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "balanced"}
+                    onClick={() => setDetailLevel("balanced")}
+                  >
+                    <AlignLeft className={styles.segmentIcon} aria-hidden="true" />
+                    <span className={styles.segmentTitle}>Balanced</span>
+                    <span className={styles.segmentSub}>Moderate depth</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${detailLevel === "very" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "very"}
+                    onClick={() => setDetailLevel("very")}
+                  >
+                    <BookOpen className={styles.segmentIcon} aria-hidden="true" />
+                    <span className={styles.segmentTitle}>Detailed</span>
+                    <span className={styles.segmentSub}>Comprehensive</span>
+                  </button>
+                </div>
+
+                <div className={styles.saveRow}>
                   <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
                     <SaveFilled className={styles.saveIcon} />
                     &#8202;&#8202;Save
