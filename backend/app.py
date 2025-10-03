@@ -1743,6 +1743,17 @@ def setSettings(*, context):
         font_size = request_body.get("font_size")
         detail_level = request_body.get("detail_level")
 
+        ALLOWED_DETAIL_LEVELS = {"brief", "balanced", "detailed"}
+        if detail_level is not None and detail_level not in ALLOWED_DETAIL_LEVELS:
+            return (
+                jsonify({
+                    "error": "invalid_detail_level",
+                    "message": f"Invalid detail_level '{detail_level}'. "
+                               f"Allowed: {', '.join(sorted(ALLOWED_DETAIL_LEVELS))}."
+                }),
+                400,
+            )
+
         set_settings(
             client_principal=client_principal,
             temperature=temperature,
