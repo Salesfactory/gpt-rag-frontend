@@ -21,7 +21,6 @@ const API_TO_UI: Record<DetailLevelAPI, DetailLevelUI> = {
   detailed: "very"
 };
 
-
 const ConfirmationDialog = ({
   loading,
   isOpen,
@@ -365,7 +364,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
   }, [onClose]);
 
   return (
-    <div className={styles.overlay}>
+    <div className={styles.overlay} data-testid="settings-overlay">
       <div ref={panelRef} className={styles.panel} onClick={e => e.stopPropagation()}>
         <ConfirmationDialog
           loading={isLoadingSettings}
@@ -612,6 +611,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                   />
                   <button
                     type="button"
+                    data-testid="detail-opt-succinct"
                     className={`${styles.segmentBtn} ${detailLevel === "high" ? styles.segmentBtnActive : ""}`}
                     aria-pressed={detailLevel === "high"}
                     onClick={() => setDetailLevel("high")}
@@ -623,6 +623,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
                   <button
                     type="button"
+                    data-testid="detail-opt-balanced"
                     className={`${styles.segmentBtn} ${detailLevel === "balanced" ? styles.segmentBtnActive : ""}`}
                     aria-pressed={detailLevel === "balanced"}
                     onClick={() => setDetailLevel("balanced")}
@@ -634,6 +635,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
                   <button
                     type="button"
+                    data-testid="detail-opt-detailed"
                     className={`${styles.segmentBtn} ${detailLevel === "very" ? styles.segmentBtnActive : ""}`}
                     aria-pressed={detailLevel === "very"}
                     onClick={() => setDetailLevel("very")}
