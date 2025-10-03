@@ -104,7 +104,7 @@ export async function deleteUser({ user, userId, organizationId }: any): Promise
                 "X-MS-CLIENT-PRINCIPAL-ID": user.id
             }
         });
-        
+
         /*This is a temporal fix. The deleteuser code in the frontend needs to be refactored*/
         if (response.status === 200 || response.status === 204) {
             return { success: true };
@@ -118,7 +118,7 @@ export async function deleteUser({ user, userId, organizationId }: any): Promise
     }
 }
 
-export async function deleteInvitation({user, invitationId }: any): Promise<any> {
+export async function deleteInvitation({ user, invitationId }: any): Promise<any> {
     try {
         const response = await fetch(`/api/deleteInvitation?invitationId=${invitationId}`, {
             method: "DELETE",
@@ -127,7 +127,7 @@ export async function deleteInvitation({user, invitationId }: any): Promise<any>
                 "Content-Type": "application/json",
             }
         });
-        
+
         if (response.status === 200 || response.status === 204) {
             return { success: true };
         }
@@ -330,12 +330,12 @@ export async function getFeedbackUrl(): Promise<string | null> {
                 "Content-Type": "application/json"
             }
         });
-        
+
         if (response.status > 299 || !response.ok) {
             console.log("Error getting feedback URL");
             return null;
         }
-        
+
         const parsedResponse = await response.json();
         return parsedResponse["feedback_url"] || null;
     } catch (error) {
@@ -575,7 +575,7 @@ export async function uploadSourceFileToBlob(file: any, organizationId: string) 
     formdata.append("file", file);
     formdata.append("organization_id", organizationId);
     formdata.append("MIME_type", file.type)
-  
+
     try {
         const response = await fetch("/api/upload-source-document", {
             method: "POST",
@@ -584,6 +584,9 @@ export async function uploadSourceFileToBlob(file: any, organizationId: string) 
         });
         if (!response.ok) {
             console.log("Error uploading file:", response.statusText);
+            if (response.status === 422) {
+                throw new Error("File type not allowed. Please upload a valid file.");
+            }
             throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
         }
         const result = await response.json();
@@ -657,7 +660,7 @@ export async function getCustomerId({ subscriptionId }: { subscriptionId: string
     const response = await fetch("/get-customer", {
         method: "POST",
         headers: {
-           "Content-Type": "application/json" 
+            "Content-Type": "application/json"
         },
         body: JSON.stringify({
             subscription_id: subscriptionId
@@ -675,15 +678,15 @@ interface CustomerPortalSession {
     url: string;
 }
 
-export async function createCustomerPortalSession({ 
-    customerId, 
+export async function createCustomerPortalSession({
+    customerId,
     return_url,
     subscription_id
 }: {
     customerId: string;
     return_url: string;
-    subscription_id:string;
-}): Promise<CustomerPortalSession>{
+    subscription_id: string;
+}): Promise<CustomerPortalSession> {
     const response = await fetch("/create-customer-portal-session", {
         method: "POST",
         headers: {
@@ -698,14 +701,14 @@ export async function createCustomerPortalSession({
     if (response.status > 299 || !response.ok) {
         throw Error("Error creating checkout session");
     }
-    
+
     if (!response.ok) {
         throw new Error("Error creating customer portal session");
     }
 
     const session = await response.json();
     return session;
-    
+
 }
 
 export async function getProductPrices({ user }: { user: any }): Promise<any> {
@@ -852,7 +855,7 @@ export async function resetUserPassword({ userId, newPassword }: { userId: strin
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({ "new_password":newPassword })
+        body: JSON.stringify({ "new_password": newPassword })
     });
 
     if (response.status === 404) {
@@ -866,7 +869,7 @@ export async function resetUserPassword({ userId, newPassword }: { userId: strin
     return response.json();
 }
 
-export async function changeSubscription({ subscriptionId, newPlanId, user}: {subscriptionId: string;newPlanId: string; user:any;}): Promise<any> {
+export async function changeSubscription({ subscriptionId, newPlanId, user }: { subscriptionId: string; newPlanId: string; user: any; }): Promise<any> {
     const userId = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const userName = user ? user.name : "anonymous";
     try {
@@ -874,7 +877,7 @@ export async function changeSubscription({ subscriptionId, newPlanId, user}: {su
             method: "PUT",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID":userId,
+                "X-MS-CLIENT-PRINCIPAL-ID": userId,
                 "X-MS-CLIENT-PRINCIPAL-NAME": userName
             },
             body: JSON.stringify({
@@ -902,8 +905,9 @@ export async function changeSubscription({ subscriptionId, newPlanId, user}: {su
 
 export async function getLogs(organizationId: string): Promise<any> {
     try {
-        const response = await fetch('/api/logs/', {method:'POST',
-            headers:{
+        const response = await fetch('/api/logs/', {
+            method: 'POST',
+            headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -941,22 +945,22 @@ export async function getLogs(organizationId: string): Promise<any> {
 export async function scrapeUrls(url: string, organizationId?: string, user?: any): Promise<any> {
     try {
         const payload: any = { url };
-        
+
         // Include organization_id if provided to save URLs to database
         if (organizationId) {
             payload.organization_id = organizationId;
         }
-        
+
         const headers: any = {
             "Content-Type": "application/json",
         };
-        
+
         // Add user authentication headers if user is provided
         if (user) {
             headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
             headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
         }
-        
+
         const response = await fetch("/api/webscraping/scrape-url", {
             method: "POST",
             headers,
@@ -968,7 +972,7 @@ export async function scrapeUrls(url: string, organizationId?: string, user?: an
         }
 
         const result = await response.json();
-        
+
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
@@ -980,22 +984,22 @@ export async function scrapeUrls(url: string, organizationId?: string, user?: an
 export async function scrapeUrlsMultipage(url: string, organizationId?: string, user?: any): Promise<any> {
     try {
         const payload: any = { url };
-        
+
         // Include organization_id if provided to save URLs to database
         if (organizationId) {
             payload.organization_id = organizationId;
         }
-        
+
         const headers: any = {
             "Content-Type": "application/json",
         };
-        
+
         // Add user authentication headers if user is provided
         if (user) {
             headers["X-MS-CLIENT-PRINCIPAL-ID"] = user.id;
             headers["X-MS-CLIENT-PRINCIPAL-NAME"] = user.name;
         }
-        
+
         const response = await fetch("/api/webscraping/multipage-scrape", {
             method: "POST",
             headers,
@@ -1007,7 +1011,7 @@ export async function scrapeUrlsMultipage(url: string, organizationId?: string, 
         }
 
         const result = await response.json();
-        
+
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
@@ -1122,7 +1126,7 @@ export async function exportConversation(conversationId: string, userId: string,
             user_id: userId,
             format: format
         };
-        
+
         const response = await fetch("/api/conversations/export", {
             method: "POST",
             headers: {
@@ -1137,9 +1141,9 @@ export async function exportConversation(conversationId: string, userId: string,
         }
 
         const result: ConversationExportResponse = await response.json();
-        
+
         console.log("Export response from server:", result);
-        
+
         if (!result.success) {
             throw new Error("Export failed: Server returned unsuccessful response");
         }
@@ -1153,374 +1157,374 @@ export async function exportConversation(conversationId: string, userId: string,
 
 // Create a brand
 export async function createBrand({
-  brand_name,
-  brand_description,
-  organization_id,
-  user,
+    brand_name,
+    brand_description,
+    organization_id,
+    user,
 }: {
-  brand_name: string;
-  brand_description: string;
-  organization_id: string;
-  user: any;
+    brand_name: string;
+    brand_description: string;
+    organization_id: string;
+    user: any;
 }): Promise<any> {
-  const response = await fetch('/api/voice-customer/brands', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({ brand_name, brand_description, organization_id }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error creating brand');
-  }
-  return data;
+    const response = await fetch('/api/voice-customer/brands', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({ brand_name, brand_description, organization_id }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error creating brand');
+    }
+    return data;
 }
 
 // Delete a brand
 export async function deleteBrand({
-  brand_id,
-  user,
-  organization_id,
+    brand_id,
+    user,
+    organization_id,
 }: {
-  brand_id: string;
-  user: any;
-  organization_id: string;
+    brand_id: string;
+    user: any;
+    organization_id: string;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({ organization_id }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error deleting brand');
-  }
-  return data;
+    const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({ organization_id }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error deleting brand');
+    }
+    return data;
 }
 
 // Get brands by organization
 export async function getBrandsByOrganization({
-  organization_id,
-  user,
+    organization_id,
+    user,
 }: {
-  organization_id: string;
-  user: any;
+    organization_id: string;
+    user: any;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/brands`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error fetching brands');
-  }
-  return data.data || [];
+    const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/brands`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error fetching brands');
+    }
+    return data.data || [];
 }
 
 // Update a brand
 export async function updateBrand({
-  brand_id,
-  brand_name,
-  brand_description,
-  user,
-  organization_id,
+    brand_id,
+    brand_name,
+    brand_description,
+    user,
+    organization_id,
 }: {
-  brand_id: string;
-  brand_name: string;
-  brand_description: string;
-  user: any;
-  organization_id: string;
+    brand_id: string;
+    brand_name: string;
+    brand_description: string;
+    user: any;
+    organization_id: string;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({ brand_name, brand_description, organization_id }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error updating brand');
-  }
-  return data;
+    const response = await fetch(`/api/voice-customer/brands/${encodeURIComponent(brand_id)}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({ brand_name, brand_description, organization_id }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error updating brand');
+    }
+    return data;
 }
 
 // Create a product
 export async function createProduct({
-  product_name,
-  product_description,
-  brand_id,
-  organization_id,
-  user,
-  category,
+    product_name,
+    product_description,
+    brand_id,
+    organization_id,
+    user,
+    category,
 }: {
-  product_name: string;
-  product_description: string;
-  brand_id: string;
-  organization_id: string;
-  user: any;
-  category: string;
+    product_name: string;
+    product_description: string;
+    brand_id: string;
+    organization_id: string;
+    user: any;
+    category: string;
 }): Promise<any> {
-  const response = await fetch('/api/voice-customer/products', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({
-      product_name,
-      product_description,
-      brand_id,
-      organization_id,
-      category,
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error creating product');
-  }
-  return data;
+    const response = await fetch('/api/voice-customer/products', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({
+            product_name,
+            product_description,
+            brand_id,
+            organization_id,
+            category,
+        }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error creating product');
+    }
+    return data;
 }
 
 // Delete a product
 export async function deleteProduct({
-  product_id,
-  user,
-  organization_id,
+    product_id,
+    user,
+    organization_id,
 }: {
-  product_id: string;
-  user: any;
-  organization_id: string;
+    product_id: string;
+    user: any;
+    organization_id: string;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({ organization_id }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error deleting product');
-  }
-  return data;
+    const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({ organization_id }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error deleting product');
+    }
+    return data;
 }
 
 // Get products by organization
 export async function getProductsByOrganization({
-  organization_id,
-  user,
+    organization_id,
+    user,
 }: {
-  organization_id: string;
-  user: any;
+    organization_id: string;
+    user: any;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/products`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error fetching products');
-  }
-  return data.data || [];
+    const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/products`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error fetching products');
+    }
+    return data.data || [];
 }
 
 // Update a product
 export async function updateProduct({
-  product_id,
-  product_name,
-  product_description,
-  brand_id,
-  user,
-  organization_id,
-  category,
+    product_id,
+    product_name,
+    product_description,
+    brand_id,
+    user,
+    organization_id,
+    category,
 }: {
-  product_id: string;
-  product_name: string;
-  product_description: string;
-  brand_id: string;
-  user: any;
-  organization_id: string;
-  category: string;
+    product_id: string;
+    product_name: string;
+    product_description: string;
+    brand_id: string;
+    user: any;
+    organization_id: string;
+    category: string;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({
-      product_name,
-      product_description,
-      brand_id,
-      organization_id,
-      category,
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error updating product');
-  }
-  return data;
+    const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({
+            product_name,
+            product_description,
+            brand_id,
+            organization_id,
+            category,
+        }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error updating product');
+    }
+    return data;
 }
 
 // Create a competitor
 export async function createCompetitor({
-  competitor_name,
-  competitor_description,
-  brands_id,
-  organization_id,
-  user,
+    competitor_name,
+    competitor_description,
+    brands_id,
+    organization_id,
+    user,
 }: {
-  competitor_name: string;
-  competitor_description: string;
-  brands_id: string[];
-  organization_id: string;
-  user: any;
+    competitor_name: string;
+    competitor_description: string;
+    brands_id: string[];
+    organization_id: string;
+    user: any;
 }): Promise<any> {
-  const response = await fetch('/api/voice-customer/competitors', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({
-      competitor_name,
-      competitor_description,
-      brands_id,
-      organization_id,
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error creating competitor');
-  }
-  return data;
+    const response = await fetch('/api/voice-customer/competitors', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({
+            competitor_name,
+            competitor_description,
+            brands_id,
+            organization_id,
+        }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error creating competitor');
+    }
+    return data;
 }
 
 // Delete a competitor
 export async function deleteCompetitor({
-  competitor_id,
-  user,
-  organization_id,
+    competitor_id,
+    user,
+    organization_id,
 }: {
-  competitor_id: string;
-  user: any;
-  organization_id: string;
+    competitor_id: string;
+    user: any;
+    organization_id: string;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({ organization_id }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error deleting competitor');
-  }
-  return data;
+    const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({ organization_id }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error deleting competitor');
+    }
+    return data;
 }
 
 // Get competitors by organization
 export async function getCompetitorsByOrganization({
-  organization_id,
-  user,
+    organization_id,
+    user,
 }: {
-  organization_id: string;
-  user: any;
+    organization_id: string;
+    user: any;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/competitors`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error fetching competitors');
-  }
-  return data.data || [];
+    const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/competitors`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error fetching competitors');
+    }
+    return data.data || [];
 }
 
 // Update a competitor
 export async function updateCompetitor({
-  competitor_id,
-  competitor_name,
-  competitor_description,
-  user,
-  organization_id,
+    competitor_id,
+    competitor_name,
+    competitor_description,
+    user,
+    organization_id,
 }: {
-  competitor_id: string;
-  competitor_name: string;
-  competitor_description: string;
-  user: any;
-  organization_id: string;
+    competitor_id: string;
+    competitor_name: string;
+    competitor_description: string;
+    user: any;
+    organization_id: string;
 }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-    body: JSON.stringify({
-      competitor_name,
-      competitor_description,
-      organization_id,
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || 'Error updating competitor');
-  }
-  return data;
+    const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({
+            competitor_name,
+            competitor_description,
+            organization_id,
+        }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Error updating competitor');
+    }
+    return data;
 }
 
 // This needs to be implemented in the future with a Delete Modal in Voice of Customer. DO NOT DELETE
 export async function getItemsToDeleteByBrand({ brand_id, user, organization_id }: { brand_id: string; user: any, organization_id: string }): Promise<any> {
-  const response = await fetch(`/api/voice-customer/organization/${encodeURIComponent(organization_id)}/brands/${encodeURIComponent(brand_id)}/items-to-delete/`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-    },
-  });
+    const response = await fetch(`/api/voice-customer/organization/${encodeURIComponent(organization_id)}/brands/${encodeURIComponent(brand_id)}/items-to-delete/`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+    });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch items to delete for brand ${brand_id}: ${response.statusText}`);
-  }
+    if (!response.ok) {
+        throw new Error(`Failed to fetch items to delete for brand ${brand_id}: ${response.statusText}`);
+    }
 
-  const result = await response.json();
+    const result = await response.json();
 
-  return result.data;
+    return result.data;
 }
 
 /**
@@ -1531,8 +1535,8 @@ export async function getItemsToDeleteByBrand({ brand_id, user, organization_id 
  */
 export async function getFileBlob(fileName: string, container: string = "documents"): Promise<Blob> {
     // Clean prefix 'documents/' if present
-    const cleanedFileName = fileName.startsWith('documents/') 
-        ? fileName.slice('documents/'.length) 
+    const cleanedFileName = fileName.startsWith('documents/')
+        ? fileName.slice('documents/'.length)
         : fileName;
 
     try {
@@ -1564,8 +1568,8 @@ export async function getFileBlob(fileName: string, container: string = "documen
  */
 export async function generateExcelDownloadUrl(filePath: string): Promise<{
     success: boolean;
-    download_url: string; 
-    preview_url?: string; 
+    download_url: string;
+    preview_url?: string;
     sas_url?: string;     // fallback public blob SAS (Excel only)
     filename: string;
     expires_in_days: number;
@@ -1593,106 +1597,106 @@ export async function generateExcelDownloadUrl(filePath: string): Promise<{
 }
 
 export async function getGalleryItems(
-  organization_id: string,
-  params: {
-    user: any;
-    uploader_id?: string | null;
-    order?: "newest" | "oldest";
-    query?: string;
-    page?: number;
-    limit?: number;
-    signal?: AbortSignal;
-  }
+    organization_id: string,
+    params: {
+        user: any;
+        uploader_id?: string | null;
+        order?: "newest" | "oldest";
+        query?: string;
+        page?: number;
+        limit?: number;
+        signal?: AbortSignal;
+    }
 ): Promise<{
-  items: any[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
+    items: any[];
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
 }> {
-  const qs = new URLSearchParams();
-  if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
-  if (params.order)       qs.set("order", params.order);
-  if (params.query)       qs.set("query", params.query);
-  if (params.page)        qs.set("page", params.page.toString());
-  if (params.limit)       qs.set("limit", params.limit.toString());
+    const qs = new URLSearchParams();
+    if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
+    if (params.order) qs.set("order", params.order);
+    if (params.query) qs.set("query", params.query);
+    if (params.page) qs.set("page", params.page.toString());
+    if (params.limit) qs.set("limit", params.limit.toString());
 
-  const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;
+    const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "X-MS-CLIENT-PRINCIPAL-ID": params.user?.id ?? "00000000-0000-0000-0000-000000000000",
-      "X-MS-CLIENT-PRINCIPAL-NAME": params.user?.name ?? "anonymous",
-      Accept: "application/json"
-    },
-    signal: params.signal
-  });
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "X-MS-CLIENT-PRINCIPAL-ID": params.user?.id ?? "00000000-0000-0000-0000-000000000000",
+            "X-MS-CLIENT-PRINCIPAL-NAME": params.user?.name ?? "anonymous",
+            Accept: "application/json"
+        },
+        signal: params.signal
+    });
 
-  if (!response.ok) {
-    const bodyText = await response.text().catch(() => "");
-    console.error(`Failed to fetch gallery items: ${response.status} ${response.statusText}`, bodyText);
-    throw new Error(`Failed to fetch gallery items: ${response.status}`);
-  }
+    if (!response.ok) {
+        const bodyText = await response.text().catch(() => "");
+        console.error(`Failed to fetch gallery items: ${response.status} ${response.statusText}`, bodyText);
+        throw new Error(`Failed to fetch gallery items: ${response.status}`);
+    }
 
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) {
-    const bodyText = await response.text().catch(() => "");
-    console.error("Unexpected non-JSON response from gallery API:", bodyText);
-    throw new Error("Invalid response from gallery API (expected JSON)");
-  }
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+        const bodyText = await response.text().catch(() => "");
+        console.error("Unexpected non-JSON response from gallery API:", bodyText);
+        throw new Error("Invalid response from gallery API (expected JSON)");
+    }
 
-  const data = await response.json().catch((err) => {
-    console.error("Error parsing gallery JSON response:", err);
-    throw new Error("Invalid JSON from gallery API");
-  });
+    const data = await response.json().catch((err) => {
+        console.error("Error parsing gallery JSON response:", err);
+        throw new Error("Invalid JSON from gallery API");
+    });
 
-  const result = data?.data ?? data ?? {};
-  return {
-    items: result.items ?? [],
-    total: result.total ?? 0,
-    page: result.page ?? 1,
-    limit: result.limit ?? 10,
-    total_pages: result.total_pages ?? 0,
-    has_next: result.has_next ?? false,
-    has_prev: result.has_prev ?? false
-  };
+    const result = data?.data ?? data ?? {};
+    return {
+        items: result.items ?? [],
+        total: result.total ?? 0,
+        page: result.page ?? 1,
+        limit: result.limit ?? 10,
+        total_pages: result.total_pages ?? 0,
+        has_next: result.has_next ?? false,
+        has_prev: result.has_prev ?? false
+    };
 }
 
 export async function fetchReportJobs({
-  organization_id,
-  user,
-  limit = 10,
-  status,
-}: {
-  organization_id: string;
-  user: any;
-  limit?: number;
-  status?: BackendReportStatus;
-}): Promise<BackendReportJobDoc[]> {
-  const params = new URLSearchParams({
     organization_id,
-    limit: String(limit),
-  });
-  if (status) params.set("status", status);
+    user,
+    limit = 10,
+    status,
+}: {
+    organization_id: string;
+    user: any;
+    limit?: number;
+    status?: BackendReportStatus;
+}): Promise<BackendReportJobDoc[]> {
+    const params = new URLSearchParams({
+        organization_id,
+        limit: String(limit),
+    });
+    if (status) params.set("status", status);
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "X-MS-CLIENT-PRINCIPAL-ID": user?.id ?? "00000000-0000-0000-0000-000000000000",
-    "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
-  };
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-MS-CLIENT-PRINCIPAL-ID": user?.id ?? "00000000-0000-0000-0000-000000000000",
+        "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+    };
 
-  const res = await fetch(`/api/report-jobs?${params.toString()}`, { method: "GET", headers });
-  const data = await res.json().catch(() => null);
+    const res = await fetch(`/api/report-jobs?${params.toString()}`, { method: "GET", headers });
+    const data = await res.json().catch(() => null);
 
-  if (!res.ok) {
-    const msg = (data && (data.message || data.error)) || `Failed to fetch report jobs (${res.status})`;
-    throw new Error(msg);
-  }
+    if (!res.ok) {
+        const msg = (data && (data.message || data.error)) || `Failed to fetch report jobs (${res.status})`;
+        throw new Error(msg);
+    }
 
-  return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data : [];
 }
 
 
@@ -1715,7 +1719,7 @@ export async function getIndustryByOrganization({ organization_id, user }: { org
 }
 
 export async function upsertIndustry({ organization_id, industry_description, user }: { organization_id: string | number; industry_description: string; user?: any }): Promise<any> {
-    const payload = { "industry_description":industry_description };
+    const payload = { "industry_description": industry_description };
     const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
         method: 'POST',
         headers: {
@@ -1733,203 +1737,203 @@ export async function upsertIndustry({ organization_id, industry_description, us
 
 
 export async function createCategory({
-  organization_id,
-  user,
-  name,
-  description,
-  metadata,
+    organization_id,
+    user,
+    name,
+    description,
+    metadata,
 }: {
-  organization_id: string;
-  user: any;
-  name: string;
-  description?: string;
-  metadata?: object;
+    organization_id: string;
+    user: any;
+    name: string;
+    description?: string;
+    metadata?: object;
 }): Promise<Category> {
-  const res = await fetch("/api/categories", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-MS-CLIENT-PRINCIPAL-ID":
-        user?.id ?? "00000000-0000-0000-0000-000000000000",
-      "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
-    },
-    body: JSON.stringify({ organization_id, name, description, metadata }),
-  });
+    const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID":
+                user?.id ?? "00000000-0000-0000-0000-000000000000",
+            "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+        },
+        body: JSON.stringify({ organization_id, name, description, metadata }),
+    });
 
-  const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message || data?.error || "Error creating category");
-  return data as Category;
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.message || data?.error || "Error creating category");
+    return data as Category;
 }
 
 
 export async function getCategory(categoryId: string, organizationId: string): Promise<Category> {
-  const response = await fetch(`/api/categories/${categoryId}?organization_id=${organizationId}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
+    const response = await fetch(`/api/categories/${categoryId}?organization_id=${organizationId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error fetching category: ${response.statusText}`);
     }
-  });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || `Error fetching category: ${response.statusText}`);
-  }
-
-  return response.json();
+    return response.json();
 }
 
 
 export async function getCategoriesByOrganization({
-  organization_id,
-  user,
-  limit = 50,
-}: {
-  organization_id: string;
-  user: any;
-  limit?: number;
-}): Promise<Category[]> {
-  const params = new URLSearchParams({
     organization_id,
-    limit: String(limit),
-  });
+    user,
+    limit = 50,
+}: {
+    organization_id: string;
+    user: any;
+    limit?: number;
+}): Promise<Category[]> {
+    const params = new URLSearchParams({
+        organization_id,
+        limit: String(limit),
+    });
 
-  const res = await fetch(`/api/categories?${params.toString()}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-MS-CLIENT-PRINCIPAL-ID":
-        user?.id ?? "00000000-0000-0000-0000-000000000000",
-      "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
-    },
-  });
+    const res = await fetch(`/api/categories?${params.toString()}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID":
+                user?.id ?? "00000000-0000-0000-0000-000000000000",
+            "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+        },
+    });
 
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw new Error(data?.message || data?.error || "Error fetching categories");
-  }
-  return Array.isArray(data) ? data : [];
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error(data?.message || data?.error || "Error fetching categories");
+    }
+    return Array.isArray(data) ? data : [];
 }
 
 
 export async function deleteCategory({
-  category_id,
-  organization_id,
-  user,
+    category_id,
+    organization_id,
+    user,
 }: {
-  category_id: string;
-  organization_id: string;
-  user: any;
+    category_id: string;
+    organization_id: string;
+    user: any;
 }): Promise<void> {
-  const res = await fetch(
-    `/api/categories/${encodeURIComponent(category_id)}?organization_id=${encodeURIComponent(organization_id)}`,
-    {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "X-MS-CLIENT-PRINCIPAL-ID":
-          user?.id ?? "00000000-0000-0000-0000-000000000000",
-        "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
-      },
+    const res = await fetch(
+        `/api/categories/${encodeURIComponent(category_id)}?organization_id=${encodeURIComponent(organization_id)}`,
+        {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID":
+                    user?.id ?? "00000000-0000-0000-0000-000000000000",
+                "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
+            },
+        }
+    );
+    if (res.status !== 204 && !res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message || data?.error || "Error deleting category");
     }
-  );
-  if (res.status !== 204 && !res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.message || data?.error || "Error deleting category");
-  }
 }
 
 export async function uploadUserDocument({
-  file,
-  conversationId,
-  user
+    file,
+    conversationId,
+    user
 }: {
-  file: File;
-  conversationId: string;
-  user: any;
+    file: File;
+    conversationId: string;
+    user: any;
 }): Promise<{ blob_url: string; blob_name: string; saved_filename: string; original_filename: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('conversation_id', conversationId);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('conversation_id', conversationId);
 
-  try {
-    const response = await fetch('/api/upload-user-document', {
-      method: 'POST',
-      headers: {
-        'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-        'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-        'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
-      },
-      body: formData
-    });
+    try {
+        const response = await fetch('/api/upload-user-document', {
+            method: 'POST',
+            headers: {
+                'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+                'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+                'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+            },
+            body: formData
+        });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.error?.message || `Upload failed: ${response.status}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.error?.message || `Upload failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const payload = result?.data ?? result; //{ data: { ... }, status }
+        return payload;
+    } catch (error) {
+        console.error('Error uploading user document:', error);
+        throw error;
     }
-
-    const result = await response.json();
-    const payload = result?.data ?? result; //{ data: { ... }, status }
-    return payload;
-  } catch (error) {
-    console.error('Error uploading user document:', error);
-    throw error;
-  }
 }
 
 export async function deleteUserDocument({
-  blobName,
-  conversationId,
-  user
+    blobName,
+    conversationId,
+    user
 }: {
-  blobName: string;
-  conversationId: string;
-  user: any;
+    blobName: string;
+    conversationId: string;
+    user: any;
 }): Promise<{ message: string }> {
-  const res = await fetch('/api/delete-user-document', {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-      'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
-    },
-    body: JSON.stringify({
-      blob_name: blobName,
-      conversation_id: conversationId
-    })
-  });
+    const res = await fetch('/api/delete-user-document', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+            'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+        },
+        body: JSON.stringify({
+            blob_name: blobName,
+            conversation_id: conversationId
+        })
+    });
 
-  const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw new Error(data?.error || data?.message || 'Error deleting user document');
-  }
-  return data?.data ?? data;
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error(data?.error || data?.message || 'Error deleting user document');
+    }
+    return data?.data ?? data;
 }
 
 export async function listUserDocuments({
-  conversationId,
-  user
+    conversationId,
+    user
 }: {
-  conversationId: string;
-  user: any;
+    conversationId: string;
+    user: any;
 }): Promise<Array<{ blob_name: string; saved_filename: string; original_filename: string; size?: number; uploaded_at?: string }>> {
-  const params = new URLSearchParams({
-    conversation_id: conversationId,
-  });
+    const params = new URLSearchParams({
+        conversation_id: conversationId,
+    });
 
-  const res = await fetch(`/api/list-user-documents?${params.toString()}`, {
-    method: 'GET',
-    headers: {
-      'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
-      'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
-      'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+    const res = await fetch(`/api/list-user-documents?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+            'X-MS-CLIENT-PRINCIPAL-ORGANIZATION': user?.organizationId ?? ''
+        }
+    });
+
+    const json = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error(json?.error?.message || json?.message || 'Error listing user documents');
     }
-  });
-
-  const json = await res.json().catch(() => null);
-  if (!res.ok) {
-    throw new Error(json?.error?.message || json?.message || 'Error listing user documents');
-  }
-  const files = json?.data?.files ?? [];
-  return Array.isArray(files) ? files : [];
+    const files = json?.data?.files ?? [];
+    return Array.isArray(files) ? files : [];
 }
