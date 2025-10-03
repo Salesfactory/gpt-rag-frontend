@@ -7,19 +7,7 @@ import { getSettings, postSettings } from "../../api/api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast } from "react-toastify";
 
-type DetailLevelUI = "high" | "balanced" | "very";
-type DetailLevelAPI = "brief" | "balanced" | "detailed";
-
-const UI_TO_API: Record<DetailLevelUI, DetailLevelAPI> = {
-  high: "brief",
-  balanced: "balanced",
-  very: "detailed"
-};
-const API_TO_UI: Record<DetailLevelAPI, DetailLevelUI> = {
-  brief: "high",
-  balanced: "balanced",
-  detailed: "very"
-};
+type DetailLevel = "brief" | "balanced" | "detailed";
 
 const ConfirmationDialog = ({
   loading,
@@ -98,7 +86,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
   const [selectedFont, setSelectedFont] = useState<string>("Arial");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [detailLevel, setDetailLevel] = useState<DetailLevelUI>("balanced");
+  const [detailLevel, setDetailLevel] = useState<DetailLevel>("balanced");
 
   const modelOptions: IDropdownOption[] = [
     { key: "gpt-4.1", text: "gpt-4.1" },
@@ -175,33 +163,17 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         if (typeof data.font_family === "string" && data.font_family.trim() !== "") {
           setSelectedFont(data.font_family.trim());
         }
-      let initial: DetailLevelUI = "balanced";
-      const fromBackend = (data as any)?.detail_level as DetailLevelAPI | undefined;
-      if (fromBackend && API_TO_UI[fromBackend]) {
-        initial = API_TO_UI[fromBackend];
+      const detail_level = (data as any)?.detail_level;
+      if (detail_level === "brief" || detail_level === "balanced" || detail_level === "detailed") {
+        setDetailLevel(detail_level);
       } else {
-        try {
-          const ls = localStorage.getItem("detail_level");
-          if (ls === "brief" || ls === "balanced" || ls === "detailed") {
-            initial = API_TO_UI[ls];
-          }
-        } catch {}
+        setDetailLevel("balanced");
       }
-      setDetailLevel(initial);
       } catch (error) {
         console.error("Error fetching settings:", error);
         const modelConfig = modelTemperatureSettings[selectedModel];
         setTemperature(Number(modelConfig.default));
-        try {
-        const ls = localStorage.getItem("detail_level");
-        if (ls === "brief" || ls === "balanced" || ls === "detailed") {
-          setDetailLevel(API_TO_UI[ls]);
-        } else {
-          setDetailLevel("balanced");
-        }
-      } catch {
         setDetailLevel("balanced");
-      }
       } finally {
         setLoading(false);
       }
@@ -218,7 +190,6 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
     const modelConfig = modelTemperatureSettings[selectedModel];
     const parsedFontSize = selectedFontSize;
     const parsedFontSeleted = selectedFont;
-    const apiDetailLevel: DetailLevelAPI = UI_TO_API[detailLevel];
 
     if (!modelConfig || parsedTemperature < modelConfig.min || parsedTemperature > modelConfig.max) {
       console.error(
@@ -233,19 +204,24 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       model: selectedModel,
       font_family: parsedFontSeleted,
       font_size: parsedFontSize,
-      detail_level: apiDetailLevel
+      detail_level: detailLevel
     })
       .then(data => {
         setTemperature(Number(data.temperature));
         setSelectedModel(data.model);
         setSelectedFont(data.font_family);
         setSelectedFontSize(data.font_size);
+
+        const returned = (data as any)?.detail_level;
+        const normalized: DetailLevel =
+          returned === "brief" || returned === "balanced" || returned === "detailed"
+            ? returned
+            : detailLevel;
+
+        setDetailLevel(normalized);
         try {
           localStorage.setItem("chat_creativity", String(data.temperature));
-          const saved = (data as any)?.detail_level as DetailLevelAPI | undefined;
-          const toStore =
-            saved === "brief" || saved === "balanced" || saved === "detailed" ? saved : apiDetailLevel;
-          localStorage.setItem("detail_level", toStore);
+          localStorage.setItem("detail_level", normalized);
         } catch {}
         setIsDialogOpen(false);
         setIsLoadingSettings(false);
@@ -595,26 +571,29 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                   <span>Detail Level</span>
                 </div>
                 <div
-                    role="group"
-                    aria-label="Detail Level"
-                    className={styles.segmentedGroup}
-                    data-testid="detail-level-group"
+                  role="group"
+                  aria-label="Detail Level"
+                  className={styles.segmentedGroup}
+                  data-testid="detail-level-group"
                 >
                   <div
                     className={styles.slidingIndicator}
                     style={{
                       width: 'calc((100% - 16px) / 3)',
-                      transform: detailLevel === "high" ? 'translateX(0%)' :
-                                 detailLevel === "balanced" ? 'translateX(calc(100% + 8px))' :
-                                 'translateX(calc(200% + 16px))'
+                      transform:
+                        detailLevel === "brief"
+                          ? 'translateX(0%)'
+                          : detailLevel === "balanced"
+                          ? 'translateX(calc(100% + 8px))'
+                          : 'translateX(calc(200% + 16px))',
                     }}
                   />
                   <button
                     type="button"
                     data-testid="detail-opt-succinct"
-                    className={`${styles.segmentBtn} ${detailLevel === "high" ? styles.segmentBtnActive : ""}`}
-                    aria-pressed={detailLevel === "high"}
-                    onClick={() => setDetailLevel("high")}
+                    className={`${styles.segmentBtn} ${detailLevel === "brief" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "brief"}
+                    onClick={() => setDetailLevel("brief")}
                   >
                     <FileText className={styles.segmentIcon} aria-hidden="true" />
                     <span className={styles.segmentTitle}>Succinct</span>
@@ -636,15 +615,16 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                   <button
                     type="button"
                     data-testid="detail-opt-detailed"
-                    className={`${styles.segmentBtn} ${detailLevel === "very" ? styles.segmentBtnActive : ""}`}
-                    aria-pressed={detailLevel === "very"}
-                    onClick={() => setDetailLevel("very")}
+                    className={`${styles.segmentBtn} ${detailLevel === "detailed" ? styles.segmentBtnActive : ""}`}
+                    aria-pressed={detailLevel === "detailed"}
+                    onClick={() => setDetailLevel("detailed")}
                   >
                     <BookOpen className={styles.segmentIcon} aria-hidden="true" />
                     <span className={styles.segmentTitle}>Detailed</span>
                     <span className={styles.segmentSub}>Comprehensive</span>
                   </button>
                 </div>
+
 
                 <div className={styles.saveRow}>
                   <DefaultButton className={styles.saveButton} onClick={() => setIsDialogOpen(true)} aria-label="Save settings">
