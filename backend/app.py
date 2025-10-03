@@ -1744,15 +1744,17 @@ def setSettings(*, context):
         detail_level = request_body.get("detail_level")
 
         ALLOWED_DETAIL_LEVELS = {"brief", "balanced", "detailed"}
-        if detail_level is not None and detail_level not in ALLOWED_DETAIL_LEVELS:
-            return (
-                jsonify({
-                    "error": "invalid_detail_level",
-                    "message": f"Invalid detail_level '{detail_level}'. "
-                               f"Allowed: {', '.join(sorted(ALLOWED_DETAIL_LEVELS))}."
-                }),
-                400,
-            )
+
+        if detail_level is not None:
+            detail_level_norm = str(detail_level).strip().lower()
+            if detail_level_norm not in ALLOWED_DETAIL_LEVELS:
+                logging.warning(
+                    "[/api/settings] Invalid detail_level '%s' — falling back to 'balanced'.",
+                    detail_level
+                )
+                detail_level = "balanced"
+            else:
+                detail_level = detail_level_norm
 
         set_settings(
             client_principal=client_principal,
