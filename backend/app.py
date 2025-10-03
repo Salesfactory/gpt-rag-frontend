@@ -16,17 +16,7 @@ import os
 from dotenv import load_dotenv
 
 
-import logging
 
-for _n in (
-    "azure",
-    "azure.identity",
-    "azure.keyvault",
-    "azure.core",
-    "azure.core.pipeline.policies.http_logging_policy",
-    "urllib3",
-):
-    logging.getLogger(_n).setLevel(logging.WARNING)
 
 import requests
 import json
@@ -116,7 +106,18 @@ from azure.storage.blob import (
 from datetime import datetime, timedelta
 from io import BytesIO
 import pandas as pd
+import logging
 
+for _n in (
+    "azure",
+    "azure.identity",
+    "azure.keyvault",
+    "azure.core",
+    "azure.core.pipeline.policies.http_logging_policy",
+    "urllib3",
+):
+    logging.getLogger(_n).setLevel(logging.WARNING)
+    
 # Suppress Azure SDK logs (including Key Vault calls)
 logging.getLogger("azure").setLevel(logging.WARNING)
 logging.getLogger("azure.identity").setLevel(logging.WARNING)
