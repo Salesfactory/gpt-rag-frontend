@@ -194,7 +194,7 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     }
 }
 
-export async function postSettings({ user, temperature, model, font_family, font_size }: PostSettingsProps): Promise<any> {
+export async function postSettings({ user, temperature, model, font_family, font_size, detail_level }: PostSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
@@ -209,7 +209,8 @@ export async function postSettings({ user, temperature, model, font_family, font
                 temperature,
                 model,
                 font_family,
-                font_size
+                font_size,
+                detail_level
             })
         });
         const fetchedData = await response.json();
