@@ -14,7 +14,6 @@ import logging
 from shared.cosmo_db import create_invitation, get_invitation_by_email_and_org, get_invitation
 
 from utils import delete_invitation, create_error_response, get_invitations
-from routes.decorators.auth_decorator import auth_required
 
 from shared.error_handling import (
     MissingJSONPayloadError,
@@ -28,6 +27,13 @@ bp = Blueprint("invitations", __name__, url_prefix="/api")
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_instance = current_app.config.get("auth")
+        return auth_instance.login_required(f)(*args, **kwargs)
+    return decorated_function
+
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PASS = os.getenv("EMAIL_PASS")
 EMAIL_USER = os.getenv("EMAIL_USER")
@@ -37,7 +43,7 @@ INVITATION_LINK = os.getenv("INVITATION_LINK")
 
 @bp.route("/inviteUser", methods=["POST"])
 @auth_required
-def sendEmail():
+def sendEmail(*, context):
     if (
         not request.json
         or "username" not in request.json
@@ -181,7 +187,7 @@ def sendEmail():
 
 @bp.route("/getInvitations", methods=["GET"])
 @auth_required
-def getInvitations():
+def getInvitations(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
@@ -209,7 +215,7 @@ def getInvitations():
 
 @bp.route("/createInvitation", methods=["POST"])
 @auth_required
-def createInvitation():
+def createInvitation(*, context):
     try:
         client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
         if not client_principal_id:
@@ -245,7 +251,7 @@ def createInvitation():
 
 @bp.route("/deleteInvitation", methods=["DELETE"])
 @auth_required
-def deleteInvitation():
+def deleteInvitation(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     if not client_principal_id:
         return (
