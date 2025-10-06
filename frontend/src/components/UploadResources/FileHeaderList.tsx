@@ -1,6 +1,6 @@
 import { IconButton, SearchBox } from "@fluentui/react";
 import styles from "./UploadResources.module.css"
-import { Plus, RefreshCw, Search } from "lucide-react";
+import { CirclePlus, RefreshCw, Search } from "lucide-react";
 
 const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUploadDialog: () => void, onRefresh: () => void }> = ({ setSearchQuery, openUploadDialog, onRefresh }) => {
     return (
@@ -63,7 +63,7 @@ const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUp
             <div className={styles.file_list_actions}>
                 <IconButton title="Upload New Files" ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
                     <span className={styles.addIcon}>
-                        <Plus />
+                        <CirclePlus />
                     </span>
                     <span className={styles.buttonText}>Upload File</span>
                 </IconButton>

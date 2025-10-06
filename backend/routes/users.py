@@ -19,12 +19,20 @@ from utils import (
     reset_password,
 )
 from shared.cosmo_db import get_user_container, patch_user_data, update_user, set_user
-from routes.decorators.auth_decorator import auth_required
 
 bp = Blueprint("users", __name__)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+
+def auth_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_instance = current_app.config.get("auth")
+        return auth_instance.login_required(f)(*args, **kwargs)
+
+    return decorated_function
 
 
 EMAIL_HOST = os.getenv("EMAIL_HOST")
@@ -37,7 +45,7 @@ INVITATION_LINK = os.getenv("INVITATION_LINK")
 
 @bp.route("/api/user/<user_id>", methods=["GET"])
 @auth_required
-def getUserid(user_id):
+def getUserid(*, context, user_id):
     """
     Endpoint to get a user by ID.
     """
@@ -55,7 +63,7 @@ def getUserid(user_id):
 # Update Users
 @bp.route("/api/user/<user_id>", methods=["PUT"])
 @auth_required
-def updateUser(user_id):
+def updateUser(*, context, user_id):
     """
     Endpoint to update a user
     """
@@ -91,7 +99,7 @@ def updateUser(user_id):
 
 @bp.route("/api/user/<user_id>", methods=["PATCH"])
 @auth_required
-def patchUserData(user_id):
+def patchUserData(*, context, user_id):
     """
     Endpoint to update the 'name', role and 'email' fields of a user's 'data'
     """
@@ -125,7 +133,7 @@ def patchUserData(user_id):
 
 @bp.route("/api/user/<user_id>/reset-password", methods=["PATCH"])
 @auth_required
-def reset_user_password(user_id):
+def reset_user_password(*, context, user_id):
     """
     Endpoint to reset a user's password and send a notification email.
     """
@@ -384,7 +392,7 @@ def reset_user_password(user_id):
 
 @bp.route("/api/deleteuser", methods=["DELETE"])
 @auth_required
-def deleteUser():
+def deleteUser(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
 
     if not client_principal_id:
@@ -419,7 +427,7 @@ def deleteUser():
 
 @bp.route("/api/checkuser", methods=["POST"])
 @auth_required
-def checkUser():
+def checkUser(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
     if not client_principal_id or not client_principal_name:
@@ -488,7 +496,7 @@ def checkUser():
 
 @bp.route("/api/getUser", methods=["GET"])
 @auth_required
-def getUser():
+def getUser(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
 
@@ -516,7 +524,7 @@ def getUser():
 
 @bp.route("/api/getusers", methods=["GET"])
 @auth_required
-def getUsers():
+def getUsers(*, context):
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
 

@@ -766,7 +766,7 @@ def set_feedback(
 ################################################
 
 
-def set_settings(client_principal, temperature, model, font_family, font_size, detail_level=None):
+def set_settings(client_principal, temperature, model, font_family, font_size):
 
     new_setting = {}
     container = get_cosmos_container("settings")
@@ -787,13 +787,6 @@ def set_settings(client_principal, temperature, model, font_family, font_size, d
     if model not in allowed_models:
         logging.error(f"[util__module] set_settings: invalid model value {model}.")
         return
-
-    # validate detail level
-    if detail_level is not None:
-        allowed_detail_levels = ["brief", "balanced", "detailed"]
-        if detail_level not in allowed_detail_levels:
-            logging.error(f"[util__module] set_settings: invalid detail_level value {detail_level}.")
-            return
 
     if client_principal["id"]:
         query = "SELECT * FROM c WHERE c.user_id = @user_id"
@@ -823,8 +816,6 @@ def set_settings(client_principal, temperature, model, font_family, font_size, d
                 setting["font_family"] = font_family
             if font_size is not None:
                 setting["font_size"] = font_size
-            if detail_level is not None:
-                setting["detail_level"] = detail_level
 
             try:
                 container.replace_item(item=setting["id"], body=setting)
@@ -861,7 +852,6 @@ def set_settings(client_principal, temperature, model, font_family, font_size, d
                 new_setting["model"] = model
                 new_setting["font_family"] = font_family or ""
                 new_setting["font_size"] = font_size or ""
-                new_setting["detail_level"] = detail_level or "balanced"
                 container.create_item(body=new_setting)
 
                 logging.info(
@@ -911,7 +901,6 @@ def get_setting(client_principal):
             "model": "gpt-4.1",  # Default model
             "font_family": "",
             "font_size": "",
-            "detail_level": "balanced",
         }
 
     user_id = client_principal["id"]
@@ -920,7 +909,8 @@ def get_setting(client_principal):
     setting = {}
     container = get_cosmos_container("settings")
     try:
-        query = "SELECT c.temperature, c.model, c.font_family, c.font_size, c.detail_level FROM c WHERE c.user_id = @user_id"
+        # Update query to select only temperature and model
+        query = "SELECT c.temperature, c.model, c.font_family, c.font_size FROM c WHERE c.user_id = @user_id"
         parameters = [{"name": "@user_id", "value": user_id}]
         result = list(
             container.query_items(
@@ -929,11 +919,11 @@ def get_setting(client_principal):
         )
         if result:
             setting = result[0]
+            # Ensure both expected keys exist, provide defaults if missing
             setting["temperature"] = setting.get("temperature", 0.0)
             setting["model"] = setting.get("model", "gpt-4.1")
             setting["font_family"] = setting.get("font_family", "")
             setting["font_size"] = setting.get("font_size", "")
-            setting["detail_level"] = setting.get("detail_level", "balanced")
             logging.info(f"Settings found for user {user_id}: {setting}")
         else:  # If no settings found, return defaults
             logging.info(
@@ -944,7 +934,6 @@ def get_setting(client_principal):
                 "model": "gpt-4.1",  # Default model
                 "font_family": "",
                 "font_size": "",
-                "detail_level": "balanced",
             }
     except CosmosHttpResponseError as e:
         # Handle specific Cosmos errors, like 404 Not Found if needed, otherwise log generic error
@@ -957,7 +946,6 @@ def get_setting(client_principal):
             "model": "gpt-4.1",  # Default model
             "font_family": "",
             "font_size": "",
-            "detail_level": "balanced",
         }
     except Exception as e:
         logging.error(
@@ -969,7 +957,6 @@ def get_setting(client_principal):
             "model": "gpt-4.1",  # Default model
             "font_family": "",
             "font_size": "",
-            "detail_level": "balanced",
         }
     return setting
 

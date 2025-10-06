@@ -13,19 +13,12 @@ from azure.cosmos import CosmosClient
 from azure.storage.queue import QueueClient
 from azure.keyvault.secrets import SecretClient
 from azure.core.exceptions import HttpResponseError, ClientAuthenticationError, ResourceNotFoundError
-from urllib.parse import urlparse
 
 from .config import CONFIG
 
 log = logging.getLogger(__name__)
 
 QUEUE_DEBUG = os.getenv("QUEUE_DEBUG", "0") == "1"
-
-def _host(url: str) -> str:
-    try:
-        return urlparse(url).netloc or url
-    except Exception:
-        return url
 
 # -----------------------------
 # Credentials (Managed Identity)
@@ -42,7 +35,7 @@ def get_default_azure_credential() -> DefaultAzureCredential:
 @lru_cache(maxsize=1)
 def get_cosmos_client() -> CosmosClient:
     """Create a cached CosmosClient using MI and session consistency."""
-    log.debug("Creating CosmosClient for %s", _host(CONFIG.cosmos_uri))
+    log.info("Creating CosmosClient for %s", CONFIG.cosmos_uri)
     return CosmosClient(
         CONFIG.cosmos_uri, get_default_azure_credential(), consistency_level="Session"
     )
@@ -76,11 +69,14 @@ def get_report_jobs_queue_client() -> Optional[QueueClient]:
         account_url=CONFIG.queue_account_url,
         queue_name=CONFIG.queue_name,
         credential=get_default_azure_credential(),
-        logging_enable=False,
     )
     try:
         qc.create_queue()  # idempotent
-        log.debug("Azure Queue Storage ready: %s/%s", _host(CONFIG.queue_account_url), CONFIG.queue_name)
+        log.info(
+            "Azure Queue Storage ready: %s/%s",
+            CONFIG.queue_account_url,
+            CONFIG.queue_name,
+        )
     except Exception as e:
         log.warning("Failed to ensure queue exists: %s", e)
     return qc
@@ -137,8 +133,8 @@ def enqueue_report_job_message(
 
     # Verbose pre-send log (no PII)
     log.info(
-        "Enqueue -> account_host=%s queue=%s raw=%dB ~b64=%dB vis=%s ttl=%s",
-        _host(CONFIG.queue_account_url), CONFIG.queue_name, raw_len, approx_b64,
+        "Enqueue -> account=%s queue=%s raw=%dB ~b64=%dB vis=%s ttl=%s",
+        CONFIG.queue_account_url, CONFIG.queue_name, raw_len, approx_b64,
         visibility_timeout, time_to_live,
     )
     if QUEUE_DEBUG:
@@ -151,8 +147,7 @@ def enqueue_report_job_message(
             time_to_live=time_to_live,
             timeout=timeout,
         )
-        if QUEUE_DEBUG:
-            log.debug("Sent payload (b64): %s", payload)
+        log.info("Sent message: %s", payload)
         # Post-send diagnostics
         try:
             props = qc.get_queue_properties()
@@ -182,8 +177,8 @@ def enqueue_report_job_message(
         if status == 403:
             log.error("403 forbidden: check RBAC. Managed Identity needs 'Storage Queue Data Message Sender' on the account/queue.")
         if status == 404:
-            log.error("404 not found: queue may not exist or wrong account/queue name. account_host=%s queue=%s",
-                      _host(CONFIG.queue_account_url), CONFIG.queue_name)
+            log.error("404 not found: queue may not exist or wrong account/queue name. account=%s queue=%s",
+                      CONFIG.queue_account_url, CONFIG.queue_name)
         raise
     except Exception as e:
         log.exception("Unexpected failure enqueuing message: %r", e)
@@ -208,11 +203,9 @@ def get_secret_client() -> SecretClient:
         raise RuntimeError(
             "Key Vault not configured. Set AZURE_KEY_VAULT_NAME or AZURE_KEY_VAULT_URL."
         )
-    log.debug("[kv] retrieving secret")
+    log.info("Creating SecretClient for %s", CONFIG.key_vault_url)
     return SecretClient(
-        vault_url=CONFIG.key_vault_url,
-        credential=get_default_azure_credential(),
-        logging_enable=False,
+        vault_url=CONFIG.key_vault_url, credential=get_default_azure_credential()
     )
 
 
@@ -229,8 +222,12 @@ def get_azure_key_vault_secret(secret_name: str) -> str:
     Raises:
         Exception: Any underlying SDK error will be propagated (and can be caught by caller).
     """
-    log.info("[kv] retrieving secret")
-    secret = get_secret_client().get_secret(secret_name, logging_enable=False)
+    log.info(
+        "[webbackend] retrieving Key Vault secret %s from %s",
+        secret_name,
+        CONFIG.key_vault_url or "<unset>",
+    )
+    secret = get_secret_client().get_secret(secret_name)
     return secret.value
 
 
@@ -239,11 +236,9 @@ def get_blob_service_client() -> Optional[BlobServiceClient]:
     """
     Return a cached BlobServiceClient or None if not configured.
     """
-    log.debug("Creating BlobServiceClient for %s", _host(CONFIG.blob_account_url))
+    log.info("Creating BlobServiceClient...")
     return BlobServiceClient(
-        account_url=CONFIG.blob_account_url,
-        credential=get_default_azure_credential(),
-        logging_enable=False,
+        account_url=CONFIG.blob_account_url, credential=get_default_azure_credential()
     )
 
 
