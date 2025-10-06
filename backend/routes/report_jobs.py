@@ -143,7 +143,7 @@ def create_job():
         "report_name": report_name,
         "params": params,
         "status": "QUEUED",
-        "schedule_time": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
+        "schedule_time": (datetime.now(timezone.utc)).isoformat(),
         "created_at": now,
         "updated_at": now,
     }
