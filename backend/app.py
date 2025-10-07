@@ -9,15 +9,15 @@ from flask import (
     url_for,
     session,
     render_template,
-    stream_with_context,
-    current_app,
+    stream_with_context
 )
 from functools import wraps
 import os
 from dotenv import load_dotenv
 
 
-import logging
+
+
 import requests
 import json
 import stripe
@@ -81,7 +81,7 @@ from shared.cosmo_db import (
     patch_organization_data,
     get_audit_logs,
     get_organization_subscription,
-    create_organization
+    create_organization,
 )
 from shared import clients
 from data_summary.config import get_azure_openai_config
@@ -106,12 +106,26 @@ from azure.storage.blob import (
 from datetime import datetime, timedelta
 from io import BytesIO
 import pandas as pd
+import logging
 
+for _n in (
+    "azure",
+    "azure.identity",
+    "azure.keyvault",
+    "azure.core",
+    "azure.core.pipeline.policies.http_logging_policy",
+    "urllib3",
+):
+    logging.getLogger(_n).setLevel(logging.WARNING)
+    
 # Suppress Azure SDK logs (including Key Vault calls)
 logging.getLogger("azure").setLevel(logging.WARNING)
 logging.getLogger("azure.identity").setLevel(logging.WARNING)
 logging.getLogger("azure.keyvault").setLevel(logging.WARNING)
 logging.getLogger("azure.core").setLevel(logging.WARNING)
+logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)  
+logging.getLogger("urllib3").setLevel(logging.WARNING)                                            
+logging.getLogger("werkzeug").setLevel(logging.WARNING) 
 
 SPEECH_REGION = os.getenv("SPEECH_REGION")
 ORCHESTRATOR_ENDPOINT = os.getenv("ORCHESTRATOR_ENDPOINT")
@@ -154,7 +168,6 @@ AZURE_CSV_STORAGE_NAME = os.getenv("AZURE_CSV_STORAGE_CONTAINER", "files")
 ORCH_MASTER_KEY = "orchestrator-host--functionKey"
 
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -170,7 +183,7 @@ limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["1000 per hour", "100 per minute"],
     storage_uri="memory://",
-    strategy="fixed-window"
+    strategy="fixed-window",
 )
 
 
@@ -193,12 +206,14 @@ auth = Auth(
 )
 
 
-@app.before_request
+@app.before_first_request
 def setup_clients():
-    print(f"[before_request] {request.method} {request.path}", flush=True)
+    print(f"[before_first_request] ", flush=True)
     clients.warm_up()  # idempotent
     current_app.config["llm"] = setup_llm()  # todo move to a client for panda AI
-    current_app.config["blob_storage_manager"] = BlobStorageManager()  # TODO implement the new BlobStorageManager in the upload_sources.py (this is the only way that there is no pytest import issue) The issue was that when running all tests together, there was a complex import resolution problem where the utils module was not being found properly due to module caching issues and conflicts between test fixtures.
+    current_app.config["blob_storage_manager"] = (
+        BlobStorageManager()
+    )  # TODO implement the new BlobStorageManager in the upload_sources.py (this is the only way that there is no pytest import issue) The issue was that when running all tests together, there was a complex import resolution problem where the utils module was not being found properly due to module caching issues and conflicts between test fixtures.
     current_app.config["auth"] = auth
 
 
@@ -586,6 +601,7 @@ def get_auth_config():
 
 
 # Constants and Configuration
+
 
 @app.route("/api/auth/user")
 @auth.login_required
@@ -1039,6 +1055,7 @@ def exportConversation(*, context):
         logging.exception("[webbackend] exception in /api/conversations/export")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/organization/<org_id>", methods=["PATCH"])
 @auth.login_required
 def patch_organization_info(*, context, org_id):
@@ -1392,7 +1409,8 @@ def getBlob(*, context):
         else:
             client_credential = DefaultAzureCredential()
             blob_service_client = BlobServiceClient(
-                f"https://{STORAGE_ACCOUNT}.blob.core.windows.net", credential=client_credential
+                f"https://{STORAGE_ACCOUNT}.blob.core.windows.net",
+                credential=client_credential,
             )
         blob_client = blob_service_client.get_blob_client(
             container=container, blob=blob_name
@@ -1470,58 +1488,73 @@ def download_excel_citation(*, context):
     try:
         data = request.json
         file_path = data.get("file_path")
-        
+
         if not file_path:
             return jsonify({"error": "Missing file_path parameter"}), 400
-            
+
         # Log the received file_path for debugging
         logging.info(f"Processing file_path: {file_path}")
-        
+
         # Handle different citation formats
         if file_path.startswith("@https://") and file_path.endswith("/"):
             # Handle citation format like: @https://construction%20adhesives%20pos%202024%202025%20ytd.xlsx/
             # Extract the filename from between @https:// and the trailing /
-            encoded_filename = file_path[9:-1]  # Remove '@https://' prefix and '/' suffix
+            encoded_filename = file_path[
+                9:-1
+            ]  # Remove '@https://' prefix and '/' suffix
             blob_name = unquote(encoded_filename)  # URL decode the filename
             logging.info(f"Detected citation format, extracted filename: {blob_name}")
-            
-        elif file_path.startswith("https://") and (file_path.endswith(".xlsx") or file_path.endswith(".xls") or file_path.endswith(".csv")):
+
+        elif file_path.startswith("https://") and (
+            file_path.endswith(".xlsx")
+            or file_path.endswith(".xls")
+            or file_path.endswith(".csv")
+        ):
             # Handle citation format like: https://Construction%20Adhesives%20POS%202024%202025%20YTD.xlsx
             # This is just a URL-encoded filename, not a real URL - remove the https:// prefix
             encoded_filename = file_path[8:]  # Remove 'https://' prefix
             blob_name = unquote(encoded_filename)
             logging.info(f"Detected encoded filename format, extracted: {blob_name}")
-            
+
         elif file_path.startswith("https://") and "blob.core.windows.net" in file_path:
             # Handle full blob URL - extract the blob name after documents/
             parsed_url = urlparse(file_path)
-            path_parts = [part for part in parsed_url.path.split('/') if part]  
-            
-            if 'documents' in path_parts:
-                docs_index = path_parts.index('documents')
-                blob_name = '/'.join(path_parts[docs_index + 1:]) if docs_index + 1 < len(path_parts) else ''
+            path_parts = [part for part in parsed_url.path.split("/") if part]
+
+            if "documents" in path_parts:
+                docs_index = path_parts.index("documents")
+                blob_name = (
+                    "/".join(path_parts[docs_index + 1 :])
+                    if docs_index + 1 < len(path_parts)
+                    else ""
+                )
             else:
                 # If no 'documents' in path, try to extract filename from the path
-                blob_name = '/'.join(path_parts) if path_parts else ''
+                blob_name = "/".join(path_parts) if path_parts else ""
                 logging.warning(f"URL doesn't contain 'documents' in path: {file_path}")
         else:
             # Handle simple filename or relative path
             blob_name = unquote(file_path)
-            if blob_name.startswith('documents/'):
+            if blob_name.startswith("documents/"):
                 blob_name = blob_name[10:]  # Remove 'documents/' prefix
-            
-        logging.info(f"Extracted blob_name: {blob_name}")
-        
-        # Additional validation
-        if not blob_name or blob_name.strip() == '':
-            return jsonify({"error": "Unable to extract valid filename from path"}), 400
-            
-        # Validate file extension for Excel files
-        allowed_extensions = ['.xlsx', '.xls', '.csv']
-        if not any(blob_name.lower().endswith(ext) for ext in allowed_extensions):
-            return jsonify({"error": "Only Excel files (.xlsx, .xls, .csv) are supported"}), 400
 
-        # Build a streaming preview URL 
+        logging.info(f"Extracted blob_name: {blob_name}")
+
+        # Additional validation
+        if not blob_name or blob_name.strip() == "":
+            return jsonify({"error": "Unable to extract valid filename from path"}), 400
+
+        # Validate file extension for Excel files
+        allowed_extensions = [".xlsx", ".xls", ".csv"]
+        if not any(blob_name.lower().endswith(ext) for ext in allowed_extensions):
+            return (
+                jsonify(
+                    {"error": "Only Excel files (.xlsx, .xls, .csv) are supported"}
+                ),
+                400,
+            )
+
+        # Build a streaming preview URL
         q = urlencode({"file_path": file_path})
         preview_url = urljoin(request.url_root, f"preview/spreadsheet?{q}")
 
@@ -1530,12 +1563,15 @@ def download_excel_citation(*, context):
             if file_path.startswith("@https://") and file_path.endswith("/"):
                 encoded_filename = file_path[9:-1]
                 name = unquote(encoded_filename)
-            elif file_path.startswith("https://") and "blob.core.windows.net" in file_path:
+            elif (
+                file_path.startswith("https://")
+                and "blob.core.windows.net" in file_path
+            ):
                 parsed_url = urlparse(file_path)
-                parts = [p for p in parsed_url.path.split('/') if p]
+                parts = [p for p in parsed_url.path.split("/") if p]
                 name = parts[-1] if parts else "file"
             else:
-                name = unquote(file_path.split('/')[-1])
+                name = unquote(file_path.split("/")[-1])
         except Exception:
             name = "file"
         # Keep original filename extension for downloads (CSV remains .csv)
@@ -1547,12 +1583,16 @@ def download_excel_citation(*, context):
             )
             container_name = "documents"
             _blob_name = blob_name
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=_blob_name)
+            blob_client = blob_service_client.get_blob_client(
+                container=container_name, blob=_blob_name
+            )
             try:
                 blob_client.get_blob_properties()
             except Exception:
-                filename_only = _blob_name.split('/')[-1]
-                container_client = blob_service_client.get_container_client(container_name)
+                filename_only = _blob_name.split("/")[-1]
+                container_client = blob_service_client.get_container_client(
+                    container_name
+                )
                 found_blob = None
                 for b in container_client.list_blobs():
                     if b.name.endswith(filename_only):
@@ -1573,16 +1613,21 @@ def download_excel_citation(*, context):
                 )
                 sas_url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{container_name}/{_blob_name}?{sas_token}"
         except Exception as e:
-            logging.warning(f"[download-excel-citation] SAS fallback generation failed: {e}")
+            logging.warning(
+                f"[download-excel-citation] SAS fallback generation failed: {e}"
+            )
 
-        return jsonify({
-            "success": True,
-            "download_url": sas_url or preview_url, # Download should return the ORIGINAL file (CSV remains CSV)
-            "preview_url": preview_url, # Preview uses streaming endpoint (converted XLSX for CSV)
-            "sas_url": sas_url,
-            "filename": name,
-            "expires_in_days": 2
-        })
+        return jsonify(
+            {
+                "success": True,
+                "download_url": sas_url
+                or preview_url,  # Download should return the ORIGINAL file (CSV remains CSV)
+                "preview_url": preview_url,  # Preview uses streaming endpoint (converted XLSX for CSV)
+                "sas_url": sas_url,
+                "filename": name,
+                "expires_in_days": 2,
+            }
+        )
 
     except Exception as e:
         logging.exception("[webbackend] Exception in /api/download-excel-citation")
@@ -1600,19 +1645,21 @@ def preview_spreadsheet():
         if file_path.startswith("@https://") and file_path.endswith("/"):
             encoded_filename = file_path[9:-1]
             blob_name = unquote(encoded_filename)
-        elif file_path.startswith("https://") and file_path.endswith((".xlsx", ".xls", ".csv")):
+        elif file_path.startswith("https://") and file_path.endswith(
+            (".xlsx", ".xls", ".csv")
+        ):
             blob_name = unquote(file_path[8:])
         elif file_path.startswith("https://") and "blob.core.windows.net" in file_path:
             parsed_url = urlparse(file_path)
-            parts = [p for p in parsed_url.path.split('/') if p]
-            if 'documents' in parts:
-                idx = parts.index('documents')
-                blob_name = '/'.join(parts[idx + 1:]) if idx + 1 < len(parts) else ''
+            parts = [p for p in parsed_url.path.split("/") if p]
+            if "documents" in parts:
+                idx = parts.index("documents")
+                blob_name = "/".join(parts[idx + 1 :]) if idx + 1 < len(parts) else ""
             else:
-                blob_name = '/'.join(parts) if parts else ''
+                blob_name = "/".join(parts) if parts else ""
         else:
             blob_name = unquote(file_path)
-            if blob_name.startswith('documents/'):
+            if blob_name.startswith("documents/"):
                 blob_name = blob_name[10:]
 
         if not blob_name:
@@ -1623,13 +1670,15 @@ def preview_spreadsheet():
             current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
         )
         container_name = "documents"
-        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+        blob_client = blob_service_client.get_blob_client(
+            container=container_name, blob=blob_name
+        )
 
         # Verify existence; if not, try to locate by filename
         try:
             blob_client.get_blob_properties()
         except Exception:
-            filename_only = blob_name.split('/')[-1]
+            filename_only = blob_name.split("/")[-1]
             container_client = blob_service_client.get_container_client(container_name)
             found_blob = None
             for blob in container_client.list_blobs():
@@ -1638,38 +1687,46 @@ def preview_spreadsheet():
                     break
             if not found_blob:
                 return jsonify({"error": "File not found"}), 404
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob=found_blob)
+            blob_client = blob_service_client.get_blob_client(
+                container=container_name, blob=found_blob
+            )
             blob_name = found_blob
 
         lower = blob_name.lower()
-        if lower.endswith('.csv'):
+        if lower.endswith(".csv"):
             csv_bytes = blob_client.download_blob().readall()
             try:
                 df = pd.read_csv(BytesIO(csv_bytes))
             except UnicodeDecodeError:
-                df = pd.read_csv(BytesIO(csv_bytes), encoding='latin1')
+                df = pd.read_csv(BytesIO(csv_bytes), encoding="latin1")
             output = BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 df.to_excel(writer, index=False, sheet_name="Sheet1")
             output.seek(0)
-            resp = Response(output.getvalue(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            base = blob_name.split('/')[-1].rsplit('.', 1)[0]
-            resp.headers['Content-Disposition'] = f'inline; filename="{base}.xlsx"'
-            resp.headers['Cache-Control'] = 'no-store'
+            resp = Response(
+                output.getvalue(),
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            base = blob_name.split("/")[-1].rsplit(".", 1)[0]
+            resp.headers["Content-Disposition"] = f'inline; filename="{base}.xlsx"'
+            resp.headers["Cache-Control"] = "no-store"
             return resp
-        elif lower.endswith('.xlsx'):
+        elif lower.endswith(".xlsx"):
             data = blob_client.download_blob().readall()
-            resp = Response(data, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            base = blob_name.split('/')[-1]
-            resp.headers['Content-Disposition'] = f'inline; filename="{base}"'
-            resp.headers['Cache-Control'] = 'no-store'
+            resp = Response(
+                data,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+            base = blob_name.split("/")[-1]
+            resp.headers["Content-Disposition"] = f'inline; filename="{base}"'
+            resp.headers["Cache-Control"] = "no-store"
             return resp
-        elif lower.endswith('.xls'):
+        elif lower.endswith(".xls"):
             data = blob_client.download_blob().readall()
             resp = Response(data, mimetype="application/vnd.ms-excel")
-            base = blob_name.split('/')[-1]
-            resp.headers['Content-Disposition'] = f'inline; filename="{base}"'
-            resp.headers['Cache-Control'] = 'no-store'
+            base = blob_name.split("/")[-1]
+            resp.headers["Content-Disposition"] = f'inline; filename="{base}"'
+            resp.headers["Cache-Control"] = "no-store"
             return resp
         else:
             return jsonify({"error": "Unsupported file type for preview"}), 400
@@ -1697,6 +1754,20 @@ def setSettings(*, context):
         )  # address later since we're adding more models
         font_family = request_body.get("font_family")
         font_size = request_body.get("font_size")
+        detail_level = request_body.get("detail_level")
+
+        ALLOWED_DETAIL_LEVELS = {"brief", "balanced", "detailed"}
+
+        if detail_level is not None:
+            detail_level_norm = str(detail_level).strip().lower()
+            if detail_level_norm not in ALLOWED_DETAIL_LEVELS:
+                logging.warning(
+                    "[/api/settings] Invalid detail_level '%s' — falling back to 'balanced'.",
+                    detail_level
+                )
+                detail_level = "balanced"
+            else:
+                detail_level = detail_level_norm
 
         set_settings(
             client_principal=client_principal,
@@ -1704,6 +1775,7 @@ def setSettings(*, context):
             model=model,
             font_family=font_family,
             font_size=font_size,
+            detail_level=detail_level,
         )
 
         # Return all saved settings, including the model
@@ -1716,6 +1788,7 @@ def setSettings(*, context):
                     "model": model,
                     "font_family": font_family,
                     "font_size": font_size,
+                    "detail_level": detail_level,
                 }
             ),
             200,
@@ -1970,7 +2043,9 @@ def financial_assistant(subscriptionId):
     # Logging: Info level for normal operations
     logging.info(f"Modifying subscription {subscriptionId} to add Financial Assistant")
     if not FINANCIAL_ASSISTANT_PRICE_ID:
-        raise IncompleteConfigurationError("Financial Assistant price ID not configured")
+        raise IncompleteConfigurationError(
+            "Financial Assistant price ID not configured"
+        )
 
     try:
         updated_subscription = stripe.Subscription.modify(
@@ -2443,10 +2518,13 @@ def cancel_subscription(*, context, subscription_id):
 ################################################
 
 
-
 from pathlib import Path
 from curation_report_generator import graph
-from financial_doc_processor import BlobUploadError, markdown_to_html, BlobStorageManager
+from financial_doc_processor import (
+    BlobUploadError,
+    markdown_to_html,
+    BlobStorageManager,
+)
 from financial_agent_utils.curation_report_utils import (
     REPORT_TOPIC_PROMPT_DICT,
     InvalidReportTypeError,
@@ -2895,7 +2973,7 @@ def list_blobs(*, context):
         container_name = data.get("container_name")
         prefix = data.get("prefix", None)
         include_metadata = data.get("include_metadata", "no").lower()
-        
+
         # Pagination parameters
         page_size = min(data.get("page_size", 10), 100)  # Cap at 100 for performance
         page = max(data.get("page", 1), 1)  # Ensure page is at least 1
@@ -2927,18 +3005,25 @@ def list_blobs(*, context):
             continuation_token=continuation_token,
         )
 
-        return jsonify({
-            "status": "success", 
-            "data": result["blobs"], 
-            "pagination": {
-                "current_page": result["current_page"],
-                "page_size": result["page_size"],
-                "total_count": result["total_count"],
-                "has_more": result["has_more"],
-                "next_continuation_token": result.get("next_continuation_token"),
-                "total_pages": result.get("total_pages")
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "data": result["blobs"],
+                    "pagination": {
+                        "current_page": result["current_page"],
+                        "page_size": result["page_size"],
+                        "total_count": result["total_count"],
+                        "has_more": result["has_more"],
+                        "next_continuation_token": result.get(
+                            "next_continuation_token"
+                        ),
+                        "total_pages": result.get("total_pages"),
+                    },
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         return jsonify({"status": "error", "message": str(e)}), 400
@@ -3002,8 +3087,7 @@ def get_source_documents(*, context):
 
         if organization_blobs:
             organization_blobs.sort(
-                key=lambda x: datetime.fromisoformat(x['created_on']),
-                reverse=True
+                key=lambda x: datetime.fromisoformat(x["created_on"]), reverse=True
             )
 
         logger.info(
@@ -3552,13 +3636,19 @@ def get_gallery(*, context, organization_id):
         404: If no gallery items are found for the organization.
         500: If an unexpected error occurs during retrieval.
     """
-    if not organization_id or not isinstance(organization_id, str) or not organization_id.strip():
-        return create_error_response("Organization ID is required and must be a non-empty string.", 400)
+    if (
+        not organization_id
+        or not isinstance(organization_id, str)
+        or not organization_id.strip()
+    ):
+        return create_error_response(
+            "Organization ID is required and must be a non-empty string.", 400
+        )
     try:
         uploader_id = request.args.get("uploader_id")
         order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
         search_query = request.args.get("query") or request.args.get("q")
-        
+
         # Pagination parameters
         page = max(1, int(request.args.get("page", 1)))
         limit = min(100, max(1, int(request.args.get("limit", 20))))
@@ -3569,19 +3659,25 @@ def get_gallery(*, context, organization_id):
             order=order,
             query=search_query,
             page=page,
-            limit=limit
+            limit=limit,
         )
 
         return create_success_response(result, 200)
 
     except ValueError as ve:
-        logger.error(f"Value error retrieving gallery items for org {organization_id}: {ve}")
+        logger.error(
+            f"Value error retrieving gallery items for org {organization_id}: {ve}"
+        )
         return create_error_response(str(ve), 400)
     except CosmosHttpResponseError as ce:
-        logger.error(f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}")
+        logger.error(
+            f"Cosmos DB error retrieving gallery items for org {organization_id}: {ce}"
+        )
         return create_error_response("Database error retrieving gallery items.", 500)
     except Exception as e:
-        logger.exception(f"Unexpected error retrieving gallery items for org {organization_id}: {e}")
+        logger.exception(
+            f"Unexpected error retrieving gallery items for org {organization_id}: {e}"
+        )
         return create_error_response("Internal Server Error", 500)
 
 

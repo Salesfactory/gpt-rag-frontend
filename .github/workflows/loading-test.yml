@@ -1,0 +1,67 @@
+name: Locust Load Test
+
+on:
+  workflow_run:
+    workflows: ["Build and Deploy to Azure"]
+    types:
+      - completed
+
+jobs:
+  locust-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install locust
+
+      - name: Run Locust test
+        run: |
+          locust -f backend/locustfile.py --host https://webgpt0-vm2b2htvuuclm.azurewebsites.net --headless -u 100 -r 10 --run-time 5m --html locust_report.html
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-report
+          path: locust_report.html
+
+      - name: Send Slack Notification
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*¡Load Testing Finished!* :zap:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Download the report as a worflow artifact. :page_facing_up:"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Workflow: ${{ github.event.workflow_run.html_url }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

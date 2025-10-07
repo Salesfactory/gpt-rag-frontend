@@ -97,6 +97,8 @@ export type GetSettingsProps = {
     } | null;
 };
 
+export type DetailLevel = "brief" | "balanced" | "detailed";
+
 export type PostSettingsProps = {
     user: {
         id: string;
@@ -106,6 +108,7 @@ export type PostSettingsProps = {
     model: string;
     font_family: string;
     font_size: string;
+    detail_level?: DetailLevel;
 };
 
 export interface Category {
