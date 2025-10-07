@@ -617,7 +617,7 @@ def get_audit_logs(organization_id):
                 ORDER BY c._ts DESC
             """,
                 parameters=[{"name": "@organization_id", "value": organization_id}],
-                enable_cross_partition_query=True,
+                partition_key=organization_id
             )
         )
 
