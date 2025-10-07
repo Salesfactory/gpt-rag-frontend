@@ -347,7 +347,6 @@ class UserService:
 
             # Extract user data
             user_data = user_response["user_data"]
-            logger.info(f"[auth] User data retrieved: {user_data}")
 
             # Ensure required fields are present
             required_fields = ["role", "organizationId"]
@@ -3646,7 +3645,7 @@ def get_gallery(*, context, organization_id):
         )
     try:
         uploader_id = request.args.get("uploader_id")
-        order = (request.args.get("order") or "newest").lower()  # "newest" | "oldest"
+        order = (request.args.get("order") or "newest").lower()
         search_query = request.args.get("query") or request.args.get("q")
 
         # Pagination parameters

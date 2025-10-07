@@ -339,7 +339,7 @@ def get_gallery_items_by_org(
             # Original method - need to slice the results for pagination
             start_index = (page - 1) * limit
             end_index = start_index + limit
-            paginated_items = items[start_index:end_index]
+            paginated_items = items
 
             blob_pagination = {
                 "current_page": paginated_result.get("current_page", page),
