@@ -18,7 +18,7 @@ Partitioning: all job documents are partitioned by `organization_id`.
 from __future__ import annotations
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, Iterable, List
 
 from flask import Blueprint, request, jsonify, abort
@@ -72,7 +72,7 @@ def _jobs_container():
     Get the Cosmos container client for report jobs.
 
     Returns:
-        azure.cosmos.ContainerProxy: Container client for the jobs container.
+        azure.c osmos.ContainerProxy: Container client for the jobs container.
     """
     return clients.get_cosmos_container(clients.JOBS_CONT)
 
@@ -124,8 +124,7 @@ def create_job():
     """
     data = request.get_json(force=True) or {}
     organization_id = _require_organization_id()
-
-    job_id = data.get("job_id") or str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
     report_key = data.get("report_key")
     report_name = data.get("report_name")
     params = data.get("params") or {}
@@ -136,12 +135,15 @@ def create_job():
     now = _utc_now_iso()
     doc = {
         "id": job_id,  # Cosmos item id
+        "job_id": job_id,
+        "tenant_id": organization_id,
         "organization_id": organization_id,  # PK
-        "idempotency_key": weekly_idem_key(organization_id, report_name, now),
+        "idempotency_key": str(uuid.uuid4()),
         "report_key": report_key,
         "report_name": report_name,
         "params": params,
         "status": "QUEUED",
+        "schedule_time": (datetime.now(timezone.utc)).isoformat(),
         "created_at": now,
         "updated_at": now,
     }
@@ -150,15 +152,6 @@ def create_job():
         created = _jobs_container().create_item(doc)
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error creating job: {e}")
-
-    # Optionally enqueue a task/notification on Azure Queue Storage (replaces Service Bus)
-    _maybe_enqueue_report_job(
-        {
-            "type": "report_job_created",
-            "job_id": job_id,
-            "organization_id": organization_id,
-        }
-    )
 
     return jsonify(created), 201
 
