@@ -697,9 +697,9 @@
     margin-right: 0.5rem;
 }
 
-.dropzone { position: relative; } /* para posicionar el shield */
+.dropzone { position: relative; }
  .dndShield {
    position: absolute;
    inset: 0;
-   z-index: 2;         /* por encima del área de drop */
+   z-index: 2;
 }

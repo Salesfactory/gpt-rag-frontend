@@ -136,7 +136,6 @@ export const DragFilesContent: React.FC<{ onDrop: (acceptedFiles: File[]) => voi
            onDrop?.(acceptedFiles);
        },
        onDropRejected: () => {
-           /* no-op: seguimos bloqueados hasta que cierre el picker */
        },
          onFileDialogCancel: () => {
              setDisableDnD(false);
