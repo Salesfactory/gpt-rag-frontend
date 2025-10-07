@@ -696,3 +696,10 @@
     color: #111827; /* gray-900 */
     margin-right: 0.5rem;
 }
+
+.dropzone { position: relative; } /* para posicionar el shield */
+ .dndShield {
+   position: absolute;
+   inset: 0;
+   z-index: 2;         /* por encima del área de drop */
+}

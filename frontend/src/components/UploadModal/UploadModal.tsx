@@ -1,7 +1,7 @@
 
 import { PrimaryButton } from '@fluentui/react';
 import styles from './UploadModal.module.css';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { AlertTriangle, Upload } from 'lucide-react';
 import { Text } from "@fluentui/react/lib/Text";
@@ -127,25 +127,69 @@ export const UploadingContent: React.FC<{ selectedFiles: FileToUpload[] }> = ({ 
     )
 }
 
-export const DragFilesContent: React.FC<{onDrop: Callback }> = ({onDrop}) => {
+export const DragFilesContent: React.FC<{ onDrop: (acceptedFiles: File[]) => void }> = ({ onDrop }) => {
 
-    const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-        onDrop,
-        noClick: true
-    });
+    const [disableDnD, setDisableDnD] = useState(false);
+
+    const { getRootProps, getInputProps, isDragActive, open, isFileDialogActive } = useDropzone({
+       onDrop: (acceptedFiles) => {
+           onDrop?.(acceptedFiles);
+       },
+       onDropRejected: () => {
+           /* no-op: seguimos bloqueados hasta que cierre el picker */
+       },
+         onFileDialogCancel: () => {
+             setDisableDnD(false);
+         },
+         noDrag: disableDnD,
+         preventDropOnDocument: true,
+         noClick: true,
+         multiple: true
+     });
+ 
+     const handleBrowse = useCallback(() => {
+      open();
+      setDisableDnD(true);
+  }, [open]);
+ 
+     useEffect(() => {
+        if (!disableDnD) return;
+        const onFocus = () => {
+        setDisableDnD(false);
+        window.removeEventListener('focus', onFocus, true);
+        };
+        window.addEventListener('focus', onFocus, true);
+        return () => window.removeEventListener('focus', onFocus, true);
+    }, [disableDnD]);
+
+    useEffect(() => {
+        if (!isFileDialogActive && disableDnD) setDisableDnD(false);
+    }, [isFileDialogActive, disableDnD]);
+
     return (
-        <div className={`${styles.dropzone} ${isDragActive ? styles.dropzone_active : ""}`} {...getRootProps()}>
+        <div
+           className={`${styles.dropzone} ${isDragActive && !disableDnD ? styles.dropzone_active : ""} ${disableDnD ? styles.dropzone_disabled : ""}`}
+           aria-disabled={disableDnD}
+           {...getRootProps()}
+       >
+           {disableDnD && (
+               <div
+                   className={styles.dndShield}
+                   onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                   onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
+               />
+           )}
             <input aria-label="Dropzone" {...getInputProps()} />
 
             <div>
                 <label className={styles.file_label}>
                     <Upload size={48} className={styles.upload_icon} />
-                    <Text variant="large">{isDragActive ? "Drop files here" : "Drag files here or click to browse"}</Text>
+                    <Text variant="large">{isDragActive && !disableDnD ? "Drop files here" : "Drag files here or click to browse"}</Text>
                     <Text variant="medium" color="#4B5563">
                         Allowed file types: {ALLOWED_FILE_TYPES.join(", ")}
                     </Text>
                 </label>
-                <button type="button" aria-label='Browse Files' onClick={open} className={styles.browse_button}>
+                <button type="button" aria-label='Browse Files' onClick={handleBrowse} className={styles.browse_button}>
                     Browse Files
                 </button>
             </div>
