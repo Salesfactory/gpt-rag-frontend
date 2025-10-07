@@ -697,9 +697,23 @@
     margin-right: 0.5rem;
 }
 
-.dropzone { position: relative; }
- .dndShield {
-   position: absolute;
-   inset: 0;
-   z-index: 2;
+.dropzone { 
+  position: relative; 
+}
+
+.dndShield {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+
+.dropzone_disabled {
+  opacity: 0.6;
+}
+
+.dropzone[aria-disabled="true"] {
+  cursor: not-allowed;
 }

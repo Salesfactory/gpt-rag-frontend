@@ -127,14 +127,14 @@ export const UploadingContent: React.FC<{ selectedFiles: FileToUpload[] }> = ({ 
     )
 }
 
-export const DragFilesContent: React.FC<{ onDrop: (acceptedFiles: File[]) => void }> = ({ onDrop }) => {
+export const DragFilesContent: React.FC<{ onDrop: (acceptedFiles: File[]) => void }> = ({ onDrop: onDropProp }) => {
 
     const [disableDnD, setDisableDnD] = useState(false);
 
     const { getRootProps, getInputProps, isDragActive, open, isFileDialogActive } = useDropzone({
-       onDrop: (acceptedFiles) => {
-           onDrop?.(acceptedFiles);
-       },
+     onDrop: (acceptedFiles) => {
+         onDropProp(acceptedFiles);   
+     },
        onDropRejected: () => {
        },
          onFileDialogCancel: () => {
