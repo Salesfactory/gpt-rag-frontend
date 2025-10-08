@@ -66,7 +66,6 @@ from utils import (
     get_organization_urls,
     add_or_update_organization_url,
     search_urls,
-    set_feedback,
     set_settings,
     validate_url,
 )
@@ -1796,71 +1795,6 @@ def setSettings(*, context):
     except Exception as e:
         logging.exception("[webbackend] exception in /api/settings POST")
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/feedback", methods=["POST"])
-@auth.login_required
-def setFeedback(*, context):
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    client_principal_name = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME")
-
-    if not client_principal_id or not client_principal_name:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters, client_principal_id or client_principal_name"
-                }
-            ),
-            400,
-        )
-
-    client_principal = {"id": client_principal_id, "name": client_principal_name}
-
-    conversation_id = request.json["conversation_id"]
-    question = request.json["question"]
-    answer = request.json["answer"]
-    category = request.json["category"]
-    feedback = request.json["feedback"]
-    rating = request.json["rating"]
-
-    if not conversation_id or not question or not answer or not category:
-        return (
-            jsonify(
-                {
-                    "error": "Missing required parameters conversation_id, question, answer or category"
-                }
-            ),
-            400,
-        )
-
-    try:
-        conversations = set_feedback(
-            client_principal=client_principal,
-            conversation_id=conversation_id,
-            feedback_message=feedback,
-            question=question,
-            answer=answer,
-            rating=rating,
-            category=category,
-        )
-        return (
-            jsonify(
-                {
-                    "client_principal_id": client_principal_id,
-                    "client_principal_name": client_principal_name,
-                    "feedback_message": feedback,
-                    "question": question,
-                    "answer": answer,
-                    "rating": rating,
-                    "category": category,
-                }
-            ),
-            200,
-        )
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/feedback")
-        return jsonify({"error": str(e)}), 500
-
 
 @app.route("/logout")
 def logout():
