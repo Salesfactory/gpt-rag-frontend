@@ -1429,7 +1429,7 @@ def delete_url_by_id(url_id, organization_id):
 
     logging.info(f"Deleting URL: {url_id} from organization: {organization_id}")
 
-    container = get_cosmos_container("OrganizationWebsites")
+    container = get_cosmos_container("organizationWebsites")
     try:
         # get the blob path from the url document 
         url_document = container.read_item(item = url_id, partition_key = organization_id)
@@ -1485,7 +1485,7 @@ def search_urls(search_term, organization_id):
     )
 
     try:
-        container = get_cosmos_container("OrganizationWebsites")
+        container = get_cosmos_container("organizationWebsites")
 
         # Split into words
         words = cleaned_search_term.split()
@@ -1545,7 +1545,7 @@ def modify_url(url_id, organization_id, new_url):
     
     logging.info(f"[modify_url] Modifying URL: {url_id} in organization: {organization_id} to {new_url}")
 
-    container = get_cosmos_container("OrganizationWebsites")
+    container = get_cosmos_container("organizationWebsites")
     try:
         # Step 1: Get existing document using correct partition key
         existing_doc = container.read_item(item=url_id, partition_key=organization_id)
@@ -1629,7 +1629,7 @@ def get_organization_urls(organization_id):
     logging.info(f"[get_organization_urls] Getting all URLs for organization: {organization_id}")
     
     try:
-        container = get_cosmos_container("OrganizationWebsites")
+        container = get_cosmos_container("organizationWebsites")
         
         query = "SELECT * FROM c WHERE c.organizationId = @organization_id ORDER BY c.lastModified DESC"
         parameters = [{"name": "@organization_id", "value": organization_id}]
@@ -1665,7 +1665,7 @@ def find_existing_url(organization_id, url):
         return None
     
     try:
-        container = get_cosmos_container("OrganizationWebsites")
+        container = get_cosmos_container("organizationWebsites")
         
         query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.url = @url"
         parameters = [
@@ -1706,7 +1706,7 @@ def add_or_update_organization_url(organization_id, url, scraping_result=None, a
         return {"error": "Organization ID and URL are required."}
     
     try:
-        container = get_cosmos_container("OrganizationWebsites")
+        container = get_cosmos_container("organizationWebsites")
         
         # Check if URL already exists
         existing_doc = find_existing_url(organization_id, url)
