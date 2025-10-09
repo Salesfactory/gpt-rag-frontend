@@ -283,6 +283,12 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       };
     }, []);
 
+    useEffect(() => {
+      if (open) {
+        calculatePosition();
+      }
+    }, [open]);
+
     return (
       <span ref={wrapperRef} className={`${styles.tooltipWrapper} ${open ? styles.tooltipOpen : ""}`} aria-label={`${title} info`}>
         <button
