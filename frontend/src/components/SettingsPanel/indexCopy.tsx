@@ -85,6 +85,7 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
   const [selectedFontSize, setSelectedFontSize] = useState<string>("16");
   const [selectedFont, setSelectedFont] = useState<string>("Arial");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 520);
 
   const [detailLevel, setDetailLevel] = useState<DetailLevel>("balanced");
 
@@ -237,7 +238,20 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
   const InfoTooltip: React.FC<{ title: string }> = ({ title }) => {
     const [open, setOpen] = useState(false);
+    const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
     const wrapperRef = useRef<HTMLSpanElement | null>(null);
+    const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+    const calculatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const tooltipWidth = 300;
+        setTooltipPosition({
+          top: rect.bottom + 6,
+          left: rect.left + rect.width / 2 - tooltipWidth / 2 + 110
+        });
+      }
+    };
 
     useEffect(() => {
       const handleDocClick = (e: MouseEvent) => {
@@ -255,9 +269,24 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       };
     }, []);
 
+    useEffect(() => {
+      calculatePosition();
+      let timeoutId: NodeJS.Timeout;
+      const handleResize = () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(calculatePosition, 150);
+      };
+      window.addEventListener("resize", handleResize);
+      return () => {
+        clearTimeout(timeoutId);
+        window.removeEventListener("resize", handleResize);
+      };
+    }, []);
+
     return (
       <span ref={wrapperRef} className={`${styles.tooltipWrapper} ${open ? styles.tooltipOpen : ""}`} aria-label={`${title} info`}>
         <button
+          ref={buttonRef}
           type="button"
           className={`${styles.infoButton} ${open ? styles.infoButtonActive : ""}`}
           aria-expanded={open}
@@ -272,7 +301,15 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
         >
           <Info size={20} className={styles.infoIcon} aria-hidden="true" />
         </button>
-        <div className={styles.tooltipBoxLarge} role="dialog" aria-modal="false">
+        <div
+          className={styles.tooltipBoxLarge}
+          role="dialog"
+          aria-modal="false"
+          style={{
+            top: `${tooltipPosition.top}px`,
+            left: `${tooltipPosition.left}px`
+          }}
+        >
           <div className={styles.scaleGrid}>
             <div>
               <div className={styles.scaleItemHeader}>
@@ -338,6 +375,21 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [onClose]);
+
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth <= 520);
+      }, 150);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return (
     <div className={styles.overlay} data-testid="settings-overlay">
@@ -578,15 +630,26 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                 >
                   <div
                     className={styles.slidingIndicator}
-                    style={{
-                      width: 'calc((100% - 16px) / 3)',
-                      transform:
-                        detailLevel === "brief"
-                          ? 'translateX(0%)'
-                          : detailLevel === "balanced"
-                          ? 'translateX(calc(100% + 8px))'
-                          : 'translateX(calc(200% + 16px))',
-                    }}
+                    style={
+                      isMobile
+                        ? {
+                            transform:
+                              detailLevel === "brief"
+                                ? "translateY(0)"
+                                : detailLevel === "balanced"
+                                ? "translateY(calc(100% + 8px))"
+                                : "translateY(calc(200% + 16px))"
+                          }
+                        : {
+                            width: "calc((100% - 16px) / 3)",
+                            transform:
+                              detailLevel === "brief"
+                                ? "translateX(0%)"
+                                : detailLevel === "balanced"
+                                ? "translateX(calc(100% + 8px))"
+                                : "translateX(calc(200% + 16px))"
+                          }
+                    }
                   />
                   <button
                     type="button"
