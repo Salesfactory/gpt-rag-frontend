@@ -337,10 +337,7 @@
 
 
 .tooltipBoxLarge {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(calc(-50% + clamp(64px, 10vw, 110px)));
+    position: fixed;
     padding: 10px 12px;
     width: min(300px, 92vw);
     max-width: 340px;
@@ -353,7 +350,7 @@
     visibility: hidden;
     transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
     pointer-events: none;
-    z-index: 1000;
+    z-index: 10000;
 }
 
 .tooltipOpen .tooltipBoxLarge,
@@ -439,13 +436,17 @@
   position: absolute;
   top: 4px;
   bottom: 4px;
+  left: 4px;
   background-color: #ffffff;
   border-radius: 6px;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   border: 2px solid #6FDCB7;
-  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 200ms ease,
+              box-shadow 200ms ease;
   pointer-events: none;
   z-index: 0;
+  will-change: transform;
 }
 
 .segmentBtn {
@@ -506,5 +507,14 @@
 @media (max-width: 520px) {
   .segmentedGroup {
     grid-template-columns: 1fr;
+  }
+
+  .slidingIndicator {
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: auto;
+    width: auto !important;
+    height: calc((100% - 16px) / 3);
   }
 }
