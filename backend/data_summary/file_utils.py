@@ -1,5 +1,6 @@
 import csv, os, logging
 from typing import Optional, Tuple
+from pandasai import DataFrame as PAIDF
 import pandas as pd
 import io
 import tempfile
@@ -63,11 +64,17 @@ def read_preview(path: str) -> Tuple[Optional[pd.DataFrame], bool]:
     return try_read_excel_preview(path), False
 
 def to_pandasai_dataframe(df: pd.DataFrame):
-    from pandasai import DataFrame as PAIDF
     df = df.copy()
     df.columns = df.columns.astype(str)
     df.columns = [c.strip().replace("\n", " ").replace("\r", " ") for c in df.columns]
+
     return PAIDF(df)
+
+def reduce_dataframe_for_fallback(df: pd.DataFrame, max_rows: int = 1000) -> PAIDF:
+    if df.shape[0] > max_rows:
+        df = df[:max_rows]
+        logger.info("DataFrame truncated to %d rows for LLM processing", max_rows)
+    return to_pandasai_dataframe(df)
 
 def bytesio_to_tempfile(byte_data: io.BytesIO, suffix: str) -> str:
     temp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)

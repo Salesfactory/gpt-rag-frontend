@@ -3,7 +3,7 @@ from typing import Optional
 import pandas as pd
 import re
 from .llm import LLMClient
-from .file_utils import read_preview, read_full_dataframe, to_pandasai_dataframe
+from .file_utils import read_preview, read_full_dataframe, to_pandasai_dataframe, reduce_dataframe_for_fallback
 import unicodedata
 
 logger = logging.getLogger("datasummary.summarize")
@@ -93,9 +93,13 @@ def create_description(
                 if attempt == 1:
                     resp = llm.summarize_dataframe(pai_df, prompt)
                     description_source = "primary_llm"
+                if attempt == 2:
+                    pai_df = reduce_dataframe_for_fallback(pai_df)
+                    resp = llm.summarize_dataframe(pai_df, prompt)
+                    description_source = "primary_llm_fallback"
                 else:
                     resp = llm.summarize_dataframe(pai_df, FALLBACK_PROMPT)
-                    description_source = "fallback_llm"
+                    description_source = "secondary_llm_fallback"
 
 
                 # Handle PandasAI StringResponse
