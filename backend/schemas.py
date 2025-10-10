@@ -30,7 +30,7 @@ class ProductUpdateSchema(BaseModel):
 class CompetitorCreateSchema(BaseModel):
     competitor_name: str
     competitor_description: Union[str, None] = ""
-    industry: str
+    brands_id: Union[list[str], None] = []
     organization_id: str
 
 class CompetitorUpdateSchema(BaseModel):
