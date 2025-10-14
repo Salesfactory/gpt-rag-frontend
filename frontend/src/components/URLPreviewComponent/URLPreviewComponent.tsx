@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, memo } from "react";
 import { Spinner } from "@fluentui/react";
 import styles from "./URLPreviewComponent.module.css";
 import { getFileType, isImageFile } from "../../utils/functions";
 import { getFileBlob } from "../../api/api";
+import { blobCache } from "../../utils/blobCache";
 
 export interface URLPreviewComponentProps {
     url: string;
@@ -22,7 +23,7 @@ interface FileBlob {
     type: string;
 }
 
-export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
+const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
     url,
     alt = "Preview",
     className = "",
@@ -41,11 +42,23 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (isGenerating) {
+        if (isGenerating || !url) {
             return;
         }
+
         const loadFile = async () => {
-            if (!url) return;
+            // Check if we have this blob cached
+            const cached = blobCache.get(url);
+            if (cached) {
+                setFileBlob({
+                    blob: cached.blob,
+                    url: cached.url,
+                    type: cached.type
+                });
+                setImageLoaded(false); // Reset for new load
+                onLoad?.();
+                return;
+            }
 
             setIsLoading(true);
             setError(null);
@@ -54,7 +67,7 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
             try {
                 const blob = await getFileBlob(url, "documents");
                 const fileType = getFileType(url);
-                const objectUrl = URL.createObjectURL(blob);
+                const objectUrl = blobCache.set(url, blob, fileType);
 
                 setFileBlob({
                     blob,
@@ -73,15 +86,9 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
         };
 
         loadFile();
-    }, [url, onLoad, onError]);
+    }, [url, isGenerating]); // Removed onLoad and onError from dependencies
 
-    useEffect(() => {
-        return () => {
-            if (fileBlob?.url) {
-                URL.revokeObjectURL(fileBlob.url);
-            }
-        };
-    }, [fileBlob]);
+    // No longer need to manually revoke URLs - the cache manages this
 
     // Handle modal close on outside click
     useEffect(() => {
@@ -237,5 +244,8 @@ export const URLPreviewComponent: React.FC<URLPreviewComponentProps> = ({
         </>
     );
 };
+
+// Memoize component to prevent unnecessary re-renders
+export const URLPreviewComponent = memo(URLPreviewComponentBase);
 
 export default URLPreviewComponent;
