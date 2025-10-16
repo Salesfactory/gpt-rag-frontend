@@ -1,5 +1,5 @@
 import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
-import type { BlobItem } from "../types";
+import { SourceDocumentsResponse } from '../types';
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -524,8 +524,14 @@ export async function getApiKeyPayment(): Promise<string> {
     return apiKey;
 }
 
-export async function getSourceFileFromBlob(organizationId: string): Promise<BlobItem[]> {
-    const response = await fetch(`/api/get-source-documents?organization_id=${organizationId}`, {
+export async function getSourceFileFromBlob(organizationId: string, folderPath: string = ""): Promise<SourceDocumentsResponse> {
+    const url = new URL('/api/get-source-documents', window.location.origin);
+    url.searchParams.append('organization_id', organizationId);
+    if (folderPath) {
+        url.searchParams.append('folder_path', folderPath);
+    }
+    
+    const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
             "Content-Type": "application/json"

@@ -2994,39 +2994,95 @@ def get_logs(*, context):
 @auth.login_required
 def get_source_documents(*, context):
     organization_id = request.args.get("organization_id", "").strip()
+    folder_path = request.args.get("folder_path", "").strip()
 
-    logger.info(f"Getting source documents for organization {organization_id}")
+    logger.info(f"Getting source documents for organization {organization_id}, folder: {folder_path}")
 
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
 
     try:
         blob_storage_manager = BlobStorageManager()
-        # Search only the blobs under that organization's specific folder
-        prefix = f"organization_files/{organization_id}/"
+        
+        # Build the base prefix for the organization
+        base_prefix = f"organization_files/{organization_id}/"
+        
+        # Add the folder path if provided
+        if folder_path:
+            # Ensure folder_path doesn't start with / and ends with /
+            folder_path = folder_path.strip("/")
+            current_prefix = f"{base_prefix}{folder_path}/"
+        else:
+            current_prefix = base_prefix
+        
+        # Get all blobs with the current prefix
         blobs = blob_storage_manager.list_blobs_in_container_for_upload_files(
-            container_name="documents", prefix=prefix, include_metadata="yes"
+            container_name="documents", prefix=current_prefix, include_metadata="yes"
         )
 
-        # Return the original blob dicts so all fields (including created_on) are preserved
-        organization_blobs = []
-        generated_images_prefix = f"{prefix}generated_images/"
+        # Exclude generated_images folder
+        generated_images_prefix = f"{base_prefix}generated_images/"
+        
+        files = []
+        folder_set = set()
+        
         for blob in blobs:
             blob_name = blob.get("name", "")
-            if blob_name.startswith(prefix) and not blob_name.startswith(
-                generated_images_prefix
-            ):
-                organization_blobs.append(blob)
-
-        if organization_blobs:
-            organization_blobs.sort(
+            
+            # Skip generated images
+            if blob_name.startswith(generated_images_prefix):
+                continue
+            
+            # Get the relative path from current prefix
+            relative_path = blob_name[len(current_prefix):]
+            
+            # Skip empty paths
+            if not relative_path:
+                continue
+            
+            # Check if this is a file in the current directory or a nested item
+            parts = relative_path.split("/")
+            
+            if len(parts) == 1:
+                # This is a file directly in the current folder
+                files.append(blob)
+            elif len(parts) > 1:
+                # This is a nested item, add the folder name
+                folder_name = parts[0]
+                folder_set.add(folder_name)
+        
+        # Create folder objects
+        folders = []
+        for folder_name in sorted(folder_set):
+            folder_full_path = f"{folder_path}/{folder_name}" if folder_path else folder_name
+            folders.append({
+                "name": folder_name,
+                "full_path": folder_full_path,
+                "type": "folder",
+                "size": 0,
+                "created_on": "",
+                "last_modified": "",
+                "content_type": "folder",
+                "url": "",
+            })
+        
+        # Sort files by creation date
+        if files:
+            files.sort(
                 key=lambda x: datetime.fromisoformat(x["created_on"]), reverse=True
             )
+        
+        # Combine folders and files (folders first)
+        result = {
+            "folders": folders,
+            "files": files,
+            "current_path": folder_path
+        }
 
         logger.info(
-            f"Found {len(organization_blobs)} source documents for organization {organization_id}"
+            f"Found {len(folders)} folders and {len(files)} files for organization {organization_id} in path '{folder_path}'"
         )
-        return create_success_response(organization_blobs, 200)
+        return create_success_response(result, 200)
 
     except Exception as e:
         logger.exception(f"Unexpected error in get_source_documents: {e}")
