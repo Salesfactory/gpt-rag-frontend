@@ -587,6 +587,34 @@ export async function deleteSourceFileFromBlob(blob_name: string) {
     return result;
 }
 
+export async function createFolder(organizationId: string, folderName: string, currentPath: string = "") {
+    const response = await fetch("/api/create-folder", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            organization_id: organizationId,
+            folder_name: folderName,
+            current_path: currentPath
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        
+        // Handle specific error cases
+        if (response.status === 409) {
+            throw new Error("A folder with this name already exists");
+        }
+        
+        throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
 export async function uploadFile(file: any) {
     const formdata = new FormData();
     formdata.append("file", file);

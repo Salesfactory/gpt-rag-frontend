@@ -3125,6 +3125,96 @@ def delete_source_document(*, context):
         return create_error_response("Internal Server Error", 500)
 
 
+@app.route("/api/create-folder", methods=["POST"])
+@auth.login_required
+def create_folder(*, context):
+    """
+    Create a virtual folder in blob storage by creating an init.txt file.
+    
+    Expected JSON payload:
+    {
+        "organization_id": "org-123",
+        "folder_name": "New Folder",
+        "current_path": "subfolder" (optional, empty string for root)
+    }
+    
+    Returns:
+        JSON response with success message or error details
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+        
+        # Validate required fields
+        organization_id = data.get("organization_id", "").strip()
+        folder_name = data.get("folder_name", "").strip()
+        current_path = data.get("current_path", "").strip()
+        
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        
+        if not folder_name:
+            return create_error_response("Folder name is required", 400)
+        
+        # Validate folder name (same validation as frontend)
+        invalid_chars = r'<>:"/\\|?*'
+        if any(char in folder_name for char in invalid_chars):
+            return create_error_response(
+                f"Folder name contains invalid characters ({invalid_chars})", 400
+            )
+        
+        if len(folder_name) > 255:
+            return create_error_response("Folder name is too long (max 255 characters)", 400)
+        
+        # Build the folder path
+        base_prefix = f"organization_files/{organization_id}/"
+        
+        if current_path:
+            current_path = current_path.strip("/")
+            folder_full_path = f"{base_prefix}{current_path}/{folder_name}/"
+        else:
+            folder_full_path = f"{base_prefix}{folder_name}/"
+        
+        # Check if folder already exists by checking for any blobs with this prefix
+        blob_storage_manager = BlobStorageManager()
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+        
+        # List blobs with the folder prefix to check if it exists
+        existing_blobs = list(container_client.list_blobs(name_starts_with=folder_full_path, results_per_page=1))
+        
+        if existing_blobs:
+            return create_error_response("A folder with this name already exists", 409)
+        
+        # Create the init.txt file to represent the folder
+        init_file_path = f"{folder_full_path}init.txt"
+        blob_client = container_client.get_blob_client(init_file_path)
+        
+        # Upload an empty file with metadata
+        blob_client.upload_blob(
+            data="",
+            blob_type="BlockBlob",
+            metadata={
+                "folder_marker": "true",
+                "created_by": "folder_creation_endpoint",
+                "organization_id": organization_id
+            },
+            overwrite=False
+        )
+        
+        logger.info(f"Created folder '{folder_name}' at path '{folder_full_path}' for organization {organization_id}")
+        
+        return create_success_response({
+            "message": "Folder created successfully",
+            "folder_path": folder_full_path,
+            "folder_name": folder_name
+        }, 201)
+        
+    except Exception as e:
+        logger.exception(f"Unexpected error in create_folder: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+
 @app.route("/api/get-password-reset-url", methods=["GET"])
 @auth.login_required
 def get_password_reset_url(*, context):
