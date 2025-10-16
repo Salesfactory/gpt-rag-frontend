@@ -11,14 +11,38 @@ import UploadDialogModal from "../../components/UploadResources/UploadDialogModa
 
 const UploadResources: React.FC = () => {
     const { user } = useAppContext();
-    const { isLoading, filteredItems, deleteFile, setSearchQuery, fetchFiles, handleDownload,items } = useSourceFiles(user?.organizationId || "")
-    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", fetchFiles, items);
+    const { 
+        isLoading, 
+        files,
+        filteredFiles, 
+        filteredFolders,
+        currentPath,
+        deleteFile, 
+        setSearchQuery, 
+        fetchFiles, 
+        handleDownload,
+        navigateToFolder,
+        navigateBack,
+        navigateToRoot
+    } = useSourceFiles(user?.organizationId || "")
+    
+    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", () => fetchFiles(currentPath), files);
 
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={fetchFiles} />
-            <LazyResourceList filteredItems={filteredItems} isLoading={isLoading} deleteFile={deleteFile} handleDownload={handleDownload} />
+            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath)} />
+            <LazyResourceList 
+                filteredFiles={filteredFiles} 
+                filteredFolders={filteredFolders}
+                currentPath={currentPath}
+                isLoading={isLoading} 
+                deleteFile={deleteFile} 
+                handleDownload={handleDownload}
+                navigateToFolder={navigateToFolder}
+                navigateBack={navigateBack}
+                navigateToRoot={navigateToRoot}
+            />
             {uploadDialogOpen && (
                 <UploadDialogModal 
                     closeUploadDialog={closeUploadDialog}  

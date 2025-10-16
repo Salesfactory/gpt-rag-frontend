@@ -9,6 +9,23 @@ export interface BlobItem {
     metadata?: Record<string, string>;
 }
 
+export interface FolderItem {
+    name: string;
+    full_path: string;
+    type: "folder";
+    size: number;
+    created_on: string;
+    last_modified: string;
+    content_type: string;
+    url: string;
+}
+
+export interface SourceDocumentsResponse {
+    folders: FolderItem[];
+    files: BlobItem[];
+    current_path: string;
+}
+
 export type FileToUpload = { file: File; action: 'upload' | 'replace' | 'rename' }
 
 export type UploadState = {
