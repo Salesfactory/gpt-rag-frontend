@@ -131,6 +131,7 @@
     justify-content: space-between;
     align-items: center;
     padding-bottom: 3rem;
+    margin-top: 20px;
 }
 
 .file_list_actions {
@@ -1085,4 +1086,87 @@
 
 .new_folder_create_button:active {
     transform: scale(0.98);
+}
+
+.headerContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.storageCard {
+  width: 100%;
+  background: #0ea15a1a;            
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.storageTopRow, .storageBottomRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.storageTitle {
+  font-weight: 700;
+  color: #064e3b;
+}
+
+.storageSub {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 2px;
+}
+
+.storageRight {
+  color: #111827;
+  font-weight: 600;
+}
+
+.storagePct {
+  font-size: 1.25rem;
+  margin-right: 6px;
+}
+
+.storageBarWrapper {
+  margin: 12px 0 8px;
+}
+
+.storageBar {
+  height: 14px;
+  width: 100%;
+  background: #e5f6ec;               /* track */
+  border-radius: 9999px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d1fae5;
+}
+
+.storageBarFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  /* gradiente verde como en el mock */
+  background: linear-gradient(90deg, #16a34a, #10b981);
+  width: 0%;
+  transition: width 240ms ease;
+}
+
+/* skeleton loading */
+.isLoading {
+  background: linear-gradient(90deg, #eef2f3 0px, #f8fafc 40%, #eef2f3 80%);
+  background-size: 240px 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@keyframes shimmer {
+  0% { background-position: -240px 0; }
+  100% { background-position: 240px 0; }
+}
+
+.storageBottomRow span {
+  color: #6b7280;
+  font-size: 0.875rem;
 }
