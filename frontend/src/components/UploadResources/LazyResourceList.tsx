@@ -7,6 +7,7 @@ import { Download, Trash2, FileText, Table, Presentation, Folder, Edit2, Clock, 
 import { formatDate, formatFileSize } from "../../utils/fileUtils";
 import { BlobItem, FolderItem } from "../../types";
 import NewFolderDialogModal from "./NewFolderDialogModal";
+import { createFolder } from "../../api/api";
 
 interface ResourceListProps {
   filteredFiles: BlobItem[];
@@ -18,6 +19,8 @@ interface ResourceListProps {
   navigateToFolder: (folderPath: string) => void;
   navigateBack: () => void;
   navigateToRoot: () => void;
+  organizationId?: string;
+  onRefresh?: () => void;
 }
 
 const LazyResourceList: React.FC<ResourceListProps> = ({ 
@@ -29,10 +32,13 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   handleDownload,
   navigateToFolder,
   navigateBack,
-  navigateToRoot
+  navigateToRoot,
+  organizationId,
+  onRefresh
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showNewFolderModal, setShowNewFolderModal] = useState<boolean>(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
 
   // Helper function to get file extension from blob name
   const getFileExtension = (fileName: string): string => {
@@ -81,11 +87,29 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     return parts[parts.length - 1] || 'All Files';
   };
 
-  // Handler for creating a new folder (placeholder - to be implemented later)
-  const handleCreateFolder = (folderName: string) => {
-    console.log('Creating folder:', folderName, 'in path:', currentPath);
-    // TODO: Implement actual folder creation logic with API call
-    setShowNewFolderModal(false);
+  // Handler for creating a new folder
+  const handleCreateFolder = async (folderName: string) => {
+    if (!organizationId) {
+      console.error('Organization ID is required to create a folder');
+      alert('Unable to create folder: Organization ID is missing');
+      return;
+    }
+
+    setIsCreatingFolder(true);
+    try {
+      await createFolder(organizationId, folderName, currentPath);
+      setShowNewFolderModal(false);
+      
+      // Refresh the file list to show the new folder
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      console.error('Error creating folder:', error);
+      alert(error.message || 'Failed to create folder. Please try again.');
+    } finally {
+      setIsCreatingFolder(false);
+    }
   };
 
   return (
@@ -223,8 +247,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
             </div>
           ))}
 
-          {/* Render Files */}
-          {filteredFiles.map((file) => (
+          {/* Render Files (filter out init.txt marker files) */}
+          {filteredFiles.filter(file => !file.name.endsWith('/init.txt')).map((file) => (
             <div
               key={file.name}
               className={styles.file_item_row}
@@ -288,13 +312,18 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
             </div>
           ))}
 
-          {/* Empty state */}
-          {filteredFolders.length === 0 && filteredFiles.length === 0 && (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-              <FileText size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
-              <Text>No files or folders found</Text>
-            </div>
-          )}
+          {/* Empty state (excluding init.txt marker files) */}
+          {(() => {
+            const visibleFiles = filteredFiles.filter(file => !file.name.endsWith('/init.txt'));
+            const isEmpty = filteredFolders.length === 0 && visibleFiles.length === 0;
+            
+            return isEmpty ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+                <FileText size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                <Text>No files or folders yet</Text>
+              </div>
+            ) : null;
+          })()}
         </div>
       )}
 

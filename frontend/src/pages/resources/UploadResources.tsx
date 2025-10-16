@@ -42,6 +42,8 @@ const UploadResources: React.FC = () => {
                 navigateToFolder={navigateToFolder}
                 navigateBack={navigateBack}
                 navigateToRoot={navigateToRoot}
+                organizationId={user?.organizationId}
+                onRefresh={() => fetchFiles(currentPath)}
             />
             {uploadDialogOpen && (
                 <UploadDialogModal 
