@@ -719,3 +719,230 @@
     outline: none;
     box-shadow: 0 0 0 2px #f97316, 0 0 0 4px #fff; /* orange-500 ring */
 }
+
+/* LazyResourceList styles */
+.category_filter_section {
+    padding: 20px 0;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 20px;
+}
+
+.category_label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.category_buttons_container {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.category_button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 24px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+}
+
+.category_button.selected {
+    border: 2px solid #10b981;
+    background-color: #f0fdf4;
+}
+
+.category_button_icon {
+    color: #6b7280;
+}
+
+.category_button.selected .category_button_icon {
+    color: #10b981;
+}
+
+.category_button_text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.category_button.selected .category_button_text {
+    color: #10b981;
+}
+
+.all_files_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.folder_header_left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.folder_title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #10b981;
+}
+
+.back_button {
+    margin-left: 12px;
+    padding: 6px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background-color: #ffffff;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.header_actions_container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.new_folder_button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #10b981;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.new_folder_icon {
+    font-size: 18px;
+}
+
+.recent_button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.file_list_wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.file_item_row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    transition: all 0.2s;
+}
+
+.file_item_row.clickable {
+    cursor: pointer;
+}
+
+.file_item_row:hover {
+    background-color: #f9fafb;
+}
+
+.file_item_left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.file_icon_container {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file_icon_container.folder {
+    background-color: #fef3c7;
+}
+
+.file_icon_container.file {
+    background-color: #fed7aa;
+}
+
+.file_details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file_name_text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #111827;
+}
+
+.file_metadata {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.file_badges_container {
+    display: flex;
+    gap: 8px;
+    margin-right: 20px;
+}
+
+.file_extension_badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    background-color: #dbeafe;
+    color: #1e40af;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.file_size_badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    background-color: #f3f4f6;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.file_actions_container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.icon_button_wrapper {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+}

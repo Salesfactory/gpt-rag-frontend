@@ -71,52 +71,21 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
       maxWidth: "100%"
     }}>
       {/* Category Filter Section */}
-      <div style={{ 
-        padding: '20px 0', 
-        borderBottom: '1px solid #e5e7eb',
-        marginBottom: '20px'
-      }}>
-        <Text style={{ 
-          fontSize: '14px', 
-          fontWeight: 600, 
-          color: '#6b7280',
-          marginBottom: '12px',
-          display: 'block'
-        }}>
+      <div className={styles.category_filter_section}>
+        <Text className={styles.category_label}>
           Category
         </Text>
-        <div style={{ 
-          display: 'flex', 
-          gap: '12px', 
-          flexWrap: 'wrap' 
-        }}>
+        <div className={styles.category_buttons_container}>
           {categories.map(category => (
             <button
               key={category.key}
               onClick={() => setSelectedCategory(category.key)}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '16px 24px',
-                border: selectedCategory === category.key ? '2px solid #10b981' : '1px solid #e5e7eb',
-                borderRadius: '8px',
-                backgroundColor: selectedCategory === category.key ? '#f0fdf4' : '#ffffff',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                minWidth: '120px'
-              }}
+              className={`${styles.category_button} ${selectedCategory === category.key ? styles.selected : ''}`}
             >
-              <div style={{ color: selectedCategory === category.key ? '#10b981' : '#6b7280' }}>
+              <div className={styles.category_button_icon}>
                 {category.icon}
               </div>
-              <Text style={{ 
-                fontSize: '14px', 
-                fontWeight: 500,
-                color: selectedCategory === category.key ? '#10b981' : '#374151'
-              }}>
+              <Text className={styles.category_button_text}>
                 {category.label}
               </Text>
             </button>
@@ -125,67 +94,27 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
       </div>
 
       {/* All Files Header Section */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '24px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className={styles.all_files_header}>
+        <div className={styles.folder_header_left}>
           <Folder size={24} color="#10b981" />
-          <Text style={{ 
-            fontSize: '18px', 
-            fontWeight: 600,
-            color: '#10b981'
-          }}>
+          <Text className={styles.folder_title}>
             {currentFolder === null ? 'All Files' : placeholderFolders.find(f => f.id === currentFolder)?.name || 'Folder'}
           </Text>
           {currentFolder !== null && (
             <button
               onClick={handleBackToAll}
-              style={{
-                marginLeft: '12px',
-                padding: '6px 12px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                backgroundColor: '#ffffff',
-                cursor: 'pointer',
-                fontSize: '13px'
-              }}
+              className={styles.back_button}
             >
               Back to All Files
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            border: 'none',
-            borderRadius: '8px',
-            backgroundColor: '#10b981',
-            color: '#ffffff',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 500
-          }}>
-            <span style={{ fontSize: '18px' }}>+</span>
+        <div className={styles.header_actions_container}>
+          <button className={styles.new_folder_button}>
+            <span className={styles.new_folder_icon}>+</span>
             New Folder
           </button>
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 16px',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            backgroundColor: '#ffffff',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: '#6b7280'
-          }}>
+          <button className={styles.recent_button}>
             <Clock size={16} />
             Recent
             <ArrowUpDown size={14} />
@@ -199,64 +128,32 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           <Spinner label="Loading files..." />
         </div>
       ) : (
-        <div style={{ 
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
-        }}>
+        <div className={styles.file_list_wrapper}>
           {displayItems.map((item: any) => (
             <div
               key={item.id}
               onClick={() => item.type === 'folder' ? handleFolderClick(item.id) : null}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 20px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                backgroundColor: '#ffffff',
-                cursor: item.type === 'folder' ? 'pointer' : 'default',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#ffffff';
-              }}
+              className={`${styles.file_item_row} ${item.type === 'folder' ? styles.clickable : ''}`}
             >
               {/* Left Section - Icon and Name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '8px',
-                  backgroundColor: item.type === 'folder' ? '#fef3c7' : '#fed7aa',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+              <div className={styles.file_item_left}>
+                <div className={`${styles.file_icon_container} ${item.type === 'folder' ? styles.folder : styles.file}`}>
                   {item.type === 'folder' ? (
                     <Folder size={24} color="#f59e0b" />
                   ) : (
                     <FileText size={24} color="#f97316" />
                   )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <Text style={{ 
-                    fontSize: '15px', 
-                    fontWeight: 500,
-                    color: '#111827'
-                  }}>
+                <div className={styles.file_details}>
+                  <Text className={styles.file_name_text}>
                     {item.name}
                   </Text>
                   {item.type === 'folder' ? (
-                    <Text style={{ fontSize: '13px', color: '#6b7280' }}>
+                    <Text className={styles.file_metadata}>
                       {item.fileCount} files • Owner: {item.owner}
                     </Text>
                   ) : (
-                    <Text style={{ fontSize: '13px', color: '#6b7280' }}>
+                    <Text className={styles.file_metadata}>
                       Uploaded on {item.uploadedOn} • {item.uploadedBy}
                     </Text>
                   )}
@@ -265,40 +162,18 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
 
               {/* Middle Section - File Details (for files only) */}
               {item.type === 'file' && (
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '8px',
-                  marginRight: '20px'
-                }}>
-                  <span style={{
-                    padding: '4px 12px',
-                    borderRadius: '6px',
-                    backgroundColor: '#dbeafe',
-                    color: '#1e40af',
-                    fontSize: '12px',
-                    fontWeight: 600
-                  }}>
+                <div className={styles.file_badges_container}>
+                  <span className={styles.file_extension_badge}>
                     {item.extension}
                   </span>
-                  <span style={{
-                    padding: '4px 12px',
-                    borderRadius: '6px',
-                    backgroundColor: '#f3f4f6',
-                    color: '#374151',
-                    fontSize: '12px',
-                    fontWeight: 500
-                  }}>
+                  <span className={styles.file_size_badge}>
                     {formatFileSize(item.size)}
                   </span>
                 </div>
               )}
 
               {/* Right Section - Actions */}
-              <div style={{ 
-                display: 'flex', 
-                gap: '8px',
-                alignItems: 'center'
-              }}>
+              <div className={styles.file_actions_container}>
                 {item.type === 'folder' ? (
                   <>
                     <IconButton 
