@@ -6,6 +6,7 @@ import styles from "./UploadResources.module.css";
 import { Download, Trash2, FileText, Table, Presentation, Folder, Edit2, Clock, ArrowUpDown } from "lucide-react";
 import { formatDate, formatFileSize } from "../../utils/fileUtils";
 import { BlobItem, FolderItem } from "../../types";
+import NewFolderDialogModal from "./NewFolderDialogModal";
 
 interface ResourceListProps {
   filteredFiles: BlobItem[];
@@ -31,6 +32,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   navigateToRoot
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showNewFolderModal, setShowNewFolderModal] = useState<boolean>(false);
 
   // Helper function to get file extension from blob name
   const getFileExtension = (fileName: string): string => {
@@ -77,6 +79,13 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     if (!currentPath) return 'All Files';
     const parts = currentPath.split('/').filter(Boolean);
     return parts[parts.length - 1] || 'All Files';
+  };
+
+  // Handler for creating a new folder (placeholder - to be implemented later)
+  const handleCreateFolder = (folderName: string) => {
+    console.log('Creating folder:', folderName, 'in path:', currentPath);
+    // TODO: Implement actual folder creation logic with API call
+    setShowNewFolderModal(false);
   };
 
   return (
@@ -134,7 +143,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           )}
         </div>
         <div className={styles.header_actions_container}>
-          <button className={styles.new_folder_button}>
+          <button 
+            className={styles.new_folder_button}
+            onClick={() => setShowNewFolderModal(true)}
+          >
             <span className={styles.new_folder_icon}>+</span>
             New Folder
           </button>
@@ -284,6 +296,14 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* New Folder Modal */}
+      {showNewFolderModal && (
+        <NewFolderDialogModal
+          closeDialog={() => setShowNewFolderModal(false)}
+          onCreateFolder={handleCreateFolder}
+        />
       )}
     </div>
   );

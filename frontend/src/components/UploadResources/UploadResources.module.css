@@ -946,3 +946,143 @@
     width: 32px;
     height: 32px;
 }
+
+/* New Folder Modal Styles */
+.new_folder_modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.new_folder_modal_header {
+    padding: 24px 24px 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.new_folder_header_content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.new_folder_header_icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #dcfce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.plus_icon {
+    font-size: 24px;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.new_folder_modal_title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.new_folder_modal_content {
+    padding: 24px;
+}
+
+.new_folder_form_group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.new_folder_label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.new_folder_input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #111827;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.new_folder_input:focus {
+    outline: none;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.new_folder_input::placeholder {
+    color: #9ca3af;
+}
+
+.new_folder_input.input_error {
+    border-color: #ef4444;
+}
+
+.new_folder_input.input_error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.error_message {
+    font-size: 13px;
+    color: #ef4444;
+    margin-top: 4px;
+}
+
+.new_folder_modal_footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.new_folder_cancel_button {
+    padding: 10px 20px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.new_folder_cancel_button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.new_folder_create_button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #16a34a;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.new_folder_create_button:hover {
+    background-color: #15803d;
+}
+
+.new_folder_create_button:active {
+    transform: scale(0.98);
+}
