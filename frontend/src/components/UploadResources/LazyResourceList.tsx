@@ -111,7 +111,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
       {/* All Files Header Section */}
       <div className={styles.all_files_header}>
         <div className={styles.folder_header_left}>
-          <Folder size={24} color="#10b981" />
+          <Folder size={24} color="#16a34a" />
           <Text className={styles.folder_title}>
             {getCurrentFolderName()}
           </Text>
