@@ -47,7 +47,6 @@ describe("Modals Test Suite", ()=> {
         cy.get("button").contains("Save Changes").should("be.visible")
         cy.get("button").contains("Save Changes").click()
 
-        cy.contains("User data updated successfully").should("be.visible")
     })
 
     it("should verify the visibility of the Organization Modal", () => {

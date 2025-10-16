@@ -32,7 +32,10 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                     role: user.role
                 }
             });
-            toast("User data updated successfully", { type: "success" });
+            toast("User data updated successfully. The window will restart in 2 seconds.", { type: "success" });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
         } catch (error) {
             console.error("Error updating user data", error);
             toast("Failed to update user data", { type: "error" });
