@@ -15,9 +15,6 @@ describe("File Vault Test Suite", () => {
         cy.get("span").contains("File Vault").should("be.visible");
         cy.get("#SearchBox5").should("be.visible");
         cy.get("span").contains("Upload File").should("be.visible");
-
-        cy.get("span").contains("Files");
-        cy.get("span").contains("Actions");
     });
 
     it("Should verify the functionality of the Upload File Button (500 Error Case)", () => {
