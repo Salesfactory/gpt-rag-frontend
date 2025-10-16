@@ -7,7 +7,6 @@ type StorageInfo = {
   totalBytes: number;
   usedBytes: number;
   loading?: boolean;
-  scope?: "organization" | "user";
 };
 
 const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUploadDialog: () => void, onRefresh: () => void, storage: StorageInfo; }> = ({ setSearchQuery, openUploadDialog, onRefresh, storage }) => {
