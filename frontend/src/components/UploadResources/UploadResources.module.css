@@ -1086,3 +1086,23 @@
 .new_folder_create_button:active {
     transform: scale(0.98);
 }
+
+/* Drag and Drop Styles */
+.drop_zone {
+    border: 2px dashed #94a3b8 !important;
+    background-color: #f8fafc;
+}
+
+.drop_target {
+    border: 2px solid #16a34a !important;
+    background-color: #dcfce7 !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.file_item_row[draggable="true"] {
+    cursor: grab;
+}
+
+.file_item_row[draggable="true"]:active {
+    cursor: grabbing;
+}
