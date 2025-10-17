@@ -3249,6 +3249,17 @@ def move_file(*, context):
         if not source_blob_name:
             return create_error_response("Source blob name is required", 400)
         
+        # This prevents cross-tenant data access/deletion
+        expected_org_prefix = f"organization_files/{organization_id}/"
+        if not source_blob_name.startswith(expected_org_prefix):
+            logger.warning(
+                f"Unauthorized move attempt: organization {organization_id} tried to move blob '{source_blob_name}' "
+                f"which doesn't belong to them (expected prefix: {expected_org_prefix})"
+            )
+            return create_error_response(
+                "Unauthorized: Source file does not belong to your organization", 403
+            )
+        
         # Extract the file name from the source blob path
         file_name = source_blob_name.split("/")[-1]
         

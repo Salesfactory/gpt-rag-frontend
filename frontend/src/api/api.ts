@@ -632,6 +632,10 @@ export async function moveFile(organizationId: string, sourceBlobName: string, d
         const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
         
         // Handle specific error cases
+        if (response.status === 403) {
+            throw new Error("Unauthorized: You do not have permission to move this file");
+        }
+        
         if (response.status === 404) {
             throw new Error("Source file not found");
         }
