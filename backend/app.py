@@ -31,6 +31,7 @@ import uuid
 from urllib.parse import urlparse
 from identity.flask import Auth
 from datetime import timedelta, datetime, timezone
+import time
 
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
@@ -3212,6 +3213,141 @@ def create_folder(*, context):
         
     except Exception as e:
         logger.exception(f"Unexpected error in create_folder: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+
+@app.route("/api/move-file", methods=["POST"])
+@auth.login_required
+def move_file(*, context):
+    """
+    Move a file from one location to another in blob storage.
+    This is implemented as a copy + delete operation.
+    
+    Expected JSON payload:
+    {
+        "organization_id": "org-123",
+        "source_blob_name": "organization_files/org-123/folder1/file.pdf",
+        "destination_folder_path": "folder2" (or "" for root)
+    }
+    
+    Returns:
+        JSON response with success message or error details
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+        
+        # Validate required fields
+        organization_id = data.get("organization_id", "").strip()
+        source_blob_name = data.get("source_blob_name", "").strip()
+        destination_folder_path = data.get("destination_folder_path", "").strip()
+        
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        
+        if not source_blob_name:
+            return create_error_response("Source blob name is required", 400)
+        
+        # This prevents cross-tenant data access/deletion
+        expected_org_prefix = f"organization_files/{organization_id}/"
+        if not source_blob_name.startswith(expected_org_prefix):
+            logger.warning(
+                f"Unauthorized move attempt: organization {organization_id} tried to move blob '{source_blob_name}' "
+                f"which doesn't belong to them (expected prefix: {expected_org_prefix})"
+            )
+            return create_error_response(
+                "Unauthorized: Source file does not belong to your organization", 403
+            )
+        
+        # Extract the file name from the source blob path
+        file_name = source_blob_name.split("/")[-1]
+        
+        # Build the destination blob path
+        base_prefix = f"organization_files/{organization_id}/"
+        
+        if destination_folder_path:
+            destination_folder_path = destination_folder_path.strip("/")
+            destination_blob_name = f"{base_prefix}{destination_folder_path}/{file_name}"
+        else:
+            destination_blob_name = f"{base_prefix}{file_name}"
+        
+        # Don't allow moving to the same location
+        if source_blob_name == destination_blob_name:
+            return create_error_response("Source and destination are the same", 400)
+        
+        blob_storage_manager = BlobStorageManager()
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+        
+        # Check if source blob exists
+        source_blob_client = container_client.get_blob_client(source_blob_name)
+        if not source_blob_client.exists():
+            return create_error_response("Source file not found", 404)
+        
+        # Check if destination already exists
+        destination_blob_client = container_client.get_blob_client(destination_blob_name)
+        if destination_blob_client.exists():
+            return create_error_response("A file with this name already exists in the destination folder", 409)
+        
+        # Get source blob properties and metadata
+        source_properties = source_blob_client.get_blob_properties()
+        source_metadata = source_properties.metadata or {}
+        
+        # Copy the blob to the new location
+        # Using start_copy_from_url which is async in Azure but we'll wait for it
+        source_url = source_blob_client.url
+        copy_operation = destination_blob_client.start_copy_from_url(source_url)
+        
+        # Wait for the copy to complete (with timeout)
+        max_wait_time = 60  # 60 seconds timeout
+        wait_time = 0
+        sleep_interval = 0.5
+        
+        while wait_time < max_wait_time:
+            dest_properties = destination_blob_client.get_blob_properties()
+            copy_status = dest_properties.copy.status
+            
+            if copy_status == "success":
+                break
+            elif copy_status == "failed":
+                return create_error_response("Failed to copy file", 500)
+            elif copy_status in ["pending", "copying"]:
+                time.sleep(sleep_interval)
+                wait_time += sleep_interval
+            else:
+                return create_error_response(f"Unknown copy status: {copy_status}", 500)
+        
+        if wait_time >= max_wait_time:
+            return create_error_response("Copy operation timed out", 500)
+        
+        # Set metadata on the destination blob (preserving original metadata)
+        try:
+            destination_blob_client.set_blob_metadata(metadata=source_metadata)
+        except Exception as metadata_error:
+            logger.warning(f"Failed to set metadata on destination blob: {metadata_error}")
+        
+        # Delete the source blob
+        try:
+            source_blob_client.delete_blob()
+        except Exception as delete_error:
+            logger.error(f"Failed to delete source blob after copy: {delete_error}")
+            # File was copied but not deleted - return a partial success message
+            return create_success_response({
+                "message": "File copied but original could not be deleted",
+                "destination_blob_name": destination_blob_name,
+                "warning": "Original file still exists"
+            }, 200)
+        
+        logger.info(f"Successfully moved file from '{source_blob_name}' to '{destination_blob_name}'")
+        
+        return create_success_response({
+            "message": "File moved successfully",
+            "destination_blob_name": destination_blob_name,
+            "source_blob_name": source_blob_name
+        }, 200)
+        
+    except Exception as e:
+        logger.exception(f"Unexpected error in move_file: {e}")
         return create_error_response("Internal Server Error", 500)
 
 
