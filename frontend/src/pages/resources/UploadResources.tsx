@@ -25,7 +25,9 @@ const UploadResources: React.FC = () => {
         handleDownload,
         navigateToFolder,
         navigateBack,
-        navigateToRoot
+        navigateToRoot,
+        sortOrder,
+        toggleSortOrder
     } = useSourceFiles(user?.organizationId || "", selectedCategory)
     
     const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", () => fetchFiles(currentPath, selectedCategory), files);
@@ -36,7 +38,7 @@ const UploadResources: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory)} />
+            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} />
             <LazyResourceList
                 filteredFiles={filteredFiles} 
                 filteredFolders={filteredFolders}
@@ -48,9 +50,11 @@ const UploadResources: React.FC = () => {
                 navigateBack={navigateBack}
                 navigateToRoot={navigateToRoot}
                 organizationId={user?.organizationId}
-                onRefresh={() => fetchFiles(currentPath, selectedCategory)}
+                onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)}
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
+                sortOrder={sortOrder}
+                onToggleSortOrder={toggleSortOrder}
             />
             {uploadDialogOpen && (
                 <UploadDialogModal 
