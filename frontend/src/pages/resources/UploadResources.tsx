@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import styles from "./UploadResourcescopy.module.css";
 
 import FileListHeader from "../../components/UploadResources/FileHeaderList";
@@ -12,8 +12,10 @@ const UploadResources: React.FC = () => {
     const { user } = useAppContext();
     const orgId = user?.organizationId || "";
 
-    const {
-        isLoading,
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    
+    const { 
+        isLoading, 
         files,
         filteredFiles,
         filteredFolders,
@@ -25,36 +27,17 @@ const UploadResources: React.FC = () => {
         navigateToFolder,
         navigateBack,
         navigateToRoot
-    } = useSourceFiles(orgId);
+    } = useSourceFiles(user?.organizationId || "", selectedCategory)
+    
+    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", () => fetchFiles(currentPath, selectedCategory), files);
 
-    const {
-        uploadDialogOpen,
-        openUploadDialog,
-        closeUploadDialog,
-        dispatch,
-        state,
-        handleDuplicateRename,
-        handleDuplicateReplace,
-        handleDuplicateSkip,
-        showRenameModal
-    } = useFileUpload(orgId, () => fetchFiles(currentPath), files);
-
-    const TOTAL_BYTES = 1 * 1024 ** 4;
-
-    const usedBytes = useMemo(() => {
-        const getSize = (it: any) => it?.size ?? it?.contentLength ?? it?.content_length ?? it?.bytes ?? 0;
-        return (files || []).reduce((sum: number, it: any) => sum + (it?.isFolder ? 0 : Number(getSize(it)) || 0), 0);
-    }, [files]);
+    const handleCategoryChange = (category: string) => {
+        setSelectedCategory(category);
+    };
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader
-                setSearchQuery={setSearchQuery}
-                openUploadDialog={openUploadDialog}
-                onRefresh={() => fetchFiles(currentPath)}
-                storage={{ totalBytes: TOTAL_BYTES, usedBytes, loading: isLoading }}
-            />
-
+            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory)}/>
             <LazyResourceList
                 filteredFiles={filteredFiles}
                 filteredFolders={filteredFolders}
@@ -65,8 +48,10 @@ const UploadResources: React.FC = () => {
                 navigateToFolder={navigateToFolder}
                 navigateBack={navigateBack}
                 navigateToRoot={navigateToRoot}
-                organizationId={orgId}
-                onRefresh={() => fetchFiles(currentPath)}
+                organizationId={user?.organizationId}
+                onRefresh={() => fetchFiles(currentPath, selectedCategory)}
+                selectedCategory={selectedCategory}
+                onCategoryChange={handleCategoryChange}
             />
 
             {uploadDialogOpen && (

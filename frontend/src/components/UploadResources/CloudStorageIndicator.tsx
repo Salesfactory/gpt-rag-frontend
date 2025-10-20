@@ -2,12 +2,6 @@
 import React from "react";
 import styles from "./UploadResources.module.css";
 
-interface CloudStorageIndicatorProps {
-    totalBytes: number;
-    usedBytes: number;
-    loading?: boolean;
-}
-
 const formatBytes = (bytes: number, locale = "en-US") => {
   if (!isFinite(bytes) || bytes <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -19,7 +13,12 @@ const formatBytes = (bytes: number, locale = "en-US") => {
   return `${nf.format(value)} ${units[i]}`;
 };
 
-const CloudStorageIndicator: React.FC<CloudStorageIndicatorProps> = ({ totalBytes, usedBytes, loading }) => {
+const CloudStorageIndicator = () => {
+
+    const totalBytes = 10 * 1024 * 1024 * 1024; // 10 GB
+    const usedBytes = 2.5 * 1024 * 1024 * 1024; // 2.5 GB
+    const loading = false;
+    
     const locale = typeof navigator !== "undefined" ? navigator.language : "en-US";
     const safeTotal = Math.max(0, totalBytes || 0);
     const safeUsed = Math.min(Math.max(0, usedBytes || 0), safeTotal || Number.MAX_SAFE_INTEGER);
