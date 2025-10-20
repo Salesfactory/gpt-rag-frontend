@@ -411,7 +411,7 @@ def move_file():
 
 @bp.route("/delete-folder", methods=["DELETE"])
 @auth_required
-def delete_folder(*, context):
+def delete_folder():
     """
     Delete a folder and all its contents from blob storage.
     This deletes all blobs with the specified folder prefix.

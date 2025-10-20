@@ -2023,7 +2023,7 @@ export async function listUserDocuments({
 
 
 export async function getStorageUsageByOrganization(organization_id: string, user?: any) {
-    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/storage-usage`, {
+    const response = await fetch(`/api/organizations/${encodeURIComponent(organization_id)}/storage-usage`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -2039,3 +2039,4 @@ export async function getStorageUsageByOrganization(organization_id: string, use
 
     return response.json();
 }
+

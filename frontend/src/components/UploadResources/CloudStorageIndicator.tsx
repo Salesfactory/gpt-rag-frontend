@@ -1,32 +1,58 @@
 // CloudStorageIndicator.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./UploadResources.module.css";
+import { getStorageUsageByOrganization } from "../../api";
+import { useAppContext } from "../../providers/AppProviders";
+
+type StorageData = {
+    freeStorage: number;
+    percentageUsed: number;
+    storageCapacity: number;
+    usedStorage: number;
+};
 
 const formatBytes = (bytes: number, locale = "en-US") => {
-  if (!isFinite(bytes) || bytes <= 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const value = bytes / Math.pow(1024, i);
-  const min = i >= 2 ? 2 : 0;
-  const max = i >= 2 ? 2 : 0;
-  const nf = new Intl.NumberFormat(locale, { minimumFractionDigits: min, maximumFractionDigits: max });
-  return `${nf.format(value)} ${units[i]}`;
+    if (!isFinite(bytes) || bytes <= 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    const value = bytes / Math.pow(1024, i);
+    const min = i >= 2 ? 2 : 0;
+    const max = i >= 2 ? 2 : 0;
+    const nf = new Intl.NumberFormat(locale, { minimumFractionDigits: min, maximumFractionDigits: max });
+    return `${nf.format(value)} ${units[i]}`;
 };
 
 const CloudStorageIndicator = () => {
+    const [storageData, setStorageData] = useState<StorageData | null>(null);
+    const { user, organization } = useAppContext();
 
-    const totalBytes = 10 * 1024 * 1024 * 1024; // 10 GB
-    const usedBytes = 2.5 * 1024 * 1024 * 1024; // 2.5 GB
+    useEffect(() => {
+        const fectchStorageData = async () => {
+            try {
+                const response = await getStorageUsageByOrganization(organization?.id || "", user)
+                const data = response.data;
+                setStorageData(data);
+            }
+            catch (error) {
+                console.error("Error fetching storage data:", error);
+            }
+        }
+
+        fectchStorageData();
+    }, [])
+
+    const totalBytes = (storageData?.storageCapacity || 0) * (1024**3) //GB
+    const usedBytes = ((storageData?.usedStorage || 0) * (1024**3)) // GB -> Bytes
     const loading = false;
-    
+
     const locale = typeof navigator !== "undefined" ? navigator.language : "en-US";
     const safeTotal = Math.max(0, totalBytes || 0);
     const safeUsed = Math.min(Math.max(0, usedBytes || 0), safeTotal || Number.MAX_SAFE_INTEGER);
     const pct = safeTotal > 0 ? Math.min(100, (safeUsed / safeTotal) * 100) : 0;
     const pctText =
-      pct > 0 && pct < 0.01
-        ? "<0.01"
-        : new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(pct);
+        pct > 0 && pct < 0.01
+            ? "<0.01"
+            : new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(pct);
     const hasUsed = safeUsed > 0;
     const progressMax = Math.max(1, safeTotal);
     const progressValue = Math.min(progressMax, safeTotal > 0 ? safeUsed : 0);

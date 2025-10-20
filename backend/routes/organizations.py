@@ -147,7 +147,7 @@ def createOrganization():
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
-@bp.route("/api/organizations/<organization_id>/storage-capacity", methods=["GET"])
+@bp.route("/api/organizations/<organization_id>/storage-usage", methods=["GET"])
 def getOrganizationStorageCapacity(organization_id):
     try:
         organization = get_organization_data(organization_id)
