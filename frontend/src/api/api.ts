@@ -712,6 +712,41 @@ export async function renameFolder(
 }
 
 
+export async function deleteFolder(organizationId: string, folderPath: string) {
+    const response = await fetch("/api/delete-folder", {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            organization_id: organizationId,
+            folder_path: folderPath
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        
+        // Handle specific error cases
+        if (response.status === 403) {
+            throw new Error("Unauthorized: You do not have permission to delete this folder");
+        }
+        
+        if (response.status === 404) {
+            throw new Error("Folder not found");
+        }
+        
+        if (response.status === 400) {
+            throw new Error(errorData.message || "Invalid request");
+        }
+        
+        throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
 export async function uploadFile(file: any) {
     const formdata = new FormData();
     formdata.append("file", file);
