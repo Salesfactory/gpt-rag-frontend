@@ -7,7 +7,8 @@ import { Download, Trash2, FileText, Table, Presentation, Folder, Edit2, Clock, 
 import { formatDate, formatFileSize } from "../../utils/fileUtils";
 import { BlobItem, FolderItem } from "../../types";
 import NewFolderDialogModal from "./NewFolderDialogModal";
-import { createFolder, moveFile } from "../../api/api";
+import DeleteFolderModal from "./DeleteFolderModal";
+import { createFolder, moveFile, deleteFolder } from "../../api/api";
 
 interface ResourceListProps {
   filteredFiles: BlobItem[];
@@ -42,6 +43,9 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   const [draggedFile, setDraggedFile] = useState<BlobItem | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [isMovingFile, setIsMovingFile] = useState<boolean>(false);
+  const [showDeleteFolderModal, setShowDeleteFolderModal] = useState<boolean>(false);
+  const [folderToDelete, setFolderToDelete] = useState<FolderItem | null>(null);
+  const [isDeletingFolder, setIsDeletingFolder] = useState<boolean>(false);
 
   // Helper function to get file extension from blob name
   const getFileExtension = (fileName: string): string => {
@@ -189,6 +193,48 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     } finally {
       setIsMovingFile(false);
       setDraggedFile(null);
+    }
+  };
+
+  // Handler for initiating folder deletion
+  const handleDeleteFolderClick = (e: any, folder: FolderItem) => {
+    e.stopPropagation();
+    setFolderToDelete(folder);
+    setShowDeleteFolderModal(true);
+  };
+
+  // Handler for confirming folder deletion
+  const handleConfirmDeleteFolder = async () => {
+    if (!folderToDelete || !organizationId) {
+      return;
+    }
+
+    setIsDeletingFolder(true);
+    
+    try {
+      await deleteFolder(organizationId, folderToDelete.full_path);
+      
+      // Close modal
+      setShowDeleteFolderModal(false);
+      setFolderToDelete(null);
+      
+      // Refresh the file list to reflect deletion
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error: any) {
+      console.error('Error deleting folder:', error);
+      alert(error.message || 'Failed to delete folder. Please try again.');
+    } finally {
+      setIsDeletingFolder(false);
+    }
+  };
+
+  // Handler for canceling folder deletion
+  const handleCancelDeleteFolder = () => {
+    if (!isDeletingFolder) {
+      setShowDeleteFolderModal(false);
+      setFolderToDelete(null);
     }
   };
 
@@ -355,9 +401,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                 <IconButton 
                   title="Delete" 
                   ariaLabel="Delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
+                  onClick={(e) => handleDeleteFolderClick(e, folder)}
                   styles={{
                     root: {
                       minWidth: '32px',
@@ -465,6 +509,16 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
         <NewFolderDialogModal
           closeDialog={() => setShowNewFolderModal(false)}
           onCreateFolder={handleCreateFolder}
+        />
+      )}
+
+      {/* Delete Folder Modal */}
+      {showDeleteFolderModal && folderToDelete && (
+        <DeleteFolderModal
+          folderName={folderToDelete.name}
+          closeDialog={handleCancelDeleteFolder}
+          onDeleteFolder={handleConfirmDeleteFolder}
+          isDeleting={isDeletingFolder}
         />
       )}
     </div>
