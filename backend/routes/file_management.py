@@ -183,8 +183,6 @@ def delete_source_document():
         return create_error_response("Internal Server Error", 500)
 
 
-
-
 @bp.route("/create-folder", methods=["POST"])
 @auth_required
 def create_folder():
@@ -409,4 +407,102 @@ def move_file():
         
     except Exception as e:
         logger.exception(f"Unexpected error in move_file: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@bp.route("/delete-folder", methods=["DELETE"])
+@auth_required
+def delete_folder(*, context):
+    """
+    Delete a folder and all its contents from blob storage.
+    This deletes all blobs with the specified folder prefix.
+    
+    Expected JSON payload:
+    {
+        "organization_id": "org-123",
+        "folder_path": "subfolder/folder-name"
+    }
+    
+    Returns:
+        JSON response with success message or error details
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+        
+        # Validate required fields
+        organization_id = data.get("organization_id", "").strip()
+        folder_path = data.get("folder_path", "").strip()
+        
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        
+        if not folder_path:
+            return create_error_response("Folder path is required", 400)
+        
+        # Build the full folder prefix
+        base_prefix = f"organization_files/{organization_id}/"
+        folder_full_path = f"{base_prefix}{folder_path.strip('/')}"
+        
+        # Prevent deletion of root organization folder
+        # Only allow deletion of sub-folders
+        if folder_full_path == base_prefix.rstrip('/'):
+            return create_error_response("Cannot delete root organization folder", 400)
+        
+        # Ensure the folder path ends with /
+        if not folder_full_path.endswith('/'):
+            folder_full_path += '/'
+        
+        # This prevents cross-tenant data access/deletion
+        if not folder_full_path.startswith(base_prefix):
+            logger.warning(
+                f"Unauthorized delete attempt: organization {organization_id} tried to delete folder '{folder_path}' "
+                f"which doesn't belong to them (expected prefix: {base_prefix})"
+            )
+            return create_error_response(
+                "Unauthorized: Folder does not belong to your organization", 403
+            )
+        
+        blob_storage_manager = current_app.config["blob_storage_manager"]
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+        
+        # List all blobs with this prefix (includes all files and subfolders)
+        blobs_to_delete = list(container_client.list_blobs(name_starts_with=folder_full_path))
+        
+        if not blobs_to_delete:
+            return create_error_response("Folder not found or is empty", 404)
+        
+        # Delete all blobs with this prefix
+        deleted_count = 0
+        failed_deletions = []
+        
+        for blob in blobs_to_delete:
+            try:
+                blob_client = container_client.get_blob_client(blob.name)
+                blob_client.delete_blob()
+                deleted_count += 1
+                logger.info(f"Deleted blob: {blob.name}")
+            except Exception as delete_error:
+                logger.error(f"Failed to delete blob {blob.name}: {delete_error}")
+                failed_deletions.append(blob.name)
+        
+        if failed_deletions:
+            logger.warning(f"Some files could not be deleted: {failed_deletions}")
+            return create_success_response({
+                "message": f"Folder partially deleted. {deleted_count} files deleted, {len(failed_deletions)} failed.",
+                "deleted_count": deleted_count,
+                "failed_count": len(failed_deletions),
+                "failed_files": failed_deletions
+            }, 200)
+        
+        logger.info(f"Successfully deleted folder '{folder_path}' with {deleted_count} files for organization {organization_id}")
+        
+        return create_success_response({
+            "message": "Folder deleted successfully",
+            "deleted_count": deleted_count,
+            "folder_path": folder_path
+        }, 200)
+        
+    except Exception as e:
+        logger.exception(f"Unexpected error in delete_folder: {e}")
         return create_error_response("Internal Server Error", 500)
