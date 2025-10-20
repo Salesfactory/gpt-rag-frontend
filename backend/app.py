@@ -81,7 +81,6 @@ from shared.cosmo_db import (
     patch_organization_data,
     get_audit_logs,
     get_organization_subscription,
-    create_organization,
 )
 from shared import clients
 from data_summary.config import get_azure_openai_config
@@ -1876,39 +1875,6 @@ def getUserOrganizationsRole(*, context):
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
-
-@app.route("/api/create-organization", methods=["POST"])
-@auth.login_required
-def createOrganization(*, context):
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
-        if not "organizationName" in request.json:
-            return (
-                jsonify({"error": "Missing required parameters, organizationName"}),
-                400,
-            )
-    try:
-        organizationName = request.json["organizationName"]
-        response = create_organization(client_principal_id, organizationName)
-        if not response:
-            return create_error_response(
-                "Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR
-            )
-        return jsonify(response), HTTPStatus.CREATED
-    except NotFound as e:
-        return create_error_response(
-            f"User {client_principal_id} not found", HTTPStatus.NOT_FOUND
-        )
-    except MissingRequiredFieldError as field:
-        return create_error_response(
-            f"Missing required parameters, {field}", HTTPStatus.BAD_REQUEST
-        )
-    except Exception as e:
-        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 def get_product_prices(product_id):
