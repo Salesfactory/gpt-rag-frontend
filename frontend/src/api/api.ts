@@ -615,6 +615,77 @@ export async function createFolder(organizationId: string, folderName: string, c
     return result;
 }
 
+export async function moveFile(organizationId: string, sourceBlobName: string, destinationFolderPath: string = "") {
+    const response = await fetch("/api/move-file", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            organization_id: organizationId,
+            source_blob_name: sourceBlobName,
+            destination_folder_path: destinationFolderPath
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        
+        // Handle specific error cases
+        if (response.status === 403) {
+            throw new Error("Unauthorized: You do not have permission to move this file");
+        }
+        
+        if (response.status === 404) {
+            throw new Error("Source file not found");
+        }
+        
+        if (response.status === 409) {
+            throw new Error("A file with this name already exists in the destination folder");
+        }
+        
+        throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function deleteFolder(organizationId: string, folderPath: string) {
+    const response = await fetch("/api/delete-folder", {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            organization_id: organizationId,
+            folder_path: folderPath
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        
+        // Handle specific error cases
+        if (response.status === 403) {
+            throw new Error("Unauthorized: You do not have permission to delete this folder");
+        }
+        
+        if (response.status === 404) {
+            throw new Error("Folder not found");
+        }
+        
+        if (response.status === 400) {
+            throw new Error(errorData.message || "Invalid request");
+        }
+        
+        throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
 export async function uploadFile(file: any) {
     const formdata = new FormData();
     formdata.append("file", file);

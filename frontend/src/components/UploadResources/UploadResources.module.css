@@ -1184,3 +1184,145 @@
 .storageBarFill[data-has-used="true"] {
   min-width: 8px;
 }
+
+/* Drag and Drop Styles */
+.drop_zone {
+    border: 2px dashed #94a3b8 !important;
+    background-color: #f8fafc;
+}
+
+.drop_target {
+    border: 2px solid #16a34a !important;
+    background-color: #dcfce7 !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.file_item_row[draggable="true"] {
+    cursor: grab;
+}
+
+.file_item_row[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* Delete Folder Modal Styles */
+.delete_folder_modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.delete_folder_modal_header {
+    padding: 24px 24px 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.delete_folder_header_content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.delete_folder_header_icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete_folder_modal_title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.delete_folder_modal_content {
+    padding: 24px;
+}
+
+.delete_folder_message {
+    font-size: 14px;
+    color: #374151;
+    margin: 0 0 16px 0;
+}
+
+.delete_folder_name_container {
+    padding: 12px 16px;
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.delete_folder_name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.delete_folder_warning {
+    font-size: 13px;
+    color: #dc2626;
+    margin: 0;
+}
+
+.delete_folder_modal_footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.delete_folder_cancel_button {
+    padding: 10px 20px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.delete_folder_cancel_button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.delete_folder_cancel_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.delete_folder_delete_button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #dc2626;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.delete_folder_delete_button:hover {
+    background-color: #b91c1c;
+}
+
+.delete_folder_delete_button:active {
+    transform: scale(0.98);
+}
+
+.delete_folder_delete_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
