@@ -11,6 +11,8 @@ import UploadDialogModal from "../../components/UploadResources/UploadDialogModa
 
 const UploadResources: React.FC = () => {
     const { user } = useAppContext();
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    
     const { 
         isLoading, 
         files,
@@ -24,14 +26,17 @@ const UploadResources: React.FC = () => {
         navigateToFolder,
         navigateBack,
         navigateToRoot
-    } = useSourceFiles(user?.organizationId || "")
+    } = useSourceFiles(user?.organizationId || "", selectedCategory)
     
-    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", () => fetchFiles(currentPath), files);
+    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", () => fetchFiles(currentPath, selectedCategory), files);
 
+    const handleCategoryChange = (category: string) => {
+        setSelectedCategory(category);
+    };
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath)} />
+            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory)} />
             <LazyResourceList
                 filteredFiles={filteredFiles} 
                 filteredFolders={filteredFolders}
@@ -43,7 +48,9 @@ const UploadResources: React.FC = () => {
                 navigateBack={navigateBack}
                 navigateToRoot={navigateToRoot}
                 organizationId={user?.organizationId}
-                onRefresh={() => fetchFiles(currentPath)}
+                onRefresh={() => fetchFiles(currentPath, selectedCategory)}
+                selectedCategory={selectedCategory}
+                onCategoryChange={handleCategoryChange}
             />
             {uploadDialogOpen && (
                 <UploadDialogModal 

@@ -524,18 +524,27 @@ export async function getApiKeyPayment(): Promise<string> {
     return apiKey;
 }
 
-export async function getSourceFileFromBlob(organizationId: string, folderPath: string = ""): Promise<SourceDocumentsResponse> {
+export async function getSourceFileFromBlob(
+    organizationId: string, 
+    folderPath: string = "", 
+    category: string = "all",
+    signal?: AbortSignal
+): Promise<SourceDocumentsResponse> {
     const url = new URL('/api/get-source-documents', window.location.origin);
     url.searchParams.append('organization_id', organizationId);
     if (folderPath) {
         url.searchParams.append('folder_path', folderPath);
+    }
+    if (category && category !== 'all') {
+        url.searchParams.append('category', category);
     }
     
     const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
-        }
+        },
+        signal
     });
     if (!response.ok) {
         console.log("Error fetching files:", response.statusText);
