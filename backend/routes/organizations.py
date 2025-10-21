@@ -148,6 +148,7 @@ def createOrganization():
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @bp.route("/api/organizations/<organization_id>/storage-usage", methods=["GET"])
+@auth_required
 def getOrganizationStorageCapacity(organization_id):
     try:
         organization = get_organization_data(organization_id)
@@ -169,9 +170,6 @@ def getOrganizationStorageCapacity(organization_id):
             prefix=prefix,
             include_metadata="none",
         )
-
-        print(blobs)
-
         total_used_storage_bytes = 0
         for blob in blobs:
             total_used_storage_bytes += blob.get("size")

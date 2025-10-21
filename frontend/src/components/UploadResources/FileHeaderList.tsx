@@ -3,11 +3,11 @@ import styles from "./UploadResources.module.css"
 import { Plus, RefreshCw, Search } from "lucide-react";
 import CloudStorageIndicator from "./CloudStorageIndicator";
 
-const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUploadDialog: () => void, onRefresh: () => void }> = ({ setSearchQuery, openUploadDialog, onRefresh }) => {
+const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUploadDialog: () => void, onRefresh: () => void, isLoading: boolean }> = ({ setSearchQuery, openUploadDialog, onRefresh, isLoading }) => {
     return (
         <div className={styles.headerContainer}>
             {/* Cloud Storage */}
-            <CloudStorageIndicator />
+            <CloudStorageIndicator isLoading={isLoading} />
 
             {/* Search + Actions */}
             <div className={styles.file_list_header}>

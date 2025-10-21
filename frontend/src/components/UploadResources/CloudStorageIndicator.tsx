@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./UploadResources.module.css";
 import { getStorageUsageByOrganization } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
+import { toast } from "react-toastify";
 
 type StorageData = {
     freeStorage: number;
@@ -22,24 +23,25 @@ const formatBytes = (bytes: number, locale = "en-US") => {
     return `${nf.format(value)} ${units[i]}`;
 };
 
-const CloudStorageIndicator = () => {
+const CloudStorageIndicator = ({ isLoading }: { isLoading: boolean }) => {
     const [storageData, setStorageData] = useState<StorageData | null>(null);
     const { user, organization } = useAppContext();
 
     useEffect(() => {
-        const fectchStorageData = async () => {
+        const fectchStorageData = async (organization_id: string, user: any) => {
             try {
-                const response = await getStorageUsageByOrganization(organization?.id || "", user)
+                const response = await getStorageUsageByOrganization(organization_id, user)
                 const data = response.data;
                 setStorageData(data);
             }
             catch (error) {
                 console.error("Error fetching storage data:", error);
+                toast.error("Failed to load storage data.");
             }
         }
 
-        fectchStorageData();
-    }, [])
+        fectchStorageData(organization?.id || "", user);
+    }, [isLoading, organization?.id, user]);
 
     const totalBytes = (storageData?.storageCapacity || 0) * (1024**3) //GB
     const usedBytes = ((storageData?.usedStorage || 0) * (1024**3)) // GB -> Bytes
