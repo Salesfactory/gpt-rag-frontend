@@ -10,9 +10,10 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
     const [currentPath, setCurrentPath] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    const fetchFiles = useCallback(async (folderPath: string = currentPath, fileCategory: string = category) => {
+    const fetchFiles = useCallback(async (folderPath: string = currentPath, fileCategory: string = category, order: "newest" | "oldest" = sortOrder) => {
         // Abort any pending request
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -27,7 +28,8 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
             const response = await getSourceFileFromBlob(
                 organizationId, 
                 folderPath, 
-                fileCategory, 
+                fileCategory,
+                order,
                 abortController.signal
             );
             
@@ -49,10 +51,10 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
                 setIsLoading(false);
             }
         }
-    }, [organizationId, currentPath, category]);
+    }, [organizationId, currentPath, category, sortOrder]);
 
     useEffect(() => {
-        if (organizationId) fetchFiles(currentPath, category);
+        if (organizationId) fetchFiles(currentPath, category, sortOrder);
         
         // Cleanup: abort any pending requests when component unmounts
         return () => {
@@ -60,12 +62,12 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
                 abortControllerRef.current.abort();
             }
         };
-    }, [organizationId, category]);
+    }, [organizationId, category, sortOrder]);
 
     const navigateToFolder = useCallback((folderPath: string) => {
         setCurrentPath(folderPath);
-        fetchFiles(folderPath, category);
-    }, [fetchFiles, category]);
+        fetchFiles(folderPath, category, sortOrder);
+    }, [fetchFiles, category, sortOrder]);
 
     const navigateBack = useCallback(() => {
         if (!currentPath) return;
@@ -75,25 +77,29 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         const newPath = pathParts.join('/');
         
         setCurrentPath(newPath);
-        fetchFiles(newPath, category);
-    }, [currentPath, fetchFiles, category]);
+        fetchFiles(newPath, category, sortOrder);
+    }, [currentPath, fetchFiles, category, sortOrder]);
 
     const navigateToRoot = useCallback(() => {
         setCurrentPath('');
-        fetchFiles('', category);
-    }, [fetchFiles, category]);
+        fetchFiles('', category, sortOrder);
+    }, [fetchFiles, category, sortOrder]);
 
     const deleteFile = async (item: BlobItem) => {
         if (window.confirm(`Are you sure you want to delete ${item.name.split('/').pop()}? (The file will be deleted permanently in 1 day)`)) {
             try {
                 await deleteSourceFileFromBlob(item.name);
                 toast.success(`${item.name.split('/').pop()} marked for deletion.`);
-                fetchFiles(currentPath, category); 
+                fetchFiles(currentPath, category, sortOrder); 
             } catch (error) {
                 toast.error("Failed to delete file.");
             }
         }
     };
+
+    const toggleSortOrder = useCallback(() => {
+        setSortOrder((prevOrder) => (prevOrder === "newest" ? "oldest" : "newest"));
+    }, []);
 
     // Filter both files and folders based on search query
     const filteredFiles = files.filter(item =>
@@ -124,5 +130,7 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         navigateToRoot,
         handleDownload,
         deleteFile,
+        sortOrder,
+        toggleSortOrder,
     };
 };
