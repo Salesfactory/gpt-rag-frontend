@@ -3375,6 +3375,274 @@ def move_file(*, context):
         logger.exception(f"Unexpected error in move_file: {e}")
         return create_error_response("Internal Server Error", 500)
 
+@app.route("/api/rename-file", methods=["POST"])
+@auth.login_required
+def rename_file_endpoint(*, context):
+    """
+    Renames a single file by copying it to the same folder with a new filename and deleting the original.
+    Expected JSON:
+    {
+        "organization_id": "org-123",
+        "source_blob_name": "organization_files/org-123/path/file.xlsx",
+        "new_file_name": "file_renamed.xlsx"   # name + extension, no slashes
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+
+        organization_id = (data.get("organization_id") or "").strip()
+        source_blob_name = (data.get("source_blob_name") or "").strip()
+        new_file_name    = (data.get("new_file_name") or "").strip()
+
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        if not source_blob_name:
+            return create_error_response("Source blob name is required", 400)
+        if not new_file_name:
+            return create_error_response("New file name is required", 400)
+
+        expected_org_prefix = f"organization_files/{organization_id}/"
+        if not source_blob_name.startswith(expected_org_prefix):
+            logger.warning(f"[rename-file] Org {organization_id} tried to rename foreign blob {source_blob_name}")
+            return create_error_response("Unauthorized: Source file does not belong to your organization", 403)
+
+        invalid_chars = '<>:"/\\|?*#^'
+        if any(ch in new_file_name for ch in invalid_chars):
+            return create_error_response(f"Invalid file name: contains one of ({invalid_chars})", 422)
+        if "/" in new_file_name or "\\" in new_file_name:
+            return create_error_response("New file name must not contain path separators", 422)
+        if len(new_file_name) > 255:
+            return create_error_response("File name is too long (max 255 characters)", 422)
+
+        last_slash = source_blob_name.rfind("/")
+        if last_slash < 0:
+            return create_error_response("Invalid source path", 400)
+        source_dir = source_blob_name[:last_slash]
+        dest_blob_name = f"{source_dir}/{new_file_name}"
+
+        if dest_blob_name == source_blob_name:
+            return create_error_response("New name is the same as current name", 400)
+
+        blob_storage_manager = BlobStorageManager()
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+
+        src = container_client.get_blob_client(source_blob_name)
+        if not src.exists():
+            return create_error_response("Source file not found", 404)
+
+        dst = container_client.get_blob_client(dest_blob_name)
+        if dst.exists():
+            return create_error_response("A file with this name already exists in this folder", 409)
+
+        source_url = src.url
+        copy = dst.start_copy_from_url(source_url)
+
+        max_wait_time = 60
+        wait_time = 0.0
+        interval = 0.5
+        while wait_time < max_wait_time:
+            props = dst.get_blob_properties()
+            status = props.copy.status
+            if status == "success":
+                break
+            if status == "failed":
+                return create_error_response("Failed to copy file", 500)
+            time.sleep(interval)
+            wait_time += interval
+        if wait_time >= max_wait_time:
+            return create_error_response("Copy operation timed out", 500)
+
+        try:
+            src_props = src.get_blob_properties()
+            dst.set_blob_metadata(metadata=(src_props.metadata or {}))
+        except Exception as meta_err:
+            logger.warning(f"[rename-file] Could not set metadata on {dest_blob_name}: {meta_err}")
+
+        try:
+            src.delete_blob()
+        except Exception as del_err:
+            logger.error(f"[rename-file] Copied but could not delete source {source_blob_name}: {del_err}")
+            return create_success_response({
+                "message": "File renamed (source not deleted)",
+                "destination_blob_name": dest_blob_name,
+                "warning": "Original file still exists"
+            }, 200)
+
+        logger.info(f"[rename-file] {source_blob_name} -> {dest_blob_name} (org={organization_id})")
+        return create_success_response({
+            "message": "File renamed successfully",
+            "destination_blob_name": dest_blob_name,
+            "source_blob_name": source_blob_name
+        }, 200)
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in rename_file: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@app.route("/api/rename-folder", methods=["POST"])
+@auth.login_required
+def rename_folder_endpoint(*, context):
+    """
+    Renames a virtual folder (prefix) by copying all blobs under the source prefix to a new prefix
+    and then deleting the originals.
+    Expected JSON:
+    {
+        "organization_id": "org-123",
+        "folder_full_path": "organization_files/org-123/foo/bar"  # con o sin barra final
+        "new_folder_name": "bar_renamed"
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+
+        organization_id   = (data.get("organization_id") or "").strip()
+        folder_full_path  = (data.get("folder_full_path") or "").strip()
+        new_folder_name   = (data.get("new_folder_name") or "").strip()
+
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        if not folder_full_path:
+            return create_error_response("Folder full path is required", 400)
+        if not new_folder_name:
+            return create_error_response("New folder name is required", 400)
+
+        expected_org_prefix = f"organization_files/{organization_id}/"
+        src_prefix = folder_full_path.strip().rstrip("/") + "/"
+
+        if not src_prefix.startswith(expected_org_prefix):
+            logger.warning(f"[rename-folder] Org {organization_id} tried to rename foreign folder {src_prefix}")
+            return create_error_response("Unauthorized: Folder does not belong to your organization", 403)
+
+        if src_prefix == expected_org_prefix:
+            return create_error_response("Cannot rename organization root folder", 400)
+
+        invalid_chars = '<>:"/\\|?*#^'
+        if any(ch in new_folder_name for ch in invalid_chars):
+            return create_error_response(f"Invalid folder name: contains one of ({invalid_chars})", 422)
+        if "/" in new_folder_name or "\\" in new_folder_name:
+            return create_error_response("New folder name must not contain path separators", 422)
+        if len(new_folder_name) > 255:
+            return create_error_response("Folder name is too long (max 255 characters)", 422)
+
+        rel = src_prefix[len(expected_org_prefix):].strip("/")
+        segments = rel.split("/") if rel else []
+        if not segments:
+            return create_error_response("Invalid source folder path", 400)
+
+        parent_segments = segments[:-1]
+        old_name = segments[-1]
+        if new_folder_name == old_name:
+            return create_error_response("New name is the same as current name", 400)
+
+        parent_rel = "/".join(parent_segments)
+        dst_prefix = (
+            expected_org_prefix +
+            (parent_rel + "/" if parent_rel else "") +
+            new_folder_name +
+            "/"
+        )
+
+        blob_storage_manager = BlobStorageManager()
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+
+        has_source = False
+        for _ in container_client.list_blobs(name_starts_with=src_prefix, results_per_page=1):
+            has_source = True
+            break
+        if not has_source:
+            return create_error_response("Folder not found or empty", 404)
+
+        exists_in_dest = False
+        for _ in container_client.list_blobs(name_starts_with=dst_prefix, results_per_page=1):
+            exists_in_dest = True
+            break
+        if exists_in_dest:
+            return create_error_response("A folder with this name already exists at this level", 409)
+
+        copied = 0
+        failed = 0
+        copy_errors = []
+        to_delete = []
+
+        for blob in container_client.list_blobs(name_starts_with=src_prefix):
+            src_blob_name = blob.name
+            rel_path = src_blob_name[len(src_prefix):]
+            dst_blob_name = dst_prefix + rel_path
+
+            src = container_client.get_blob_client(src_blob_name)
+            dst = container_client.get_blob_client(dst_blob_name)
+
+            try:
+                copy = dst.start_copy_from_url(src.url)
+                max_wait_time = 120
+                wait_time = 0.0
+                interval = 0.5
+                while wait_time < max_wait_time:
+                    props = dst.get_blob_properties()
+                    status = props.copy.status
+                    if status == "success":
+                        break
+                    if status == "failed":
+                        raise RuntimeError("copy failed")
+                    time.sleep(interval)
+                    wait_time += interval
+                if wait_time >= max_wait_time:
+                    raise TimeoutError("copy timed out")
+
+                try:
+                    src_props = src.get_blob_properties()
+                    dst.set_blob_metadata(metadata=(src_props.metadata or {}))
+                except Exception as meta_err:
+                    logger.warning(f"[rename-folder] metadata set failed on {dst_blob_name}: {meta_err}")
+
+                copied += 1
+                to_delete.append(src_blob_name)
+            except Exception as err:
+                failed += 1
+                copy_errors.append({"blob": src_blob_name, "error": str(err)})
+                logger.error(f"[rename-folder] copy failed {src_blob_name} -> {dst_blob_name}: {err}")
+
+        if failed > 0 and copied == 0:
+            return create_error_response("Failed to rename folder (no blobs copied)", 500)
+
+        deleted = 0
+        delete_errors = []
+        for src_blob_name in to_delete:
+            try:
+                container_client.get_blob_client(src_blob_name).delete_blob()
+                deleted += 1
+            except Exception as del_err:
+                delete_errors.append({"blob": src_blob_name, "error": str(del_err)})
+                logger.error(f"[rename-folder] could not delete {src_blob_name}: {del_err}")
+
+        summary = {
+            "message": "Folder renamed",
+            "source_prefix": src_prefix,
+            "destination_prefix": dst_prefix,
+            "copied": copied,
+            "copy_failed": failed,
+            "deleted_source": deleted,
+            "delete_failed": len(delete_errors)
+        }
+
+        if failed > 0 or delete_errors:
+            summary["warning"] = "Completed with partial errors"
+            summary["copy_errors"] = copy_errors
+            summary["delete_errors"] = delete_errors
+            status_code = 207
+        else:
+            status_code = 200
+
+        logger.info(f"[rename-folder] {src_prefix} -> {dst_prefix} (org={organization_id}) | copied={copied}, deleted={deleted}, failed={failed}")
+        return create_success_response(summary, status_code)
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in rename_folder: {e}")
+        return create_error_response("Internal Server Error", 500)
 
 @app.route("/api/delete-folder", methods=["DELETE"])
 @auth.login_required
