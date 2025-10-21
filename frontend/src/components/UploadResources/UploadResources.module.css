@@ -1205,6 +1205,10 @@
     cursor: grabbing;
 }
 
+.inline_edit_container { display:flex; align-items:center; gap:8px; }
+.inline_edit_actions { display:flex; gap:4px; }
+.inline_ext_badge { font-size:12px; opacity:.75; padding:2px 6px; border:1px solid #e5e7eb; border-radius:6px; }
+
 /* Delete Folder Modal Styles */
 .delete_folder_modal {
     background: white;

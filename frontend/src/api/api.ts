@@ -664,6 +664,67 @@ export async function moveFile(organizationId: string, sourceBlobName: string, d
     return result;
 }
 
+export async function renameFile(
+  organizationId: string,
+  sourceBlobName: string,
+  newFileName: string
+) {
+  const response = await fetch("/api/rename-file", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      organization_id: organizationId,
+      source_blob_name: sourceBlobName,
+      new_file_name: newFileName,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+
+    if (response.status === 400) throw new Error("Invalid request to rename file");
+    if (response.status === 403) throw new Error("Unauthorized: You do not have permission to rename this file");
+    if (response.status === 404) throw new Error("Source file not found");
+    if (response.status === 409) throw new Error("A file with this name already exists in this folder");
+    if (response.status === 422) throw new Error("Invalid file name");
+
+    throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function renameFolder(
+  organizationId: string,
+  folderFullPath: string,
+  newFolderName: string
+) {
+  const response = await fetch("/api/rename-folder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      organization_id: organizationId,
+      folder_full_path: folderFullPath,
+      new_folder_name: newFolderName,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+
+    if (response.status === 400) throw new Error("Invalid request to rename folder");
+    if (response.status === 403) throw new Error("Unauthorized: You do not have permission to rename this folder");
+    if (response.status === 404) throw new Error("Folder not found");
+    if (response.status === 409) throw new Error("A folder with this name already exists at this level");
+    if (response.status === 422) throw new Error("Invalid folder name");
+
+    throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+
 export async function deleteFolder(organizationId: string, folderPath: string) {
     const response = await fetch("/api/delete-folder", {
         method: "DELETE",
