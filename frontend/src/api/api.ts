@@ -2024,3 +2024,22 @@ export async function listUserDocuments({
     const files = json?.data?.files ?? [];
     return Array.isArray(files) ? files : [];
 }
+
+
+export async function getStorageUsageByOrganization(organization_id: string, user?: any) {
+    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/storage-usage`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error fetching storage usage: ${response.statusText}`);
+    }
+
+    return response.json();
+}
