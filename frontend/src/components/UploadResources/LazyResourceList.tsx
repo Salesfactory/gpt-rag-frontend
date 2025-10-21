@@ -3,8 +3,8 @@ import { IconButton } from "@fluentui/react/lib/Button";
 import { Text } from "@fluentui/react/lib/Text";
 import { Spinner } from "@fluentui/react/lib/Spinner";
 import styles from "./UploadResources.module.css";
-import { Download, Trash2, FileText, Table, Presentation, Folder, Edit2, Clock, ArrowUpDown, FolderUp, Check, X } from "lucide-react";
-import { formatFileSize } from "../../utils/fileUtils";
+import { Download, Trash2, FileText, Table, Presentation, Folder, Edit2, Clock, ArrowUpDown, FolderUp, Check, X, ArrowUp, ArrowDown } from "lucide-react";
+import { formatDate, formatFileSize } from "../../utils/fileUtils";
 import { BlobItem, FolderItem } from "../../types";
 import NewFolderDialogModal from "./NewFolderDialogModal";
 import { createFolder, moveFile, deleteFolder, renameFile, renameFolder } from "../../api/api";
@@ -25,6 +25,8 @@ interface ResourceListProps {
   onRefresh?: () => void;
   selectedCategory?: string;
   onCategoryChange?: (category: string) => void;
+  sortOrder?: "newest" | "oldest";
+  onToggleSortOrder?: () => void;
 }
 
 const LazyResourceList: React.FC<ResourceListProps> = ({ 
@@ -40,7 +42,9 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   organizationId,
   onRefresh,
   selectedCategory = 'all',
-  onCategoryChange
+  onCategoryChange,
+  sortOrder = 'newest',
+  onToggleSortOrder
 }) => {
   const [showNewFolderModal, setShowNewFolderModal] = useState<boolean>(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
@@ -370,10 +374,14 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
             <span className={styles.new_folder_icon}>+</span>
             New Folder
           </button>
-          <button className={styles.recent_button}>
+          <button 
+            className={styles.recent_button}
+            onClick={onToggleSortOrder}
+            title={sortOrder === "newest" ? "Showing newest first (click to show oldest first)" : "Showing oldest first (click to show newest first)"}
+          >
             <Clock size={16} />
-            Recent
-            <ArrowUpDown size={14} />
+            {sortOrder === "newest" ? "Newest First" : "Oldest First"}
+            {sortOrder === "newest" ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
           </button>
         </div>
       </div>

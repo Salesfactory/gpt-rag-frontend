@@ -2997,8 +2997,9 @@ def get_source_documents(*, context):
     organization_id = request.args.get("organization_id", "").strip()
     folder_path = request.args.get("folder_path", "").strip()
     category = request.args.get("category", "all").strip()
+    order = request.args.get("order", "newest").strip()  # 'newest' or 'oldest'
 
-    logger.info(f"Getting source documents for organization {organization_id}, folder: {folder_path}, category: {category}")
+    logger.info(f"Getting source documents for organization {organization_id}, folder: {folder_path}, category: {category}, order: {order}")
 
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
@@ -3089,10 +3090,12 @@ def get_source_documents(*, context):
                 "url": "",
             })
         
-        # Sort files by creation date
+        # Sort files by creation date based on order parameter
         if files:
+            # reverse=True means newest first, reverse=False means oldest first
+            sort_reverse = (order == "newest")
             files.sort(
-                key=lambda x: datetime.fromisoformat(x["created_on"]), reverse=True
+                key=lambda x: datetime.fromisoformat(x["created_on"]), reverse=sort_reverse
             )
         
         # Combine folders and files (folders first)
