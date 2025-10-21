@@ -13,6 +13,7 @@ type StorageData = {
 };
 
 const formatBytes = (bytes: number, locale = "en-US") => {
+
     if (!isFinite(bytes) || bytes <= 0) return "0 B";
     const units = ["B", "KB", "MB", "GB", "TB"];
     const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
@@ -24,11 +25,14 @@ const formatBytes = (bytes: number, locale = "en-US") => {
 };
 
 const CloudStorageIndicator = ({ isLoading }: { isLoading: boolean }) => {
-    const [storageData, setStorageData] = useState<StorageData | null>(null);
     const { user, organization } = useAppContext();
-
+    
+    const [storageData, setStorageData] = useState<StorageData | null>(null);
+    
+    const BYTES_PER_GB = (1024 ** 3);
+    
     useEffect(() => {
-        const fectchStorageData = async (organization_id: string, user: any) => {
+        const fetchStorageData = async (organization_id: string, user: any) => {
             try {
                 const response = await getStorageUsageByOrganization(organization_id, user)
                 const data = response.data;
@@ -40,11 +44,11 @@ const CloudStorageIndicator = ({ isLoading }: { isLoading: boolean }) => {
             }
         }
 
-        fectchStorageData(organization?.id || "", user);
+        fetchStorageData(organization?.id || "", user);
     }, [isLoading, organization?.id, user]);
 
-    const totalBytes = (storageData?.storageCapacity || 0) * (1024**3) //GB
-    const usedBytes = ((storageData?.usedStorage || 0) * (1024**3)) // GB -> Bytes
+    const totalBytes = (storageData?.storageCapacity || 0) * BYTES_PER_GB; //GB
+    const usedBytes = ((storageData?.usedStorage || 0) * BYTES_PER_GB); // GB -> Bytes
     const loading = false;
 
     const locale = typeof navigator !== "undefined" ? navigator.language : "en-US";
