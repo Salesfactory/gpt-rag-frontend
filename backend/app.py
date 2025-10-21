@@ -2996,11 +2996,31 @@ def get_logs(*, context):
 def get_source_documents(*, context):
     organization_id = request.args.get("organization_id", "").strip()
     folder_path = request.args.get("folder_path", "").strip()
+    category = request.args.get("category", "all").strip()
 
-    logger.info(f"Getting source documents for organization {organization_id}, folder: {folder_path}")
+    logger.info(f"Getting source documents for organization {organization_id}, folder: {folder_path}, category: {category}")
 
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
+
+    # Define file extension mappings for categories
+    CATEGORY_EXTENSIONS = {
+        "documents": [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt"],
+        "spreadsheets": [".csv", ".xlsx", ".xls", ".ods"],
+        "presentations": [".ppt", ".pptx", ".odp", ".key"]
+    }
+
+    def should_include_file(file_name, category):
+        """Check if a file should be included based on the category filter"""
+        if category == "all":
+            return True
+        
+        if category not in CATEGORY_EXTENSIONS:
+            return True
+        
+        # Get file extension
+        file_ext = os.path.splitext(file_name.lower())[1]
+        return file_ext in CATEGORY_EXTENSIONS[category]
 
     try:
         blob_storage_manager = BlobStorageManager()
@@ -3046,7 +3066,9 @@ def get_source_documents(*, context):
             
             if len(parts) == 1:
                 # This is a file directly in the current folder
-                files.append(blob)
+                # Apply category filter
+                if should_include_file(blob_name, category):
+                    files.append(blob)
             elif len(parts) > 1:
                 # This is a nested item, add the folder name
                 folder_name = parts[0]

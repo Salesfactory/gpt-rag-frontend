@@ -524,18 +524,27 @@ export async function getApiKeyPayment(): Promise<string> {
     return apiKey;
 }
 
-export async function getSourceFileFromBlob(organizationId: string, folderPath: string = ""): Promise<SourceDocumentsResponse> {
+export async function getSourceFileFromBlob(
+    organizationId: string, 
+    folderPath: string = "", 
+    category: string = "all",
+    signal?: AbortSignal
+): Promise<SourceDocumentsResponse> {
     const url = new URL('/api/get-source-documents', window.location.origin);
     url.searchParams.append('organization_id', organizationId);
     if (folderPath) {
         url.searchParams.append('folder_path', folderPath);
+    }
+    if (category && category !== 'all') {
+        url.searchParams.append('category', category);
     }
     
     const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
-        }
+        },
+        signal
     });
     if (!response.ok) {
         console.log("Error fetching files:", response.statusText);
@@ -2071,4 +2080,23 @@ export async function listUserDocuments({
     }
     const files = json?.data?.files ?? [];
     return Array.isArray(files) ? files : [];
+}
+
+
+export async function getStorageUsageByOrganization(organization_id: string, user?: any) {
+    const response = await fetch(`/api/organization/${encodeURIComponent(organization_id)}/storage-usage`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error fetching storage usage: ${response.statusText}`);
+    }
+
+    return response.json();
 }

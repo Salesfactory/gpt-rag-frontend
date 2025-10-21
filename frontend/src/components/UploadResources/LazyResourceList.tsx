@@ -23,6 +23,8 @@ interface ResourceListProps {
   navigateToRoot: () => void;
   organizationId?: string;
   onRefresh?: () => void;
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
 }
 
 const LazyResourceList: React.FC<ResourceListProps> = ({ 
@@ -36,9 +38,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   navigateBack,
   navigateToRoot,
   organizationId,
-  onRefresh
+  onRefresh,
+  selectedCategory = 'all',
+  onCategoryChange
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showNewFolderModal, setShowNewFolderModal] = useState<boolean>(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState<boolean>(false);
   const [draggedFile, setDraggedFile] = useState<BlobItem | null>(null);
@@ -320,7 +323,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           {categories.map(category => (
             <button
               key={category.key}
-              onClick={() => setSelectedCategory(category.key)}
+              onClick={() => onCategoryChange?.(category.key)}
               className={`${styles.category_button} ${selectedCategory === category.key ? styles.selected : ''}`}
             >
               <div className={styles.category_button_icon}>
