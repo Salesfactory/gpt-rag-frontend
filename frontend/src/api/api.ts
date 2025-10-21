@@ -528,6 +528,7 @@ export async function getSourceFileFromBlob(
     organizationId: string, 
     folderPath: string = "", 
     category: string = "all",
+    order: "newest" | "oldest" = "newest",
     signal?: AbortSignal
 ): Promise<SourceDocumentsResponse> {
     const url = new URL('/api/get-source-documents', window.location.origin);
@@ -537,6 +538,9 @@ export async function getSourceFileFromBlob(
     }
     if (category && category !== 'all') {
         url.searchParams.append('category', category);
+    }
+    if (order) {
+        url.searchParams.append('order', order);
     }
     
     const response = await fetch(url.toString(), {
