@@ -39,7 +39,7 @@ const UploadResources: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} />
+            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} isLoading={isLoading} />
             <LazyResourceList
                 filteredFiles={filteredFiles}
                 filteredFolders={filteredFolders}
