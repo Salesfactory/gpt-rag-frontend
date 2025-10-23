@@ -44,6 +44,12 @@ const RenameFileContent = lazy(() =>
   }))
 );
 
+const InvalidCharactersWarningContent = lazy(() => 
+  import('./UploadModal').then(module => ({ 
+    default: module.InvalidCharactersWarningContent 
+  }))
+);
+
 // Loading fallback component
 const LoadingFallback: React.FC<{ label?: string }> = ({ label = "Loading..." }) => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
@@ -105,5 +111,14 @@ export const LazyRenameFileContent: React.FC<{
 }> = (props) => (
   <Suspense fallback={<LoadingFallback label="Loading rename dialog..." />}>
     <RenameFileContent {...props} />
+  </Suspense>
+);
+
+export const LazyInvalidCharactersWarningContent: React.FC<{ 
+  invalidFiles: string[];
+  onCancel: () => void;
+}> = (props) => (
+  <Suspense fallback={<LoadingFallback label="Loading warning..." />}>
+    <InvalidCharactersWarningContent {...props} />
   </Suspense>
 );

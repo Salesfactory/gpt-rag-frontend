@@ -11,7 +11,8 @@ const initialState: UploadState = {
   duplicateFiles: [],
   filesToUpload: [],
   currentFileIndex: 0,
-  excelFiles: []
+  excelFiles: [],
+  invalidCharacterFiles: []
 };
 
 function validationReducer(state: UploadState, action: UploadAction): UploadState {
@@ -78,6 +79,9 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
 
     case "EXCEL_WARNING":
       return { ...state, excelFiles: action.payload, status: "excel_warning"}
+
+    case "INVALID_CHARACTERS":
+      return { ...state, invalidCharacterFiles: action.payload, status: "invalid_characters"}
 
     case "UPLOAD":
       return {...state, status: "uploading"}

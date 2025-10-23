@@ -7,9 +7,11 @@ import {
   LazyRenameFileContent, 
   LazyUploadingContent, 
   LazyUploadModalFooter, 
-  LazyUploadModalHeader 
+  LazyUploadModalHeader,
+  LazyInvalidCharactersWarningContent
 } from "../UploadModal/LazyUploadModal";
 import { UploadState, UploadAction } from "../../types";
+import { hasInvalidCharacters } from "../../utils/fileUtils";
 
 
 const UploadDialogModal: React.FC<{
@@ -36,13 +38,28 @@ const UploadDialogModal: React.FC<{
     }, []);
 
     const onDrop = useCallback((acceptedFiles: any) => {
-        dispatchState({ type: 'SELECT_FILES', payload: acceptedFiles });
+        // Check for invalid characters in file names
+        const filesWithInvalidChars = acceptedFiles.filter((file: File) => 
+            hasInvalidCharacters(file.name)
+        );
+
+        if (filesWithInvalidChars.length > 0) {
+            const invalidFileNames = filesWithInvalidChars.map((file: File) => file.name);
+            dispatchState({ type: 'INVALID_CHARACTERS', payload: invalidFileNames });
+        } else {
+            dispatchState({ type: 'SELECT_FILES', payload: acceptedFiles });
+        }
     }, []);
 
     const renderContent = () => {
         switch (uploadState.status) {
             case 'idle':
                 return <LazyDragFilesContent onDrop={onDrop} />
+            case 'invalid_characters':
+                return <LazyInvalidCharactersWarningContent
+                    invalidFiles={uploadState.invalidCharacterFiles}
+                    onCancel={() => dispatchState({ type: 'CANCEL' })}
+                />
             case 'duplicateWarning':
                 return <LazyDuplicateWarningContent
                     files={uploadState.duplicateFiles}

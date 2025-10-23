@@ -37,3 +37,30 @@ export const checkSpreadsheetFileLimit = (newFiles: File[], Files: BlobItem[]): 
     }
     return true;
 };
+
+/**
+ * Characters that are not allowed in file names
+ */
+export const INVALID_FILENAME_CHARACTERS = ['&', '#', '%', '{', '}', '\\', '<', '>', '*', '?', '/', '$', '!', "'", '"', ':', '@', '+', '`', '|', '='];
+
+/**
+ * Checks if a file name contains invalid characters
+ * @param fileName - The file name to validate
+ * @returns true if the file name contains invalid characters, false otherwise
+ */
+export const hasInvalidCharacters = (fileName: string): boolean => {
+    const invalidCharacters = /[&#%{}\\<>*?/$!'"'":@+`|=]/;
+    return invalidCharacters.test(fileName);
+};
+
+/**
+ * Validates file names and returns files with invalid characters
+ * @param files - Array of files to validate
+ * @returns Object containing arrays of valid files and files with invalid characters
+ */
+export const validateFileNames = (files: File[]): { validFiles: File[], filesWithInvalidChars: File[] } => {
+    const filesWithInvalidChars = files.filter(file => hasInvalidCharacters(file.name));
+    const validFiles = files.filter(file => !hasInvalidCharacters(file.name));
+    
+    return { validFiles, filesWithInvalidChars };
+};
