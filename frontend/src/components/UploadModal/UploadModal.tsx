@@ -8,6 +8,7 @@ import { Text } from "@fluentui/react/lib/Text";
 import { ALLOWED_FILE_TYPES } from '../../constants';
 import { Callback } from 'microsoft-cognitiveservices-speech-sdk/distrib/lib/src/sdk/Transcription/IConversation';
 import { FileToUpload } from '../../types';
+import { INVALID_FILENAME_CHARACTERS } from '../../utils/fileUtils';
 
 function BoldMessage({ text }: { text: string }) {
     const parts = text.split(/\*\*(.*?)\*\*/g);
@@ -345,6 +346,50 @@ export const RenameFileContent: React.FC<{
                     onClick={onCancel}
                 >
                     Cancel
+                </button>
+            </div>
+        </div>
+    )
+}
+
+export const InvalidCharactersWarningContent: React.FC<{ 
+    invalidFiles: string[], 
+    onCancel: () => void 
+}> = ({ invalidFiles, onCancel }) => {
+    return (
+        <div className={styles.excelWarningContainer}>
+            <div className={styles.excelWarningHeader}>
+                <div className={styles.iconWrapper}>
+                    <AlertTriangle className={styles.icon} />
+                </div>
+                <h4 className={styles.title}>Invalid File Name Characters</h4>
+            </div>
+
+            <div className={styles.warningBox}>
+                <p className={styles.message}>
+                    <strong>Error:</strong> The following file{invalidFiles.length > 1 ? 's contain' : ' contains'} unsupported characters in {invalidFiles.length > 1 ? 'their names' : 'its name'}.
+                </p>
+                <div className={styles.filesList}>
+                    <ul>
+                        {invalidFiles.map((fileName, index) => (
+                            <li key={index}>{fileName}</li>
+                        ))}
+                    </ul>
+                </div>
+                <p className={styles.message}>
+                    File names cannot contain the following special characters:
+                </p>
+                <p className={styles.message} style={{ fontFamily: 'monospace', fontSize: '14px', backgroundColor: '#f3f4f6', padding: '8px', borderRadius: '4px' }}>
+                    {INVALID_FILENAME_CHARACTERS.join(' ')}
+                </p>
+                <p className={styles.message}>
+                    Please rename the file{invalidFiles.length > 1 ? 's' : ''} and try uploading again.
+                </p>
+            </div>
+
+            <div className={styles.actions}>
+                <button aria-label='Close' className={styles.confirmButton} onClick={onCancel}>
+                    Close
                 </button>
             </div>
         </div>

@@ -29,13 +29,14 @@ export interface SourceDocumentsResponse {
 export type FileToUpload = { file: File; action: 'upload' | 'replace' | 'rename' }
 
 export type UploadState = {
-  status: 'idle' | 'validating' |  'duplicateWarning' | 'renameFile' | 'readyToUpload' | 'excel_warning' | 'uploading' | 'success' | 'error';
+  status: 'idle' | 'validating' |  'duplicateWarning' | 'renameFile' | 'readyToUpload' | 'excel_warning' | 'invalid_characters' | 'uploading' | 'success' | 'error';
   initialFiles: File[]
   duplicateFiles: File[]
   filesToUpload: FileToUpload[]
   currentFileIndex: number
   errorMessage?: string;
   excelFiles: string[]
+  invalidCharacterFiles: string[]
 };
 
 
@@ -53,4 +54,5 @@ export type UploadAction =
   | { type: 'UPLOAD_SUCCESS' }
   | { type: 'UPLOAD_ERROR'; payload: string }
   | {type: 'EXCEL_WARNING'; payload: string[]}
+  | {type: 'INVALID_CHARACTERS'; payload: string[]}
   | { type: 'CANCEL' };
