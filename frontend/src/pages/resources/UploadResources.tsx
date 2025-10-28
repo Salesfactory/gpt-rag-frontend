@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import styles from "./UploadResourcescopy.module.css";
 
 import FileListHeader from "../../components/UploadResources/FileHeaderList";
@@ -31,7 +31,12 @@ const UploadResources: React.FC = () => {
         toggleSortOrder
     } = useSourceFiles(user?.organizationId || "", selectedCategory)
     
-    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", () => fetchFiles(currentPath, selectedCategory), files);
+    // Memoize onUploadComplete to prevent infinite loop
+    const handleUploadComplete = useCallback(() => {
+        fetchFiles(currentPath, selectedCategory, sortOrder);
+    }, [fetchFiles, currentPath, selectedCategory, sortOrder]);
+    
+    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", handleUploadComplete, files, currentPath);
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
