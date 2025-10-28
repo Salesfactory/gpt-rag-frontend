@@ -101,7 +101,7 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
 }
 
 
-export const useFileUpload = (organizationId: string, onUploadComplete: () => void, existingFiles: BlobItem[]) => {
+export const useFileUpload = (organizationId: string, onUploadComplete: () => void, existingFiles: BlobItem[], currentPath: string = "") => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   const [state, dispatch] = useReducer(validationReducer, initialState)
@@ -119,7 +119,7 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
       dispatch({ type: 'UPLOAD' });
       
       for (const file of files) {
-        await uploadSourceFileToBlob(file.file, organizationId);
+        await uploadSourceFileToBlob(file.file, organizationId, currentPath);
       }
       
       dispatch({ type: 'UPLOAD_SUCCESS' });
@@ -132,7 +132,7 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
     } finally {
       closeUploadDialog();
     }
-  }, [organizationId, onUploadComplete, dispatch]);
+  }, [organizationId, currentPath, onUploadComplete]);
 
   const handleDuplicateRename = (newName: string) => {
     dispatch({ type: 'HANDLE_DUPLICATE_RENAME', payload: newName });
@@ -180,7 +180,7 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
         return existingFiles.some(item => item.name.split('/').pop() === file.name);
       })
     });
-  }, [state.initialFiles, existingFiles, dispatch]);
+  }, [state.initialFiles, existingFiles]);
 
   const checkExcelFiles = useCallback(() => {
     const files: FileToUpload[] = state.filesToUpload;
@@ -196,19 +196,25 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
     } else {
       dispatch({ type: "UPLOAD" });
     }
-  }, [state.filesToUpload, dispatch]);
+  }, [state.filesToUpload]);
 
   useEffect(() => {
     if (state.status === 'validating' && state.initialFiles.length > 0) {
       validate();
     }
+  }, [state.status, validate]);
+
+  useEffect(() => {
     if (state.status === "readyToUpload" && state.filesToUpload.length > 0) {
       checkExcelFiles();
     }
-    if (state.status === "uploading") {
+  }, [state.status, checkExcelFiles]);
+
+  useEffect(() => {
+    if (state.status === "uploading" && state.filesToUpload.length > 0) {
       startUpload(state.filesToUpload);
     }
-  }, [state.status, state.initialFiles, validate, checkExcelFiles, startUpload, state.filesToUpload]);
+  }, [state.status, startUpload]);
 
   return {
     uploadDialogOpen,

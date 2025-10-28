@@ -87,6 +87,9 @@ def upload_source_document():
             logger.error("No file selected")
             return create_error_response("No file selected", 400)
 
+        # Get folder path from request (optional)
+        folder_path = request.form.get("folder_path", "").strip()
+
         # Extract extension & mimetype
         _, ext = os.path.splitext(file.filename.lower())
         file_mime = file.mimetype
@@ -105,10 +108,14 @@ def upload_source_document():
             logger.error(f"File signature mismatch for {file.filename} ({file_mime})")
             return create_error_response("File content does not match declared type", 422)
 
-        logger.info(f"Uploading file '{file.filename}' for organization '{organization_id}'")
+        logger.info(f"Uploading file '{file.filename}' for organization '{organization_id}' to folder '{folder_path}'")
 
-        # Blob folder
+        # Blob folder - include subfolder path if provided
         blob_folder = f"{ORG_FILES_PREFIX}/{organization_id}"
+        if folder_path:
+            # Clean the folder path (remove leading/trailing slashes)
+            folder_path = folder_path.strip("/")
+            blob_folder = f"{blob_folder}/{folder_path}"
 
         # Metadata
         metadata = {"organization_id": organization_id}
