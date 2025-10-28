@@ -972,6 +972,7 @@ const Chat = () => {
                                             onHideTab={hideTab}
                                             spreadsheetDownloadUrl={spreadsheetDownloadUrl}
                                             spreadsheetFileName={spreadsheetFileName}
+                                            onCitationClicked={(c, n) => onShowCitation(c, n, selectedAnswer)}
                                         />
                                         )}
                                     </div>

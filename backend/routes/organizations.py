@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, request, jsonify
 import logging
 
 from http import HTTPStatus
@@ -14,20 +14,29 @@ from data_summary.blob_utils import (
 )
 from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
+from shared.cosmo_db import create_organization, get_organization_data
+
 from utils import create_success_response, create_error_response
+
 from azure.core.exceptions import ResourceNotFoundError, AzureError
+from shared.error_handling import (
+    MissingRequiredFieldError,
+)
+from werkzeug.exceptions import NotFound
+
+from routes.decorators.auth_decorator import auth_required
 
 DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
 BLOB_CONTAINER_NAME = "documents"
 ORG_FILES_PREFIX = "organization_files"
 
-bp = Blueprint("organizations", __name__, url_prefix="/api/organizations/")
+bp = Blueprint("organizations", __name__)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-@bp.route("<organization_id>/<file_name>/business-describe", methods=["POST"])
+@bp.route("/api/organizations/<organization_id>/<file_name>/business-describe", methods=["POST"])
 def generate_business_description(organization_id, file_name):
     blob_temp_path = None
 
@@ -105,3 +114,78 @@ def generate_business_description(organization_id, file_name):
     finally:
         if blob_temp_path and os.path.exists(blob_temp_path):
             os.remove(blob_temp_path)
+
+@bp.route("/api/create-organization", methods=["POST"])
+@auth_required
+def createOrganization():
+    default_storage_capacity = 500  # Default storage capacity in GB
+
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return create_error_response({"error": "Missing required parameters, client_principal_id"}, HTTPStatus.BAD_REQUEST)
+    try:
+        organizationName = request.json["organizationName"]
+        if not request.json.get("storageCapacity"):
+            storage_capacity = default_storage_capacity
+        else:
+            storage_capacity = request.json["storageCapacity"]
+
+        response = create_organization(client_principal_id, organizationName, storage_capacity)
+        if not response:
+            return create_error_response(
+                "Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR
+            )
+        return jsonify(response), HTTPStatus.CREATED
+    except NotFound as e:
+        return create_error_response(
+            f"User {client_principal_id} not found", HTTPStatus.NOT_FOUND
+        )
+    except MissingRequiredFieldError as field:
+        return create_error_response(
+            f"Missing required parameters, {field}", HTTPStatus.BAD_REQUEST
+        )
+    except Exception as e:
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+@bp.route("/api/organizations/<organization_id>/storage-usage", methods=["GET"])
+@auth_required
+def getOrganizationStorageCapacity(organization_id):
+    try:
+        organization = get_organization_data(organization_id)
+        if not organization:
+            return create_error_response(
+                "Organization not found", HTTPStatus.NOT_FOUND
+            )
+
+        storage_capacity = organization.get("storageCapacity", None)
+        if storage_capacity is None:
+            return create_error_response(
+                "Storage capacity not set for this organization", HTTPStatus.NOT_FOUND
+            )
+        
+        blob_storage_manager = current_app.config["blob_storage_manager"]
+        prefix = f"{ORG_FILES_PREFIX}/{organization_id}/"
+        blobs = blob_storage_manager.list_blobs_in_container(
+            container_name=BLOB_CONTAINER_NAME,
+            prefix=prefix,
+            include_metadata="none",
+        )
+        total_used_storage_bytes = 0
+        for blob in blobs:
+            total_used_storage_bytes += blob.get("size")
+        
+        used_storage_gib = (total_used_storage_bytes / (1024 ** 3)) 
+        
+        free_storage_gib = storage_capacity - used_storage_gib
+
+        percentage_used = (used_storage_gib / storage_capacity) * 100
+
+        return create_success_response({
+            "storageCapacity": storage_capacity,
+            "usedStorage": used_storage_gib,
+            "freeStorage": free_storage_gib,
+            "percentageUsed": percentage_used
+        })
+
+    except Exception as e:
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)

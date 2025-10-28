@@ -857,7 +857,7 @@ def get_invitation_by_email_and_org(invited_user_email, organizationId):
         return None
 
 
-def create_organization(user_id, organization_name):
+def create_organization(user_id, organization_name, storage_capacity):
     """
     Creates a new organization in the container.
     """
@@ -875,6 +875,7 @@ def create_organization(user_id, organization_name):
                 "sessionId": None,
                 "subscriptionStatus": "inactive",
                 "subscriptionExpirationDate": None,
+                "storageCapacity": storage_capacity,
             }
         )
         if not result:

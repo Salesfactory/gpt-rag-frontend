@@ -1,8 +1,23 @@
 .page_container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    padding: 50px 50px 50px 50px;
-    background-color: #f9fafb;
-    min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 24px;           
+  background-color: #f9fafb;
+  min-height: 100dvh;          
+  box-sizing: border-box;
+}
+
+
+:global(#root):has(.page_container) {
+  height: auto !important;
+  min-height: 100%;
+}
+
+
+:global(html):has(.page_container),
+:global(body):has(.page_container) {
+  height: auto !important;
+  min-height: 100%;
+  background-color: #f9fafb;
 }

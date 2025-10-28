@@ -5,6 +5,7 @@
     padding: 50px 50px 50px 50px;
     background-color: #f9fafb;
     min-height: 100vh;
+    scrollbar-gutter: stable;
 }
 
 .cardContainer2 {
@@ -62,6 +63,10 @@
     width: 100%;
 }
 
+.card, .card2 {
+  align-items: stretch;
+}
+
 .infoContainer {
     display: flex;
     justify-content: space-between;
@@ -114,6 +119,8 @@
     line-height: 1.5;
     min-height: 80px;
     transition: border-color 0.2s ease-in-out;
+    overflow-y: hidden;
+    overflow-anchor: none;
 }
 
 .textArea:focus {

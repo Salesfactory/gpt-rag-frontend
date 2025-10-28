@@ -131,6 +131,7 @@
     justify-content: space-between;
     align-items: center;
     padding-bottom: 3rem;
+    margin-top: 20px;
 }
 
 .file_list_actions {
@@ -364,7 +365,7 @@
     color: #71b33b;
     display: flex;
     gap: 8px;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
     margin-left: 0;
     width: 100%;
@@ -718,4 +719,667 @@
 .confirmButton:focus {
     outline: none;
     box-shadow: 0 0 0 2px #f97316, 0 0 0 4px #fff; /* orange-500 ring */
+}
+
+/* LazyResourceList styles */
+.category_filter_section {
+    padding: 20px 0;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 20px;
+}
+
+.category_label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.category_buttons_container {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.category_button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 24px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 120px;
+}
+
+.category_button.selected {
+    border: 2px solid #10b981;
+    background-color: #f0fdf4;
+}
+
+.category_button_icon {
+    color: #6b7280;
+}
+
+.category_button.selected .category_button_icon {
+    color: #10b981;
+}
+
+.category_button_text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.category_button.selected .category_button_text {
+    color: #10b981;
+}
+
+.all_files_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.folder_header_left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.folder_title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.back_button {
+    margin-left: 12px;
+    padding: 6px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background-color: #ffffff;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.header_actions_container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.new_folder_button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #16a34a;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.new_folder_icon {
+    font-size: 18px;
+}
+
+.recent_button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.file_list_wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.file_item_row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    transition: all 0.2s;
+}
+
+.file_item_row.clickable {
+    cursor: pointer;
+}
+
+.file_item_row:hover {
+    background-color: #f9fafb;
+}
+
+.file_item_left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+}
+
+.file_icon_container {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file_icon_container.folder {
+    background-color: #fef3c7;
+}
+
+.file_icon_container.file {
+    background-color: #fed7aa;
+}
+
+.file_details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file_name_text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #111827;
+}
+
+.file_metadata {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.file_badges_container {
+    display: flex;
+    gap: 8px;
+    margin-right: 20px;
+}
+
+.file_extension_badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    background-color: #dbeafe;
+    color: #1e40af;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.file_size_badge {
+    padding: 4px 12px;
+    border-radius: 6px;
+    background-color: #f3f4f6;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.file_actions_container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.icon_button_wrapper {
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+/* New Folder Modal Styles */
+.new_folder_modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.new_folder_modal_header {
+    padding: 24px 24px 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.new_folder_header_content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.new_folder_header_icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #dcfce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.plus_icon {
+    font-size: 24px;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.new_folder_modal_title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.new_folder_modal_content {
+    padding: 24px;
+}
+
+.new_folder_form_group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.new_folder_label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.new_folder_input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #111827;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.new_folder_input:focus {
+    outline: none;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.new_folder_input::placeholder {
+    color: #9ca3af;
+}
+
+.new_folder_input.input_error {
+    border-color: #ef4444;
+}
+
+.new_folder_input.input_error:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.error_message {
+    font-size: 13px;
+    color: #ef4444;
+    margin-top: 4px;
+}
+
+.new_folder_modal_footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.new_folder_cancel_button {
+    padding: 10px 20px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.new_folder_cancel_button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.new_folder_create_button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #16a34a;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.new_folder_create_button:hover {
+    background-color: #15803d;
+}
+
+.new_folder_create_button:active {
+    transform: scale(0.98);
+}
+
+.headerContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.storageCard {
+  width: 100%;
+  background: linear-gradient(90deg, #0ABD56, #009944);           
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.storageTopRow, .storageBottomRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.storageTitle {
+  font-weight: 700;
+  color: white;
+}
+
+.storageSub {
+  color: white;
+  font-size: 0.875rem;
+  margin-top: 2px;
+}
+
+.storageRight {
+  color: white;
+  font-weight: 600;
+}
+
+.storagePct {
+  font-size: 1.25rem;
+  margin-right: 6px;
+}
+
+.storageBarWrapper {
+  margin: 12px 0 8px;
+}
+
+.storageBar {
+  height: 14px;
+  width: 100%;
+  background: #e5f6ec;
+  border-radius: 9999px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d1fae5;
+}
+
+.storageBarFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #16a34a, #10b981);
+  width: 0%;
+  transition: width 240ms ease;
+}
+
+.isLoading {
+  background: linear-gradient(90deg, #eef2f3 0px, #f8fafc 40%, #eef2f3 80%);
+  background-size: 240px 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@keyframes shimmer {
+  0% { background-position: -240px 0; }
+  100% { background-position: 240px 0; }
+}
+
+.storageBottomRow span {
+  color: white;
+  font-size: 0.875rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.storageBarFill[data-has-used="true"] {
+  min-width: 8px;
+}
+
+/* Drag and Drop Styles */
+.drop_zone {
+    border: 2px dashed #94a3b8 !important;
+    background-color: #f8fafc;
+}
+
+.drop_target {
+    border: 2px solid #16a34a !important;
+    background-color: #dcfce7 !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.file_item_row[draggable="true"] {
+    cursor: grab;
+}
+
+.file_item_row[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.inline_edit_container { display:flex; align-items:center; gap:8px; }
+.inline_edit_actions { display:flex; gap:4px; }
+.inline_ext_badge { font-size:12px; opacity:.75; padding:2px 6px; border:1px solid #e5e7eb; border-radius:6px; }
+
+/* Delete Folder Modal Styles */
+.delete_folder_modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.delete_folder_modal_header {
+    padding: 24px 24px 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.delete_folder_header_content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.delete_folder_header_icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete_folder_modal_title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.delete_folder_modal_content {
+    padding: 24px;
+}
+
+.delete_folder_message {
+    font-size: 14px;
+    color: #374151;
+    margin: 0 0 16px 0;
+}
+
+.delete_folder_name_container {
+    padding: 12px 16px;
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.delete_folder_name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.delete_folder_warning {
+    font-size: 13px;
+    color: #dc2626;
+    margin: 0;
+}
+
+.delete_folder_modal_footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.delete_folder_cancel_button {
+    padding: 10px 20px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.delete_folder_cancel_button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.delete_folder_cancel_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.delete_folder_delete_button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #dc2626;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.delete_folder_delete_button:hover {
+    background-color: #b91c1c;
+}
+
+.delete_folder_delete_button:active {
+    transform: scale(0.98);
+}
+
+.delete_folder_delete_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+.file_item_row { box-sizing: border-box; }
+.file_item_left,
+.file_badges_container,
+.file_actions_container { min-width: 0; }
+.file_details { min-width: 0; }
+
+.file_name_text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .file_item_row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px 12px; 
+    padding: 12px 14px;
+  }
+
+  .file_item_left {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+
+  .file_badges_container {
+    order: 2;
+    flex: 0 1 auto;
+    margin: 0;                
+    gap: 6px;
+  }
+
+  .file_actions_container {
+    order: 3;
+    flex: 0 0 auto;
+    margin-left: auto;       
+    gap: 6px;
+  }
+
+
+  .file_actions_container button {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+  }
+}
+
+@media (max-width: 400px) {
+  .file_badges_container { display: none; }
 }

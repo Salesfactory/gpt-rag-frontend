@@ -1,5 +1,5 @@
 import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
-import type { BlobItem } from "../types";
+import { SourceDocumentsResponse } from '../types';
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -524,12 +524,31 @@ export async function getApiKeyPayment(): Promise<string> {
     return apiKey;
 }
 
-export async function getSourceFileFromBlob(organizationId: string): Promise<BlobItem[]> {
-    const response = await fetch(`/api/get-source-documents?organization_id=${organizationId}`, {
+export async function getSourceFileFromBlob(
+    organizationId: string, 
+    folderPath: string = "", 
+    category: string = "all",
+    order: "newest" | "oldest" = "newest",
+    signal?: AbortSignal
+): Promise<SourceDocumentsResponse> {
+    const url = new URL('/api/get-source-documents', window.location.origin);
+    url.searchParams.append('organization_id', organizationId);
+    if (folderPath) {
+        url.searchParams.append('folder_path', folderPath);
+    }
+    if (category && category !== 'all') {
+        url.searchParams.append('category', category);
+    }
+    if (order) {
+        url.searchParams.append('order', order);
+    }
+    
+    const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
-        }
+        },
+        signal
     });
     if (!response.ok) {
         console.log("Error fetching files:", response.statusText);
@@ -577,6 +596,166 @@ export async function deleteSourceFileFromBlob(blob_name: string) {
         console.log("Error deleting file:", response.statusText);
         throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
     }
+    const result = await response.json();
+    return result;
+}
+
+export async function createFolder(organizationId: string, folderName: string, currentPath: string = "") {
+    const response = await fetch("/api/create-folder", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            organization_id: organizationId,
+            folder_name: folderName,
+            current_path: currentPath
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        
+        // Handle specific error cases
+        if (response.status === 409) {
+            throw new Error("A folder with this name already exists");
+        }
+        
+        throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function moveFile(organizationId: string, sourceBlobName: string, destinationFolderPath: string = "") {
+    const response = await fetch("/api/move-file", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            organization_id: organizationId,
+            source_blob_name: sourceBlobName,
+            destination_folder_path: destinationFolderPath
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        
+        // Handle specific error cases
+        if (response.status === 403) {
+            throw new Error("Unauthorized: You do not have permission to move this file");
+        }
+        
+        if (response.status === 404) {
+            throw new Error("Source file not found");
+        }
+        
+        if (response.status === 409) {
+            throw new Error("A file with this name already exists in the destination folder");
+        }
+        
+        throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function renameFile(
+  organizationId: string,
+  sourceBlobName: string,
+  newFileName: string
+) {
+  const response = await fetch("/api/rename-file", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      organization_id: organizationId,
+      source_blob_name: sourceBlobName,
+      new_file_name: newFileName,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+
+    if (response.status === 400) throw new Error("Invalid request to rename file");
+    if (response.status === 403) throw new Error("Unauthorized: You do not have permission to rename this file");
+    if (response.status === 404) throw new Error("Source file not found");
+    if (response.status === 409) throw new Error("A file with this name already exists in this folder");
+    if (response.status === 422) throw new Error("Invalid file name");
+
+    throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function renameFolder(
+  organizationId: string,
+  folderFullPath: string,
+  newFolderName: string
+) {
+  const response = await fetch("/api/rename-folder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      organization_id: organizationId,
+      folder_full_path: folderFullPath,
+      new_folder_name: newFolderName,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+
+    if (response.status === 400) throw new Error("Invalid request to rename folder");
+    if (response.status === 403) throw new Error("Unauthorized: You do not have permission to rename this folder");
+    if (response.status === 404) throw new Error("Folder not found");
+    if (response.status === 409) throw new Error("A folder with this name already exists at this level");
+    if (response.status === 422) throw new Error("Invalid folder name");
+
+    throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+
+export async function deleteFolder(organizationId: string, folderPath: string) {
+    const response = await fetch("/api/delete-folder", {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            organization_id: organizationId,
+            folder_path: folderPath
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        
+        // Handle specific error cases
+        if (response.status === 403) {
+            throw new Error("Unauthorized: You do not have permission to delete this folder");
+        }
+        
+        if (response.status === 404) {
+            throw new Error("Folder not found");
+        }
+        
+        if (response.status === 400) {
+            throw new Error(errorData.message || "Invalid request");
+        }
+        
+        throw new Error(errorData.message || `Server responded with ${response.status}: ${response.statusText}`);
+    }
+    
     const result = await response.json();
     return result;
 }
@@ -1906,3 +2085,23 @@ export async function listUserDocuments({
     const files = json?.data?.files ?? [];
     return Array.isArray(files) ? files : [];
 }
+
+
+export async function getStorageUsageByOrganization(organization_id: string, user?: any) {
+    const response = await fetch(`/api/organizations/${encodeURIComponent(organization_id)}/storage-usage`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Error fetching storage usage: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+

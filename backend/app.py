@@ -31,6 +31,7 @@ import uuid
 from urllib.parse import urlparse
 from identity.flask import Auth
 from datetime import timedelta, datetime, timezone
+import time
 
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
@@ -80,7 +81,6 @@ from shared.cosmo_db import (
     patch_organization_data,
     get_audit_logs,
     get_organization_subscription,
-    create_organization,
 )
 from shared import clients
 from data_summary.config import get_azure_openai_config
@@ -88,7 +88,7 @@ from data_summary.llm import PandasAIClient
 
 from routes.report_jobs import bp as jobs_bp
 from routes.organizations import bp as organizations
-from routes.upload_source_document import bp as upload_source_document
+from routes.file_management import bp as file_management
 from routes.user_documents import bp as user_documents
 from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
@@ -236,7 +236,7 @@ def _load_secrets_once():
 
 app.register_blueprint(jobs_bp)
 app.register_blueprint(organizations)
-app.register_blueprint(upload_source_document)
+app.register_blueprint(file_management)
 app.register_blueprint(user_documents)
 app.register_blueprint(voice_customer)
 app.register_blueprint(categories)
@@ -1876,39 +1876,6 @@ def getUserOrganizationsRole(*, context):
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 
-@app.route("/api/create-organization", methods=["POST"])
-@auth.login_required
-def createOrganization(*, context):
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    if not client_principal_id:
-        return (
-            jsonify({"error": "Missing required parameters, client_principal_id"}),
-            400,
-        )
-        if not "organizationName" in request.json:
-            return (
-                jsonify({"error": "Missing required parameters, organizationName"}),
-                400,
-            )
-    try:
-        organizationName = request.json["organizationName"]
-        response = create_organization(client_principal_id, organizationName)
-        if not response:
-            return create_error_response(
-                "Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR
-            )
-        return jsonify(response), HTTPStatus.CREATED
-    except NotFound as e:
-        return create_error_response(
-            f"User {client_principal_id} not found", HTTPStatus.NOT_FOUND
-        )
-    except MissingRequiredFieldError as field:
-        return create_error_response(
-            f"Missing required parameters, {field}", HTTPStatus.BAD_REQUEST
-        )
-    except Exception as e:
-        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
-
 
 def get_product_prices(product_id):
 
@@ -2994,80 +2961,124 @@ def get_logs(*, context):
 @auth.login_required
 def get_source_documents(*, context):
     organization_id = request.args.get("organization_id", "").strip()
+    folder_path = request.args.get("folder_path", "").strip()
+    category = request.args.get("category", "all").strip()
+    order = request.args.get("order", "newest").strip()  # 'newest' or 'oldest'
 
-    logger.info(f"Getting source documents for organization {organization_id}")
+    logger.info(f"Getting source documents for organization {organization_id}, folder: {folder_path}, category: {category}, order: {order}")
 
     if not organization_id:
         return create_error_response("Organization ID is required", 400)
 
+    # Define file extension mappings for categories
+    CATEGORY_EXTENSIONS = {
+        "documents": [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt"],
+        "spreadsheets": [".csv", ".xlsx", ".xls", ".ods"],
+        "presentations": [".ppt", ".pptx", ".odp", ".key"]
+    }
+
+    def should_include_file(file_name, category):
+        """Check if a file should be included based on the category filter"""
+        if category == "all":
+            return True
+        
+        if category not in CATEGORY_EXTENSIONS:
+            return True
+        
+        # Get file extension
+        file_ext = os.path.splitext(file_name.lower())[1]
+        return file_ext in CATEGORY_EXTENSIONS[category]
+
     try:
         blob_storage_manager = BlobStorageManager()
-        # Search only the blobs under that organization's specific folder
-        prefix = f"organization_files/{organization_id}/"
+        
+        # Build the base prefix for the organization
+        base_prefix = f"organization_files/{organization_id}/"
+        
+        # Add the folder path if provided
+        if folder_path:
+            # Ensure folder_path doesn't start with / and ends with /
+            folder_path = folder_path.strip("/")
+            current_prefix = f"{base_prefix}{folder_path}/"
+        else:
+            current_prefix = base_prefix
+        
+        # Get all blobs with the current prefix
         blobs = blob_storage_manager.list_blobs_in_container_for_upload_files(
-            container_name="documents", prefix=prefix, include_metadata="yes"
+            container_name="documents", prefix=current_prefix, include_metadata="yes"
         )
 
-        # Return the original blob dicts so all fields (including created_on) are preserved
-        organization_blobs = []
-        generated_images_prefix = f"{prefix}generated_images/"
+        # Exclude generated_images folder
+        generated_images_prefix = f"{base_prefix}generated_images/"
+        
+        files = []
+        folder_set = set()
+        
         for blob in blobs:
             blob_name = blob.get("name", "")
-            if blob_name.startswith(prefix) and not blob_name.startswith(
-                generated_images_prefix
-            ):
-                organization_blobs.append(blob)
-
-        if organization_blobs:
-            organization_blobs.sort(
-                key=lambda x: datetime.fromisoformat(x["created_on"]), reverse=True
+            
+            # Skip generated images
+            if blob_name.startswith(generated_images_prefix):
+                continue
+            
+            # Get the relative path from current prefix
+            relative_path = blob_name[len(current_prefix):]
+            
+            # Skip empty paths
+            if not relative_path:
+                continue
+            
+            # Check if this is a file in the current directory or a nested item
+            parts = relative_path.split("/")
+            
+            if len(parts) == 1:
+                # This is a file directly in the current folder
+                # Apply category filter
+                if should_include_file(blob_name, category):
+                    files.append(blob)
+            elif len(parts) > 1:
+                # This is a nested item, add the folder name
+                folder_name = parts[0]
+                folder_set.add(folder_name)
+        
+        # Create folder objects
+        folders = []
+        for folder_name in sorted(folder_set):
+            folder_full_path = f"{folder_path}/{folder_name}" if folder_path else folder_name
+            folders.append({
+                "name": folder_name,
+                "full_path": folder_full_path,
+                "type": "folder",
+                "size": 0,
+                "created_on": "",
+                "last_modified": "",
+                "content_type": "folder",
+                "url": "",
+            })
+        
+        # Sort files by creation date based on order parameter
+        if files:
+            # reverse=True means newest first, reverse=False means oldest first
+            sort_reverse = (order == "newest")
+            files.sort(
+                key=lambda x: datetime.fromisoformat(x["created_on"]), reverse=sort_reverse
             )
+        
+        # Combine folders and files (folders first)
+        result = {
+            "folders": folders,
+            "files": files,
+            "current_path": folder_path
+        }
 
         logger.info(
-            f"Found {len(organization_blobs)} source documents for organization {organization_id}"
+            f"Found {len(folders)} folders and {len(files)} files for organization {organization_id} in path '{folder_path}'"
         )
-        return create_success_response(organization_blobs, 200)
+        return create_success_response(result, 200)
 
     except Exception as e:
         logger.exception(f"Unexpected error in get_source_documents: {e}")
         return create_error_response("Internal Server Error", 500)
-
-
-@app.route("/api/delete-source-document", methods=["DELETE"])
-@auth.login_required
-def delete_source_document(*, context):
-    try:
-        # Get blob name from query parameters
-        blob_name = request.args.get("blob_name")
-        if not blob_name:
-            return create_error_response("Blob name is required", 400)
-
-        # # Make sure blob_name starts with organization_files/ for security
-        # if not blob_name.startswith("organization_files/"):
-        #     return create_error_response("Invalid blob path. Path must start with 'organization_files/'", 400)
-        # NOTE: commented out to allow deletion of results from web scraping folder as well
-
-        # Initialize blob storage manager and delete blob
-        blob_storage_manager = BlobStorageManager()
-        container_client = (
-            blob_storage_manager.blob_service_client.get_container_client("documents")
-        )
-
-        # Get the blob client
-        blob_client = container_client.get_blob_client(blob_name)
-
-        # Check if blob exists
-        if not blob_client.exists():
-            return create_error_response(f"File not found: {blob_name}", 404)
-
-        # Delete the blob
-        blob_client.delete_blob()
-
-        return create_success_response({"message": "File deleted successfully"}, 200)
-    except Exception as e:
-        logger.exception(f"Unexpected error in delete_source_from_blob: {e}")
-        return create_error_response("Internal Server Error", 500)
-
 
 @app.route("/api/get-password-reset-url", methods=["GET"])
 @auth.login_required

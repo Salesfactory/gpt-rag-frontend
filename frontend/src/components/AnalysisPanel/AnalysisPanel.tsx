@@ -23,6 +23,7 @@ interface Props {
     onHideTab: () => void;
     spreadsheetDownloadUrl?: string;
     spreadsheetFileName?: string;
+    onCitationClicked?: (citation: string, fileName: string) => void;
 }
 
 const pivotItemDisabledStyle = { disabled: true, style: { color: "grey" } };
@@ -40,7 +41,7 @@ const closeButtonStyle = {
     }
 };
 
-export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName }: Props) => {
+export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName, onCitationClicked }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
@@ -64,6 +65,26 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
         if (/^www\./i.test(s)) return `https://${s}`;
         if (/^[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s]*)?$/i.test(s)) return `https://${s}`;
         return null;
+    };
+
+    // Check if a URL is a blob storage URL (not a public website)
+    const isBlobStorageUrl = (url: string): boolean => {
+        if (!url) return false;
+        const lowerUrl = url.toLowerCase();
+        // Check if it's a blob storage URL
+        const isBlobStorage = lowerUrl.includes('.blob.core.windows.net');
+        // Check if it has document extensions
+        const hasDocExtension = /\.(pdf|docx?|xlsx?|csv|pptx?|txt)($|\?)/i.test(lowerUrl);
+        return isBlobStorage || hasDocExtension;
+    };
+
+    // Handle source click - either open in panel or open in new tab
+    const handleSourceClick = (e: React.MouseEvent, href: string, label: string) => {
+        if (isBlobStorageUrl(href) && onCitationClicked) {
+            e.preventDefault();
+            onCitationClicked(href, label);
+        }
+        // Otherwise, let the default <a> behavior happen (open in new tab)
     };
     return (
         <>
@@ -178,7 +199,13 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                                         return (
                                                             <li key={i} style={{ marginBottom: 2 }}>
                                                                 {href ? (
-                                                                    <a href={href} target="_blank" rel="noreferrer noopener" style={{ color: "#2563eb" }}>
+                                                                    <a 
+                                                                        href={href} 
+                                                                        target="_blank" 
+                                                                        rel="noreferrer noopener" 
+                                                                        style={{ color: "#2563eb", cursor: "pointer" }}
+                                                                        onClick={(e) => handleSourceClick(e, href, label)}
+                                                                    >
                                                                         {label}
                                                                     </a>
                                                                 ) : (
@@ -194,7 +221,13 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                                     const href = toHref(single);
                                                     const label = sourcePlain(single);
                                                     return href ? (
-                                                        <a href={href} target="_blank" rel="noreferrer noopener" style={{ color: "#2563eb" }}>
+                                                        <a 
+                                                            href={href} 
+                                                            target="_blank" 
+                                                            rel="noreferrer noopener" 
+                                                            style={{ color: "#2563eb", cursor: "pointer" }}
+                                                            onClick={(e) => handleSourceClick(e, href, label)}
+                                                        >
                                                             {label}
                                                         </a>
                                                     ) : (
