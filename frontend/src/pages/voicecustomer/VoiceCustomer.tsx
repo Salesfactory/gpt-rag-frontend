@@ -1140,8 +1140,8 @@ function ReportJobs() {
                                 const endedAt = doc?.updated_at ? new Date(doc.updated_at) : null; 
 
                                 // Turn it to EST timezone string
-                                const createdAtEST = createdAt ? createdAt.toLocaleString("en-US", { timeZone: "America/New_York" }) : null;
-                                const endedAtEST = endedAt ? endedAt.toLocaleString("en-US", { timeZone: "America/New_York" }) : null;
+                                const createdAtEST = createdAt ? createdAt.toLocaleDateString("en-US", { timeZone: "America/New_York" }) : null;
+                                const endedAtEST = endedAt ? endedAt.toLocaleDateString("en-US", { timeZone: "America/New_York" }) : null;
 
                                 const c = toCanonical(doc?.status);
                                 const terminal = c === "SUCCEEDED" || c === "FAILED";
@@ -1159,8 +1159,8 @@ function ReportJobs() {
                                             </div>
                                         </td>
                                         <td className={styles.tableCell}>{typeof progress === "number" ? `${Math.round(progress)}%` : "-"}</td>
-                                        <td className={styles.tableCell}>{createdAtEST ? createdAtEST.slice(0, 10) : "-"}</td>
-                                        <td className={styles.tableCell}>{endedAtEST ? endedAtEST.slice(0, 10) : "-"}</td>
+                                        <td className={styles.tableCell}>{createdAtEST ? createdAtEST : "-"}</td>
+                                        <td className={styles.tableCell}>{endedAtEST ? endedAtEST : "-"}</td>
                                     </tr>
                                 );
                             })}
