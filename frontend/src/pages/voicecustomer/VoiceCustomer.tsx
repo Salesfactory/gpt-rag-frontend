@@ -1134,6 +1134,15 @@ function ReportJobs() {
 
                         <tbody className={styles.tableBody}>
                             {rawReportJobs.map(doc => {
+                                console.log(doc);
+
+                                const createdAt = doc?.created_at ? new Date(doc.created_at) : null;
+                                const endedAt = doc?.updated_at ? new Date(doc.updated_at) : null; 
+
+                                // Turn it to EST timezone string
+                                const createdAtEST = createdAt ? createdAt.toLocaleString("en-US", { timeZone: "America/New_York" }) : null;
+                                const endedAtEST = endedAt ? endedAt.toLocaleString("en-US", { timeZone: "America/New_York" }) : null;
+
                                 const c = toCanonical(doc?.status);
                                 const terminal = c === "SUCCEEDED" || c === "FAILED";
                                 const progress = typeof doc?.progress === "number" ? doc.progress : c === "SUCCEEDED" ? 100 : undefined;
@@ -1150,8 +1159,8 @@ function ReportJobs() {
                                             </div>
                                         </td>
                                         <td className={styles.tableCell}>{typeof progress === "number" ? `${Math.round(progress)}%` : "-"}</td>
-                                        <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
-                                        <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
+                                        <td className={styles.tableCell}>{createdAtEST ? createdAtEST.slice(0, 10) : "-"}</td>
+                                        <td className={styles.tableCell}>{endedAtEST ? endedAtEST.slice(0, 10) : "-"}</td>
                                     </tr>
                                 );
                             })}
