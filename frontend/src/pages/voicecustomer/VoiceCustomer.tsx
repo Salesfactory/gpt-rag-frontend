@@ -1134,7 +1134,6 @@ function ReportJobs() {
 
                         <tbody className={styles.tableBody}>
                             {rawReportJobs.map(doc => {
-                                console.log(doc);
 
                                 const createdAt = doc?.created_at ? new Date(doc.created_at) : null;
                                 const endedAt = doc?.updated_at ? new Date(doc.updated_at) : null; 
