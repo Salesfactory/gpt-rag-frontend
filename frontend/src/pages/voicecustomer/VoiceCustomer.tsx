@@ -1136,11 +1136,14 @@ function ReportJobs() {
                             {rawReportJobs.map(doc => {
 
                                 const createdAt = doc?.created_at ? new Date(doc.created_at) : null;
-                                const endedAt = doc?.updated_at ? new Date(doc.updated_at) : null; 
+                                const endedAt = doc?.updated_at ? new Date(doc.updated_at) : null;
 
-                                // Turn it to EST timezone string
-                                const createdAtEST = createdAt ? createdAt.toLocaleDateString("en-US", { timeZone: "America/New_York" }) : null;
-                                const endedAtEST = endedAt ? endedAt.toLocaleDateString("en-US", { timeZone: "America/New_York" }) : null;
+                                const createdAtEST = createdAt
+                                    ? createdAt.toLocaleDateString("en-CA", { timeZone: "America/New_York" })
+                                    : null;
+                                const endedAtEST = endedAt
+                                    ? endedAt.toLocaleDateString("en-CA", { timeZone: "America/New_York" })
+                                    : null;
 
                                 const c = toCanonical(doc?.status);
                                 const terminal = c === "SUCCEEDED" || c === "FAILED";
@@ -1159,7 +1162,7 @@ function ReportJobs() {
                                         </td>
                                         <td className={styles.tableCell}>{typeof progress === "number" ? `${Math.round(progress)}%` : "-"}</td>
                                         <td className={styles.tableCell}>{createdAtEST ? createdAtEST : "-"}</td>
-                                        <td className={styles.tableCell}>{endedAtEST ? endedAtEST : "-"}</td>
+                                        <td className={styles.tableCell}>{endedAtEST ? createdAtEST : "-"}</td>
                                     </tr>
                                 );
                             })}
@@ -1322,7 +1325,7 @@ export function CategoriesDefinition({ onChange, onDataRefresh }: { onChange?: (
                     if (name) counts[name] = (counts[name] || 0) + 1;
                 });
                 setUsageByName(counts);
-            } catch (e) {}
+            } catch (e) { }
         })();
     }, [organization?.id, user]);
 
