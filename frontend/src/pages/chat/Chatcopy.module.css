@@ -204,9 +204,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    position: fixed;
     bottom: 0;
     gap: 0;
+    position: sticky !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 2;
 }
 
 .chatAnalysisPanel {
