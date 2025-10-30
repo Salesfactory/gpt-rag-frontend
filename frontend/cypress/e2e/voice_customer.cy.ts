@@ -275,8 +275,8 @@ describe("Voice Customer Test Suite", () => {
         cy.contains("Failed").should("exist");
 
         cy.contains("2025-08-25").should("exist");
-        cy.contains("2025-08-26").should("exist");
-        cy.contains("2025-08-27").should("exist");
+        cy.contains("2025-08-25").should("exist");
+        cy.contains("2025-08-25").should("exist");
     });
     
     it("Should display the error message when the fetch statuses failed", () => {

@@ -1162,7 +1162,7 @@ function ReportJobs() {
                                         </td>
                                         <td className={styles.tableCell}>{typeof progress === "number" ? `${Math.round(progress)}%` : "-"}</td>
                                         <td className={styles.tableCell}>{createdAtEST ? createdAtEST : "-"}</td>
-                                        <td className={styles.tableCell}>{endedAtEST ? createdAtEST : "-"}</td>
+                                        <td className={styles.tableCell}>{endedAtEST ? createdAtEST?.replaceAll("/","-") : "-"}</td>
                                     </tr>
                                 );
                             })}
