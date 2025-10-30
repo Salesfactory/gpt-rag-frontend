@@ -10,7 +10,6 @@ import NewFolderDialogModal from "./NewFolderDialogModal";
 import { createFolder, moveFile, deleteFolder, renameFile, renameFolder } from "../../api/api";
 import { TextField } from "@fluentui/react/lib/TextField";
 import DeleteFolderModal from "./DeleteFolderModal";
-import { first, lastIndexOf } from 'cypress/types/lodash';
 
 interface ResourceListProps {
   filteredFiles: BlobItem[];
