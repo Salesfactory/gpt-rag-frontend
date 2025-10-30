@@ -1,9 +1,14 @@
 import { IconButton, SearchBox } from "@fluentui/react";
-import styles from "./UploadResources.module.css"
+import styles from "./UploadResources.module.css";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import CloudStorageIndicator from "./CloudStorageIndicator";
 
-const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUploadDialog: () => void, onRefresh: () => void, isLoading: boolean }> = ({ setSearchQuery, openUploadDialog, onRefresh, isLoading }) => {
+const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUploadDialog: () => void; onRefresh: () => void; isLoading: boolean }> = ({
+    setSearchQuery,
+    openUploadDialog,
+    onRefresh,
+    isLoading
+}) => {
     return (
         <div className={styles.headerContainer}>
             {/* Cloud Storage */}
@@ -67,18 +72,17 @@ const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void, openUp
                     }}
                 />
                 <div className={styles.file_list_actions}>
-                    <IconButton title="Upload New Files" ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
-                        <span className={styles.addIcon}>
-                            <Plus />
-                        </span>
-                        <span className={styles.buttonText}>Upload File</span>
-                    </IconButton>
-
                     <IconButton title="Reload" ariaLabel="Reload file list" className={styles.refresh_button} onClick={onRefresh}>
                         <RefreshCw size={20} />
                     </IconButton>
                 </div>
             </div>
+            <IconButton title="Upload New Files" ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
+                <span className={styles.addIcon}>
+                    <Plus />
+                </span>
+                <span className={styles.buttonText}>Upload File</span>
+            </IconButton>
         </div>
     );
 };
