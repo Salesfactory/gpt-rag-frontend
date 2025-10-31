@@ -182,19 +182,24 @@ def get_blobs_with_custom_filtering_paginated(
 
                 # Apply query filtering (search across name, content_type, metadata)
                 if query:
-                    query_lower = query.casefold()
+                    query_lower = query.lower()
                     filtered_items = []
                     for item in raw_items:
-                        name_match = query_lower in (item.get("name", "").casefold())
-                        content_type_match   = query_lower in (item.get("content_type", "").casefold())
-                        meta    = item.get("metadata", {})
-                        metadata_match = query_lower in " ".join(f"{k}:{v}" for k, v in meta.items()).casefold() if meta else False
+                        # Check name
+                        name_match = query_lower in item.get("name", "").lower()
+                        # Check content_type
+                        content_type_match = query_lower in item.get("content_type", "").lower()
+                        # Check metadata
+                        metadata_match = False
+                        metadata = item.get("metadata", {})
+                        if metadata:
+                            metadata_string = " ".join(f"{k}:{v}" for k, v in metadata.items()).lower()
+                            metadata_match = query_lower in metadata_string
+
                         if name_match or content_type_match or metadata_match:
                             filtered_items.append(item)
+
                     raw_items = filtered_items
-
-                all_filtered_items.extend(raw_items)
-
                 # Check if we have more pages
                 if not paginated_result.get("has_more", False):
                     break
