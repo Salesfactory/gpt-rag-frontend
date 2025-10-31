@@ -3824,6 +3824,7 @@ def healthz():
     _ = clients.get_cosmos_container(clients.USERS_CONT)
     return jsonify(status="ok")
 
+ALLOWED_CATEGORIES = {"documents", "spreadsheets", "presentations"}
 
 @app.route("/api/organization/<organization_id>/gallery", methods=["GET"])
 @auth.login_required
@@ -3860,6 +3861,7 @@ def get_gallery(*, context, organization_id):
         uploader_id = request.args.get("uploader_id")
         order = (request.args.get("order") or "newest").lower()
         search_query = request.args.get("query") or request.args.get("q")
+        category = (request.args.get("category") or "").lower().strip() or None
 
         # Pagination parameters
         page = max(1, int(request.args.get("page", 1)))
@@ -3870,6 +3872,7 @@ def get_gallery(*, context, organization_id):
             uploader_id=uploader_id,
             order=order,
             query=search_query,
+            category=category,
             page=page,
             limit=limit,
         )
