@@ -182,24 +182,27 @@ def get_blobs_with_custom_filtering_paginated(
 
                 # Apply query filtering (search across name, content_type, metadata)
                 if query:
-                    query_lower = query.lower()
+                    query_lower = query.casefold()
                     filtered_items = []
                     for item in raw_items:
                         # Check name
-                        name_match = query_lower in item.get("name", "").lower()
+                        name_match = query_lower in item.get("name", "").casefold()
                         # Check content_type
-                        content_type_match = query_lower in item.get("content_type", "").lower()
+                        content_type_match = query_lower in item.get("content_type", "").casefold()
                         # Check metadata
                         metadata_match = False
                         metadata = item.get("metadata", {})
                         if metadata:
-                            metadata_string = " ".join(f"{k}:{v}" for k, v in metadata.items()).lower()
+                            metadata_string = " ".join(f"{k}:{v}" for k, v in metadata.items()).casefold()
                             metadata_match = query_lower in metadata_string
 
                         if name_match or content_type_match or metadata_match:
                             filtered_items.append(item)
 
                     raw_items = filtered_items
+
+                all_filtered_items.extend(raw_items)
+
                 # Check if we have more pages
                 if not paginated_result.get("has_more", False):
                     break
@@ -272,12 +275,15 @@ CATEGORY_EXT = {
 def _in_category(name: str | None, content_type: str | None, category: str) -> bool:
     if not category:
         return True
-    n = (name or "").lower()
-    ct = (content_type or "").lower()
-    if ct in CATEGORY_MIME.get(category, set()):
+    name_raw = (name or "")
+    content_type_raw = content_type or ""
+    content_type_split = content_type_raw.split(";", 1)[0].strip().lower()
+    name_lower = name_raw.lower()
+    if content_type_split  in CATEGORY_MIME.get(category, set()):
         return True
     # fallback
-    return any(n.endswith(f".{ext}") for ext in CATEGORY_EXT.get(category, []))
+    ext = name_lower.rsplit(".", 1)[-1] if "." in name_lower else ""
+    return ext in set(CATEGORY_EXT.get(category, []))
 
 
 def get_gallery_items_by_org(
