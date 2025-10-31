@@ -174,7 +174,6 @@ def get_blobs_with_custom_filtering_paginated(
                             filtered_items.append(item)
                     raw_items = filtered_items
 
-                # 2) Filtro por categoría (MIME/ext), NO metadata
                 if desired_category:
                     raw_items = [
                         it for it in raw_items
