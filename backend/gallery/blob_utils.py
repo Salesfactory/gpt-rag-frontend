@@ -182,14 +182,14 @@ def get_blobs_with_custom_filtering_paginated(
 
                 # Apply query filtering (search across name, content_type, metadata)
                 if query:
-                    q = query.casefold()
+                    query_lower = query.casefold()
                     filtered_items = []
                     for item in raw_items:
-                        name_ok = q in (item.get("name", "").casefold())
-                        ct_ok   = q in (item.get("content_type", "").casefold())
+                        name_match = query_lower in (item.get("name", "").casefold())
+                        content_type_match   = query_lower in (item.get("content_type", "").casefold())
                         meta    = item.get("metadata", {})
-                        meta_ok = q in " ".join(f"{k}:{v}" for k, v in meta.items()).casefold() if meta else False
-                        if name_ok or ct_ok or meta_ok:
+                        metadata_match = query_lower in " ".join(f"{k}:{v}" for k, v in meta.items()).casefold() if meta else False
+                        if name_match or content_type_match or metadata_match:
                             filtered_items.append(item)
                     raw_items = filtered_items
 
