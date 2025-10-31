@@ -141,6 +141,11 @@ def get_blobs_with_custom_filtering_paginated(
         current_page = 1
         max_pages_to_fetch = 100  # Safety limit to prevent infinite loops
 
+        local_filters: Dict[str, Any] = dict(filter_criteria) if filter_criteria else {}
+        desired_category: Optional[str] = None
+        if "category" in local_filters:
+            desired_category = str(local_filters.pop("category") or "").lower()
+
         # Fetch pages until we have enough items for the requested page or hit max pages
         while len(all_filtered_items) < (requested_page * requested_limit) and current_page <= max_pages_to_fetch:
             try:
@@ -156,12 +161,12 @@ def get_blobs_with_custom_filtering_paginated(
                 raw_items = paginated_result.get("blobs", [])
 
                 # Apply metadata filtering
-                if filter_criteria:
+                if local_filters:
                     filtered_items = []
                     for item in raw_items:
                         metadata = item.get("metadata", {})
                         matches = True
-                        for key, value in filter_criteria.items():
+                        for key, value in local_filters.items():
                             if key not in metadata or str(metadata[key]).casefold() != str(value).casefold():
                                 matches = False
                                 break
@@ -169,25 +174,24 @@ def get_blobs_with_custom_filtering_paginated(
                             filtered_items.append(item)
                     raw_items = filtered_items
 
+                # 2) Filtro por categoría (MIME/ext), NO metadata
+                if desired_category:
+                    raw_items = [
+                        it for it in raw_items
+                        if _in_category(it.get("name"), it.get("content_type"), desired_category)
+                    ]
+
                 # Apply query filtering (search across name, content_type, metadata)
                 if query:
-                    query_lower = query.lower()
+                    q = query.casefold()
                     filtered_items = []
                     for item in raw_items:
-                        # Check name
-                        name_match = query_lower in item.get("name", "").lower()
-                        # Check content_type
-                        content_type_match = query_lower in item.get("content_type", "").lower()
-                        # Check metadata
-                        metadata_match = False
-                        metadata = item.get("metadata", {})
-                        if metadata:
-                            metadata_string = " ".join(f"{k}:{v}" for k, v in metadata.items()).lower()
-                            metadata_match = query_lower in metadata_string
-
-                        if name_match or content_type_match or metadata_match:
+                        name_ok = q in (item.get("name", "").casefold())
+                        ct_ok   = q in (item.get("content_type", "").casefold())
+                        meta    = item.get("metadata", {})
+                        meta_ok = q in " ".join(f"{k}:{v}" for k, v in meta.items()).casefold() if meta else False
+                        if name_ok or ct_ok or meta_ok:
                             filtered_items.append(item)
-
                     raw_items = filtered_items
 
                 all_filtered_items.extend(raw_items)
@@ -234,12 +238,50 @@ def get_blobs_with_custom_filtering_paginated(
         logger.exception(f"Error in custom paginated blob retrieval: {e}")
         raise GalleryRetrievalError(f"Failed to retrieve blobs with custom filtering: {str(e)}")
 
+CATEGORY_MIME = {
+    "documents": {
+        "application/pdf",
+        "text/plain",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+    },
+    "spreadsheets": {
+        "text/csv",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    },
+    "presentations": {
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    },
+}
+
+CATEGORY_EXT = {
+    "documents": ["pdf", "txt", "doc", "docx", "png", "jpg", "jpeg"],
+    "spreadsheets": ["csv", "xls", "xlsx"],
+    "presentations": ["ppt", "pptx"],
+}
+
+def _in_category(name: str | None, content_type: str | None, category: str) -> bool:
+    if not category:
+        return True
+    n = (name or "").lower()
+    ct = (content_type or "").lower()
+    if ct in CATEGORY_MIME.get(category, set()):
+        return True
+    # fallback
+    return any(n.endswith(f".{ext}") for ext in CATEGORY_EXT.get(category, []))
+
 
 def get_gallery_items_by_org(
     organization_id: str,
     uploader_id: Optional[str] = None,
     order: str = "newest",
     query: Optional[str] = None,
+    category: Optional[str] = None,
     page: int = 1,
     limit: int = 10,
     continuation_token: Optional[str] = None
@@ -257,8 +299,12 @@ def get_gallery_items_by_org(
         prefix = f"organization_files/{organization_id}/generated_images"
 
         # Use custom filtering pagination if uploader_id or query is provided
-        if uploader_id or query:
-            filter_criteria = {"user_id": uploader_id} if uploader_id else None
+        if uploader_id or query or category:
+            filter_criteria: Dict[str, Any] = {}
+            if uploader_id:
+                filter_criteria["user_id"] = uploader_id
+            if category:
+                filter_criteria["category"] = category
 
             paginated_result = get_blobs_with_custom_filtering_paginated(
                 container_name="documents",
@@ -300,17 +346,20 @@ def get_gallery_items_by_org(
                 "url": sas_url or item.get("url")  # Fallback to original URL if SAS generation fails
             })
 
+        if category:
+            items = [it for it in items if _in_category(it.get("name"), it.get("content_type"), category)]
+
         # Backend search is already handled in the custom function when query is provided,
         # but we still need to apply it if we're using the original method
-        if query and not uploader_id:
-            query_list = ("" if query is None else str(query)).casefold()
+        if query and not (uploader_id or category):
+            q = (query or "").casefold()
             filtered: List[Dict[str, Any]] = []
-            for item in items:
-                name_ok = query_list in item.get("name", "").casefold()
-                content_type_ok   = query_list in item.get("content_type", "").casefold()
-                metadata_string = " ".join(f"{k}:{v}" for k, v in item.get("metadata", {}).items()).casefold()
-                if name_ok or content_type_ok or (query_list in metadata_string):
-                    filtered.append(item)
+            for it in items:
+                name_ok = q in (it.get("name", "").casefold())
+                ct_ok = q in (it.get("content_type", "").casefold())
+                meta_str = " ".join(f"{k}:{v}" for k, v in (it.get("metadata") or {}).items()).casefold()
+                if name_ok or ct_ok or (q in meta_str):
+                    filtered.append(it)
             items = filtered
 
         # Stable sort by created_on, fallback last_modified; tie-breaker by name
@@ -324,7 +373,7 @@ def get_gallery_items_by_org(
         # Apply pagination - for the original method, we may need to slice the results
         total_items_after_filtering = len(items)
 
-        if uploader_id or query:
+        if uploader_id or query or category:
             # Custom pagination already handled the pagination
             paginated_items = items
             blob_pagination = {
@@ -352,12 +401,12 @@ def get_gallery_items_by_org(
 
         return {
             "items": paginated_items,
-            "total": total_items_after_filtering,
+            "total": blob_pagination["total_count"],
             "page": blob_pagination["current_page"],
             "limit": blob_pagination["page_size"],
             "total_pages": blob_pagination["total_pages"],
             "has_next": blob_pagination["has_more"],
-            "has_prev": page > 1,
+            "has_prev": (blob_pagination["current_page"] or 1) > 1,
             "next_continuation_token": blob_pagination["next_continuation_token"]
         }
 

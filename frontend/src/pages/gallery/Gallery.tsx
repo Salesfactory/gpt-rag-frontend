@@ -1,10 +1,11 @@
 import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, FileText, Table, Presentation } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
+import type { GalleryCategoryAll, GalleryCategory } from "../../api/models";
 
 const statusFilterOptions = [
     { label: "Newest", value: "newest" },
@@ -60,6 +61,17 @@ const Gallery: React.FC = () => {
     const usersErrorShownRef = useRef(false);
     const abortControllerRef = useRef<AbortController | null>(null);
 
+    const [selectedCategory, setSelectedCategory] = useState<GalleryCategoryAll>("all");
+
+    const categories: { key: GalleryCategoryAll; label: string; icon: JSX.Element }[] = [
+        { key: "all", label: "All", icon: <FileText size={20} /> },
+        { key: "documents", label: "Documents", icon: <FileText size={20} /> },
+        { key: "spreadsheets", label: "Spreadsheets", icon: <Table size={20} /> },
+        { key: "presentations", label: "Presentations", icon: <Presentation size={20} /> }
+    ];
+
+    const displayedImages = images;
+
     useEffect(() => {
         let cancelled = false;
 
@@ -106,6 +118,7 @@ const Gallery: React.FC = () => {
                     uploader_id: userFilter ?? undefined,
                     order: sortOrder as "newest" | "oldest",
                     query: searchQuery.trim() || undefined,
+                    category: selectedCategory === "all" ? undefined : (selectedCategory as GalleryCategory),
                     page: currentPage,
                     limit: itemsPerPage,
                     signal: abortController.signal
@@ -142,7 +155,7 @@ const Gallery: React.FC = () => {
                 abortControllerRef.current.abort();
             }
         };
-    }, [orgId, userId, userFilter, sortOrder, searchQuery, currentPage, itemsPerPage]);
+    }, [orgId, userId, userFilter, sortOrder, searchQuery, currentPage, itemsPerPage, selectedCategory]);
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -270,6 +283,24 @@ const Gallery: React.FC = () => {
                         }
                     }}
                 />
+                {/* Category Filter Section */}
+                <div className={styles.category_filter_section}>
+                <span className={styles.category_label}>Category</span>
+                <div className={styles.category_buttons_container}>
+                    {categories.map(c => (
+                    <button
+                        key={c.key}
+                        onClick={() => { setSelectedCategory(c.key); setCurrentPage(1); }}
+                        className={`${styles.category_button} ${selectedCategory === c.key ? styles.selected : ""}`}
+                        title={c.label}
+                        type="button"
+                    >
+                        <div className={styles.category_button_icon}>{c.icon}</div>
+                        <span className={styles.category_button_text}>{c.label}</span>
+                    </button>
+                    ))}
+                </div>
+                </div>
                 <div className={styles.filtersGroup}>
                     <div className={styles.filter}>
                         <div className={styles.filterContainer}>
@@ -354,11 +385,11 @@ const Gallery: React.FC = () => {
                         <div className={styles.header}>
                             <div className={styles.headerContent}>
                                 <h2 className={styles.headerTitle}>Charts</h2>
-                                <span className={styles.headerCount}>Actual page: {images.length}</span>
+                                <span className={styles.headerCount}>Actual page: {displayedImages.length}</span>
                             </div>
                         </div>
 
-                        {images.length === 0 ? (
+                        {displayedImages.length === 0 ? (
                             <div className={styles.emptyState}>
                                 <div className={styles.emptyContent}>
                                     <Upload size={48} className={styles.emptyIcon} />
@@ -374,7 +405,7 @@ const Gallery: React.FC = () => {
                                     {/* Scrollable grid wrapper: limits height and enables vertical scrolling when needed */}
                                     <div className={styles.gridScrollable}>
                                         <div className={styles.grid}>
-                                            {images.map(file => (
+                                            {displayedImages.map(file => (
                                                 <div key={file.name} className={styles.card}>
                                                     {/* Image Preview */}
                                                     <div className={styles.preview}>

@@ -135,3 +135,9 @@ export interface BackendReportJobDoc {
   updated_at?: string | null;
   params?: { target?: string };
 }
+
+export const GALLERY_CATEGORY_KEYS = ["all","documents","spreadsheets","presentations"] as const;
+
+export type GalleryCategoryAll = typeof GALLERY_CATEGORY_KEYS[number];
+
+export type GalleryCategory = Exclude<GalleryCategoryAll, "all">;
