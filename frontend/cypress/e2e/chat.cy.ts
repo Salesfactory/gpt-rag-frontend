@@ -22,7 +22,7 @@ describe("Main Page (Chat) Test Suite", () => {
         cy.get('textarea[placeholder="Write your question here"]').should("be.visible");
 
         cy.contains(
-            "Your AI-driven Home Improvement expert who boosts marketing performance by synthesizing multiple data sources to deliver actionable insights."
+            "Your AI-driven marketing expert who boosts marketing performance by synthesizing multiple data sources to deliver actionable insights."
         ).should("be.visible");
         cy.contains("This app is in beta. Responses may not be fully accurate.").should("be.visible");
     });
