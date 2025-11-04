@@ -310,8 +310,7 @@
     max-width: 100%;
 }
 
-.file_extension_pill {
-    margin-left: 0.5rem;
+.file_user_pill {
     border-radius: 99999px;
     line-height: 1rem;
     font-size: 0.75rem;
@@ -901,9 +900,12 @@
 }
 
 .file_name_text {
+    margin-bottom: 0.2rem;
     font-size: 15px;
     font-weight: 500;
     color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .file_metadata {
@@ -945,6 +947,19 @@
     min-width: 32px;
     width: 32px;
     height: 32px;
+}
+
+.userTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.20rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #ccfbf1; /* green-100 */
+  color: #065F46; /* green-800 */
+  width: fit-content;
+
 }
 
 /* New Folder Modal Styles */
