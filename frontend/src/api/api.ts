@@ -2106,3 +2106,10 @@ export async function getStorageUsageByOrganization(organization_id: string, use
     return response.json();
 }
 
+export async function monitorSession() {
+    const response = await fetch("/session-monitor", {
+        method: "GET"
+    })
+    console.log("Session monitor response:", await response.json());
+    return response.json();
+}

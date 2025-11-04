@@ -767,6 +767,16 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         )
 
 
+@app.route("/session-monitor", methods=["GET"])
+@auth.login_required
+def session_monitor(*, context):
+    print(f"context {context}")
+    return jsonify({
+        "context": context
+    })
+    
+
+
 @app.route("/stream_chatgpt", methods=["POST"])
 @auth.login_required
 def proxy_orc(*, context):
