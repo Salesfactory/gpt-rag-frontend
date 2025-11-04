@@ -362,14 +362,14 @@ def get_gallery_items_by_org(
         # Backend search is already handled in the custom function when query is provided,
         # but we still need to apply it if we're using the original method
         if query and not (uploader_id or category):
-            q = (query or "").casefold()
+            query_list = (query or "").casefold()
             filtered: List[Dict[str, Any]] = []
-            for it in items:
-                name_ok = q in (it.get("name", "").casefold())
-                ct_ok = q in (it.get("content_type", "").casefold())
-                meta_str = " ".join(f"{k}:{v}" for k, v in (it.get("metadata") or {}).items()).casefold()
-                if name_ok or ct_ok or (q in meta_str):
-                    filtered.append(it)
+            for item in items:
+                name_ok = query_list in (item.get("name", "").casefold())
+                content_type_ok = query_list in (item.get("content_type", "").casefold())
+                metadata_string = " ".join(f"{k}:{v}" for k, v in (item.get("metadata") or {}).items()).casefold()
+                if name_ok or content_type_ok or (query_list in metadata_string):
+                    filtered.append(item)
             items = filtered
 
         # Stable sort by created_on, fallback last_modified; tie-breaker by name
