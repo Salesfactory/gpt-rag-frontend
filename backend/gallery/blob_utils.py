@@ -367,7 +367,7 @@ def get_gallery_items_by_org(
             for item in items:
                 name_ok = query_list in (item.get("name", "").casefold())
                 content_type_ok = query_list in (item.get("content_type", "").casefold())
-                metadata_string = " ".join(f"{k}:{v}" for k, v in (item.get("metadata") or {}).items()).casefold()
+                metadata_string = " ".join(f"{k}:{v}" for k, v in (item.get("metadata")).items()).casefold()
                 if name_ok or content_type_ok or (query_list in metadata_string):
                     filtered.append(item)
             items = filtered
