@@ -733,7 +733,7 @@ const Chat = () => {
                                                 </h1>
 
                                                 <p style={{ width: "80%", textAlign: "center" }}>
-                                                    Your AI-driven marketing expert who boosts marketing performance by synthesizing multiple data
+                                                    Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data
                                                     sources to deliver actionable insights.
                                                 </p>
                                             </div>
