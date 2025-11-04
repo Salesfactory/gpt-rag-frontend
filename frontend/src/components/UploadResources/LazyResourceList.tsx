@@ -82,9 +82,6 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     const parts = fullName.split('/');
 
     const lastPart = parts[parts.length - 1]
-    if (lastPart.length > 35) {
-      return lastPart.slice(0, 25) + '...';
-    }
 
     return lastPart;
   };

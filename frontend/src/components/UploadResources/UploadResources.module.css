@@ -905,7 +905,8 @@
     font-size: 15px;
     font-weight: 500;
     color: #111827;
-    
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .file_metadata {
