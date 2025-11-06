@@ -43,7 +43,7 @@ const Chat = () => {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
     const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
-    const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string }[]>([]);
+    const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string; uploadedAt?: number }[]>([]);
     const [fileUploadError, setFileUploadError] = useState<string>("");
 
     const [isDragOver, setIsDragOver] = useState(false);
@@ -115,6 +115,26 @@ const Chat = () => {
         }
         return conversationId;
     };
+
+    const getBaseName = (s: string) => s.toLowerCase().replace(/\.[^.]+$/, "");
+    function pickAttachmentForQuestion(
+        question: string,
+        docs: { blobName: string; originalFilename: string; savedFilename: string; uploadedAt?: number }[]
+    ) {
+        if (!docs?.length) return undefined;
+        const t = (question || "").toLowerCase();
+        const quoted = [...t.matchAll(/"([^"]+)"/g), ...t.matchAll(/`([^`]+)`/g)].map(m => m[1].toLowerCase());
+        const byQuoted = docs.find(d =>
+            quoted.some(q => d.originalFilename.toLowerCase().includes(q) || getBaseName(d.originalFilename).includes(q))
+        );
+        if (byQuoted) return byQuoted.blobName;
+        const byFull = docs.find(d => t.includes(d.originalFilename.toLowerCase()));
+        if (byFull) return byFull.blobName;
+        const byBase = docs.find(d => t.includes(getBaseName(d.originalFilename)));
+        if (byBase) return byBase.blobName;
+        const sorted = [...docs].sort((a, b) => (a.uploadedAt ?? 0) - (b.uploadedAt ?? 0));
+        return (sorted.at(-1) ?? docs.at(-1))?.blobName;
+    }
 
     const streamResponse = async (question: string, chatId: string | null, userDocumentBlobNames?: string[]) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
@@ -480,6 +500,7 @@ const Chat = () => {
                             blobName: result.blob_name,
                             originalFilename: result.original_filename || file.name,
                             savedFilename: result.saved_filename || file.name,
+                            uploadedAt: Date.now(),
                         },
                     ]);
                 }
@@ -523,16 +544,17 @@ const Chat = () => {
         let cancelled = false;
         (async () => {
             try {
-                const files = await listUserDocuments({
-                    conversationId: convId,
-                    user,
-                });
+                const files = await listUserDocuments({ conversationId: convId, user });
                 if (cancelled) return;
-                const mapped = files.map(f => ({
+                const mapped = files.map((f: any) => ({
                     blobName: f.blob_name,
                     originalFilename: f.original_filename || f.saved_filename,
                     savedFilename: f.saved_filename,
-                }));
+                    uploadedAt:
+                        f.uploaded_at
+                        ?? f.created_at
+                        ?? (f.created_at_iso ? Date.parse(f.created_at_iso) : undefined),
+                })).sort((a: any, b: any) => (a.uploadedAt ?? 0) - (b.uploadedAt ?? 0));
                 setAttachedDocs(mapped);
             } catch (e) {
                 // do not block chat on rehydrate errors
@@ -779,8 +801,8 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question => {
-                                                                      const blobNames = attachedDocs.map(d => d.blobName);
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                      const chosen = pickAttachmentForQuestion(question, attachedDocs);
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, chosen ? [chosen] : undefined);
                                                                   }}
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -804,8 +826,8 @@ const Chat = () => {
                                                                   onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                                                   onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                                                   onFollowupQuestionClicked={question => {
-                                                                      const blobNames = attachedDocs.map(d => d.blobName);
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                      const chosen = pickAttachmentForQuestion(question, attachedDocs);
+                                                                      streamResponse(question, chatId !== "" ? chatId : null, chosen ? [chosen] : undefined);
                                                                   }}
                                                                   showFollowupQuestions={false}
                                                                   showSources={true}
@@ -821,8 +843,8 @@ const Chat = () => {
                                                     <AnswerError
                                                         error={error_message_text + error.toString()}
                                                         onRetry={() => {
-                                                            const blobNames = attachedDocs.map(d => d.blobName);
-                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, blobNames);
+                                                            const chosen = pickAttachmentForQuestion(lastQuestionRef.current, attachedDocs);
+                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, chosen ? [chosen] : undefined);
                                                         }}
                                                     />
                                                 </div>
@@ -905,8 +927,8 @@ const Chat = () => {
                                             disabled={isLoading || isUploadingDocs}
                                             onSend={question => {
                                                 (async () => {
-                                                    const blobNames = attachedDocs.map(d => d.blobName);
-                                                    await streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                    const chosen = pickAttachmentForQuestion(question, attachedDocs);
+                                                    await streamResponse(question, chatId !== "" ? chatId : null, chosen ? [chosen] : undefined);
                                                     setFileUploadError("");
                                                 })();
                                             }}
