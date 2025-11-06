@@ -770,12 +770,30 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 @app.route("/session-monitor", methods=["GET"])
 @auth.login_required
 def session_monitor(*, context):
-    print(f"context {context}")
+    user_data = context["user"]
+    exp_time = user_data.get("exp")
+    if not user_data:
+        return jsonify({
+            "status": "error",
+            "message": "User Not Found",
+        }), 401
+    if exp_time:
+        if exp_time > int(time.time()):
+            return jsonify({
+                "status": "active",
+                "message": "Session is active",
+                "expires_at": exp_time
+            }), 200
+        else:
+            return jsonify({
+                "status": "expired",
+                "message": "Session has expired",
+                "expires_at": exp_time
+            }), 401
     return jsonify({
-        "context": context
-    })
-    
-
+        "status": "error",
+        "message": "Session expiration time not found"
+    }), 404
 
 @app.route("/stream_chatgpt", methods=["POST"])
 @auth.login_required
