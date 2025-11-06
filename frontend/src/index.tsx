@@ -11,6 +11,7 @@ import { initializeIcons } from "@fluentui/react";
 import "./index.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { ToastContainer } from "react-toastify";
+import { installFetchUnauthorizedListener } from "./providers/SessionMonitorProvider";
 
 initializeIcons();
 
@@ -18,6 +19,7 @@ const container = document.getElementById("root");
 
 // Type assertion to ensure `container` is not null
 if (container) {
+    installFetchUnauthorizedListener();
     const root = ReactDOM.createRoot(container);
 
     root.render(

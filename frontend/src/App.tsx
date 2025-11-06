@@ -24,9 +24,11 @@ import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
 import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
 import Gallery from "./pages/gallery/Gallery";
 import SubscriptionError from "./pages/SubscriptionError";
+import SessionMonitorProvider from "./providers/SessionMonitorProvider";
 
 export default function App() {
     return (
+        <SessionMonitorProvider>
         <Routes>
             {/* Public Routes */}
             <Route path="/onboarding" element={<Onboarding />} />
@@ -153,5 +155,6 @@ export default function App() {
             {/* Catch-All Route for Undefined Paths */}
             <Route path="*" element={<NoPage />} />
         </Routes>
+        </SessionMonitorProvider>
     );
 }
