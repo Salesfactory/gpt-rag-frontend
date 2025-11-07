@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import styles from "./RequestStudies.module.css"
 
 const RequestStudies: React.FC = () => {
