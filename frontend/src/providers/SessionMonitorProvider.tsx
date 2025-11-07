@@ -48,7 +48,6 @@ export default function SessionMonitorProvider({ children }: { children: React.R
             </div>
         );
 
-
         const onUnauthorized = (ev: Event) => {
             if (toast.isActive((window as any).__sessionExpiredToastId)) return;
             (window as any).__sessionExpiredToastId = toast(sessionExpiredToast, {
