@@ -2,8 +2,10 @@ import os
 import tempfile
 import logging
 import time
-import requests
 from flask import Blueprint, current_app, request
+from azure.search.documents import SearchClient
+from azure.core.credentials import AzureKeyCredential
+from azure.core.exceptions import HttpResponseError
 from data_summary.summarize import create_description
 from utils import create_success_response, create_error_response
 
@@ -69,7 +71,7 @@ def validate_file_signature(file_path, mimetype):
 
 def delete_from_azure_search(filepath: str) -> dict:
     """
-    Delete documents from Azure Search Service by filepath.
+    Delete documents from Azure Search Service by filepath using Azure Search SDK.
     
     Args:
         filepath: The filepath value to match in the search index
@@ -80,66 +82,53 @@ def delete_from_azure_search(filepath: str) -> dict:
     try:
         # Get Azure Search configuration from environment variables
         search_service_name = os.getenv("AZURE_SEARCH_SERVICE_NAME")
-        search_api_version = os.getenv("AZURE_SEARCH_API_VERSION")
         search_admin_key = os.getenv("AZURE_SEARCH_ADMIN_KEY")
         search_index_name = os.getenv("AZURE_SEARCH_INDEX_NAME")
         
         # If Azure Search is not configured, skip deletion
-        if not all([search_service_name, search_api_version, search_admin_key]):
+        if not all([search_service_name, search_admin_key]):
             logger.warning("Azure Search Service not fully configured. Skipping search index deletion.")
             return {"success": True, "skipped": True}
         
-        # If index name is not provided, try to use a default or log warning
+        # If index name is not provided, log warning and skip
         if not search_index_name:
             logger.warning("AZURE_SEARCH_INDEX_NAME not set. Skipping search index deletion.")
             return {"success": True, "skipped": True}
         
-        # Construct the Azure Search REST API endpoint
-        search_endpoint = f"https://{search_service_name}.search.windows.net/indexes/{search_index_name}/docs/index?api-version={search_api_version}"
+        # Construct the Azure Search endpoint
+        search_endpoint = f"https://{search_service_name}.search.windows.net"
         
-        # Prepare headers
-        headers = {
-            "Content-Type": "application/json",
-            "api-key": search_admin_key
-        }
-        
-        # Prepare the deletion payload
-        # Azure Search requires the key field to delete documents
-        # We're using 'filepath' as specified by the user
-        payload = {
-            "value": [
-                {
-                    "@search.action": "delete",
-                    "filepath": filepath
-                }
-            ]
-        }
+        # Create credential and search client
+        credential = AzureKeyCredential(search_admin_key)
+        search_client = SearchClient(
+            endpoint=search_endpoint,
+            index_name=search_index_name,
+            credential=credential
+        )
         
         logger.info(f"Attempting to delete document from Azure Search index '{search_index_name}' with filepath: {filepath}")
         
-        # Make the API request
-        response = requests.post(search_endpoint, json=payload, headers=headers, timeout=30)
+        # Delete document by filepath
+        # The document must include the key field (filepath in this case)
+        result = search_client.delete_documents(documents=[{"filepath": filepath}])
         
-        # Check response status
-        if response.status_code in [200, 201]:
-            logger.info(f"Successfully deleted document from Azure Search: {filepath}")
-            return {"success": True}
-        elif response.status_code == 207:  # Multi-status - partial success
-            # Parse the response to check if the deletion was successful
-            result = response.json()
-            logger.info(f"Azure Search deletion returned multi-status: {result}")
-            return {"success": True, "partial": True}
+        # Check the result
+        # The result is a list of IndexingResult objects
+        if result and len(result) > 0:
+            delete_result = result[0]
+            if delete_result.succeeded:
+                logger.info(f"Successfully deleted document from Azure Search: {filepath}")
+                return {"success": True}
+            else:
+                error_msg = f"Failed to delete from Azure Search. Status code: {delete_result.status_code}, Error: {delete_result.error_message}"
+                logger.error(error_msg)
+                return {"success": False, "error": error_msg}
         else:
-            error_msg = f"Failed to delete from Azure Search. Status: {response.status_code}, Response: {response.text}"
-            logger.error(error_msg)
-            return {"success": False, "error": error_msg}
+            logger.warning(f"No result returned from Azure Search deletion for: {filepath}")
+            return {"success": True, "partial": True}
             
-    except requests.exceptions.Timeout:
-        error_msg = "Azure Search deletion request timed out"
-        logger.error(error_msg)
-        return {"success": False, "error": error_msg}
-    except requests.exceptions.RequestException as e:
-        error_msg = f"Azure Search API request failed: {str(e)}"
+    except HttpResponseError as e:
+        error_msg = f"Azure Search HTTP error: {str(e)}"
         logger.error(error_msg)
         return {"success": False, "error": error_msg}
     except Exception as e:
