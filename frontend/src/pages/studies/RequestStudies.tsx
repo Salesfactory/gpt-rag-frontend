@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import styles from "./RequestStudies.module.css"
-import { monitorSessionKeepAlive } from "../../api";
 
 const RequestStudies: React.FC = () => {
     return (
