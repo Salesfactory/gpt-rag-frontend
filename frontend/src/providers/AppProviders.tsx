@@ -463,7 +463,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setIsChatHistoryLoading(true);
 
             try {
-                const response = await fetchWrapper("/api/chat-history", {
+                const response = await fetch("/api/chat-history", {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
