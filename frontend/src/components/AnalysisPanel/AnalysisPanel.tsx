@@ -8,7 +8,7 @@ import { DismissCircleFilled } from "@fluentui/react-icons";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { Brain, BookOpen } from "lucide-react";
 import { parseThoughts } from "./parseThoughts";
-import { rawThoughtsToString, extractPreContent, parseMeta, toPlainText, sourcePlain } from "../../utils/formattingUtils";
+import { rawThoughtsToString, extractPreContent, parseMeta, toPlainText, sourcePlain, extractContextDocs } from "../../utils/formattingUtils";
 
 const LazyViewer = lazy(() => import("../DocView/DocView"));
 
@@ -42,20 +42,36 @@ const closeButtonStyle = {
 };
 
 export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName, onCitationClicked }: Props) => {
-    const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
     let thoughts = parseThoughts(answer.thoughts);
 
     const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
     const meta = parseMeta(preContent);
-    const agentType = meta.mcpToolUsed || meta.mcpToolsUsed;
-    const hasAnyMeta = !!(meta.modelUsed || agentType || meta.toolSelected); // only show meta section if the agent type is available
+    const agentType = meta.agentType || meta.mcpToolUsed || meta.mcpToolsUsed;
+    const contextDocs = extractContextDocs(answer.thoughts);
+
+    const metaCards = [
+        { key: "model", label: "Model Used", value: meta.modelUsed },
+        { key: "agent", label: "Agent Type", value: agentType },
+        { key: "tool", label: "Tool Used", value: meta.toolSelected },
+        { key: "category", label: "Query Category", value: meta.queryCategory },
+        { key: "original", label: "Original Query", value: meta.originalQuery },
+        { key: "rewritten", label: "Rewritten Query", value: meta.rewrittenQuery }
+    ];
+
+    const visibleMetaCards = metaCards.filter(card => !!card.value);
+    const hasAnyMeta = visibleMetaCards.length > 0;
 
     const filteredThoughts = (thoughts || []).filter((thought: any) => {
         const title = toPlainText(thought?.title).toLowerCase();
         return !title.includes("assistant");
     });
+
+    const hasThoughtBlocks = filteredThoughts.length > 0;
+    const hasContextDocs = contextDocs.length > 0;
+    const hasThoughtProcessContent = hasAnyMeta || hasThoughtBlocks || hasContextDocs;
+    const isDisabledThoughtProcessTab: boolean = !hasThoughtProcessContent;
 
     // Helpers to sanitize and render sources
     const toHref = (val: unknown): string | null => {
@@ -126,28 +142,70 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                     <div className={styles.thoughtProcess}>
                         {hasAnyMeta && (
                             <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-                                {meta.modelUsed && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Model Used</h4>
-                                        <p className={styles.contentCard}>{meta.modelUsed}</p>
+                                {visibleMetaCards.map(card => (
+                                    <section key={card.key} className={styles.sectionCard}>
+                                        <h4 className={styles.headerCard}>{card.label}</h4>
+                                        <p className={styles.contentCard}>{toPlainText(card.value)}</p>
                                     </section>
-                                )}
-                                {agentType && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Agent Type</h4>
-                                        <p className={styles.contentCard}>{toPlainText(agentType)}</p>
-                                    </section>
-                                )}
-                                {meta.toolSelected && (
-                                    <section className={styles.sectionCard}>
-                                        <h4 className={styles.headerCard}>Tool Used</h4>
-                                        <p className={styles.contentCard}>{toPlainText(meta.toolSelected)}</p>
-                                    </section>
-                                )}
+                                ))}
                             </div>
                         )}
-                        {agentType &&
-                            filteredThoughts &&
+                        {hasContextDocs && (
+                            <section className={styles.sectionCard}>
+                                <h4 className={styles.headerCard}>Context Documents</h4>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                    {contextDocs.map((doc, index) => {
+                                        const docContent = toPlainText(doc.content);
+                                        const sourceLabel = doc.source ? sourcePlain(doc.source) : "";
+                                        const href = doc.source ? toHref(doc.source) : null;
+                                        return (
+                                            <div
+                                                key={`context-doc-${index}-${sourceLabel}`}
+                                                style={{
+                                                    padding: "8px 10px",
+                                                    border: "1px solid #e5e7eb",
+                                                    borderRadius: 6,
+                                                    background: "#fff"
+                                                }}
+                                            >
+                                                <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Doc {index + 1}</div>
+                                                {docContent && (
+                                                    <p
+                                                        style={{
+                                                            margin: 0,
+                                                            whiteSpace: "pre-wrap",
+                                                            fontSize: 13,
+                                                            color: "#374151"
+                                                        }}
+                                                    >
+                                                        {docContent}
+                                                    </p>
+                                                )}
+                                                {doc.source && (
+                                                    <div style={{ marginTop: 6, fontSize: 12 }}>
+                                                        <span style={{ color: "#6b7280" }}>Source: </span>
+                                                        {href ? (
+                                                            <a
+                                                                href={href}
+                                                                target="_blank"
+                                                                rel="noreferrer noopener"
+                                                                style={{ color: "#2563eb", cursor: "pointer" }}
+                                                                onClick={e => handleSourceClick(e, href, sourceLabel || href)}
+                                                            >
+                                                                {sourceLabel || href}
+                                                            </a>
+                                                        ) : (
+                                                            <span style={{ color: "#374151" }}>{sourceLabel || doc.source}</span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        )}
+                        {filteredThoughts &&
                             filteredThoughts.length > 0 &&
                             filteredThoughts.map((p: any, index: number) => (
                                 <div
