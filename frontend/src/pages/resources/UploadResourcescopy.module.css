@@ -63,7 +63,7 @@
   }
 
   :global(.leftSidebar) {
-    width: 85vw;       /* más ancho para facilitar navegación táctil */
+    width: 85vw;
     left: -100vw;
   }
 
@@ -72,7 +72,7 @@
   }
 
   :global(.page_container) {
-    font-size: 15px;   /* tamaño de fuente cómodo para lectura en móvil */
+    font-size: 15px;
   }
 
   :global(header),
