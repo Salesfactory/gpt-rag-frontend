@@ -1,5 +1,22 @@
 import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
 import { SourceDocumentsResponse } from '../types';
+import { fetchWrapper } from './fetchWrapper';
+
+/**
+ * API Functions for Frontend
+ *
+ * Session Management:
+ * - Critical auth functions have been migrated to use fetchWrapper (with automatic 401 handling)
+ * - fetchWrapper automatically intercepts 401 responses and triggers session expiration modal
+ * - When adding new API functions, use fetchWrapper instead of native fetch for better session handling
+ *
+ * Migration Status:
+ * - ✅ fetchUserOrganizations
+ * - ✅ fetchUserRoleForOrganization
+ * - ✅ checkUser
+ * - ✅ getOrganizationSubscription
+ * - ⏳ Other functions can be migrated gradually as needed
+ */
 
 export async function getUsers({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -53,7 +70,7 @@ export async function getUserById({ user }: any): Promise<any> {
 
 export async function fetchUserOrganizations(userId: string): Promise<any> {
     try {
-        const response = await fetch(`/api/get-user-organizations`, {
+        const response = await fetchWrapper(`/api/get-user-organizations`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -75,7 +92,7 @@ export async function fetchUserOrganizations(userId: string): Promise<any> {
 
 export async function fetchUserRoleForOrganization(userId: string, organizationId: string): Promise<{ role: string } | null> {
     try {
-        const response = await fetch(`/api/get-users-organizations-role?organization_id=${encodeURIComponent(organizationId)}`, {
+        const response = await fetchWrapper(`/api/get-users-organizations-role?organization_id=${encodeURIComponent(organizationId)}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -144,7 +161,7 @@ export async function checkUser({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     if (user.email) {
-        const response = await fetch("/api/checkuser", {
+        const response = await fetchWrapper("/api/checkuser", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -881,7 +898,7 @@ export async function getProductPrices({ user }: { user: any }): Promise<any> {
 }
 
 export async function getOrganizationSubscription({ userId, organizationId }: any) {
-    const response = await fetch("/api/get-organization-subscription?organizationId=" + organizationId, {
+    const response = await fetchWrapper("/api/get-organization-subscription?organizationId=" + organizationId, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",

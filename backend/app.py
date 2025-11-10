@@ -601,6 +601,24 @@ def get_auth_config():
 # Constants and Configuration
 
 
+@app.route("/api/auth/session/status")
+@auth.login_required
+def check_session_status(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
+    """
+    Check if the current session is valid.
+
+    This endpoint is used by the frontend to validate session state
+    without fetching full user data.
+
+    Args:
+        context: The authentication context from B2C
+
+    Returns:
+        Tuple[Dict[str, Any], int]: Session validity status and HTTP status code
+    """
+    return jsonify({"valid": True, "user_id": context.get("user", {}).get("oid")}), 200
+
+
 @app.route("/api/auth/user")
 @auth.login_required
 @handle_auth_error
