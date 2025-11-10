@@ -1,9 +1,9 @@
 import { setupTestUserAndOrg } from "../fixtures/setupTestUser"
 describe("Session Monitor Test Suite", () => {
-    beforeEach(() => {
-       setupTestUserAndOrg()
-       cy.visit("/")
-    })
+  beforeEach(() => {
+    setupTestUserAndOrg()
+    cy.visit("/")
+  })
     it("should detect session expiration and show modal", () => {
         // Simulate session expiration by manipulating the backend response
         cy.intercept("GET", "/api/auth/session/status", {
