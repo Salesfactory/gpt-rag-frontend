@@ -165,7 +165,7 @@ export const extractContextDocs = (thoughts: ThoughtProcess): ContextDoc[] => {
   return docs;
 };
 
-const CONTEXT_DOC_KEYS = ['context_docs', 'contextdocs', 'context_documents'];
+const CONTEXT_DOC_KEY = 'context_docs';
 
 const THOUGHT_LABEL_OVERRIDES: Record<string, string> = {
   model_used: 'Model Used',
@@ -188,11 +188,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function hasContextDocs(value: Record<string, unknown>): boolean {
-  return CONTEXT_DOC_KEYS.some(key => key in value);
+  return CONTEXT_DOC_KEY in value;
 }
 
 function isContextDocsKey(key: string): boolean {
-  return CONTEXT_DOC_KEYS.includes(key.toLowerCase());
+  return key.toLowerCase() === CONTEXT_DOC_KEY;
 }
 
 function mapThoughtKeyToLabel(key: string): string {

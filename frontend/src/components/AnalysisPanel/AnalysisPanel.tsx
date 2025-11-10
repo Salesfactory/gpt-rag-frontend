@@ -7,7 +7,6 @@ import { getPage } from "../../utils/functions";
 import { DismissCircleFilled } from "@fluentui/react-icons";
 import { mergeStyles } from "@fluentui/react/lib/Styling";
 import { Brain, BookOpen } from "lucide-react";
-import { parseThoughts } from "./parseThoughts";
 import { rawThoughtsToString, extractPreContent, parseMeta, toPlainText, sourcePlain, extractContextDocs } from "../../utils/formattingUtils";
 
 const LazyViewer = lazy(() => import("../DocView/DocView"));
@@ -44,7 +43,6 @@ const closeButtonStyle = {
 export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName, onCitationClicked }: Props) => {
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
-    let thoughts = parseThoughts(answer.thoughts);
 
     const preContent = extractPreContent(rawThoughtsToString(answer.thoughts));
     const meta = parseMeta(preContent);
@@ -63,14 +61,8 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const visibleMetaCards = metaCards.filter(card => !!card.value);
     const hasAnyMeta = visibleMetaCards.length > 0;
 
-    const filteredThoughts = (thoughts || []).filter((thought: any) => {
-        const title = toPlainText(thought?.title).toLowerCase();
-        return !title.includes("assistant");
-    });
-
-    const hasThoughtBlocks = filteredThoughts.length > 0;
     const hasContextDocs = contextDocs.length > 0;
-    const hasThoughtProcessContent = hasAnyMeta || hasThoughtBlocks || hasContextDocs;
+    const hasThoughtProcessContent = hasAnyMeta || hasContextDocs;
     const isDisabledThoughtProcessTab: boolean = !hasThoughtProcessContent;
 
     // Helpers to sanitize and render sources
@@ -205,98 +197,6 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                                 </div>
                             </section>
                         )}
-                        {filteredThoughts &&
-                            filteredThoughts.length > 0 &&
-                            filteredThoughts.map((p: any, index: number) => (
-                                <div
-                                    key={index}
-                                    style={{
-                                        backgroundColor: "#f9fafb",
-                                        padding: "12px",
-                                        marginBottom: "10px",
-                                        borderRadius: "6px"
-                                    }}
-                                >
-                                    {p.title && (
-                                        <h3
-                                            style={{
-                                                margin: "0 0 6px 0",
-                                                color: "#333",
-                                                fontWeight: 600,
-                                                fontSize: "1rem"
-                                            }}
-                                        >
-                                            {toPlainText(p.title)}
-                                        </h3>
-                                    )}
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            color: "#555",
-                                            whiteSpace: "pre-wrap",
-                                            fontSize: "14px",
-                                            lineHeight: 1.4
-                                        }}
-                                    >
-                                        {toPlainText(p.content)}
-                                    </p>
-                                    {(p.sources || p.source) && (
-                                        <div
-                                            style={{
-                                                marginTop: 8,
-                                                color: "#6b7280",
-                                                fontSize: 12
-                                            }}
-                                        >
-                                            Source:{" "}
-                                            {Array.isArray(p.sources || p.source) ? (
-                                                <ul style={{ margin: "4px 0 0 16px" }}>
-                                                    {(p.sources || p.source).map((s: unknown, i: number) => {
-                                                        const href = toHref(s);
-                                                        const label = sourcePlain(s);
-                                                        return (
-                                                            <li key={i} style={{ marginBottom: 2 }}>
-                                                                {href ? (
-                                                                    <a 
-                                                                        href={href} 
-                                                                        target="_blank" 
-                                                                        rel="noreferrer noopener" 
-                                                                        style={{ color: "#2563eb", cursor: "pointer" }}
-                                                                        onClick={(e) => handleSourceClick(e, href, label)}
-                                                                    >
-                                                                        {label}
-                                                                    </a>
-                                                                ) : (
-                                                                    <span>{label}</span>
-                                                                )}
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            ) : (
-                                                (() => {
-                                                    const single = (p.sources || p.source) as unknown;
-                                                    const href = toHref(single);
-                                                    const label = sourcePlain(single);
-                                                    return href ? (
-                                                        <a 
-                                                            href={href} 
-                                                            target="_blank" 
-                                                            rel="noreferrer noopener" 
-                                                            style={{ color: "#2563eb", cursor: "pointer" }}
-                                                            onClick={(e) => handleSourceClick(e, href, label)}
-                                                        >
-                                                            {label}
-                                                        </a>
-                                                    ) : (
-                                                        <span>{label}</span>
-                                                    );
-                                                })()
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
                     </div>
                 </PivotItem>
 
