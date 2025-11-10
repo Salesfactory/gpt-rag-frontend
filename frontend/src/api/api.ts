@@ -195,7 +195,7 @@ export async function getSettings({ user }: GetSettingsProps): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
-        const response = await fetch("/api/settings", {
+        const response = await fetchWrapper("/api/settings", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -215,7 +215,7 @@ export async function postSettings({ user, temperature, model, font_family, font
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_name = user ? user.name : "anonymous";
     try {
-        const response = await fetch("/api/settings", {
+        const response = await fetchWrapper("/api/settings", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -281,7 +281,7 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
 
 export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
     try {
-        const response = await fetch(`/api/chat-conversations/${chatId}`, {
+        const response = await fetchWrapper(`/api/chat-conversations/${chatId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
@@ -2122,4 +2122,10 @@ export async function getStorageUsageByOrganization(organization_id: string, use
 
     return response.json();
 }
+
+/* NOTE: Take Into consideration the difference between Fetch and FetchWrapper when adding new API functions
+            FetchWrapper includes automatic session validation and retry logic and error handling.
+            Use FetchWrapper for all new API calls if you need automatic session management...
+            if you're gonna make a lot of recurrent calls to the API in a short time frame. You should use Fetch instead of FetchWrapper
+*/
 
