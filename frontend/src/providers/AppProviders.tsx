@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
 import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getSettings, getUserById } from "../api";
+import type { ThoughtProcess } from "../api/models";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
 
@@ -71,7 +72,7 @@ export interface ChatTurn {
     user: string;
     bot?: {
         message: string;
-        thoughts: any;
+        thoughts: ThoughtProcess;
     } | null;
     // Add other properties as needed
 }

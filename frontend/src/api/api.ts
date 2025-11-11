@@ -1,4 +1,4 @@
-import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
 import { SourceDocumentsResponse } from '../types';
 
 export async function getUsers({ user }: any): Promise<any> {
@@ -236,7 +236,7 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
     const conversationItems: ChatTurn[] = [];
     let currentUserMessage = "";
     let currentBotMessage = "";
-    let currentBotThoughts: string[] = [];
+    let currentBotThoughts: ThoughtProcess = null;
 
     if (messages) {
         messages.forEach((item: any) => {
@@ -249,7 +249,7 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
                     conversationItems.push({ user: currentUserMessage, bot: { message: currentBotMessage, thoughts: currentBotThoughts } });
                     currentUserMessage = "";
                     currentBotMessage = "";
-                    currentBotThoughts = [];
+                    currentBotThoughts = null;
                 }
             }
         });
@@ -2105,4 +2105,3 @@ export async function getStorageUsageByOrganization(organization_id: string, use
 
     return response.json();
 }
-
