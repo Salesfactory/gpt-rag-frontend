@@ -154,6 +154,183 @@ def upload_source_document():
 
 
 
+@bp.route("/upload-shared-document", methods=["POST"])
+@auth_required
+def upload_shared_document():
+    """
+    Upload a file to all organizations' shared folders.
+    This endpoint discovers all existing organizations and uploads the file to each one.
+    
+    Expected form data:
+    - file: The file to upload
+    
+    Returns:
+        JSON response with upload results for all organizations
+    """
+    llm = current_app.config["llm"]
+    temp_file_path = None
+    
+    try:
+        file = request.files.get("file")
+        if not file:
+            logger.error("No file part in the request")
+            return create_error_response("No file part in the request", 400)
+
+        if file.filename == "":
+            logger.error("No file selected")
+            return create_error_response("No file selected", 400)
+
+        # Extract extension & mimetype
+        _, ext = os.path.splitext(file.filename.lower())
+        file_mime = file.mimetype
+
+        expected_mime = ALLOWED_MIME_TYPES.get(ext)
+        if not expected_mime or file_mime != expected_mime:
+            logger.error(f"Invalid file type: {file.filename} ({file_mime})")
+            return create_error_response("Invalid file type", 422)
+
+        # Save to temp
+        temp_file_path = os.path.join(tempfile.gettempdir(), file.filename)
+        file.save(temp_file_path)
+
+        # Validate file signature
+        if not validate_file_signature(temp_file_path, file_mime):
+            logger.error(f"File signature mismatch for {file.filename} ({file_mime})")
+            return create_error_response("File content does not match declared type", 422)
+
+        logger.info(f"Uploading shared file '{file.filename}' to all organizations")
+
+        # Get blob storage manager
+        blob_storage_manager = current_app.config["blob_storage_manager"]
+        container_client = blob_storage_manager.blob_service_client.get_container_client(
+            os.getenv("BLOB_CONTAINER_NAME", BLOB_CONTAINER_NAME)
+        )
+
+        # List all organization folders
+        # We'll look for blobs that match the pattern: organization_files/{org_id}/
+        organization_ids = set()
+        
+        try:
+            # List all blobs with the organization_files prefix
+            blobs = container_client.list_blobs(name_starts_with=f"{ORG_FILES_PREFIX}/")
+            
+            for blob in blobs:
+                # Extract organization ID from blob path
+                # Path format: organization_files/{org_id}/...
+                parts = blob.name.split("/")
+                if len(parts) >= 2 and parts[0] == ORG_FILES_PREFIX:
+                    org_id = parts[1]
+                    organization_ids.add(org_id)
+            
+            logger.info(f"Found {len(organization_ids)} organizations: {organization_ids}")
+            
+        except Exception as e:
+            logger.error(f"Error listing organization folders: {e}")
+            return create_error_response("Failed to discover organizations", 500)
+
+        if not organization_ids:
+            logger.warning("No organizations found in blob storage")
+            return create_error_response("No organizations found to upload to", 404)
+
+        # Prepare metadata (generate description if applicable)
+        metadata = {}
+        
+        if ext in DESCRIPTION_VALID_FILE_EXTENSIONS:
+            logger.info(f"Generating AI description for shared file '{file.filename}'")
+            try:
+                description = create_description(temp_file_path, llm=llm)
+                logger.info(f"Generated Description: {description}")
+                metadata["description"] = description["file_description"]
+                metadata["description_source"] = description["source"]
+            except Exception as desc_error:
+                logger.warning(f"Failed to generate description: {desc_error}")
+                # Continue without description
+
+        # Upload to each organization's shared folder
+        upload_results = {
+            "successful": [],
+            "failed": []
+        }
+
+        for org_id in organization_ids:
+            try:
+                # Build the blob path for this organization's shared folder
+                blob_folder = f"{ORG_FILES_PREFIX}/{org_id}/shared"
+                
+                # Add organization_id to metadata for this specific upload
+                org_metadata = metadata.copy()
+                org_metadata["organization_id"] = org_id
+                org_metadata["shared_file"] = "true"
+                
+                # Upload to blob
+                result = blob_storage_manager.upload_to_blob(
+                    file_path=temp_file_path,
+                    blob_folder=blob_folder,
+                    metadata=org_metadata,
+                    container=os.getenv("BLOB_CONTAINER_NAME", BLOB_CONTAINER_NAME),
+                )
+
+                if result["status"] == "success":
+                    logger.info(f"Successfully uploaded to organization '{org_id}' shared folder")
+                    upload_results["successful"].append({
+                        "organization_id": org_id,
+                        "blob_url": result["blob_url"]
+                    })
+                else:
+                    error_msg = result.get('error', 'Unknown error')
+                    logger.error(f"Failed to upload to organization '{org_id}': {error_msg}")
+                    upload_results["failed"].append({
+                        "organization_id": org_id,
+                        "error": error_msg
+                    })
+                    
+            except Exception as org_error:
+                logger.error(f"Error uploading to organization '{org_id}': {org_error}")
+                upload_results["failed"].append({
+                    "organization_id": org_id,
+                    "error": str(org_error)
+                })
+
+        # Prepare response
+        total_orgs = len(organization_ids)
+        successful_count = len(upload_results["successful"])
+        failed_count = len(upload_results["failed"])
+
+        logger.info(
+            f"Shared file upload complete: {successful_count}/{total_orgs} successful, "
+            f"{failed_count}/{total_orgs} failed"
+        )
+
+        if successful_count == 0:
+            return create_error_response(
+                "Failed to upload file to any organization",
+                500,
+                {"details": upload_results}
+            )
+        
+        response_data = {
+            "message": f"File uploaded to {successful_count} out of {total_orgs} organizations",
+            "filename": file.filename,
+            "total_organizations": total_orgs,
+            "successful_uploads": successful_count,
+            "failed_uploads": failed_count,
+            "results": upload_results
+        }
+
+        # Return 207 Multi-Status if there were partial failures, 200 if all successful
+        status_code = 200 if failed_count == 0 else 207
+        
+        return create_success_response(response_data, status_code)
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in upload_shared_document: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
+
 @bp.route("/delete-source-document", methods=["DELETE"])
 @auth_required
 def delete_source_document():
