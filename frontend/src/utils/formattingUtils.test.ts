@@ -1,5 +1,5 @@
 
-import { rawThoughtsToString, extractPreContent, parseMeta } from './formattingUtils';
+import { rawThoughtsToString, extractPreContent, parseMeta, extractContextDocs } from './formattingUtils';
 
 const thoughtWithSubqueries = `
 		Rewritten Query: Most used social media platforms
@@ -27,8 +27,18 @@ describe('rawThoughtsToString', () => {
 	it('joins array of strings with newlines', () => {
 		expect(rawThoughtsToString(['a', 'b', 'c'])).toBe('a\nb\nc');
 	});
-	it('ignores non-string elements in array', () => {
-		expect(rawThoughtsToString(['a', 1, 'b', null])).toBe('a\nb');
+	it('stringifies primitive elements inside arrays', () => {
+		expect(rawThoughtsToString(['a', 1, 'b', null])).toBe('a\n1\nb');
+	});
+	it('stringifies structured objects with snake_case keys', () => {
+		const result = rawThoughtsToString({
+			model_used: 'claude-sonnet-3.5',
+			query_category: 'General',
+			empty_value: ''
+		});
+		expect(result).toContain('Model Used: claude-sonnet-3.5');
+		expect(result).toContain('Query Category: General');
+		expect(result).not.toContain('empty value');
 	});
 	it('returns empty string for non-string, non-array', () => {
 		expect(rawThoughtsToString(123)).toBe('');
@@ -60,31 +70,62 @@ describe('extractPreContent', () => {
 });
 
 describe('parseMeta', () => {
-	it('extracts all meta fields if present', () => {
-		const text = `Model Used: gpt-4\nTool Selected: search\nOriginal Query: hola\nMCP Tools Used: foo`;
-		expect(parseMeta(text)).toEqual({
-			modelUsed: 'gpt-4',
-			toolSelected: 'search',
-			originalQuery: 'hola',
-			mcpToolsUsed: 'foo',
-		});
+	it('extracts commonly used meta fields when present', () => {
+		const text = `Model Used: gpt-4\nTool Selected: search\nOriginal Query: hola\nMCP Tools Used: foo\nQuery Category: General\nRewritten Query: hi`;
+		const meta = parseMeta(text);
+		expect(meta.modelUsed).toBe('gpt-4');
+		expect(meta.toolSelected).toBe('search');
+		expect(meta.originalQuery).toBe('hola');
+		expect(meta.mcpToolsUsed).toBe('foo');
+		expect(meta.queryCategory).toBe('General');
+		expect(meta.rewrittenQuery).toBe('hi');
 	});
-	it('returns undefined for missing fields', () => {
+	it('returns undefined for fields that do not exist', () => {
 		const text = 'Model Used: gpt-4';
-		expect(parseMeta(text)).toEqual({
-			modelUsed: 'gpt-4',
-			toolSelected: undefined,
-			originalQuery: undefined,
-			mcpToolsUsed: undefined,
-		});
+		const meta = parseMeta(text);
+		expect(meta.modelUsed).toBe('gpt-4');
+		expect(meta.toolSelected).toBeUndefined();
+		expect(meta.queryCategory).toBeUndefined();
 	});
-	it('handles extra whitespace and case', () => {
-		const text = 'model used :  gpt-4  / Tool Selected:search';
-		expect(parseMeta(text)).toEqual({
-			modelUsed: 'gpt-4',
-			toolSelected: 'search',
-			originalQuery: undefined,
-			mcpToolsUsed: undefined,
+	it('handles alternate labels and mixed case', () => {
+		const text = 'last mcp tool used :  data_analyst  / Number of documents retrieved:3';
+		const meta = parseMeta(text);
+		expect(meta.mcpToolUsed).toBe('data_analyst');
+		expect(meta.numberOfDocumentsRetrieved).toBe('3');
+	});
+});
+
+describe('extractContextDocs', () => {
+	it('handles agentic search style objects with content and source', () => {
+		const docs = extractContextDocs({
+			model_used: 'claude-sonnet',
+			context_docs: [
+				{ content: 'Example video title will go here for this video', source: 'https://www.wcnc.com/article/news/local/charlotte' },
+				{ content: 'In 2023, Charlotte had a population of 886k', source: 'https://datausa.io/profile/geo/charlotte-nc/' }
+			]
+		} as any);
+		expect(docs).toHaveLength(2);
+		expect(docs[0]).toEqual({
+			content: 'Example video title will go here for this video',
+			source: 'https://www.wcnc.com/article/news/local/charlotte'
 		});
+		expect(docs[1].source).toContain('datausa.io/profile/geo/charlotte-nc');
+	});
+
+	it('handles context docs represented as plain strings', () => {
+		const docs = extractContextDocs({
+			context_docs: [
+				"I'll help you create a line chart showing revenue trends...",
+				"Here is the graph/visualization link: organization_files/..."
+			]
+		} as any);
+		expect(docs).toHaveLength(2);
+		expect(docs[0].content).toContain('line chart');
+		expect(docs[1].content).toContain('organization_files');
+	});
+
+	it('returns empty array when no context docs exist', () => {
+		expect(extractContextDocs(null as any)).toEqual([]);
+		expect(extractContextDocs({} as any)).toEqual([]);
 	});
 });

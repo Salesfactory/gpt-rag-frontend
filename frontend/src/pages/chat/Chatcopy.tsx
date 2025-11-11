@@ -3,7 +3,7 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument, deleteUserDocument, listUserDocuments } from "../../api";
+import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, ThoughtProcess, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument, deleteUserDocument, listUserDocuments } from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -136,7 +136,7 @@ const Chat = () => {
         if (dataConversation.length > 0) {
             history.push(...dataConversation);
         } else {
-            history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts || [] } })));
+            history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts ?? null } })));
         }
         history.push({ user: question, bot: undefined });
         const activeConversationId = getOrCreateConversationId();
@@ -181,7 +181,7 @@ const Chat = () => {
             /* ---------- 3 · Consume the stream via our parser with markdown validation ---------- */
             const reader = response.body.getReader();
             let result = "";
-            let ctrlMsg: { conversation_id?: string; thoughts?: string } = {};
+            let ctrlMsg: { conversation_id?: string; thoughts?: ThoughtProcess } = {};
 
             for await (const evt of parseStreamWithMarkdownValidation(reader)) {
                 /* allow user to abort mid-stream */
@@ -234,8 +234,7 @@ const Chat = () => {
             const botResponse = {
                 answer: result || "",
                 data_points: [""],
-
-                thoughts: ctrlMsg.thoughts ?? ""
+                thoughts: ctrlMsg.thoughts ?? null
             } as AskResponse;
 
             setAnswers(prev => [...prev, [question, botResponse]]);
@@ -367,7 +366,7 @@ const Chat = () => {
                 {
                     answer: data?.bot?.message || "",
                     data_points: [],
-                    thoughts: data?.bot?.thoughts || []
+                    thoughts: data?.bot?.thoughts ?? null
                 }
             ])
         );
@@ -588,11 +587,14 @@ const Chat = () => {
     const answerFromHistory = dataConversation.map(data => data.bot?.message);
     const thoughtsFromHistory = dataConversation.map(data => data.bot?.thoughts);
 
+    const latestAnswerFromHistory = answerFromHistory.length > 0 ? answerFromHistory[answerFromHistory.length - 1] ?? "" : "";
+    const latestThoughtFromHistory = thoughtsFromHistory.length > 0 ? thoughtsFromHistory[thoughtsFromHistory.length - 1] ?? null : null;
+
     const responseForPreviewPanel = {
-        answer: answerFromHistory.toString(),
+        answer: latestAnswerFromHistory,
         conversation_id: chatId,
         data_points: [""],
-        thoughts: thoughtsFromHistory.toString()
+        thoughts: latestThoughtFromHistory
     } as AskResponse;
 
     const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
@@ -763,7 +765,7 @@ const Chat = () => {
                                                       answer: item.bot?.message || "",
                                                       conversation_id: chatId,
                                                       data_points: [""],
-                                                      thoughts: item.bot?.thoughts || []
+                                                      thoughts: item.bot?.thoughts ?? null
                                                   } as AskResponse;
                                                   return (
                                                       <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
@@ -838,7 +840,7 @@ const Chat = () => {
                                                                 answer: lastAnswer,
                                                                 conversation_id: chatId,
                                                                 data_points: [""],
-                                                                thoughts: ""
+                                                                thoughts: null
                                                             } as AskResponse
                                                         }
                                                         isGenerating={isLoading}

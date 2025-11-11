@@ -26,6 +26,8 @@ export type ConversationChatItem = {
     content: string;
 };
 
+export type ThoughtProcess = string | string[] | Record<string, unknown> | null;
+
 export type AskRequestOverrides = {
     semanticRanker?: boolean;
     semanticCaptions?: boolean;
@@ -46,7 +48,7 @@ export type AskRequest = {
 
 export type AskResponse = {
     answer: string;
-    thoughts: string | null;
+    thoughts: ThoughtProcess;
     data_points: string[];
     error?: string;
 };
@@ -61,7 +63,7 @@ export type AskResponseGpt = {
     conversation_id: string;
     answer: string;
     current_state: string;
-    thoughts: string | null;
+    thoughts: ThoughtProcess;
     data_points: string[];
     transaction_data?: TransactionData;
     error?: string;
@@ -71,7 +73,7 @@ export type ChatTurn = {
     user: string;
     bot?: {
         message: string;
-        thoughts: any;
+        thoughts: ThoughtProcess;
     } | null;
 };
 
