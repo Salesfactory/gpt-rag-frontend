@@ -304,8 +304,7 @@ def upload_shared_document():
         if successful_count == 0:
             return create_error_response(
                 "Failed to upload file to any organization",
-                500,
-                {"details": upload_results}
+                500
             )
         
         response_data = {
