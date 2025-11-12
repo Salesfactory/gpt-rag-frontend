@@ -776,6 +776,7 @@ def proxy_orc(*, context):
     agent = data.get("agent")
     user_timezone = data.get("user_timezone")
     user_document_blob_names = data.get("user_document_blob_names")
+    is_data_analyst_mode = data.get("is_data_analyst_mode", False)
 
     if not question:
         return jsonify({"error": "Missing required parameters"}), 400
@@ -820,6 +821,7 @@ def proxy_orc(*, context):
         "client_principal_name": client_principal_name,
         "client_principal_organization": client_principal_organization,
         "user_timezone": user_timezone,
+        "is_data_analyst_mode": is_data_analyst_mode,
     }
     if isinstance(user_document_blob_names, list) and len(user_document_blob_names) > 0:
         payload_dict["blob_names"] = user_document_blob_names
