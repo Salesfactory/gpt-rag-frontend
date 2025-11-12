@@ -2123,6 +2123,31 @@ export async function getStorageUsageByOrganization(organization_id: string, use
     return response.json();
 }
 
+export async function uploadSharedDocument(file: File) {
+    const formdata = new FormData();
+    formdata.append("file", file);
+
+    try {
+        const response = await fetchWrapper("/api/upload-shared-document", {
+            method: "POST",
+            body: formdata
+        });
+        
+        if (!response.ok) {
+            console.log("Error uploading shared file:", response.statusText);
+            if (response.status === 422) {
+                throw new Error("File type not allowed. Please upload a valid file.");
+            }
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error("Error uploading shared file:", error);
+        throw error;
+    }
+}
 /* NOTE: Take Into consideration the difference between Fetch and FetchWrapper when adding new API functions
             FetchWrapper includes automatic session validation and retry logic and error handling.
             Use FetchWrapper for all new API calls if you need automatic session management...
