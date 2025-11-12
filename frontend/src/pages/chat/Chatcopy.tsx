@@ -12,6 +12,7 @@ import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import AttachButton from "../../components/AttachButton/AttachButton";
+import DataAnalystButton from "../../components/DataAnalystButton/DataAnalystButton";
 import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES} from "../../constants";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -45,6 +46,7 @@ const Chat = () => {
     const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
     const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string }[]>([]);
     const [fileUploadError, setFileUploadError] = useState<string>("");
+    const [isDataAnalystMode, setIsDataAnalystMode] = useState<boolean>(false);
 
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -170,7 +172,8 @@ const Chat = () => {
                     conversation_id: request.conversation_id,
                     agent: request.agent,
                     user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    user_document_blob_names: Array.isArray(userDocumentBlobNames) && userDocumentBlobNames.length > 0 ? userDocumentBlobNames : undefined
+                    user_document_blob_names: Array.isArray(userDocumentBlobNames) && userDocumentBlobNames.length > 0 ? userDocumentBlobNames : undefined,
+                    is_data_analyst_mode: isDataAnalystMode
                 })
             });
 
@@ -261,6 +264,7 @@ const Chat = () => {
             setAnswers([]);
             setDataConversation([]);
             setChatIsCleaned(true);
+            setIsDataAnalystMode(false);
         } else {
             return;
         }
@@ -282,6 +286,7 @@ const Chat = () => {
             setChatSelected("");
             setChatIsCleaned(false);
             setAttachedDocs([]); // clear attachments for a fresh chat
+            setIsDataAnalystMode(false); // reset data analyst mode for new chat
         } else {
             return;
         }
@@ -913,6 +918,14 @@ const Chat = () => {
                                                 })();
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
+                                            extraButtonDataAnalyst={
+                                                <DataAnalystButton
+                                                    isEnabled={!isLoading && !isUploadingDocs}
+                                                    isActive={isDataAnalystMode}
+                                                    ariaLabel="Data analyst mode"
+                                                    onChange={setIsDataAnalystMode}
+                                                />
+                                            }
                                             extraButtonAttach={
                                                 <AttachButton
                                                     isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES}
