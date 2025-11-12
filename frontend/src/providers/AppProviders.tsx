@@ -6,6 +6,9 @@ import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrg
 import type { ThoughtProcess } from "../api/models";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
+import { useSessionManager } from "../hooks/useSessionManager";
+import { SessionExpiredModal } from "../components/SessionExpiredModal/SessionExpiredModal";
+import { fetchWrapper } from "../api/fetchWrapper";
 
 // Define the debug mode based on the environment
 const isDebugMode = process.env.NODE_ENV === "development";
@@ -135,6 +138,7 @@ interface AppContextType {
     setisResizingAnalysisPanel: Dispatch<SetStateAction<boolean>>;
     subscriptionError: string | null;
     setSubscriptionError: Dispatch<SetStateAction<string | null>>;
+    validateSession: () => Promise<boolean>; // Session validation function
 }
 
 // Create the context with a default value
@@ -181,6 +185,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
     const [isResizingAnalysisPanel, setisResizingAnalysisPanel] = useState<boolean>(false);
     const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+
+    // Session management
+    const { isSessionExpiredModalOpen, handleRefreshSession, handleLogout, validateSession } = useSessionManager();
 
     // Move agentType update into useEffect to prevent state updates on every render
     useEffect(() => {
@@ -537,6 +544,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setisResizingAnalysisPanel,
             subscriptionError,
             setSubscriptionError,
+            validateSession, // Session validation function
         }),
         [
             showHistoryPanel,
@@ -563,7 +571,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             settings,
             userName,
             isResizingAnalysisPanel,
-            subscriptionError
+            subscriptionError,
+            validateSession
         ]
     );
     useEffect(() => {
@@ -635,7 +644,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         );
     }
     // Provide the context to child components
-    return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
+    return (
+        <AppContext.Provider value={contextValue}>
+            {children}
+            <SessionExpiredModal
+                isOpen={isSessionExpiredModalOpen}
+                onRefresh={handleRefreshSession}
+                onLogout={handleLogout}
+            />
+        </AppContext.Provider>
+    );
 };
 
 // Custom hook for consuming the context
