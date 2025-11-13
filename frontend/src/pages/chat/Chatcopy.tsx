@@ -12,13 +12,14 @@ import { getFileType } from "../../utils/functions";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import AttachButton from "../../components/AttachButton/AttachButton";
+import DataAnalystButton from "../../components/DataAnalystButton/DataAnalystButton";
 import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES} from "../../constants";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
 
 import React from "react";
-import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, extractProgressState, ProgressMessage } from "./streamParser";
+import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, isThinkingMessage, isDataAnalystContentMessage, extractProgressState, ProgressMessage, ThinkingMessage, DataAnalystContentMessage } from "./streamParser";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -45,6 +46,7 @@ const Chat = () => {
     const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
     const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string }[]>([]);
     const [fileUploadError, setFileUploadError] = useState<string>("");
+    const [isDataAnalystMode, setIsDataAnalystMode] = useState<boolean>(false);
 
     const [isDragOver, setIsDragOver] = useState(false);
 
@@ -88,6 +90,7 @@ const Chat = () => {
 
     const [lastAnswer, setLastAnswer] = useState<string>("");
     const [progressState, setProgressState] = useState<{ step: string; message: string; progress?: number; timestamp?: number } | null>(null);
+    const [thinkingContent, setThinkingContent] = useState<string>("");
     const restartChat = useRef<boolean>(false);
     const [loadingCitationPath, setLoadingCitationPath] = useState<string | null>(null);
 
@@ -128,6 +131,7 @@ const Chat = () => {
         setActiveAnalysisPanelTab(undefined);
         setLastAnswer("");
         setProgressState(null);
+        setThinkingContent("");
 
         const agent = "consumer";
         // const agent = isFinancialAssistantActive ? "financial" : "consumer";
@@ -170,7 +174,8 @@ const Chat = () => {
                     conversation_id: request.conversation_id,
                     agent: request.agent,
                     user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    user_document_blob_names: Array.isArray(userDocumentBlobNames) && userDocumentBlobNames.length > 0 ? userDocumentBlobNames : undefined
+                    user_document_blob_names: Array.isArray(userDocumentBlobNames) && userDocumentBlobNames.length > 0 ? userDocumentBlobNames : undefined,
+                    is_data_analyst_mode: isDataAnalystMode
                 })
             });
 
@@ -192,8 +197,15 @@ const Chat = () => {
 
                 if (evt.type === "json") {
                     // ---- Handle different types of JSON messages from backend ----
-                    if (isProgressMessage(evt.payload)) {
-                        // Progress message - update progress state
+                    if (isDataAnalystContentMessage(evt.payload)) {
+                        // Data analyst content - treat as thinking (goes into collapsible section)
+                        const contentMsg = evt.payload as DataAnalystContentMessage;
+                        setThinkingContent(prev => prev + contentMsg.content);
+                    } else if (isThinkingMessage(evt.payload)) {
+                        // Thinking message - accumulate Claude's thinking process
+                        const thinkingMsg = evt.payload as ThinkingMessage;
+                        setThinkingContent(prev => prev + thinkingMsg.content);
+                    } else if (isProgressMessage(evt.payload)) {
                         const progress = extractProgressState(evt.payload as ProgressMessage);
                         setProgressState(progress);
                     } else if (isThoughtsMessage(evt.payload)) {
@@ -253,6 +265,9 @@ const Chat = () => {
     };
 
     const clearChat = () => {
+        setThinkingContent("");
+        setIsDataAnalystMode(false);
+
         if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
             lastQuestionRef.current = "";
             error && setError(undefined);
@@ -268,6 +283,9 @@ const Chat = () => {
 
 
     const handleNewChat = () => {
+        setThinkingContent("");
+        setIsDataAnalystMode(false);
+
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             restartChat.current = true;
             lastQuestionRef.current = "";
@@ -845,6 +863,7 @@ const Chat = () => {
                                                         }
                                                         isGenerating={isLoading}
                                                         progressState={progressState}
+                                                        thinkingContent={thinkingContent}
                                                         isSelected={activeAnalysisPanelTab !== undefined}
                                                         loadingCitationPath={loadingCitationPath}
                                                         onCitationClicked={(c, n) => {}}
@@ -913,6 +932,14 @@ const Chat = () => {
                                                 })();
                                             }}
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
+                                            extraButtonDataAnalyst={
+                                                <DataAnalystButton
+                                                    isEnabled={!isLoading && !isUploadingDocs}
+                                                    isActive={isDataAnalystMode}
+                                                    ariaLabel="Data analyst mode"
+                                                    onChange={setIsDataAnalystMode}
+                                                />
+                                            }
                                             extraButtonAttach={
                                                 <AttachButton
                                                     isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES}
