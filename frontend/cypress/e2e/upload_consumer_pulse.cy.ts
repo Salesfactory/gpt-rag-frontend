@@ -95,7 +95,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
     };
 
     describe("Access Control Tests", () => {
-        it("Should allow platformAdmin to access the page", () => {
+        it("Should allow platformAdmin to see Consumer Pulse in sidebar and access the page", () => {
             setupCommonInterceptsForRole("platformAdmin");
             
             // Visit root first to initialize AppContext
@@ -104,31 +104,87 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             // Wait for initial page load
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
             
-            // Navigate to the upload consumer pulse page
-            cy.visit("/#/upload-consumer-pulse");
+            // Open the sidebar by clicking the headerCollapse button
+            cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
+            
+            // Wait for sidebar to open
+            cy.wait(500);
+            
+            // Click on "Premium Features" to expand the submenu
+            cy.contains("Premium Features").should("be.visible").click();
+            
+            // Wait for submenu to expand
+            cy.wait(300);
+            
+            // Verify that "Consumer Pulse" option is visible for platformAdmin
+            cy.contains("Consumer Pulse").should("be.visible");
+            
+            // Click on "Consumer Pulse" to navigate to the page
+            cy.contains("Consumer Pulse").click();
             
             // Verify the page loads and main elements are visible
             cy.contains("Upload Consumer Pulse Data", { timeout: 10000 }).should("be.visible");
             cy.contains("Upload files that will be distributed across all organizations").should("be.visible");
         });
 
-        it("Should NOT allow admin users to access the page", () => {
+        it("Should NOT show Consumer Pulse option to admin users", () => {
             setupCommonInterceptsForRole("admin");
             
-            // Try to navigate to the upload consumer pulse page
-            cy.visit("/#/upload-consumer-pulse");
+            // Visit root first to initialize AppContext
+            cy.visit("/");
             
-            // Wait for auth check
-            cy.wait("@getUser");
+            // Wait for initial page load
+            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
             
-            // Should be redirected or show access denied
-            cy.contains("Upload Consumer Pulse Data").should("not.exist");
+            // Open the sidebar by clicking the headerCollapse button
+            cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
+            
+            // Wait for sidebar to open
+            cy.wait(500);
+            
+            // Try to find "Premium Features" and click if it exists
+            cy.get("body").then($body => {
+                if ($body.text().includes("Premium Features")) {
+                    cy.contains("Premium Features").click();
+                    cy.wait(300);
+                }
+            });
+            
+            // Verify that "Consumer Pulse" option is NOT visible for admin
+            cy.contains("Consumer Pulse").should("not.exist");
         });
 
-        it("Should NOT allow regular users to access the page", () => {
+        it("Should NOT show Consumer Pulse option to regular users", () => {
             setupCommonInterceptsForRole("user");
             
-            // Try to navigate to the upload consumer pulse page
+            // Visit root first to initialize AppContext
+            cy.visit("/");
+            
+            // Wait for initial page load
+            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            
+            // Open the sidebar by clicking the headerCollapse button
+            cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
+            
+            // Wait for sidebar to open
+            cy.wait(500);
+            
+            // Try to find "Premium Features" and click if it exists
+            cy.get("body").then($body => {
+                if ($body.text().includes("Premium Features")) {
+                    cy.contains("Premium Features").click();
+                    cy.wait(300);
+                }
+            });
+            
+            // Verify that "Consumer Pulse" option is NOT visible for regular user
+            cy.contains("Consumer Pulse").should("not.exist");
+        });
+
+        it("Should prevent direct URL access for non-platformAdmin users", () => {
+            setupCommonInterceptsForRole("admin");
+            
+            // Try to navigate directly to the upload consumer pulse page via URL
             cy.visit("/#/upload-consumer-pulse");
             
             // Wait for auth check
@@ -144,7 +200,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/");
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
-            cy.visit("/#/upload-consumer-pulse");
+            
+            // Navigate through sidebar
+            cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
+            cy.wait(500);
+            cy.contains("Premium Features").should("be.visible").click();
+            cy.wait(300);
+            cy.contains("Consumer Pulse").should("be.visible").click();
+            cy.contains("Upload Consumer Pulse Data", { timeout: 10000 }).should("be.visible");
         });
 
         it("Should display the page header with title and subtitle", () => {
@@ -169,7 +232,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/");
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
-            cy.visit("/#/upload-consumer-pulse");
+            
+            // Navigate through sidebar
+            cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
+            cy.wait(500);
+            cy.contains("Premium Features").should("be.visible").click();
+            cy.wait(300);
+            cy.contains("Consumer Pulse").should("be.visible").click();
+            cy.contains("Upload Consumer Pulse Data", { timeout: 10000 }).should("be.visible");
         });
 
         it("Should successfully upload a file and show success message", () => {
@@ -401,7 +471,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/");
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
-            cy.visit("/#/upload-consumer-pulse");
+            
+            // Navigate through sidebar
+            cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
+            cy.wait(500);
+            cy.contains("Premium Features").should("be.visible").click();
+            cy.wait(300);
+            cy.contains("Consumer Pulse").should("be.visible").click();
+            cy.contains("Upload Consumer Pulse Data", { timeout: 10000 }).should("be.visible");
         });
 
         it("Should accept file drop via drag and drop", () => {
@@ -460,7 +537,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/");
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
-            cy.visit("/#/upload-consumer-pulse");
+            
+            // Navigate through sidebar
+            cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
+            cy.wait(500);
+            cy.contains("Premium Features").should("be.visible").click();
+            cy.wait(300);
+            cy.contains("Consumer Pulse").should("be.visible").click();
+            cy.contains("Upload Consumer Pulse Data", { timeout: 10000 }).should("be.visible");
         });
 
         it("Should handle case when no organizations exist", () => {
