@@ -78,6 +78,13 @@
     overflow-y: auto;
 }
 
+
+  @media (max-width: 650px) {
+    .dropdownContent {
+      right: 40px;
+    }
+  }
+
 .dropdownItem {
     display: block;
     padding: 8px 16px;
@@ -401,6 +408,7 @@
     height: 40px;
     font-size: 15px;
   }
+
 
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
