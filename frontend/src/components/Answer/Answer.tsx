@@ -245,7 +245,7 @@ export const Answer = ({
 
             {thinkingContent && thinkingContent.trim().length > 0 && (
                 <Stack.Item>
-                    <details className={styles.thinkingContainer} open={isGenerating}>
+                    <details className={styles.thinkingContainer} open={isGenerating} data-cy="thinking-container">
                         <summary className={styles.thinkingSummary}>
                             Freddaid's Thinking Process
                         </summary>
