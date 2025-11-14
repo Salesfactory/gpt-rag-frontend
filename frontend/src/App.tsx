@@ -17,6 +17,7 @@ import Admin from "./pages/admin/Admincopy";
 import Organization from "./pages/organization/Organizationcopy";
 
 import UploadResources from "./pages/resources/UploadResources";
+import UploadConsumerPulse from "./pages/consumerpulse/UploadConsumerPulse";
 
 import SubscriptionManagement from "./pages/subscriptionmanagement/SubscriptionManagementcopy";
 
@@ -109,6 +110,27 @@ export default function App() {
                     <Route path="/knowledge-sources" element={<KnowledgeSources />} />
                     <Route path="/voice-customer" element={<VoiceCustomer />} />
                     <Route path="/subscription-management" element={<SubscriptionManagement />} />
+                </Route>
+            </Route>
+
+            {/* Protected Routes for Platform Admin Only */}
+            <Route
+                element={
+                    <ProtectedRoute
+                        allowedRoles={["platformAdmin"]}
+                        allowedTiers={[
+                            "Basic",
+                            "Custom",
+                            "Premium",
+                            "Basic + Financial Assistant",
+                            "Custom + Financial Assistant",
+                            "Premium + Financial Assistant"
+                        ]}
+                    />
+                }
+            >
+                <Route element={<Layout />}>
+                    <Route path="/upload-consumer-pulse" element={<UploadConsumerPulse />} />
                 </Route>
             </Route>
 

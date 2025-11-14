@@ -29,12 +29,12 @@ interface ResourceListProps {
   onToggleSortOrder?: () => void;
 }
 
-const LazyResourceList: React.FC<ResourceListProps> = ({ 
+const LazyResourceList: React.FC<ResourceListProps> = ({
   filteredFiles,
   filteredFolders,
   currentPath,
-  isLoading, 
-  deleteFile, 
+  isLoading,
+  deleteFile,
   handleDownload,
   navigateToFolder,
   navigateBack,
@@ -80,7 +80,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   // Helper function to get display name from blob name
   const getDisplayName = (fullName: string): string => {
     const parts = fullName.split('/');
-    return parts[parts.length - 1];
+
+    const lastPart = parts[parts.length - 1]
+
+    return lastPart;
   };
 
   const splitBaseAndExt = (name: string) => {
@@ -133,7 +136,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     try {
       await createFolder(organizationId, folderName, currentPath);
       setShowNewFolderModal(false);
-      
+
       // Refresh the file list to show the new folder
       if (onRefresh) {
         onRefresh();
@@ -151,7 +154,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     setDraggedFile(file);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', file.name);
-    
+
     // Add a slight opacity to the dragged element
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '0.5';
@@ -161,7 +164,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   const handleDragEnd = (e: React.DragEvent) => {
     setDraggedFile(null);
     setDropTarget(null);
-    
+
     // Reset opacity
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '1';
@@ -188,9 +191,9 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   const handleDrop = async (e: React.DragEvent, destinationFolderPath: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     setDropTarget(null);
-    
+
     if (!draggedFile || !organizationId) {
       return;
     }
@@ -199,17 +202,17 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     const currentFileFolder = draggedFile.name.substring(0, draggedFile.name.lastIndexOf('/'));
     const expectedPrefix = `organization_files/${organizationId}/`;
     const currentRelativePath = currentFileFolder.replace(expectedPrefix, '');
-    
+
     if (currentRelativePath === destinationFolderPath) {
       console.log('File is already in this folder');
       return;
     }
 
     setIsMovingFile(true);
-    
+
     try {
       await moveFile(organizationId, draggedFile.name, destinationFolderPath);
-      
+
       // Refresh the file list
       if (onRefresh) {
         onRefresh();
@@ -224,18 +227,18 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   };
 
   const startEditFolder = (folder: FolderItem) => {
-     setEditing({ type: "folder", id: folder.full_path, value: folder.name });
-   };
+    setEditing({ type: "folder", id: folder.full_path, value: folder.name });
+  };
 
   const startEditFile = (file: BlobItem) => {
-     const visible = getDisplayName(file.name);
-     const { base } = splitBaseAndExt(visible);
-     setEditing({ type: "file", id: file.name, value: base });
-   };
+    const visible = getDisplayName(file.name);
+    const { base } = splitBaseAndExt(visible);
+    setEditing({ type: "file", id: file.name, value: base });
+  };
 
   const cancelEdit = () => {
-     setEditing(null);
-   };
+    setEditing(null);
+  };
 
   const saveRename = async () => {
     if (!editing) return;
@@ -284,14 +287,14 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     }
 
     setIsDeletingFolder(true);
-    
+
     try {
       await deleteFolder(organizationId, folderToDelete.full_path);
-      
+
       // Close modal
       setShowDeleteFolderModal(false);
       setFolderToDelete(null);
-      
+
       // Refresh the file list to reflect deletion
       if (onRefresh) {
         onRefresh();
@@ -313,8 +316,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
   };
 
   return (
-    <div className={styles.content_container} style={{ 
-      minHeight: "60vh", 
+    <div className={styles.content_container} style={{
+      minHeight: "60vh",
       width: "100%",
       maxWidth: "100%"
     }}>
@@ -348,8 +351,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           <Text className={styles.folder_title}>
             {getCurrentFolderName()}
           </Text>
-          {currentPath && (
+          <div className={styles.navigation_buttons}>
+            {currentPath && (
             <button
+              type="button"
               onClick={navigateBack}
               className={styles.back_button}
             >
@@ -358,26 +363,31 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           )}
           {currentPath && (
             <button
+              type="button"
               onClick={navigateToRoot}
               className={styles.back_button}
-              style={{ marginLeft: '8px' }}
             >
               Go to Root
             </button>
           )}
+          </div>
         </div>
         <div className={styles.header_actions_container}>
-          <button 
+          <button
             className={styles.new_folder_button}
             onClick={() => setShowNewFolderModal(true)}
           >
             <span className={styles.new_folder_icon}>+</span>
             New Folder
           </button>
-          <button 
+          <button
             className={styles.recent_button}
             onClick={onToggleSortOrder}
-            title={sortOrder === "newest" ? "Showing newest first (click to show oldest first)" : "Showing oldest first (click to show newest first)"}
+            title={
+              sortOrder === "newest"
+                ? "Showing newest first (click to show oldest first)"
+                : "Showing oldest first (click to show newest first)"
+            }
           >
             <Clock size={16} />
             {sortOrder === "newest" ? "Newest First" : "Oldest First"}
@@ -385,6 +395,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           </button>
         </div>
       </div>
+
 
       {/* File List View Section */}
       {isLoading || isMovingFile || isRenaming ? (
@@ -400,9 +411,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
               onDragEnter={(e) => handleDragEnter(e, currentPath.substring(0, currentPath.lastIndexOf('/')))}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, currentPath.substring(0, currentPath.lastIndexOf('/')))}
-              className={`${styles.file_item_row} ${styles.drop_zone} ${
-                dropTarget === currentPath.substring(0, currentPath.lastIndexOf('/')) ? styles.drop_target : ''
-              }`}
+              className={`${styles.file_item_row} ${styles.drop_zone} ${dropTarget === currentPath.substring(0, currentPath.lastIndexOf('/')) ? styles.drop_target : ''
+                }`}
               style={{
                 backgroundColor: dropTarget === currentPath.substring(0, currentPath.lastIndexOf('/')) ? '#e0f2fe' : '#f8fafc',
                 border: '2px dashed #94a3b8',
@@ -437,9 +447,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                 e.stopPropagation();
                 handleDrop(e, folder.full_path);
               }}
-              className={`${styles.file_item_row} ${styles.clickable} ${
-                dropTarget === folder.full_path ? styles.drop_target : ''
-              }`}
+              className={`${styles.file_item_row} ${styles.clickable} ${dropTarget === folder.full_path ? styles.drop_target : ''
+                }`}
               style={{
                 backgroundColor: dropTarget === folder.full_path ? '#dcfce7' : undefined,
                 transition: 'background-color 0.2s ease'
@@ -470,10 +479,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                         styles={{ fieldGroup: { height: 32, minWidth: 220 } }}
                       />
                       <div className={styles.inline_edit_actions}>
-                        <IconButton title="Save" ariaLabel="Save" onClick={(e)=>{e.stopPropagation(); saveRename();}} disabled={isRenaming}>
+                        <IconButton title="Save" ariaLabel="Save" onClick={(e) => { e.stopPropagation(); saveRename(); }} disabled={isRenaming}>
                           <Check size={16} />
                         </IconButton>
-                        <IconButton title="Cancel" ariaLabel="Cancel" onClick={(e)=>{e.stopPropagation(); cancelEdit();}} disabled={isRenaming}>
+                        <IconButton title="Cancel" ariaLabel="Cancel" onClick={(e) => { e.stopPropagation(); cancelEdit(); }} disabled={isRenaming}>
                           <X size={16} />
                         </IconButton>
                       </div>
@@ -491,8 +500,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
 
               {/* Right Section - Actions */}
               <div className={styles.file_actions_container}>
-                <IconButton 
-                  title="Edit" 
+                <IconButton
+                  title="Edit"
                   ariaLabel="Edit"
                   onClick={(e) => { e.stopPropagation(); startEditFolder(folder); }}
                   styles={{
@@ -505,8 +514,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                 >
                   <Edit2 size={16} color="#6b7280" />
                 </IconButton>
-                <IconButton 
-                  title="Delete" 
+                <IconButton
+                  title="Delete"
                   ariaLabel="Delete"
                   onClick={(e) => handleDeleteFolderClick(e, folder)}
                   styles={{
@@ -540,7 +549,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
               {/* Left Section - Icon and Name */}
               <div className={styles.file_item_left}>
                 <div className={`${styles.file_icon_container} ${styles.file}`}>
-                  <FileText size={24} color="#f97316" />
+                  <FileText size={23} color="#f97316" />
                 </div>
                 <div
                   className={styles.file_details}
@@ -579,8 +588,16 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                       <Text className={styles.file_name_text}>
                         {getDisplayName(file.name)}
                       </Text>
+                      <div>
+                        <Text className={styles.file_description}>
+                          <span className={styles.file_user_pill}>{file.name.slice(file.name.lastIndexOf('.') + 1).toLocaleUpperCase()}</span>
+                          <span className={styles.file_size_pill}>
+                            {formatFileSize(file.size)}
+                          </span>
+                        </Text>
+                      </div>
                       <Text className={styles.file_metadata}>
-                        Uploaded on {formatUploadDate(file.created_on)}
+                        {file.created_on.slice(0, file.created_on.lastIndexOf("T")).replaceAll("-", "/")}
                       </Text>
                     </>
                   )}
@@ -588,14 +605,14 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
               </div>
 
               {/* Middle Section - File Details */}
-              <div className={styles.file_badges_container}>
+              {/* <div className={styles.file_badges_container}>
                 <span className={styles.file_extension_badge}>
                   {getFileExtension(file.name)}
                 </span>
                 <span className={styles.file_size_badge}>
                   {formatFileSize(file.size)}
                 </span>
-              </div>
+              </div> */}
 
               {/* Right Section - Actions */}
               <div className={styles.file_actions_container}>
@@ -607,8 +624,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                 >
                   <Edit2 size={16} color="#6b7280" />
                 </IconButton>
-                <IconButton 
-                  title="Download" 
+                <IconButton
+                  title="Download"
                   ariaLabel="Download"
                   onClick={() => handleDownload(file)}
                   styles={{
@@ -621,8 +638,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                 >
                   <Download size={16} color="#6b7280" />
                 </IconButton>
-                <IconButton 
-                  title="Delete" 
+                <IconButton
+                  title="Delete"
                   ariaLabel="Delete"
                   onClick={() => deleteFile(file)}
                   styles={{
@@ -643,7 +660,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           {(() => {
             const visibleFiles = filteredFiles.filter(file => !file.name.endsWith('/init.txt'));
             const isEmpty = filteredFolders.length === 0 && visibleFiles.length === 0;
-            
+
             return isEmpty ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
                 <FileText size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />

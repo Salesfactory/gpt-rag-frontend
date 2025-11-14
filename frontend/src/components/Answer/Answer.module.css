@@ -273,3 +273,40 @@ sup {
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
 }
+
+/* Thinking process display styles */
+.thinkingContainer {
+    margin: 1em 0;
+    padding: 1em;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.thinkingSummary {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: #495057;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+}
+
+.thinkingSummary::-webkit-details-marker {
+    display: none;
+}
+
+.thinkingContent {
+    margin-top: 0.75em;
+    padding: 0.75em;
+    background: white;
+    border-left: 3px solid #16a34a;
+    border-radius: 4px;
+    color: #495057;
+    font-size: 0.9em;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}

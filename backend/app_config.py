@@ -4,6 +4,7 @@ import os
 # Flask configuration
 SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "default-secret-key-change-in-production")
 SESSION_TYPE = "filesystem"
+PERMANENT_SESSION_LIFETIME = 3600  # 1 hour session timeout
 
 # Azure AD B2C details
 B2C_TENANT_NAME = os.getenv("AAD_TENANT_NAME")  # e.g. "contoso"
@@ -11,9 +12,7 @@ SIGNUPSIGNIN_USER_FLOW = os.getenv("AAD_POLICY_NAME")  # e.g. "B2C_1_signupsigni
 EDITPROFILE_USER_FLOW = os.getenv(
     "EDITPROFILE_USER_FLOW"
 )  # e.g. "B2C_1_profileediting1"
-ADD_CHANGE_PASSWORD = os.getenv(
-    "ADD_CHANGE_PASSWORD"
-)  # e.g. "B2C_1_passwordreset1"
+ADD_CHANGE_PASSWORD = os.getenv("ADD_CHANGE_PASSWORD")  # e.g. "B2C_1_passwordreset1"
 
 # Application (client) registration details
 CLIENT_ID = os.getenv("AAD_CLIENT_ID")

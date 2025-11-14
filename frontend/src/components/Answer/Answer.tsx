@@ -45,6 +45,7 @@ interface Props {
     isSelected?: boolean;
     isGenerating?: boolean;
     progressState?: ProgressState | null;
+    thinkingContent?: string;
     loadingCitationPath?: string | null;
     onCitationClicked: (filePath: string, filename: string) => void;
     onThoughtProcessClicked: () => void;
@@ -74,6 +75,7 @@ export const Answer = ({
     isGenerating,
     isSelected,
     progressState,
+    thinkingContent,
     loadingCitationPath,
     onCitationClicked,
     onThoughtProcessClicked,
@@ -238,6 +240,19 @@ export const Answer = ({
                         )}
                         <span className={styles.loadingdots} />
                     </div>
+                </Stack.Item>
+            )}
+
+            {thinkingContent && thinkingContent.trim().length > 0 && (
+                <Stack.Item>
+                    <details className={styles.thinkingContainer} open={isGenerating}>
+                        <summary className={styles.thinkingSummary}>
+                            Freddaid's Thinking Process
+                        </summary>
+                        <div className={styles.thinkingContent}>
+                            {thinkingContent}
+                        </div>
+                    </details>
                 </Stack.Item>
             )}
 

@@ -180,6 +180,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
                         },
                         {
+                            title: "Consumer Pulse",
+                            href: "/upload-consumer-pulse",
+                            roles: ["platformAdmin"],
+                            tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
+                        },
+                        {
                             title: "Request Studies",
                             href: "/request-studies",
                             roles: ["admin", "platformAdmin"],

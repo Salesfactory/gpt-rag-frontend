@@ -12,6 +12,7 @@ interface Props {
   clearOnSend?: boolean;
   extraButtonNewChat?: React.ReactNode;
   extraButtonAttach?: React.ReactNode;
+  extraButtonDataAnalyst?: React.ReactNode;
 }
 
 export const QuestionInput = ({
@@ -20,7 +21,8 @@ export const QuestionInput = ({
   placeholder,
   clearOnSend,
   extraButtonNewChat,
-  extraButtonAttach
+  extraButtonAttach,
+  extraButtonDataAnalyst
 }: Props) => {
   const { organization } = useAppContext();
   const [question, setQuestion] = useState<string>("");
@@ -65,7 +67,8 @@ export const QuestionInput = ({
     <Stack horizontal className={styles.questionInputContainer}>
       <div className={styles.questionInputButtonsContainer}>
         {extraButtonNewChat}
-        {extraButtonAttach} {/* ← lo renderiza el padre (Chat) */}
+        {extraButtonDataAnalyst}
+        {extraButtonAttach}
       </div>
       <TextField
         className={styles.questionInputTextArea}

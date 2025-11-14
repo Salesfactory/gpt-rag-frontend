@@ -1,6 +1,6 @@
 // src/ProtectedRoute.tsx
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { useAppContext } from "../providers/AppProviders";
 import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Optional: Create a loading spinner component
@@ -34,8 +34,31 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTiers }) => {
-    const { user, isAuthenticated, organization, subscriptionTiers, isLoading, isOrganizationLoading, isSubscriptionTiersLoading, isChatHistoryLoading } =
+    const { user, isAuthenticated, organization, subscriptionTiers, isLoading, isOrganizationLoading, isSubscriptionTiersLoading, isChatHistoryLoading, validateSession } =
         useAppContext();
+    const [isValidatingSession, setIsValidatingSession] = useState(false);
+
+    // Validate session on route mount for extra security
+    useEffect(() => {
+        if (isAuthenticated && !isLoading) {
+            setIsValidatingSession(true);
+            validateSession()
+                .then(isValid => {
+                    if (!isValid) {
+                        debugLog("ProtectedRoute: Session validation failed on mount");
+                        // Session expired modal will be shown by the session manager
+                    } else {
+                        debugLog("ProtectedRoute: Session is valid");
+                    }
+                })
+                .catch(error => {
+                    debugLog("ProtectedRoute: Session validation error:", error);
+                })
+                .finally(() => {
+                    setIsValidatingSession(false);
+                });
+        }
+    }, [isAuthenticated, isLoading, validateSession]);
 
     // Debug: Log context values
     debugLog("ProtectedRoute Rendered with props:", { allowedRoles, allowedTiers });
@@ -88,10 +111,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
         return isValid;
     };
 
-    // Show a loading spinner while loading data
-    if (isLoading || isOrganizationLoading || isSubscriptionTiersLoading || isChatHistoryLoading) {
+    // Show a loading spinner while loading data or validating session
+    if (isLoading || isOrganizationLoading || isSubscriptionTiersLoading || isChatHistoryLoading || isValidatingSession) {
         debugLog(
-            `ProtectedRoute: Loading states - isLoading: ${isLoading}, isOrganizationLoading: ${isOrganizationLoading}, isSubscriptionTiersLoading: ${isSubscriptionTiersLoading}, isChatHistoryLoading: ${isChatHistoryLoading}. Rendering LoadingSpinner.`
+            `ProtectedRoute: Loading states - isLoading: ${isLoading}, isOrganizationLoading: ${isOrganizationLoading}, isSubscriptionTiersLoading: ${isSubscriptionTiersLoading}, isChatHistoryLoading: ${isChatHistoryLoading}, isValidatingSession: ${isValidatingSession}. Rendering LoadingSpinner.`
         );
         return <LoadingSpinner />;
     }
