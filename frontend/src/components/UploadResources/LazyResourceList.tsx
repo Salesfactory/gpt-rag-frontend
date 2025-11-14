@@ -353,6 +353,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           </Text>
           {currentPath && (
             <button
+              type="button"
               onClick={navigateBack}
               className={styles.back_button}
             >
@@ -361,9 +362,9 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           )}
           {currentPath && (
             <button
+              type="button"
               onClick={navigateToRoot}
               className={styles.back_button}
-              style={{ marginLeft: '8px' }}
             >
               Go to Root
             </button>
@@ -380,7 +381,11 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           <button
             className={styles.recent_button}
             onClick={onToggleSortOrder}
-            title={sortOrder === "newest" ? "Showing newest first (click to show oldest first)" : "Showing oldest first (click to show newest first)"}
+            title={
+              sortOrder === "newest"
+                ? "Showing newest first (click to show oldest first)"
+                : "Showing oldest first (click to show newest first)"
+            }
           >
             <Clock size={16} />
             {sortOrder === "newest" ? "Newest First" : "Oldest First"}
@@ -388,6 +393,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           </button>
         </div>
       </div>
+
 
       {/* File List View Section */}
       {isLoading || isMovingFile || isRenaming ? (

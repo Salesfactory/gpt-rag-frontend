@@ -807,6 +807,10 @@
     font-size: 13px;
 }
 
+.back_button + .back_button {
+    margin-left: 8px;
+}
+
 .header_actions_container {
     display: flex;
     gap: 12px;
@@ -1366,6 +1370,56 @@
     padding: 12px 14px;
   }
 
+  .all_files_header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .folder_header_left {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 8px;
+    row-gap: 8px;
+    align-items: center;
+  }
+
+  .header_actions_container {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .category_filter_section {
+    padding: 16px 0;
+    margin-bottom: 16px;
+  }
+
+  .category_buttons_container {
+    gap: 8px;
+  }
+
+  .category_button {
+    padding: 10px 14px;   
+    min-width: 100px;
+    gap: 6px;
+  }
+
+  .category_button_icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .category_button_text {
+    font-size: 12px;      
+  }
+
+  .back_button {
+    margin-left: 0;
+  }
+
   .file_item_left {
     flex: 1 1 100%;
     min-width: 0;
@@ -1396,4 +1450,29 @@
 
 @media (max-width: 400px) {
   .file_badges_container { display: none; }
+  .header_actions_container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .new_folder_button,
+  .recent_button {
+    width: 100%;
+    justify-content: center;
+  }
+
+   .category_button {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+    padding: 8px 10px;
+  }
+
+  .category_button_icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .category_button_text {
+    font-size: 11px;
+  }
 }
