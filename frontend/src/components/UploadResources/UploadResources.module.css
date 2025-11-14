@@ -841,17 +841,13 @@
 }
 
 .back_button {
-    margin-left: 12px;
+    margin-left: 0px;
     padding: 6px 12px;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
     background-color: #ffffff;
     cursor: pointer;
     font-size: 13px;
-}
-
-.back_button + .back_button {
-    margin-left: 8px;
 }
 
 .header_actions_container {
@@ -1436,11 +1432,14 @@
     white-space: nowrap;
 }
 
-@media (max-width: 400px) {
-    .file_badges_container {
-        display: none;
-    }
-}
+@media (max-width: 640px) {
+  .file_item_row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 8px 12px;
+    padding: 12px 14px;
+  }
 
   .all_files_header {
     flex-direction: column;
@@ -1451,10 +1450,22 @@
   .folder_header_left {
     width: 100%;
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: auto 1fr;
     column-gap: 8px;
     row-gap: 8px;
     align-items: center;
+  }
+
+  .navigation_buttons {
+    grid-column: 1 / -1;      
+    margin-left: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .back_button {
+    margin-left: 0;
   }
 
   .header_actions_container {
@@ -1474,7 +1485,7 @@
   }
 
   .category_button {
-    padding: 10px 14px;   
+    padding: 10px 14px;
     min-width: 100px;
     gap: 6px;
   }
@@ -1485,11 +1496,7 @@
   }
 
   .category_button_text {
-    font-size: 12px;      
-  }
-
-  .back_button {
-    margin-left: 0;
+    font-size: 12px;
   }
 
   .file_item_left {
@@ -1497,136 +1504,42 @@
     min-width: 0;
   }
 
-@media only screen and (max-width: 600px) {
+  .file_badges_container {
+    order: 2;
+    flex: 0 1 auto;
+    margin: 0;
+    gap: 6px;
+  }
 
-    .file_item_row {
-        flex-wrap: wrap;
-        align-items: flex-start;
-        justify-content: flex-start;
-        gap: 8px 12px;
-        padding: 12px 14px;
-    }
+  .file_actions_container {
+    order: 3;
+    flex: 0 0 auto;
+    margin-left: auto;
+    gap: 6px;
+  }
 
-    .file_item_left {
-        flex: 1 1 100%;
-        min-width: 0;
-    }
+  .file_actions_container button {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+  }
 
+  .file_icon_container {
+    min-width: 40px;
+    min-height: 40px;
+  }
 
-    .file_badges_container {
-        order: 2;
-        flex: 0 1 auto;
-        margin: 0;
-        gap: 6px;
-    }
-
-    .file_actions_container {
-        order: 3;
-        flex: 0 0 auto;
-        margin-left: auto;
-        gap: 6px;
-    }
-
-
-    .file_actions_container button {
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-    }
-
-    .file_icon_container {
-        min-width: 40px;
-        min-height: 40px;
-    }
-
-    .category_buttons_container {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
-    .category_button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 16px 24px;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        background-color: #ffffff;
-        cursor: pointer;
-        transition: all 0.2s;
-        white-space: nowrap;
-        min-width: 130px;
-    }
-
-    .new_folder_button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 32px;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        background-color: #16a34a;
-        margin-bottom: 1rem;
-        color: #ffffff;
-    }
-
-    .new_folder_icon {
-        font-size: 18px;
-    }
-
-    .header_actions_container {
-        display: inline;
-    }
-
-    .responsiveSearch {
-        width: 80%;
-        margin-top: 10px;
-    }
-
-    .headerContainer {
-        display: inline;
-    }
-
-    .file_list_section {
-        display: flex;
-        margin-top: 40px;
-        gap: 15px;
-        border-top: 1px solid #eaeaea;
-        border-radius: 8px 8px 0 0;
-        padding: 20px;
-        background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .file_list_header {
-        height: 40px;
-        display: inline-flex;
-        align-items: center;
-        margin-top: 20px;
-    }
-
-    .folder_header_left {
-        display: flex;
-    }
-
-    .back_button {
-        margin-top: 1rem;
-        margin-right: 1rem;
-        padding: 6px 10px;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        background-color: #ffffff;
-        cursor: pointer;
-        font-size: 13px;
-    }
+  .responsiveSearch {
+    width: 80%;
+    margin-top: 10px;
+  }
 }
 
 @media (max-width: 400px) {
-  .file_badges_container { display: none; }
+  .file_badges_container { 
+    display: none; 
+  }
+
   .header_actions_container {
     flex-direction: column;
     align-items: stretch;
@@ -1638,7 +1551,7 @@
     justify-content: center;
   }
 
-   .category_button {
+  .category_button {
     flex: 1 1 calc(50% - 6px);
     min-width: 0;
     padding: 8px 10px;
