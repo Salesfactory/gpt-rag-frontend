@@ -351,7 +351,8 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
           <Text className={styles.folder_title}>
             {getCurrentFolderName()}
           </Text>
-          {currentPath && (
+          <div className={styles.navigation_buttons}>
+            {currentPath && (
             <button
               type="button"
               onClick={navigateBack}
@@ -369,6 +370,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
               Go to Root
             </button>
           )}
+          </div>
         </div>
         <div className={styles.header_actions_container}>
           <button
