@@ -139,7 +139,7 @@
     align-items: center;
     gap: 0.3rem;
     max-width: 600px;
-    position: fixed;
+    position: static;
     margin-bottom: 125px;
 }
 
@@ -289,8 +289,9 @@
 }
 
 @media (max-width: 650px) {
-    .flexDescription {
-        max-width: 70%;
+        .flexDescription {
+        max-width: 90%;
+        margin: 1.5rem 1rem 130px;
     }
     
     .chatInputContainer {
