@@ -3,6 +3,9 @@ import tempfile
 import logging
 import time
 from flask import Blueprint, current_app, request
+from azure.search.documents import SearchClient
+from azure.core.credentials import AzureKeyCredential
+from azure.core.exceptions import HttpResponseError
 from data_summary.summarize import create_description
 from utils import create_success_response, create_error_response
 
@@ -64,6 +67,74 @@ def validate_file_signature(file_path, mimetype):
             return False
 
     return False
+
+
+def delete_from_azure_search(filepath: str) -> dict:
+    """
+    Delete documents from Azure Search Service by filepath using Azure Search SDK.
+    
+    Args:
+        filepath: The filepath value to match in the search index
+        
+    Returns:
+        dict: Result dictionary with 'success' boolean and optional 'error' message
+    """
+    try:
+        # Get Azure Search configuration from environment variables
+        search_service_name = os.getenv("AZURE_SEARCH_SERVICE_NAME")
+        search_admin_key = os.getenv("AZURE_SEARCH_ADMIN_KEY")
+        search_index_name = os.getenv("AZURE_SEARCH_INDEX_NAME")
+        
+        # If Azure Search is not configured, skip deletion
+        if not all([search_service_name, search_admin_key]):
+            logger.warning("Azure Search Service not fully configured. Skipping search index deletion.")
+            return {"success": True, "skipped": True}
+        
+        # If index name is not provided, log warning and skip
+        if not search_index_name:
+            logger.warning("AZURE_SEARCH_INDEX_NAME not set. Skipping search index deletion.")
+            return {"success": True, "skipped": True}
+        
+        # Construct the Azure Search endpoint
+        search_endpoint = f"https://{search_service_name}.search.windows.net"
+        
+        # Create credential and search client
+        credential = AzureKeyCredential(search_admin_key)
+        search_client = SearchClient(
+            endpoint=search_endpoint,
+            index_name=search_index_name,
+            credential=credential
+        )
+        
+        logger.info(f"Attempting to delete document from Azure Search index '{search_index_name}' with filepath: {filepath}")
+        
+        # Delete document by filepath
+        # The document must include the key field (filepath in this case)
+        result = search_client.delete_documents(documents=[{"filepath": filepath}])
+        
+        # Check the result
+        # The result is a list of IndexingResult objects
+        if result and len(result) > 0:
+            delete_result = result[0]
+            if delete_result.succeeded:
+                logger.info(f"Successfully deleted document from Azure Search: {filepath}")
+                return {"success": True}
+            else:
+                error_msg = f"Failed to delete from Azure Search. Status code: {delete_result.status_code}, Error: {delete_result.error_message}"
+                logger.error(error_msg)
+                return {"success": False, "error": error_msg}
+        else:
+            logger.warning(f"No result returned from Azure Search deletion for: {filepath}")
+            return {"success": True, "partial": True}
+            
+    except HttpResponseError as e:
+        error_msg = f"Azure Search HTTP error: {str(e)}"
+        logger.error(error_msg)
+        return {"success": False, "error": error_msg}
+    except Exception as e:
+        error_msg = f"Unexpected error deleting from Azure Search: {str(e)}"
+        logger.exception(error_msg)
+        return {"success": False, "error": error_msg}
 
 
 
@@ -154,6 +225,182 @@ def upload_source_document():
 
 
 
+@bp.route("/upload-shared-document", methods=["POST"])
+@auth_required
+def upload_shared_document():
+    """
+    Upload a file to all organizations' shared folders.
+    This endpoint discovers all existing organizations and uploads the file to each one.
+    
+    Expected form data:
+    - file: The file to upload
+    
+    Returns:
+        JSON response with upload results for all organizations
+    """
+    llm = current_app.config["llm"]
+    temp_file_path = None
+    
+    try:
+        file = request.files.get("file")
+        if not file:
+            logger.error("No file part in the request")
+            return create_error_response("No file part in the request", 400)
+
+        if file.filename == "":
+            logger.error("No file selected")
+            return create_error_response("No file selected", 400)
+
+        # Extract extension & mimetype
+        _, ext = os.path.splitext(file.filename.lower())
+        file_mime = file.mimetype
+
+        expected_mime = ALLOWED_MIME_TYPES.get(ext)
+        if not expected_mime or file_mime != expected_mime:
+            logger.error(f"Invalid file type: {file.filename} ({file_mime})")
+            return create_error_response("Invalid file type", 422)
+
+        # Save to temp
+        temp_file_path = os.path.join(tempfile.gettempdir(), file.filename)
+        file.save(temp_file_path)
+
+        # Validate file signature
+        if not validate_file_signature(temp_file_path, file_mime):
+            logger.error(f"File signature mismatch for {file.filename} ({file_mime})")
+            return create_error_response("File content does not match declared type", 422)
+
+        logger.info(f"Uploading shared file '{file.filename}' to all organizations")
+
+        # Get blob storage manager
+        blob_storage_manager = current_app.config["blob_storage_manager"]
+        container_client = blob_storage_manager.blob_service_client.get_container_client(
+            os.getenv("BLOB_CONTAINER_NAME", BLOB_CONTAINER_NAME)
+        )
+
+        # List all organization folders
+        # We'll look for blobs that match the pattern: organization_files/{org_id}/
+        organization_ids = set()
+        
+        try:
+            # List all blobs with the organization_files prefix
+            blobs = container_client.list_blobs(name_starts_with=f"{ORG_FILES_PREFIX}/")
+            
+            for blob in blobs:
+                # Extract organization ID from blob path
+                # Path format: organization_files/{org_id}/...
+                parts = blob.name.split("/")
+                if len(parts) >= 2 and parts[0] == ORG_FILES_PREFIX:
+                    org_id = parts[1]
+                    organization_ids.add(org_id)
+            
+            logger.info(f"Found {len(organization_ids)} organizations: {organization_ids}")
+            
+        except Exception as e:
+            logger.error(f"Error listing organization folders: {e}")
+            return create_error_response("Failed to discover organizations", 500)
+
+        if not organization_ids:
+            logger.warning("No organizations found in blob storage")
+            return create_error_response("No organizations found to upload to", 404)
+
+        # Prepare metadata (generate description if applicable)
+        metadata = {}
+        
+        if ext in DESCRIPTION_VALID_FILE_EXTENSIONS:
+            logger.info(f"Generating AI description for shared file '{file.filename}'")
+            try:
+                description = create_description(temp_file_path, llm=llm)
+                logger.info(f"Generated Description: {description}")
+                metadata["description"] = description["file_description"]
+                metadata["description_source"] = description["source"]
+            except Exception as desc_error:
+                logger.warning(f"Failed to generate description: {desc_error}")
+                # Continue without description
+
+        # Upload to each organization's shared folder
+        upload_results = {
+            "successful": [],
+            "failed": []
+        }
+
+        for org_id in organization_ids:
+            try:
+                # Build the blob path for this organization's shared folder
+                blob_folder = f"{ORG_FILES_PREFIX}/{org_id}/shared"
+                
+                # Add organization_id to metadata for this specific upload
+                org_metadata = metadata.copy()
+                org_metadata["organization_id"] = org_id
+                org_metadata["shared_file"] = "true"
+                
+                # Upload to blob
+                result = blob_storage_manager.upload_to_blob(
+                    file_path=temp_file_path,
+                    blob_folder=blob_folder,
+                    metadata=org_metadata,
+                    container=os.getenv("BLOB_CONTAINER_NAME", BLOB_CONTAINER_NAME),
+                )
+
+                if result["status"] == "success":
+                    logger.info(f"Successfully uploaded to organization '{org_id}' shared folder")
+                    upload_results["successful"].append({
+                        "organization_id": org_id,
+                        "blob_url": result["blob_url"]
+                    })
+                else:
+                    error_msg = result.get('error', 'Unknown error')
+                    logger.error(f"Failed to upload to organization '{org_id}': {error_msg}")
+                    upload_results["failed"].append({
+                        "organization_id": org_id,
+                        "error": error_msg
+                    })
+                    
+            except Exception as org_error:
+                logger.error(f"Error uploading to organization '{org_id}': {org_error}")
+                upload_results["failed"].append({
+                    "organization_id": org_id,
+                    "error": str(org_error)
+                })
+
+        # Prepare response
+        total_orgs = len(organization_ids)
+        successful_count = len(upload_results["successful"])
+        failed_count = len(upload_results["failed"])
+
+        logger.info(
+            f"Shared file upload complete: {successful_count}/{total_orgs} successful, "
+            f"{failed_count}/{total_orgs} failed"
+        )
+
+        if successful_count == 0:
+            return create_error_response(
+                "Failed to upload file to any organization",
+                500
+            )
+        
+        response_data = {
+            "message": f"File uploaded to {successful_count} out of {total_orgs} organizations",
+            "filename": file.filename,
+            "total_organizations": total_orgs,
+            "successful_uploads": successful_count,
+            "failed_uploads": failed_count,
+            "results": upload_results
+        }
+
+        # Return 207 Multi-Status if there were partial failures, 200 if all successful
+        status_code = 200 if failed_count == 0 else 207
+        
+        return create_success_response(response_data, status_code)
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in upload_shared_document: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
+
 @bp.route("/delete-source-document", methods=["DELETE"])
 @auth_required
 def delete_source_document():
@@ -183,8 +430,24 @@ def delete_source_document():
 
         # Delete the blob
         blob_client.delete_blob()
+        
+        # Delete from Azure Search Service
+        search_result = delete_from_azure_search(blob_name)
+        
+        # Prepare response message
+        response_data = {"message": "File deleted successfully"}
+        
+        # Add search deletion status to response
+        if search_result.get("skipped"):
+            response_data["search_index_note"] = "Azure Search deletion skipped (not configured)"
+        elif not search_result.get("success"):
+            # Log the error but don't fail the overall operation since blob was deleted
+            logger.warning(f"File deleted from blob storage but failed to delete from Azure Search: {search_result.get('error')}")
+            response_data["search_index_warning"] = "File deleted but search index deletion failed"
+        else:
+            response_data["search_index_deleted"] = True
 
-        return create_success_response({"message": "File deleted successfully"}, 200)
+        return create_success_response(response_data, 200)
     except Exception as e:
         logger.exception(f"Unexpected error in delete_source_from_blob: {e}")
         return create_error_response("Internal Server Error", 500)
@@ -414,6 +677,127 @@ def move_file():
         
     except Exception as e:
         logger.exception(f"Unexpected error in move_file: {e}")
+        return create_error_response("Internal Server Error", 500)
+
+@bp.route("/rename-file", methods=["POST"])
+@auth_required
+def rename_file():
+    """
+    Renames a single file by copying it to the same folder with a new filename and deleting the original.
+    Expected JSON:
+    {
+        "organization_id": "org-123",
+        "source_blob_name": "organization_files/org-123/path/file.xlsx",
+        "new_file_name": "file_renamed.xlsx"   # name + extension, no slashes
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return create_error_response("No JSON data provided", 400)
+
+        organization_id = (data.get("organization_id") or "").strip()
+        source_blob_name = (data.get("source_blob_name") or "").strip()
+        new_file_name = (data.get("new_file_name") or "").strip()
+
+        if not organization_id:
+            return create_error_response("Organization ID is required", 400)
+        if not source_blob_name:
+            return create_error_response("Source blob name is required", 400)
+        if not new_file_name:
+            return create_error_response("New file name is required", 400)
+
+        expected_org_prefix = f"organization_files/{organization_id}/"
+        if not source_blob_name.startswith(expected_org_prefix):
+            logger.warning(f"[rename-file] Org {organization_id} tried to rename foreign blob {source_blob_name}")
+            return create_error_response("Unauthorized: Source file does not belong to your organization", 403)
+
+        invalid_chars = '<>:"/\\|?*#^'
+        if any(ch in new_file_name for ch in invalid_chars):
+            return create_error_response(f"Invalid file name: contains one of ({invalid_chars})", 422)
+        if "/" in new_file_name or "\\" in new_file_name:
+            return create_error_response("New file name must not contain path separators", 422)
+        if len(new_file_name) > 255:
+            return create_error_response("File name is too long (max 255 characters)", 422)
+
+        last_slash = source_blob_name.rfind("/")
+        if last_slash < 0:
+            return create_error_response("Invalid source path", 400)
+        source_dir = source_blob_name[:last_slash]
+        dest_blob_name = f"{source_dir}/{new_file_name}"
+
+        if dest_blob_name == source_blob_name:
+            return create_error_response("New name is the same as current name", 400)
+
+        blob_storage_manager = current_app.config["blob_storage_manager"]
+        container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
+
+        src = container_client.get_blob_client(source_blob_name)
+        if not src.exists():
+            return create_error_response("Source file not found", 404)
+
+        dst = container_client.get_blob_client(dest_blob_name)
+        if dst.exists():
+            return create_error_response("A file with this name already exists in this folder", 409)
+
+        source_url = src.url
+        copy = dst.start_copy_from_url(source_url)
+
+        max_wait_time = 60
+        wait_time = 0.0
+        interval = 0.5
+        while wait_time < max_wait_time:
+            props = dst.get_blob_properties()
+            status = props.copy.status
+            if status == "success":
+                break
+            if status == "failed":
+                return create_error_response("Failed to copy file", 500)
+            time.sleep(interval)
+            wait_time += interval
+        if wait_time >= max_wait_time:
+            return create_error_response("Copy operation timed out", 500)
+
+        try:
+            src_props = src.get_blob_properties()
+            dst.set_blob_metadata(metadata=(src_props.metadata or {}))
+        except Exception as meta_err:
+            logger.warning(f"[rename-file] Could not set metadata on {dest_blob_name}: {meta_err}")
+
+        try:
+            src.delete_blob()
+        except Exception as del_err:
+            logger.error(f"[rename-file] Copied but could not delete source {source_blob_name}: {del_err}")
+            return create_success_response({
+                "message": "File renamed (source not deleted)",
+                "destination_blob_name": dest_blob_name,
+                "warning": "Original file still exists"
+            }, 200)
+
+        # Delete old file reference from Azure Search Service
+        search_result = delete_from_azure_search(source_blob_name)
+        
+        # Prepare response
+        response_data = {
+            "message": "File renamed successfully",
+            "destination_blob_name": dest_blob_name,
+            "source_blob_name": source_blob_name
+        }
+        
+        # Add search deletion status to response
+        if search_result.get("skipped"):
+            response_data["search_index_note"] = "Azure Search deletion skipped (not configured)"
+        elif not search_result.get("success"):
+            logger.warning(f"File renamed but failed to delete old reference from Azure Search: {search_result.get('error')}")
+            response_data["search_index_warning"] = "File renamed but old search index entry may still exist"
+        else:
+            response_data["search_index_deleted"] = True
+
+        logger.info(f"[rename-file] {source_blob_name} -> {dest_blob_name} (org={organization_id})")
+        return create_success_response(response_data, 200)
+
+    except Exception as e:
+        logger.exception(f"Unexpected error in rename_file: {e}")
         return create_error_response("Internal Server Error", 500)
 
 @bp.route("/delete-folder", methods=["DELETE"])
