@@ -1728,6 +1728,22 @@ export async function getFileBlob(fileName: string, container: string = "documen
     }
 }
 
+export async function getBlobSasUrl(blobName: string, containerName: string = "documents"): Promise<string> {
+    const response = await fetchWrapper('/api/generate-sas-url', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ blob_name: blobName, container_name: containerName })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(`Failed to generate SAS URL: ${data.error}`);
+    }
+    return data.sas_url;
+}
+
+
 /**
  * @param filePath - The file path/URL for the Excel file
  * @returns Promise with download URL and metadata

@@ -11,9 +11,10 @@ interface FileViewerProps {
     file: string | Blob;
     fileType: string;
     page?: number;
+    blobName?: string; // For PPTX files using SAS URL approach
 }
 
-const FileViewer: React.FC<FileViewerProps> = ({ file, fileType, page }) => {
+const FileViewer: React.FC<FileViewerProps> = ({ file, fileType, page, blobName }) => {
     const { isResizingAnalysisPanel } = useAppContext();
 
     if (isResizingAnalysisPanel) {
@@ -30,7 +31,8 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileType, page }) => {
         case "cvs":
             return <TextViewer file={file as Blob} />;
         case "pptx":
-            return <PptxViewer file={file as Blob} />;
+        case "ppt":
+            return <PptxViewer file={file as Blob} blobName={blobName} />;
         case "jpg":
         case "png":
             return <IMGViewer file={file as Blob} />;
