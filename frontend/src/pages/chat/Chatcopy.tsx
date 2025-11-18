@@ -569,6 +569,26 @@ const Chat = () => {
                 return window.open(citation, "_blank");
             }
         }
+        // Handle PPTX/PPT files separately - use blob name for SAS URL generation
+        if (citation.endsWith(".ppt") || citation.endsWith(".pptx")) {
+            // Extract filepath if necessary
+            const modifiedFilename = extractAfterDomain(fileName);
+
+            if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+                setActiveAnalysisPanelTab(undefined);
+            } else {
+                setLoadingCitationPath(fileName);
+                // For PPTX files, store the blob name in a special format so PPTXViewer can fetch SAS URL
+                setFileType("pptx");
+                setActiveCitation(`pptx-blob://${modifiedFilename}`);
+                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+                setLoadingCitationPath(null);
+            }
+
+            setSelectedAnswer(index);
+            return;
+        }
+
         // Handle PDF/DOC/DOCX files - load in analysis panel for preview
         if (citation.endsWith(".pdf") || citation.endsWith(".doc") || citation.endsWith(".docx")) {
             // Extract filepath if necessary
