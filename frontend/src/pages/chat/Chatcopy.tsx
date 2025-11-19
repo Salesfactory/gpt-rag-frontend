@@ -791,10 +791,9 @@ const Chat = () => {
                                         )} */}
                                     </div>
                                 ) : (
-                                    <div className={styles.chatScrollWrapper} aria-label="Chat messages scroll wrapper">
+                                    <div className={styles.chatScrollWrapper} aria-label="Chat messages scroll wrapper" tabIndex={0}>
                                         <div
                                             className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
-                                            tabIndex={0}
                                         >
                                         {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                         {dataConversation.length > 0
