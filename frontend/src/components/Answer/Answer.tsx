@@ -61,7 +61,8 @@ function truncateString(str: string, maxLength: number): string {
     }
     const startLength = Math.ceil((maxLength - 3) / 2);
     const endLength = Math.floor((maxLength - 3) / 2);
-    return str.substring(0, startLength) + "..." + str.substring(str.length - endLength);
+    const filename = decodeURIComponent(str.split('/').pop() || str);
+    return filename?.substring(0, startLength) + "..." + filename?.substring(filename.length - endLength) || str;
 }
 
 const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: React.CSSProperties; children: React.ReactNode }> = ({
@@ -284,7 +285,7 @@ export const Answer = ({
                                         }}
                                         tabIndex={0}
                                         className={styles.citation}
-                                        title={path}
+                                        title={path.split('/').pop() || path.split('/')[-2] || path}
                                         onClick={() => {
                                             if (!isLoadingThis) onCitationClicked(fullUrl, path);
                                         }}
