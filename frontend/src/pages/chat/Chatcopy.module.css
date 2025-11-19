@@ -173,8 +173,6 @@
 }
 
 .chatMessageStream {
-    flex-grow: 1;
-    max-height: 1024px;
     width: 80%;
     max-width: 80%;
     padding-top: 0;
