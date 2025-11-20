@@ -245,7 +245,14 @@ def get_gallery_items_by_org(
     continuation_token: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    List the organization's blobs and apply server-side filtering/sorting with pagination.
+    List the organization's blobs and apply filtering/sorting with pagination.
+    
+    Simplified approach:
+    1. Fetch ALL blobs from Azure Storage
+    2. Apply filtering (uploader_id, query) in memory
+    3. Sort all items by date (newest/oldest)
+    4. Paginate the sorted results
+    
     - Filter by metadata.user_id == uploader_id (case-insensitive).
     - Search by query across name, content_type, and serialized metadata.
     - Sort by created_on (fallback: last_modified). order: 'newest' | 'oldest'.
@@ -253,112 +260,84 @@ def get_gallery_items_by_org(
     Returns a dictionary with items, total count, and pagination info.
     """
     try:
-        items: List[Dict[str, Any]] = []
+        blob_storage_manager = BlobStorageManager()
         prefix = f"organization_files/{organization_id}/generated_images"
-
-        # Use custom filtering pagination if uploader_id or query is provided
-        if uploader_id or query:
-            filter_criteria = {"user_id": uploader_id} if uploader_id else None
-
-            paginated_result = get_blobs_with_custom_filtering_paginated(
-                container_name="documents",
-                prefix=prefix,
-                include_metadata="yes",
-                requested_page=page,
-                requested_limit=limit,
-                filter_criteria=filter_criteria,
-                query=query
-            )
-        else:
-            # Use the original paginated method when no filtering is needed
-            blob_storage_manager = BlobStorageManager()
-            paginated_result = blob_storage_manager.list_blobs_in_container_for_upload_files_paginated(
-                container_name="documents",
-                prefix=prefix,
-                include_metadata="yes",
-                page_size=limit,
-                page=page,
-                continuation_token=continuation_token
-            )
-
-        raw_items = paginated_result.get("blobs", [])
-
-        for item in raw_items:
-            metadata = item.get("metadata") or {}
-            blob_name = item.get("name")
+        
+        # Step 1: Fetch ALL blobs from Azure Storage
+        logger.info(f"Fetching all blobs for organization {organization_id} with prefix {prefix}")
+        all_blobs = blob_storage_manager.list_blobs_in_container(
+            container_name="documents",
+            prefix=prefix,
+            include_metadata="yes",
+            max_results=None  # Get all blobs
+        )
+        
+        # Step 2: Convert to items format and apply filters
+        items: List[Dict[str, Any]] = []
+        
+        for blob in all_blobs:
+            metadata = blob.get("metadata") or {}
+            blob_name = blob.get("name")
             
-            # Generate SAS URL instead of using direct URL
+            # Filter by uploader_id if provided
+            if uploader_id:
+                user_id_in_metadata = metadata.get("user_id", "")
+                if str(user_id_in_metadata).casefold() != str(uploader_id).casefold():
+                    continue  # Skip this blob if user_id doesn't match
+            
+            # Filter by query if provided (search across name, content_type, metadata)
+            if query:
+                query_lower = query.lower()
+                name_match = query_lower in blob.get("name", "").lower()
+                content_type_match = query_lower in blob.get("content_type", "").lower()
+                metadata_match = False
+                if metadata:
+                    metadata_string = " ".join(f"{k}:{v}" for k, v in metadata.items()).lower()
+                    metadata_match = query_lower in metadata_string
+                
+                if not (name_match or content_type_match or metadata_match):
+                    continue  # Skip this blob if query doesn't match
+            
+            # Generate SAS URL for the blob
             sas_url = _generate_sas_url(blob_name, container_name="documents") if blob_name else None
             
             items.append({
                 "name": blob_name,
-                "size": item.get("size"),
-                "content_type": item.get("content_type"),
-                "created_on": item.get("last_modified"),
-                "last_modified": item.get("last_modified"),
+                "size": blob.get("size"),
+                "content_type": blob.get("content_type"),
+                "created_on": blob.get("last_modified"),
+                "last_modified": blob.get("last_modified"),
                 "metadata": metadata,
-                "url": sas_url or item.get("url")  # Fallback to original URL if SAS generation fails
+                "url": sas_url or blob.get("url")  # Fallback to original URL if SAS generation fails
             })
-
-        # Backend search is already handled in the custom function when query is provided,
-        # but we still need to apply it if we're using the original method
-        if query and not uploader_id:
-            query_list = ("" if query is None else str(query)).casefold()
-            filtered: List[Dict[str, Any]] = []
-            for item in items:
-                name_ok = query_list in item.get("name", "").casefold()
-                content_type_ok   = query_list in item.get("content_type", "").casefold()
-                metadata_string = " ".join(f"{k}:{v}" for k, v in item.get("metadata", {}).items()).casefold()
-                if name_ok or content_type_ok or (query_list in metadata_string):
-                    filtered.append(item)
-            items = filtered
-
-        # Stable sort by created_on, fallback last_modified; tie-breaker by name
+        
+        # Step 3: Sort ALL items by date BEFORE pagination
         def sort_key(it: Dict[str, Any]) -> datetime:
             created = _coerce_dt(it.get("created_on"))
             return created if created != _MIN else _coerce_dt(it.get("last_modified"))
-
+        
         reverse = (order or "newest").lower() == "newest"
         items.sort(key=lambda i: (sort_key(i), i.get("name", "")), reverse=reverse)
-
-        # Apply pagination - for the original method, we may need to slice the results
-        total_items_after_filtering = len(items)
-
-        if uploader_id or query:
-            # Custom pagination already handled the pagination
-            paginated_items = items
-            blob_pagination = {
-                "current_page": paginated_result.get("current_page", page),
-                "page_size": paginated_result.get("page_size", limit),
-                "total_count": paginated_result.get("total_count", total_items_after_filtering),
-                "has_more": paginated_result.get("has_more", False),
-                "next_continuation_token": paginated_result.get("next_continuation_token"),
-                "total_pages": paginated_result.get("total_pages", 1)
-            }
-        else:
-            # Original method - need to slice the results for pagination
-            start_index = (page - 1) * limit
-            end_index = start_index + limit
-            paginated_items = items
-
-            blob_pagination = {
-                "current_page": paginated_result.get("current_page", page),
-                "page_size": paginated_result.get("page_size", limit),
-                "total_count": paginated_result.get("total_count", total_items_after_filtering),
-                "has_more": paginated_result.get("has_more", False),
-                "next_continuation_token": paginated_result.get("next_continuation_token"),
-                "total_pages": paginated_result.get("total_pages", 1)
-            }
-
+        
+        # Step 4: Apply pagination to the sorted and filtered results
+        total_items = len(items)
+        total_pages = math.ceil(total_items / limit) if total_items > 0 else 0
+        
+        start_index = (page - 1) * limit
+        end_index = start_index + limit
+        paginated_items = items[start_index:end_index]
+        
+        logger.info(f"Retrieved {len(paginated_items)} items on page {page} of {total_pages} (total: {total_items})")
+        
         return {
             "items": paginated_items,
-            "total": total_items_after_filtering,
-            "page": blob_pagination["current_page"],
-            "limit": blob_pagination["page_size"],
-            "total_pages": blob_pagination["total_pages"],
-            "has_next": blob_pagination["has_more"],
+            "total": total_items,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
             "has_prev": page > 1,
-            "next_continuation_token": blob_pagination["next_continuation_token"]
+            "next_continuation_token": None  # Not using continuation tokens with in-memory pagination
         }
 
     except Exception as e:
