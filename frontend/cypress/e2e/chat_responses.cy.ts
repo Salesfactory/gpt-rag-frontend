@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-export {}; // Add this line at the top
+export { }; // Add this line at the top
 
 /* helper to stub a streaming response */
 function stubStream(alias: string, body: string) {
@@ -9,13 +9,45 @@ function stubStream(alias: string, body: string) {
         body
     }).as(alias);
 
-    cy.intercept('GET', '/api/get-storage-account', { statusCode: 200, body: {/* mock data */} });
-    cy.intercept('GET', '/api/get-blob', { statusCode: 200, body: {/* mock data */} });
-    cy.intercept('GET', '/api/settings', { statusCode: 200, body: {/* mock settings */} });
-    cy.intercept('GET', '/api/get-user-organizations', { statusCode: 200, body: {/* mock orgs */} });
-    cy.intercept('GET', '/api/chat-history', { statusCode: 200, body: {/* mock chat history */} });
-    cy.intercept('GET', '/api/getusers*', { statusCode: 200, body: {/* mock users */} });
-    
+    cy.intercept('GET', '/api/get-storage-account', {
+        statusCode: 200,
+        body: { storage_account: 'mockstorageaccount' }
+    });
+
+    cy.intercept('GET', '/api/get-blob*', {
+        statusCode: 200,
+        body: new Blob(['fake-document-data'], { type: 'application/pdf' })
+    }).as('getBlob');
+
+    cy.intercept('POST', '/api/get-blob', {
+        statusCode: 200,
+        body: new Blob(['fake-document-data'], { type: 'application/pdf' })
+    }).as('postBlob');
+
+    cy.intercept('GET', '/api/settings', {
+        statusCode: 200,
+        body: {
+            showGPT4VOptions: false,
+            showSemanticRankerOption: false,
+            showVectorOption: false
+        }
+    });
+
+    cy.intercept('GET', '/api/get-user-organizations', {
+        statusCode: 200,
+        body: []
+    });
+
+    cy.intercept('GET', '/api/chat-history', {
+        statusCode: 200,
+        body: []
+    });
+
+    cy.intercept('GET', '/api/getusers*', {
+        statusCode: 200,
+        body: { users: [] }
+    });
+
 }
 
 describe("Answer component rendering tests", () => {
@@ -85,7 +117,7 @@ Our key achievements include:
                 cy.contains("Market...is.pdf");
             });
 
-        cy.dataCy("chat-msg").find("sup").first().click(); // click citation
+        cy.dataCy("chat-msg").find(".supContainer").first().click(); // click citation link
     });
 
     /* ────────────────── Scenario 3 – basic text ────────────────────────────── */
@@ -164,11 +196,11 @@ function stubImageResponse(alias: string) {
     }).as('getBlobRequest');
 
     // Mock other required API calls
-    cy.intercept('GET', '/api/get-storage-account', { statusCode: 200, body: {/* mock data */} });
-    cy.intercept('GET', '/api/settings', { statusCode: 200, body: {/* mock settings */} });
-    cy.intercept('GET', '/api/get-user-organizations', { statusCode: 200, body: {/* mock orgs */} });
-    cy.intercept('GET', '/api/chat-history', { statusCode: 200, body: {/* mock chat history */} });
-    cy.intercept('GET', '/api/getusers*', { statusCode: 200, body: {/* mock users */} });
+    cy.intercept('GET', '/api/get-storage-account', { statusCode: 200, body: {/* mock data */ } });
+    cy.intercept('GET', '/api/settings', { statusCode: 200, body: {/* mock settings */ } });
+    cy.intercept('GET', '/api/get-user-organizations', { statusCode: 200, body: {/* mock orgs */ } });
+    cy.intercept('GET', '/api/chat-history', { statusCode: 200, body: {/* mock chat history */ } });
+    cy.intercept('GET', '/api/getusers*', { statusCode: 200, body: {/* mock users */ } });
 }
 
 describe("Answer component – image rendering", () => {
@@ -183,12 +215,12 @@ describe("Answer component – image rendering", () => {
         cy.dataCy("chat-msg") // our answer container
             .should("contain.text", "Here is a chart:")
             .should("contain.text", "Nice picture, right?");
-            
+
         // Check that URLPreviewComponent is rendered and attempts to load the image
         // The component should show an error state since we're using a mock URL
         cy.dataCy("chat-msg")
             .should("contain.text", "Failed to load preview");
-            
+
         // Verify the error icon is displayed
         cy.dataCy("chat-msg")
             .find("div")

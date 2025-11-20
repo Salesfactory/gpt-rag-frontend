@@ -89,6 +89,52 @@ export const Answer = ({
         to: { opacity: 1 }
     });
 
+    const markdownContainerRef = React.useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const container = markdownContainerRef.current;
+        if (!container) return;
+
+        const handleCitationClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const citationLink = target.closest('.supContainer');
+
+            if (citationLink) {
+                e.preventDefault();
+                const url = citationLink.getAttribute('data-citation-url');
+                const path = citationLink.getAttribute('data-citation-path');
+
+                if (url && path) {
+                    onCitationClicked(url, path);
+                }
+            }
+        };
+
+        const handleCitationKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const target = e.target as HTMLElement;
+                const citationLink = target.closest('.supContainer');
+
+                if (citationLink) {
+                    e.preventDefault();
+                    const url = citationLink.getAttribute('data-citation-url');
+                    const path = citationLink.getAttribute('data-citation-path');
+
+                    if (url && path) {
+                        onCitationClicked(url, path);
+                    }
+                }
+            }
+        };
+
+        container.addEventListener('click', handleCitationClick);
+        container.addEventListener('keydown', handleCitationKeyDown);
+        return () => {
+            container.removeEventListener('click', handleCitationClick);
+            container.removeEventListener('keydown', handleCitationKeyDown);
+        };
+    }, [onCitationClicked]);
+
     const { settings } = useAppContext();
     const fontFamily = settings.font_family?.trim() || "Arial";
     const fontSize = settings.font_size || 16;
@@ -258,9 +304,11 @@ export const Answer = ({
             )}
 
             <Stack.Item>
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
-                    {sanitizedAnswerHtml}
-                </ReactMarkdown>
+                <div ref={markdownContainerRef}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+                        {sanitizedAnswerHtml}
+                    </ReactMarkdown>
+                </div>
             </Stack.Item>
 
             {!!parsedAnswer.citations.length && showSources && (
@@ -328,15 +376,15 @@ export const Answer = ({
                                 aria-hidden="true"
                                 iconProps={{ iconName: "Feedback" }}
                                 styles={{
-                                    root: { 
-                                        background: 'transparent', 
+                                    root: {
+                                        background: 'transparent',
                                         border: 'none',
                                         minWidth: 'auto',
                                         width: 'auto',
                                         height: 'auto',
                                         padding: 0
                                     },
-                                    icon: { 
+                                    icon: {
                                         color: 'inherit',
                                         fontSize: '16px'
                                     }
