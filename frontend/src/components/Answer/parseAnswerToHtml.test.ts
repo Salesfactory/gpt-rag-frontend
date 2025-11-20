@@ -75,7 +75,11 @@ describe("parseAnswerToHtml()", () => {
         const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
 
         expect(citations).toEqual(["A.pdf", "B.pdf"]);
+        expect(answerHtml).toMatch(/data-citation-url="A.pdf"/);
+        expect(answerHtml).toMatch(/data-citation-path="\/docs\/A.pdf"/);
         expect(answerHtml).toMatch(/<sup>1<\/sup>/);
+        expect(answerHtml).toMatch(/data-citation-url="B.pdf"/);
+        expect(answerHtml).toMatch(/data-citation-path="\/docs\/B.pdf"/);
         expect(answerHtml).toMatch(/<sup>2<\/sup>/);
     });
 
@@ -98,15 +102,15 @@ describe("parseAnswerToHtml()", () => {
     });
 
     it('handles citations with parentheses in filename', () => {
-      mockIsResizing = false;
-      const md = 'File [[1]](megustalaarepa(1).xlsx) and [[2]](file(2).pdf)';
-      const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
+        mockIsResizing = false;
+        const md = 'File [[1]](megustalaarepa(1).xlsx) and [[2]](file(2).pdf)';
+        const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
 
-      expect(citations).toEqual(['megustalaarepa(1).xlsx', 'file(2).pdf']);
-      expect(answerHtml).toMatch(/<sup>1<\/sup>/);
-      expect(answerHtml).toMatch(/<sup>2<\/sup>/);
-      expect(answerHtml).not.toContain('[[1]]');
-      expect(answerHtml).not.toContain('[[2]]');
+        expect(citations).toEqual(['megustalaarepa(1).xlsx', 'file(2).pdf']);
+        expect(answerHtml).toMatch(/<sup>1<\/sup>/);
+        expect(answerHtml).toMatch(/<sup>2<\/sup>/);
+        expect(answerHtml).not.toContain('[[1]]');
+        expect(answerHtml).not.toContain('[[2]]');
     });
 });
 
