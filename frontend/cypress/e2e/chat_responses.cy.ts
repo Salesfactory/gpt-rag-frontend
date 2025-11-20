@@ -9,12 +9,44 @@ function stubStream(alias: string, body: string) {
         body
     }).as(alias);
 
-    cy.intercept('GET', '/api/get-storage-account', { statusCode: 200, body: {/* mock data */ } });
-    cy.intercept('GET', '/api/get-blob', { statusCode: 200, body: {/* mock data */ } });
-    cy.intercept('GET', '/api/settings', { statusCode: 200, body: {/* mock settings */ } });
-    cy.intercept('GET', '/api/get-user-organizations', { statusCode: 200, body: {/* mock orgs */ } });
-    cy.intercept('GET', '/api/chat-history', { statusCode: 200, body: {/* mock chat history */ } });
-    cy.intercept('GET', '/api/getusers*', { statusCode: 200, body: {/* mock users */ } });
+    cy.intercept('GET', '/api/get-storage-account', {
+        statusCode: 200,
+        body: { storage_account: 'mockstorageaccount' }
+    });
+
+    cy.intercept('GET', '/api/get-blob*', {
+        statusCode: 200,
+        body: new Blob(['fake-document-data'], { type: 'application/pdf' })
+    }).as('getBlob');
+
+    cy.intercept('POST', '/api/get-blob', {
+        statusCode: 200,
+        body: new Blob(['fake-document-data'], { type: 'application/pdf' })
+    }).as('postBlob');
+
+    cy.intercept('GET', '/api/settings', {
+        statusCode: 200,
+        body: {
+            showGPT4VOptions: false,
+            showSemanticRankerOption: false,
+            showVectorOption: false
+        }
+    });
+
+    cy.intercept('GET', '/api/get-user-organizations', {
+        statusCode: 200,
+        body: []
+    });
+
+    cy.intercept('GET', '/api/chat-history', {
+        statusCode: 200,
+        body: []
+    });
+
+    cy.intercept('GET', '/api/getusers*', {
+        statusCode: 200,
+        body: { users: [] }
+    });
 
 }
 
