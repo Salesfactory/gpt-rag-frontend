@@ -37,8 +37,6 @@ export function parseThoughts(thoughts: unknown): ThoughtBlock[] {
 
     // Fallback: one block per thought
     const title =
-      extractLabel(t, "Rewritten Query") ||
-      extractLabel(t, "Original Query") ||
       extractFirstHeading(t) ||
       `Thought ${out.length + 1}`;
 
@@ -69,13 +67,6 @@ function extractContentSection(s: string): string {
   const sliced = s.slice(idx);
   // remove up to and including the "Content:" label at line start
   return sliced.replace(/^[^\n\r]*?\bContent\s*:\s*/i, "");
-}
-
-function extractLabel(s: string, label: string): string | null {
-  // e.g. "Rewritten Query: something" (until slash or newline)
-  const re = new RegExp(`${label}\\s*:\\s*([^/\\r\\n]+)`);
-  const m = s.match(re);
-  return m ? m[1].trim() : null;
 }
 
 function extractFirstHeading(s: string): string | null {

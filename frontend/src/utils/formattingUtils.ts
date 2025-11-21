@@ -79,8 +79,6 @@ export const parseMeta = (text: string) => {
   return {
     modelUsed: pickAny('Model\\s*Used'),
     toolSelected: pickAny('Tool\\s*Selected'),
-    originalQuery: pickAny('Original\\s*Query'),
-    rewrittenQuery: pickAny('Rewritten\\s*Query'),
     queryCategory: pickAny('Query\\s*Category'),
     requiredRetrieval: pickAny('Required\\s*Retrieval'),
     numberOfDocumentsRetrieved: pickAny('Number\\s*of\\s*documents\\s*retrieved', 'Context\\s*documents\\s*retrieved'),
@@ -171,8 +169,6 @@ const THOUGHT_LABEL_OVERRIDES: Record<string, string> = {
   model_used: 'Model Used',
   model: 'Model Used',
   query_category: 'Query Category',
-  original_query: 'Original Query',
-  rewritten_query: 'Rewritten Query',
   mcp_tool_used: 'MCP Tool Used',
   last_mcp_tool_used: 'MCP Tool Used',
   mcp_tools_used: 'MCP Tools Used',
