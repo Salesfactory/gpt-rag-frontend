@@ -720,11 +720,6 @@ const Chat = () => {
 
     useEffect(() => {
         hideTab();
-        setActiveAnalysisPanelTab(undefined);
-        setActiveCitation(undefined);
-        setFileType("");
-        setSpreadsheetDownloadUrl(undefined);
-        setSpreadsheetFileName(undefined);
     }, [chatSelected]);
 
     useEffect(() => {
