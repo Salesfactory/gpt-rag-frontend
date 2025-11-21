@@ -59,6 +59,7 @@ const Chat = () => {
         conversationIsLoading,
         setRefreshFetchHistory,
         setChatId,
+        chatSelected,
         setChatSelected,
         setChatIsCleaned,
         chatIsCleaned,
@@ -716,6 +717,15 @@ const Chat = () => {
         document.addEventListener("mousemove", onMouseMove);
         document.addEventListener("mouseup", onMouseUp);
     };
+
+    useEffect(() => {
+        hideTab();
+        setActiveAnalysisPanelTab(undefined);
+        setActiveCitation(undefined);
+        setFileType("");
+        setSpreadsheetDownloadUrl(undefined);
+        setSpreadsheetFileName(undefined);
+    }, [chatSelected]);
 
     useEffect(() => {
         const handleResize = () => {
