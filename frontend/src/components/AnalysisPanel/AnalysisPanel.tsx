@@ -53,9 +53,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
         { key: "model", label: "Model Used", value: meta.modelUsed },
         { key: "agent", label: "Agent Type", value: agentType },
         { key: "tool", label: "Tool Used", value: meta.toolSelected },
-        { key: "category", label: "Query Category", value: meta.queryCategory },
-        { key: "original", label: "Original Query", value: meta.originalQuery },
-        { key: "rewritten", label: "Rewritten Query", value: meta.rewrittenQuery }
+        { key: "category", label: "Query Category", value: meta.queryCategory }
     ];
 
     const visibleMetaCards = metaCards.filter(card => !!card.value);
