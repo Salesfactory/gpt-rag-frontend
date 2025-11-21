@@ -791,11 +791,10 @@ const Chat = () => {
                                         )} */}
                                     </div>
                                 ) : (
-                                    <div
-                                        className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
-                                        aria-label="Chat messages"
-                                        tabIndex={0}
-                                    >
+                                    <div className={styles.chatScrollWrapper} aria-label="Chat messages scroll wrapper" tabIndex={0}>
+                                        <div
+                                            className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
+                                        >
                                         {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                         {dataConversation.length > 0
                                             ? dataConversation.map((item, index) => {
@@ -896,7 +895,8 @@ const Chat = () => {
                                                 </div>
                                             </>
                                         )}
-                                        <div ref={chatMessageStreamEnd} />
+                                            <div ref={chatMessageStreamEnd} />
+                                        </div>
                                     </div>
                                 )}
                                 <div 
