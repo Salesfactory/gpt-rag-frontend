@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, memo } from "react";
-import { Spinner } from "@fluentui/react";
+import { Spinner, Icon } from "@fluentui/react";
 import styles from "./URLPreviewComponent.module.css";
 import { getFileType, isImageFile } from "../../utils/functions";
 import { getFileBlob } from "../../api/api";
@@ -190,6 +190,24 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
     }
 
     const isImage = isImageFile(url);
+    const isPowerPoint = url.toLowerCase().endsWith('.pptx') || url.toLowerCase().endsWith('.ppt');
+    const isExcel = url.toLowerCase().endsWith('.xlsx') || url.toLowerCase().endsWith('.xls');
+    const isWord = url.toLowerCase().endsWith('.docx') || url.toLowerCase().endsWith('.doc');
+    const isPDF = url.toLowerCase().endsWith('.pdf');
+
+    const getFileIcon = () => {
+        if (isPowerPoint) {
+            return { name: "PowerPointDocument", color: "#D24726", label: "PowerPoint Slide" };
+        } else if (isExcel) {
+            return { name: "ExcelDocument", color: "#217346", label: "Excel Spreadsheet" };
+        } else if (isWord) {
+            return { name: "WordDocument", color: "#2B579A", label: "Word Document" };
+        } else if (isPDF) {
+            return { name: "PDF", color: "#DC3E15", label: "PDF Document" };
+        } else {
+            return { name: "Page", color: "#605E5C", label: "Document" };
+        }
+    };
 
     const renderContent = () => {
         if (isImage) {
@@ -212,12 +230,21 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
                 </>
             );
         } else {
-            // For non-image files, show a file icon with download option
+            const fileIcon = getFileIcon();
+            const fileName = url.split("/").pop() || "document";
+
             return (
                 <div className={styles.filePreview}>
-                    <div className={styles.fileIcon}>📄</div>
-                    <div className={styles.fileName}>{url.split("/").pop()}</div>
-                    <a href={fileBlob.url} download={url.split("/").pop()} className={styles.downloadLink}>
+                    <Icon
+                        iconName={fileIcon.name}
+                        className={styles.fileIcon}
+                        style={{ color: fileIcon.color, fontSize: '48px' }}
+                    />
+                    <div className={styles.fileTypeLabel} style={{ color: fileIcon.color, fontWeight: 600 }}>
+                        {fileIcon.label}
+                    </div>
+                    <div className={styles.fileName}>{fileName}</div>
+                    <a href={fileBlob.url} download={fileName} className={styles.downloadLink}>
                         Download
                     </a>
                 </div>
