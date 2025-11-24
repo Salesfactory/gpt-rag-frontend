@@ -354,7 +354,7 @@ const Gallery: React.FC = () => {
                         <div className={styles.header}>
                             <div className={styles.headerContent}>
                                 <h2 className={styles.headerTitle}>Charts</h2>
-                                <span className={styles.headerCount}>Actual page: {images.length}</span>
+                                <span className={styles.headerCount}>Page count: {images.length}</span>
                             </div>
                         </div>
 

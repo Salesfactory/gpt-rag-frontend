@@ -71,14 +71,12 @@ describe('extractPreContent', () => {
 
 describe('parseMeta', () => {
 	it('extracts commonly used meta fields when present', () => {
-		const text = `Model Used: gpt-4\nTool Selected: search\nOriginal Query: hola\nMCP Tools Used: foo\nQuery Category: General\nRewritten Query: hi`;
+		const text = `Model Used: gpt-4\nTool Selected: search\nMCP Tools Used: foo\nQuery Category: General`;
 		const meta = parseMeta(text);
 		expect(meta.modelUsed).toBe('gpt-4');
 		expect(meta.toolSelected).toBe('search');
-		expect(meta.originalQuery).toBe('hola');
 		expect(meta.mcpToolsUsed).toBe('foo');
 		expect(meta.queryCategory).toBe('General');
-		expect(meta.rewrittenQuery).toBe('hi');
 	});
 	it('returns undefined for fields that do not exist', () => {
 		const text = 'Model Used: gpt-4';

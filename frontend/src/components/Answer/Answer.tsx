@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Stack, IconButton, TooltipHost } from "@fluentui/react";
 import DOMPurify from "dompurify";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
@@ -61,7 +61,8 @@ function truncateString(str: string, maxLength: number): string {
     }
     const startLength = Math.ceil((maxLength - 3) / 2);
     const endLength = Math.floor((maxLength - 3) / 2);
-    return str.substring(0, startLength) + "..." + str.substring(str.length - endLength);
+    const filename = decodeURIComponent(str.split('/').pop() || str);
+    return filename?.substring(0, startLength) + "..." + filename?.substring(filename.length - endLength) || str;
 }
 
 const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: React.CSSProperties; children: React.ReactNode }> = ({
@@ -87,6 +88,52 @@ export const Answer = ({
         from: { opacity: 0 },
         to: { opacity: 1 }
     });
+
+    const markdownContainerRef = React.useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const container = markdownContainerRef.current;
+        if (!container) return;
+
+        const handleCitationClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const citationLink = target.closest('.supContainer');
+
+            if (citationLink) {
+                e.preventDefault();
+                const url = citationLink.getAttribute('data-citation-url');
+                const path = citationLink.getAttribute('data-citation-path');
+
+                if (url && path) {
+                    onCitationClicked(url, path);
+                }
+            }
+        };
+
+        const handleCitationKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const target = e.target as HTMLElement;
+                const citationLink = target.closest('.supContainer');
+
+                if (citationLink) {
+                    e.preventDefault();
+                    const url = citationLink.getAttribute('data-citation-url');
+                    const path = citationLink.getAttribute('data-citation-path');
+
+                    if (url && path) {
+                        onCitationClicked(url, path);
+                    }
+                }
+            }
+        };
+
+        container.addEventListener('click', handleCitationClick);
+        container.addEventListener('keydown', handleCitationKeyDown);
+        return () => {
+            container.removeEventListener('click', handleCitationClick);
+            container.removeEventListener('keydown', handleCitationKeyDown);
+        };
+    }, [onCitationClicked]);
 
     const { settings } = useAppContext();
     const fontFamily = settings.font_family?.trim() || "Arial";
@@ -183,6 +230,98 @@ export const Answer = ({
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
+    const thoughtNodes = useMemo(() => {
+        if (!thinkingContent || thinkingContent.trim().length === 0) {
+            return [];
+        }
+
+        // Helper function to split text into sentences
+        const splitIntoSentences = (text: string): string[] => {
+            // Common abbreviations that shouldn't trigger sentence splits
+            const abbreviations = /(?:Dr|Mr|Mrs|Ms|Prof|Sr|Jr|vs|etc|Inc|Ltd|Corp|U\.S|Ph\.D)\./gi;
+
+            // Temporarily replace abbreviations with placeholders
+            const placeholders: string[] = [];
+            let processed = text.replace(abbreviations, (match) => {
+                placeholders.push(match);
+                return `__ABBR_${placeholders.length - 1}__`;
+            });
+
+            // Now split on sentence boundaries
+            const sentences = processed
+                .split(/(?<=[.!?])\s+(?=[A-Z])/)
+                .filter(s => s.trim().length > 0);
+
+            // Restore abbreviations
+            return sentences.map(sentence => {
+                return sentence.replace(/__ABBR_(\d+)__/g, (_, index) => {
+                    return placeholders[parseInt(index)];
+                });
+            });
+        };
+
+        const parseThinkingIntoNodes = (content: string): string[] => {
+            const MIN_THOUGHT_LENGTH = 80; // Minimum characters for a thought node
+
+            // Split by double line breaks first (paragraphs)
+            let thoughts = content.split(/\n\n+/).filter(t => t.trim().length > 0);
+
+            // For very long paragraphs, split by sentence groups (2-3 sentences at a time)
+            thoughts = thoughts.flatMap(thought => {
+                if (thought.length > 500) {
+                    // Split into sentences using improved function
+                    const sentences = splitIntoSentences(thought);
+                    const groups: string[] = [];
+                    let currentGroup = '';
+
+                    for (let i = 0; i < sentences.length; i++) {
+                        const sentence = sentences[i].trim();
+                        if (currentGroup.length === 0) {
+                            currentGroup = sentence;
+                        } else if (currentGroup.length + sentence.length < 400) {
+                            // Add to current group if not too long
+                            // Check if previous sentence already has ending punctuation
+                            const separator = /[.!?]$/.test(currentGroup) ? ' ' : '. ';
+                            currentGroup += separator + sentence;
+                        } else {
+                            // Start new group
+                            groups.push(currentGroup);
+                            currentGroup = sentence;
+                        }
+                    }
+                    if (currentGroup) groups.push(currentGroup);
+                    return groups;
+                }
+                return [thought];
+            });
+
+            // Merge very short thoughts with adjacent ones
+            const merged: string[] = [];
+            for (let i = 0; i < thoughts.length; i++) {
+                const thought = thoughts[i].trim();
+
+                if (thought.length < MIN_THOUGHT_LENGTH && merged.length > 0) {
+                    // Merge with previous thought
+                    merged[merged.length - 1] += ' ' + thought;
+                } else if (thought.length < MIN_THOUGHT_LENGTH && i < thoughts.length - 1) {
+                    // Merge with next thought
+                    thoughts[i + 1] = thought + ' ' + thoughts[i + 1];
+                } else {
+                    merged.push(thought);
+                }
+            }
+
+            return merged.map(t => t.trim());
+        };
+
+        return parseThinkingIntoNodes(thinkingContent);
+    }, [thinkingContent]);
+
+    const thinkingMarkdownComponents: Partial<Components> = {
+        p: (props) => <p style={{ margin: 0, display: 'inline' }} {...props} />,
+        code: (props) => <code style={{ background: '#f3f4f6', padding: '2px 4px', borderRadius: '4px', fontSize: '0.9em' }} {...props} />
+    };
+
     const handleFeedbackClick = async () => {
         try {
             const feedbackUrl = await getFeedbackUrl();
@@ -243,23 +382,49 @@ export const Answer = ({
                 </Stack.Item>
             )}
 
-            {thinkingContent && thinkingContent.trim().length > 0 && (
+            {thoughtNodes.length > 0 && (
                 <Stack.Item>
                     <details className={styles.thinkingContainer} open={isGenerating}>
                         <summary className={styles.thinkingSummary}>
                             Freddaid's Thinking Process
                         </summary>
-                        <div className={styles.thinkingContent}>
-                            {thinkingContent}
+                        <div className={styles.thoughtStream}>
+                            {thoughtNodes.map((thought, index) => (
+                                <div
+                                    key={index}
+                                    className={styles.thoughtNode}
+                                    style={{ animationDelay: `${index * 0.1}s` }}
+                                >
+                                    <div className={styles.thoughtConnector}>
+                                        <div className={styles.thoughtDot} />
+                                        {index < thoughtNodes.length - 1 && (
+                                            <div className={styles.thoughtLine} />
+                                        )}
+                                    </div>
+                                    <div className={styles.thoughtCard}>
+                                        <div className={styles.thoughtText}>
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                rehypePlugins={[rehypeRaw]}
+                                                components={thinkingMarkdownComponents}
+                                            >
+                                                {thought.endsWith('.') ? thought : thought + '.'}
+                                            </ReactMarkdown>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </details>
                 </Stack.Item>
             )}
 
             <Stack.Item>
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
-                    {sanitizedAnswerHtml}
-                </ReactMarkdown>
+                <div ref={markdownContainerRef}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+                        {sanitizedAnswerHtml}
+                    </ReactMarkdown>
+                </div>
             </Stack.Item>
 
             {!!parsedAnswer.citations.length && showSources && (
@@ -284,7 +449,7 @@ export const Answer = ({
                                         }}
                                         tabIndex={0}
                                         className={styles.citation}
-                                        title={path}
+                                        title={path.split('/').filter(Boolean).pop() || path}
                                         onClick={() => {
                                             if (!isLoadingThis) onCitationClicked(fullUrl, path);
                                         }}
@@ -327,15 +492,15 @@ export const Answer = ({
                                 aria-hidden="true"
                                 iconProps={{ iconName: "Feedback" }}
                                 styles={{
-                                    root: { 
-                                        background: 'transparent', 
+                                    root: {
+                                        background: 'transparent',
                                         border: 'none',
                                         minWidth: 'auto',
                                         width: 'auto',
                                         height: 'auto',
                                         padding: 0
                                     },
-                                    icon: { 
+                                    icon: {
                                         color: 'inherit',
                                         fontSize: '16px'
                                     }

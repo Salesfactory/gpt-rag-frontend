@@ -1496,6 +1496,78 @@ def download_document(*, context):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/generate-sas-url", methods=["POST"])
+@auth.login_required
+def generate_sas_url_endpoint(*, context):
+    """
+    Generate a SAS URL for a blob file for viewing in document viewers.
+    
+    Expected JSON payload:
+    {
+        "blob_name": "path/to/file.pptx",
+        "container_name": "documents"  # optional, defaults to "documents"
+    }
+    
+    Returns:
+        JSON response with SAS URL
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        blob_name = data.get("blob_name")
+        container_name = data.get("container_name", "documents")
+        
+        if not blob_name:
+            return jsonify({"error": "blob_name is required"}), 400
+        
+        # Whitelist of allowed containers for security
+        allowed_containers = ["documents", "fa-documents"]
+        if container_name not in allowed_containers:
+            return jsonify({"error": "Invalid container name"}), 400
+        
+        # Generate SAS URL with longer expiry for viewing documents (24 hours)
+        blob_service_client = BlobServiceClient.from_connection_string(
+            current_app.config["AZURE_STORAGE_CONNECTION_STRING"]
+        )
+        account_name = blob_service_client.account_name
+        
+        # Verify the blob exists
+        blob_client = blob_service_client.get_blob_client(
+            container=container_name, blob=blob_name
+        )
+        
+        try:
+            blob_client.get_blob_properties()
+        except Exception:
+            return jsonify({"error": "Blob not found"}), 404
+        
+        # Generate SAS token
+        sas_token = generate_blob_sas(
+            account_name=account_name,
+            container_name=container_name,
+            blob_name=blob_name,
+            account_key=blob_service_client.credential.account_key,
+            permission=BlobSasPermissions(read=True),
+            expiry=datetime.now(timezone.utc) + timedelta(hours=24),
+        )
+        
+        sas_url = f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+        
+        return jsonify({
+            "success": True,
+            "sas_url": sas_url,
+            "blob_name": blob_name,
+            "container_name": container_name,
+            "expires_in_hours": 24
+        }), 200
+        
+    except Exception as e:
+        logging.exception("[webbackend] Exception in /api/generate-sas-url")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/download-excel-citation", methods=["POST"])
 @auth.login_required()
 def download_excel_citation(*, context):

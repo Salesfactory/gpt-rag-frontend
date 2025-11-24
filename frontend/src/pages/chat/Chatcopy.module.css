@@ -139,7 +139,7 @@
     align-items: center;
     gap: 0.3rem;
     max-width: 600px;
-    position: fixed;
+    position: static;
     margin-bottom: 125px;
 }
 
@@ -153,19 +153,44 @@
     padding-top: 60px;
 }
 
-.chatMessageStream {
+
+.chatScrollWrapper {
     flex-grow: 1;
     max-height: 1024px;
+    width: 100%;
+    max-width: 100%;
+    overflow-y: auto;
+    direction: ltr;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+    padding-top: 15px;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-bottom: 125px;
+}
+
+.chatMessageStream {
     width: 80%;
     max-width: 80%;
-    overflow-y: auto;
-    padding-top: 15px;
+    padding-top: 0;
     display: flex;
     flex-direction: column;
     margin: 0 auto;
     padding-left: 2px;
     padding-right: 2px;
-    padding-bottom: 125px;
+    padding-bottom: 0;
+}
+
+
+.chatMessageStream > .chatMessageGpt,
+.chatMessageStream > .chatMessageGptMinWidth {
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%;
+    max-width: 80%;
 }
 
 .chatMessageGpt {
@@ -289,8 +314,9 @@
 }
 
 @media (max-width: 650px) {
-    .flexDescription {
-        max-width: 70%;
+        .flexDescription {
+        max-width: 90%;
+        margin: 1.5rem 1rem 130px;
     }
     
     .chatInputContainer {

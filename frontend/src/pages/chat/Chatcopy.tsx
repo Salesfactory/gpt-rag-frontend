@@ -59,6 +59,7 @@ const Chat = () => {
         conversationIsLoading,
         setRefreshFetchHistory,
         setChatId,
+        chatSelected,
         setChatSelected,
         setChatIsCleaned,
         chatIsCleaned,
@@ -569,6 +570,26 @@ const Chat = () => {
                 return window.open(citation, "_blank");
             }
         }
+        // Handle PPTX/PPT files separately - use blob name for SAS URL generation
+        if (citation.endsWith(".ppt") || citation.endsWith(".pptx")) {
+            // Extract filepath if necessary
+            const modifiedFilename = extractAfterDomain(fileName);
+
+            if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+                setActiveAnalysisPanelTab(undefined);
+            } else {
+                setLoadingCitationPath(fileName);
+                // For PPTX files, store the blob name in a special format so PPTXViewer can fetch SAS URL
+                setFileType("pptx");
+                setActiveCitation(`pptx-blob://${modifiedFilename}`);
+                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+                setLoadingCitationPath(null);
+            }
+
+            setSelectedAnswer(index);
+            return;
+        }
+
         // Handle PDF/DOC/DOCX files - load in analysis panel for preview
         if (citation.endsWith(".pdf") || citation.endsWith(".doc") || citation.endsWith(".docx")) {
             // Extract filepath if necessary
@@ -698,6 +719,10 @@ const Chat = () => {
     };
 
     useEffect(() => {
+        hideTab();
+    }, [chatSelected]);
+
+    useEffect(() => {
         const handleResize = () => {
             setWindowWidth(window.innerWidth);
             if (window.innerWidth < 700) {
@@ -771,11 +796,10 @@ const Chat = () => {
                                         )} */}
                                     </div>
                                 ) : (
-                                    <div
-                                        className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
-                                        aria-label="Chat messages"
-                                        tabIndex={0}
-                                    >
+                                    <div className={styles.chatScrollWrapper} aria-label="Chat messages scroll wrapper" tabIndex={0}>
+                                        <div
+                                            className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
+                                        >
                                         {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                         {dataConversation.length > 0
                                             ? dataConversation.map((item, index) => {
@@ -876,7 +900,8 @@ const Chat = () => {
                                                 </div>
                                             </>
                                         )}
-                                        <div ref={chatMessageStreamEnd} />
+                                            <div ref={chatMessageStreamEnd} />
+                                        </div>
                                     </div>
                                 )}
                                 <div 

@@ -31,13 +31,17 @@ const DocView: React.FC<LazyDocViewerProps> = ({ base64Doc, page, fileType }) =>
         return new Blob([out], { type: fileType });
     };
 
-    const blob = base64toBlob(base64Doc);
+    // Check if this is a PPTX blob name reference (special format)
+    const isPptxBlobName = base64Doc?.startsWith("pptx-blob://");
+    const blobName = isPptxBlobName ? base64Doc?.substring("pptx-blob://".length) : undefined;
+
+    const blob = isPptxBlobName ? "" : base64toBlob(base64Doc);
 
     return (
         <div>
             {base64Doc ? (
                 <>
-                    <FileViewer file={blob} fileType={fileType} page={currentPage} />
+                    <FileViewer file={blob} fileType={fileType} page={currentPage} blobName={blobName} />
                 </>
             ) : (
                 <div>Loading Document...</div>

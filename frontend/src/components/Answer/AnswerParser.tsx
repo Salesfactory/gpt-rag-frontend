@@ -67,7 +67,7 @@ function supNode(index: number, title: string, onClick: (title: string, path: st
     // A small JSX fragment rendered to string; React is required by TSX
     // eslint-disable-next-line react/react-in-jsx-scope
     return renderToStaticMarkup(
-        <a key={`citation-${index}`} className="supContainer" title={title} onClick={() => onClick(title, path)} tabIndex={0}>
+        <a key={`citation-${index}`} className="supContainer" title={title} data-citation-url={title} data-citation-path={path} tabIndex={0}>
             <sup>{index}</sup>
         </a>
     );
