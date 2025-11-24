@@ -1293,7 +1293,7 @@ export async function exportConversation(conversationId: string, userId: string,
             format: format
         };
 
-        const response = await fetch("/api/conversations/export", {
+        const response = await fetchWrapper("/api/conversations/export", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -1500,7 +1500,7 @@ export async function getProductsByOrganization({
     organization_id: string;
     user: any;
 }): Promise<any> {
-    const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/products`, {
+    const response = await fetchWrapper(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/products`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1533,7 +1533,7 @@ export async function updateProduct({
     organization_id: string;
     category: string;
 }): Promise<any> {
-    const response = await fetch(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
+    const response = await fetchWrapper(`/api/voice-customer/products/${encodeURIComponent(product_id)}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
@@ -1569,7 +1569,7 @@ export async function createCompetitor({
     organization_id: string;
     user: any;
 }): Promise<any> {
-    const response = await fetch('/api/voice-customer/competitors', {
+    const response = await fetchWrapper('/api/voice-customer/competitors', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1600,7 +1600,7 @@ export async function deleteCompetitor({
     user: any;
     organization_id: string;
 }): Promise<any> {
-    const response = await fetch(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
+    const response = await fetchWrapper(`/api/voice-customer/competitors/${encodeURIComponent(competitor_id)}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -1624,7 +1624,7 @@ export async function getCompetitorsByOrganization({
     organization_id: string;
     user: any;
 }): Promise<any> {
-    const response = await fetch(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/competitors`, {
+    const response = await fetchWrapper(`/api/voice-customer/organizations/${encodeURIComponent(organization_id)}/competitors`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1757,7 +1757,7 @@ export async function generateExcelDownloadUrl(filePath: string): Promise<{
     expires_in_days: number;
 }> {
     try {
-        const response = await fetch('/api/download-excel-citation', {
+        const response = await fetchWrapper('/api/download-excel-citation', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1807,7 +1807,7 @@ export async function getGalleryItems(
 
     const url = `/api/organization/${encodeURIComponent(organization_id)}/gallery${qs.toString() ? `?${qs.toString()}` : ""}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWrapper(url, {
         method: "GET",
         headers: {
             "X-MS-CLIENT-PRINCIPAL-ID": params.user?.id ?? "00000000-0000-0000-0000-000000000000",
@@ -1870,7 +1870,7 @@ export async function fetchReportJobs({
         "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? "anonymous",
     };
 
-    const res = await fetch(`/api/report-jobs?${params.toString()}`, { method: "GET", headers });
+    const res = await fetchWrapper(`/api/report-jobs?${params.toString()}`, { method: "GET", headers });
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -1883,7 +1883,7 @@ export async function fetchReportJobs({
 
 
 export async function getIndustryByOrganization({ organization_id, user }: { organization_id: string; user?: any }): Promise<{ industry_description?: string } | null> {
-    const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
+    const response = await fetchWrapper(`/api/voice-customer/organizations/${organization_id}/industry`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -1902,7 +1902,7 @@ export async function getIndustryByOrganization({ organization_id, user }: { org
 
 export async function upsertIndustry({ organization_id, industry_description, user }: { organization_id: string | number; industry_description: string; user?: any }): Promise<any> {
     const payload = { "industry_description": industry_description };
-    const response = await fetch(`/api/voice-customer/organizations/${organization_id}/industry`, {
+    const response = await fetchWrapper(`/api/voice-customer/organizations/${organization_id}/industry`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1931,7 +1931,7 @@ export async function createCategory({
     description?: string;
     metadata?: object;
 }): Promise<Category> {
-    const res = await fetch("/api/categories", {
+    const res = await fetchWrapper("/api/categories", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -1949,7 +1949,7 @@ export async function createCategory({
 
 
 export async function getCategory(categoryId: string, organizationId: string): Promise<Category> {
-    const response = await fetch(`/api/categories/${categoryId}?organization_id=${organizationId}`, {
+    const response = await fetchWrapper(`/api/categories/${categoryId}?organization_id=${organizationId}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
@@ -1979,7 +1979,7 @@ export async function getCategoriesByOrganization({
         limit: String(limit),
     });
 
-    const res = await fetch(`/api/categories?${params.toString()}`, {
+    const res = await fetchWrapper(`/api/categories?${params.toString()}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -2006,7 +2006,7 @@ export async function deleteCategory({
     organization_id: string;
     user: any;
 }): Promise<void> {
-    const res = await fetch(
+    const res = await fetchWrapper(
         `/api/categories/${encodeURIComponent(category_id)}?organization_id=${encodeURIComponent(organization_id)}`,
         {
             method: "DELETE",
@@ -2038,7 +2038,7 @@ export async function uploadUserDocument({
     formData.append('conversation_id', conversationId);
 
     try {
-        const response = await fetch('/api/upload-user-document', {
+        const response = await fetchWrapper('/api/upload-user-document', {
             method: 'POST',
             headers: {
                 'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
@@ -2071,7 +2071,7 @@ export async function deleteUserDocument({
     conversationId: string;
     user: any;
 }): Promise<{ message: string }> {
-    const res = await fetch('/api/delete-user-document', {
+    const res = await fetchWrapper('/api/delete-user-document', {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -2103,7 +2103,7 @@ export async function listUserDocuments({
         conversation_id: conversationId,
     });
 
-    const res = await fetch(`/api/list-user-documents?${params.toString()}`, {
+    const res = await fetchWrapper(`/api/list-user-documents?${params.toString()}`, {
         method: 'GET',
         headers: {
             'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
@@ -2122,7 +2122,7 @@ export async function listUserDocuments({
 
 
 export async function getStorageUsageByOrganization(organization_id: string, user?: any) {
-    const response = await fetch(`/api/organizations/${encodeURIComponent(organization_id)}/storage-usage`, {
+    const response = await fetchWrapper(`/api/organizations/${encodeURIComponent(organization_id)}/storage-usage`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
