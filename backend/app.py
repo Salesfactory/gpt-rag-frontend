@@ -3883,9 +3883,19 @@ def get_gallery(*, context, organization_id):
 @app.after_request
 def secure_response(response: Response) -> Response:
     """
-    Secures the response by checking if unauthorized API requests are being made.
-    If an API request is made without proper authentication and is not a login redirect,
-    it returns a 401 Unauthorized error response.
+    Secures API responses by converting authentication redirects to JSON errors.
+
+    When an API endpoint decorated with @login_required fails authentication,
+    it typically returns an HTML redirect response. This hook intercepts such
+    redirects for API requests and converts them to proper 401 JSON error responses,
+    allowing frontend clients to handle authentication failures gracefully.
+
+    Args:
+        response: The Flask response object
+
+    Returns:
+        Response: Either a 401 JSON error (for auth failures on API endpoints)
+                  or the original response (for all other cases)
     """
     is_api_request = request.path.startswith("/api/")
     content_type = getattr(response, "content_type", None)
