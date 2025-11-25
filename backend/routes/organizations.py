@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 @bp.route("/api/organizations/<organization_id>/<file_name>/business-describe", methods=["POST"])
+@auth_required
 def generate_business_description(organization_id, file_name):
     blob_temp_path = None
 

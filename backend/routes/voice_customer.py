@@ -3,7 +3,7 @@
 from flask import Blueprint, current_app, request
 from pydantic import ValidationError
 import logging
-
+from routes.decorators.auth_decorator import auth_required
 from utils import (create_success_response, create_error_response)
 from shared.cosmo_db import (
     create_competitor,
@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 @bp.route("/brands", methods=["POST"])
+@auth_required
 def create_brand():
     """
     Handles the creation of a new brand.
@@ -67,6 +68,7 @@ def create_brand():
 
 
 @bp.route("/organizations/<organization_id>/brands", methods=["GET"])
+@auth_required
 def get_brands(organization_id):
     """
     Retrieve brands associated with a given organization.
@@ -127,6 +129,7 @@ def update_brand(brand_id):
 
 
 @bp.route("/brands/<brand_id>", methods=["DELETE"])
+@auth_required
 def delete_brand(brand_id):
     """
     Deletes a brand by its ID.
@@ -157,6 +160,7 @@ def delete_brand(brand_id):
 
 
 @bp.route("/products", methods=["POST"])
+@auth_required
 def create_product():
     """
     Creates a new product using the provided JSON payload.
@@ -217,6 +221,7 @@ def get_products(organization_id):
         return create_error_response(f"Error retrieving products: {str(e)}", 500)
     
 @bp.route("/products/<product_id>", methods=["PATCH"])
+@auth_required
 def update_product(product_id):
     """
     Update an existing product with new data.
@@ -259,6 +264,7 @@ def update_product(product_id):
         return create_error_response(f"Error updating product: {str(e)}", 500)
 
 @bp.route("/products/<product_id>", methods=["DELETE"])
+@auth_required
 def delete_product(product_id):
     """
     Deletes a product by its ID.
@@ -286,6 +292,7 @@ def delete_product(product_id):
     
 
 @bp.route("/competitors", methods=["POST"])
+@auth_required
 def add_competitor():
     """
     Handles the creation of a new competitor and associates it with specified brands.
@@ -369,6 +376,7 @@ def update_competitor(competitor_id):
         return create_error_response(f"Error updating competitor: {str(e)}", 500)
 
 @bp.route("/competitors/<competitor_id>", methods=["DELETE"])
+@auth_required
 def delete_competitor(competitor_id):
     """
     Deletes a competitor by their unique identifier.
@@ -400,6 +408,7 @@ def delete_competitor(competitor_id):
 @bp.route(
     "/organizations/<organization_id>/competitors", methods=["GET"]
 )
+@auth_required
 def get_competitors(organization_id):
     """
     Retrieve competitors for a given organization.
@@ -425,6 +434,7 @@ def get_competitors(organization_id):
 
 
 @bp.route("/organizations/<organization_id>/brands/<brand_id>/items-to-delete/", methods=["GET"])
+@auth_required
 def get_items_to_delete(organization_id,brand_id):
     """
     Endpoint to retrieve items that are marked for deletion.
@@ -469,6 +479,7 @@ def add_industry(organization_id):
         return create_error_response("Internal Server Error", 500)
     
 @bp.route("/organizations/<organization_id>/industry", methods=["GET"])
+@auth_required
 def get_industry_by_organization(organization_id):
     """
     Endpoint to add a new industry for a specific organization.

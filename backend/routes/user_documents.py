@@ -7,7 +7,7 @@ import secrets
 import uuid
 import time
 from utils import create_success_response, create_error_response
-
+from routes.decorators.auth_decorator import auth_required
 BLOB_CONTAINER_NAME = "user-documents"
 ALLOWED_FILE_EXTENSIONS = [".pdf"]
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB 
@@ -53,6 +53,7 @@ def validate_file(file):
 
 
 @bp.route("/upload-user-document", methods=["POST"])
+@auth_required
 def upload_user_document():
     temp_file_path = None
     try:
@@ -164,6 +165,7 @@ def upload_user_document():
 
 
 @bp.route("/list-user-documents", methods=["GET"])
+@auth_required
 def list_user_documents():
     try:
         user_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -235,6 +237,7 @@ def list_user_documents():
 
 
 @bp.route("/delete-user-document", methods=["DELETE"])
+@auth_required
 def delete_user_document():
     try:
         user_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")

@@ -140,6 +140,7 @@ def delete_from_azure_search(filepath: str) -> dict:
 
 
 @bp.route("/upload-source-document", methods=["POST"])
+@auth_required
 def upload_source_document():
     llm = current_app.config["llm"]
     temp_file_path = None
