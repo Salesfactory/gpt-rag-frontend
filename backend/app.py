@@ -83,6 +83,7 @@ from shared.cosmo_db import (
     get_organization_subscription,
 )
 from shared import clients
+from shared import decorators
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
 
@@ -787,7 +788,9 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
 @app.route("/stream_chatgpt", methods=["POST"])
 @auth.login_required
-def proxy_orc(*, context):
+@decorators.require_conversation_limits
+@decorators.check_session_limits
+def proxy_orc(*, context, **kwargs):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
     question = data.get("question")
@@ -804,6 +807,11 @@ def proxy_orc(*, context):
     client_principal_organization = request.headers.get(
         "X-MS-CLIENT-PRINCIPAL-ORGANIZATION"
     )
+
+    # Get org_id and limits check from decorators
+    org_id = kwargs.get("_org_id") or client_principal_organization
+    limits_check = kwargs.get("_limits_check")
+    session_check = kwargs.get("_session_check")
 
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
@@ -860,6 +868,23 @@ def proxy_orc(*, context):
                 for chunk in r.iter_content(chunk_size=8192):
                     if chunk:
                         yield chunk.decode()
+
+                # After streaming completes, update usage tracking
+                if conversation_id and client_principal_id and org_id:
+                    try:
+                        from utils import update_conversation_timestamps
+                        from shared.cosmo_db import update_organization_usage, get_conversation_duration_seconds
+
+                        # Update conversation timestamps
+                        update_conversation_timestamps(conversation_id, client_principal_id, is_active=True)
+
+                        # Get total duration and update org usage
+                        # Note: We don't increment here per message, but the duration is already tracked
+                        # Organization usage will be checked on next request
+                        logging.info(f"Completed streaming for conversation {conversation_id}")
+                    except Exception as tracking_error:
+                        logging.error(f"Error tracking usage after stream: {tracking_error}")
+
         except Exception as e:
             logging.exception(f"[webbackend] exception in /stream_chatgpt: {str(e)}")
             error_message = f"Error contacting orchestrator {str(e)}"
@@ -1331,6 +1356,19 @@ def webhook():
         paymentStatus = event["data"]["object"]["payment_status"]
         organizationName = event["data"]["object"]["custom_fields"][0]["text"]["value"]
         expirationDate = event["data"]["object"]["expires_at"]
+
+        # Sync subscription tier from Stripe metadata
+        try:
+            if subscriptionId:
+                subscription = stripe.Subscription.retrieve(subscriptionId)
+                tier_name = subscription.get("metadata", {}).get("tier", "free")
+
+                # Initialize organization usage with new tier
+                from shared.cosmo_db import initialize_organization_usage
+                initialize_organization_usage(organizationId, tier_name)
+                logging.info(f"Initialized tier {tier_name} for organization {organizationId}")
+        except Exception as tier_error:
+            logging.error(f"Error setting tier for organization {organizationId}: {tier_error}")
         try:
             # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
             # It is set during the infrastructure deployment.
@@ -1370,9 +1408,86 @@ def webhook():
         except Exception as e:
             logging.exception("[webbackend] exception in /api/checkUser")
             return jsonify({"error": str(e)}), 500
+
+    elif event["type"] == "customer.subscription.updated":
+        print("🔔  Webhook received!", event["type"])
+        subscription = event["data"]["object"]
+        subscriptionId = subscription["id"]
+        metadata = subscription.get("metadata", {})
+        organizationId = metadata.get("organizationId")
+
+        if organizationId:
+            try:
+                tier_name = metadata.get("tier", "free")
+                from shared.cosmo_db import initialize_organization_usage
+                initialize_organization_usage(organizationId, tier_name)
+                logging.info(f"Updated tier to {tier_name} for organization {organizationId}")
+            except Exception as tier_error:
+                logging.error(f"Error updating tier for organization {organizationId}: {tier_error}")
+
+    elif event["type"] == "customer.subscription.deleted":
+        print("🔔  Webhook received!", event["type"])
+        subscription = event["data"]["object"]
+        metadata = subscription.get("metadata", {})
+        organizationId = metadata.get("organizationId")
+
+        if organizationId:
+            try:
+                # Downgrade to free tier when subscription is cancelled
+                from shared.cosmo_db import initialize_organization_usage
+                initialize_organization_usage(organizationId, "free")
+                logging.info(f"Downgraded to free tier for organization {organizationId}")
+            except Exception as tier_error:
+                logging.error(f"Error downgrading tier for organization {organizationId}: {tier_error}")
+
+    elif event["type"] == "invoice.paid":
+        print("🔔  Webhook received!", event["type"])
+        invoice = event["data"]["object"]
+        subscriptionId = invoice.get("subscription")
+
+        if subscriptionId:
+            try:
+                subscription = stripe.Subscription.retrieve(subscriptionId)
+                metadata = subscription.get("metadata", {})
+                organizationId = metadata.get("organizationId")
+
+                if organizationId:
+                    # Ensure tier is up to date when invoice is paid
+                    tier_name = metadata.get("tier", "free")
+                    from shared.cosmo_db import get_organization_subscription
+                    from shared.cosmo_db import initialize_organization_usage
+
+                    org = get_organization_subscription(organizationId)
+                    current_tier = org.get("subscriptionTier", "free")
+
+                    # Only update if tier has changed
+                    if current_tier != tier_name:
+                        initialize_organization_usage(organizationId, tier_name)
+                        logging.info(f"Confirmed tier {tier_name} for organization {organizationId} after payment")
+            except Exception as tier_error:
+                logging.error(f"Error confirming tier after invoice payment: {tier_error}")
+
+    elif event["type"] == "invoice.payment_failed":
+        print("🔔  Webhook received!", event["type"])
+        invoice = event["data"]["object"]
+        subscriptionId = invoice.get("subscription")
+
+        if subscriptionId:
+            try:
+                subscription = stripe.Subscription.retrieve(subscriptionId)
+                metadata = subscription.get("metadata", {})
+                organizationId = metadata.get("organizationId")
+
+                if organizationId:
+                    # Could implement grace period or immediate downgrade
+                    # For now, just log it - the subscription will be cancelled by Stripe after retries
+                    logging.warning(f"Payment failed for organization {organizationId}")
+            except Exception as error:
+                logging.error(f"Error handling payment failure: {error}")
+
     else:
         # Unexpected event type
-        print("Unexpected event type")
+        print(f"Unhandled event type: {event['type']}")
 
     return jsonify(success=True)
 
@@ -1895,6 +2010,109 @@ def getUserOrganizationsRole(*, context):
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+
+@app.route("/api/organizations/<org_id>/usage", methods=["GET"])
+@auth.login_required
+def get_organization_usage(org_id, *, context):
+    """
+    Get detailed usage statistics for an organization.
+
+    Returns:
+        - Tier information
+        - Current period dates
+        - Usage stats (used, limit, remaining, percentage)
+        - Status flags (allowed, show_warning, unlimited)
+    """
+    from shared.cosmo_db import get_organization_usage_stats
+
+    try:
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+        if not client_principal_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        # Verify user has access to this organization
+        user_orgs = get_user_organizations(client_principal_id)
+        user_org_ids = [org.get("id") for org in user_orgs]
+
+        if org_id not in user_org_ids:
+            return jsonify({"error": "Access denied to this organization"}), 403
+
+        # Get usage stats
+        usage_stats = get_organization_usage_stats(org_id)
+
+        return jsonify(usage_stats), 200
+
+    except NotFound:
+        return jsonify({"error": "Organization not found"}), 404
+    except Exception as e:
+        logging.error(f"Error getting usage for organization {org_id}: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/organizations/<org_id>/limits", methods=["GET"])
+@auth.login_required
+def get_organization_limits(org_id, *, context):
+    """
+    Get limit information and check status for an organization.
+
+    Returns:
+        - allowed: bool - whether organization can make more requests
+        - tier: str - subscription tier name
+        - used_seconds: int
+        - limit_seconds: int
+        - remaining_seconds: int
+        - percentage_used: float
+        - unlimited: bool
+    """
+    from shared.cosmo_db import check_organization_limits
+
+    try:
+        client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+        if not client_principal_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        # Verify user has access to this organization
+        user_orgs = get_user_organizations(client_principal_id)
+        user_org_ids = [org.get("id") for org in user_orgs]
+
+        if org_id not in user_org_ids:
+            return jsonify({"error": "Access denied to this organization"}), 403
+
+        # Check limits
+        limits_check = check_organization_limits(org_id)
+
+        # Add formatted time strings
+        from subscription_tiers import format_time_remaining
+        limits_check["used_formatted"] = format_time_remaining(limits_check["used_seconds"])
+        limits_check["limit_formatted"] = format_time_remaining(limits_check["limit_seconds"]) if limits_check["limit_seconds"] != -1 else "Unlimited"
+        limits_check["remaining_formatted"] = format_time_remaining(limits_check["remaining_seconds"]) if limits_check["remaining_seconds"] != -1 else "Unlimited"
+
+        return jsonify(limits_check), 200
+
+    except NotFound:
+        return jsonify({"error": "Organization not found"}), 404
+    except Exception as e:
+        logging.error(f"Error checking limits for organization {org_id}: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/api/subscription-tiers", methods=["GET"])
+def get_subscription_tiers():
+    """
+    Get all subscription tier information for display/comparison.
+
+    No authentication required - this is public pricing information.
+    """
+    from subscription_tiers import get_all_tiers_comparison
+
+    try:
+        tiers = get_all_tiers_comparison()
+        return jsonify({"tiers": tiers}), 200
+    except Exception as e:
+        logging.error(f"Error getting subscription tiers: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 def get_product_prices(product_id):

@@ -1438,3 +1438,344 @@ def delete_brand_by_id(brand_id, organization_id):
     except Exception as e:
         logging.error(f"Error deleting brand with id {brand_id}: {e}")
         raise
+
+
+# ======================
+# USAGE TRACKING FUNCTIONS
+# ======================
+
+
+def initialize_organization_usage(org_id, tier_name="free"):
+    """
+    Initialize or reset usage tracking for an organization.
+
+    Args:
+        org_id (str): The organization ID
+        tier_name (str): The subscription tier name
+
+    Returns:
+        dict: Updated organization document
+    """
+    from subscription_tiers import get_tier_config, DEFAULT_TIER
+
+    if not org_id:
+        raise ValueError("Organization ID is required.")
+
+    tier = get_tier_config(tier_name) or get_tier_config(DEFAULT_TIER)
+    container = get_cosmos_container("organizations")
+
+    try:
+        org = container.read_item(item=org_id, partition_key=org_id)
+
+        # Calculate period start and end
+        now = datetime.now(timezone.utc)
+        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # Calculate next month's first day
+        if period_start.month == 12:
+            period_end = period_start.replace(year=period_start.year + 1, month=1)
+        else:
+            period_end = period_start.replace(month=period_start.month + 1)
+
+        # Initialize usage tracking
+        org["subscriptionTier"] = tier_name
+        org["limits"] = {
+            "conversation_time_minutes_per_month": tier["conversation_time_minutes_per_month"],
+            "max_conversation_duration_minutes": tier["max_conversation_duration_minutes"],
+            "reset_period": "monthly",
+            "reset_day": 1
+        }
+        org["usage"] = {
+            "current_period_start": period_start.isoformat(),
+            "current_period_end": period_end.isoformat(),
+            "total_conversation_time_seconds": 0,
+            "conversations_this_period": 0,
+            "last_reset": now.isoformat(),
+            "last_updated": now.isoformat()
+        }
+
+        # Upsert the organization
+        container.upsert_item(org)
+        logging.info(f"Initialized usage tracking for organization {org_id} with tier {tier_name}")
+        return org
+
+    except CosmosResourceNotFoundError:
+        logging.error(f"Organization {org_id} not found.")
+        raise NotFound
+    except Exception as e:
+        logging.error(f"Error initializing usage for organization {org_id}: {e}")
+        raise
+
+
+def check_organization_limits(org_id):
+    """
+    Check if an organization has conversation time remaining.
+
+    Args:
+        org_id (str): The organization ID
+
+    Returns:
+        dict: {
+            "allowed": bool,
+            "tier": str,
+            "used_seconds": int,
+            "limit_seconds": int,
+            "remaining_seconds": int,
+            "percentage_used": float,
+            "needs_reset": bool
+        }
+    """
+    from subscription_tiers import get_conversation_time_limit_seconds, calculate_usage_percentage
+
+    if not org_id:
+        raise ValueError("Organization ID is required.")
+
+    try:
+        org = get_organization_subscription(org_id)
+
+        # Initialize usage if not present
+        if "usage" not in org or "limits" not in org:
+            logging.warning(f"Organization {org_id} missing usage tracking. Initializing...")
+            tier = org.get("subscriptionTier", "free")
+            org = initialize_organization_usage(org_id, tier)
+
+        # Check if we need to reset usage (new period)
+        needs_reset = _is_new_period(org.get("usage", {}))
+        if needs_reset:
+            logging.info(f"New billing period detected for organization {org_id}. Resetting usage.")
+            org = _reset_organization_usage(org_id)
+
+        # Get limits and usage
+        tier = org.get("subscriptionTier", "free")
+        limits = org.get("limits", {})
+        usage = org.get("usage", {})
+
+        limit_seconds = get_conversation_time_limit_seconds(tier)
+        used_seconds = usage.get("total_conversation_time_seconds", 0)
+
+        # -1 means unlimited
+        if limit_seconds == -1:
+            return {
+                "allowed": True,
+                "tier": tier,
+                "used_seconds": used_seconds,
+                "limit_seconds": -1,
+                "remaining_seconds": -1,
+                "percentage_used": 0.0,
+                "needs_reset": False,
+                "unlimited": True
+            }
+
+        remaining_seconds = max(0, limit_seconds - used_seconds)
+        percentage_used = calculate_usage_percentage(used_seconds, limit_seconds)
+
+        return {
+            "allowed": used_seconds < limit_seconds,
+            "tier": tier,
+            "used_seconds": used_seconds,
+            "limit_seconds": limit_seconds,
+            "remaining_seconds": remaining_seconds,
+            "percentage_used": percentage_used,
+            "needs_reset": False,
+            "unlimited": False
+        }
+
+    except NotFound:
+        logging.error(f"Organization {org_id} not found during limit check.")
+        raise
+    except Exception as e:
+        logging.error(f"Error checking limits for organization {org_id}: {e}")
+        raise
+
+
+def update_organization_usage(org_id, additional_seconds, conversation_id=None):
+    """
+    Update the usage tracking for an organization.
+
+    Args:
+        org_id (str): The organization ID
+        additional_seconds (int): Seconds to add to usage
+        conversation_id (str): Optional conversation ID for tracking
+
+    Returns:
+        dict: Updated organization document
+    """
+    if not org_id:
+        raise ValueError("Organization ID is required.")
+
+    if additional_seconds < 0:
+        raise ValueError("Additional seconds must be non-negative.")
+
+    container = get_cosmos_container("organizations")
+
+    try:
+        org = container.read_item(item=org_id, partition_key=org_id)
+
+        # Initialize usage if not present
+        if "usage" not in org:
+            tier = org.get("subscriptionTier", "free")
+            org = initialize_organization_usage(org_id, tier)
+
+        # Check if we need to reset (new period)
+        if _is_new_period(org.get("usage", {})):
+            org = _reset_organization_usage(org_id)
+            # Re-read after reset
+            org = container.read_item(item=org_id, partition_key=org_id)
+
+        # Update usage
+        usage = org.get("usage", {})
+        usage["total_conversation_time_seconds"] = usage.get("total_conversation_time_seconds", 0) + additional_seconds
+        usage["last_updated"] = datetime.now(timezone.utc).isoformat()
+
+        if conversation_id:
+            usage["conversations_this_period"] = usage.get("conversations_this_period", 0) + 1
+
+        org["usage"] = usage
+
+        # Upsert the organization
+        container.upsert_item(org)
+        logging.info(f"Updated usage for organization {org_id}: +{additional_seconds}s")
+        return org
+
+    except CosmosResourceNotFoundError:
+        logging.error(f"Organization {org_id} not found during usage update.")
+        raise NotFound
+    except Exception as e:
+        logging.error(f"Error updating usage for organization {org_id}: {e}")
+        raise
+
+
+def _is_new_period(usage_data):
+    """
+    Check if we're in a new billing period.
+
+    Args:
+        usage_data (dict): The usage tracking data
+
+    Returns:
+        bool: True if in new period
+    """
+    if not usage_data or "current_period_end" not in usage_data:
+        return True
+
+    try:
+        period_end = datetime.fromisoformat(usage_data["current_period_end"].replace("Z", "+00:00"))
+        now = datetime.now(timezone.utc)
+        return now >= period_end
+    except Exception as e:
+        logging.error(f"Error checking period: {e}")
+        return True
+
+
+def _reset_organization_usage(org_id):
+    """
+    Reset usage for a new billing period.
+
+    Args:
+        org_id (str): The organization ID
+
+    Returns:
+        dict: Updated organization document
+    """
+    container = get_cosmos_container("organizations")
+
+    try:
+        org = container.read_item(item=org_id, partition_key=org_id)
+
+        # Calculate new period
+        now = datetime.now(timezone.utc)
+        period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        if period_start.month == 12:
+            period_end = period_start.replace(year=period_start.year + 1, month=1)
+        else:
+            period_end = period_start.replace(month=period_start.month + 1)
+
+        # Reset usage
+        usage = org.get("usage", {})
+        usage["current_period_start"] = period_start.isoformat()
+        usage["current_period_end"] = period_end.isoformat()
+        usage["total_conversation_time_seconds"] = 0
+        usage["conversations_this_period"] = 0
+        usage["last_reset"] = now.isoformat()
+        usage["last_updated"] = now.isoformat()
+
+        org["usage"] = usage
+
+        # Upsert the organization
+        container.upsert_item(org)
+        logging.info(f"Reset usage for organization {org_id} for new period starting {period_start}")
+        return org
+
+    except CosmosResourceNotFoundError:
+        logging.error(f"Organization {org_id} not found during usage reset.")
+        raise NotFound
+    except Exception as e:
+        logging.error(f"Error resetting usage for organization {org_id}: {e}")
+        raise
+
+
+def get_organization_usage_stats(org_id):
+    """
+    Get detailed usage statistics for an organization.
+
+    Args:
+        org_id (str): The organization ID
+
+    Returns:
+        dict: Detailed usage statistics
+    """
+    from subscription_tiers import (
+        format_time_remaining,
+        calculate_usage_percentage,
+        should_show_warning,
+        get_tier_display_info
+    )
+
+    if not org_id:
+        raise ValueError("Organization ID is required.")
+
+    try:
+        limits_check = check_organization_limits(org_id)
+        org = get_organization_subscription(org_id)
+
+        tier = org.get("subscriptionTier", "free")
+        tier_info = get_tier_display_info(tier)
+        usage = org.get("usage", {})
+        limits = org.get("limits", {})
+
+        used_seconds = limits_check["used_seconds"]
+        limit_seconds = limits_check["limit_seconds"]
+
+        return {
+            "organization_id": org_id,
+            "tier": tier_info,
+            "current_period": {
+                "start": usage.get("current_period_start"),
+                "end": usage.get("current_period_end"),
+                "last_updated": usage.get("last_updated")
+            },
+            "usage": {
+                "used_seconds": used_seconds,
+                "used_formatted": format_time_remaining(used_seconds),
+                "limit_seconds": limit_seconds,
+                "limit_formatted": format_time_remaining(limit_seconds) if limit_seconds != -1 else "Unlimited",
+                "remaining_seconds": limits_check["remaining_seconds"],
+                "remaining_formatted": format_time_remaining(limits_check["remaining_seconds"]) if limit_seconds != -1 else "Unlimited",
+                "percentage_used": limits_check["percentage_used"],
+                "conversations_count": usage.get("conversations_this_period", 0)
+            },
+            "status": {
+                "allowed": limits_check["allowed"],
+                "show_warning": should_show_warning(used_seconds, limit_seconds),
+                "unlimited": limits_check.get("unlimited", False)
+            },
+            "limits": limits
+        }
+
+    except NotFound:
+        logging.error(f"Organization {org_id} not found during stats retrieval.")
+        raise
+    except Exception as e:
+        logging.error(f"Error getting usage stats for organization {org_id}: {e}")
+        raise

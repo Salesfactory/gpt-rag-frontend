@@ -1762,7 +1762,255 @@ def add_or_update_organization_url(organization_id, url, scraping_result=None, a
             
             logging.info(f"[add_or_update_organization_url] URL {url_id} added successfully by {added_by_name or 'Unknown'}")
             return {"message": "URL added successfully", "id": url_id, "action": "added"}
-        
+
     except Exception as e:
         logging.error(f"[add_or_update_organization_url] add_or_update_organization_url: something went wrong. {str(e)}")
         raise
+
+
+################################################
+# CONVERSATION TIME TRACKING
+################################################
+
+
+def calculate_conversation_duration(conversation_id, user_id):
+    """
+    Calculate the duration of a conversation in seconds.
+
+    Args:
+        conversation_id (str): The conversation ID
+        user_id (str): The user ID (partition key)
+
+    Returns:
+        int: Duration in seconds, or 0 if conversation not found or no messages
+    """
+    try:
+        if not conversation_id or not user_id:
+            raise ValueError("conversation_id and user_id are required")
+
+        container = get_cosmos_container("conversations")
+        conversation = container.read_item(item=conversation_id, partition_key=user_id)
+
+        conversation_data = conversation.get("conversation_data", {})
+        start_date_str = conversation_data.get("start_date")
+        last_message_time_str = conversation_data.get("last_message_time")
+
+        if not start_date_str:
+            logging.warning(f"Conversation {conversation_id} has no start_date")
+            return 0
+
+        # Parse start date
+        start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+
+        # If we have last_message_time, use it; otherwise use current time
+        if last_message_time_str:
+            end_date = datetime.fromisoformat(last_message_time_str.replace("Z", "+00:00"))
+        else:
+            end_date = datetime.now(timezone.utc)
+
+        duration = (end_date - start_date).total_seconds()
+        return max(0, int(duration))
+
+    except Exception as e:
+        logging.error(f"Error calculating duration for conversation {conversation_id}: {e}")
+        return 0
+
+
+def update_conversation_timestamps(conversation_id, user_id, is_active=True):
+    """
+    Update the last_message_time and duration for a conversation.
+
+    Args:
+        conversation_id (str): The conversation ID
+        user_id (str): The user ID (partition key)
+        is_active (bool): Whether the conversation is still active
+
+    Returns:
+        dict: Updated conversation document, or None if error
+    """
+    try:
+        if not conversation_id or not user_id:
+            raise ValueError("conversation_id and user_id are required")
+
+        container = get_cosmos_container("conversations")
+        conversation = container.read_item(item=conversation_id, partition_key=user_id)
+
+        conversation_data = conversation.get("conversation_data", {})
+        now = datetime.now(timezone.utc).isoformat()
+
+        # Update last_message_time
+        conversation_data["last_message_time"] = now
+        conversation_data["is_active"] = is_active
+
+        # If marking as inactive, set end_date
+        if not is_active and "end_date" not in conversation_data:
+            conversation_data["end_date"] = now
+
+        # Calculate and update duration
+        start_date_str = conversation_data.get("start_date")
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str.replace("Z", "+00:00"))
+            end_time = datetime.fromisoformat(now.replace("Z", "+00:00"))
+            duration_seconds = int((end_time - start_date).total_seconds())
+            conversation_data["duration_seconds"] = max(0, duration_seconds)
+
+        conversation["conversation_data"] = conversation_data
+
+        # Upsert the conversation
+        container.upsert_item(conversation)
+        logging.info(f"Updated timestamps for conversation {conversation_id}")
+        return conversation
+
+    except Exception as e:
+        logging.error(f"Error updating timestamps for conversation {conversation_id}: {e}")
+        return None
+
+
+def get_conversation_duration_seconds(conversation_id, user_id):
+    """
+    Get the stored duration of a conversation in seconds.
+
+    Args:
+        conversation_id (str): The conversation ID
+        user_id (str): The user ID (partition key)
+
+    Returns:
+        int: Duration in seconds, or calculated duration if not stored
+    """
+    try:
+        if not conversation_id or not user_id:
+            raise ValueError("conversation_id and user_id are required")
+
+        container = get_cosmos_container("conversations")
+        conversation = container.read_item(item=conversation_id, partition_key=user_id)
+
+        conversation_data = conversation.get("conversation_data", {})
+
+        # Return stored duration if available
+        stored_duration = conversation_data.get("duration_seconds")
+        if stored_duration is not None:
+            return stored_duration
+
+        # Otherwise calculate it
+        return calculate_conversation_duration(conversation_id, user_id)
+
+    except Exception as e:
+        logging.error(f"Error getting duration for conversation {conversation_id}: {e}")
+        return 0
+
+
+def check_conversation_session_limit(conversation_id, user_id, org_id):
+    """
+    Check if a conversation has exceeded its session time limit.
+
+    Args:
+        conversation_id (str): The conversation ID
+        user_id (str): The user ID (partition key)
+        org_id (str): The organization ID
+
+    Returns:
+        dict: {
+            "allowed": bool,
+            "duration_seconds": int,
+            "limit_seconds": int,
+            "remaining_seconds": int,
+            "exceeded": bool
+        }
+    """
+    from subscription_tiers import get_max_session_duration_seconds
+    from shared.cosmo_db import get_organization_subscription
+
+    try:
+        # Get organization tier
+        org = get_organization_subscription(org_id)
+        tier = org.get("subscriptionTier", "free")
+
+        # Get session limit
+        limit_seconds = get_max_session_duration_seconds(tier)
+
+        # Get current conversation duration
+        duration_seconds = calculate_conversation_duration(conversation_id, user_id)
+
+        # -1 means unlimited
+        if limit_seconds == -1:
+            return {
+                "allowed": True,
+                "duration_seconds": duration_seconds,
+                "limit_seconds": -1,
+                "remaining_seconds": -1,
+                "exceeded": False,
+                "unlimited": True
+            }
+
+        remaining_seconds = max(0, limit_seconds - duration_seconds)
+        exceeded = duration_seconds >= limit_seconds
+
+        return {
+            "allowed": not exceeded,
+            "duration_seconds": duration_seconds,
+            "limit_seconds": limit_seconds,
+            "remaining_seconds": remaining_seconds,
+            "exceeded": exceeded,
+            "unlimited": False
+        }
+
+    except Exception as e:
+        logging.error(f"Error checking session limit for conversation {conversation_id}: {e}")
+        # Default to allowing in case of error
+        return {
+            "allowed": True,
+            "duration_seconds": 0,
+            "limit_seconds": -1,
+            "remaining_seconds": -1,
+            "exceeded": False,
+            "error": str(e)
+        }
+
+
+def track_conversation_usage(conversation_id, user_id, org_id):
+    """
+    Track conversation usage and update organization usage counters.
+    This should be called after each message in a conversation.
+
+    Args:
+        conversation_id (str): The conversation ID
+        user_id (str): The user ID (partition key)
+        org_id (str): The organization ID
+
+    Returns:
+        dict: Usage tracking result with status
+    """
+    from shared.cosmo_db import update_organization_usage, check_organization_limits
+
+    try:
+        # Update conversation timestamps
+        conversation = update_conversation_timestamps(conversation_id, user_id, is_active=True)
+        if not conversation:
+            return {"success": False, "error": "Failed to update conversation"}
+
+        # Get conversation duration
+        duration_seconds = get_conversation_duration_seconds(conversation_id, user_id)
+
+        # Check if organization has time remaining
+        limits_check = check_organization_limits(org_id)
+
+        # Check session limit
+        session_check = check_conversation_session_limit(conversation_id, user_id, org_id)
+
+        return {
+            "success": True,
+            "conversation_duration_seconds": duration_seconds,
+            "organization_limits": limits_check,
+            "session_limits": session_check,
+            "warnings": {
+                "monthly_limit_warning": limits_check.get("percentage_used", 0) >= 80,
+                "session_limit_warning": (
+                    session_check.get("duration_seconds", 0) / session_check.get("limit_seconds", 1) >= 0.8
+                    if session_check.get("limit_seconds", -1) > 0 else False
+                )
+            }
+        }
+
+    except Exception as e:
+        logging.error(f"Error tracking conversation usage for {conversation_id}: {e}")
+        return {"success": False, "error": str(e)}
