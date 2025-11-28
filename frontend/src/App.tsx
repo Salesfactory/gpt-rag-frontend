@@ -14,6 +14,7 @@ import SuccessPayment from "./components/PaymentGateway/SuccessPayment";
 import Layout from "./pages/layout/_Layoutcopy";
 import Chat from "./pages/chat/Chatcopy";
 import Admin from "./pages/admin/Admincopy";
+import ChatUsage from "./pages/admin/ChatUsage";
 import Organization from "./pages/organization/Organizationcopy";
 
 import UploadResources from "./pages/resources/UploadResources";
@@ -131,6 +132,7 @@ export default function App() {
             >
                 <Route element={<Layout />}>
                     <Route path="/upload-consumer-pulse" element={<UploadConsumerPulse />} />
+                    <Route path="/chat-usage" element={<ChatUsage />} />
                 </Route>
             </Route>
 

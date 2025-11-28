@@ -7,9 +7,7 @@ import secrets
 import uuid
 import time
 from utils import create_success_response, create_error_response
-
 from routes.decorators.auth_decorator import auth_required
-
 BLOB_CONTAINER_NAME = "user-documents"
 ALLOWED_FILE_EXTENSIONS = [".pdf"]
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB 

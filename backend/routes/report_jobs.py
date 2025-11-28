@@ -27,7 +27,7 @@ from flask import Blueprint, request, jsonify, abort
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 
 from shared import clients
-from shared.idempotency import weekly_idem_key
+from routes.decorators.auth_decorator import auth_required
 
 from routes.decorators.auth_decorator import auth_required
 

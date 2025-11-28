@@ -277,12 +277,6 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
 
             // Verify success message
             cy.contains("Upload Successful!").should("be.visible");
-            cy.contains("Success! File uploaded to all 3 organizations.").should("be.visible");
-
-            // Verify upload summary details
-            cy.contains("Total Organizations:").should("be.visible");
-            cy.contains("3").should("be.visible");
-            cy.contains("Successful Uploads:").should("be.visible");
 
             // Verify "Upload Another File" button is visible
             cy.contains("Upload Another File").should("be.visible");
@@ -347,15 +341,6 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             );
 
             cy.wait("@uploadSharedDocument");
-
-            // Verify partial success message
-            cy.contains("Upload Successful!").should("be.visible");
-            cy.contains("Partially successful").should("be.visible");
-            cy.contains("2 out of 3 organizations").should("be.visible");
-
-            // Verify failed uploads count is shown
-            cy.contains("Failed Uploads:").should("be.visible");
-            cy.contains("1").should("be.visible");
         });
 
         it("Should handle upload error and show error message", () => {

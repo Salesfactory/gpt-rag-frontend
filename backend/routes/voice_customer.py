@@ -3,7 +3,7 @@
 from flask import Blueprint, current_app, request
 from pydantic import ValidationError
 import logging
-
+from routes.decorators.auth_decorator import auth_required
 from utils import (create_success_response, create_error_response)
 from shared.cosmo_db import (
     create_competitor,
@@ -296,6 +296,7 @@ def delete_product(product_id):
     
 
 @bp.route("/competitors", methods=["POST"])
+@auth_required
 def add_competitor():
     """
     Handles the creation of a new competitor and associates it with specified brands.
