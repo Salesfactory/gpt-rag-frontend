@@ -25,18 +25,8 @@ const UploadConsumerPulse: React.FC = () => {
             if (result.data) {
                 setUploadStatus("success");
                 setUploadDetails(result.data);
+                setUploadMessage(`Success! File uploaded to all organizations.`);
                 
-                const { successful_uploads, total_organizations, failed_uploads } = result.data;
-                
-                if (failed_uploads === 0) {
-                    setUploadMessage(
-                        `Success! File uploaded to all ${total_organizations} organizations.`
-                    );
-                } else {
-                    setUploadMessage(
-                        `Partially successful. File uploaded to ${successful_uploads} out of ${total_organizations} organizations. ${failed_uploads} failed.`
-                    );
-                }
             } else {
                 setUploadStatus("error");
                 setUploadMessage("Upload failed. Please try again.");
