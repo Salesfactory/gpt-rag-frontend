@@ -1766,3 +1766,72 @@ def add_or_update_organization_url(organization_id, url, scraping_result=None, a
     except Exception as e:
         logging.error(f"[add_or_update_organization_url] add_or_update_organization_url: something went wrong. {str(e)}")
         raise
+    
+def create_organization_usage(organization_id, period_start, period_end):
+    if not organization_id:
+        return {"error": "Organization ID not found."}
+
+    logging.info(
+        f"[create_organization_usage] Processing usage record for organization: {organization_id}"
+    )
+
+    credential = DefaultAzureCredential()
+    db_client = CosmosClient(AZURE_DB_URI, credential, consistency_level="Session")
+    db = db_client.get_database_client(database=AZURE_DB_NAME)
+    container = db.get_container_client("organizationUsage")
+
+    try:
+        # Check if usage record already exists
+        query = "SELECT * FROM c WHERE c.organization_id = @organization_id"
+        parameters = [{"name": "@organization_id", "value": organization_id}]
+        results = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
+
+        if results:
+            usage_item = results[0]
+            usage_item["periodStart"] = period_start
+            usage_item["periodEnd"] = period_end
+            # If updating the subscription/period, we might want to reset usage or keep it?
+            # The request says "include ... a current usage with a 0 value".
+            # We will assume updating implies starting/refreshing the period usage.
+            usage_item["current_usage"] = 0 
+            usage_item["updatedAt"] = int(datetime.now(timezone.utc).timestamp())
+            
+            container.replace_item(item=usage_item["id"], body=usage_item)
+            logging.info(
+                f"[create_organization_usage] Successfully updated usage record for organization {organization_id}"
+            )
+        else:
+            usage_item = {
+                "id": str(uuid.uuid4()),
+                "organization_id": organization_id,
+                "currentUsage": {
+                "conversationMinutes": 0,
+                "pages": 0,
+                "documents": 0,
+                "spreadsheets": 0,
+                "scrapingUrls": 0,
+                "scrapingSites": 0,
+                "reports": 0,
+                "images": 0,
+                "users": 0
+                },
+                "usage_type": "",
+                "periodStart": period_start,
+                "periodEnd": period_end,
+                "createdAt": int(datetime.now(timezone.utc).timestamp()),
+                "metadata": {},
+            }
+            container.create_item(body=usage_item)
+            logging.info(
+                f"[create_organization_usage] Successfully created usage record for organization {organization_id}"
+            )
+        return {"success": True}
+    except Exception as e:
+        logging.error(
+            f"[create_organization_usage] Failed to process usage record: {str(e)}"
+        )
+        return {"error": str(e)}

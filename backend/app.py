@@ -70,6 +70,7 @@ from utils import (
     search_urls,
     set_settings,
     validate_url,
+    create_organization_usage,
 )
 
 import stripe.error
@@ -1368,6 +1369,16 @@ def webhook():
             }
             response = requests.request("POST", url, headers=headers, data=payload)
             logging.info(f"[webbackend] RESPONSE: {response.text[:500]}...")
+
+            if response.status_code == 200:
+                try:
+                    subscription = stripe.Subscription.retrieve(subscriptionId)
+                    period_start = subscription.get("current_period_start")
+                    period_end = subscription.get("current_period_end")
+                    create_organization_usage(organizationId, period_start, period_end)
+                except Exception as e:
+                    logging.error(f"[webbackend] Error updating organization usage: {str(e)}")
+
         except Exception as e:
             logging.exception("[webbackend] exception in /api/checkUser")
             return jsonify({"error": str(e)}), 500
