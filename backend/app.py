@@ -70,6 +70,7 @@ from utils import (
     search_urls,
     set_settings,
     validate_url,
+    create_organization_usage,
 )
 
 import stripe.error
@@ -1332,6 +1333,51 @@ def webhook():
         paymentStatus = event["data"]["object"]["payment_status"]
         organizationName = event["data"]["object"]["custom_fields"][0]["text"]["value"]
         expirationDate = event["data"]["object"]["expires_at"]
+        
+        # Extract plan information from the webhook event
+        plan_nickname = None
+        try:
+            # Try to get plan nickname from subscription items metadata
+            if "line_items" in event["data"]["object"]:
+                line_items = event["data"]["object"]["line_items"]["data"]
+                if line_items and len(line_items) > 0:
+                    price = line_items[0].get("price", {})
+                    if price:
+                        plan_nickname = price.get("nickname") or price.get("metadata", {}).get("plan_nickname")
+            
+            # Fallback: Try to get from subscription metadata directly
+            if not plan_nickname and subscriptionId:
+                try:
+                    subscription = stripe.Subscription.retrieve(subscriptionId)
+                    if subscription and subscription.get("items") and subscription["items"].get("data"):
+                        items_data = subscription["items"]["data"]
+                        if items_data and len(items_data) > 0:
+                            plan_nickname = items_data[0].get("plan", {}).get("nickname")
+                            if not plan_nickname:
+                                plan_nickname = items_data[0].get("price", {}).get("nickname")
+                            if not plan_nickname:
+                                # Try metadata
+                                plan_nickname = items_data[0].get("metadata", {}).get("plan_nickname")
+                except Exception as stripe_err:
+                    logging.warning(f"[webhook] Could not retrieve subscription details: {stripe_err}")
+                    
+        except Exception as e:
+            logging.warning(f"[webhook] Error extracting plan nickname: {e}")
+        
+        # Create or update organization usage wallet
+        if plan_nickname:
+            try:
+                logging.info(f"[webhook] Creating organization usage for org {organizationId} with plan {plan_nickname}")
+                create_organization_usage(
+                    organization_id=organizationId,
+                    subscription_tier_id=plan_nickname
+                )
+                logging.info(f"[webhook] Successfully created/updated organization usage for org {organizationId}")
+            except Exception as e:
+                logging.error(f"[webhook] Error creating organization usage: {e}")
+        else:
+            logging.warning(f"[webhook] Could not extract plan nickname from webhook event for org {organizationId}")
+        
         try:
             # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
             # It is set during the infrastructure deployment.
