@@ -14,6 +14,24 @@ describe("Onboarding Tests", () => {
             status: "pending"
         }
         }).as('createOrganization');
+        cy.intercept('GET','/api/get-user-organizations', {
+        statusCode: 200,
+        body: [
+            {
+                id: "org_123456",
+                name: "Grove Street Families",
+                owner: "David Martinez",
+            }
+        ]
+        }).as('getOrganizations');
+        cy.intercept('POST', '/api/create-organization-usage', {
+        statusCode: 201,
+        body: {
+            id: "usage_123456",
+            organizationId: "org_123456",
+            subscriptionTierId: "free"
+        }
+        }).as('createOrganizationUsage');
         cy.url().should("include", "#/onboarding");
     });
 
