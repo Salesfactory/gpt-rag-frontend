@@ -1344,23 +1344,6 @@ def webhook():
                     price = line_items[0].get("price", {})
                     if price:
                         plan_nickname = price.get("nickname") or price.get("metadata", {}).get("plan_nickname")
-            
-            # Fallback: Try to get from subscription metadata directly
-            if not plan_nickname and subscriptionId:
-                try:
-                    subscription = stripe.Subscription.retrieve(subscriptionId)
-                    if subscription and subscription.get("items") and subscription["items"].get("data"):
-                        items_data = subscription["items"]["data"]
-                        if items_data and len(items_data) > 0:
-                            plan_nickname = items_data[0].get("plan", {}).get("nickname")
-                            if not plan_nickname:
-                                plan_nickname = items_data[0].get("price", {}).get("nickname")
-                            if not plan_nickname:
-                                # Try metadata
-                                plan_nickname = items_data[0].get("metadata", {}).get("plan_nickname")
-                except Exception as stripe_err:
-                    logging.warning(f"[webhook] Could not retrieve subscription details: {stripe_err}")
-                    
         except Exception as e:
             logging.warning(f"[webhook] Error extracting plan nickname: {e}")
         
@@ -1375,8 +1358,10 @@ def webhook():
                 logging.info(f"[webhook] Successfully created/updated organization usage for org {organizationId}")
             except Exception as e:
                 logging.error(f"[webhook] Error creating organization usage: {e}")
+                return jsonify({"error": str(e)}), 500
         else:
             logging.warning(f"[webhook] Could not extract plan nickname from webhook event for org {organizationId}")
+            return jsonify({"error": "Could not extract plan nickname from webhook event for org {organizationId}"}), 500
         
         try:
             # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
