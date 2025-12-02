@@ -29,6 +29,8 @@ from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpRespo
 from shared import clients
 from routes.decorators.auth_decorator import auth_required
 
+from routes.decorators.auth_decorator import auth_required
+
 bp = Blueprint("report_jobs", __name__, url_prefix="/api/report-jobs")
 log = logging.getLogger(__name__)
 

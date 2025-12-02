@@ -25,6 +25,8 @@ from shared.cosmo_db import (
 
 from schemas import BrandCreateSchema, BrandUpdateSchema, ProductCreateSchema, ProductUpdateSchema, CompetitorCreateSchema, CompetitorUpdateSchema
 
+from routes.decorators.auth_decorator import auth_required
+
 bp = Blueprint("voice_customer", __name__, url_prefix="/api/voice-customer")
 
 logging.basicConfig(level=logging.DEBUG)
@@ -92,6 +94,7 @@ def get_brands(organization_id):
         return create_error_response(f"Error retrieving brands: {str(e)}", 500)
 
 @bp.route("/brands/<brand_id>", methods=["PATCH"])
+@auth_required
 def update_brand(brand_id):
     """
     Updates the details of a brand with the specified brand_id.
@@ -198,6 +201,7 @@ def create_product():
 @bp.route(
     "/organizations/<organization_id>/products", methods=["GET"]
 )
+@auth_required
 def get_products(organization_id):
     """
     Retrieve products for a given organization.
@@ -337,6 +341,7 @@ def add_competitor():
         return create_error_response(f"Error creating competitor", 500)
 
 @bp.route("/competitors/<competitor_id>", methods=["PATCH"])
+@auth_required
 def update_competitor(competitor_id):
     """
     Updates a competitor's information based on the provided competitor ID and JSON payload.
