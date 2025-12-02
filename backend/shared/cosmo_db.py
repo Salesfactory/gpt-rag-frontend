@@ -1438,3 +1438,86 @@ def delete_brand_by_id(brand_id, organization_id):
     except Exception as e:
         logging.error(f"Error deleting brand with id {brand_id}: {e}")
         raise
+
+def get_subscription_tier_by_id(tier_id):
+    """
+    Retrieves a subscription tier by its ID from the subscriptionTiers container.
+    Parameters:
+        tier_id (str): The ID of the subscription tier.
+    Returns:
+        dict: The subscription tier document.
+    Raises:
+        NotFound: If the subscription tier is not found.
+        Exception: For any other unexpected error.
+    """
+    container = get_cosmos_container("subscriptionTiers")
+
+    try:
+        tier = container.read_item(item=tier_id, partition_key=tier_id)
+        logging.info(f"Subscription tier successfully retrieved: {tier}")
+        return tier
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Subscription tier with id '{tier_id}' not found in Cosmos DB.")
+        raise NotFound(f"Subscription tier not found")
+
+    except Exception as e:
+        logging.error(f"Unexpected error retrieving subscription tier with id '{tier_id}': {e}")
+        raise
+
+def upsert_organization_usage(usage_data):
+    """
+    Creates or updates organization usage data in the organizationsUsage container.
+    Parameters:
+        usage_data (dict): The usage data to upsert.
+    Returns:
+        dict: The upserted document.
+    Raises:
+        Exception: For any error during the operation.
+    """
+    container = get_cosmos_container("organizationsUsage")
+
+    try:
+        result = container.upsert_item(usage_data)
+        logging.info(f"Organization usage upserted successfully: {result}")
+        return result
+
+    except Exception as e:
+        logging.error(f"Error upserting organization usage: {e}")
+        raise
+
+def get_organization_usage(organization_id):
+    """
+    Retrieves organization usage data by organization ID.
+    Parameters:
+        organization_id (str): The organization ID.
+    Returns:
+        dict or None: The organization usage document if found, None otherwise.
+    """
+    container = get_cosmos_container("organizationsUsage")
+
+    try:
+        query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.type = @type"
+        parameters = [
+            {"name": "@organization_id", "value": organization_id},
+            {"name": "@type", "value": "wallet"}
+        ]
+
+        items = list(
+            container.query_items(
+                partition_key=organization_id,
+                query=query,
+                parameters=parameters
+            )
+        )
+
+        if items:
+            logging.info(f"Organization usage found for organization '{organization_id}'")
+            return items[0]
+        else:
+            logging.info(f"No organization usage found for organization '{organization_id}'")
+            return None
+
+    except Exception as e:
+        logging.error(f"Error retrieving organization usage for organization '{organization_id}': {e}")
+        return None

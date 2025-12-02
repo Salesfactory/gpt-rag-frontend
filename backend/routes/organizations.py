@@ -116,6 +116,25 @@ def generate_business_description(organization_id, file_name):
         if blob_temp_path and os.path.exists(blob_temp_path):
             os.remove(blob_temp_path)
 
+from utils import create_organization_usage
+@bp.route("/api/create-organization-usage", methods=["POST"])
+@auth_required
+def createOrganizationUsage():
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return create_error_response({"error": "Missing required parameters, client_principal_id"}, HTTPStatus.BAD_REQUEST)
+    try:
+        organizationId = request.json["organizationId"]
+        subscriptionTierId = request.json["subscriptionTierId"]
+        if not organizationId or not subscriptionTierId:
+            return create_error_response({"error": "Missing required parameters, organizationId or subscriptionTierId"}, HTTPStatus.BAD_REQUEST)
+        organizationUsage = create_organization_usage(organizationId, subscriptionTierId)
+        if not organizationUsage:
+            return create_error_response({"error": "Failed to create organization usage"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+        return create_success_response(organizationUsage)
+    except Exception as e:
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+
 @bp.route("/api/create-organization", methods=["POST"])
 @auth_required
 def createOrganization():
