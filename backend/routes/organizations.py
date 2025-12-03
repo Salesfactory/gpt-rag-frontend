@@ -15,6 +15,7 @@ from data_summary.blob_utils import (
 from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
 from shared.cosmo_db import create_organization, get_organization_data
+from shared.decorators import check_organization_limits
 
 from utils import create_success_response, create_error_response
 
@@ -167,6 +168,7 @@ def createOrganization():
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
+
 @bp.route("/api/organizations/<organization_id>/storage-usage", methods=["GET"])
 @auth_required
 def getOrganizationStorageCapacity(organization_id):
@@ -207,5 +209,13 @@ def getOrganizationStorageCapacity(organization_id):
             "percentageUsed": percentage_used
         })
 
+    except Exception as e:
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+@bp.route("/api/organizations/<organization_id>/usage", methods=["GET"])
+@check_organization_limits()
+def getOrganizationUsage(organization_id, **kwargs):
+    try:
+        return create_success_response(kwargs["organization_usage"], HTTPStatus.OK)
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
