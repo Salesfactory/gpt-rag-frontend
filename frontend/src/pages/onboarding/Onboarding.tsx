@@ -4,7 +4,7 @@ import salesLogo from "../../img/logo_white.png";
 import styles from "./Onboarding.module.css";
 import { ChevronRightRegular, ChevronLeftRegular, MoneySettingsRegular } from "@fluentui/react-icons";
 import { Spinner } from "@fluentui/react";
-import { createOrganization } from "../../api";
+import { createOrganization, createOrganizationUsage } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import backgroud from "../../img/background.png";
 import mall from "../../img/welcome_image.png";
@@ -30,11 +30,17 @@ const Onboarding: React.FC = () => {
         if (!partialUser) {
             return null;
         }
+        try {
         const newOrganization = await createOrganization({ userId: partialUser.id, organizationName: organizationName });
-        if (newOrganization.id) {
+        const organizationUsage = await createOrganizationUsage({ userId: partialUser.id, organizationId: newOrganization.id, subscriptionTierId: "tier_free" });
+        if (newOrganization.id && organizationUsage.id) {
             setOrganization(newOrganization);
             setUser({ ...partialUser, organizationId: newOrganization.id });
             return newOrganization;
+        }
+        } catch (error) {
+            console.error(error);
+            return null;
         }
     };
 
