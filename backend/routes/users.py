@@ -18,8 +18,9 @@ from utils import (
     get_users,
     reset_password,
 )
-from shared.cosmo_db import get_user_container, patch_user_data, update_user, set_user
+from shared.cosmo_db import get_organization_usage, get_user_container, patch_user_data, update_user, set_user
 from routes.decorators.auth_decorator import auth_required
+from shared.decorators import require_user_conversation_limits
 
 bp = Blueprint("users", __name__)
 
@@ -544,3 +545,21 @@ def getUsers():
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
 
+
+@bp.route("/api/users/usage", methods=["POST"])
+@require_user_conversation_limits()
+def getUserConversationUsage():
+    """
+    Endpoint to get the conversation usage for a user within an organization.
+    Expects 'organization_id' and 'user_id' in the request (either as URL parameters or in the JSON body).
+    """
+    data = request.get_json()
+    organization_id = data.get("organization_id")
+    user_id = data.get("user_id")
+    if not organization_id or not user_id:
+        return jsonify({"error": "Missing required parameters, organization_id or user_id"}), 400
+    try:
+        return jsonify({"message": "User conversation limits check passed"}), 200
+    except Exception as e:
+        logging.exception(f"Error retrieving conversation usage for user {user_id} in organization {organization_id}")
+        return jsonify({"error": "Internal Server Error"}), 500

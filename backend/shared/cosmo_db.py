@@ -1454,7 +1454,6 @@ def get_subscription_tier_by_id(tier_id):
 
     try:
         tier = container.read_item(item=tier_id, partition_key=tier_id)
-        print(tier)
         logging.info(f"Subscription tier successfully retrieved: {tier}")
         return tier
 
