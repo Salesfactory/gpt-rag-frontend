@@ -79,7 +79,6 @@ def check_organization_limits():
 
                 return f(*args, **kwargs)
             except Exception as e:
-                logging.error(f"Error in check_organization_limits decorator: {e}")
                 return jsonify({"error": "Internal server error"}), 500
 
         return decorated_function
@@ -117,7 +116,6 @@ def require_conversation_limits():
 
                 return f(*args, **kwargs)
             except Exception as e:
-                logging.error(f"Error in require_conversation_limits decorator: {e}")
                 return jsonify({"error": "Internal server error"}), 500
 
         return decorated_function
@@ -158,7 +156,6 @@ def require_user_conversation_limits():
                 return f(*args, **kwargs)
 
             except Exception as e:
-                logging.error(f"Error in require_user_conversation_limits decorator: {e}")
                 return jsonify({"error": "Internal server error"}), 500
 
         return decorated_function
