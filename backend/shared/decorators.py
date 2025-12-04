@@ -146,10 +146,13 @@ def require_user_conversation_limits():
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
 
-                if org_usage["balance"]["currentCreditsUsed"] < org_limits["quotas"]["totalCreditsAllocated"]:
-                    if org_usage["policy"]["allowedUserIds"][user_id]["used"] >= org_usage["policy"]["allowedUserIds"][user_id]["limit"]:
-                        return jsonify({"error": "User has exceeded their conversation limits"}), 403
-                else:
+                allowed_users = org_usage["policy"].get("allowedUserIds", {})
+                user_limits = allowed_users.get(user_id)
+                if not user_limits:
+                    return jsonify({"error": "User is not authorized for this organization"}), 403
+                if user_limits["used"] >= user_limits["limit"]:
+                    return jsonify({"error": "User has exceeded their conversation limits"}), 403
+                if org_usage["balance"]["currentCreditsUsed"] >= org_limits["quotas"]["totalCreditsAllocated"]:
                     return jsonify({"error": "Organization has exceeded its conversation limits"}), 403
 
                 return f(*args, **kwargs)
