@@ -22,6 +22,51 @@ describe("Onboarding Tests", () => {
             subscriptionTierId: "free"
         }
         }).as('createOrganizationUsage');
+        // Mock Stripe API key endpoint
+        cy.intercept('GET', '/api/stripe', {
+        statusCode: 200,
+        body: {
+            functionKey: "pk_test_mock_stripe_key_123456789"
+        }
+        }).as('getStripeKey');
+        // Mock product prices endpoint
+        cy.intercept('GET', '/api/prices', {
+        statusCode: 200,
+        body: {
+            prices: [
+            {
+                id: "price_basic",
+                nickname: "Basic",
+                unit_amount: 999,
+                currency: "usd",
+                metadata: {
+                features: "Feature 1, Feature 2, Feature 3",
+                FAQ: "Question 1?*Answer 1*Question 2?*Answer 2"
+                }
+            },
+            {
+                id: "price_premium",
+                nickname: "Premium",
+                unit_amount: 2999,
+                currency: "usd",
+                metadata: {
+                features: "Feature 1, Feature 2, Feature 3, Feature 4",
+                FAQ: "Question 1?*Answer 1*Question 2?*Answer 2"
+                }
+            },
+            {
+                id: "price_custom",
+                nickname: "Custom",
+                unit_amount: 4999,
+                currency: "usd",
+                metadata: {
+                features: "All features, Custom support, Priority access",
+                FAQ: "Question 1?*Answer 1*Question 2?*Answer 2"
+                }
+            }
+            ]
+        }
+        }).as('getPrices');
         cy.url().should("include", "#/onboarding");
     });
 

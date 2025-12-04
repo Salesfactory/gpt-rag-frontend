@@ -16,7 +16,7 @@ from functools import wraps
 import os
 from dotenv import load_dotenv
 
-
+from utils import create_organization_usage
 
 
 import requests
@@ -1179,6 +1179,7 @@ def create_checkout_session(*, context):
     organizationId = request.json["organizationId"]
     userName = request.json["userName"]
     organizationName = request.json["organizationName"]
+    subscriptionTierId = request.json["subscriptionTierId"]
     try:
         checkout_session = stripe.checkout.Session.create(
             line_items=[{"price": price, "quantity": 1}],
@@ -1189,6 +1190,7 @@ def create_checkout_session(*, context):
                 "organizationId": organizationId,
                 "userName": userName,
                 "organizationName": organizationName,
+                "subscriptionTierId": subscriptionTierId
             },
             success_url=success_url,
             cancel_url=cancel_url,
@@ -1293,7 +1295,7 @@ def getStripe(*, context):
     try:
         keySecretName = "stripeKey"
         functionKey = clients.get_azure_key_vault_secret(keySecretName)
-        return functionKey
+        return jsonify({"functionKey": functionKey})
     except Exception as e:
         logging.exception("[webbackend] exception in /api/stripe")
         return jsonify({"error": str(e)}), 500
@@ -1301,6 +1303,7 @@ def getStripe(*, context):
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    logging.info("🔔  Webhook received!")
     stripe.api_key = os.getenv("STRIPE_API_KEY")
     endpoint_secret = os.getenv("STRIPE_SIGNING_SECRET")
 
@@ -1327,12 +1330,14 @@ def webhook():
         print("🔔  Webhook received!", event["type"])
         userId = event["data"]["object"]["client_reference_id"]
         organizationId = event["data"]["object"]["metadata"]["organizationId"]
+        organizationName = event["data"]["object"]["metadata"]["organizationName"]
+        subscriptionTierId = event["data"]["object"]["metadata"]["subscriptionTierId"]
         sessionId = event["data"]["object"]["id"]
         subscriptionId = event["data"]["object"]["subscription"]
         paymentStatus = event["data"]["object"]["payment_status"]
-        organizationName = event["data"]["object"]["custom_fields"][0]["text"]["value"]
         expirationDate = event["data"]["object"]["expires_at"]
         try:
+            create_organization_usage(organizationId, subscriptionId, subscriptionTierId, userId)
             # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
             # It is set during the infrastructure deployment.
             keySecretName = "orchestrator-host--subscriptions"
