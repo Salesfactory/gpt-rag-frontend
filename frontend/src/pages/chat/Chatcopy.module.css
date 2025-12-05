@@ -14,83 +14,83 @@
 }
 
 .chatInputDragOver {
-  outline: 2px dashed #047857;
-  outline-offset: 4px;
+    outline: 2px dashed #047857;
+    outline-offset: 4px;
 }
 
 /* File upload error message */
 .fileUploadError {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
-  font-size: 14px;
-  width: 80%;
-  max-width: 80%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    font-size: 14px;
+    width: 92%;
+    max-width: 92%;
 }
 
 .errorIcon {
-  font-weight: bold;
-  font-size: 16px;
+    font-weight: bold;
+    font-size: 16px;
 }
 
 /* Attachment display container */
 .attachmentDisplay {
-  width: 80%;
-  max-width: 80%;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: flex-start;
+    width: 92%;
+    max-width: 92%;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: flex-start;
 }
 
 .attachmentChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 16px;
-  background: #ecfdf5;
-  border: 1px solid #d1fae5;
-  color: #065f46;
-  font-size: 13px;
-  line-height: 1.2;
-  width: max-content;
-  max-width: 400px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    background: #ecfdf5;
+    border: 1px solid #d1fae5;
+    color: #065f46;
+    font-size: 13px;
+    line-height: 1.2;
+    width: max-content;
+    max-width: 400px;
 }
 
 .attachmentName {
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
 }
 
 .removeChipBtn {
-  background: transparent;
-  border: none;
-  color: #065f46;
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s, color 0.2s;
+    background: transparent;
+    border: none;
+    color: #065f46;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .removeChipBtn:hover {
-  background: #d1fae5;
-  color: #047857;
+    background: #d1fae5;
+    color: #047857;
 }
 
 .chatRoot {
@@ -173,8 +173,8 @@
 }
 
 .chatMessageStream {
-    width: 80%;
-    max-width: 80%;
+    width: 92%;
+    max-width: 92%;
     padding-top: 0;
     display: flex;
     flex-direction: column;
@@ -185,24 +185,22 @@
 }
 
 
-.chatMessageStream > .chatMessageGpt,
-.chatMessageStream > .chatMessageGptMinWidth {
+.chatMessageGpt {
     margin-left: auto;
     margin-right: auto;
-    width: 80%;
-    max-width: 80%;
-}
-
-.chatMessageGpt {
     margin-bottom: 20px;
-    max-width: 80%;
+    width: 92%;
+    max-width: 92%;
     display: flex;
     min-width: 300px;
 }
 
 .chatMessageGptMinWidth {
+    margin-left: auto;
+    margin-right: auto;
     max-width: 500px;
     margin-bottom: 20px;
+    width: 92%;
 }
 
 .chatInput {
@@ -213,8 +211,8 @@
     display: flex;
     align-items: start;
     border-radius: 6px;
-    width: 80%;
-    max-width: 80%;
+    width: 92%;
+    max-width: 92%;
     background-color: rgba(255, 255, 255, 1);
     border: 1px solid rgba(229, 231, 235, 1);
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -264,6 +262,7 @@
     border-radius: 3px;
     user-select: none;
 }
+
 .analysisResizeHandle:hover {
     background: #e0e0e0;
 }
@@ -304,7 +303,7 @@
 
 .chatDisclaimer,
 .chatDisclaimer p {
-  color: #374151;
+    color: #374151;
 }
 
 @media only screen and (max-height: 999px) {
@@ -314,11 +313,11 @@
 }
 
 @media (max-width: 650px) {
-        .flexDescription {
+    .flexDescription {
         max-width: 90%;
         margin: 1.5rem 1rem 130px;
     }
-    
+
     .chatInputContainer {
         /* On mobile, always use full width to avoid complex overlapping */
         right: 0 !important;
