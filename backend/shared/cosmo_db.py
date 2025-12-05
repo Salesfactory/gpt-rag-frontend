@@ -1497,7 +1497,7 @@ def get_organization_usage(organization_id):
     container = get_cosmos_container("organizationsUsage")
 
     try:
-        query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.type = @type"
+        query = "SELECT * FROM c WHERE c.organization_id = @organization_id AND c.type = @type"
         parameters = [
             {"name": "@organization_id", "value": organization_id},
             {"name": "@type", "value": "wallet"}
@@ -1521,3 +1521,5 @@ def get_organization_usage(organization_id):
     except Exception as e:
         logging.error(f"Error retrieving organization usage for organization '{organization_id}': {e}")
         return None
+    
+
