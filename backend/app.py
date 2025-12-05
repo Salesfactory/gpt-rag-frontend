@@ -9,7 +9,8 @@ from flask import (
     url_for,
     session,
     render_template,
-    stream_with_context
+    stream_with_context,
+    make_response
 )
 from functools import wraps
 import os
@@ -1725,7 +1726,8 @@ def download_excel_citation(*, context):
 
 
 @app.route("/preview/spreadsheet", methods=["GET"])
-def preview_spreadsheet():
+@auth.login_required
+def preview_spreadsheet(*, context):
     try:
         file_path = request.args.get("file_path")
         if not file_path:
@@ -3878,6 +3880,14 @@ def get_gallery(*, context, organization_id):
         )
         return create_error_response("Internal Server Error", 500)
 
+
+@app.after_request
+def after_request_hook(response):
+    from shared.secure_response import secure_response
+    return secure_response(response)
+
+
+# DO NOT ADD MORE ENDPOINTS IN THIS FILE
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

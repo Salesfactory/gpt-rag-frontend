@@ -18,6 +18,13 @@ from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpRespo
 from werkzeug.exceptions import NotFound
 from urllib.parse import urlparse
 
+from shared.cosmo_db import (
+    get_organization_subscription,
+    get_subscription_tier_by_id, 
+    get_organization_usage,
+    upsert_organization_usage
+)
+
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
 
@@ -1766,3 +1773,132 @@ def add_or_update_organization_url(organization_id, url, scraping_result=None, a
     except Exception as e:
         logging.error(f"[add_or_update_organization_url] add_or_update_organization_url: something went wrong. {str(e)}")
         raise
+    
+def create_organization_usage(organization_id, subscription_tier_id):
+    """
+    Creates or updates organization usage wallet in the organizationsUsage container.
+    
+    This function manages the wallet configuration for an organization based on their 
+    subscription tier. It preserves existing seat usage data during renewals/updates.
+    
+    Args:
+        organization_id (str): The ID of the organization
+        subscription_tier_id (str): The ID of the subscription tier (plan nickname from Stripe)
+        
+    Returns:
+        dict: The created or updated organization usage document
+        
+    Raises:
+        ValueError: If required parameters are missing or invalid
+        NotFound: If organization or subscription tier doesn't exist
+        Exception: For any other unexpected errors
+    """
+
+    # Input validation
+    if not organization_id or not isinstance(organization_id, str) or not organization_id.strip():
+        logging.error("[create_organization_usage] Invalid organization_id provided")
+        raise ValueError("organization_id must be a non-empty string")
+
+    if not subscription_tier_id or not isinstance(subscription_tier_id, str) or not subscription_tier_id.strip():
+        logging.error("[create_organization_usage] Invalid subscription_tier_id provided")
+        raise ValueError("subscription_tier_id must be a non-empty string")
+
+    try:
+        # Validate organization exists
+        logging.info(f"[create_organization_usage] Validating organization exists: {organization_id}")
+        try:
+            organization = get_organization_subscription(organization_id)
+        except NotFound:
+            logging.error(f"[create_organization_usage] Organization '{organization_id}' not found")
+            raise NotFound(f"Organization with id '{organization_id}' does not exist")
+
+        # Get subscription tier data
+        logging.info(f"[create_organization_usage] Retrieving subscription tier: {subscription_tier_id}")
+        try:
+            subscription_tier = get_subscription_tier_by_id(subscription_tier_id)
+        except NotFound:
+            logging.error(f"[create_organization_usage] Subscription tier '{subscription_tier_id}' not found")
+            raise NotFound(f"Subscription tier with id '{subscription_tier_id}' does not exist")
+
+        # Extract tier data with validation
+        plan_name = subscription_tier.get("planName")
+        max_seats = subscription_tier.get("maxSeats")
+
+        if not plan_name:
+            logging.error("[create_organization_usage] Subscription tier missing 'planName'")
+            raise ValueError("Subscription tier data is incomplete: missing planName")
+
+        if max_seats is None or not isinstance(max_seats, int) or max_seats < 0:
+            logging.error("[create_organization_usage] Invalid maxSeats in subscription tier")
+            raise ValueError("Subscription tier data is incomplete or invalid: maxSeats must be a non-negative integer")
+
+        
+        total_allocated = subscription_tier.get("totalAllocated", 100000)
+
+        # Check if organization usage already exists
+        logging.info(f"[create_organization_usage] Checking existing organization usage for: {organization_id}")
+        existing_usage = get_organization_usage(organization_id)
+
+        # Determine seat usage based on whether this is new or renewal/update
+        if existing_usage:
+            # Renewal or update - preserve existing seat data
+            logging.info(f"[create_organization_usage] Existing usage found. Preserving seat data for organization: {organization_id}")
+            current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
+            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [])
+            current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
+
+            # Validate preserved data
+            if not isinstance(current_seats, int) or current_seats < 0:
+                logging.warning("[create_organization_usage] Invalid currentSeats in existing data, resetting to 0")
+                current_seats = 0
+
+            if not isinstance(allowed_user_ids, list):
+                logging.warning("[create_organization_usage] Invalid allowedUserIds in existing data, resetting to empty list")
+                allowed_user_ids = []
+
+            if not isinstance(current_used, int) or current_used < 0:
+                logging.warning("[create_organization_usage] Invalid currentUsed in existing data, resetting to 0")
+                current_used = 0
+        else:
+            # New organization - initialize with zeros
+            logging.info(f"[create_organization_usage] No existing usage. Initializing new wallet for organization: {organization_id}")
+            current_seats = 0
+            allowed_user_ids = []
+            current_used = 0
+
+        # Check subscription status from organization
+        is_subscription_active = organization.get("subscriptionStatus") == "active"
+
+        # Build the usage document
+        usage_document = {
+            "id": f"config_{organization_id}",
+            "organizationId": organization_id,
+            "type": "wallet",
+            "balance": {
+                "totalAllocated": total_allocated,
+                "currentUsed": current_used
+            },
+            "policy": {
+                "planName": plan_name,
+                "maxSeats": max_seats,
+                "currentSeats": current_seats,
+                "allowedUserIds": allowed_user_ids,
+                "isSubscriptionActive": is_subscription_active
+            }
+        }
+
+        # Upsert the document
+        logging.info(f"[create_organization_usage] Upserting organization usage for: {organization_id}")
+        result = upsert_organization_usage(usage_document)
+
+        logging.info(f"[create_organization_usage] Successfully created/updated organization usage for: {organization_id}")
+        return result
+
+    except (ValueError, NotFound) as e:
+        # Re-raise validation and not found errors
+        logging.error(f"[create_organization_usage] Validation error: {str(e)}")
+        raise
+
+    except Exception as e:
+        logging.error(f"[create_organization_usage] Unexpected error for organization '{organization_id}': {str(e)}")
+        raise Exception(f"Failed to create organization usage: {str(e)}")

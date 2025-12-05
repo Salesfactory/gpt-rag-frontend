@@ -14,6 +14,14 @@ describe("Onboarding Tests", () => {
             status: "pending"
         }
         }).as('createOrganization');
+        cy.intercept('POST', '/api/create-organization-usage', {
+        statusCode: 201,
+        body: {
+            id: "usage_123456",
+            organizationId: "org_123456",
+            subscriptionTierId: "free"
+        }
+        }).as('createOrganizationUsage');
         cy.url().should("include", "#/onboarding");
     });
 

@@ -25,18 +25,8 @@ const UploadConsumerPulse: React.FC = () => {
             if (result.data) {
                 setUploadStatus("success");
                 setUploadDetails(result.data);
+                setUploadMessage(`Success! File uploaded to all organizations.`);
                 
-                const { successful_uploads, total_organizations, failed_uploads } = result.data;
-                
-                if (failed_uploads === 0) {
-                    setUploadMessage(
-                        `Success! File uploaded to all ${total_organizations} organizations.`
-                    );
-                } else {
-                    setUploadMessage(
-                        `Partially successful. File uploaded to ${successful_uploads} out of ${total_organizations} organizations. ${failed_uploads} failed.`
-                    );
-                }
             } else {
                 setUploadStatus("error");
                 setUploadMessage("Upload failed. Please try again.");
@@ -123,32 +113,6 @@ const UploadConsumerPulse: React.FC = () => {
                             </div>
                             <h2 className={styles.success_title}>Upload Successful!</h2>
                             <p className={styles.success_message}>{uploadMessage}</p>
-                            
-                            {uploadDetails && (
-                                <div className={styles.upload_summary}>
-                                    <div className={styles.summary_item}>
-                                        <span className={styles.summary_label}>Total Organizations:</span>
-                                        <span className={styles.summary_value}>
-                                            {uploadDetails.total_organizations}
-                                        </span>
-                                    </div>
-                                    <div className={styles.summary_item}>
-                                        <span className={styles.summary_label}>Successful Uploads:</span>
-                                        <span className={styles.summary_value_success}>
-                                            {uploadDetails.successful_uploads}
-                                        </span>
-                                    </div>
-                                    {uploadDetails.failed_uploads > 0 && (
-                                        <div className={styles.summary_item}>
-                                            <span className={styles.summary_label}>Failed Uploads:</span>
-                                            <span className={styles.summary_value_error}>
-                                                {uploadDetails.failed_uploads}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            
                             <button onClick={resetUpload} className={styles.reset_button}>
                                 Upload Another File
                             </button>

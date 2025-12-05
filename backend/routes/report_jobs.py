@@ -27,7 +27,9 @@ from flask import Blueprint, request, jsonify, abort
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 
 from shared import clients
-from shared.idempotency import weekly_idem_key
+from routes.decorators.auth_decorator import auth_required
+
+from routes.decorators.auth_decorator import auth_required
 
 bp = Blueprint("report_jobs", __name__, url_prefix="/api/report-jobs")
 log = logging.getLogger(__name__)
@@ -96,6 +98,7 @@ def _maybe_enqueue_report_job(message: Dict[str, Any]) -> None:
 
 # --------- routes ---------
 @bp.post("")
+@auth_required
 def create_job():
     """
     Create a new report job (status=QUEUED) and enqueue a processing message.
@@ -157,6 +160,7 @@ def create_job():
 
 
 @bp.get("/<job_id>")
+@auth_required
 def get_job(job_id: str):
     """
     Fetch a single job document by id within the caller's organization partition.
@@ -186,6 +190,7 @@ def get_job(job_id: str):
 ALLOWED_STATUSES = {"SUCCEEDED", "RUNNING", "QUEUED", "FAILED"}
 
 @bp.get("")
+@auth_required
 def list_jobs():
     """
     List recent report jobs for an organization (most recent first).
@@ -251,6 +256,7 @@ def list_jobs():
 
 
 @bp.delete("/<job_id>")
+@auth_required
 def delete_job(job_id: str):
     """
     Delete a job by id within the caller's organization partition.

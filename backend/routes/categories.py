@@ -26,6 +26,7 @@ from flask import Blueprint, request, jsonify, abort
 from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpResponseError
 
 from shared import clients
+from routes.decorators.auth_decorator import auth_required
 
 bp = Blueprint("categories", __name__, url_prefix="/api/categories")
 log = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ def _categories_container():
 
 # --------- routes ---------
 @bp.post("")
+@auth_required
 def create_category():
     """
     Create a new category and return the created document.
@@ -131,6 +133,7 @@ def create_category():
 
 
 @bp.get("/<category_id>")
+@auth_required
 def get_category(category_id: str):
     """
     Fetch a single category document by id within the caller's organization partition.
@@ -161,6 +164,7 @@ def get_category(category_id: str):
 
 
 @bp.get("")
+@auth_required
 def list_categories():
     """
     List categories for an organization (most recent first).
@@ -194,6 +198,7 @@ def list_categories():
 
 
 @bp.delete("/<category_id>")
+@auth_required
 def delete_category(category_id: str):
     """
     Delete a category by id within the caller's organization partition.
