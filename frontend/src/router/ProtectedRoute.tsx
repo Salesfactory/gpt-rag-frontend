@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { useAppContext } from "../providers/AppProviders";
 import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Optional: Create a loading spinner component
-
+import { SubscriptionTier } from "../api/models";
 // Define the debug mode based on the environment
 const isDebugMode = process.env.NODE_ENV === "development";
 
@@ -26,7 +26,7 @@ const debugLog = (...args: any[]) => {
  * @param {Array} allowedTiers - Array of subscription tiers that are permitted to access the route.
  */
 type Role = "platformAdmin" | "admin" | "user";
-type SubscriptionTier = "Basic" | "Custom" | "Premium" | "Basic + Financial Assistant" | "Custom + Financial Assistant" | "Premium + Financial Assistant";
+
 
 interface ProtectedRouteProps {
     allowedRoles: Role[];
@@ -84,16 +84,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
         return hasRole;
     };
 
-    // Check if the user has a Subscription
+    // Check if the user has a Subscription (including free tier)
     const hasSubscription = (): boolean => {
-        if (!organization?.subscriptionId) {
-            debugLog("hasSubscription: User does not have a subscription ID.");
-            return false;
-        }
+        // Free tier users have subscriptionTiers but no subscriptionId
         if (!subscriptionTiers || subscriptionTiers.length === 0) {
             debugLog("hasSubscription: No subscription tiers available.");
             return false;
         }
+        debugLog("hasSubscription: User has subscription tiers (including possible free tier).");
         return true;
     };
 
@@ -104,9 +102,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
         return hasTier;
     };
 
-    // Ensure the organization and subscription information is valid
+    // Ensure the organization and subscription information is valid (including free tier)
     const isValidSubscriptionForOrganization = (): boolean => {
-        const isValid = user?.organizationId && organization?.subscriptionId ? true : false;
+        // Valid if user has organizationId and organization exists (subscriptionId not required for free tier)
+        const isValid = user?.organizationId && organization?.id ? true : false;
         debugLog(`isValidSubscriptionForOrganization: ${isValid ? "Valid" : "Invalid"}.`);
         return isValid;
     };
@@ -118,7 +117,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, allowedTi
         );
         return <LoadingSpinner />;
     }
-
+    return <Outlet />;
     // Determine which navigation path to take
     if (isAuthenticated && hasRequiredRole() && hasRequiredTier()) {
         debugLog("ProtectedRoute: User is authenticated with required role and tier. Rendering Outlet.");

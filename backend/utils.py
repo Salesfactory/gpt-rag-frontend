@@ -1894,3 +1894,17 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
     except Exception as e:
         logging.error(f"[create_organization_usage] Unexpected error for organization '{organization_id}': {str(e)}")
         raise Exception(f"Failed to create organization usage: {str(e)}")
+    
+def get_organization_usage_by_id(organization_id: str):
+    if not organization_id:
+        return {"error": "Organization ID is required."}
+    try:
+        container = get_cosmos_container("organizationsUsage")
+        query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.type = @type"
+        parameters = [{"name": "@organization_id", "value": organization_id}, {"name": "@type", "value": "wallet"}]
+        result = list(container.query_items(query=query, parameters=parameters, partition_key=organization_id))
+        print(result)
+        return result[0] if result else None
+    except Exception as e:
+        logging.error(f"[get_organization_usage_by_id] get_organization_usage_by_id: something went wrong. {str(e)}")
+        return None

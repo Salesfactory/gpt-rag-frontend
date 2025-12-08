@@ -62,9 +62,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         };
     }, [isDropdownOpen]);
 
-    const fastatus = subscriptiontype.includes("Basic + Financial Assistant")
+    const fastatus = subscriptiontype.includes("tier_free")
         ? true
-        : false || subscriptiontype.includes("Premium + Financial Assistant") || subscriptiontype.includes("Custom + Financial Assistant");
+        : false || subscriptiontype.includes("tier_free") || subscriptiontype.includes("tier_free");
 
     const [settingsPanel, setSettingsPanel] = useState(false);
 

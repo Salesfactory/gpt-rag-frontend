@@ -80,7 +80,14 @@ const Onboarding: React.FC = () => {
         window.location.href = "#/payment";
     };
 
-    if (user?.organizationId && organization?.subscriptionId) {
+    const handleContinueAsFreeUser = () => {
+        // Free users can proceed to the app without a paid subscription
+        localStorage.removeItem("onboardingStep");
+        window.location.href = "/#/";
+    };
+
+    // Allow navigation if user has organization (with or without paid subscription)
+    if (user?.organizationId && (organization?.subscriptionId || organization?.id)) {
         // Clears the saved step at the end of onboarding
         localStorage.removeItem("onboardingStep");
         return <Navigate to="/" replace />;
@@ -96,10 +103,11 @@ const Onboarding: React.FC = () => {
 
     useEffect(() => {
         // Saves the step only if the user has not finished onboarding.
-        if (!(user?.organizationId && organization?.subscriptionId)) {
+        // Free users complete onboarding with just an organization (no subscriptionId required)
+        if (!(user?.organizationId && organization?.id)) {
             localStorage.setItem("onboardingStep", step.toString());
         }
-    }, [step, user?.organizationId, organization?.subscriptionId]);
+    }, [step, user?.organizationId, organization?.id]);
 
     const renderProgressBar = () => (
         <div className={styles.progressContainer}>
@@ -232,9 +240,24 @@ const Onboarding: React.FC = () => {
                                 <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick} disabled={isLoadingStep} aria-label="Previous">
                                     <ChevronLeftRegular className={`${styles.icon} ${styles.iconLeft}`} /> Previous
                                 </button>
-                                <button className={styles.button} style={{ width: "auto", padding: "10px 15px" }} onClick={handleSubscriptionRedirect} aria-label="Subscribe Now" >
-                                    Subscribe Now!
-                                </button>
+                                <div style={{ display: "flex", gap: "10px" }}>
+                                    <button 
+                                        className={styles.button} 
+                                        style={{ width: "auto", padding: "10px 15px", background: "#6c757d" }} 
+                                        onClick={handleContinueAsFreeUser} 
+                                        aria-label="Continue as Free User"
+                                    >
+                                        Continue as Free User
+                                    </button>
+                                    <button 
+                                        className={styles.button} 
+                                        style={{ width: "auto", padding: "10px 15px" }} 
+                                        onClick={handleSubscriptionRedirect} 
+                                        aria-label="Subscribe Now"
+                                    >
+                                        Subscribe Now!
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}

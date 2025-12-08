@@ -1,4 +1,5 @@
 import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import { OrganizationUsage } from "./models";
 import { SourceDocumentsResponse } from '../types';
 import { fetchWrapper } from './fetchWrapper';
 
@@ -951,6 +952,49 @@ export const createOrganizationUsage = async ({ userId, organizationId, subscrip
     const organizationUsage = await response.json();
     return organizationUsage;
 }
+
+export async function getOrganizationUsage({ organizationId }: { organizationId: string }): Promise<OrganizationUsage> {
+    const response = await fetch(`/api/${organizationId}/get-organization-usage`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting organization usage");
+    }
+    const organizationUsage = await response.json();
+    return organizationUsage;
+}
+
+export async function getOrganizationSubscriptionTier({ organizationId }: { organizationId: string }): Promise<any> {
+    const response = await fetchWrapper(`/api/${organizationId}/get-subscription-tier`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting organization subscription tier");
+    }
+    const subscriptionTier = await response.json();
+    return subscriptionTier;
+}
+
+export async function fetchSubscriptionTiers(): Promise<any> {
+    const response = await fetchWrapper(`/api/subscriptions-tiers`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (!response.ok) {
+        throw Error("Error fetching subscription tiers");
+    }
+    const subscriptionTiers = await response.json();
+    return subscriptionTiers;
+};
 
 export async function getInvitations({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";

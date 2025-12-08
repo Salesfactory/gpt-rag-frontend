@@ -1,6 +1,4 @@
-// SidebarSectionTypes.ts
-
-import { SidebarItem } from "./SidebarItemTypescopy";
+import { SidebarItem } from "../../api/models";
 
 export interface SidebarSection {
     section?: string; // Optional, present for section titles

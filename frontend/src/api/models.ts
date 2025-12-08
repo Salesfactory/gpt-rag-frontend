@@ -7,6 +7,57 @@ export type UserInfo = {
     user_id: string;
 };
 
+export type OrganizationUsage = {
+    id: string;
+    organizationId: string;
+    subscriptionTierId: string;
+    isSubscriptionActive: boolean;
+    balance:{
+        totalAllocated: number;
+        currentUsed: number;
+    }
+    policy:{
+        tierId: string;
+        currentSeats: number;
+        allowedUserIds: string[];
+    }
+}
+export interface SubscriptionTier {
+    id: string;
+    tierId: string;
+    tierName: string;
+    cost: number;
+    quotas: {
+        totalCreditsAllocated: number;
+        totalStorageAllocated: number;
+    }
+    policy: {
+        allowOverdraft: boolean;
+        maxSeats: number;
+    }
+}
+export interface PartialUserInfo {
+    id: string;
+    name: string;
+    email: string | null;
+    role?: Role;
+    organizationId?: string;
+    isReportEmailReceiver?: boolean;
+}
+
+export interface OrganizationInfo {
+    id: string;
+    name: string;
+    owner: string;
+    subscriptionId?: string;
+    subscriptionStatus?: string;
+    subscriptionExpirationDate?: number;
+    brandInformation?: string;
+    additionalInstructions?: string;
+    segmentSynonyms?: string;
+    industryInformation?: string;
+}
+
 export const enum Approaches {
     RetrieveThenRead = "rtr",
     ReadRetrieveRead = "rrr",
@@ -20,6 +71,35 @@ export type ConversationHistoryItem = {
     type: string;
     organization_id: string;
 };
+
+export type Role = "platformAdmin"|"admin" | "user";
+
+export interface SidebarLink {
+    title: string;
+    href: string;
+    tiers: SubscriptionTier[];
+    roles: Role[];
+}
+
+export interface BaseSidebarItem {
+    title: string;
+    icon: JSX.Element;
+    tiers: SubscriptionTier[];
+    roles: Role[];
+}
+
+export interface LinkSidebarItem extends BaseSidebarItem {
+    to: string;
+    links?: never; // Ensures that 'links' is not present
+}
+
+export interface SubmenuSidebarItem extends BaseSidebarItem {
+    to?: never; // Ensures that 'to' is not present
+    links: SidebarLink[];
+}
+
+export type SidebarItem = LinkSidebarItem | SubmenuSidebarItem;
+
 
 export type ConversationChatItem = {
     role: string;

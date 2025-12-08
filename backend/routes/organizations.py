@@ -16,7 +16,7 @@ from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
 from shared.cosmo_db import create_organization, get_organization_data
 
-from utils import create_success_response, create_error_response, create_organization_usage
+from utils import create_success_response, create_error_response, create_organization_usage, get_organization_usage_by_id
 
 from azure.core.exceptions import ResourceNotFoundError, AzureError
 from shared.error_handling import (
@@ -133,6 +133,28 @@ def createOrganizationUsage():
         if not organizationUsage:
             return create_error_response({"error": "Failed to create organization usage"}, HTTPStatus.INTERNAL_SERVER_ERROR)
         return create_success_response(organizationUsage)
+    except Exception as e:
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+    
+@bp.route("/api/<organization_id>/get-organization-usage", methods=["GET"])
+@auth_required
+def getOrganizationUsage(organization_id: str):
+    if not organization_id:
+        return create_error_response({"error": "Missing required parameters, organization_id"}, HTTPStatus.BAD_REQUEST)
+    try:
+        organizationUsage = get_organization_usage_by_id(organization_id)
+        return create_success_response(organizationUsage)
+    except Exception as e:
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+@bp.route("/api/<organization_id>/get-subscription-tier", methods=["GET"])
+@auth_required
+def getSubscriptionTier(organization_id: str):
+    if not organization_id:
+        return create_error_response({"error": "Missing required parameters, organization_id"}, HTTPStatus.BAD_REQUEST)
+    try:
+        subscriptionTier = get_subscription_tier_by_id(organization_id)
+        return create_success_response(subscriptionTier)
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
