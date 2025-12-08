@@ -1,4 +1,4 @@
-import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category, OrganizationUsage, Policy } from "./models";
 import { SourceDocumentsResponse } from '../types';
 import { fetchWrapper } from './fetchWrapper';
 
@@ -1224,6 +1224,20 @@ export async function getOrganizationUrls(organizationId: string): Promise<any> 
         console.error("Error fetching organization URLs:", error);
         throw error;
     }
+}
+
+export async function getOrganizationUsage({ organizationId }: { organizationId: string }): Promise<OrganizationUsage> {
+    const response = await fetch(`/api/organizations/${organizationId}/get-organization-usage`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting organization usage");
+    }
+    const organizationUsage = (await response.json()).data;
+    return organizationUsage;
 }
 
 export async function deleteOrganizationUrl(urlId: string, organizationId: string): Promise<any> {

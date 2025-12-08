@@ -113,6 +113,33 @@ export type PostSettingsProps = {
     detail_level?: DetailLevel;
 };
 
+export type SubscriptionTier = "tier_free" | "tier_basic" | "tier_custom" | "tier_premium";
+
+export type AllowedUserId = {
+    userId: string;
+    limit: number;
+    used: number;
+}
+
+export type Policy = {
+    tierId: string;
+    currentSeats: number;
+    allowedUserIds: AllowedUserId[];
+    isSubscriptionActive: boolean;
+}
+
+export type OrganizationUsage = {
+    "id": string,
+    "organizationId": string,
+    "subscriptionId": string | null,
+    "isSubscriptionActive": boolean,
+    "type": string,
+    "balance": {
+        "totalAllocated": number,
+        "currentUsed": number
+    },
+    "policy": Policy
+}
 export interface Category {
   id: string;
   organization_id: string;

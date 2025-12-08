@@ -26,6 +26,14 @@ import KnowledgeSources from "./pages/knowledgesources/KnowledgeSources";
 import VoiceCustomer from "./pages/voicecustomer/VoiceCustomer";
 import Gallery from "./pages/gallery/Gallery";
 import SubscriptionError from "./pages/SubscriptionError";
+import { SubscriptionTier } from "./api/models";
+
+const allowedTiers: SubscriptionTier[] = [
+    "tier_free",
+    "tier_basic",
+    "tier_custom",
+    "tier_premium"
+]
 
 export default function App() {
     return (
@@ -42,14 +50,7 @@ export default function App() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["user", "admin", "platformAdmin"]}
-                        allowedTiers={[
-                            "Basic",
-                            "Custom",
-                            "Premium",
-                            "Basic + Financial Assistant",
-                            "Custom + Financial Assistant",
-                            "Premium + Financial Assistant"
-                        ]}
+                        allowedTiers={allowedTiers}
                     />
                 }
             >
@@ -94,14 +95,7 @@ export default function App() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["admin", "platformAdmin"]}
-                        allowedTiers={[
-                            "Basic",
-                            "Custom",
-                            "Premium",
-                            "Basic + Financial Assistant",
-                            "Custom + Financial Assistant",
-                            "Premium + Financial Assistant"
-                        ]}
+                        allowedTiers={allowedTiers}
                     />
                 }
             >
@@ -119,14 +113,7 @@ export default function App() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["platformAdmin"]}
-                        allowedTiers={[
-                            "Basic",
-                            "Custom",
-                            "Premium",
-                            "Basic + Financial Assistant",
-                            "Custom + Financial Assistant",
-                            "Premium + Financial Assistant"
-                        ]}
+                        allowedTiers={allowedTiers}
                     />
                 }
             >
@@ -141,7 +128,7 @@ export default function App() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["admin", "user", "platformAdmin"]}
-                        allowedTiers={["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
+                        allowedTiers={allowedTiers}
                     />
                 }
             >
@@ -156,7 +143,7 @@ export default function App() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["admin", "platformAdmin"]}
-                        allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
+                        allowedTiers={allowedTiers}
                     />
                 }
             >
@@ -167,7 +154,7 @@ export default function App() {
                 element={
                     <ProtectedRoute
                         allowedRoles={["admin", "platformAdmin"]}
-                        allowedTiers={["Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]}
+                        allowedTiers={allowedTiers}
                     />
                 }
             >

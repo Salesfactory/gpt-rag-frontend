@@ -8,15 +8,22 @@ import styles from "./Sidebarcopy.module.css";
 import SidebarItem from "./SidebarItemcopy";
 import { useAppContext } from "../../providers/AppProviders";
 import { SidebarSection } from "./SidebarSectionTypescopy";
-import { SidebarItem as SidebarItemType, Role, SubscriptionTier } from "./SidebarItemTypescopy";
+import { SidebarItem as SidebarItemType, Role } from "./SidebarItemTypescopy";
 import newSFLogo from "../../img/NewSFLogo.png";
 import { Image } from "@fluentui/react";
+import { SubscriptionTier } from "../../api/models";
 
 interface SidebarProps {
     isCollapsed: boolean;
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+const allowedTiers: SubscriptionTier[] = [
+    "tier_free",
+    "tier_basic",
+    "tier_custom",
+    "tier_premium"
+]
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [activeItem, setActiveItem] = useState<string | null>(null);
@@ -51,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
         (itemRoles: Role[], itemTiers: SubscriptionTier[]): boolean => {
             if (!user || !user.role) return false;
             const roleMatch = itemRoles.includes(user.role);
-            const tierMatch = itemTiers.some(tier => userSubscriptionTiers.includes(tier));
+            const tierMatch = itemTiers.some(tier => allowedTiers.includes(tier));
 
             return roleMatch && tierMatch;
         },
@@ -68,21 +75,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     title: "AI Chat",
                     icon: <MessageSquare className={styles.sidebarLinkIcon} />,
                     to: "/",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 },
                 {
                     title: "VizVault",
                     icon: <ChartBar className={styles.sidebarLinkIcon} />,
                     to: "/vizvault",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 },
                 {
                     title: "Notifications",
                     icon: <Bell className={styles.sidebarLinkIcon} />,
                     to: "/notification-settings",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 }
             ]
@@ -99,70 +106,35 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {
                             title: "Team Management",
                             href: "/admin",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
+                            tiers: allowedTiers,
                             roles: ["admin", "platformAdmin"]
                         },
                         {
                             title: "Workspace Governance",
                             href: "/organization",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
+                            tiers: allowedTiers,
                             roles: ["admin", "platformAdmin"]
                         },
                         {
                             title: "Knowledge Sources",
                             href: "/knowledge-sources",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
+                            tiers: allowedTiers,
                             roles: ["admin", "platformAdmin"]
                         },
                         {
                             title: "Voice of Customer",
                             href: "/voice-customer",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
+                            tiers: allowedTiers,
                             roles: ["admin", "platformAdmin"]
                         },
                         {
                             title: "Subscription Plans",
                             href: "/subscription-management",
-                            tiers: [
-                                "Basic",
-                                "Custom",
-                                "Premium",
-                                "Basic + Financial Assistant",
-                                "Custom + Financial Assistant",
-                                "Premium + Financial Assistant"
-                            ],
+                            tiers: allowedTiers,
                             roles: ["admin", "platformAdmin"]
                         }
                     ],
-                    tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 }
             ]
@@ -177,22 +149,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             title: "File Vault",
                             href: "/upload-resources",
                             roles: ["admin", "platformAdmin"],
-                            tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
+                            tiers: allowedTiers,
                         },
                         {
                             title: "Consumer Pulse",
                             href: "/upload-consumer-pulse",
                             roles: ["platformAdmin"],
-                            tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
+                            tiers: allowedTiers,
                         },
                         {
                             title: "Request Studies",
                             href: "/request-studies",
                             roles: ["admin", "platformAdmin"],
-                            tiers: ["Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"]
+                            tiers: allowedTiers,
                         }
                     ],
-                    tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: allowedTiers,
                     roles: ["admin", "platformAdmin"]
                 }
             ]
@@ -205,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     icon: <FileText className={styles.sidebarLinkIcon} />,
                     links: [
                     ],
-                    tiers: ["Custom", "Premium", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 }
             ]
@@ -220,7 +192,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     title: "Help Center",
                     icon: <Headphones className={styles.sidebarLinkIcon} />,
                     to: "/help-center",
-                    tiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"],
+                    tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 }
             ]

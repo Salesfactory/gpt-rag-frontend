@@ -80,7 +80,7 @@ const Onboarding: React.FC = () => {
         window.location.href = "#/payment";
     };
 
-    if (user?.organizationId && organization?.subscriptionId) {
+    if (user?.organizationId) {
         // Clears the saved step at the end of onboarding
         localStorage.removeItem("onboardingStep");
         return <Navigate to="/" replace />;
