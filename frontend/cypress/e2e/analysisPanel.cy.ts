@@ -2,7 +2,11 @@ import { setupTestUserAndOrg } from "../fixtures/setupTestUser";
 describe('AnalysisPanel Component', () => {
   beforeEach(() => {
     setupTestUserAndOrg();
-    cy.visit('/');
+    cy.visit('/', {
+        onBeforeLoad: (window) => {
+            window.localStorage.setItem("finishedOnboarding", "true");
+        }
+    });
   });
 
     it("should verify the visibility and functionality of the Thought process with subquery conversations", () => {

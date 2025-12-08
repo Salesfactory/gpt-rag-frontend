@@ -120,7 +120,7 @@ export function setupTestUserAndOrg() {
         ]
     }).as("getChatHistory");
 
-    cy.intercept("GET", "/api/settings", {
+    cy.intercept("GET", "/api/settings*", {
         statusCode: 200,
         body: { font_family: "Arial", font_size: "16", model: "gpt-4.1", temperature: 0 }
     }).as("getSettings");
@@ -230,6 +230,29 @@ export function setupTestUserAndOrg() {
             status: 200
         }
     });
+
+    cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
+        statusCode: 200,
+        body: {
+            data: {
+                id: "usage-123",
+                organizationId: "0aad82ee-52ec-428e-b211-e9cc34b94457",
+                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
+                isSubscriptionActive: true,
+                type: "organization_usage",
+                balance: {
+                    totalAllocated: 1000,
+                    currentUsed: 100
+                },
+                policy: {
+                    tierId: "tier_premium",
+                    currentSeats: 5,
+                    allowedUserIds: [],
+                    isSubscriptionActive: true
+                }
+            }
+        }
+    }).as("getOrganizationUsage");
 
     cy.intercept("POST", "/api/voice-customer/brands", {
         statusCode: 201,

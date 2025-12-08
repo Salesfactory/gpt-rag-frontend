@@ -15,7 +15,11 @@ Cypress.Commands.add("focusChatInput", () => {
 
 Cypress.Commands.add("openChat", () => {
     setupTestUserAndOrg();
-    cy.visit("/");
+    cy.visit("/", {
+        onBeforeLoad: (window) => {
+            window.localStorage.setItem("finishedOnboarding", "true");
+        }
+    });
     cy.get("#headerCollapse").click();
     cy.contains("a", /ai chat/i).click();
     cy.url().should("include", "#/");

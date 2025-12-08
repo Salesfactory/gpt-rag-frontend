@@ -10,7 +10,7 @@ export function setupTestUserWithoutOrg() {
                 email: "davidmartinez@nightcity.com",
                 id: "dummyid",
                 name: "David Martinez",
-                organizationId: "null",
+                organizationId: null,
                 role: "platformAdmin"
             }
         }

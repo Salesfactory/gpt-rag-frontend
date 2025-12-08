@@ -54,5 +54,27 @@ export function setupSubscriptionError() {
         body: { role: "admin" }
     });
 
-  
+    cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
+        statusCode: 200,
+        body: {
+            data: {
+                id: "usage-dummy",
+                organizationId: "dummyid",
+                subscriptionId: "sub_dummy",
+                isSubscriptionActive: true,
+                type: "organization_usage",
+                balance: {
+                    totalAllocated: 1000,
+                    currentUsed: 100
+                },
+                policy: {
+                    tierId: "tier_basic",
+                    currentSeats: 5,
+                    allowedUserIds: [],
+                    isSubscriptionActive: true
+                }
+            }
+        }
+    }).as("getOrganizationUsage");
+
 }
