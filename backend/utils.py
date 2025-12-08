@@ -1920,7 +1920,11 @@ def get_organization_id_from_request(request):
             return organization_id
         
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    organization_id = get_user_organizations(client_principal_id)[0]["id"] if client_principal_id else None
+    organization_id = None
+    if client_principal_id:
+        organizations = get_user_organizations(client_principal_id)
+        if organizations:
+            organization_id = organizations[0]["id"]
 
     return organization_id
 
@@ -1946,8 +1950,12 @@ def get_organization_id_and_user_id_from_request(request):
             return organization_id, user_id
         
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    organizations = get_user_organizations(client_principal_id) if client_principal_id else []
-    organization_id = organizations[0]["id"] if organizations else None
+    organization_id = None
+    if client_principal_id:
+        organizations = get_user_organizations(client_principal_id)
+        if organizations:
+            organization_id = organizations[0]["id"]
+            
     user_id = client_principal_id
 
     return organization_id, user_id

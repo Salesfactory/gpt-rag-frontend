@@ -217,5 +217,8 @@ def getOrganizationStorageCapacity(organization_id):
 def getOrganizationUsage(organization_id, **kwargs):
     try:
         return create_success_response(kwargs["organization_usage"], HTTPStatus.OK)
+    except NotFound:
+        return create_error_response("Organization not found", HTTPStatus.NOT_FOUND)
     except Exception as e:
-        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+        logging.exception(f"Error fetching organization usage: {e}")
+        return create_error_response("Internal server error", HTTPStatus.INTERNAL_SERVER_ERROR)

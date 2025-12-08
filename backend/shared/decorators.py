@@ -1,5 +1,6 @@
 import os
-from flask import logging, request, jsonify
+import logging
+from flask import request, jsonify
 from functools import wraps
 from utils import get_azure_key_vault_secret, get_organization_id_from_request, get_organization_id_and_user_id_from_request
 from shared.cosmo_db import get_user_organizations, get_organization_usage, get_subscription_tier_by_id
@@ -63,6 +64,20 @@ def check_organization_limits():
                     if not organization_id:
                         return jsonify({"error": "Missing required parameters, organization_id"}), 400
 
+                # Get authenticated user's ID
+                client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+                if not client_principal_id:
+                    return jsonify({"error": "Unauthorized"}), 401
+
+                # Verify user belongs to this organization
+                user_orgs = get_user_organizations(client_principal_id)
+                user_org_ids = [org["id"] for org in user_orgs]
+
+                if organization_id not in user_org_ids:
+                    logging.warning(
+                        f"User {client_principal_id} attempted to access org {organization_id}"
+                    )
+                    return jsonify({"error": "Unauthorized access to organization"}), 403
                 
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
@@ -79,6 +94,7 @@ def check_organization_limits():
 
                 return f(*args, **kwargs)
             except Exception as e:
+                logging.exception("An error occurred in check_organization_limits")
                 return jsonify({"error": "Internal server error"}), 500
 
         return decorated_function
@@ -107,6 +123,20 @@ def require_conversation_limits():
                     if not organization_id:
                         return jsonify({"error": "Missing required parameters, organization_id"}), 400
 
+                # Get authenticated user's ID
+                client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+                if not client_principal_id:
+                    return jsonify({"error": "Unauthorized"}), 401
+
+                # Verify user belongs to this organization
+                user_orgs = get_user_organizations(client_principal_id)
+                user_org_ids = [org["id"] for org in user_orgs]
+
+                if organization_id not in user_org_ids:
+                    logging.warning(
+                        f"User {client_principal_id} attempted to access org {organization_id}"
+                    )
+                    return jsonify({"error": "Unauthorized access to organization"}), 403
                 
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
@@ -116,6 +146,7 @@ def require_conversation_limits():
 
                 return f(*args, **kwargs)
             except Exception as e:
+                logging.exception("An error occurred in require_conversation_limits")
                 return jsonify({"error": "Internal server error"}), 500
 
         return decorated_function
@@ -141,6 +172,21 @@ def require_user_conversation_limits():
                 if not organization_id or not user_id:
                     return jsonify({"error": "Missing required parameters, organization_id or user_id"}), 400
                 
+                # Get authenticated user's ID
+                client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+                if not client_principal_id:
+                    return jsonify({"error": "Unauthorized"}), 401
+
+                # Verify user belongs to this organization
+                user_orgs = get_user_organizations(client_principal_id)
+                user_org_ids = [org["id"] for org in user_orgs]
+
+                if organization_id not in user_org_ids:
+                    logging.warning(
+                        f"User {client_principal_id} attempted to access org {organization_id}"
+                    )
+                    return jsonify({"error": "Unauthorized access to organization"}), 403
+
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
 
@@ -156,6 +202,7 @@ def require_user_conversation_limits():
                 return f(*args, **kwargs)
 
             except Exception as e:
+                logging.exception("An error occurred in require_user_conversation_limits")
                 return jsonify({"error": "Internal server error"}), 500
 
         return decorated_function
