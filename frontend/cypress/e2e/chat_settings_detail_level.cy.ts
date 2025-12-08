@@ -16,7 +16,11 @@ describe("Chat Settings – Detail Level", () => {
             }
         }).as("getSettings");
 
-        cy.visit("/");
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                window.localStorage.setItem("finishedOnboarding", "true");
+            }
+        });
         cy.get('[data-testid="settings-button"]').should("be.visible").click();
         cy.wait("@getSettings");
         cy.contains("Chat Settings").should("be.visible");

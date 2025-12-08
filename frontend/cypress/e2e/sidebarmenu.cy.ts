@@ -3,7 +3,11 @@ import { setupTestUserAndOrg } from "../fixtures/setupTestUser";
 describe("Sidebar Menu Tests", () => {
     beforeEach(() => {
         setupTestUserAndOrg();
-        cy.visit("/");
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                window.localStorage.setItem("finishedOnboarding", "true");
+            }
+        });
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();
     });

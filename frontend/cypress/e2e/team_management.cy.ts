@@ -46,7 +46,11 @@ describe("Agent Section Tests", () => {
                 }
             ]
             }).as('getUsers');
-        cy.visit("/");
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                window.localStorage.setItem("finishedOnboarding", "true");
+            }
+        });
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();
     });    
