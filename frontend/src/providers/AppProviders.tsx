@@ -96,6 +96,8 @@ interface AppContextType {
     setUser: Dispatch<SetStateAction<UserInfo | null>>;
     organization: OrganizationInfo | null;
     setOrganization: Dispatch<SetStateAction<OrganizationInfo | null>>;
+    organizationUsage: OrganizationUsage | null;
+    setOrganizationUsage: Dispatch<SetStateAction<OrganizationUsage | null>>;
     partialUser: PartialUserInfo | null;
     setPartialUser: Dispatch<SetStateAction<PartialUserInfo | null>>;
     chatSelected: string;
@@ -385,7 +387,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                         name: organization.name,
                         owner: organization.owner,
                         subscriptionId: organization.subscriptionId,
-                        subscriptionTier: organization.subscriptionTier as SubscriptionTier, // Type assertion
                         subscriptionExpirationDate: organization.subscriptionExpirationDate,
                         subscriptionStatus: organization.subscriptionStatus,
                         brandInformation: organization.brandInformation,
@@ -478,6 +479,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setUser,
             organization,
             setOrganization,
+            organizationUsage,
+            setOrganizationUsage,
             partialUser,
             setPartialUser,
             chatSelected,

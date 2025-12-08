@@ -1479,7 +1479,7 @@ def upsert_organization_usage(usage_data):
 
     try:
         result = container.upsert_item(usage_data)
-        logging.info(f"Organization usage upserted successfully: {result}")
+        logging.info(f"Organization usage upserted successfully")
         return result
 
     except Exception as e:
