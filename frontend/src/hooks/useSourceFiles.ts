@@ -1,6 +1,6 @@
 // src/features/UploadResources/hooks/useSourceFiles.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getSourceFileFromBlob, deleteSourceFileFromBlob } from '../api/api';
+import { getSourceFileFromBlob, deleteSourceFileFromBlob, getBlobSasUrl } from '../api/api';
 import { toast } from 'react-toastify';
 import { BlobItem, FolderItem } from '../types';
 
@@ -110,8 +110,8 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         folder.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleDownload = (item: BlobItem) => {
-        const downloadUrl = `/api/download?organizationId=${organizationId}&blobName=${encodeURIComponent(item.name)}`;
+    const handleDownload = async (item: BlobItem) => {
+        const downloadUrl = await getBlobSasUrl(item.name);
         window.open(downloadUrl, "_blank");
     };
 
