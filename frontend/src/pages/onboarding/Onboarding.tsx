@@ -77,12 +77,10 @@ const Onboarding: React.FC = () => {
     };
 
     const handleSubscriptionRedirect = () => {
-        localStorage.setItem("finishedOnboarding", "true");
         window.location.href = "#/payment";
     };
 
     const handleFreeContinue = () => {
-        localStorage.setItem("finishedOnboarding", "true");
         localStorage.removeItem("onboardingStep");
         window.location.href = "/#";
     };
@@ -117,7 +115,7 @@ const Onboarding: React.FC = () => {
         </div>
     );
 
-    if(localStorage.getItem("finishedOnboarding") === "true" || organizationUsage?.isSubscriptionActive) {
+    if(organizationUsage?.isSubscriptionActive) {
         return <Navigate to="/" replace />;
     }
 
