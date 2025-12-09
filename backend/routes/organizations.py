@@ -213,6 +213,7 @@ def getOrganizationStorageCapacity(organization_id):
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @bp.route("/api/organizations/<organization_id>/usage", methods=["GET"])
+@auth_required
 @check_organization_limits()
 def getOrganizationUsage(organization_id, **kwargs):
     try:

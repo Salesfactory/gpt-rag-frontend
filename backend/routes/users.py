@@ -547,19 +547,15 @@ def getUsers():
 
 
 @bp.route("/api/users/usage", methods=["POST"])
+@auth_required
 @require_user_conversation_limits()
 def getUserConversationUsage():
     """
     Endpoint to get the conversation usage for a user within an organization.
-    Expects 'organization_id' and 'user_id' in the request (either as URL parameters or in the JSON body).
+    Expects 'organization_id' and 'user_id' in the request (either as URL parameters or in the JSON body). THIS IS AN EXAMPLE ENDPOINT
     """
-    data = request.get_json()
-    organization_id = data.get("organization_id")
-    user_id = data.get("user_id")
-    if not organization_id or not user_id:
-        return jsonify({"error": "Missing required parameters, organization_id or user_id"}), 400
     try:
         return jsonify({"message": "User conversation limits check passed"}), 200
     except Exception as e:
-        logging.exception(f"Error retrieving conversation usage for user {user_id} in organization {organization_id}")
+        logging.exception("[webbackend] exception in /api/users/usage endpoint")
         return jsonify({"error": "Internal Server Error"}), 500
