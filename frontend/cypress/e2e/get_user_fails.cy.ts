@@ -6,7 +6,11 @@ describe("Agent Section Tests", () => {
     });  
 
     it('Should fails if the user is registered but can login into his organization ', () => {
-        cy.visit("/");
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                
+            }
+        });
         cy.get('._text1_16056_87').should("not.exist")
     });
 

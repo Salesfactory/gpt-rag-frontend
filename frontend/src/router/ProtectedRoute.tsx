@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { useAppContext } from "../providers/AppProviders";
 import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner"; // Optional: Create a loading spinner component
+import { SubscriptionTier } from "../api/models";
 
 // Define the debug mode based on the environment
 const isDebugMode = process.env.NODE_ENV === "development";
@@ -26,7 +27,6 @@ const debugLog = (...args: any[]) => {
  * @param {Array} allowedTiers - Array of subscription tiers that are permitted to access the route.
  */
 type Role = "platformAdmin" | "admin" | "user";
-type SubscriptionTier = "Basic" | "Custom" | "Premium" | "Basic + Financial Assistant" | "Custom + Financial Assistant" | "Premium + Financial Assistant";
 
 interface ProtectedRouteProps {
     allowedRoles: Role[];

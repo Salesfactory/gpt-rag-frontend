@@ -1479,7 +1479,7 @@ def upsert_organization_usage(usage_data):
 
     try:
         result = container.upsert_item(usage_data)
-        logging.info(f"Organization usage upserted successfully: {result}")
+        logging.info(f"Organization usage upserted successfully")
         return result
 
     except Exception as e:
@@ -1522,4 +1522,18 @@ def get_organization_usage(organization_id):
         logging.error(f"Error retrieving organization usage for organization '{organization_id}': {e}")
         return None
     
+def get_subscription_tiers():
+    """
+    Retrieves all subscription tiers from the subscriptionTiers container.
+    """
+    try:
+        container = get_cosmos_container("subscriptionsTiers")
+        tiers = list(container.query_items(query="SELECT * FROM c", enable_cross_partition_query=True))
+        return tiers
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No subscription tiers found in Cosmos DB.")
+        return []
+    except Exception as e:
+        logging.error(f"Error retrieving subscription tiers: {e}")
+        return []
 

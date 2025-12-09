@@ -12,7 +12,7 @@ import office from "../../img/organization_name.png";
 import subscription from "../../img/subscription_image.png";
 import { toast } from "react-toastify";
 const Onboarding: React.FC = () => {
-    const { user, setUser, organization, setOrganization, partialUser } = useAppContext();
+    const { user, setUser, organization, setOrganization, organizationUsage, setOrganizationUsage, partialUser } = useAppContext();
     const [organizationName, setOrganizationName] = useState("");
     const [step, setStep] = useState(() => {
         const savedStep = localStorage.getItem("onboardingStep");
@@ -31,13 +31,13 @@ const Onboarding: React.FC = () => {
             return null;
         }
         try {
-        const newOrganization = await createOrganization({ userId: partialUser.id, organizationName: organizationName });
-        await createOrganizationUsage({ userId: partialUser.id, organizationId: newOrganization.id, subscriptionTierId: "tier_free" });
-        if (newOrganization.id) {
-            setOrganization(newOrganization);
-            setUser({ ...partialUser, organizationId: newOrganization.id });
-            return newOrganization;
-        }
+            const newOrganization = await createOrganization({ userId: partialUser.id, organizationName: organizationName });
+            await createOrganizationUsage({ userId: partialUser.id, organizationId: newOrganization.id, subscriptionTierId: "tier_free" });
+            if (newOrganization.id) {
+                setOrganization(newOrganization);
+                setUser({ ...partialUser, organizationId: newOrganization.id });
+                return newOrganization;
+            }
         } catch (error) {
             console.error(error);
             //TODO: Delete the organization if it was created
@@ -80,11 +80,10 @@ const Onboarding: React.FC = () => {
         window.location.href = "#/payment";
     };
 
-    if (user?.organizationId && organization?.subscriptionId) {
-        // Clears the saved step at the end of onboarding
+    const handleFreeContinue = () => {
         localStorage.removeItem("onboardingStep");
-        return <Navigate to="/" replace />;
-    }
+        window.location.href = "/#";
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -115,6 +114,10 @@ const Onboarding: React.FC = () => {
             ))}
         </div>
     );
+
+    if(organizationUsage?.isSubscriptionActive) {
+        return <Navigate to="/" replace />;
+    }
 
     return (
         <div
@@ -193,7 +196,13 @@ const Onboarding: React.FC = () => {
 
                             {/* Buttons Step 1 */}
                             <div className={styles.buttonContainer}>
-                                <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick} disabled={isLoadingStep} aria-label="Previous">
+                                <button
+                                    className={styles.buttonPrev}
+                                    type="button"
+                                    onClick={handlePreviousClick}
+                                    disabled={isLoadingStep}
+                                    aria-label="Previous"
+                                >
                                     <ChevronLeftRegular className={`${styles.icon} ${styles.iconLeft}`} /> Previous
                                 </button>
                                 <button
@@ -229,13 +238,29 @@ const Onboarding: React.FC = () => {
 
                             {/* Buttons Step 2 */}
                             <div className={styles.buttonContainer}>
-                                <button className={styles.buttonPrev} type="button" onClick={handlePreviousClick} disabled={isLoadingStep} aria-label="Previous">
+                                <button
+                                    className={styles.buttonPrev}
+                                    type="button"
+                                    onClick={handlePreviousClick}
+                                    disabled={isLoadingStep}
+                                    aria-label="Previous"
+                                >
                                     <ChevronLeftRegular className={`${styles.icon} ${styles.iconLeft}`} /> Previous
                                 </button>
-                                <button className={styles.button} style={{ width: "auto", padding: "10px 15px" }} onClick={handleSubscriptionRedirect} aria-label="Subscribe Now" >
-                                    Subscribe Now!
-                                </button>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                    <button
+                                        className={styles.button}
+                                        style={{ width: "auto", padding: "10px 15px" }}
+                                        onClick={handleSubscriptionRedirect}
+                                        aria-label="Subscribe Now"
+                                    >
+                                        Subscribe Now!
+                                    </button>
+                                </div>
                             </div>
+                            <button className={styles.buttonFree} type="button" onClick={handleFreeContinue}>
+                                Continue as free user
+                            </button>
                         </div>
                     )}
                 </div>

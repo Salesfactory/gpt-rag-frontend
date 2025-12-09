@@ -146,7 +146,11 @@ describe("Knowledge Sources tests", () => {
                 message: "URL modified successfully"
             }
         }).as('updateOrganizationUrl');
-        cy.visit("/");
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                
+            }
+        });
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();
         cy.get('span').contains("Control Center").click();

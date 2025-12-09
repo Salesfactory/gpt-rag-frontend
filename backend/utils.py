@@ -1836,7 +1836,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             # Renewal or update - preserve existing seat data
             logging.info(f"[create_organization_usage] Existing usage found. Preserving seat data for organization: {organization_id}")
             current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
-            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id }])
+            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }])
             current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
 
             # Validate preserved data
@@ -1859,12 +1859,12 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             current_used = 0
 
         # Check subscription status from organization
-        is_subscription_active = organization.get("subscriptionStatus") == "active"
+        is_subscription_active = subscription_id is not None
 
         # Build the usage document
         usage_document = {
             "id": f"config_{organization_id}",
-            "organization_id": organization_id,
+            "organizationId": organization_id,
             "subscriptionId": subscription_id,
             "isSubscriptionActive": is_subscription_active,
             "type": "wallet",
@@ -1896,6 +1896,18 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
         logging.error(f"[create_organization_usage] Unexpected error for organization '{organization_id}': {str(e)}")
         raise Exception(f"Failed to create organization usage: {str(e)}")
     
+def get_organization_usage_by_id(organization_id: str):
+    if not organization_id:
+        return {"error": "Organization ID is required."}
+    try:
+        container = get_cosmos_container("organizationsUsage")
+        query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.type = @type"
+        parameters = [{"name": "@organization_id", "value": organization_id}, {"name": "@type", "value": "wallet"}]
+        result = list(container.query_items(query=query, parameters=parameters, partition_key=organization_id))
+        return result[0] if result else None
+    except Exception as e:
+        logging.error(f"[get_organization_usage_by_id] get_organization_usage_by_id: something went wrong. {str(e)}")
+        return None
 def get_organization_id_from_request(request):
     """
     Extracts the organization_id from the request.

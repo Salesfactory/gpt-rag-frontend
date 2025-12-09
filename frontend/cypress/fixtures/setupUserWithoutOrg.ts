@@ -10,7 +10,7 @@ export function setupTestUserWithoutOrg() {
                 email: "davidmartinez@nightcity.com",
                 id: "dummyid",
                 name: "David Martinez",
-                organizationId: "null",
+                organizationId: null,
                 role: "platformAdmin"
             }
         }
@@ -132,4 +132,12 @@ export function setupTestUserWithoutOrg() {
                 ]
             }
             }).as('getProductPrices');
+
+    // Intercept the organization usage API - return 404 since user has no organization yet
+    cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
+        statusCode: 404,
+        body: {
+            error: "Organization not found"
+        }
+    }).as("getOrganizationUsageNotFound");
 }

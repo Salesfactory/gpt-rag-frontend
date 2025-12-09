@@ -3,7 +3,11 @@ import { setupTestUserAndOrg } from "../fixtures/setupTestUser";
 describe("Modals Test Suite", ()=> {
     beforeEach(() => {
         setupTestUserAndOrg()
-        cy.visit("/")
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                
+            }
+        })
     })
 
     it("Should verify the visibility of the Profile Modal", () => {

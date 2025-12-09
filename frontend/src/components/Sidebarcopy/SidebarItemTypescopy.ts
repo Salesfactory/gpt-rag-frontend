@@ -1,14 +1,6 @@
 // SidebarItemTypes.ts
-
+import { SubscriptionTier } from "../../api/models";
 export type Role = "platformAdmin"|"admin" | "user";
-
-export type SubscriptionTier =
-    | "Basic"
-    | "Custom"
-    | "Premium"
-    | "Basic + Financial Assistant"
-    | "Custom + Financial Assistant"
-    | "Premium + Financial Assistant";
 
 export interface SidebarLink {
     title: string;

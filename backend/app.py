@@ -2510,6 +2510,32 @@ def cancel_subscription(*, context, subscription_id):
         return jsonify({"message": "Unauthorized access"}), 403
     except Exception as e:
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+    
+@app.route("/api/subscriptions-tiers", methods=["GET"])
+@require_client_principal  # Security: Enforce authentication
+def get_subscription_tiers():
+    """
+    Get all subscription tiers from Cosmos DB.
+    """
+    try:
+        from shared.cosmo_db import get_subscription_tiers
+        tiers = get_subscription_tiers()
+        print("tiers", tiers)
+        return jsonify(tiers), 200
+    except Exception as e:
+        logging.exception("Exception in /api/subscriptions/tiers")
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/subscriptions-tiers/<subscription_tier_id>", methods=["GET"])
+@require_client_principal
+def get_subscription_tier(subscription_tier_id):
+    try:
+        from shared.cosmo_db import get_subscription_tier_by_id
+        tier = get_subscription_tier_by_id(subscription_tier_id)
+        return jsonify(tier), 200
+    except Exception as e:
+        logging.exception("Exception in /api/get-subscription-tier/<subscription_tier_id>")
+        return jsonify({"error": str(e)}), 500
 
 
 ################################################

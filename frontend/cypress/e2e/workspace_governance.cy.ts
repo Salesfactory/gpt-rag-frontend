@@ -11,7 +11,11 @@ describe("Agent Section Tests", () => {
     beforeEach(() => {
         setupTestUserAndOrg();
         cy.intercept("PATCH", "/api/organization/*", {statusCode: 200}).as("updateOrg");
-        cy.visit("/");
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                
+            }
+        });
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();
     });
