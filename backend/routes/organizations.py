@@ -215,7 +215,7 @@ def getOrganizationStorageCapacity(organization_id):
     
 @bp.route("/api/organizations/<organization_id>/get-organization-usage", methods=["GET"])
 @auth_required
-def getOrganizationUsage(organization_id: str):
+def getOrgUsage(organization_id: str):
     if not organization_id:
         return create_error_response({"error": "Missing required parameters, organization_id"}, HTTPStatus.BAD_REQUEST)
     try:
