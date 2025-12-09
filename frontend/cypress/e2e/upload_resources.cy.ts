@@ -5,7 +5,7 @@ describe("File Vault Test Suite", () => {
         setupTestUserAndOrg();
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         cy.get("button#headerCollapse").should("be.visible");

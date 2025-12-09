@@ -18,7 +18,7 @@ describe("Chat Settings – Detail Level", () => {
 
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         cy.get('[data-testid="settings-button"]').should("be.visible").click();

@@ -8,7 +8,7 @@ describe("Agent Section Tests", () => {
     it('Should fails if the user is registered but can login into his organization ', () => {
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         cy.get('._text1_16056_87').should("not.exist")

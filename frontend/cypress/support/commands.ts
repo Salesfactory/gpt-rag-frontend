@@ -17,7 +17,7 @@ Cypress.Commands.add("openChat", () => {
     setupTestUserAndOrg();
     cy.visit("/", {
         onBeforeLoad: (window) => {
-            window.localStorage.setItem("finishedOnboarding", "true");
+            
         }
     });
     cy.get("#headerCollapse").click();

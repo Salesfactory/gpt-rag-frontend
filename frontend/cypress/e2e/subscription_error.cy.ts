@@ -27,7 +27,7 @@ describe("Subscription Error", () => {
         
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         
@@ -50,7 +50,7 @@ describe("Subscription Error", () => {
         
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         
@@ -72,7 +72,7 @@ describe("Subscription Error", () => {
         
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         

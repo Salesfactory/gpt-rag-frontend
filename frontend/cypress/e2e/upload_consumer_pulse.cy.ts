@@ -125,7 +125,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             // Visit root first to initialize AppContext
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             
@@ -161,7 +161,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             // Visit root first to initialize AppContext
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             
@@ -192,7 +192,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             // Visit root first to initialize AppContext
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             
@@ -223,7 +223,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             // Try to navigate directly to the upload consumer pulse page via URL
             cy.visit("/#/upload-consumer-pulse", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             
@@ -240,7 +240,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             
@@ -278,7 +278,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             
@@ -508,7 +508,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             
@@ -580,7 +580,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    window.localStorage.setItem("finishedOnboarding", "true");
+                    
                 }
             });
             

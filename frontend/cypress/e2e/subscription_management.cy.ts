@@ -174,7 +174,7 @@ describe("Subscription Page tests", () => {
                 }).as('getLogs');
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         cy.get("button#headerCollapse").should("be.visible");

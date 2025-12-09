@@ -4,7 +4,7 @@ describe('AnalysisPanel Component', () => {
     setupTestUserAndOrg();
     cy.visit('/', {
         onBeforeLoad: (window) => {
-            window.localStorage.setItem("finishedOnboarding", "true");
+            
         }
     });
   });

@@ -5,7 +5,7 @@ describe("Voice Customer Test Suite", () => {
         setupTestUserAndOrg();
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         cy.get("button#headerCollapse").should("be.visible");

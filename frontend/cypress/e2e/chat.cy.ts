@@ -6,7 +6,7 @@ describe("Main Page (Chat) Test Suite", () => {
 
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         cy.get("button#headerCollapse").should("be.visible");

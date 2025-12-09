@@ -6,7 +6,7 @@ describe("Agent Section Tests", () => {
         // Start from the web app that triggers the B2C sign-in
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         // Verify the button is visible

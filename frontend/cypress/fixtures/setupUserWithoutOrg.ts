@@ -133,27 +133,11 @@ export function setupTestUserWithoutOrg() {
             }
             }).as('getProductPrices');
 
-    // Intercept the organization usage API that's called during app initialization
+    // Intercept the organization usage API - return 404 since user has no organization yet
     cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
-        statusCode: 200,
+        statusCode: 404,
         body: {
-            data: {
-                id: "usage_123456",
-                organizationId: "org_123456",
-                subscriptionId: "sub_free",
-                isSubscriptionActive: true,
-                type: "organization_usage",
-                balance: {
-                    totalAllocated: 1000,
-                    currentUsed: 0
-                },
-                policy: {
-                    tierId: "free",
-                    currentSeats: 1,
-                    allowedUserIds: [],
-                    isSubscriptionActive: true
-                }
-            }
+            error: "Organization not found"
         }
-    }).as("getOrganizationUsage");
+    }).as("getOrganizationUsageNotFound");
 }

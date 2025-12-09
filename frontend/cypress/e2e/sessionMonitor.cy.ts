@@ -4,7 +4,7 @@ describe("Session Monitor Test Suite", () => {
     setupTestUserAndOrg()
     cy.visit("/", {
         onBeforeLoad: (window) => {
-            window.localStorage.setItem("finishedOnboarding", "true");
+            
         }
     })
   })

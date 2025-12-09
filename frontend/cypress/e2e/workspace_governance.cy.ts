@@ -13,7 +13,7 @@ describe("Agent Section Tests", () => {
         cy.intercept("PATCH", "/api/organization/*", {statusCode: 200}).as("updateOrg");
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                window.localStorage.setItem("finishedOnboarding", "true");
+                
             }
         });
         cy.get("button#headerCollapse").should("be.visible");
