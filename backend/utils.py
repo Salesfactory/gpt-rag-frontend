@@ -22,7 +22,8 @@ from shared.cosmo_db import (
     get_organization_subscription,
     get_subscription_tier_by_id, 
     get_organization_usage,
-    upsert_organization_usage
+    upsert_organization_usage,
+    get_user_organizations
 )
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
@@ -1907,3 +1908,58 @@ def get_organization_usage_by_id(organization_id: str):
     except Exception as e:
         logging.error(f"[get_organization_usage_by_id] get_organization_usage_by_id: something went wrong. {str(e)}")
         return None
+def get_organization_id_from_request(request):
+    """
+    Extracts the organization_id from the request.
+    Checks URL parameters first, then JSON body if applicable.
+    
+    Returns:
+        str or None: The organization_id if found, else None
+    """
+
+    if request.is_json:
+        data = request.get_json()
+        organization_id = data.get("organization_id")
+        if organization_id:
+            return organization_id
+        
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = None
+    if client_principal_id:
+        organizations = get_user_organizations(client_principal_id)
+        if organizations:
+            organization_id = organizations[0]["id"]
+
+    return organization_id
+
+
+
+def get_organization_id_and_user_id_from_request(request):
+    """
+    Extracts the organization_id and user_id from the request.
+    Checks URL parameters first, then JSON body if applicable.
+    
+    Returns:
+        tuple: (organization_id or None, user_id or None)
+    """
+
+    organization_id = None
+    user_id = None
+
+    if request.is_json:
+        data = request.get_json()
+        organization_id = data.get("organization_id")
+        user_id = data.get("user_id")
+        if organization_id and user_id:
+            return organization_id, user_id
+        
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = None
+    if client_principal_id:
+        organizations = get_user_organizations(client_principal_id)
+        if organizations:
+            organization_id = organizations[0]["id"]
+            
+    user_id = client_principal_id
+
+    return organization_id, user_id

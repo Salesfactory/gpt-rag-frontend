@@ -1536,3 +1536,4 @@ def get_subscription_tiers():
     except Exception as e:
         logging.error(f"Error retrieving subscription tiers: {e}")
         return []
+
