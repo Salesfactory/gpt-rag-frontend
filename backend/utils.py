@@ -1858,7 +1858,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             current_used = 0
 
         # Check subscription status from organization
-        is_subscription_active = organization.get("subscriptionStatus") == "active"
+        is_subscription_active = subscription_id is not None
 
         # Build the usage document
         usage_document = {

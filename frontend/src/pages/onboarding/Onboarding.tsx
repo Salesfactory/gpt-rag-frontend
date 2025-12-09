@@ -117,7 +117,7 @@ const Onboarding: React.FC = () => {
         </div>
     );
 
-    if(localStorage.getItem("finishedOnboarding") === "true") {
+    if(localStorage.getItem("finishedOnboarding") === "true" || organizationUsage?.isSubscriptionActive) {
         return <Navigate to="/" replace />;
     }
 
