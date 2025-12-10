@@ -80,14 +80,15 @@ def check_organization_limits():
                     return create_error_response("Unauthorized access to organization", 403)
                 
                 org_usage = get_organization_usage(organization_id)
+                print(org_usage)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
+                print(org_limits)
 
                 
                 usage = {
                     "limits": org_limits["quotas"],
                     "current_usage": org_usage["balance"],
-                    "is_storage_exceeded": org_usage["balance"]["currentStorageUsed"] > org_limits["quotas"]["totalStorageAllocated"],
-                    "is_credits_exceeded": org_usage["balance"]["currentCreditsUsed"] > org_limits["quotas"]["totalCreditsAllocated"]
+                    "is_credits_exceeded": org_usage["balance"]["currentUsed"] > org_limits["quotas"]["totalCreditsAllocated"]
                 }
 
                 kwargs["organization_usage"] = usage
@@ -141,7 +142,7 @@ def require_conversation_limits():
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
 
-                if org_usage["balance"]["currentCreditsUsed"] > org_limits["quotas"]["totalCreditsAllocated"]:
+                if org_usage["balance"]["currentUsed"] > org_limits["quotas"]["totalCreditsAllocated"]:
                     return create_error_response("Organization has exceeded its conversation limits", 403)
 
                 return f(*args, **kwargs)
@@ -190,14 +191,17 @@ def require_user_conversation_limits():
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
 
-                allowed_users = org_usage["policy"].get("allowedUserIds", {})
-                user_limits = allowed_users.get(user_id)
+                allowed_users = org_usage["policy"].get("allowedUserIds", [])
+                user_limits = next((user for user in allowed_users if user["userId"] == user_id), None)
+                print(user_limits)
                 if not user_limits:
                     return create_error_response("User is not authorized for this organization", 403)
                 if user_limits["used"] >= user_limits["limit"]:
                     return create_error_response("User has exceeded their conversation limits", 403)    
-                if org_usage["balance"]["currentCreditsUsed"] >= org_limits["quotas"]["totalCreditsAllocated"]:
+                if org_usage["balance"]["currentUsed"] >= org_limits["quotas"]["totalCreditsAllocated"]:
                     return create_error_response("Organization has exceeded its conversation limits", 403)
+                
+                kwargs["user_limits"] = {"user_limit": user_limits["limit"], "user_used": user_limits["used"]}
 
                 return f(*args, **kwargs)
 

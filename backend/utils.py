@@ -1954,7 +1954,9 @@ def get_organization_id_and_user_id_from_request(request):
             return organization_id, user_id
         
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    organization_id = None
+    organization_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
+    if organization_id:
+        return organization_id, client_principal_id
     if client_principal_id:
         organizations = get_user_organizations(client_principal_id)
         if organizations:

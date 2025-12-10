@@ -81,7 +81,7 @@ const Chat = () => {
     const [spreadsheetDownloadUrl, setSpreadsheetDownloadUrl] = useState<string | undefined>(undefined);
     const [spreadsheetFileName, setSpreadsheetFileName] = useState<string | undefined>(undefined);
     const [activeAnalysisPanelTab, setActiveAnalysisPanelTab] = useState<AnalysisPanelTabs | undefined>(undefined);
-
+    const [limitExceeded, setLimitExceeded] = useState<boolean>(false);
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
@@ -180,9 +180,15 @@ const Chat = () => {
                 })
             });
 
+            if (response.status == 403) {
+                setLimitExceeded(true);
+                throw new Error("Conversation limit exceeded.");
+            }
+            
             if (!response.body) {
                 throw new Error("ReadableStream not supported in this browser.");
             }
+
 
             /* ---------- 3 · Consume the stream via our parser with markdown validation ---------- */
             const reader = response.body.getReader();
