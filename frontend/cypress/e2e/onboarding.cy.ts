@@ -151,7 +151,7 @@ describe("Onboarding Tests", () => {
                         currentUsed: 0
                     },
                     policy: {
-                        tierId: "tier_free",
+                        tierId: "in_progress",
                         currentSeats: 1,
                         allowedUserIds: [],
                         isSubscriptionActive: false
@@ -195,7 +195,7 @@ describe("Onboarding Tests", () => {
                         currentUsed: 0
                     },
                     policy: {
-                        tierId: "tier_free",
+                        tierId: "in_progress",
                         currentSeats: 1,
                         allowedUserIds: [],
                         isSubscriptionActive: false

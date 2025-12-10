@@ -113,7 +113,7 @@ export type PostSettingsProps = {
     detail_level?: DetailLevel;
 };
 
-export type SubscriptionTier = "tier_free" | "tier_basic" | "tier_custom" | "tier_premium";
+export type SubscriptionTier = "in_progress" | "tier_free" | "tier_basic" | "tier_custom" | "tier_premium" | "tier_enterprise";
 
 export type AllowedUserId = {
     userId: string;

@@ -32,7 +32,8 @@ const Onboarding: React.FC = () => {
         }
         try {
             const newOrganization = await createOrganization({ userId: partialUser.id, organizationName: organizationName });
-            await createOrganizationUsage({ userId: partialUser.id, organizationId: newOrganization.id, subscriptionTierId: "tier_free" });
+            const tierId = partialUser?.email?.endsWith("@salesfactory.com") ? "tier_free" : "in_progress";
+            await createOrganizationUsage({ userId: partialUser.id, organizationId: newOrganization.id, subscriptionTierId: tierId });
             if (newOrganization.id) {
                 setOrganization(newOrganization);
                 setUser({ ...partialUser, organizationId: newOrganization.id });
@@ -80,11 +81,6 @@ const Onboarding: React.FC = () => {
         window.location.href = "#/payment";
     };
 
-    const handleFreeContinue = () => {
-        localStorage.removeItem("onboardingStep");
-        window.location.href = "/#";
-    };
-
     useEffect(() => {
         const timer = setTimeout(() => {
             setAnimatedStep(step);
@@ -115,7 +111,7 @@ const Onboarding: React.FC = () => {
         </div>
     );
 
-    if(organizationUsage?.isSubscriptionActive) {
+    if(organizationUsage?.isSubscriptionActive || organizationUsage?.policy?.tierId === "tier_free") {
         return <Navigate to="/" replace />;
     }
 
@@ -258,9 +254,6 @@ const Onboarding: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            <button className={styles.buttonFree} type="button" onClick={handleFreeContinue}>
-                                Continue as free user
-                            </button>
                         </div>
                     )}
                 </div>
