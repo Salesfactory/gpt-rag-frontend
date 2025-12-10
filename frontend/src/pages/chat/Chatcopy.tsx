@@ -20,6 +20,8 @@ import FreddaidLogo from "../../img/FreddaidLogo.png";
 
 import React from "react";
 import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, isThinkingMessage, isDataAnalystContentMessage, extractProgressState, ProgressMessage, ThinkingMessage, DataAnalystContentMessage } from "./streamParser";
+import {Warning28Regular } from "@fluentui/react-icons";
+import { log } from "console";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -82,6 +84,7 @@ const Chat = () => {
     const [spreadsheetFileName, setSpreadsheetFileName] = useState<string | undefined>(undefined);
     const [activeAnalysisPanelTab, setActiveAnalysisPanelTab] = useState<AnalysisPanelTabs | undefined>(undefined);
     const [limitExceeded, setLimitExceeded] = useState<boolean>(false);
+    const [nextPeriodStart, setNextPeriodStart] = useState<number | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
@@ -180,8 +183,12 @@ const Chat = () => {
                 })
             });
 
-            if (response.status == 404) {
+            if (response.status == 403) {
                 setLimitExceeded(true);
+                const data = await response.json();
+                const nextPeriodStart = (data.error.message.nextPeriodStart - Date.now()) / 1000;
+                console.log("nextPeriodStart", nextPeriodStart);
+                setNextPeriodStart(Math.ceil(nextPeriodStart / 86400));
             }
 
             if (!response.body) {
@@ -880,10 +887,12 @@ const Chat = () => {
                                             {
                                                 limitExceeded ? (
                                                     <div className={styles.limitExceeded} role="alert" aria-live="assertive">
-                                                        <div className={styles.errorIcon}>⚠️</div>
+                                                        <div className={styles.errorIcon}>
+                                                            <Warning28Regular color="#E29D6B" />
+                                                        </div>
                                                         <div>
                                                         <h1>Monthly Credit Limit Reached</h1>
-                                                        <p>You’ve reached your monthly credit limit. You’ll be able to ask more questions in X days when your billing cycle resets. Until then, feel free to review past insights—we’ll be ready when you are.</p>
+                                                        <p>You’ve reached your monthly credit limit. You’ll be able to ask more questions in {nextPeriodStart} days when your billing cycle resets. Until then, feel free to review past insights—we’ll be ready when you are.</p>
                                                         </div>
                                                     </div>
                                                 ) : null
