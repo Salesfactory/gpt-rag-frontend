@@ -84,6 +84,7 @@ from shared.cosmo_db import (
     get_organization_subscription,
 )
 from shared import clients
+from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_paused, handle_subscription_resumed, handle_subscription_deleted
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
 
@@ -1324,61 +1325,25 @@ def webhook():
         except stripe.error.SignatureVerificationError as e:
             print("⚠️  Webhook signature verification failed. " + str(e))
             return jsonify(success=False)
-
-    # Handle the event
-    if event["type"] == "checkout.session.completed":
-        print("🔔  Webhook received!", event["type"])
-        userId = event["data"]["object"]["client_reference_id"]
-        organizationId = event["data"]["object"]["metadata"]["organizationId"]
-        organizationName = event["data"]["object"]["metadata"]["organizationName"]
-        subscriptionTierId = event["data"]["object"]["metadata"]["subscriptionTierId"]
-        sessionId = event["data"]["object"]["id"]
-        subscriptionId = event["data"]["object"]["subscription"]
-        paymentStatus = event["data"]["object"]["payment_status"]
-        expirationDate = event["data"]["object"]["expires_at"]
-        try:
-            create_organization_usage(organizationId, subscriptionId, subscriptionTierId, userId)
-            # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-            # It is set during the infrastructure deployment.
-            keySecretName = "orchestrator-host--subscriptions"
-            functionKey = clients.get_azure_key_vault_secret(keySecretName)
-        except Exception as e:
-            logging.exception(
-                "[webbackend] exception in /api/orchestrator-host--subscriptions"
-            )
-            return (
-                jsonify(
-                    {
-                        "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                    }
-                ),
-                500,
-            )
-        try:
-            url = SUBSCRIPTION_ENDPOINT
-            payload = json.dumps(
-                {
-                    "id": userId,
-                    "organizationId": organizationId,
-                    "sessionId": sessionId,
-                    "subscriptionId": subscriptionId,
-                    "paymentStatus": paymentStatus,
-                    "organizationName": organizationName,
-                    "expirationDate": expirationDate,
-                }
-            )
-            headers = {
-                "Content-Type": "application/json",
-                "x-functions-key": functionKey,
-            }
-            response = requests.request("POST", url, headers=headers, data=payload)
-            logging.info(f"[webbackend] RESPONSE: {response.text[:500]}...")
-        except Exception as e:
-            logging.exception("[webbackend] exception in /api/checkUser")
-            return jsonify({"error": str(e)}), 500
-    else:
-        # Unexpected event type
-        print("Unexpected event type")
+        
+    event_type = event["type"]
+    try:
+        match (event_type):
+            case "checkout.session.completed":
+                handle_checkout_session_completed(event)
+            case "customer.subscription.updated":
+                handle_subscription_updated(event)
+            case "customer.subscription.paused":
+                handle_subscription_paused(event)
+            case "customer.subscription.resumed":
+                handle_subscription_resumed(event)
+            case "customer.subscription.deleted":
+                handle_subscription_deleted(event)
+            case _:
+                logging.warning(f"[webbackend] Unhandled event type: {event_type}")
+    except Exception as e:
+        logging.exception(f"[webbackend] exception in /webhook: {e}")
+        return jsonify({"error": str(e)}), 500
 
     return jsonify(success=True)
 

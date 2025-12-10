@@ -1774,7 +1774,19 @@ def add_or_update_organization_url(organization_id, url, scraping_result=None, a
     except Exception as e:
         logging.error(f"[add_or_update_organization_url] add_or_update_organization_url: something went wrong. {str(e)}")
         raise
-    
+def update_organization_usage(organization_id, subscription_id, subscription_tier_id, organization_usage):
+    """
+    Updates organization usage wallet in the organizationsUsage container.
+    """
+    if not organization_id or not subscription_id or not subscription_tier_id or not organization_usage:
+        return {"error": "Organization ID, subscription ID, subscription tier ID and organization usage are required."}
+    try:
+        upsert_organization_usage(organization_usage)
+        return {"message": "Organization usage updated successfully"}
+    except Exception as e:
+        logging.error(f"[update_organization_usage] update_organization_usage: something went wrong. {str(e)}")
+        raise
+
 def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id):
     """
     Creates or updates organization usage wallet in the organizationsUsage container.
@@ -1908,6 +1920,20 @@ def get_organization_usage_by_id(organization_id: str):
     except Exception as e:
         logging.error(f"[get_organization_usage_by_id] get_organization_usage_by_id: something went wrong. {str(e)}")
         return None
+    
+def get_organization_usage_by_subscription_id(subscription_id: str):
+    if not subscription_id:
+        return {"error": "Subscription ID is required."}
+    try:
+        container = get_cosmos_container("organizationsUsage")
+        query = "SELECT * FROM c WHERE c.subscriptionId = @subscription_id AND c.type = @type"
+        parameters = [{"name": "@subscription_id", "value": subscription_id}, {"name": "@type", "value": "wallet"}]
+        result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return result[0] if result else None
+    except Exception as e:
+        logging.error(f"[get_organization_usage_by_subscription_id] get_organization_usage_by_subscription_id: something went wrong. {str(e)}")
+        return None
+    
 def get_organization_id_from_request(request):
     """
     Extracts the organization_id from the request.
