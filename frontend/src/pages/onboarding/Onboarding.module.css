@@ -148,23 +148,6 @@
     border-color: #9ca3af;
 }
 
-.buttonFree {
-    background-color: transparent;
-    border: none;
-    color: #9ca3af;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.3s;
-    padding: 0.5rem;
-    white-space: nowrap;
-}
-
-.buttonFree:hover {
-    color: #6b7280;
-}
-
 .icon {
     width: 20px;
     height: 20px;

@@ -32,7 +32,8 @@ const allowedTiers: SubscriptionTier[] = [
     "tier_free",
     "tier_basic",
     "tier_custom",
-    "tier_premium"
+    "tier_premium",
+    "tier_enterprise"
 ]
 
 export default function App() {

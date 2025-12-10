@@ -3,14 +3,12 @@ import React, { useCallback, useMemo, useState } from "react";
 import { BadgeCheck, Bell, MessageSquare, SlidersHorizontal, Headphones, Star, FileText, ChartBar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { IconX, IconDots } from "@tabler/icons-react";
-import salesLogo from "../../img/logo_white.png";
 import styles from "./Sidebarcopy.module.css";
 import SidebarItem from "./SidebarItemcopy";
 import { useAppContext } from "../../providers/AppProviders";
 import { SidebarSection } from "./SidebarSectionTypescopy";
 import { SidebarItem as SidebarItemType, Role } from "./SidebarItemTypescopy";
 import newSFLogo from "../../img/NewSFLogo.png";
-import { Image } from "@fluentui/react";
 import { SubscriptionTier } from "../../api/models";
 
 interface SidebarProps {
@@ -22,7 +20,8 @@ const allowedTiers: SubscriptionTier[] = [
     "tier_free",
     "tier_basic",
     "tier_custom",
-    "tier_premium"
+    "tier_premium",
+    "tier_enterprise"
 ]
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
