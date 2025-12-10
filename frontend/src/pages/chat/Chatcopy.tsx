@@ -13,7 +13,7 @@ import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import AttachButton from "../../components/AttachButton/AttachButton";
 import DataAnalystButton from "../../components/DataAnalystButton/DataAnalystButton";
-import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES} from "../../constants";
+import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES } from "../../constants";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
@@ -101,7 +101,7 @@ const Chat = () => {
             return crypto.randomUUID();
         }
         // Fallback for older browsers
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
             const r = Math.random() * 16 | 0;
             const v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
@@ -180,11 +180,10 @@ const Chat = () => {
                 })
             });
 
-            if (response.status == 403) {
+            if (response.status == 404) {
                 setLimitExceeded(true);
-                throw new Error("Conversation limit exceeded.");
             }
-            
+
             if (!response.body) {
                 throw new Error("ReadableStream not supported in this browser.");
             }
@@ -806,113 +805,124 @@ const Chat = () => {
                                         <div
                                             className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
                                         >
-                                        {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
-                                        {dataConversation.length > 0
-                                            ? dataConversation.map((item, index) => {
-                                                  const response = {
-                                                      answer: item.bot?.message || "",
-                                                      conversation_id: chatId,
-                                                      data_points: [""],
-                                                      thoughts: item.bot?.thoughts ?? null
-                                                  } as AskResponse;
-                                                  return (
-                                                      <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
-                                                          <UserChatMessage message={item.user} />
-                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                              <Answer
-                                                                  key={index}
-                                                                  answer={response}
-                                                                  isGenerating={false}
-                                                                  isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                                  loadingCitationPath={loadingCitationPath}
-                                                                  onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                                  onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                                  onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={question => {
-                                                                      const blobNames = attachedDocs.map(d => d.blobName);
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
-                                                                  }}
-                                                                  showFollowupQuestions={false}
-                                                                  showSources={true}
-                                                              />
-                                                          </div>
-                                                      </div>
-                                                  );
-                                              })
-                                            : answers.map((answer, index) => {
-                                                  return (
-                                                      <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
-                                                          <UserChatMessage message={answer[0]} />
-                                                          <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                              <Answer
-                                                                  key={index}
-                                                                  answer={answer[1]}
-                                                                  isGenerating={false}
-                                                                  isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                                  loadingCitationPath={loadingCitationPath}
-                                                                  onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                                  onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                                  onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                  onFollowupQuestionClicked={question => {
-                                                                      const blobNames = attachedDocs.map(d => d.blobName);
-                                                                      streamResponse(question, chatId !== "" ? chatId : null, blobNames);
-                                                                  }}
-                                                                  showFollowupQuestions={false}
-                                                                  showSources={true}
-                                                              />
-                                                          </div>
-                                                      </div>
-                                                  );
-                                              })}
-                                        {error ? (
-                                            <>
-                                                <UserChatMessage message={lastQuestionRef.current} />
-                                                <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
-                                                    <AnswerError
-                                                        error={error_message_text + error.toString()}
-                                                        onRetry={() => {
-                                                            const blobNames = attachedDocs.map(d => d.blobName);
-                                                            streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, blobNames);
-                                                        }}
-                                                    />
-                                                </div>
-                                            </>
-                                        ) : null}
-                                        {lastQuestionRef.current !== "" && (
-                                            <>
-                                                <UserChatMessage message={lastQuestionRef.current} />
-                                                <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                    <Answer
-                                                        answer={
-                                                            {
-                                                                answer: lastAnswer,
-                                                                conversation_id: chatId,
-                                                                data_points: [""],
-                                                                thoughts: null
-                                                            } as AskResponse
-                                                        }
-                                                        isGenerating={isLoading}
-                                                        progressState={progressState}
-                                                        thinkingContent={thinkingContent}
-                                                        isSelected={activeAnalysisPanelTab !== undefined}
-                                                        loadingCitationPath={loadingCitationPath}
-                                                        onCitationClicked={(c, n) => {}}
-                                                        onThoughtProcessClicked={() => {}}
-                                                        onSupportingContentClicked={() => {}}
-                                                        onFollowupQuestionClicked={q => {}}
-                                                        showFollowupQuestions={false}
-                                                        showSources={true}
-                                                    />
-                                                </div>
-                                            </>
-                                        )}
+                                            {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
+                                            {dataConversation.length > 0
+                                                ? dataConversation.map((item, index) => {
+                                                    const response = {
+                                                        answer: item.bot?.message || "",
+                                                        conversation_id: chatId,
+                                                        data_points: [""],
+                                                        thoughts: item.bot?.thoughts ?? null
+                                                    } as AskResponse;
+                                                    return (
+                                                        <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                            <UserChatMessage message={item.user} />
+                                                            <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
+                                                                <Answer
+                                                                    key={index}
+                                                                    answer={response}
+                                                                    isGenerating={false}
+                                                                    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                    loadingCitationPath={loadingCitationPath}
+                                                                    onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                                    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                                    onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                                    onFollowupQuestionClicked={question => {
+                                                                        const blobNames = attachedDocs.map(d => d.blobName);
+                                                                        streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                    }}
+                                                                    showFollowupQuestions={false}
+                                                                    showSources={true}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                                : answers.map((answer, index) => {
+                                                    return (
+                                                        <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                            <UserChatMessage message={answer[0]} />
+                                                            <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
+                                                                <Answer
+                                                                    key={index}
+                                                                    answer={answer[1]}
+                                                                    isGenerating={false}
+                                                                    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                    loadingCitationPath={loadingCitationPath}
+                                                                    onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                                    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                                    onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                                    onFollowupQuestionClicked={question => {
+                                                                        const blobNames = attachedDocs.map(d => d.blobName);
+                                                                        streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                    }}
+                                                                    showFollowupQuestions={false}
+                                                                    showSources={true}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            {error ? (
+                                                <>
+                                                    <UserChatMessage message={lastQuestionRef.current} />
+                                                    <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
+                                                        <AnswerError
+                                                            error={error_message_text + error.toString()}
+                                                            onRetry={() => {
+                                                                const blobNames = attachedDocs.map(d => d.blobName);
+                                                                streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, blobNames);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </>
+                                            ) : null}
+                                            {
+                                                limitExceeded ? (
+                                                    <div className={styles.limitExceeded} role="alert" aria-live="assertive">
+                                                        <div className={styles.errorIcon}>⚠️</div>
+                                                        <div>
+                                                        <h1>Monthly Credit Limit Reached</h1>
+                                                        <p>You’ve reached your monthly credit limit. You’ll be able to ask more questions in X days when your billing cycle resets. Until then, feel free to review past insights—we’ll be ready when you are.</p>
+                                                        </div>
+                                                    </div>
+                                                ) : null
+                                            }
+                                            {lastQuestionRef.current !== "" && (
+                                                <>
+                                                    <UserChatMessage message={lastQuestionRef.current} />
+                                                    <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
+                                                        <Answer
+                                                            answer={
+                                                                {
+                                                                    answer: lastAnswer,
+                                                                    conversation_id: chatId,
+                                                                    data_points: [""],
+                                                                    thoughts: null
+                                                                } as AskResponse
+                                                            }
+                                                            isGenerating={isLoading}
+                                                            progressState={progressState}
+                                                            thinkingContent={thinkingContent}
+                                                            isSelected={activeAnalysisPanelTab !== undefined}
+                                                            loadingCitationPath={loadingCitationPath}
+                                                            onCitationClicked={(c, n) => { }}
+                                                            onThoughtProcessClicked={() => { }}
+                                                            onSupportingContentClicked={() => { }}
+                                                            onFollowupQuestionClicked={q => { }}
+                                                            showFollowupQuestions={false}
+                                                            showSources={true}
+                                                        />
+                                                    </div>
+                                                </>
+                                            )}
                                             <div ref={chatMessageStreamEnd} />
                                         </div>
                                     </div>
                                 )}
-                                <div 
+                                <div
                                     className={styles.chatInputContainer}
-                                    style={{ 
+                                    style={{
                                         width: activeAnalysisPanelTab ? windowWidth - analysisPanelWidth : "100%",
                                     }}
                                 >
@@ -995,10 +1005,10 @@ const Chat = () => {
                                 </div>
                             </div>
                             {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer]) ||
-                            (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
+                                (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
                                 <>
                                     <div className={styles.analysisResizeHandle} onMouseDown={handleResizeMouseDown} style={{ cursor: "col-resize" }} />
-                                    
+
                                     <div
                                         style={{
                                             width: analysisPanelWidth,
@@ -1010,30 +1020,31 @@ const Chat = () => {
                                         }}
                                     >
                                         {isResizingAnalysisPanel && (
-                                            <div style={{ width: "100%", height: "100%", background: "#fff",
+                                            <div style={{
+                                                width: "100%", height: "100%", background: "#fff",
                                                 display: "flex",
                                                 justifyContent: "center",
                                                 alignItems: "center"
-                                             }} >
+                                            }} >
                                                 <h4>Resizing...</h4>
                                             </div>
                                         )}
                                         {!isResizingAnalysisPanel && (
-                                        <AnalysisPanel
-                                            className={styles.chatAnalysisPanel}
-                                            activeCitation={activeCitation}
-                                            onActiveTabChanged={x => {
-                                                onToggleTab(x, selectedAnswer);
-                                            }}
-                                            citationHeight="810px"
-                                            answer={answers.length > 0 && answers[selectedAnswer] ? answers[selectedAnswer]?.[1] : responseForPreviewPanel}
-                                            activeTab={activeAnalysisPanelTab}
-                                            fileType={fileType}
-                                            onHideTab={hideTab}
-                                            spreadsheetDownloadUrl={spreadsheetDownloadUrl}
-                                            spreadsheetFileName={spreadsheetFileName}
-                                            onCitationClicked={(c, n) => onShowCitation(c, n, selectedAnswer)}
-                                        />
+                                            <AnalysisPanel
+                                                className={styles.chatAnalysisPanel}
+                                                activeCitation={activeCitation}
+                                                onActiveTabChanged={x => {
+                                                    onToggleTab(x, selectedAnswer);
+                                                }}
+                                                citationHeight="810px"
+                                                answer={answers.length > 0 && answers[selectedAnswer] ? answers[selectedAnswer]?.[1] : responseForPreviewPanel}
+                                                activeTab={activeAnalysisPanelTab}
+                                                fileType={fileType}
+                                                onHideTab={hideTab}
+                                                spreadsheetDownloadUrl={spreadsheetDownloadUrl}
+                                                spreadsheetFileName={spreadsheetFileName}
+                                                onCitationClicked={(c, n) => onShowCitation(c, n, selectedAnswer)}
+                                            />
                                         )}
                                     </div>
                                 </>
