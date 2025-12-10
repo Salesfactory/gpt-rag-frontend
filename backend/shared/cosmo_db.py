@@ -1537,3 +1537,32 @@ def get_subscription_tiers():
         logging.error(f"Error retrieving subscription tiers: {e}")
         return []
 
+def create_new_subscription_logs(userId, organizationId, userName, organizationName, action):
+    """
+    Logs events related to a new subscription to the audit container.
+
+    Parameters:
+    - userId (str): user ID.
+    - organizationId (str): organization ID.
+    - userName (str): user Name.
+    - organizationName (str): organization Name
+    - action (str): action performed
+    """
+    container = get_cosmos_container("auditLogs")
+
+    try:
+        audit_log_entry = {
+            "id": str(uuid.uuid4()),
+            "modified_by_name": userName,
+            "modified_by": userId,
+            "organizationName": organizationName,
+            "organization_id": organizationId,
+            "action": action,
+            "changeTime": int(datetime.now(timezone.utc).timestamp()),
+        }
+
+        container.create_item(body=audit_log_entry)
+        logging.info(f"[handle_new_subscription_logs] Audit log created for organization: {organizationId}")
+    except Exception as e:
+        logging.error(f"[handle_new_subscription_logs] Error creating audit log: {str(e)}")
+        raise Exception(f"Failed to create audit log: {e}")
