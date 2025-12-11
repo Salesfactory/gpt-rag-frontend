@@ -1101,20 +1101,6 @@ export async function getSubscriptionTierDetails(subscriptionTierId: string): Pr
     return response.json();
 }
 
-export async function getSubscriptionTierById(subscriptionTierId: string): Promise<SubscriptionTier> {
-    const response = await fetch(`/api/subscriptions-tiers/${subscriptionTierId}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
-    if (response.status > 299 || !response.ok) {
-        throw new Error(`Error getting subscription tier details: ${response.status} ${response.statusText}`);
-    }
-    const tier = await response.json();
-    return tier.tier_id as SubscriptionTier;
-}
-
 export async function getLogs(organizationId: string): Promise<any> {
     try {
         const response = await fetch('/api/logs/', {

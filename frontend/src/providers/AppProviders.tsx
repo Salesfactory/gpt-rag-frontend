@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
-import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getOrganizationUsage, getSettings, getUserById, getSubscriptionTierById } from "../api";
+import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getOrganizationUsage, getSettings, getUserById, getSubscriptionTierDetails } from "../api";
 import type { OrganizationUsage, ThoughtProcess, SubscriptionTier } from "../api/models";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
@@ -400,7 +400,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     debugLog("No organization details found.");
                 }
                 const organizationUsage = await getOrganizationUsage({ organizationId: organizationId });
-                const tier = await getSubscriptionTierById(organizationUsage.policy.tierId);
+                const tier = (await getSubscriptionTierDetails(organizationUsage.policy.tierId || "")).tier_name;
                 if (organizationUsage) {
                     setOrganizationUsage(organizationUsage);
                     setSubscriptionTiers([tier]);
