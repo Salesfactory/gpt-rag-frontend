@@ -73,6 +73,14 @@ def create_success_response(
     """
     return jsonify({"data": data, "status": optionalCode}), optionalCode
 
+def create_error_response_with_body(message: str, status_code: int, body: Dict[str, Any]) -> JsonResponse:
+    """
+    Create a standardized error response with additional body data.
+    Response Formatting: Ensures consistent error response structure with extra context.
+    """
+    response_body = {"error": {"message": message, "status": status_code, **body}}
+    return jsonify(response_body), status_code
+
 # Security: Decorator to ensure client principal ID is present
 def require_client_principal(f):
     """
