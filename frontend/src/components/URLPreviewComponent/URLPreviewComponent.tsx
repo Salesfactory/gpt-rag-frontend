@@ -131,6 +131,10 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
     };
 
     const handleImageClick = () => {
+        // Only allow opening modal if image is fully loaded and ready
+        if (!fileBlob || isLoading || isGenerating || !imageLoaded) {
+            return;
+        }
         if (displayMode === "thumbnail" || displayMode === "full") {
             setIsModalOpen(true);
         }
