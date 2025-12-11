@@ -130,8 +130,8 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
         setImageLoaded(false);
     };
 
-    const handleThumbnailClick = () => {
-        if (displayMode === "thumbnail") {
+    const handleImageClick = () => {
+        if (displayMode === "thumbnail" || displayMode === "full") {
             setIsModalOpen(true);
         }
     };
@@ -151,7 +151,8 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
                 return {
                     ...baseStyles,
                     maxWidth,
-                    maxHeight
+                    maxHeight,
+                    cursor: "zoom-in"
                 };
             case "modal":
                 return {
@@ -218,7 +219,7 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
                         alt={alt}
                         style={getDisplayStyles()}
                         className={`${styles.image} ${displayMode === "thumbnail" ? styles.thumbnail : ""}`}
-                        onClick={handleThumbnailClick}
+                        onClick={handleImageClick}
                         onLoad={handleImageLoad}
                         onError={handleImageError}
                     />
@@ -261,10 +262,7 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
                 <div className={styles.modal}>
                     <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)} />
                     <div className={styles.modalContent} ref={modalRef}>
-                        <button className={styles.modalCloseButton} onClick={() => setIsModalOpen(false)} aria-label="Close modal">
-                            ✕
-                        </button>
-                        <img src={fileBlob.url} alt={alt} className={styles.modalImage} style={getDisplayStyles()} />
+                        <img src={fileBlob.url} alt={alt} className={styles.modalImage} />
                     </div>
                 </div>
             )}

@@ -59,6 +59,7 @@
     height: auto;
     object-fit: contain;
     transition: transform 0.2s ease, opacity 0.2s ease;
+    cursor: zoom-in;
 }
 
 .thumbnail {
@@ -169,47 +170,22 @@
 
 .modalContent {
     position: relative;
-    max-width: 90vw;
-    max-height: 90vh;
-    background: white;
+    position: relative;
+    background: transparent;
     border-radius: 12px;
-    padding: 1rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    padding: 0;
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.modalCloseButton {
-    position: absolute;
-    top: -15px;
-    right: -15px;
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 50%;
-    background: #fff;
-    color: #333;
-    font-size: 1.2rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transition: all 0.2s ease;
-    z-index: 1001;
-}
-
-.modalCloseButton:hover {
-    background: #f7fafc;
-    transform: scale(1.1);
 }
 
 .modalImage {
-    max-width: 100%;
-    max-height: 100%;
+    max-width: 80vw;
+    max-height: 80vh;
     object-fit: contain;
     border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 /* Responsive design */
@@ -220,7 +196,7 @@
         max-height: calc(100vh - 2rem);
         padding: 0.5rem;
     }
-    
+
     .modalCloseButton {
         top: -10px;
         right: -10px;
@@ -228,17 +204,17 @@
         height: 35px;
         font-size: 1rem;
     }
-    
+
     .thumbnail {
         max-width: 120px;
         max-height: 120px;
     }
-    
+
     .filePreview {
         padding: 1rem;
         min-width: 120px;
     }
-    
+
     .fileName {
         font-size: 0.8rem;
         max-width: 150px;
@@ -251,6 +227,7 @@
         opacity: 0;
         transform: scale(0.9);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
