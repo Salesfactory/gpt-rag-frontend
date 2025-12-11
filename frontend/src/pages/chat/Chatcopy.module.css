@@ -340,3 +340,34 @@
     margin-top: 0;
     margin-bottom: 0;
 }
+
+.limitExceeded {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 900px;
+    margin-top: 2rem;
+    background-color: #FEF6EC;
+    border: 2px solid #F7E2C9;
+    padding-top: 1.5rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    display: flex;
+    border-radius: 12px;
+    gap: 1rem;
+} 
+
+.limitExceeded h1 {
+    color: #92400E;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.limitExceeded p {
+    color: #C16849;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+}
+
+.errorIcon {
+    padding-bottom: 14px;
+}

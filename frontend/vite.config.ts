@@ -54,7 +54,7 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            "/chatgpt": "http://127.0.0.1:8000",
+            "/stream_chatgpt": "http://127.0.0.1:8000",
             "/api/stripe": "http://127.0.0.1:8000",
             "/api/chat-history": "http://127.0.0.1:8000",
             "/api/chat-conversation/<chat_id>": "http://127.0.0.1:8000",

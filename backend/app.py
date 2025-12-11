@@ -46,6 +46,7 @@ from gallery.blob_utils import get_gallery_items_by_org
 load_dotenv(override=True)
 import app_config
 
+from shared.decorators import require_user_conversation_limits
 from shared.error_handling import (
     IncompleteConfigurationError,
     MissingRequiredFieldError,
@@ -789,6 +790,7 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
 @app.route("/stream_chatgpt", methods=["POST"])
 @auth.login_required
+@require_user_conversation_limits()
 def proxy_orc(*, context):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
