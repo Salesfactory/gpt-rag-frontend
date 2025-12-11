@@ -400,10 +400,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     debugLog("No organization details found.");
                 }
                 const organizationUsage = await getOrganizationUsage({ organizationId: organizationId });
-                const tier = (await getSubscriptionTierDetails(organizationUsage.policy.tierId || "")).tier_name;
+                const tier = (await getSubscriptionTierDetails(organizationUsage.policy.tierId || "")).tier_id;
                 if (organizationUsage) {
                     setOrganizationUsage(organizationUsage);
-                    setSubscriptionTiers([tier]);
+                    setSubscriptionTiers([tier as SubscriptionTier]);
                 } else {
                     debugLog("No organization details found.");
                 }
