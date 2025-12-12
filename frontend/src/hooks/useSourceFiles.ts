@@ -111,8 +111,20 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
     );
 
     const handleDownload = async (item: BlobItem) => {
-        const downloadUrl = await getBlobSasUrl(item.name);
-        window.open(downloadUrl, "_blank");
+        try {
+            const downloadUrl = await getBlobSasUrl(item.name);
+  
+            if (!downloadUrl) {
+                toast.error("Failed to generate download link");
+                return;
+            }
+  
+            window.open(downloadUrl, "_blank");
+            toast.success(`Downloading ${item.name}`);
+        } catch (error) {
+            console.error("Download error:", error);
+            toast.error(`Failed to download ${item.name}. Please try again.`);
+        }
     };
 
     return {
