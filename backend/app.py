@@ -1549,6 +1549,33 @@ def generate_sas_url_endpoint(*, context):
         except Exception:
             return jsonify({"error": "Blob not found"}), 404
         
+        # Validate organization access for organization_files
+        if blob_name.startswith(f"{ORG_FILES_PREFIX}/"):
+            path_parts = blob_name.split("/")
+            if len(path_parts) < 2:
+                return jsonify({"error": "Invalid organization file path"}), 400
+            
+            file_org_id = path_parts[1]
+            
+            client_principal_id = context.get("client_principal_id")
+            if not client_principal_id:
+                return jsonify({"error": "User not authenticated"}), 401
+            
+            try:
+                user_orgs = get_user_organizations(client_principal_id)
+                user_org_ids = [org.get("id") for org in user_orgs if org.get("id")]
+                
+                if file_org_id not in user_org_ids:
+                    logging.warning(
+                        f"[webbackend] User {client_principal_id} attempted to access file from organization {file_org_id} "
+                        f"but is not a member. User organizations: {user_org_ids}"
+                    )
+                    return jsonify({"error": "Access denied. You are not a member of this organization"}), 403
+                
+            except Exception as org_error:
+                logging.exception(f"[webbackend] Error validating organization membership: {org_error}")
+                return jsonify({"error": "Failed to validate organization membership"}), 500
+        
         # Generate SAS token
         sas_token = generate_blob_sas(
             account_name=account_name,
