@@ -1774,7 +1774,7 @@ def add_or_update_organization_url(organization_id, url, scraping_result=None, a
         logging.error(f"[add_or_update_organization_url] add_or_update_organization_url: something went wrong. {str(e)}")
         raise
     
-def create_organization_usage(organization_id, subscription_tier_id):
+def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id):
     """
     Creates or updates organization usage wallet in the organizationsUsage container.
     
@@ -1783,8 +1783,9 @@ def create_organization_usage(organization_id, subscription_tier_id):
     
     Args:
         organization_id (str): The ID of the organization
+        subscription_id (str): The ID of the subscription (from Stripe) None for free organizations
         subscription_tier_id (str): The ID of the subscription tier (plan nickname from Stripe)
-        
+        client_principal_id (str): The ID of the client principal
     Returns:
         dict: The created or updated organization usage document
         
@@ -1821,19 +1822,9 @@ def create_organization_usage(organization_id, subscription_tier_id):
             raise NotFound(f"Subscription tier with id '{subscription_tier_id}' does not exist")
 
         # Extract tier data with validation
-        plan_name = subscription_tier.get("planName")
-        max_seats = subscription_tier.get("maxSeats")
-
-        if not plan_name:
-            logging.error("[create_organization_usage] Subscription tier missing 'planName'")
-            raise ValueError("Subscription tier data is incomplete: missing planName")
-
-        if max_seats is None or not isinstance(max_seats, int) or max_seats < 0:
-            logging.error("[create_organization_usage] Invalid maxSeats in subscription tier")
-            raise ValueError("Subscription tier data is incomplete or invalid: maxSeats must be a non-negative integer")
-
+        tier_id = subscription_tier.get("id")
         
-        total_allocated = subscription_tier.get("totalAllocated", 100000)
+        total_allocated = subscription_tier.get("quotas", {}).get("totalCreditsAllocated", 0)
 
         # Check if organization usage already exists
         logging.info(f"[create_organization_usage] Checking existing organization usage for: {organization_id}")
@@ -1844,7 +1835,7 @@ def create_organization_usage(organization_id, subscription_tier_id):
             # Renewal or update - preserve existing seat data
             logging.info(f"[create_organization_usage] Existing usage found. Preserving seat data for organization: {organization_id}")
             current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
-            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [])
+            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id }])
             current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
 
             # Validate preserved data
@@ -1862,8 +1853,8 @@ def create_organization_usage(organization_id, subscription_tier_id):
         else:
             # New organization - initialize with zeros
             logging.info(f"[create_organization_usage] No existing usage. Initializing new wallet for organization: {organization_id}")
-            current_seats = 0
-            allowed_user_ids = []
+            current_seats = 1
+            allowed_user_ids = [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }]
             current_used = 0
 
         # Check subscription status from organization
@@ -1872,15 +1863,16 @@ def create_organization_usage(organization_id, subscription_tier_id):
         # Build the usage document
         usage_document = {
             "id": f"config_{organization_id}",
-            "organizationId": organization_id,
+            "organization_id": organization_id,
+            "subscriptionId": subscription_id,
+            "isSubscriptionActive": is_subscription_active,
             "type": "wallet",
             "balance": {
                 "totalAllocated": total_allocated,
                 "currentUsed": current_used
             },
             "policy": {
-                "planName": plan_name,
-                "maxSeats": max_seats,
+                "tierId": tier_id,
                 "currentSeats": current_seats,
                 "allowedUserIds": allowed_user_ids,
                 "isSubscriptionActive": is_subscription_active

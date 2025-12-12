@@ -1450,7 +1450,7 @@ def get_subscription_tier_by_id(tier_id):
         NotFound: If the subscription tier is not found.
         Exception: For any other unexpected error.
     """
-    container = get_cosmos_container("subscriptionTiers")
+    container = get_cosmos_container("subscriptionsTiers")
 
     try:
         tier = container.read_item(item=tier_id, partition_key=tier_id)

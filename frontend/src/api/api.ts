@@ -525,20 +525,18 @@ export async function createInvitation({ organizationId, invitedUserEmail, userI
         return { error: error };
     }
 }
-export async function getApiKeyPayment(): Promise<string> {
-    const response = await fetch("/api/stripe", {
+export async function getApiKeyPayment(): Promise<any> {
+    const response = await fetchWrapper("/api/stripe", {
         method: "GET",
         headers: {
             "Content-Type": "application/json"
         }
     });
-
     if (response.status > 299 || !response.ok) {
         throw Error("Error getting Api key payment");
     }
 
-    const apiKey = await response.text();
-    return apiKey;
+    return await response.json();
 }
 
 export async function getSourceFileFromBlob(
@@ -798,7 +796,7 @@ export async function uploadFile(file: any) {
     }
 }
 
-export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl, organizationId, userName, organizationName }: any) {
+export async function createCheckoutSession({ userId, priceId, successUrl, cancelUrl, organizationId, userName, organizationName, subscriptionTierId }: any) {
     const response = await fetch("/create-checkout-session", {
         method: "POST",
         headers: {
@@ -811,7 +809,8 @@ export async function createCheckoutSession({ userId, priceId, successUrl, cance
             cancelUrl,
             organizationId,
             userName,
-            organizationName
+            organizationName,
+            subscriptionTierId
         })
     });
     if (response.status > 299 || !response.ok) {
