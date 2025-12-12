@@ -2,6 +2,9 @@
 import { setupTestUserAndOrg } from "../fixtures/setupTestUser";
 
 describe("Upload Consumer Pulse Data Test Suite", () => {
+    beforeEach(() => {
+        setupTestUserAndOrg();
+    });
     const setupCommonInterceptsForRole = (role: string) => {
         cy.intercept("GET", "/api/auth/user", {
             statusCode: 200,

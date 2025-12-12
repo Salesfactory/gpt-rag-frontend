@@ -245,7 +245,7 @@ export function setupTestUserAndOrg() {
                     currentUsed: 100
                 },
                 policy: {
-                    tierId: "tier_premium",
+                    tierId: "price_1Qf5FCEpF6ccgZLw4DTmrYHQ",
                     currentSeats: 5,
                     allowedUserIds: [],
                     isSubscriptionActive: true
@@ -253,6 +253,24 @@ export function setupTestUserAndOrg() {
             }
         }
     }).as("getOrganizationUsage");
+
+    cy.intercept("GET", "/api/subscriptions-tiers/*", {
+        statusCode: 200,
+        body: {
+            "id": "price_1Qf5FCEpF6ccgZLw4DTmrYHQ",
+            "tier_id": "tier_basic",
+            "tier_name": "Basic Tier",
+            "cost": 500,
+            "quotas": {
+                "totalCreditsAllocated": 1000,
+                "totalStorageAllocated": 1000
+            },
+            "policy": {
+                "allowOverdraft": false,
+                "maxSeats": 5
+            }
+        }
+    }).as("getSubscriptionTierDetails");
 
     cy.intercept("POST", "/api/voice-customer/brands", {
         statusCode: 201,

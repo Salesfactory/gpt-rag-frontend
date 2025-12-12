@@ -1787,7 +1787,7 @@ def update_organization_usage(organization_id, subscription_id, subscription_tie
         logging.error(f"[update_organization_usage] update_organization_usage: something went wrong. {str(e)}")
         raise
 
-def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id):
+def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id,current_period_ends=None):
     """
     Creates or updates organization usage wallet in the organizationsUsage container.
     
@@ -1799,6 +1799,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
         subscription_id (str): The ID of the subscription (from Stripe) None for free organizations
         subscription_tier_id (str): The ID of the subscription tier (plan nickname from Stripe)
         client_principal_id (str): The ID of the client principal
+        current_period_ends (float): The current period ends date in milliseconds
     Returns:
         dict: The created or updated organization usage document
         
@@ -1816,6 +1817,10 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
     if not subscription_tier_id or not isinstance(subscription_tier_id, str) or not subscription_tier_id.strip():
         logging.error("[create_organization_usage] Invalid subscription_tier_id provided")
         raise ValueError("subscription_tier_id must be a non-empty string")
+    # If no period end provided, calculate it
+    if current_period_ends is None:
+        # Default to 30 days from now for new subscriptions
+        current_period_ends = (datetime.now(timezone.utc) + timedelta(days=30)).timestamp()
 
     try:
         # Validate organization exists
@@ -1850,7 +1855,6 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
             allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }])
             current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
-
             # Validate preserved data
             if not isinstance(current_seats, int) or current_seats < 0:
                 logging.warning("[create_organization_usage] Invalid currentSeats in existing data, resetting to 0")
@@ -1877,6 +1881,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
         usage_document = {
             "id": f"config_{organization_id}",
             "organizationId": organization_id,
+            "currentPeriodEnds": current_period_ends,
             "subscriptionId": subscription_id,
             "isSubscriptionActive": is_subscription_active,
             "type": "wallet",

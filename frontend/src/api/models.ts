@@ -130,6 +130,7 @@ export type Policy = {
 
 export type OrganizationUsage = {
     "id": string,
+    "currentPeriodEnds": number,
     "organizationId": string,
     "subscriptionId": string | null,
     "isSubscriptionActive": boolean,
