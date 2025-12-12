@@ -83,7 +83,7 @@ def handle_subscription_updated(event):
                 logging.error(
                     f"No organization usage found for subscription: {subscriptionId}")
                 raise Exception(
-                    f"No organization usage found fortier subscription: {subscriptionId}")
+                    f"No organization usage found for subscription: {subscriptionId}")
 
             tier = get_subscription_tier_by_id(planId)
             if not tier:
