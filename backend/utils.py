@@ -1787,7 +1787,7 @@ def update_organization_usage(organization_id, subscription_id, subscription_tie
         logging.error(f"[update_organization_usage] update_organization_usage: something went wrong. {str(e)}")
         raise
 
-def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id,current_period_ends = datetime.now(timezone.utc).timestamp()):
+def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id,current_period_ends=None):
     """
     Creates or updates organization usage wallet in the organizationsUsage container.
     
@@ -1817,6 +1817,10 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
     if not subscription_tier_id or not isinstance(subscription_tier_id, str) or not subscription_tier_id.strip():
         logging.error("[create_organization_usage] Invalid subscription_tier_id provided")
         raise ValueError("subscription_tier_id must be a non-empty string")
+    # If no period end provided, calculate it
+    if current_period_ends is None:
+        # Default to 30 days from now for new subscriptions
+        current_period_ends = (datetime.now(timezone.utc) + timedelta(days=30)).timestamp()
 
     try:
         # Validate organization exists
