@@ -1,4 +1,4 @@
-import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category, OrganizationUsage, Policy } from "./models";
+import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category, OrganizationUsage, Policy, SubscriptionTier } from "./models";
 import { SourceDocumentsResponse } from '../types';
 import { fetchWrapper } from './fetchWrapper';
 
@@ -1053,7 +1053,7 @@ export async function resetUserPassword({ userId, newPassword }: { userId: strin
     return response.json();
 }
 
-export async function changeSubscription({ subscriptionId, newPlanId, user }: { subscriptionId: string; newPlanId: string; user: any; }): Promise<any> {
+export async function changeSubscription({ subscriptionId, newPlanId, user, organizationId }: { subscriptionId: string; newPlanId: string; user: any; organizationId: string; }): Promise<any> {
     const userId = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const userName = user ? user.name : "anonymous";
     try {
@@ -1066,6 +1066,7 @@ export async function changeSubscription({ subscriptionId, newPlanId, user }: { 
             },
             body: JSON.stringify({
                 new_plan_id: newPlanId,
+                organization_id: organizationId
             }),
         });
 
@@ -1085,6 +1086,19 @@ export async function changeSubscription({ subscriptionId, newPlanId, user }: { 
         );
         throw error;
     }
+}
+
+export async function getSubscriptionTierDetails(subscriptionTierId: string): Promise<any> {
+    const response = await fetch(`/api/subscriptions-tiers/${subscriptionTierId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`Error getting subscription tier details: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
 }
 
 export async function getLogs(organizationId: string): Promise<any> {

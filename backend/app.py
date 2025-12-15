@@ -84,7 +84,7 @@ from shared.cosmo_db import (
     get_organization_subscription,
 )
 from shared import clients
-from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_paused, handle_subscription_resumed, handle_subscription_deleted
+from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_deleted
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
 
@@ -1333,14 +1333,10 @@ def webhook():
                 handle_checkout_session_completed(event)
             case "customer.subscription.updated":
                 handle_subscription_updated(event)
-            case "customer.subscription.paused":
-                handle_subscription_paused(event)
-            case "customer.subscription.resumed":
-                handle_subscription_resumed(event)
             case "customer.subscription.deleted":
                 handle_subscription_deleted(event)
             case _:
-                logging.warning(f"[webbackend] Unhandled event type: {event_type}")
+                logging.warning(f"[webbackend] Unhandled event type")
     except Exception as e:
         logging.exception(f"[webbackend] exception in /webhook: {e}")
         return jsonify({"error": str(e)}), 500
@@ -2398,8 +2394,12 @@ def change_subscription(*, context, subscription_id):
 
         data = request.json
         new_plan_id = data.get("new_plan_id")
+        organization_id = data.get("organization_id")
         if not new_plan_id:
             return jsonify({"error": "new_plan_id is required"}), 400
+
+        if not organization_id:
+            return jsonify({"error": "organization_id is required"}), 400
 
         # Retrieve subscription from Stripe
         stripe_subscription = stripe.Subscription.retrieve(subscription_id)
@@ -2419,6 +2419,7 @@ def change_subscription(*, context, subscription_id):
                 }
             ],
             metadata={
+                "organization_id": organization_id,
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
                 "modified_by_name": request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "subscription_tier_change",
@@ -2477,7 +2478,7 @@ def cancel_subscription(*, context, subscription_id):
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
     
 @app.route("/api/subscriptions-tiers", methods=["GET"])
-@require_client_principal  # Security: Enforce authentication
+@require_client_principal
 def get_subscription_tiers():
     """
     Get all subscription tiers from Cosmos DB.
@@ -2492,8 +2493,8 @@ def get_subscription_tiers():
         return jsonify({"error": str(e)}), 500
     
 @app.route("/api/subscriptions-tiers/<subscription_tier_id>", methods=["GET"])
-@require_client_principal
-def get_subscription_tier(subscription_tier_id):
+@auth.login_required
+def get_subscription_tier(*, context, subscription_tier_id):
     try:
         from shared.cosmo_db import get_subscription_tier_by_id
         tier = get_subscription_tier_by_id(subscription_tier_id)
