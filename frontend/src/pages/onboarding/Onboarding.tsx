@@ -32,7 +32,7 @@ const Onboarding: React.FC = () => {
         }
         try {
             const newOrganization = await createOrganization({ userId: partialUser.id, organizationName: organizationName });
-            const tierId = partialUser?.email?.endsWith("@salesfactory.com") ? "tier_free" : "in_progress";
+            const tierId = partialUser?.email?.endsWith("@salesfactory.com") || partialUser?.email?.endsWith("@salesfactory.ai") ? "tier_free" : "in_progress";
             await createOrganizationUsage({ userId: partialUser.id, organizationId: newOrganization.id, subscriptionTierId: tierId });
             if (newOrganization.id) {
                 setOrganization(newOrganization);
