@@ -91,9 +91,13 @@ def handle_subscription_updated(event):
                 raise Exception(f"No subscription tier found for plan: {planId}")
 
             totalAllocated = tier.get("quotas", {}).get("totalCreditsAllocated", 0)
-            organizationUsage["balance"]["currentUsed"] += totalAllocated
+            organizationUsage["balance"]["currentUsed"] = 0
             organizationUsage["balance"]["totalAllocated"] += totalAllocated
-
+            
+            for allowedUserId in organizationUsage.get("policy", {}).get("allowedUserIds", []):
+                allowedUserId["limit"] = organizationUsage.get("balance", {}).get("totalAllocated", 0)/len(organizationUsage.get("policy", {}).get("allowedUserIds", []))
+                allowedUserId["used"] = 0
+            
             update_organization_usage(
                 organizationUsage["organizationId"], subscriptionId, planId, organizationUsage)
             
