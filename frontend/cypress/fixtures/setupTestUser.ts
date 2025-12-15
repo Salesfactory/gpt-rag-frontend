@@ -298,10 +298,11 @@ export function setupTestUserAndOrg() {
         }
     }).as("getIndustryByOrganization");
 
-    cy.intercept("GET", "/api/get-source-documents?organization_id=0aad82ee-52ec-428e-b211-e9cc34b94457", {
+    cy.intercept("GET", "/api/get-source-documents*", {
         statusCode: 203,
         body: {
-            data: [
+            data: {
+                files: [
                 {
                     content_type: "application/octet-stream",
                     created_on: "2025-08-14T02:08:57+00:00",
@@ -401,6 +402,9 @@ export function setupTestUserAndOrg() {
                     url: "https://strag0vm2b2htvuuclm.blob.core.windows.net/documents/organization_files/22552b2f-1e98-4bc0-a252-a782d80201d5/linearalgebraanditsapplications.pdf"
                 }
             ],
+            folders: [],
+            current_path: ""
+            },
             status: 200
         }
     });

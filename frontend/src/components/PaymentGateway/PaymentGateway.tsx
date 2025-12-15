@@ -9,8 +9,13 @@ import { Check } from "lucide-react";
 import subscription from "../../img/subscription_image.png";
 
 const fetchApiKey = async () => {
+    try {
     const apiKey = await getApiKeyPayment();
-    return apiKey;
+        return apiKey.functionKey;
+    } catch (error) {
+        console.error("Failed to fetch API key:", error);
+        return null;
+    }
 };
 
 export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null> }> = ({ stripePromise }) => {
@@ -25,6 +30,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             try {
                 const data = await getProductPrices({ user });
                 const sortedPrices = data.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount);
+                console.log(sortedPrices);
                 setPrices(sortedPrices);
 
                 const initialTabs = Object.fromEntries(sortedPrices.map((price: any) => [price.id, "features"]));
@@ -58,7 +64,8 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             successUrl: window.location.origin + "#/success-payment",
             cancelUrl: window.location.origin + "/",
             organizationName: organization?.name,
-            organizationId: user.organizationId || ""
+            organizationId: user.organizationId || "",
+            subscriptionTierId: priceId
         });
         window.location.href = url;
     };
