@@ -2,7 +2,7 @@ import os
 import logging
 from flask import request, jsonify
 from functools import wraps
-from utils import get_azure_key_vault_secret, get_organization_id_from_request, get_organization_id_and_user_id_from_request, create_error_response, create_success_response
+from utils import get_azure_key_vault_secret, get_organization_id_from_request, get_organization_id_and_user_id_from_request, create_error_response, create_error_response_with_body
 from shared.cosmo_db import get_user_organizations, get_organization_usage, get_subscription_tier_by_id
 
 def validate_token():
@@ -193,16 +193,15 @@ def require_user_conversation_limits():
 
                 allowed_users = org_usage["policy"].get("allowedUserIds", [])
                 user_limits = next((user for user in allowed_users if user["userId"] == user_id), None)
-                print(user_limits)
                 if not user_limits:
                     return create_error_response("User is not authorized for this organization", 403)
                 if user_limits["currentUsed"] >= user_limits["totalAllocated"]:
                     next_period_start = org_usage["currentPeriodEnds"]
-                    print(next_period_start)
-                    return create_error_response({
-                        "error": "User has exceeded their conversation limits",
-                        "nextPeriodStart": next_period_start
-                    }, 403)    
+                    return create_error_response_with_body(
+                        "User has exceeded their conversation limits",
+                        403,
+                        {"nextPeriodStart": next_period_start}
+                    ) 
                 if org_usage["balance"]["currentUsed"] >= org_limits["quotas"]["totalCreditsAllocated"]:
                     return create_error_response("Organization has exceeded its conversation limits", 403)
                 
