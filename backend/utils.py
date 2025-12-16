@@ -1836,7 +1836,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             # Renewal or update - preserve existing seat data
             logging.info(f"[create_organization_usage] Existing usage found. Preserving seat data for organization: {organization_id}")
             current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
-            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }])
+            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "totalAllocated": total_allocated, "currentUsed": 0 }])
             current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
 
             # Validate preserved data

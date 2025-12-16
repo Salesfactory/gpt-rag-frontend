@@ -196,7 +196,7 @@ def require_user_conversation_limits():
                 print(user_limits)
                 if not user_limits:
                     return create_error_response("User is not authorized for this organization", 403)
-                if user_limits["used"] >= user_limits["limit"]:
+                if user_limits["currentUsed"] >= user_limits["totalAllocated"]:
                     next_period_start = org_usage["currentPeriodEnds"]
                     print(next_period_start)
                     return create_error_response({
@@ -206,7 +206,7 @@ def require_user_conversation_limits():
                 if org_usage["balance"]["currentUsed"] >= org_limits["quotas"]["totalCreditsAllocated"]:
                     return create_error_response("Organization has exceeded its conversation limits", 403)
                 
-                kwargs["user_limits"] = {"user_limit": user_limits["limit"], "user_used": user_limits["used"]}
+                kwargs["user_limits"] = {"user_limit": user_limits["totalAllocated"], "user_used": user_limits["currentUsed"]}
 
                 return f(*args, **kwargs)
 
