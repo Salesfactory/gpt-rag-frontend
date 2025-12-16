@@ -73,6 +73,14 @@ def create_success_response(
     """
     return jsonify({"data": data, "status": optionalCode}), optionalCode
 
+def create_error_response_with_body(message: str, status_code: int, body: Dict[str, Any]) -> JsonResponse:
+    """
+    Create a standardized error response with additional body data.
+    Response Formatting: Ensures consistent error response structure with extra context.
+    """
+    response_body = {"error": {"message": message, "status": status_code, **body}}
+    return jsonify(response_body), status_code
+
 # Security: Decorator to ensure client principal ID is present
 def require_client_principal(f):
     """
@@ -1853,7 +1861,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             # Renewal or update - preserve existing seat data
             logging.info(f"[create_organization_usage] Existing usage found. Preserving seat data for organization: {organization_id}")
             current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
-            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }])
+            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "totalAllocated": total_allocated, "currentUsed": 0 }])
             current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
             # Validate preserved data
             if not isinstance(current_seats, int) or current_seats < 0:
@@ -1985,7 +1993,9 @@ def get_organization_id_and_user_id_from_request(request):
             return organization_id, user_id
         
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-    organization_id = None
+    organization_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
+    if organization_id:
+        return organization_id, client_principal_id
     if client_principal_id:
         organizations = get_user_organizations(client_principal_id)
         if organizations:
