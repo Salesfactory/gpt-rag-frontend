@@ -10,7 +10,7 @@ import subscription from "../../img/subscription_image.png";
 
 const fetchApiKey = async () => {
     try {
-    const apiKey = await getApiKeyPayment();
+        const apiKey = await getApiKeyPayment();
         return apiKey.functionKey;
     } catch (error) {
         console.error("Failed to fetch API key:", error);
@@ -30,7 +30,6 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
             try {
                 const data = await getProductPrices({ user });
                 const sortedPrices = data.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount);
-                console.log(sortedPrices);
                 setPrices(sortedPrices);
 
                 const initialTabs = Object.fromEntries(sortedPrices.map((price: any) => [price.id, "features"]));
@@ -146,11 +145,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                                         role="button"
                                         aria-label={`Subscribe to ${price.nickname}`}
                                     >
-                                        {organization?.subscriptionId && organization.subscriptionStatus === "inactive"
-                                            ? "Reactivate subscription"
-                                            : organization?.subscriptionStatus === "active"
-                                            ? "Edit payment information"
-                                            : "Subscribe"}
+                                        "Select this plan"
                                     </button>
                                 </div>
                             </div>
