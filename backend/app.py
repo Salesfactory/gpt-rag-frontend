@@ -791,7 +791,7 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 @app.route("/stream_chatgpt", methods=["POST"])
 @auth.login_required
 @require_user_conversation_limits()
-def proxy_orc(*, context):
+def proxy_orc(*, context, **kwargs):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
     question = data.get("question")
