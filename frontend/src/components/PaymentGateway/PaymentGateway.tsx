@@ -145,7 +145,7 @@ export const SubscriptionPlans: React.FC<{ stripePromise: Promise<Stripe | null>
                                         role="button"
                                         aria-label={`Subscribe to ${price.nickname}`}
                                     >
-                                        "Select this plan"
+                                        Select this plan
                                     </button>
                                 </div>
                             </div>
