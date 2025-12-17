@@ -1528,7 +1528,7 @@ def get_subscription_tiers():
     """
     try:
         container = get_cosmos_container("subscriptionsTiers")
-        tiers = list(container.query_items(query="SELECT * FROM c", enable_cross_partition_query=True))
+        tiers = list(container.query_items(query="SELECT * FROM c WHERE c.type = 'tier'", enable_cross_partition_query=True))
         return tiers
     except CosmosResourceNotFoundError:
         logging.warning(f"No subscription tiers found in Cosmos DB.")
