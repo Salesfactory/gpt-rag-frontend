@@ -3,8 +3,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSourceFileFromBlob, deleteSourceFileFromBlob, getBlobSasUrl } from '../api/api';
 import { toast } from 'react-toastify';
 import { BlobItem, FolderItem } from '../types';
+import { useAppContext } from '../providers/AppProviders';
 
 export const useSourceFiles = (organizationId: string, category: string = 'all') => {
+    const { user } = useAppContext();
     const [files, setFiles] = useState<BlobItem[]>([]);
     const [folders, setFolders] = useState<FolderItem[]>([]);
     const [currentPath, setCurrentPath] = useState<string>('');
@@ -112,7 +114,7 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
 
     const handleDownload = async (item: BlobItem) => {
         try {
-            const downloadUrl = await getBlobSasUrl(item.name);
+            const downloadUrl = await getBlobSasUrl(item.name, "documents", user);
   
             if (!downloadUrl) {
                 toast.error("Failed to generate download link");

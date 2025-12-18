@@ -1746,11 +1746,12 @@ export async function getFileBlob(fileName: string, container: string = "documen
     }
 }
 
-export async function getBlobSasUrl(blobName: string, containerName: string = "documents"): Promise<string> {
+export async function getBlobSasUrl(blobName: string, containerName: string = "documents", user: any): Promise<string> {
     const response = await fetchWrapper('/api/generate-sas-url', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id,
         },
         body: JSON.stringify({ blob_name: blobName, container_name: containerName })
     });

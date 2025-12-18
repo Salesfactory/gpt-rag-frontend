@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
 import { getBlobSasUrl } from "../../api/api";
+import { useAppContext } from "../../providers/AppProviders";
 
 interface PptxViewerProps {
     file: Blob | string;
@@ -8,6 +9,7 @@ interface PptxViewerProps {
 }
 
 const PptxViewer: React.FC<PptxViewerProps> = ({ file, blobName }) => {
+    const { user } = useAppContext();
     const [fileUrl, setFileUrl] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>("");
@@ -23,7 +25,7 @@ const PptxViewer: React.FC<PptxViewerProps> = ({ file, blobName }) => {
                 // If blobName is provided, fetch SAS URL from backend
                 if (blobName) {
                     const cleanedBlobName = decodeURIComponent(blobName.replace("documents/", ""));
-                    const response = await getBlobSasUrl(cleanedBlobName, "documents");
+                    const response = await getBlobSasUrl(cleanedBlobName, "documents", user);
                     setFileUrl(response);
                 } else if (file instanceof Blob) {
                     // Fallback: create blob URL (though this doesn't work well with react-doc-viewer)
