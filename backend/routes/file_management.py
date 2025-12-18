@@ -9,6 +9,9 @@ from azure.core.exceptions import HttpResponseError
 from data_summary.summarize import create_description
 from utils import create_success_response, create_error_response
 
+from shared.decorators import require_organization_storage_limits
+from shared.cosmo_db import upsert_organization_usage, get_organization_usage
+
 from routes.decorators.auth_decorator import auth_required
 
 # Allowed file extensions for description generation
@@ -141,7 +144,8 @@ def delete_from_azure_search(filepath: str) -> dict:
 
 @bp.route("/upload-source-document", methods=["POST"])
 @auth_required
-def upload_source_document():
+@require_organization_storage_limits()
+def upload_source_document(**kwargs):
     llm = current_app.config["llm"]
     temp_file_path = None
     try:
@@ -154,6 +158,11 @@ def upload_source_document():
         if not file:
             logger.error("No file part in the request")
             return create_error_response("No file part in the request", 400)
+        
+        if file.filename.endswith(".pdf"):
+            if kwargs["upload_limits"]["pagesUsed"] >= kwargs["upload_limits"]["pagesLimit"]:
+                logger.warning(f"Organization {organization_id} has exceeded page upload limits")
+                return create_error_response("Page upload limit exceeded for your organization", 403)
 
         if file.filename == "":
             logger.error("No file selected")

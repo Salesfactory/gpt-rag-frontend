@@ -1962,12 +1962,11 @@ def get_organization_id_from_request(request):
         if organization_id:
             return organization_id
         
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
+    if organization_id:
+        return organization_id
+    
     organization_id = None
-    if client_principal_id:
-        organizations = get_user_organizations(client_principal_id)
-        if organizations:
-            organization_id = organizations[0]["id"]
 
     return organization_id
 

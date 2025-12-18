@@ -1,9 +1,12 @@
 import os
 import logging
-from flask import request, jsonify
+from flask import current_app, request, jsonify
 from functools import wraps
 from utils import get_azure_key_vault_secret, get_organization_id_from_request, get_organization_id_and_user_id_from_request, create_error_response, create_error_response_with_body
 from shared.cosmo_db import get_user_organizations, get_organization_usage, get_subscription_tier_by_id
+
+ORG_FILES_PREFIX = "organization_files"
+BLOB_CONTAINER_NAME = "documents"
 
 def validate_token():
     """
@@ -88,7 +91,8 @@ def check_organization_limits():
                 usage = {
                     "limits": org_limits["quotas"],
                     "current_usage": org_usage["balance"],
-                    "is_credits_exceeded": org_usage["balance"]["currentUsed"] > org_limits["quotas"]["totalCreditsAllocated"]
+                    "is_credits_exceeded": org_usage["balance"]["currentUsed"] > org_limits["quotas"]["totalCreditsAllocated"],
+                    "is_allowed_to_upload_files": org_limits["policy"]["allowFileUploads"]
                 }
 
                 kwargs["organization_usage"] = usage
@@ -211,6 +215,177 @@ def require_user_conversation_limits():
 
             except Exception as e:
                 logging.exception("An error occurred in require_user_conversation_limits")
+                return create_error_response("Internal server error", 500)
+
+        return decorated_function
+
+    return decorator
+
+def check_organization_upload_limits():
+    """
+    Decorator factory that ensures an organization context is available, fetches
+    the organization's usage and limits, and checks if the organization is allowed
+    to upload files.
+    Behavior when organization_id is missing:
+    1. Attempts to extract organization_id from JSON body if request is JSON.
+    2. If still missing, retrieves user's organizations using client principal ID
+       from headers and selects the first organization.
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            try:
+                organization_id = kwargs.get("organization_id")
+
+                if not organization_id:
+                    organization_id = get_organization_id_from_request(request)
+                    if not organization_id:
+                        return create_error_response("Missing required parameters, organization_id", 400)
+
+                # Get authenticated user's ID
+                client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+                print(client_principal_id)
+                if not client_principal_id:
+                    return create_error_response("Unauthorized", 401)
+
+                # Verify user belongs to this organization
+                user_orgs = get_user_organizations(client_principal_id)
+                print(user_orgs)
+                user_org_ids = [org["id"] for org in user_orgs]
+
+                if organization_id not in user_org_ids:
+                    logging.warning(
+                        f"User {client_principal_id} attempted to access org {organization_id}"
+                    )
+                    return create_error_response("Unauthorized access to organization", 403)
+                
+                org_usage = get_organization_usage(organization_id)
+                org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
+
+                if org_limits["policy"]["allowFileUploads"] == False:
+                    return create_error_response("Organization is not allowed to upload files", 403)
+                
+                storage_capacity = org_limits["quotas"]["totalStorageAllocated"]
+                
+                blob_storage_manager = current_app.config["blob_storage_manager"]
+                prefix = f"{ORG_FILES_PREFIX}/{organization_id}/"
+                blobs = blob_storage_manager.list_blobs_in_container(
+                container_name=BLOB_CONTAINER_NAME,
+                prefix=prefix,
+                include_metadata="none",
+            )
+                total_used_storage_bytes = 0
+                for blob in blobs:
+                    total_used_storage_bytes += blob.get("size")
+            
+                used_storage_gib = (total_used_storage_bytes / (1024 ** 3))
+            
+                free_storage_gib = storage_capacity - used_storage_gib
+
+                percentage_used = (used_storage_gib / storage_capacity) * 100
+
+                kwargs["upload_limits"] = {
+            "storageCapacity": storage_capacity,
+            "is_allowed_to_upload_files": org_limits["policy"]["allowFileUploads"],
+            "usedStorage": used_storage_gib,
+            "freeStorage": free_storage_gib,
+            "percentageUsed": percentage_used,
+            "pagesUsed": org_usage["balance"]["currentPagesUsed"],
+            "spreadsheetsUsed": org_usage["balance"]["spreadsheetsUsed"],
+            "spreadsheetLimit": org_limits["quotas"]["totalSpreedsheets"],
+            "pagesLimit": org_limits["quotas"]["totalPagesAllocated"]
+        }
+
+                return f(*args, **kwargs)
+            except Exception as e:
+                logging.exception("An error occurred in check_organization_upload_limits")
+                return create_error_response("Internal server error", 500)
+
+        return decorated_function
+
+    return decorator
+
+def require_organization_storage_limits():
+    """
+    Decorator factory that ensures an organization context is available, fetches
+    the organization's usage and limits, and checks if the organization is allowed
+    to upload files.
+    Behavior when organization_id is missing:
+    1. Attempts to extract organization_id from JSON body if request is JSON.
+    2. If still missing, retrieves user's organizations using client principal ID
+       from headers and selects the first organization.
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            try:
+                organization_id = kwargs.get("organization_id", None)
+
+                if not organization_id:
+                    organization_id = get_organization_id_from_request(request)
+                    if not organization_id:
+                        return create_error_response("Missing required parameters, organization_id", 400)
+
+                # Get authenticated user's ID
+                client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+                if not client_principal_id:
+                    return create_error_response("Unauthorized", 401)
+
+                # Verify user belongs to this organization
+                user_orgs = get_user_organizations(client_principal_id)
+                user_org_ids = [org["id"] for org in user_orgs]
+
+                if organization_id not in user_org_ids:
+                    logging.warning(
+                        f"User {client_principal_id} attempted to access org {organization_id}"
+                    )
+                    return create_error_response("Unauthorized access to organization", 403)
+                
+                org_usage = get_organization_usage(organization_id)
+                org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
+
+                if not org_limits["policy"]["allowFileUploads"]:
+                    return create_error_response("Organization is not allowed to upload files", 403)
+                
+                storage_capacity = org_limits["quotas"]["totalStorageAllocated"]
+                
+                blob_storage_manager = current_app.config["blob_storage_manager"]
+                prefix = f"{ORG_FILES_PREFIX}/{organization_id}/"
+                blobs = blob_storage_manager.list_blobs_in_container(
+                container_name=BLOB_CONTAINER_NAME,
+                prefix=prefix,
+                include_metadata="none",
+            )
+                total_used_storage_bytes = 0
+                for blob in blobs:
+                    total_used_storage_bytes += blob.get("size")
+            
+                used_storage_gib = (total_used_storage_bytes / (1024 ** 3))
+
+                if storage_capacity <= used_storage_gib:
+                    return create_error_response("Organization has exceeded its storage capacity", 403)
+            
+                free_storage_gib = storage_capacity - used_storage_gib
+
+                percentage_used = (used_storage_gib / storage_capacity) * 100
+
+                kwargs["upload_limits"] = {
+            "storageCapacity": storage_capacity,
+            "is_allowed_to_upload_files": org_limits["policy"]["allowFileUploads"],
+            "usedStorage": used_storage_gib,
+            "freeStorage": free_storage_gib,
+            "percentageUsed": percentage_used,
+            "pagesUsed": org_usage["balance"]["currentPagesUsed"],
+            "spreadsheetsUsed": org_usage["balance"]["spreadsheetsUsed"],
+            "spreadsheetLimit": org_limits["quotas"]["totalSpreedsheets"],
+            "pagesLimit": org_limits["quotas"]["totalPagesAllocated"]
+        }
+
+                return f(*args, **kwargs)
+            except Exception as e:
+                logging.exception("An error occurred in require_organization_upload_limits")
                 return create_error_response("Internal server error", 500)
 
         return decorated_function
