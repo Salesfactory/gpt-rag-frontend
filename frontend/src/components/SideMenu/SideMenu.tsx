@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import salesLogo from "../../img/logo.png";
 import isotipo from "../../img/isotipo.png";
 import styles from "./SideMenu.module.css";
@@ -93,18 +93,6 @@ export const SideMenu: React.FC<SideMenuProps> = ({ isCollapsed, setIsCollapsed 
                             >
                                 <ContactCardRibbonRegular className={styles.icon} />
                                 {!isCollapsed && "Organization"}
-                            </a>
-                        </li>
-                    )}
-                    {user?.role === "admin" && (
-                        <li>
-                            <a
-                                href="#/financialassistant"
-                                className={`${styles.link} ${activeOption === "Financial Assistant" ? styles.active : ""}`}
-                                onClick={() => setActiveOption("Financial Assistant")}
-                            >
-                                <ContactCardRibbonRegular className={styles.icon} />
-                                {!isCollapsed && "Financial Assistant"}
                             </a>
                         </li>
                     )}

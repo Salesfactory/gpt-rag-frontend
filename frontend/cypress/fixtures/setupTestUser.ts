@@ -59,30 +59,21 @@ export function setupTestUserAndOrg() {
         body: {
             subscriptionData: {
                 current_period_end: 1738940483,
-                items: [
-                    {
-                        currency: "usd",
-                        price_id: "price_1QFFxYEpF6ccgZLwkInisIKQ",
-                        price_nickname: "Premium",
-                        product_id: "prod_R05WPWPAgXt6Kj",
-                        product_name: "AI Assistants",
-                        quantity: 1,
-                        unit_amount: 1200000
-                    },
-                    {
-                        currency: "usd",
-                        price_id: "price_1QG274EpF6ccgZLw5mfmGyAw",
-                        price_nickname: null,
-                        product_id: "prod_R8IiGUjCNUuE3c",
-                        product_name: "Financial Assistant",
-                        quantity: 1,
-                        unit_amount: 100000
-                    }
-                ],
-                status: "active"
-            },
-            subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
-            subscriptionTiers: ["Premium", "Financial Assistant", "Premium + Financial Assistant"]
+                    items: [
+                        {
+                            currency: "usd",
+                            price_id: "price_1QFFxYEpF6ccgZLwkInisIKQ",
+                            price_nickname: "Premium",
+                            product_id: "prod_R05WPWPAgXt6Kj",
+                            product_name: "AI Assistants",
+                            quantity: 1,
+                            unit_amount: 1200000
+                        }
+                    ],
+                    status: "active"
+                },
+                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
+            subscriptionTiers: ["Premium"]
         }
     }).as("getSubscriptionTiers");
 
