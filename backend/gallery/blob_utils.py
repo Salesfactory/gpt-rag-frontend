@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
 from email.utils import parsedate_to_datetime
-from financial_doc_processor import BlobStorageManager
+from shared.blob_storage import BlobStorageManager
 from logging import getLogger
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from flask import current_app
