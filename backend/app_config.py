@@ -24,13 +24,3 @@ REDIRECT_PATH = "/"  # The absolute URL must match your app's redirect_uri
 
 # B2C policy configuration
 B2C_POLICY = SIGNUPSIGNIN_USER_FLOW  # Default policy
-
-# financial ingestion config.py
-ALLOWED_FILING_TYPES = ["10-Q", "10-K", "8-K", "DEF 14A"]
-FILING_TYPES = ["10-Q", "10-K", "8-K", "DEF 14A"]
-BLOB_CONTAINER_NAME = "documents"
-BASE_FOLDER = "financial"
-
-# Paths in financial summarization
-IMAGE_PATH = "images"
-PDF_PATH = "./pdf"

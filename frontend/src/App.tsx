@@ -65,32 +65,6 @@ export default function App() {
                     <Route path="/subscription-error" element={<SubscriptionError />} />
                 </Route>
             </Route>
-            {/* <Route
-                element={
-                    <ProtectedRoute
-                        allowedRoles={["user", "admin", "platformAdmin"]}
-                        allowedTiers={[
-                            "Basic",
-                            "Custom",
-                            "Premium",
-                            "Basic + Financial Assistant",
-                            "Custom + Financial Assistant",
-                            "Premium + Financial Assistant"
-                        ]}
-                    />
-                }
-            >
-                <Route element={<Layout2 />}>
-                    {/* <Route path="/secondary-chat" element={<Chat2 />} /> */}
-            {/* <Route path="/secondary-admin" element={<Admin2 />} /> */}
-            {/* <Route path="/secondary-organization" element={<Organization2 />} /> */}
-            {/* <Route path="/secondary-details-settings" element={<DistributionLists2 />} /> */}
-            {/* <Route path="/secondary-subscription-management" element={<SubscriptionManagementcopy />} /> */}
-            {/* <Route path="/secondary-upload-resources" element={<UploadResources2 />} /> */}
-            {/* <Route path="/secondary-view-reports" element={<Reports2 />} /> 
-                </Route>
-            </Route> */}
-
             {/* Protected Routes for Admin Only */}
             <Route
                 element={
