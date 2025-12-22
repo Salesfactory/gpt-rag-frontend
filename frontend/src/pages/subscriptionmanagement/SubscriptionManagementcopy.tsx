@@ -2,7 +2,15 @@ import React, { useEffect, useState, useRef } from "react";
 import styles from "./SubscriptionManagementcopy.module.css";
 import { Label, Spinner, Dropdown, IconButton, SpinnerSize } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
-import { createCustomerPortalSession, getCustomerId, changeSubscription, getProductPrices, getLogs, getSubscriptionTierDetails, createCheckoutSession } from "../../api";
+import {
+    createCustomerPortalSession,
+    getCustomerId,
+    changeSubscription,
+    getProductPrices,
+    getLogs,
+    getSubscriptionTierDetails,
+    createCheckoutSession
+} from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 import { toast } from "react-toastify";
@@ -28,6 +36,8 @@ const SubscriptionManagement: React.FC = () => {
     const [paginatedLogs, setPaginatedLogs] = useState<any>();
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
     const organizationId = organization?.id || "";
+
+    console.log("organizationUsage", organizationUsage);
 
     const rowsPerPage = 5;
 
@@ -167,26 +177,12 @@ const SubscriptionManagement: React.FC = () => {
         let timer: NodeJS.Timeout;
         setIsLoading(true);
         try {
-            if (organizationUsage?.policy?.tierId !== "tier_free") {
-                await changeSubscription({
-                    subscriptionId: organization?.subscriptionId ?? "",
-                    newPlanId: priceId,
-                    user,
-                    organizationId: organizationId
-                });
-            } else {
-                const { url } = await createCheckoutSession({
-                    userId: user?.id ?? "",
-                    userName: user?.name ?? "",
-                    priceId: priceId,
-                    successUrl: window.location.origin + "#/success-payment",
-                    cancelUrl: window.location.origin + "/",
-                    organizationName: organization?.name ?? "",
-                    organizationId: organizationId,
-                    subscriptionTierId: priceId
-                });
-                window.location.href = url;
-            }
+            await changeSubscription({
+                subscriptionId: organization?.subscriptionId ?? "",
+                newPlanId: priceId,
+                user,
+                organizationId: organizationId
+            });
         } catch (error) {
             console.error("Error trying to change the subscription: ", error);
             setError("Error trying to change the subscription: ");
@@ -198,6 +194,25 @@ const SubscriptionManagement: React.FC = () => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
             window.location.reload();
+        }
+    };
+
+    const handleFreeSubscriptionChange = async (priceId: string) => {
+        try {
+            const { url } = await createCheckoutSession({
+                userId: user?.id ?? "",
+                userName: user?.name ?? "",
+                priceId: priceId,
+                successUrl: window.location.origin + "#/success-payment",
+                cancelUrl: window.location.origin + "/",
+                organizationName: organization?.name ?? "",
+                organizationId: organizationId,
+                subscriptionTierId: priceId
+            });
+            window.location.href = url;
+        } catch (error) {
+            console.error("Error trying to change the subscription: ", error);
+            toast("Failed to create the customer portal link. Please try again.", { type: "warning" });
         }
     };
 
@@ -480,7 +495,7 @@ const SubscriptionManagement: React.FC = () => {
                                                 Cancel
                                             </button>
                                             <button
-                                                onClick={() => handleChangeSubscription(selectedSubscriptionID)}
+                                                onClick={() => organizationUsage?.policy.tierId === "tier_free" ? handleFreeSubscriptionChange(selectedSubscriptionID) : handleChangeSubscription(selectedSubscriptionID)}
                                                 className={`${styles.confirmButton} ${styles.subscribeButton}`}
                                                 disabled={isLoading}
                                                 aria-label={isLoading ? "Loading..." : "Confirm Subscription"}
