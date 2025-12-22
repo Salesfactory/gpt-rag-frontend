@@ -4,7 +4,7 @@ import os
 # Flask configuration
 SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "default-secret-key-change-in-production")
 SESSION_TYPE = "filesystem"
-PERMANENT_SESSION_LIFETIME = 3600  # 1 hour session timeout
+PERMANENT_SESSION_LIFETIME = 86400  # 24 hour session timeout
 
 # Azure AD B2C details
 B2C_TENANT_NAME = os.getenv("AAD_TENANT_NAME")  # e.g. "contoso"
