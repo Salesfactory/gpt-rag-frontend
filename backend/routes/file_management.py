@@ -9,6 +9,9 @@ from azure.core.exceptions import HttpResponseError
 from data_summary.summarize import create_description
 from utils import create_success_response, create_error_response
 
+from shared.decorators import require_organization_storage_limits
+from shared.cosmo_db import update_storage_used
+
 from routes.decorators.auth_decorator import auth_required
 
 # Allowed file extensions for description generation
@@ -141,7 +144,8 @@ def delete_from_azure_search(filepath: str) -> dict:
 
 @bp.route("/upload-source-document", methods=["POST"])
 @auth_required
-def upload_source_document():
+@require_organization_storage_limits()
+def upload_source_document(**kwargs):
     llm = current_app.config["llm"]
     temp_file_path = None
     try:
@@ -154,6 +158,11 @@ def upload_source_document():
         if not file:
             logger.error("No file part in the request")
             return create_error_response("No file part in the request", 400)
+        
+        if file.filename.endswith(".pdf"):
+            if kwargs["upload_limits"]["pagesUsed"] >= kwargs["upload_limits"]["pagesLimit"]:
+                logger.warning(f"Organization {organization_id} has exceeded page upload limits")
+                return create_error_response("Page upload limit exceeded for your organization", 403)
 
         if file.filename == "":
             logger.error("No file selected")
@@ -174,6 +183,8 @@ def upload_source_document():
         # Save to temp
         temp_file_path = os.path.join(tempfile.gettempdir(), file.filename)
         file.save(temp_file_path)
+
+        file_size = os.path.getsize(temp_file_path)
 
         # Validate file signature
         if not validate_file_signature(temp_file_path, file_mime):
@@ -210,6 +221,8 @@ def upload_source_document():
 
         if result["status"] == "success":
             logger.info(f"Successfully uploaded file '{file.filename}' to '{blob_folder}'")
+            updated_storage = kwargs["upload_limits"]["usedStorage"] + (file_size/(1024**3))
+            update_storage_used(organization_id, updated_storage)
             return create_success_response({"blob_url": result["blob_url"]}, 200)
         else:
             error_msg = f"Error uploading file: {result.get('error', 'Unknown error')}"

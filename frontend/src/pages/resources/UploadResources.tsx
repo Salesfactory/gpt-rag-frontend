@@ -36,7 +36,7 @@ const UploadResources: React.FC = () => {
         fetchFiles(currentPath, selectedCategory, sortOrder);
     }, [fetchFiles, currentPath, selectedCategory, sortOrder]);
     
-    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.organizationId || "", handleUploadComplete, files, currentPath);
+    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.id || "", user?.organizationId || "", handleUploadComplete, files, currentPath);
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
