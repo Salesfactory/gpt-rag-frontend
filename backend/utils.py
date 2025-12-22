@@ -1581,8 +1581,11 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             # Renewal or update - preserve existing seat data
             logging.info(f"[create_organization_usage] Existing usage found. Preserving seat data for organization: {organization_id}")
             current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
-            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "totalAllocated": total_allocated, "currentUsed": 0 }])
             current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
+            current_pages_used = existing_usage.get("balance", {}).get("currentPagesUsed", 0)
+            spreadsheets_used = existing_usage.get("balance", {}).get("currentSpreadsheetsUsed", 0)
+            current_used_storage = existing_usage.get("balance", {}).get("currentUsedStorage", 0)
+            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "totalAllocated": total_allocated, "currentUsed": 0 }])
             # Validate preserved data
             if not isinstance(current_seats, int) or current_seats < 0:
                 logging.warning("[create_organization_usage] Invalid currentSeats in existing data, resetting to 0")
@@ -1601,6 +1604,9 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             current_seats = 1
             allowed_user_ids = [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }]
             current_used = 0
+            current_pages_used = 0
+            spreadsheets_used = 0
+            current_used_storage = 0
 
         # Check subscription status from organization
         is_subscription_active = subscription_id is not None
@@ -1615,7 +1621,10 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             "type": "wallet",
             "balance": {
                 "totalAllocated": total_allocated,
-                "currentUsed": current_used
+                "currentUsed": current_used,
+                "currentPagesUsed": current_pages_used,
+                "currentSpreadsheetsUsed": spreadsheets_used,
+                "currentUsedStorage": current_used_storage
             },
             "policy": {
                 "tierId": tier_id,

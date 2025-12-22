@@ -2,14 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import styles from "./SubscriptionManagementcopy.module.css";
 import { Label, Spinner, Dropdown, IconButton, SpinnerSize } from "@fluentui/react";
 import { useAppContext } from "../../providers/AppProviders";
-import {
-    createCustomerPortalSession,
-    getCustomerId,
-    changeSubscription,
-    getProductPrices,
-    getLogs,
-    getSubscriptionTierDetails
-} from "../../api";
+import { createCustomerPortalSession, getCustomerId, changeSubscription, getProductPrices, getLogs, getSubscriptionTierDetails, createCheckoutSession } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
 import { toast } from "react-toastify";
@@ -174,12 +167,26 @@ const SubscriptionManagement: React.FC = () => {
         let timer: NodeJS.Timeout;
         setIsLoading(true);
         try {
-            await changeSubscription({
-                subscriptionId: organization?.subscriptionId ?? "",
-                newPlanId: priceId,
-                user,
-                organizationId: organizationId
-            });
+            if (organizationUsage?.policy?.tierId !== "tier_free") {
+                await changeSubscription({
+                    subscriptionId: organization?.subscriptionId ?? "",
+                    newPlanId: priceId,
+                    user,
+                    organizationId: organizationId
+                });
+            } else {
+                const { url } = await createCheckoutSession({
+                    userId: user?.id ?? "",
+                    userName: user?.name ?? "",
+                    priceId: priceId,
+                    successUrl: window.location.origin + "#/success-payment",
+                    cancelUrl: window.location.origin + "/",
+                    organizationName: organization?.name ?? "",
+                    organizationId: organizationId,
+                    subscriptionTierId: priceId
+                });
+                window.location.href = url;
+            }
         } catch (error) {
             console.error("Error trying to change the subscription: ", error);
             setError("Error trying to change the subscription: ");
