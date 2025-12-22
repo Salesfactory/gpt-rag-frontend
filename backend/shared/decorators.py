@@ -402,9 +402,6 @@ def require_organization_storage_limits():
                     organization_id
                 )
 
-                print(org_limits)
-                print(org_usage)
-
                 if not org_limits["policy"]["allowFileUploads"]:
                     return create_error_response(
                         "Organization is not allowed to upload files", 403

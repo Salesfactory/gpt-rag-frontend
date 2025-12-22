@@ -2016,6 +2016,6 @@ def get_organization_tier_and_subscription(organization_id):
         
         return org_tier, org_usage
 
-
     except Exception as e:
-        pass
+        logging.error(f"[get_organization_tier_and_subscription] get_organization_tier_and_subscription: something went wrong. {str(e)}")
+        return None
