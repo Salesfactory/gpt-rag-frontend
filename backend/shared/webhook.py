@@ -1,5 +1,5 @@
 import logging
-from utils import create_organization_usage, get_organization_usage_by_subscription_id, get_subscription_tier_by_id, update_organization_usage
+from utils import create_organization_usage, get_organization_usage_by_subscription_id, get_subscription_tier_by_id, update_organization_usage, get_organization_usage_by_id
 from shared.cosmo_db import create_new_subscription_logs, get_organization_data
 def handle_checkout_session_completed(event):
     try:
@@ -49,8 +49,8 @@ def handle_subscription_updated(event):
         organization_id = metadata.get("organization_id", "Unknown")
         
         if modification_type == "subscription_tier_change":
-            organizationUsage = get_organization_usage_by_subscription_id(
-                subscriptionId)
+            org_usage_id = "config_"+organization_id
+            organizationUsage = get_organization_usage_by_id(org_usage_id)
             if not organizationUsage:
                 logging.error(
                     f"No organization usage found for subscription: {subscriptionId}")
