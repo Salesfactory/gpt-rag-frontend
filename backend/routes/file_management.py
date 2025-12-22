@@ -10,7 +10,7 @@ from data_summary.summarize import create_description
 from utils import create_success_response, create_error_response
 
 from shared.decorators import require_organization_storage_limits
-from shared.cosmo_db import upsert_organization_usage, get_organization_usage
+from shared.cosmo_db import update_storage_used
 
 from routes.decorators.auth_decorator import auth_required
 
@@ -184,6 +184,8 @@ def upload_source_document(**kwargs):
         temp_file_path = os.path.join(tempfile.gettempdir(), file.filename)
         file.save(temp_file_path)
 
+        file_size = os.path.getsize(temp_file_path)
+
         # Validate file signature
         if not validate_file_signature(temp_file_path, file_mime):
             logger.error(f"File signature mismatch for {file.filename} ({file_mime})")
@@ -219,6 +221,8 @@ def upload_source_document(**kwargs):
 
         if result["status"] == "success":
             logger.info(f"Successfully uploaded file '{file.filename}' to '{blob_folder}'")
+            updated_storage = kwargs["upload_limits"]["usedStorage"] + (file_size/(1024**3))
+            update_storage_used(organization_id, updated_storage)
             return create_success_response({"blob_url": result["blob_url"]}, 200)
         else:
             error_msg = f"Error uploading file: {result.get('error', 'Unknown error')}"

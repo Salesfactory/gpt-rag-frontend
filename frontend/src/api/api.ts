@@ -579,7 +579,6 @@ export async function uploadSourceFileToBlob(file: any, userId: string, organiza
     formdata.append("organization_id", organizationId);
     formdata.append("MIME_type", file.type);
     formdata.append("folder_path", folderPath);
-    console.log(userId, organizationId);
     
     try {
         const response = await fetch("/api/upload-source-document", {
