@@ -49,6 +49,7 @@ def handle_subscription_updated(event):
         organization_id = metadata.get("organization_id", "Unknown")
         
         if modification_type == "subscription_tier_change":
+            logging.info(f"Subscription tier change: {subscriptionId}")
             organizationUsage = get_organization_usage_by_id(organization_id)
             if not organizationUsage:
                 logging.error(
@@ -76,6 +77,7 @@ def handle_subscription_updated(event):
 
         # The subscription is an automatic renewal
         if modification_type is None:
+            logging.info(f"Subscription is an automatic renewal: {subscriptionId}")
             organizationUsage = get_organization_usage_by_subscription_id(
                 subscriptionId)
             if not organizationUsage:
