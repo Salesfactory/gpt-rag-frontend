@@ -91,6 +91,9 @@ def handle_subscription_updated(event):
 
             totalAllocated = tier.get("quotas", {}).get("totalCreditsAllocated", 0)
             organizationUsage["balance"]["currentUsed"] = 0
+            organizationUsage["balance"]["currentPagesUsed"] = 0
+            organizationUsage["balance"]["spreadsheetsUsed"] = 0
+            organizationUsage["balance"]["currentUsedStorage"] = 0
             organizationUsage["balance"]["totalAllocated"] += totalAllocated
             
             # Reset usage for each allowed user and distribute credits evenly
