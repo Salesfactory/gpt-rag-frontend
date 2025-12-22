@@ -1473,6 +1473,7 @@ def generate_sas_url_endpoint(*, context):
         
         blob_name = data.get("blob_name")
         container_name = data.get("container_name", "documents")
+        client_principal_id = data.get("client_principal_id")
         
         if not blob_name:
             return jsonify({"error": "blob_name is required"}), 400
@@ -1510,7 +1511,6 @@ def generate_sas_url_endpoint(*, context):
                 
                 file_org_id = path_parts[1]
                 
-                client_principal_id = context.get("client_principal_id")
                 if not client_principal_id:
                     return jsonify({"error": "User not authenticated"}), 401
                 
