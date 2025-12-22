@@ -37,8 +37,6 @@ const SubscriptionManagement: React.FC = () => {
     const expirationDate = new Date((organization?.subscriptionExpirationDate || 0) * 1000).toLocaleDateString();
     const organizationId = organization?.id || "";
 
-    console.log("organizationUsage", organizationUsage);
-
     const rowsPerPage = 5;
 
     const FilterMapping = {
@@ -178,7 +176,7 @@ const SubscriptionManagement: React.FC = () => {
         setIsLoading(true);
         try {
             await changeSubscription({
-                subscriptionId: organization?.subscriptionId ?? "",
+                subscriptionId: organizationUsage?.subscriptionId || "",
                 newPlanId: priceId,
                 user,
                 organizationId: organizationId

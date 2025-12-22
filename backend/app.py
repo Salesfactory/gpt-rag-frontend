@@ -2123,9 +2123,9 @@ def change_subscription(*, context, subscription_id):
                 "modified_by_name": request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "subscription_tier_change",
             },
-            proration_behavior="none",  # No proration
-            billing_cycle_anchor="now",  # Change the billing cycle so that it is charged at that moment
-            cancel_at_period_end=False,  # Do not cancel the subscription
+            proration_behavior="none",
+            billing_cycle_anchor="now",
+            cancel_at_period_end=False,
         )
 
         result = {
@@ -2133,7 +2133,7 @@ def change_subscription(*, context, subscription_id):
             "subscription": updated_subscription,
         }
         
-        logging.info(f"Subscription changed successfully: {result}")
+        logging.info(f"Subscription changed successfully: {new_plan_id} for organization: {organization_id}")
 
         return jsonify(result), 200
 
