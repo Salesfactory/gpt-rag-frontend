@@ -49,8 +49,7 @@ def handle_subscription_updated(event):
         organization_id = metadata.get("organization_id", "Unknown")
         
         if modification_type == "subscription_tier_change":
-            org_usage_id = "config_"+organization_id
-            organizationUsage = get_organization_usage_by_id(org_usage_id)
+            organizationUsage = get_organization_usage_by_id(organization_id)
             if not organizationUsage:
                 logging.error(
                     f"No organization usage found for subscription: {subscriptionId}")
