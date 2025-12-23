@@ -40,6 +40,7 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [imageLoaded, setImageLoaded] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
+    const localObjectUrlRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (isGenerating || !url) {
@@ -47,12 +48,22 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
         }
 
         const loadFile = async () => {
+            // Revoke any previous local URL before creating a new one
+            if (localObjectUrlRef.current) {
+                URL.revokeObjectURL(localObjectUrlRef.current);
+                localObjectUrlRef.current = null;
+            }
+
             // Check if we have this blob cached
             const cached = blobCache.get(url);
             if (cached) {
+                // Create our own local URL from the cached blob
+                // This prevents issues when the cache revokes its URL
+                const localUrl = URL.createObjectURL(cached.blob);
+                localObjectUrlRef.current = localUrl;
                 setFileBlob({
                     blob: cached.blob,
-                    url: cached.url,
+                    url: localUrl,
                     type: cached.type
                 });
                 setImageLoaded(false); // Reset for new load
@@ -67,11 +78,14 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
             try {
                 const blob = await getFileBlob(url, "documents");
                 const fileType = getFileType(url);
-                const objectUrl = blobCache.set(url, blob, fileType);
+                // Still add to cache for other components, but we use our own local URL
+                blobCache.set(url, blob, fileType);
+                const localUrl = URL.createObjectURL(blob);
+                localObjectUrlRef.current = localUrl;
 
                 setFileBlob({
                     blob,
-                    url: objectUrl,
+                    url: localUrl,
                     type: fileType
                 });
 
@@ -86,9 +100,14 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
         };
 
         loadFile();
+        return () => {
+            if (localObjectUrlRef.current) {
+                URL.revokeObjectURL(localObjectUrlRef.current);
+                localObjectUrlRef.current = null;
+            }
+        };
     }, [url, isGenerating]); // Removed onLoad and onError from dependencies
 
-    // No longer need to manually revoke URLs - the cache manages this
 
     // Handle modal close on outside click
     useEffect(() => {
@@ -130,8 +149,12 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
         setImageLoaded(false);
     };
 
-    const handleThumbnailClick = () => {
-        if (displayMode === "thumbnail") {
+    const handleImageClick = () => {
+        // Only allow opening modal if image is fully loaded and ready
+        if (!fileBlob || isLoading || isGenerating || !imageLoaded) {
+            return;
+        }
+        if (displayMode === "thumbnail" || displayMode === "full") {
             setIsModalOpen(true);
         }
     };
@@ -151,7 +174,8 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
                 return {
                     ...baseStyles,
                     maxWidth,
-                    maxHeight
+                    maxHeight,
+                    cursor: "zoom-in"
                 };
             case "modal":
                 return {
@@ -218,7 +242,7 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
                         alt={alt}
                         style={getDisplayStyles()}
                         className={`${styles.image} ${displayMode === "thumbnail" ? styles.thumbnail : ""}`}
-                        onClick={handleThumbnailClick}
+                        onClick={handleImageClick}
                         onLoad={handleImageLoad}
                         onError={handleImageError}
                     />
@@ -261,10 +285,7 @@ const URLPreviewComponentBase: React.FC<URLPreviewComponentProps> = ({
                 <div className={styles.modal}>
                     <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)} />
                     <div className={styles.modalContent} ref={modalRef}>
-                        <button className={styles.modalCloseButton} onClick={() => setIsModalOpen(false)} aria-label="Close modal">
-                            ✕
-                        </button>
-                        <img src={fileBlob.url} alt={alt} className={styles.modalImage} style={getDisplayStyles()} />
+                        <img src={fileBlob.url} alt={alt} className={styles.modalImage} />
                     </div>
                 </div>
             )}

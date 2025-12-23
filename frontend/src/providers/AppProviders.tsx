@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
-import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getSettings, getUserById } from "../api";
-import type { ThoughtProcess } from "../api/models";
+import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getOrganizationUsage, getSettings, getUserById, getSubscriptionTierDetails } from "../api";
+import type { OrganizationUsage, ThoughtProcess, SubscriptionTier } from "../api/models";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
 import { useSessionManager } from "../hooks/useSessionManager";
@@ -25,8 +25,6 @@ const debugLog = (...args: any[]) => {
 
 // Updated Role and SubscriptionTier types
 type Role = "admin" | "user";
-
-type SubscriptionTier = "Basic" | "Custom" | "Premium" | "Basic + Financial Assistant" | "Custom + Financial Assistant" | "Premium + Financial Assistant";
 
 // Updated UserInfo interface
 interface UserInfo {
@@ -98,6 +96,8 @@ interface AppContextType {
     setUser: Dispatch<SetStateAction<UserInfo | null>>;
     organization: OrganizationInfo | null;
     setOrganization: Dispatch<SetStateAction<OrganizationInfo | null>>;
+    organizationUsage: OrganizationUsage | null;
+    setOrganizationUsage: Dispatch<SetStateAction<OrganizationUsage | null>>;
     partialUser: PartialUserInfo | null;
     setPartialUser: Dispatch<SetStateAction<PartialUserInfo | null>>;
     chatSelected: string;
@@ -112,12 +112,8 @@ interface AppContextType {
     setNewChatDeleted: Dispatch<SetStateAction<boolean>>;
     isAuthenticated: boolean;
     isLoading: boolean;
-    subscriptionTiers: SubscriptionTier[]; // New state variable
-    setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>; // Setter for subscriptionTiers
-    isFinancialAssistantActive: boolean;
-    setIsFinancialAssistantActive: Dispatch<SetStateAction<boolean>>;
-    agentType: string;
-    setAgentType: Dispatch<SetStateAction<string>>;
+    subscriptionTiers: SubscriptionTier[];
+    setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>;
     // New loading states
     isOrganizationLoading: boolean;
     isSubscriptionTiersLoading: boolean;
@@ -162,10 +158,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [newChatDeleted, setNewChatDeleted] = useState<boolean>(false);
     const [user, setUser] = useState<UserInfo | null>(null);
     const [organization, setOrganization] = useState<OrganizationInfo | null>(null);
+    const [organizationUsage, setOrganizationUsage] = useState<OrganizationUsage | null>(null);
     const [organizations, setOrganizations] = useState<OrganizationInfo[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isFinancialAssistantActive, setIsFinancialAssistantActive] = useState(false);
 
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
@@ -177,25 +173,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [isChatHistoryLoading, setIsChatHistoryLoading] = useState<boolean>(false);
     const [showOrganizationSelection, setShowOrganizationSelection] = useState<boolean>(false);
 
-    // Setting variables for the Financial Agent URL
-    const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
-    const params = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
-
-    const agentParam = params["agent"];
-    const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
     const [isResizingAnalysisPanel, setisResizingAnalysisPanel] = useState<boolean>(false);
     const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
 
     // Session management
     const { isSessionExpiredModalOpen, handleRefreshSession, handleLogout, validateSession } = useSessionManager();
-
-    // Move agentType update into useEffect to prevent state updates on every render
-    useEffect(() => {
-        if (agentParam && agentType !== agentParam) {
-            debugLog(`Updating agentType from "${agentType}" to "${agentParam}"`);
-            setAgentType(agentParam);
-        }
-    }, [agentParam, agentType]);
 
     function setCookie(name: any, value: string | number | boolean, days: number) {
         const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
@@ -341,16 +323,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     debugLog("User not authenticated.");
                 }
 
-                // Handle financial assistant activation based on local storage or agentType
-                const savedState = localStorage.getItem(`financialAssistantActive_${authData.user?.id}`);
-                if (savedState !== null) {
-                    setIsFinancialAssistantActive(JSON.parse(savedState));
-                    debugLog("Financial Assistant activation state loaded from localStorage.");
-                }
-                if (agentType === "financial") {
-                    setIsFinancialAssistantActive(true);
-                    debugLog("Financial Assistant activated based on agentType.");
-                }
             } catch (error) {
                 debugLog("Initialization failed:", error);
                 console.error("Initialization failed:", error);
@@ -362,7 +334,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
 
         initializeAuth();
-    }, [agentType]); // Dependency only on agentType
+    }, []);
 
     // Effect to fetch organization details when user.id changes
     useEffect(() => {
@@ -380,14 +352,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     userId,
                     organizationId
                 });
-
                 if (organization) {
                     setOrganization({
                         id: organization.id,
                         name: organization.name,
                         owner: organization.owner,
                         subscriptionId: organization.subscriptionId,
-                        subscriptionTier: organization.subscriptionTier as SubscriptionTier, // Type assertion
                         subscriptionExpirationDate: organization.subscriptionExpirationDate,
                         subscriptionStatus: organization.subscriptionStatus,
                         brandInformation: organization.brandInformation,
@@ -397,15 +367,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     });
 
                     debugLog("Organization details fetched:", organization);
-
-                    if (organization.subscriptionId) {
-                        await fetchSubscriptionTiers(organization.subscriptionId, userId);
-                    }
+                } else {
+                    debugLog("No organization details found.");
+                }
+                const organizationUsage = await getOrganizationUsage({ organizationId: organizationId });
+                const tier = (await getSubscriptionTierDetails(organizationUsage.policy.tierId || "")).tier_id;
+                if (organizationUsage) {
+                    setOrganizationUsage(organizationUsage);
+                    setSubscriptionTiers([tier as SubscriptionTier]);
                 } else {
                     debugLog("No organization details found.");
                 }
             } catch (error) {
-                debugLog("Failed to fetch organization details:", error);
                 console.error("Failed to fetch organization details:", error);
                 toast.error("Failed to fetch organization details.");
                 throw error;
@@ -414,41 +387,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 debugLog("Organization fetch completed.");
             }
         };
-
-        const fetchSubscriptionTiers = async (subscriptionId: string, userId: string) => {
-            debugLog(`Fetching subscription tiers for Subscription ID: ${subscriptionId}`);
-            setIsSubscriptionTiersLoading(true);
-
-            try {
-                const response = await fetch(`/api/subscriptions/${subscriptionId}/tiers`, {
-                    method: "GET",
-                    headers: {
-                        "X-MS-CLIENT-PRINCIPAL-ID": userId || "", // Ensure user is set
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    debugLog(`HTTP error while fetching subscription tiers! Status: ${response.status}`, errorData);
-                    console.error(`HTTP error while fetching subscription tiers! Status: ${response.status}`, errorData);
-                    throw new Error(errorData.error || "Failed to fetch subscription tiers");
-                }
-
-                const data = await response.json();
-                setSubscriptionTiers(data.subscriptionTiers as SubscriptionTier[]);
-                debugLog("Subscription tiers fetched:", data.subscriptionTiers);
-            } catch (error: any) {
-                debugLog("Failed to fetch subscription tiers:", error);
-                console.error("Failed to fetch subscription tiers:", error);
-                toast.error(error.message || "Failed to fetch subscription tiers.");
-                setSubscriptionError(error.message || "Failed to fetch subscription tiers.");
-            } finally {
-                setIsSubscriptionTiersLoading(false);
-                debugLog("Subscription tiers fetch completed.");
-            }
-        };
-
         fetchOrganizationDetails(user.id, user.organizationId);
     }, [user?.id, user?.organizationId]);
 
@@ -513,6 +451,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setUser,
             organization,
             setOrganization,
+            organizationUsage,
+            setOrganizationUsage,
             partialUser,
             setPartialUser,
             chatSelected,
@@ -529,10 +469,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isLoading,
             subscriptionTiers, // New state variable
             setSubscriptionTiers, // Setter for subscriptionTiers
-            isFinancialAssistantActive,
-            setIsFinancialAssistantActive,
-            agentType,
-            setAgentType,
             isOrganizationLoading, // New loading state
             isSubscriptionTiersLoading, // New loading state
             isChatHistoryLoading, // New loading state
@@ -563,8 +499,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isAuthenticated,
             isLoading,
             subscriptionTiers,
-            isFinancialAssistantActive,
-            agentType,
             isOrganizationLoading,
             isSubscriptionTiersLoading,
             isChatHistoryLoading,

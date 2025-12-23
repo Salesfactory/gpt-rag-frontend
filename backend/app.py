@@ -33,6 +33,7 @@ from urllib.parse import urlparse
 from identity.flask import Auth
 from datetime import timedelta, datetime, timezone
 import time
+from pathlib import Path
 
 from typing import Dict, Any, Tuple, Optional
 from tenacity import retry, wait_fixed, stop_after_attempt
@@ -46,6 +47,7 @@ from gallery.blob_utils import get_gallery_items_by_org
 load_dotenv(override=True)
 import app_config
 
+from shared.decorators import require_user_conversation_limits
 from shared.error_handling import (
     IncompleteConfigurationError,
     MissingRequiredFieldError,
@@ -84,6 +86,8 @@ from shared.cosmo_db import (
     get_organization_subscription,
 )
 from shared import clients
+from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_deleted
+from shared.blob_storage import BlobStorageManager, BlobUploadError
 from data_summary.config import get_azure_openai_config
 from data_summary.llm import PandasAIClient
 
@@ -137,7 +141,6 @@ HISTORY_ENDPOINT = ORCHESTRATOR_URI + "/api/conversations"
 SUBSCRIPTION_ENDPOINT = ORCHESTRATOR_URI + "/api/subscriptions"
 INVITATIONS_ENDPOINT = ORCHESTRATOR_URI + "/api/invitations"
 STORAGE_ACCOUNT = os.getenv("STORAGE_ACCOUNT")
-FINANCIAL_ASSISTANT_ENDPOINT = ORCHESTRATOR_URI + "/api/financial-orc"
 PRODUCT_ID_DEFAULT = os.getenv("STRIPE_PRODUCT_ID")
 
 DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
@@ -153,7 +156,6 @@ EMAIL_PORT = os.getenv("EMAIL_PORT")
 
 # stripe
 stripe.api_key = os.getenv("STRIPE_API_KEY")
-FINANCIAL_ASSISTANT_PRICE_ID = os.getenv("STRIPE_FA_PRICE_ID")
 
 INVITATION_LINK = os.getenv("INVITATION_LINK")
 
@@ -788,7 +790,8 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
 
 @app.route("/stream_chatgpt", methods=["POST"])
 @auth.login_required
-def proxy_orc(*, context):
+@require_user_conversation_limits()
+def proxy_orc(*, context, **kwargs):
     data = request.get_json()
     conversation_id = data.get("conversation_id")
     question = data.get("question")
@@ -809,11 +812,7 @@ def proxy_orc(*, context):
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
-        keySecretName = (
-            "orchestrator-host--financial"
-            if agent == "financial"
-            else "orchestrator-host--functionKey"
-        )
+        keySecretName = "orchestrator-host--functionKey"
         functionKey = clients.get_azure_key_vault_secret(keySecretName)
         if not functionKey:
             raise ValueError(f"Function key {keySecretName} is empty")
@@ -829,9 +828,6 @@ def proxy_orc(*, context):
             ),
             500,
         )
-    orchestrator_url = (
-        FINANCIAL_ASSISTANT_ENDPOINT if agent == "financial" else ORCHESTRATOR_ENDPOINT
-    )
 
     payload_dict = {
         "conversation_id": conversation_id,
@@ -851,7 +847,7 @@ def proxy_orc(*, context):
     def generate():
         try:
             with requests.post(
-                orchestrator_url, stream=True, headers=headers, data=payload
+                ORCHESTRATOR_ENDPOINT, stream=True, headers=headers, data=payload
             ) as r:
                 # Check for error status codes
                 if r.status_code != 200:
@@ -892,10 +888,7 @@ def chatgpt(*, context):
     try:
         # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
         # It is set during the infrastructure deployment.
-        if agent == "financial":
-            keySecretName = "orchestrator-host--financial"
-        else:
-            keySecretName = "orchestrator-host--functionKey"
+        keySecretName = "orchestrator-host--functionKey"
 
         functionKey = clients.get_azure_key_vault_secret(keySecretName)
     except Exception as e:
@@ -912,10 +905,6 @@ def chatgpt(*, context):
         )
 
     try:
-        if agent == "financial":
-            orchestrator_url = FINANCIAL_ASSISTANT_ENDPOINT
-        else:
-            orchestrator_url = ORCHESTRATOR_ENDPOINT
 
         payload = json.dumps(
             {
@@ -928,7 +917,7 @@ def chatgpt(*, context):
         )
         headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
         response = requests.request(
-            "GET", orchestrator_url, headers=headers, data=payload
+            "GET", ORCHESTRATOR_ENDPOINT, headers=headers, data=payload
         )
         logging.info(f"[webbackend] response: {response.text[:500]}...")
 
@@ -1324,61 +1313,21 @@ def webhook():
         except stripe.error.SignatureVerificationError as e:
             print("⚠️  Webhook signature verification failed. " + str(e))
             return jsonify(success=False)
-
-    # Handle the event
-    if event["type"] == "checkout.session.completed":
-        print("🔔  Webhook received!", event["type"])
-        userId = event["data"]["object"]["client_reference_id"]
-        organizationId = event["data"]["object"]["metadata"]["organizationId"]
-        organizationName = event["data"]["object"]["metadata"]["organizationName"]
-        subscriptionTierId = event["data"]["object"]["metadata"]["subscriptionTierId"]
-        sessionId = event["data"]["object"]["id"]
-        subscriptionId = event["data"]["object"]["subscription"]
-        paymentStatus = event["data"]["object"]["payment_status"]
-        expirationDate = event["data"]["object"]["expires_at"]
-        try:
-            create_organization_usage(organizationId, subscriptionId, subscriptionTierId, userId)
-            # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-            # It is set during the infrastructure deployment.
-            keySecretName = "orchestrator-host--subscriptions"
-            functionKey = clients.get_azure_key_vault_secret(keySecretName)
-        except Exception as e:
-            logging.exception(
-                "[webbackend] exception in /api/orchestrator-host--subscriptions"
-            )
-            return (
-                jsonify(
-                    {
-                        "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                    }
-                ),
-                500,
-            )
-        try:
-            url = SUBSCRIPTION_ENDPOINT
-            payload = json.dumps(
-                {
-                    "id": userId,
-                    "organizationId": organizationId,
-                    "sessionId": sessionId,
-                    "subscriptionId": subscriptionId,
-                    "paymentStatus": paymentStatus,
-                    "organizationName": organizationName,
-                    "expirationDate": expirationDate,
-                }
-            )
-            headers = {
-                "Content-Type": "application/json",
-                "x-functions-key": functionKey,
-            }
-            response = requests.request("POST", url, headers=headers, data=payload)
-            logging.info(f"[webbackend] RESPONSE: {response.text[:500]}...")
-        except Exception as e:
-            logging.exception("[webbackend] exception in /api/checkUser")
-            return jsonify({"error": str(e)}), 500
-    else:
-        # Unexpected event type
-        print("Unexpected event type")
+        
+    event_type = event["type"]
+    try:
+        match (event_type):
+            case "checkout.session.completed":
+                handle_checkout_session_completed(event)
+            case "customer.subscription.updated":
+                handle_subscription_updated(event)
+            case "customer.subscription.deleted":
+                handle_subscription_deleted(event)
+            case _:
+                logging.warning(f"[webbackend] Unhandled event type")
+    except Exception as e:
+        logging.exception(f"[webbackend] exception in /webhook: {e}")
+        return jsonify({"error": str(e)}), 500
 
     return jsonify(success=True)
 
@@ -1524,6 +1473,7 @@ def generate_sas_url_endpoint(*, context):
         
         blob_name = data.get("blob_name")
         container_name = data.get("container_name", "documents")
+        client_principal_id = data.get("client_principal_id")
         
         if not blob_name:
             return jsonify({"error": "blob_name is required"}), 400
@@ -1561,7 +1511,6 @@ def generate_sas_url_endpoint(*, context):
                 
                 file_org_id = path_parts[1]
                 
-                client_principal_id = context.get("client_principal_id")
                 if not client_principal_id:
                     return jsonify({"error": "User not authenticated"}), 401
                 
@@ -1762,8 +1711,7 @@ def download_excel_citation(*, context):
 
 
 @app.route("/preview/spreadsheet", methods=["GET"])
-@auth.login_required
-def preview_spreadsheet(*, context):
+def preview_spreadsheet():
     try:
         file_path = request.args.get("file_path")
         if not file_path:
@@ -2041,311 +1989,6 @@ def get_product_prices_endpoint(*, context):
         return jsonify({"error": str(e)}), 500
 
 
-# ADD FINANCIAL ASSITANT A SUBSCRIPTION
-@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["PUT"])
-@require_client_principal  # Security: Enforce authentication
-def financial_assistant(subscriptionId):
-    """
-    Add Financial Assistant to an existing subscription.
-
-    Args:
-        subscription_id (str): Unique Stripe Subscription ID
-    Returns:
-        JsonResponse: Response containing a new updated subscription with the new new Item
-        Success format: {
-            "data": {
-                "message": "Financial Assistant added to subscription successfully.",
-                 "subscription": {
-                    "application": null, ...
-                },
-                status: 200
-            }
-        }
-
-    Raises:
-        BadRequest: If the request is invalid. HttpCode: 400
-        NotFound: If the subscription is not found. HttpCode: 404
-        Unauthorized: If client principal ID is missing. HttpCode: 401
-    """
-    if not subscriptionId or not isinstance(subscriptionId, str):
-        raise BadRequest("Invalid subscription ID")
-
-    # Logging: Info level for normal operations
-    logging.info(f"Modifying subscription {subscriptionId} to add Financial Assistant")
-    if not FINANCIAL_ASSISTANT_PRICE_ID:
-        raise IncompleteConfigurationError(
-            "Financial Assistant price ID not configured"
-        )
-
-    try:
-        updated_subscription = stripe.Subscription.modify(
-            subscriptionId,
-            items=[{"price": FINANCIAL_ASSISTANT_PRICE_ID}],
-            metadata={
-                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
-                "modified_by_name": request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
-                "modification_type": "add_financial_assistant",
-            },
-        )
-        # Logging: Success confirmation
-        logging.info(f"Successfully modified subscription {subscriptionId}")
-
-        # Response Formatting: Clean, structured success response
-        return create_success_response(
-            {
-                "message": "Financial Assistant added to subscription successfully.",
-                "subscription": {
-                    "id": updated_subscription.id,
-                    "status": updated_subscription.status,
-                    "current_period_end": updated_subscription.current_period_end,
-                },
-            }
-        )
-
-    # Error Handling: Specific error types with proper status codes
-    except IncompleteConfigurationError as e:
-        # Logging: Error level for operation failures
-        logging.error(f"Stripe invalid request error: {str(e)}")
-        return create_error_response(
-            f"An error occurred while processing your request", HTTPStatus.NOT_FOUND
-        )
-    except stripe.error.InvalidRequestError as e:
-        logging.error(f"Stripe API error: {str(e)}")
-        return create_error_response("Invalid Subscription ID", HTTPStatus.NOT_FOUND)
-    except stripe.error.StripeError as e:
-        # Logging: Error level for API failures
-        logging.error(f"Stripe API error: {str(e)}")
-        return create_error_response(
-            "An error occurred while processing your request", HTTPStatus.BAD_REQUEST
-        )
-
-    except BadRequest as e:
-        # Logging: Warning level for invalid requests
-        logging.warning(f"Bad request: {str(e)}")
-        return create_error_response(str(e), HTTPStatus.BAD_REQUEST)
-
-    except Exception as e:
-        # Logging: Exception level for unexpected errors
-        logging.exception(f"Unexpected error: {str(e)}")
-        return create_error_response(
-            "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
-
-# DELETE FINANCIAL ASSITANT A SUBSCRIPTION
-@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["DELETE"])
-@require_client_principal  # Security: Enforce authentication
-def remove_financial_assistant(subscriptionId):
-    """
-    Remove Financial Assistant from an existing subscription.
-
-    Args:
-        subscription_id (str): Unique Stripe Subscription ID
-    Returns:
-        JsonResponse: Response confirming the removal of the Financial Assistant
-        Success format: {
-            "data": {
-                "message": "Financial Assistant removed from subscription successfully.",
-                "subscription": {
-                    "id": "<subscription_id>",
-                    "status": "<status>",
-                    "current_period_end": "<current_period_end>"
-                },
-                status: 200
-            }
-        }
-
-    Raises:
-        BadRequest: If the request is invalid. HttpCode: 400
-        NotFound: If the subscription is not found. HttpCode: 404
-        Unauthorized: If client principal ID is missing. HttpCode: 401
-    """
-    if not subscriptionId or not isinstance(subscriptionId, str):
-        raise BadRequest("Invalid subscription ID")
-
-    logging.info(
-        f"Modifying subscription {subscriptionId} to remove Financial Assistant"
-    )
-
-    try:
-        # Get the subscription to find the Financial Assistant item
-        subscription = stripe.Subscription.retrieve(subscriptionId)
-
-        # Find the Financial Assistant item
-        assistant_item_id = None
-        for item in subscription["items"]["data"]:
-            if item["price"]["id"] == FINANCIAL_ASSISTANT_PRICE_ID:
-                assistant_item_id = item["id"]
-                break
-
-        if not assistant_item_id:
-            raise NotFound("Financial Assistant item not found in subscription")
-
-        # Modify the subscription to remove the Financial Assistant item
-        updated_subscription = stripe.Subscription.modify(
-            subscriptionId,
-            items=[{"id": assistant_item_id, "deleted": True}],
-            metadata={
-                "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
-                "modified_by_name": request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
-                "modification_type": "remove_financial_assistant",
-            },
-        )
-
-        logging.info(
-            f"Successfully removed Financial Assistant from subscription {subscriptionId}"
-        )
-
-        return create_success_response(
-            {
-                "message": "Financial Assistant removed from subscription successfully.",
-                "subscription": {
-                    "id": updated_subscription.id,
-                    "status": updated_subscription.status,
-                    "current_period_end": updated_subscription.current_period_end,
-                },
-            }
-        )
-
-    except stripe.error.InvalidRequestError as e:
-        logging.error(f"Stripe API error: {str(e)}")
-        return create_error_response("Invalid Subscription ID", HTTPStatus.NOT_FOUND)
-    except stripe.error.StripeError as e:
-        logging.error(f"Stripe API error: {str(e)}")
-        return create_error_response(
-            "An error occurred while processing your request", HTTPStatus.BAD_REQUEST
-        )
-    except NotFound as e:
-        logging.warning(f"Not found: {str(e)}")
-        return create_error_response(str(e), HTTPStatus.NOT_FOUND)
-    except Exception as e:
-        logging.exception(f"Unexpected error: {str(e)}")
-        return create_error_response(
-            "An unexpected error occurred", HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-
-
-# CHECK STATUS SUBSCRIPTION FA (FINANCIAL ASSITANT)
-@app.route("/api/subscription/<subscriptionId>/financialAssistant", methods=["GET"])
-@require_client_principal  # Security: Enforce authentication
-def get_financial_assistant_status(subscriptionId):
-    """
-    Check if Financial Assistant is added to a subscription.
-
-    Args:
-        subscriptionId (str): Unique Stripe Subscription ID
-
-    Returns:
-        JsonResponse: Response indicating if Financial Assistant is active in the subscription.
-        Success format:
-        {
-            "data": {
-                "financial_assistant_active": true,
-                "subscription": {
-                    "id": "<subscriptionId>",
-                    "status": "active"
-                }
-            }
-        }
-
-    Raises:
-        NotFound: If the subscription is not found. HttpCode: 404
-        Unauthorized: If client principal ID is missing. HttpCode: 401
-    """
-    try:
-        subscription = stripe.Subscription.retrieve(subscriptionId)
-
-        financial_assistant_active = any(
-            item.price.id == FINANCIAL_ASSISTANT_PRICE_ID
-            for item in subscription["items"]["data"]
-        )
-
-        financial_assistant_item = next(
-            (
-                item
-                for item in subscription["items"]["data"]
-                if item.price.id == FINANCIAL_ASSISTANT_PRICE_ID
-            ),
-            None,
-        )
-
-        if financial_assistant_item is False:
-            logging.info(
-                f"Financial Assistant not actived in subscription: {subscriptionId}"
-            )
-            return (
-                jsonify(
-                    {
-                        "data": {
-                            "financial_assistant_active": False,
-                            "message": "Financial Assistant is not active in this subscription.",
-                        }
-                    }
-                ),
-                HTTPStatus.OK,
-            )
-
-        if financial_assistant_item is None:
-            logging.info(
-                f"Financial Assistant not found in subscription: {subscriptionId}"
-            )
-            return (
-                jsonify(
-                    {
-                        "data": {
-                            "financial_assistant_active": False,
-                            "message": "Financial Assistant not founded in this subscription.",
-                        }
-                    }
-                ),
-                HTTPStatus.OK,
-            )
-
-        return (
-            jsonify(
-                {
-                    "data": {
-                        "financial_assistant_active": financial_assistant_active,
-                        "subscription": {
-                            "id": subscription.id,
-                            "status": subscription.status,
-                            "price_id": financial_assistant_item.price.id,
-                        },
-                    }
-                }
-            ),
-            HTTPStatus.OK,
-        )
-
-    except stripe.error.InvalidRequestError:
-        logging.error(f"Invalid Subscription ID: {subscriptionId}")
-        return (
-            jsonify({"error": {"message": "Invalid Subscription ID", "status": 404}}),
-            HTTPStatus.NOT_FOUND,
-        )
-
-    except stripe.error.StripeError as e:
-        logging.error(f"Stripe API error: {str(e)}")
-        return (
-            jsonify(
-                {
-                    "error": {
-                        "message": "An error occurred while processing your request.",
-                        "status": 400,
-                    }
-                }
-            ),
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    except Exception as e:
-        logging.exception(f"Unexpected error: {str(e)}")
-        return (
-            jsonify(
-                {"error": {"message": "An unexpected error occurred", "status": 500}}
-            ),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
 
 
 @app.route("/api/subscriptions/<subscription_id>/tiers", methods=["GET"])
@@ -2403,7 +2046,6 @@ def get_subscription_details(subscription_id):
 def determine_subscription_tiers(subscription):
     """
     Determines the subscription tiers based on the products and prices in the Stripe subscription.
-    Updated to include 'Premium' tiers.
     """
     tiers = []
 
@@ -2411,7 +2053,6 @@ def determine_subscription_tiers(subscription):
     has_ai_assistant_basic = False
     has_ai_assistant_custom = False
     has_ai_assistant_premium = False
-    has_financial_assistant = False
 
     # Iterate through subscription items
     for item in subscription["items"]["data"]:
@@ -2432,8 +2073,6 @@ def determine_subscription_tiers(subscription):
                 has_ai_assistant_custom = True
             elif "premium" in price_nickname:
                 has_ai_assistant_premium = True
-        elif "financial assistant" in product_name:
-            has_financial_assistant = True
 
     # Determine tiers based on flags
     if has_ai_assistant_basic:
@@ -2442,17 +2081,6 @@ def determine_subscription_tiers(subscription):
         tiers.append("Custom")
     if has_ai_assistant_premium:
         tiers.append("Premium")
-    if has_financial_assistant:
-        tiers.append("Financial Assistant")
-
-    # Combine tiers into possible combinations
-    if has_financial_assistant:
-        if has_ai_assistant_basic:
-            tiers.append("Basic + Financial Assistant")
-        if has_ai_assistant_custom:
-            tiers.append("Custom + Financial Assistant")
-        if has_ai_assistant_premium:
-            tiers.append("Premium + Financial Assistant")
 
     return tiers
 
@@ -2464,8 +2092,12 @@ def change_subscription(*, context, subscription_id):
 
         data = request.json
         new_plan_id = data.get("new_plan_id")
+        organization_id = data.get("organization_id")
         if not new_plan_id:
             return jsonify({"error": "new_plan_id is required"}), 400
+
+        if not organization_id:
+            return jsonify({"error": "organization_id is required"}), 400
 
         # Retrieve subscription from Stripe
         stripe_subscription = stripe.Subscription.retrieve(subscription_id)
@@ -2485,29 +2117,36 @@ def change_subscription(*, context, subscription_id):
                 }
             ],
             metadata={
+                "organization_id": organization_id,
                 "modified_by": request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
                 "modified_by_name": request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "subscription_tier_change",
             },
-            proration_behavior="none",  # No proration
-            billing_cycle_anchor="now",  # Change the billing cycle so that it is charged at that moment
-            cancel_at_period_end=False,  # Do not cancel the subscription
+            proration_behavior="none",
+            billing_cycle_anchor="now",
+            cancel_at_period_end=False,
         )
 
         result = {
             "message": "Subscription change successfully",
             "subscription": updated_subscription,
         }
+        
+        logging.info(f"Subscription changed successfully: {new_plan_id} for organization: {organization_id}")
 
         return jsonify(result), 200
 
     except stripe.error.InvalidRequestError as e:
+        logging.error(f"Invalid request: {str(e)}")
         return jsonify({"error": f"Invalid request: {str(e)}"}), 400
     except stripe.error.AuthenticationError:
+        logging.error(f"Authentication with Stripe API failed")
         return jsonify({"error": "Authentication with Stripe API failed"}), 403
     except stripe.error.PermissionError:
+        logging.error(f"Permission error when accessing the Stripe API")
         return jsonify({"error": "Permission error when accessing the Stripe API"}), 403
     except stripe.error.RateLimitError:
+        logging.error(f"Too many requests to Stripe API, please try again later")
         return (
             jsonify(
                 {"error": "Too many requests to Stripe API, please try again later"}
@@ -2515,9 +2154,11 @@ def change_subscription(*, context, subscription_id):
             429,
         )
     except stripe.error.StripeError as e:
+        logging.error(f"Stripe API error: {str(e)}")
         return jsonify({"error": f"Stripe API error: {str(e)}"}), 500
 
     except Exception as e:
+        logging.error(f"Internal server error: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 
@@ -2541,194 +2182,32 @@ def cancel_subscription(*, context, subscription_id):
         return jsonify({"message": "Unauthorized access"}), 403
     except Exception as e:
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
-
-
-################################################
-# Financial Doc Ingestion
-################################################
-
-
-from pathlib import Path
-from curation_report_generator import graph
-from financial_doc_processor import (
-    BlobUploadError,
-    markdown_to_html,
-    BlobStorageManager,
-)
-from financial_agent_utils.curation_report_utils import (
-    REPORT_TOPIC_PROMPT_DICT,
-    InvalidReportTypeError,
-    ReportGenerationError,
-    StorageError,
-)
-from financial_agent_utils.curation_report_config import (
-    WEEKLY_CURATION_REPORT,
-    ALLOWED_CURATION_REPORTS,
-    NUM_OF_QUERIES,
-)
-
-
-@app.route("/api/reports/generate/curation", methods=["POST"])
-@auth.login_required
-def generate_report(*, context):
+    
+@app.route("/api/subscriptions-tiers", methods=["GET"])
+@require_client_principal
+def get_subscription_tiers():
+    """
+    Get all subscription tiers from Cosmos DB.
+    """
     try:
-        data = request.get_json()
-        report_topic_rqst = data["report_topic"]  # Will raise KeyError if missing
-
-        # Validate report type
-        if report_topic_rqst not in ALLOWED_CURATION_REPORTS:
-            raise InvalidReportTypeError(
-                f"Invalid report type. Please choose from: {ALLOWED_CURATION_REPORTS}"
-            )
-        if report_topic_rqst == "Company_Analysis" and not data.get("company_name"):
-            raise ValueError("company_name is required for Company Analysis report")
-
-        if report_topic_rqst == "Company_Analysis":
-            # modify the prompt to include the company name
-            report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst].replace(
-                "company_name", data["company_name"]
-            )
-        else:
-            report_topic_prompt = REPORT_TOPIC_PROMPT_DICT[report_topic_rqst]
-
-        search_days = 10 if report_topic_rqst in WEEKLY_CURATION_REPORT else 30
-
-        # Generate report
-        logger.info(f"Generating report for {report_topic_rqst}")
-        report = graph.invoke(
-            {
-                "topic": report_topic_prompt,  # this is the prompt to to trigger the agent
-                "report_type": report_topic_rqst,  # this is user request
-                "number_of_queries": NUM_OF_QUERIES,
-                "search_mode": "news",
-                "search_days": search_days,
-            }
-        )
-
-        # Generate file path
-        current_date = datetime.now(timezone.utc)
-        week_of_month = (current_date.day - 1) // 7 + 1
-        company_name = str(data.get("company_name", "")).replace(" ", "_")
-        if report_topic_rqst in WEEKLY_CURATION_REPORT:
-            file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}/{report_topic_rqst}_Week_{week_of_month}.html"
-            )
-        elif report_topic_rqst == "Company_Analysis":
-            # add company name to the file path
-            logger.info(f"Company name after replacement: {company_name}")
-            file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}/{company_name}_{report_topic_rqst}_{datetime.now().strftime('%b %d %y')}.html"
-            )
-        else:
-            file_path = Path(
-                f"Reports/Curation_Reports/{report_topic_rqst}/{report_topic_rqst}_{datetime.now().strftime('%b %d %y')}.html"
-            )
-
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Convert and save report
-        logger.info("Converting markdown to html")
-        markdown_to_html(report["final_report"], str(file_path))
-
-        # Read the generated HTML file
-        with open(str(file_path), "r", encoding="utf-8") as f:
-            html_content = f.read()
-
-        # Add logo to the top of the HTML content
-        logo_url = "https://raw.githubusercontent.com/Salesfactory/gpt-rag-frontend/develop/backend/images/Sales%20Factory%20Logo%20BW.jpg"
-        style_and_logo = f"""<style>
-            body {{
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            }}
-            .header {{
-                padding: 20px;
-            }}
-        </style>
-        <div class="header">
-            <a href="https://www.linkedin.com/company/the-sales-factory">
-                <img src="{logo_url}" 
-                     alt="Sales Factory Logo"  
-                     style="width: 250px; height: auto;"/>
-            </a>
-        </div>"""
-        html_content = html_content.replace("<body>", f"<body>{style_and_logo}")
-
-        # Write the modified HTML back to the file
-        with open(str(file_path), "w", encoding="utf-8") as f:
-            f.write(html_content)
-
-        logger.info("Uploading to blob storage")
-        blob_storage_manager = BlobStorageManager()
-        if report_topic_rqst in WEEKLY_CURATION_REPORT:
-            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{current_date.strftime('%B_%Y')}"
-        elif report_topic_rqst == "Company_Analysis":
-            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}/{company_name}"
-        else:
-            blob_folder = f"Reports/Curation_Reports/{report_topic_rqst}"
-
-        metadata = {
-            "document_id": str(uuid.uuid4()),
-            "report_type": report_topic_rqst,
-            "date": current_date.isoformat(),
-            "company_name": (
-                company_name if report_topic_rqst == "Company_Analysis" else ""
-            ),
-        }
-
-        upload_result = blob_storage_manager.upload_to_blob(
-            file_path=str(file_path), blob_folder=blob_folder, metadata=metadata
-        )
-
-        # Cleanup files
-        logger.info("Cleaning up local files")
-        try:
-            # Use shutil.rmtree to recursively remove directory and all contents
-            import shutil
-
-            if file_path.exists():
-                shutil.rmtree(file_path.parent, ignore_errors=True)
-            logger.info(f"Successfully removed directory: {file_path.parent}")
-        except Exception as e:
-            logger.warning(
-                f"Error while cleaning up directory {file_path.parent}: {str(e)}"
-            )
-            # Continue execution even if cleanup fails
-            pass
-        if report_topic_rqst == "Company_Analysis":
-            return jsonify(
-                {
-                    "status": "success",
-                    "message": f"Company Analysis report generated for {data['company_name']}",
-                    "report_url": upload_result["blob_url"],
-                }
-            )
-        else:
-            return jsonify(
-                {
-                    "status": "success",
-                    "message": f"Report generated for {report_topic_rqst}",
-                    "report_url": upload_result["blob_url"],
-                }
-            )
-
-    except KeyError as e:
-        logger.error(f"Missing key in request: {str(e)}")
-        return jsonify({"error": f"Missing key in request: {str(e)}"}), 400
-
-    except InvalidReportTypeError as e:
-        logger.error(f"Invalid report topic: {str(e)}")
-        return jsonify({"error": str(e)}), 400
-
+        from shared.cosmo_db import get_subscription_tiers
+        tiers = get_subscription_tiers()
+        print("tiers", tiers)
+        return jsonify(tiers), 200
     except Exception as e:
-        logger.error(
-            f"Unexpected error during report generation: {str(e)}", exc_info=True
-        )
-        return (
-            jsonify(
-                {"error": "An unexpected error occurred while generating the report"}
-            ),
-            500,
-        )
+        logging.exception("Exception in /api/subscriptions/tiers")
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/subscriptions-tiers/<subscription_tier_id>", methods=["GET"])
+@auth.login_required
+def get_subscription_tier(*, context, subscription_tier_id):
+    try:
+        from shared.cosmo_db import get_subscription_tier_by_id
+        tier = get_subscription_tier_by_id(subscription_tier_id)
+        return jsonify(tier), 200
+    except Exception as e:
+        logging.exception("Exception in /api/get-subscription-tier/<subscription_tier_id>")
+        return jsonify({"error": str(e)}), 500
 
 
 from utils import EmailServiceError, EmailService
@@ -2894,80 +2373,6 @@ def send_email_endpoint(*, context):
         )
 
 
-from rp2email import process_and_send_email, ReportProcessor
-
-
-@app.route("/api/reports/digest", methods=["POST"])
-@auth.login_required
-def digest_report(*, context):
-    """
-    Process report and send email .
-
-    Expected payload:
-    {
-        "blob_link": "https://...",
-        "recipients": ["email1@domain.com"],
-        "attachment_path": "path/to/attachment.pdf"  # Optional, use forward slashes.
-        By default, it will automatically attach the document from the blob link (PDF converted). Select "no" to disable this feature.
-        "email_subject": "Custom email subject"  # Optional
-        "save_email": "yes"  # Optional, default is "yes"
-    }
-    """
-    try:
-        # Validate request data
-        data = request.get_json()
-        if not data:
-            return jsonify({"status": "error", "message": "No JSON data provided"}), 400
-
-        # Validate required fields
-        if "blob_link" not in data or "recipients" not in data:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "message": "Missing required fields: blob_link and/or recipients",
-                    }
-                ),
-                400,
-            )
-
-        # Process report and send email
-        success = process_and_send_email(
-            blob_link=data["blob_link"],
-            recipients=data["recipients"],
-            attachment_path=data.get("attachment_path", None),
-            email_subject=data.get("email_subject", None),
-            save_email=data.get("save_email", "yes"),
-            summary=data.get("summary", None),
-            is_summarization=data.get("is_summarization", False),
-        )
-
-        if success:
-            return (
-                jsonify(
-                    {
-                        "status": "success",
-                        "message": "Report processed and email sent successfully",
-                    }
-                ),
-                200,
-            )
-        else:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "message": "Failed to process report and send email",
-                    }
-                ),
-                500,
-            )
-
-    except Exception as e:
-        logger.exception("Error processing report and sending email")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
 @app.route("/api/reports/storage/files", methods=["GET"])
 @auth.login_required
 def list_blobs(*, context):
@@ -2987,7 +2392,7 @@ def list_blobs(*, context):
 
     Example Payload:
     {
-        "prefix": "Reports/Curation_Reports/Monthly_Economics/",
+        "prefix": "organization_files/<organization_id>/",
         "include_metadata": "yes",
         "page_size": 20,
         "page": 1,

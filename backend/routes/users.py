@@ -13,13 +13,15 @@ from utils import (
     EmailService,
     EmailServiceError,
     create_error_response,
+    create_success_response,
     delete_user,
     get_user_by_id,
     get_users,
     reset_password,
 )
-from shared.cosmo_db import get_user_container, patch_user_data, update_user, set_user
+from shared.cosmo_db import get_organization_usage, get_user_container, patch_user_data, update_user, set_user
 from routes.decorators.auth_decorator import auth_required
+from shared.decorators import require_user_conversation_limits
 
 bp = Blueprint("users", __name__)
 
@@ -544,3 +546,17 @@ def getUsers():
         logging.exception("[webbackend] exception in /api/checkUser")
         return jsonify({"error": str(e)}), 500
 
+
+@bp.route("/api/users/usage", methods=["GET"])
+@auth_required
+@require_user_conversation_limits()
+def getUserConversationUsage(**kwargs):
+    """
+    Endpoint to get the conversation usage for a user within an organization.
+    Expects 'organization_id' and 'user_id' in the request (either as URL parameters or in the JSON body). THIS IS AN EXAMPLE ENDPOINT
+    """
+    try:
+        return create_success_response(kwargs.get("user_limits", {}))
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/users/usage endpoint")
+        return jsonify({"error": "Internal Server Error"}), 500

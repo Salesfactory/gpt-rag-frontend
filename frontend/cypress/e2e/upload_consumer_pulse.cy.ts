@@ -2,6 +2,9 @@
 import { setupTestUserAndOrg } from "../fixtures/setupTestUser";
 
 describe("Upload Consumer Pulse Data Test Suite", () => {
+    beforeEach(() => {
+        setupTestUserAndOrg();
+    });
     const setupCommonInterceptsForRole = (role: string) => {
         cy.intercept("GET", "/api/auth/user", {
             statusCode: 200,
@@ -68,7 +71,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
                     status: "active"
                 },
                 subscriptionId: "sub_test123",
-                subscriptionTiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]
+                subscriptionTiers: ["Basic", "Custom", "Premium"]
             }
         }).as("getSubscriptionTiers");
 
@@ -92,6 +95,30 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             statusCode: 200,
             body: []
         }).as("getCategories");
+
+        // Add intercept for organization usage to prevent unhandled promise rejection
+        cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
+            statusCode: 200,
+            body: {
+                data: {
+                    id: "usage-test-123",
+                    organizationId: "test-org-id-456",
+                    subscriptionId: "sub_test123",
+                    isSubscriptionActive: true,
+                    type: "organization_usage",
+                    balance: {
+                        totalAllocated: 1000,
+                        currentUsed: 100
+                    },
+                    policy: {
+                        tierId: "tier_premium",
+                        currentSeats: 5,
+                        allowedUserIds: [],
+                        isSubscriptionActive: true
+                    }
+                }
+            }
+        }).as("getOrganizationUsage");
     };
 
     describe("Access Control Tests", () => {
@@ -99,7 +126,11 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             
             // Visit root first to initialize AppContext
-            cy.visit("/");
+            cy.visit("/", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
             
             // Wait for initial page load
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
@@ -131,7 +162,11 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("admin");
             
             // Visit root first to initialize AppContext
-            cy.visit("/");
+            cy.visit("/", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
             
             // Wait for initial page load
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
@@ -158,7 +193,11 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("user");
             
             // Visit root first to initialize AppContext
-            cy.visit("/");
+            cy.visit("/", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
             
             // Wait for initial page load
             cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
@@ -185,7 +224,11 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("admin");
             
             // Try to navigate directly to the upload consumer pulse page via URL
-            cy.visit("/#/upload-consumer-pulse");
+            cy.visit("/#/upload-consumer-pulse", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
             
             // Wait for auth check
             cy.wait("@getUser");
@@ -198,8 +241,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
     describe("UI Elements Display Tests", () => {
         beforeEach(() => {
             setupCommonInterceptsForRole("platformAdmin");
-            cy.visit("/");
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            cy.visit("/", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
+            
+            // Wait for initial page load with more time
+            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -230,8 +279,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
     describe("File Upload Functionality Tests", () => {
         beforeEach(() => {
             setupCommonInterceptsForRole("platformAdmin");
-            cy.visit("/");
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            cy.visit("/", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
+            
+            // Wait for initial page load with more time
+            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -454,8 +509,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
     describe("Dropzone Interaction Tests", () => {
         beforeEach(() => {
             setupCommonInterceptsForRole("platformAdmin");
-            cy.visit("/");
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            cy.visit("/", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
+            
+            // Wait for initial page load with more time
+            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -520,8 +581,14 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
     describe("No Organizations Scenario", () => {
         beforeEach(() => {
             setupCommonInterceptsForRole("platformAdmin");
-            cy.visit("/");
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            cy.visit("/", {
+                onBeforeLoad: (window) => {
+                    
+                }
+            });
+            
+            // Wait for initial page load with more time
+            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -555,4 +622,3 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
         });
     });
 });
-

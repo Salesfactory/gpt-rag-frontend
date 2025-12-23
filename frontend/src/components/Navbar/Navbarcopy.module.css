@@ -143,40 +143,6 @@
     margin-bottom: 2px;
 }
 
-.financialToggleText {
-    font-size: 1rem;
-    color: #333;
-}
-
-.financialToggle {
-    cursor: pointer;
-    height: 1.25rem;
-    width: 2.25rem;
-    transform: scale(1.5);
-}
-
-
-.financialToggle[type="checkbox"] {
-    background-color: #d1d5db;
-    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba(255,255,255,1)'/></svg>") !important;
-}
-
-.financialToggle[type="checkbox"]:checked {
-    background-color: #43A047;
-    border-color: #43A047;
-}
-
-.financialToggle[type="checkbox"]:focus {
-    outline: none;
-    box-shadow: 0 0 0 0.1rem #43A047;
-}
-
-@media (max-width: 900px) {
-    .financialToggleText {
-        display: none;
-    }
-}
-
 .iconContainer {
     justify-content: flex-end !important;
 
@@ -220,12 +186,6 @@
         display: flex;
         gap: 68%;
     }
-}
-
-.financialToggleContainer {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
 }
 
 .appHeader {

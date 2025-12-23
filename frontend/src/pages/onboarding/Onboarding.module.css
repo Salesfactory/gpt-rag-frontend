@@ -95,6 +95,7 @@
     padding: 1.5rem;
     background-color: white;
     border-radius: 0px 0px 12px 12px;
+    align-items: center;
 }
 
 .button,

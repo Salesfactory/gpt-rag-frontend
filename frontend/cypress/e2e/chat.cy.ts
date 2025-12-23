@@ -4,7 +4,11 @@ describe("Main Page (Chat) Test Suite", () => {
     beforeEach(() => {
         setupTestUserAndOrg();
 
-        cy.visit("/");
+        cy.visit("/", {
+            onBeforeLoad: (window) => {
+                
+            }
+        });
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();
     });

@@ -15,8 +15,9 @@ from data_summary.blob_utils import (
 from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
 from shared.cosmo_db import create_organization, get_organization_data
+from shared.decorators import check_organization_limits
 
-from utils import create_success_response, create_error_response, create_organization_usage
+from utils import create_success_response, create_error_response, create_organization_usage, get_organization_usage_by_id
 
 from azure.core.exceptions import ResourceNotFoundError, AzureError
 from shared.error_handling import (
@@ -168,6 +169,7 @@ def createOrganization():
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
+
 @bp.route("/api/organizations/<organization_id>/storage-usage", methods=["GET"])
 @auth_required
 def getOrganizationStorageCapacity(organization_id):
@@ -210,3 +212,25 @@ def getOrganizationStorageCapacity(organization_id):
 
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+    
+@bp.route("/api/organizations/<organization_id>/get-organization-usage", methods=["GET"])
+@auth_required
+def getOrgUsage(organization_id: str):
+    if not organization_id:
+        return create_error_response({"error": "Missing required parameters, organization_id"}, HTTPStatus.BAD_REQUEST)
+    try:
+        organizationUsage = get_organization_usage_by_id(organization_id)
+        return create_success_response(organizationUsage)
+    except Exception as e:
+        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+@bp.route("/api/organizations/<organization_id>/usage", methods=["GET"])
+@check_organization_limits()
+def getOrganizationUsage(organization_id, **kwargs):
+    try:
+        return create_success_response(kwargs["organization_usage"], HTTPStatus.OK)
+    except NotFound:
+        return create_error_response("Organization not found", HTTPStatus.NOT_FOUND)
+    except Exception as e:
+        logging.exception(f"Error fetching organization usage: {e}")
+        return create_error_response("Internal server error", HTTPStatus.INTERNAL_SERVER_ERROR)

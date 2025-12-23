@@ -59,30 +59,21 @@ export function setupTestUserAndOrg() {
         body: {
             subscriptionData: {
                 current_period_end: 1738940483,
-                items: [
-                    {
-                        currency: "usd",
-                        price_id: "price_1QFFxYEpF6ccgZLwkInisIKQ",
-                        price_nickname: "Premium",
-                        product_id: "prod_R05WPWPAgXt6Kj",
-                        product_name: "AI Assistants",
-                        quantity: 1,
-                        unit_amount: 1200000
-                    },
-                    {
-                        currency: "usd",
-                        price_id: "price_1QG274EpF6ccgZLw5mfmGyAw",
-                        price_nickname: null,
-                        product_id: "prod_R8IiGUjCNUuE3c",
-                        product_name: "Financial Assistant",
-                        quantity: 1,
-                        unit_amount: 100000
-                    }
-                ],
-                status: "active"
-            },
-            subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
-            subscriptionTiers: ["Premium", "Financial Assistant", "Premium + Financial Assistant"]
+                    items: [
+                        {
+                            currency: "usd",
+                            price_id: "price_1QFFxYEpF6ccgZLwkInisIKQ",
+                            price_nickname: "Premium",
+                            product_id: "prod_R05WPWPAgXt6Kj",
+                            product_name: "AI Assistants",
+                            quantity: 1,
+                            unit_amount: 1200000
+                        }
+                    ],
+                    status: "active"
+                },
+                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
+            subscriptionTiers: ["Premium"]
         }
     }).as("getSubscriptionTiers");
 
@@ -120,7 +111,7 @@ export function setupTestUserAndOrg() {
         ]
     }).as("getChatHistory");
 
-    cy.intercept("GET", "/api/settings", {
+    cy.intercept("GET", "/api/settings*", {
         statusCode: 200,
         body: { font_family: "Arial", font_size: "16", model: "gpt-4.1", temperature: 0 }
     }).as("getSettings");
@@ -230,6 +221,47 @@ export function setupTestUserAndOrg() {
             status: 200
         }
     });
+
+    cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
+        statusCode: 200,
+        body: {
+            data: {
+                id: "usage-123",
+                organizationId: "0aad82ee-52ec-428e-b211-e9cc34b94457",
+                subscriptionId: "sub_1QeeHXEpF6ccgZLwfCmANnOP",
+                isSubscriptionActive: true,
+                type: "organization_usage",
+                balance: {
+                    totalAllocated: 1000,
+                    currentUsed: 100
+                },
+                policy: {
+                    tierId: "price_1Qf5FCEpF6ccgZLw4DTmrYHQ",
+                    currentSeats: 5,
+                    allowedUserIds: [],
+                    isSubscriptionActive: true
+                }
+            }
+        }
+    }).as("getOrganizationUsage");
+
+    cy.intercept("GET", "/api/subscriptions-tiers/*", {
+        statusCode: 200,
+        body: {
+            "id": "price_1Qf5FCEpF6ccgZLw4DTmrYHQ",
+            "tier_id": "tier_basic",
+            "tier_name": "Basic Tier",
+            "cost": 500,
+            "quotas": {
+                "totalCreditsAllocated": 1000,
+                "totalStorageAllocated": 1000
+            },
+            "policy": {
+                "allowOverdraft": false,
+                "maxSeats": 5
+            }
+        }
+    }).as("getSubscriptionTierDetails");
 
     cy.intercept("POST", "/api/voice-customer/brands", {
         statusCode: 201,

@@ -2,12 +2,13 @@ from functools import wraps
 import logging
 import uuid
 import os
+from pathlib import Path
 
 import requests
 from shared.cosmo_db import get_cosmos_container
 from flask import request, jsonify, Flask
 from http import HTTPStatus
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Optional
 from azure.cosmos.exceptions import CosmosHttpResponseError
 from datetime import datetime, timezone, timedelta
 from time import time
@@ -18,11 +19,17 @@ from azure.cosmos.exceptions import CosmosResourceNotFoundError, CosmosHttpRespo
 from werkzeug.exceptions import NotFound
 from urllib.parse import urlparse
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 from shared.cosmo_db import (
     get_organization_subscription,
     get_subscription_tier_by_id, 
     get_organization_usage,
-    upsert_organization_usage
+    upsert_organization_usage,
+    get_user_organizations
 )
 
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
@@ -72,6 +79,14 @@ def create_success_response(
     """
     return jsonify({"data": data, "status": optionalCode}), optionalCode
 
+def create_error_response_with_body(message: str, status_code: int, body: Dict[str, Any]) -> JsonResponse:
+    """
+    Create a standardized error response with additional body data.
+    Response Formatting: Ensures consistent error response structure with extra context.
+    """
+    response_body = {"error": {"message": message, "status": status_code, **body}}
+    return jsonify(response_body), status_code
+
 # Security: Decorator to ensure client principal ID is present
 def require_client_principal(f):
     """
@@ -91,292 +106,6 @@ def require_client_principal(f):
         return f(*args, **kwargs)
 
     return decorated_function
-
-
-################################################
-# Financial Doc Ingestion Utils
-################################################
-
-# utils.py
-import os
-import logging
-from pathlib import Path
-import pdfkit
-from typing import Dict, Any, Tuple, Optional, Union
-import logging
-import shutil
-from app_config import ALLOWED_FILING_TYPES
-
-
-# configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
-logger = logging.getLogger(__name__)
-
-################################################
-# financialDocument (EDGAR) Ingestion
-################################################
-
-
-def validate_payload(data: Dict[str, Any]) -> Tuple[bool, str]:
-    """
-    Validate the request payload for Edgar financialDocument endpoint
-
-    Args:
-        data (dict): The request payload
-
-    Returns:
-        tuple: (is_valid: bool, error_message: str)
-    """
-    # Check if equity_ids exists and is not empty
-    if not data.get("equity_id"):
-        return False, "equity_id is required"
-
-    # check if date is provided
-    if not data.get("after_date"):
-        logger.warning("No after_date provided, retrieving most recent filings")
-
-    # Check if equity_ids is not empty
-    if data["equity_id"].strip() == "":
-        return False, "equity_id cannot be empty"
-
-    # Validate filing_types if provided
-    if not data.get("filing_type"):
-        return False, "filing_type is required"
-
-    # Check if all filing types are valid
-    if data["filing_type"] not in ALLOWED_FILING_TYPES:
-        return (
-            False,
-            f"Invalid filing type(s): {data['filing_type']}. Allowed types are: {', '.join(ALLOWED_FILING_TYPES)}",
-        )
-
-    return True, ""
-
-
-def convert_html_to_pdf(
-    input_path: Union[str, Path],
-    output_path: Union[str, Path],
-    options: Optional[Dict] = None,
-) -> bool:
-    """
-    Convert HTML file to PDF using wkhtmltopdf.
-
-    Args:
-        input_path (Union[str, Path]): Path to the input HTML file
-        output_path (Union[str, Path]): Path where the PDF will be saved
-        wkhtmltopdf_path (Optional[str]): Path to wkhtmltopdf executable
-        options (Optional[Dict]): Additional options for PDF conversion
-
-    Returns:
-        bool: True if conversion was successful, False otherwise
-
-    Raises:
-        FileNotFoundError: If input file or wkhtmltopdf executable doesn't exist
-        OSError: If there's an error during PDF conversion
-        Exception: For other unexpected errors
-    """
-
-    try:
-        # Convert paths to Path objects for better path handling
-        input_path = Path(input_path)
-        output_path = Path(output_path)
-
-        # Validate input file exists
-        if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_path}")
-
-        # Create output directory if it doesn't exist
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Default options if none provided
-        if options is None:
-            options = {
-                "quiet": "",
-                "enable-local-file-access": "",
-                "encoding": "UTF-8",
-                "no-stop-slow-scripts": "",
-                "disable-smart-shrinking": "",
-            }
-
-        logger.info(f"Converting {input_path} to PDF...")
-
-        # Perform conversion
-        pdfkit.from_file(str(input_path), str(output_path), options=options)
-
-        # Verify the output file was created
-        if not output_path.exists():
-            raise OSError("PDF file was not created")
-
-        logger.info(f"Successfully converted to PDF: {output_path}")
-        return True
-
-    except FileNotFoundError as e:
-        logger.error(f"File not found error: {str(e)}")
-        raise
-
-    except OSError as e:
-        logger.error(f"PDF conversion error: {str(e)}")
-        # Clean up partial output file if it exists
-        if output_path.exists():
-            output_path.unlink()
-        raise
-
-    except Exception as e:
-        logger.error(f"Unexpected error during PDF conversion: {str(e)}")
-        # Clean up partial output file if it exists
-        if output_path.exists():
-            output_path.unlink()
-        raise
-
-
-def check_and_install_wkhtmltopdf():
-    """Check if wkhtmltopdf is installed and configured properly"""
-    import subprocess
-    import sys
-    import os
-
-    try:
-        # For Windows, add wkhtmltopdf to PATH if not already present
-        if sys.platform == "win32":
-            wkhtmltopdf_path = r"C:\Program Files\wkhtmltopdf\bin"
-            logger.info(f"Windows detected")
-            if os.path.exists(wkhtmltopdf_path):
-                logger.info(f"wkhtmltopdf directory found at {wkhtmltopdf_path}")
-                if wkhtmltopdf_path not in os.environ["PATH"]:
-                    logger.info(f"Adding wkhtmltopdf to PATH: {wkhtmltopdf_path}")
-                    os.environ["PATH"] += os.pathsep + wkhtmltopdf_path
-            else:
-                logger.warning(f"wkhtmltopdf directory not found at {wkhtmltopdf_path}")
-                return install_wkhtmltopdf()
-
-        # Try to run wkhtmltopdf --version
-        result = subprocess.run(
-            ["wkhtmltopdf", "--version"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-            text=True,
-        )
-        logger.info(
-            f"wkhtmltopdf is installed and configured. Version: {result.stdout.strip()}"
-        )
-        return True
-
-    except (subprocess.SubprocessError, FileNotFoundError):
-        logger.warning("wkhtmltopdf not found or not properly configured")
-        return install_wkhtmltopdf()
-    except Exception as e:
-        logger.error(f"Unexpected error checking wkhtmltopdf: {str(e)}")
-        return False
-
-
-def install_wkhtmltopdf():
-    """Attempt to install wkhtmltopdf based on the operating system"""
-    import subprocess
-    import sys
-    import platform
-
-    if sys.platform == "win32":
-        # Windows installation code remains the same
-        download_url = "https://wkhtmltopdf.org/downloads.html"
-        logger.error(
-            "Automatic installation not supported on Windows. "
-            "Please install wkhtmltopdf manually:\n"
-            "1. Download from: " + download_url + "\n"
-            "2. Install to default location (C:\\Program Files\\wkhtmltopdf)\n"
-            "3. Add C:\\Program Files\\wkhtmltopdf\\bin to your system PATH"
-        )
-        return False
-
-    elif sys.platform.startswith("linux"):
-        try:
-            logger.info("Installing wkhtmltopdf on Linux...")
-
-            # Try to determine the package manager
-            if (
-                subprocess.run(
-                    ["which", "apt-get"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                ).returncode
-                == 0
-            ):
-                # Debian/Ubuntu
-                install_cmd = ["apt-get", "install", "-y", "wkhtmltopdf"]
-            elif (
-                subprocess.run(
-                    ["which", "yum"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                ).returncode
-                == 0
-            ):
-                # CentOS/RHEL
-                install_cmd = ["yum", "install", "-y", "wkhtmltopdf"]
-            else:
-                logger.error(
-                    "Could not determine package manager. Please install wkhtmltopdf manually."
-                )
-                return False
-
-            # Try to install without sudo first
-            try:
-                subprocess.run(install_cmd, check=True)
-            except subprocess.CalledProcessError:
-                # If that fails, try with sudo if available
-                if (
-                    subprocess.run(
-                        ["which", "sudo"],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                    ).returncode
-                    == 0
-                ):
-                    install_cmd.insert(0, "sudo")
-                    subprocess.run(install_cmd, check=True)
-                else:
-                    logger.error(
-                        "Installation requires root privileges. Please install wkhtmltopdf manually."
-                    )
-                    return False
-
-            logger.info("wkhtmltopdf installed successfully")
-            return True
-
-        except subprocess.SubprocessError as e:
-            logger.error(f"Failed to install wkhtmltopdf: {str(e)}")
-            return False
-        except Exception as e:
-            logger.error(f"Unexpected error during installation: {str(e)}")
-            return False
-    else:
-        logger.error(f"Unsupported operating system: {sys.platform}")
-        return False
-
-
-def cleanup_resources() -> bool:
-    # Delete all files in the sec-edgar-filings directory
-    try:
-        filings_dir = os.path.join(os.getcwd(), "sec-edgar-filings")
-        if os.path.exists(filings_dir):
-            logger.info(f"Deleting all files in {filings_dir}")
-            shutil.rmtree(filings_dir)
-            logger.info(f"Deleted all files in {filings_dir}")
-            return True
-        else:
-            logger.info(
-                f"No files to delete in {filings_dir} - directory does not exist"
-            )
-            return True
-    except Exception as e:
-        logger.error(f"Error during cleanup: {str(e)}")
-        return False
-
-
-def _extract_response_data(response):
-    """Helper function to extract JSON data from response objects"""
-    if isinstance(response, tuple):
-        return response[0].get_json()
-    return response.get_json()
 
 
 ################################################
@@ -493,7 +222,7 @@ class EmailService:
         from datetime import datetime, timezone
         from azure.storage.blob import ContentSettings
         from azure.identity import DefaultAzureCredential
-        from financial_doc_processor import BlobUploadError
+        from shared.blob_storage import BlobUploadError
         import uuid
 
         credential = DefaultAzureCredential()
@@ -1445,7 +1174,7 @@ def delete_url_by_id(url_id, organization_id):
         # delete the blob from storage if exists 
         if blob_path: 
             try:
-                from financial_doc_processor import BlobStorageManager
+                from shared.blob_storage import BlobStorageManager
                 blob_storage_manager = BlobStorageManager()
                 container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
                 blob_client = container_client.get_blob_client(blob_path)
@@ -1561,7 +1290,7 @@ def modify_url(url_id, organization_id, new_url):
         old_blob_path = existing_doc.get("blobPath")
         if old_blob_path:
             try:
-                from financial_doc_processor import BlobStorageManager
+                from shared.blob_storage import BlobStorageManager
                 blob_storage_manager = BlobStorageManager()
                 container_client = blob_storage_manager.blob_service_client.get_container_client("documents")
                 blob_client = container_client.get_blob_client(old_blob_path)
@@ -1773,8 +1502,20 @@ def add_or_update_organization_url(organization_id, url, scraping_result=None, a
     except Exception as e:
         logging.error(f"[add_or_update_organization_url] add_or_update_organization_url: something went wrong. {str(e)}")
         raise
-    
-def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id):
+def update_organization_usage(organization_id, subscription_id, subscription_tier_id, organization_usage):
+    """
+    Updates organization usage wallet in the organizationsUsage container.
+    """
+    if not organization_id or not subscription_id or not subscription_tier_id or not organization_usage:
+        return {"error": "Organization ID, subscription ID, subscription tier ID and organization usage are required."}
+    try:
+        upsert_organization_usage(organization_usage)
+        return {"message": "Organization usage updated successfully"}
+    except Exception as e:
+        logging.error(f"[update_organization_usage] update_organization_usage: something went wrong. {str(e)}")
+        raise
+
+def create_organization_usage(organization_id, subscription_id, subscription_tier_id, client_principal_id,current_period_ends=None):
     """
     Creates or updates organization usage wallet in the organizationsUsage container.
     
@@ -1786,6 +1527,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
         subscription_id (str): The ID of the subscription (from Stripe) None for free organizations
         subscription_tier_id (str): The ID of the subscription tier (plan nickname from Stripe)
         client_principal_id (str): The ID of the client principal
+        current_period_ends (float): The current period ends date in milliseconds
     Returns:
         dict: The created or updated organization usage document
         
@@ -1803,6 +1545,10 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
     if not subscription_tier_id or not isinstance(subscription_tier_id, str) or not subscription_tier_id.strip():
         logging.error("[create_organization_usage] Invalid subscription_tier_id provided")
         raise ValueError("subscription_tier_id must be a non-empty string")
+    # If no period end provided, calculate it
+    if current_period_ends is None:
+        # Default to 30 days from now for new subscriptions
+        current_period_ends = (datetime.now(timezone.utc) + timedelta(days=30)).timestamp()
 
     try:
         # Validate organization exists
@@ -1835,9 +1581,11 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             # Renewal or update - preserve existing seat data
             logging.info(f"[create_organization_usage] Existing usage found. Preserving seat data for organization: {organization_id}")
             current_seats = existing_usage.get("policy", {}).get("currentSeats", 0)
-            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id }])
             current_used = existing_usage.get("balance", {}).get("currentUsed", 0)
-
+            current_pages_used = existing_usage.get("balance", {}).get("currentPagesUsed", 0)
+            spreadsheets_used = existing_usage.get("balance", {}).get("currentSpreadsheetsUsed", 0)
+            current_used_storage = existing_usage.get("balance", {}).get("currentUsedStorage", 0)
+            allowed_user_ids = existing_usage.get("policy", {}).get("allowedUserIds", [{ "userId": client_principal_id, "totalAllocated": total_allocated, "currentUsed": 0 }])
             # Validate preserved data
             if not isinstance(current_seats, int) or current_seats < 0:
                 logging.warning("[create_organization_usage] Invalid currentSeats in existing data, resetting to 0")
@@ -1856,20 +1604,27 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             current_seats = 1
             allowed_user_ids = [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }]
             current_used = 0
+            current_pages_used = 0
+            spreadsheets_used = 0
+            current_used_storage = 0
 
         # Check subscription status from organization
-        is_subscription_active = organization.get("subscriptionStatus") == "active"
+        is_subscription_active = subscription_id is not None
 
         # Build the usage document
         usage_document = {
             "id": f"config_{organization_id}",
-            "organization_id": organization_id,
+            "organizationId": organization_id,
+            "currentPeriodEnds": current_period_ends,
             "subscriptionId": subscription_id,
             "isSubscriptionActive": is_subscription_active,
             "type": "wallet",
             "balance": {
                 "totalAllocated": total_allocated,
-                "currentUsed": current_used
+                "currentUsed": current_used,
+                "currentPagesUsed": current_pages_used,
+                "currentSpreadsheetsUsed": spreadsheets_used,
+                "currentUsedStorage": current_used_storage
             },
             "policy": {
                 "tierId": tier_id,
@@ -1894,3 +1649,87 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
     except Exception as e:
         logging.error(f"[create_organization_usage] Unexpected error for organization '{organization_id}': {str(e)}")
         raise Exception(f"Failed to create organization usage: {str(e)}")
+    
+def get_organization_usage_by_id(organization_id: str):
+    if not organization_id:
+        return {"error": "Organization ID is required."}
+    try:
+        container = get_cosmos_container("organizationsUsage")
+        query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.type = @type"
+        parameters = [{"name": "@organization_id", "value": organization_id}, {"name": "@type", "value": "wallet"}]
+        result = list(container.query_items(query=query, parameters=parameters, partition_key=organization_id))
+        return result[0] if result else None
+    except Exception as e:
+        logging.error(f"[get_organization_usage_by_id] get_organization_usage_by_id: something went wrong. {str(e)}")
+        return None
+    
+def get_organization_usage_by_subscription_id(subscription_id: str):
+    if not subscription_id:
+        return {"error": "Subscription ID is required."}
+    try:
+        container = get_cosmos_container("organizationsUsage")
+        query = "SELECT * FROM c WHERE c.subscriptionId = @subscription_id AND c.type = @type"
+        parameters = [{"name": "@subscription_id", "value": subscription_id}, {"name": "@type", "value": "wallet"}]
+        result = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        return result[0] if result else None
+    except Exception as e:
+        logging.error(f"[get_organization_usage_by_subscription_id] get_organization_usage_by_subscription_id: something went wrong. {str(e)}")
+        return None
+    
+def get_organization_id_from_request(request):
+    """
+    Extracts the organization_id from the request.
+    Checks URL parameters first, then JSON body if applicable.
+    
+    Returns:
+        str or None: The organization_id if found, else None
+    """
+
+    if request.is_json:
+        data = request.get_json()
+        organization_id = data.get("organization_id")
+        if organization_id:
+            return organization_id
+        
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = None
+    if client_principal_id:
+        organizations = get_user_organizations(client_principal_id)
+        if organizations:
+            organization_id = organizations[0]["id"]
+
+    return organization_id
+
+
+
+def get_organization_id_and_user_id_from_request(request):
+    """
+    Extracts the organization_id and user_id from the request.
+    Checks URL parameters first, then JSON body if applicable.
+    
+    Returns:
+        tuple: (organization_id or None, user_id or None)
+    """
+
+    organization_id = None
+    user_id = None
+
+    if request.is_json:
+        data = request.get_json()
+        organization_id = data.get("organization_id")
+        user_id = data.get("user_id")
+        if organization_id and user_id:
+            return organization_id, user_id
+        
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
+    if organization_id:
+        return organization_id, client_principal_id
+    if client_principal_id:
+        organizations = get_user_organizations(client_principal_id)
+        if organizations:
+            organization_id = organizations[0]["id"]
+            
+    user_id = client_principal_id
+
+    return organization_id, user_id

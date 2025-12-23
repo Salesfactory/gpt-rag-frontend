@@ -1454,7 +1454,7 @@ def get_subscription_tier_by_id(tier_id):
 
     try:
         tier = container.read_item(item=tier_id, partition_key=tier_id)
-        logging.info(f"Subscription tier successfully retrieved: {tier}")
+        logging.info(f"Subscription tier successfully retrieved: {tier_id}")
         return tier
 
     except CosmosResourceNotFoundError:
@@ -1479,7 +1479,7 @@ def upsert_organization_usage(usage_data):
 
     try:
         result = container.upsert_item(usage_data)
-        logging.info(f"Organization usage upserted successfully: {result}")
+        logging.info(f"Organization usage upserted successfully")
         return result
 
     except Exception as e:
@@ -1497,9 +1497,9 @@ def get_organization_usage(organization_id):
     container = get_cosmos_container("organizationsUsage")
 
     try:
-        query = "SELECT * FROM c WHERE c.organizationId = @organization_id AND c.type = @type"
+        query = "SELECT * FROM c WHERE c.organizationId = @organizationId AND c.type = @type"
         parameters = [
-            {"name": "@organization_id", "value": organization_id},
+            {"name": "@organizationId", "value": organization_id},
             {"name": "@type", "value": "wallet"}
         ]
 
@@ -1521,3 +1521,48 @@ def get_organization_usage(organization_id):
     except Exception as e:
         logging.error(f"Error retrieving organization usage for organization '{organization_id}': {e}")
         return None
+    
+def get_subscription_tiers():
+    """
+    Retrieves all subscription tiers from the subscriptionTiers container.
+    """
+    try:
+        container = get_cosmos_container("subscriptionsTiers")
+        tiers = list(container.query_items(query="SELECT * FROM c WHERE c.type = 'tier'", enable_cross_partition_query=True))
+        return tiers
+    except CosmosResourceNotFoundError:
+        logging.warning(f"No subscription tiers found in Cosmos DB.")
+        return []
+    except Exception as e:
+        logging.error(f"Error retrieving subscription tiers: {e}")
+        return []
+
+def create_new_subscription_logs(userId, organizationId, userName, organizationName, action):
+    """
+    Logs events related to a new subscription to the audit container.
+
+    Parameters:
+    - userId (str): user ID.
+    - organizationId (str): organization ID.
+    - userName (str): user Name.
+    - organizationName (str): organization Name
+    - action (str): action performed
+    """
+    container = get_cosmos_container("auditLogs")
+
+    try:
+        audit_log_entry = {
+            "id": str(uuid.uuid4()),
+            "modified_by_name": userName,
+            "modified_by": userId,
+            "organizationName": organizationName,
+            "organization_id": organizationId,
+            "action": action,
+            "changeTime": int(datetime.now(timezone.utc).timestamp()),
+        }
+
+        container.create_item(body=audit_log_entry)
+        logging.info(f"[handle_new_subscription_logs] Audit log created for organization: {organizationId}")
+    except Exception as e:
+        logging.error(f"[handle_new_subscription_logs] Error creating audit log: {str(e)}")
+        raise Exception(f"Failed to create audit log: {e}")

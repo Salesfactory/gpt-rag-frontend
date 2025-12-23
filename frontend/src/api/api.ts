@@ -1,4 +1,4 @@
-import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category } from "./models";
+import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category, OrganizationUsage, Policy, SubscriptionTier } from "./models";
 import { SourceDocumentsResponse } from '../types';
 import { fetchWrapper } from './fetchWrapper';
 
@@ -415,93 +415,6 @@ interface SubscriptionResponse {
     status: number;
 }
 
-export async function getFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
-    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
-
-    try {
-        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId
-            }
-        });
-
-        if (!response.ok) {
-            const error = new Error(`Failed to check financial assistant status: ${response.status}`);
-            (error as any).status = response.status; // Añade el código de estado al error
-            throw error;
-        }
-
-        const parsedResponse = await response.json();
-        return parsedResponse.data;
-    } catch (error) {
-        console.error("Error verifying the Financial Assistant: ", error instanceof Error ? error.message : error);
-        throw error;
-    }
-}
-
-export async function upgradeSubscription({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
-    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
-    const userName = user?.name ?? "anonymous";
-    const userOrganizationId = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
-
-    try {
-        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId,
-                "X-MS-CLIENT-PRINCIPAL-NAME": userName
-            },
-            body: JSON.stringify({
-                organizationId: userOrganizationId,
-                activateFinancialAssistant: true
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Subscription upgrade failed: ${response.status} ${response.statusText}`);
-        }
-
-        const parsedResponse: SubscriptionResponse = await response.json();
-        const { message, subscription } = parsedResponse.data;
-
-        console.log("Subscription upgraded successfully:", message);
-        return subscription;
-    } catch (error) {
-        console.error("Error upgrading subscription:", error instanceof Error ? error.message : error);
-        throw error;
-    }
-}
-
-export async function removeFinancialAssistant({ user, subscriptionId }: { user?: User; subscriptionId: string }): Promise<any> {
-    const userId = user?.id ?? "00000000-0000-0000-0000-000000000000";
-    const userName = user?.name ?? "anonymous";
-    try {
-        const response = await fetch(`/api/subscription/${subscriptionId}/financialAssistant`, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": userId,
-                "X-MS-CLIENT-PRINCIPAL-NAME": userName
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Subscription removal failed: ${response.status} ${response.statusText}`);
-        }
-
-        const parsedResponse: SubscriptionResponse = await response.json();
-        const { message, subscription } = parsedResponse.data;
-
-        console.log("Financial Assistant removed successfully:", message);
-        return subscription;
-    } catch (error) {
-        console.error("Error removing Financial Assistant:", error instanceof Error ? error.message : error);
-        throw error;
-    }
-}
 
 export async function createInvitation({ organizationId, invitedUserEmail, userId, role, nickname }: any): Promise<any> {
     try {
@@ -1053,7 +966,7 @@ export async function resetUserPassword({ userId, newPassword }: { userId: strin
     return response.json();
 }
 
-export async function changeSubscription({ subscriptionId, newPlanId, user }: { subscriptionId: string; newPlanId: string; user: any; }): Promise<any> {
+export async function changeSubscription({ subscriptionId, newPlanId, user, organizationId }: { subscriptionId: string; newPlanId: string; user: any; organizationId: string; }): Promise<any> {
     const userId = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const userName = user ? user.name : "anonymous";
     try {
@@ -1066,6 +979,7 @@ export async function changeSubscription({ subscriptionId, newPlanId, user }: { 
             },
             body: JSON.stringify({
                 new_plan_id: newPlanId,
+                organization_id: organizationId
             }),
         });
 
@@ -1085,6 +999,19 @@ export async function changeSubscription({ subscriptionId, newPlanId, user }: { 
         );
         throw error;
     }
+}
+
+export async function getSubscriptionTierDetails(subscriptionTierId: string): Promise<any> {
+    const response = await fetch(`/api/subscriptions-tiers/${subscriptionTierId}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`Error getting subscription tier details: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
 }
 
 export async function getLogs(organizationId: string): Promise<any> {
@@ -1224,6 +1151,20 @@ export async function getOrganizationUrls(organizationId: string): Promise<any> 
         console.error("Error fetching organization URLs:", error);
         throw error;
     }
+}
+
+export async function getOrganizationUsage({ organizationId }: { organizationId: string }): Promise<OrganizationUsage> {
+    const response = await fetch(`/api/organizations/${organizationId}/get-organization-usage`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error getting organization usage");
+    }
+    const organizationUsage = (await response.json()).data;
+    return organizationUsage;
 }
 
 export async function deleteOrganizationUrl(urlId: string, organizationId: string): Promise<any> {
@@ -1753,7 +1694,7 @@ export async function getBlobSasUrl(blobName: string, containerName: string = "d
             'Content-Type': 'application/json',
             'X-MS-CLIENT-PRINCIPAL-ID': user?.id,
         },
-        body: JSON.stringify({ blob_name: blobName, container_name: containerName })
+        body: JSON.stringify({ blob_name: blobName, container_name: containerName, client_principal_id: user?.id })
     });
     const data = await response.json();
     if (!response.ok) {
