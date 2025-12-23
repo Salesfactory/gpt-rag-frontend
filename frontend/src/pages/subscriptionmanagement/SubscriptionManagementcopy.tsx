@@ -97,7 +97,8 @@ const SubscriptionManagement: React.FC = () => {
         async function fetchPrices() {
             try {
                 const data = await getProductPrices({ user });
-                setPrices(data.prices);
+                const sortedPrices = data.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount);
+                setPrices(sortedPrices);
             } catch (err) {
                 console.error("Failed to fetch product prices:", err);
                 setError("Unable to fetch product prices. Please try again later.");
