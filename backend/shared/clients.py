@@ -12,7 +12,11 @@ from azure.identity import DefaultAzureCredential
 from azure.cosmos import CosmosClient
 from azure.storage.queue import QueueClient
 from azure.keyvault.secrets import SecretClient
-from azure.core.exceptions import HttpResponseError, ClientAuthenticationError, ResourceNotFoundError
+from azure.core.exceptions import (
+    HttpResponseError,
+    ClientAuthenticationError,
+    ResourceNotFoundError,
+)
 from urllib.parse import urlparse
 
 from .config import CONFIG
@@ -21,11 +25,13 @@ log = logging.getLogger(__name__)
 
 QUEUE_DEBUG = os.getenv("QUEUE_DEBUG", "0") == "1"
 
+
 def _host(url: str) -> str:
     try:
         return urlparse(url).netloc or url
     except Exception:
         return url
+
 
 # -----------------------------
 # Credentials (Managed Identity)
@@ -58,136 +64,6 @@ def get_cosmos_database():
 def get_cosmos_container(container_name: str):
     """Get a cached container client by name."""
     return get_cosmos_database().get_container_client(container_name)
-
-
-# --------------------------------------------------------
-# Azure Queue Storage (replaces Service Bus queue/sender)
-# --------------------------------------------------------
-@lru_cache(maxsize=1)
-def get_report_jobs_queue_client() -> Optional[QueueClient]:
-    """
-    Return the QueueClient for the report-jobs queue or None if not configured.
-    Uses MI (DefaultAzureCredential) against CONFIG.queue_account_url.
-    """
-    if not CONFIG.queue_account_url:
-        log.info("QUEUE_ACCOUNT_URL not set; Azure Queue Storage client disabled.")
-        return None
-    qc = QueueClient(
-        account_url=CONFIG.queue_account_url,
-        queue_name=CONFIG.queue_name,
-        credential=get_default_azure_credential(),
-        logging_enable=False,
-    )
-    try:
-        qc.create_queue()  # idempotent
-        log.debug("Azure Queue Storage ready: %s/%s", _host(CONFIG.queue_account_url), CONFIG.queue_name)
-    except Exception as e:
-        log.warning("Failed to ensure queue exists: %s", e)
-    return qc
-
-def _approx_base64_len(n_bytes: int) -> int:
-    # base64 expands by 4/3, rounded up to multiple of 4
-    return ((n_bytes + 2) // 3) * 4
-
-def enqueue_report_job_message(
-    message_dict: dict,
-    *,
-    visibility_timeout: int | None = None,
-    time_to_live: int | None = None,
-    timeout: int | None = None,
-) -> None:
-    """
-    Serialize and send a message to the report-jobs Azure Queue with rich diagnostics.
-
-    Logs:
-      - queue endpoint & name
-      - raw and approx base64 sizes (64 KiB limit)
-      - returned message_id, pop_receipt, request IDs
-      - queue approximate message count after enqueue
-
-    Raises:
-      RuntimeError if the queue client is not configured.
-      Re-raises HttpResponseError for callers that want to handle it; logs full detail.
-    """
-    qc = get_report_jobs_queue_client()
-    if qc is None:
-        log.error("Azure Queue Storage not configured (account_url missing).")
-        raise RuntimeError("Azure Queue Storage is not configured.")
-
-    # Build payload
-    payload = base64.b64encode(json.dumps(message_dict, separators=(",", ":")).encode("utf-8")).decode("utf-8")
-    raw_len = len(payload.encode("utf-8"))
-    approx_b64 = _approx_base64_len(raw_len)
-
-    # The queue service enforces 64 KiB on the *encoded* message.
-    # Keep a headroom (e.g., <= 63*1024) to be safe.
-    if approx_b64 > 63 * 1024:
-        log.warning(
-            "Queue message likely too large after base64 (raw=%dB, approx_b64=%dB). "
-            "Trim payload or store large data in Blob and reference it.",
-            raw_len, approx_b64,
-        )
-
-    # Sanity checks on visibility/TTL
-    if visibility_timeout is not None and time_to_live is not None and visibility_timeout > time_to_live:
-        log.warning(
-            "visibility_timeout (%s) > time_to_live (%s). Message may expire before becoming visible.",
-            visibility_timeout, time_to_live,
-        )
-
-    # Verbose pre-send log (no PII)
-    log.info(
-        "Enqueue -> account_host=%s queue=%s raw=%dB ~b64=%dB vis=%s ttl=%s",
-        _host(CONFIG.queue_account_url), CONFIG.queue_name, raw_len, approx_b64,
-        visibility_timeout, time_to_live,
-    )
-    if QUEUE_DEBUG:
-        log.debug("Enqueue payload: %s", payload)
-
-    try:
-        qm = qc.send_message(
-            payload,
-            visibility_timeout=visibility_timeout,
-            time_to_live=time_to_live,
-            timeout=timeout,
-        )
-        if QUEUE_DEBUG:
-            log.debug("Sent payload (b64): %s", payload)
-        # Post-send diagnostics
-        try:
-            props = qc.get_queue_properties()
-            approx_count = getattr(props, "approximate_message_count", None)
-        except Exception as e_props:
-            approx_count = None
-            log.debug("Failed to read queue properties after send: %s", e_props)
-
-        log.info(
-            "Enqueued OK: msg_id=%s next_visible=%s expires=%s approx_count=%s",
-            getattr(qm, "id", None),
-            getattr(qm, "next_visible_on", None),
-            getattr(qm, "expires_on", None),
-            approx_count,
-        )
-    except (ClientAuthenticationError, ResourceNotFoundError, HttpResponseError) as e:
-        # Try to surface the most useful details (HTTP code, x-ms-request-id, error code)
-        status = getattr(getattr(e, "response", None), "status_code", None)
-        headers = getattr(getattr(e, "response", None), "headers", {}) or {}
-        req_id = headers.get("x-ms-request-id") or headers.get("x-ms-client-request-id")
-        err_code = headers.get("x-ms-error-code")
-        log.error(
-            "Enqueue FAILED: status=%s err_code=%s request_id=%s exc=%r",
-            status, err_code, req_id, e,
-        )
-        # Common causes to call out explicitly:
-        if status == 403:
-            log.error("403 forbidden: check RBAC. Managed Identity needs 'Storage Queue Data Message Sender' on the account/queue.")
-        if status == 404:
-            log.error("404 not found: queue may not exist or wrong account/queue name. account_host=%s queue=%s",
-                      _host(CONFIG.queue_account_url), CONFIG.queue_name)
-        raise
-    except Exception as e:
-        log.exception("Unexpected failure enqueuing message: %r", e)
-        raise
 
 
 # -----------------------------
@@ -284,10 +160,6 @@ def warm_up() -> None:
             "Warm-up: failed to get users container '%s': %s", CONFIG.users_container, e
         )
     try:
-        _ = get_report_jobs_queue_client()
-    except Exception as e:
-        log.warning("Warm-up: failed to init Azure Queue Storage client: %s", e)
-    try:
         # Do not fetch any secret here; just build the client so import-time callers work.
         _ = get_secret_client()
     except Exception as e:
@@ -303,12 +175,6 @@ def _shutdown():
         bsc = get_blob_service_client()
         if bsc:
             bsc.close()
-    except Exception:
-        pass
-    try:
-        qc = get_report_jobs_queue_client()
-        if qc:
-            qc.close()
     except Exception:
         pass
     try:

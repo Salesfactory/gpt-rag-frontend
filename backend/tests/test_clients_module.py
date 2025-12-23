@@ -13,7 +13,6 @@ def _clear_caches():
     clients.get_cosmos_database.cache_clear()
     clients.get_cosmos_container.cache_clear()
     # queue storage
-    clients.get_report_jobs_queue_client.cache_clear()
 
 
 @pytest.fixture(autouse=True)
@@ -117,16 +116,6 @@ def test_warm_up_initializes_cosmos_users_and_queue(fake_azure):
     assert fake_azure["cosmos"].db.calls == ["users"]
     assert "users" in fake_azure["cosmos"].db.containers
 
-    # Queue client created and ensured
-    qc = clients.get_report_jobs_queue_client()
-    assert qc is fake_azure["queue"]
-    assert qc.account_url == clients.CONFIG.queue_account_url
-    assert qc.queue_name == clients.CONFIG.queue_name
-    assert qc.created is True  # create_queue() invoked during init
-
-    # Same credential shared
-    assert cos.credential is qc.credential is clients.get_default_azure_credential()
-
 
 def test_get_cosmos_container_is_cached(fake_azure):
     c1 = clients.get_cosmos_container("reportJobs")
@@ -150,13 +139,6 @@ def test_queue_client_none_when_not_configured(monkeypatch, fake_azure):
     )
     monkeypatch.setattr(clients, "CONFIG", cfg, raising=True)
     _clear_caches()
-
-    qc = clients.get_report_jobs_queue_client()
-    assert qc is None
-
-    # warm_up should tolerate missing queue client too
-    clients.warm_up()
-    assert fake_azure["queue"] is None  # no QueueClient constructed
 
 
 def test_shutdown_closes_both_clients(fake_azure):

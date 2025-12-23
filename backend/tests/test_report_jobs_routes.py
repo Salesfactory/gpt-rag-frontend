@@ -68,10 +68,6 @@ def app(monkeypatch):
         # record the enqueue with payload for assertions
         enqueued.append(("enqueued", payload))
 
-    monkeypatch.setattr(
-        clients_mod, "enqueue_report_job_message", _fake_enqueue, raising=True
-    )
-
     # Also patch exceptions in the route module so our NotFoundError is treated as CosmosResourceNotFoundError
     from routes import report_jobs as routes_mod
 

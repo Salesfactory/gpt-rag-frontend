@@ -79,23 +79,6 @@ def _jobs_container():
     return clients.get_cosmos_container(clients.JOBS_CONT)
 
 
-def _maybe_enqueue_report_job(message: Dict[str, Any]) -> None:
-    """
-    Best-effort enqueue of a report job message to Azure Queue Storage.
-
-    Sends a small JSON payload (e.g., {"type": "...", "job_id": "...", "organization_id": "..."})
-    to the configured `report-jobs` queue. Any exception during enqueue is logged and **not**
-    propagated to the HTTP caller (to avoid failing the create call on transient queue issues).
-
-    Args:
-        message: Dict payload that will be JSON-serialized and sent as the queue message.
-    """
-    try:
-        clients.enqueue_report_job_message(message)
-    except Exception as e:
-        log.warning("Azure Queue enqueue failed: %s", e)
-
-
 # --------- routes ---------
 @bp.post("")
 @auth_required
@@ -187,7 +170,9 @@ def get_job(job_id: str):
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error reading job: {e}")
 
+
 ALLOWED_STATUSES = {"SUCCEEDED", "RUNNING", "QUEUED", "FAILED"}
+
 
 @bp.get("")
 @auth_required
@@ -252,7 +237,6 @@ def list_jobs():
         return jsonify(out)
     except CosmosHttpResponseError as e:
         abort(502, f"Cosmos error listing jobs: {e}")
-
 
 
 @bp.delete("/<job_id>")
