@@ -2,8 +2,23 @@ import os
 import logging
 from flask import request, jsonify
 from functools import wraps
-from utils import get_azure_key_vault_secret, get_organization_id_from_request, get_organization_id_and_user_id_from_request, create_error_response, create_error_response_with_body
-from shared.cosmo_db import get_user_organizations, get_organization_usage, get_subscription_tier_by_id
+from utils import (
+    get_azure_key_vault_secret,
+    get_organization_id_from_request,
+    get_organization_id_and_user_id_from_request,
+    create_error_response,
+    create_error_response_with_body,
+)
+from shared.cosmo_db import (
+    get_user_organizations,
+    get_organization_usage,
+    get_subscription_tier_by_id,
+    initalize_user_limits,
+)
+
+ORG_FILES_PREFIX = "organization_files"
+BLOB_CONTAINER_NAME = "documents"
+
 
 def validate_token():
     """
@@ -27,7 +42,7 @@ def validate_token():
 
             if len(tokens) != 2:
                 return jsonify({"error": "Invalid token"}), 401
-            
+
             if tokens[0] != "Bearer":
                 return jsonify({"error": "Invalid token"}), 401
 
@@ -42,11 +57,12 @@ def validate_token():
 
     return decorator
 
+
 def check_organization_limits():
     """
     Decorator factory that ensures an organization context is available, fetches
     the organization's usage and limits, and injects a summary into the decorated
-    function's kwargs. 
+    function's kwargs.
     Behavior when organization_id is missing:
     1. Attempts to extract organization_id from JSON body if request is JSON.
     2. If still missing, retrieves user's organizations using client principal ID
@@ -62,7 +78,9 @@ def check_organization_limits():
                 if not organization_id:
                     organization_id = get_organization_id_from_request(request)
                     if not organization_id:
-                        return create_error_response("Missing required parameters, organization_id", 400)
+                        return create_error_response(
+                            "Missing required parameters, organization_id", 400
+                        )
 
                 # Get authenticated user's ID
                 client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -77,18 +95,20 @@ def check_organization_limits():
                     logging.warning(
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
-                    return create_error_response("Unauthorized access to organization", 403)
-                
+                    return create_error_response(
+                        "Unauthorized access to organization", 403
+                    )
+
                 org_usage = get_organization_usage(organization_id)
                 print(org_usage)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
                 print(org_limits)
 
-                
                 usage = {
                     "limits": org_limits["quotas"],
                     "current_usage": org_usage["balance"],
-                    "is_credits_exceeded": org_usage["balance"]["currentUsed"] > org_limits["quotas"]["totalCreditsAllocated"]
+                    "is_credits_exceeded": org_usage["balance"]["currentUsed"]
+                    > org_limits["quotas"]["totalCreditsAllocated"],
                 }
 
                 kwargs["organization_usage"] = usage
@@ -101,6 +121,7 @@ def check_organization_limits():
         return decorated_function
 
     return decorator
+
 
 def require_conversation_limits():
     """
@@ -122,7 +143,9 @@ def require_conversation_limits():
                 if not organization_id:
                     organization_id = get_organization_id_from_request(request)
                     if not organization_id:
-                        return create_error_response("Missing required parameters, organization_id", 400)
+                        return create_error_response(
+                            "Missing required parameters, organization_id", 400
+                        )
 
                 # Get authenticated user's ID
                 client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
@@ -137,13 +160,20 @@ def require_conversation_limits():
                     logging.warning(
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
-                    return create_error_response("Unauthorized access to organization", 403)
-                
+                    return create_error_response(
+                        "Unauthorized access to organization", 403
+                    )
+
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
 
-                if org_usage["balance"]["currentUsed"] > org_limits["quotas"]["totalCreditsAllocated"]:
-                    return create_error_response("Organization has exceeded its conversation limits", 403)
+                if (
+                    org_usage["balance"]["currentUsed"]
+                    > org_limits["quotas"]["totalCreditsAllocated"]
+                ):
+                    return create_error_response(
+                        "Organization has exceeded its conversation limits", 403
+                    )
 
                 return f(*args, **kwargs)
             except Exception as e:
@@ -153,6 +183,7 @@ def require_conversation_limits():
         return decorated_function
 
     return decorator
+
 
 def require_user_conversation_limits():
     """
@@ -169,10 +200,14 @@ def require_user_conversation_limits():
         @wraps(f)
         def decorated_function(*args, **kwargs):
             try:
-                organization_id, user_id = get_organization_id_and_user_id_from_request(request)
+                organization_id, user_id = get_organization_id_and_user_id_from_request(
+                    request
+                )
                 if not organization_id or not user_id:
-                    return create_error_response("Missing required parameters, organization_id or user_id", 400)
-                
+                    return create_error_response(
+                        "Missing required parameters, organization_id or user_id", 400
+                    )
+
                 # Get authenticated user's ID
                 client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
                 if not client_principal_id:
@@ -186,31 +221,52 @@ def require_user_conversation_limits():
                     logging.warning(
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
-                    return create_error_response("Unauthorized access to organization", 403)
+                    return create_error_response(
+                        "Unauthorized access to organization", 403
+                    )
 
                 org_usage = get_organization_usage(organization_id)
                 org_limits = get_subscription_tier_by_id(org_usage["policy"]["tierId"])
 
                 allowed_users = org_usage["policy"].get("allowedUserIds", [])
-                user_limits = next((user for user in allowed_users if user["userId"] == user_id), None)
+                user_limits = next(
+                    (user for user in allowed_users if user["userId"] == user_id), None
+                )
                 if not user_limits:
-                    return create_error_response("User is not authorized for this organization", 403)
+                    user_limits = initalize_user_limits(
+                        organization_id,
+                        user_id,
+                        (
+                            org_limits["quotas"]["totalCreditsAllocated"]
+                            / org_limits["policy"]["maxSeats"]
+                        ),
+                    )
                 if user_limits["currentUsed"] >= user_limits["totalAllocated"]:
                     next_period_start = org_usage["currentPeriodEnds"]
                     return create_error_response_with_body(
                         "User has exceeded their conversation limits",
                         403,
-                        {"nextPeriodStart": next_period_start}
-                    ) 
-                if org_usage["balance"]["currentUsed"] >= org_limits["quotas"]["totalCreditsAllocated"]:
-                    return create_error_response("Organization has exceeded its conversation limits", 403)
-                
-                kwargs["user_limits"] = {"user_limit": user_limits["totalAllocated"], "user_used": user_limits["currentUsed"]}
+                        {"nextPeriodStart": next_period_start},
+                    )
+                if (
+                    org_usage["balance"]["currentUsed"]
+                    >= org_limits["quotas"]["totalCreditsAllocated"]
+                ):
+                    return create_error_response(
+                        "Organization has exceeded its conversation limits", 403
+                    )
+
+                kwargs["user_limits"] = {
+                    "user_limit": user_limits["totalAllocated"],
+                    "user_used": user_limits["currentUsed"],
+                }
 
                 return f(*args, **kwargs)
 
             except Exception as e:
-                logging.exception("An error occurred in require_user_conversation_limits")
+                logging.exception(
+                    "An error occurred in require_user_conversation_limits"
+                )
                 return create_error_response("Internal server error", 500)
 
         return decorated_function
