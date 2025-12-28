@@ -1521,6 +1521,16 @@ def get_organization_usage(organization_id):
     except Exception as e:
         logging.error(f"Error retrieving organization usage for organization '{organization_id}': {e}")
         return None
+
+def update_organization_usage(organization_id, org_usage):
+    container = get_cosmos_container("organizationsUsage")
+
+    try:
+        container.upsert_item(org_usage)
+        logging.info(f"Organization usage updated successfully for organization '{organization_id}'")
+    except Exception as e:
+        logging.error(f"Error updating organization usage for organization '{organization_id}': {e}")
+        raise
     
 def get_subscription_tiers():
     """
@@ -1586,4 +1596,24 @@ def update_storage_used(organization_id, storage_used):
             logging.warning(f"No usage record found for organization '{organization_id}'. Cannot update storage used.")
     except Exception as e:
         logging.error(f"Error updating storage used for organization '{organization_id}': {e}")
+        raise
+
+
+def initalize_user_limits(organization_id, user_id, credits_limit):
+    try:
+        user_limits = {
+                "userId": user_id,
+                "totalAllocated": credits_limit,
+                "currentUsed": 0
+            }
+
+        org_usage = get_organization_usage(organization_id)
+        org_user_limits: List[dict] = org_usage["policy"]["allowedUserIds"]
+        org_user_limits.append(user_limits)
+        org_usage["policy"]["allowedUserIds"] = org_user_limits
+        update_organization_usage(organization_id, org_usage)
+        logging.info(f"User limits initialized for organization '{organization_id}' and user '{user_id}'.")
+        return user_limits
+    except Exception as e:
+        logging.error(f"Error initializing user limits for organization '{organization_id}' and user '{user_id}': {e}")
         raise
