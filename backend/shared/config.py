@@ -11,9 +11,6 @@ class Settings:
     # Explicit Blob service URL override (e.g., "https://mystorage.blob.core.windows.net")
     # Default containers (optional, for convenience)
     default_container: str = os.getenv("BLOB_CONTAINER_NAME", "public")
-    financial_container: str = os.getenv("FINANCIAL_AGENT_CONTAINER", "financial")
-    # Optional base folder used by your previous manager (kept for compatibility)
-    blob_base_folder: str = os.getenv("BLOB_BASE_FOLDER", "financial")
     # Optional SAS token for link building (MI is used for auth; SAS is only for generating shareable URLs)
     blob_sas_token: str = os.getenv("BLOB_SAS_TOKEN", "")
     # Cosmos DB

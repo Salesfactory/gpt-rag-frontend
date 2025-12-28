@@ -21,7 +21,6 @@ class WebAppUser(HttpUser):
 
     def on_start(self):
         """Initializes lists to store created item IDs for each user."""
-        self.created_report_ids = []
         self.created_invitation_ids = []
         # --- NEW ---
         self.created_report_job_ids = []
@@ -54,49 +53,6 @@ class WebAppUser(HttpUser):
             headers=self.auth_headers,
             name="/api/user/[user_id]"
         )
-
-    # =================================================================
-    # == Report Management Tasks (Create -> Delete)
-    # =================================================================
-    @task(5)
-    def create_report_and_save_id(self):
-        """Task to create a new report and save its ID for deletion."""
-        report_type = random.choice(["curation", "companySummarization"])
-        payload = {
-            "name": f"Locust Test Report - {random.randint(1, 9999)}",
-            "type": report_type,
-            "status": "active"
-        }
-        if report_type == "curation":
-            payload["category"] = "Ecommerce"
-        else: # companySummarization
-            payload["reportTemplate"] = "10-K"
-            payload["companyTickers"] = ["TSLA"]
-
-        with self.client.post("/api/reports/", json=payload, headers=self.auth_headers, name="/api/reports/", catch_response=True) as response:
-            if response.ok:
-                try:
-                    new_report = response.json()
-                    if new_report and "id" in new_report:
-                        self.created_report_ids.append(new_report["id"])
-                except ValueError:
-                    response.failure("Failed to parse JSON from create report response")
-
-    @task(5)
-    def delete_created_report(self):
-        """Task to delete a report that was previously created by this user."""
-        if self.created_report_ids:
-            report_to_delete = self.created_report_ids.pop()
-            self.client.delete(
-                f"/api/reports/{report_to_delete}",
-                headers=self.auth_headers,
-                name="/api/reports/[report_id]"
-            )
-    
-    @task(10)
-    def get_all_reports(self):
-        """Task to get all reports."""
-        self.client.get("/api/reports", headers=self.auth_headers, name="/api/reports")
 
     # =================================================================
     # == Invitation Management Tasks (Create -> Delete)

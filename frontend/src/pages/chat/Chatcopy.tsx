@@ -66,7 +66,6 @@ const Chat = () => {
         setChatIsCleaned,
         chatIsCleaned,
         user,
-        isFinancialAssistantActive,
         isResizingAnalysisPanel,
         setisResizingAnalysisPanel
     } = useAppContext();
@@ -138,7 +137,6 @@ const Chat = () => {
         setThinkingContent("");
 
         const agent = "consumer";
-        // const agent = isFinancialAssistantActive ? "financial" : "consumer";
 
         let history: ChatTurn[] = [];
         if (dataConversation.length > 0) {
@@ -787,7 +785,7 @@ const Chat = () => {
                 <div>
                     {/* <div className={showFeedbackRatingPanel ? styles.commandsContainer : styles.hidden}>{showFeedbackRatingPanel && <FeedbackRating />}</div> */}
                 </div>
-                {/* <FinancialPopup /> */}
+
                 <div className={styles.container}>
                     <div className={styles.chatRoot}>
                         <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "100%" }}>
@@ -795,29 +793,16 @@ const Chat = () => {
                                 {!lastQuestionRef.current && dataConversation.length <= 0 ? (
                                     <div className={dataConversation.length > 0 && !conversationIsLoading ? styles.chatMessageStream : styles.chatEmptyState}>
                                         {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
-                                        {!isFinancialAssistantActive && (
-                                            <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                                <h1>
-                                                    <img height="100px" src={FreddaidLogo} alt="FreddAid 4.1"></img>
-                                                </h1>
+                                        <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
+                                            <h1>
+                                                <img height="100px" src={FreddaidLogo} alt="FreddAid 4.1"></img>
+                                            </h1>
 
-                                                <p style={{ width: "80%", textAlign: "center" }}>
-                                                    Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data
-                                                    sources to deliver actionable insights.
-                                                </p>
-                                            </div>
-                                        )}
-                                        {/* {isFinancialAssistantActive && (
-                                            <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
-                                                <img height="70px" src={FreddaidLogoFinlAi} alt="FreddAid 4.1"></img>
-                                                <h1>FinlAI</h1>
-
-                                                <p style={{ width: "80%", textAlign: "center" }}>
-                                                    Your financial ally, delivering real-time insights and strategic guidance to help you stay ahead of
-                                                    opportunities and threats in an ever-changing financial landscape.
-                                                </p>
-                                            </div>
-                                        )} */}
+                                            <p style={{ width: "80%", textAlign: "center" }}>
+                                                Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data
+                                                sources to deliver actionable insights.
+                                            </p>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className={styles.chatScrollWrapper} aria-label="Chat messages scroll wrapper" tabIndex={0}>

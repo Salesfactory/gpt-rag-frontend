@@ -148,14 +148,6 @@ export default function () {
             'Get subscription details completed': (r) => r.status >= 200 && r.status < 500,
         }) || errorRate.add(1);
 
-        // Check financial assistant status
-        response = http.get(`${BASE_URL}/api/subscription/${testData.subscriptionId}/financialAssistant`, {
-            headers: authHeaders
-        });
-        check(response, {
-            'Get financial assistant status completed': (r) => r.status >= 200 && r.status < 500,
-        }) || errorRate.add(1);
-
         // Get product prices
         response = http.get(`${BASE_URL}/api/prices`, {
             headers: authHeaders

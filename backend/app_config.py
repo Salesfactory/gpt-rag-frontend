@@ -4,7 +4,7 @@ import os
 # Flask configuration
 SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "default-secret-key-change-in-production")
 SESSION_TYPE = "filesystem"
-PERMANENT_SESSION_LIFETIME = 3600  # 1 hour session timeout
+PERMANENT_SESSION_LIFETIME = 86400  # 24 hour session timeout
 
 # Azure AD B2C details
 B2C_TENANT_NAME = os.getenv("AAD_TENANT_NAME")  # e.g. "contoso"
@@ -24,13 +24,3 @@ REDIRECT_PATH = "/"  # The absolute URL must match your app's redirect_uri
 
 # B2C policy configuration
 B2C_POLICY = SIGNUPSIGNIN_USER_FLOW  # Default policy
-
-# financial ingestion config.py
-ALLOWED_FILING_TYPES = ["10-Q", "10-K", "8-K", "DEF 14A"]
-FILING_TYPES = ["10-Q", "10-K", "8-K", "DEF 14A"]
-BLOB_CONTAINER_NAME = "documents"
-BASE_FOLDER = "financial"
-
-# Paths in financial summarization
-IMAGE_PATH = "images"
-PDF_PATH = "./pdf"
