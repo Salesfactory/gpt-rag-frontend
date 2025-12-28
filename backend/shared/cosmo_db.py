@@ -1566,3 +1566,24 @@ def create_new_subscription_logs(userId, organizationId, userName, organizationN
     except Exception as e:
         logging.error(f"[handle_new_subscription_logs] Error creating audit log: {str(e)}")
         raise Exception(f"Failed to create audit log: {e}")
+    
+def update_storage_used(organization_id, storage_used):
+    """
+    Updates the storage used for a specific organization.
+
+    Parameters:
+        organization_id (str): The ID of the organization to update.
+        storage_used (int): The new storage used value.
+    """
+    container = get_cosmos_container("organizationsUsage")
+    try:
+        organizations_usage = get_organization_usage(organization_id)
+        if organizations_usage:
+            organizations_usage["balance"]["currentUsedStorage"] = storage_used
+            container.upsert_item(organizations_usage)
+            logging.info(f"Updated storage used for organization '{organization_id}' to {storage_used}.")
+        else:
+            logging.warning(f"No usage record found for organization '{organization_id}'. Cannot update storage used.")
+    except Exception as e:
+        logging.error(f"Error updating storage used for organization '{organization_id}': {e}")
+        raise

@@ -101,7 +101,7 @@ function validationReducer(state: UploadState, action: UploadAction): UploadStat
 }
 
 
-export const useFileUpload = (organizationId: string, onUploadComplete: () => void, existingFiles: BlobItem[], currentPath: string = "") => {
+export const useFileUpload = (userId: string, organizationId: string, onUploadComplete: () => void, existingFiles: BlobItem[], currentPath: string = "") => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   const [state, dispatch] = useReducer(validationReducer, initialState)
@@ -119,7 +119,7 @@ export const useFileUpload = (organizationId: string, onUploadComplete: () => vo
       dispatch({ type: 'UPLOAD' });
       
       for (const file of files) {
-        await uploadSourceFileToBlob(file.file, organizationId, currentPath);
+        await uploadSourceFileToBlob(file.file, userId, organizationId, currentPath);
       }
       
       dispatch({ type: 'UPLOAD_SUCCESS' });

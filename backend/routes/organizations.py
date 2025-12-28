@@ -15,7 +15,7 @@ from data_summary.blob_utils import (
 from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
 from shared.cosmo_db import create_organization, get_organization_data
-from shared.decorators import check_organization_limits
+from shared.decorators import check_organization_limits, check_organization_upload_limits, require_organization_storage_limits
 
 from utils import create_success_response, create_error_response, create_organization_usage, get_organization_usage_by_id
 
@@ -169,50 +169,14 @@ def createOrganization():
     except Exception as e:
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
-
 @bp.route("/api/organizations/<organization_id>/storage-usage", methods=["GET"])
-@auth_required
-def getOrganizationStorageCapacity(organization_id):
+@require_organization_storage_limits()
+def getOrganizationStorageCapacity(organization_id, **kwargs):
     try:
-        organization = get_organization_data(organization_id)
-        if not organization:
-            return create_error_response(
-                "Organization not found", HTTPStatus.NOT_FOUND
-            )
+        return create_success_response(kwargs["upload_limits"], HTTPStatus.OK)
+    except: 
+        return create_error_response("Internal server error", HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        storage_capacity = organization.get("storageCapacity", None)
-        if storage_capacity is None:
-            return create_error_response(
-                "Storage capacity not set for this organization", HTTPStatus.NOT_FOUND
-            )
-        
-        blob_storage_manager = current_app.config["blob_storage_manager"]
-        prefix = f"{ORG_FILES_PREFIX}/{organization_id}/"
-        blobs = blob_storage_manager.list_blobs_in_container(
-            container_name=BLOB_CONTAINER_NAME,
-            prefix=prefix,
-            include_metadata="none",
-        )
-        total_used_storage_bytes = 0
-        for blob in blobs:
-            total_used_storage_bytes += blob.get("size")
-        
-        used_storage_gib = (total_used_storage_bytes / (1024 ** 3)) 
-        
-        free_storage_gib = storage_capacity - used_storage_gib
-
-        percentage_used = (used_storage_gib / storage_capacity) * 100
-
-        return create_success_response({
-            "storageCapacity": storage_capacity,
-            "usedStorage": used_storage_gib,
-            "freeStorage": free_storage_gib,
-            "percentageUsed": percentage_used
-        })
-
-    except Exception as e:
-        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
-    
 @bp.route("/api/organizations/<organization_id>/get-organization-usage", methods=["GET"])
 @auth_required
 def getOrgUsage(organization_id: str):
