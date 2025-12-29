@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 import requests
-from shared.cosmo_db import get_cosmos_container
+from shared.cosmo_db import get_cosmos_container, get_subscription_tier_by_id, get_organization_usage
 from flask import request, jsonify, Flask
 from http import HTTPStatus
 from typing import Tuple, Dict, Any, Optional
@@ -1712,12 +1712,11 @@ def get_organization_id_from_request(request):
         if organization_id:
             return organization_id
         
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
+    if organization_id:
+        return organization_id
+    
     organization_id = None
-    if client_principal_id:
-        organizations = get_user_organizations(client_principal_id)
-        if organizations:
-            organization_id = organizations[0]["id"]
 
     return organization_id
 
@@ -1754,3 +1753,19 @@ def get_organization_id_and_user_id_from_request(request):
     user_id = client_principal_id
 
     return organization_id, user_id
+
+def get_organization_tier_and_subscription(organization_id):
+    """
+    Retrieves the subscription tier and usage for the given organization ID.
+    """
+    if not organization_id:
+        return None
+    try:
+        org_usage = get_organization_usage(organization_id)
+        org_tier = get_subscription_tier_by_id(org_usage["policy"]["tierId"]) if org_usage else None
+        
+        return org_tier, org_usage
+
+    except Exception as e:
+        logging.error(f"[get_organization_tier_and_subscription] get_organization_tier_and_subscription: something went wrong. {str(e)}")
+        return None
