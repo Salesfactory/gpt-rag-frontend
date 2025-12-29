@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import request, jsonify
+from flask import current_app, request, jsonify
 from functools import wraps
 from utils import (
     get_azure_key_vault_secret,
@@ -420,12 +420,10 @@ def require_organization_storage_limits():
                     return create_error_response(
                         "Organization has exceeded its storage capacity", 403
                     )
-
                 if storage_capacity <= 0:
                     return create_error_response(
                         "Organization has no storage capacity allocated", 403
                     )
-
                 free_storage_gib = storage_capacity - used_storage_gib
                 percentage_used = (used_storage_gib / storage_capacity) * 100
 
