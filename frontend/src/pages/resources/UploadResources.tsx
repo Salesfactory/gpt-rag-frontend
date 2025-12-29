@@ -28,8 +28,10 @@ const UploadResources: React.FC = () => {
         navigateBack,
         navigateToRoot,
         sortOrder,
-        toggleSortOrder
-    } = useSourceFiles(user?.organizationId || "", selectedCategory)
+        toggleSortOrder,
+        getStorageUsage,
+        isStorageLimitExceeded
+    } = useSourceFiles(user?.organizationId || "", selectedCategory, user)
     
     // Memoize onUploadComplete to prevent infinite loop
     const handleUploadComplete = useCallback(() => {
@@ -44,7 +46,14 @@ const UploadResources: React.FC = () => {
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} isLoading={isLoading} />
+            <FileListHeader
+                setSearchQuery={setSearchQuery}
+                openUploadDialog={openUploadDialog}
+                onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)}
+                isLoading={isLoading}
+                getStorageUsage={getStorageUsage}
+                isStorageLimitExceeded={isStorageLimitExceeded}
+            />
             <LazyResourceList
                 filteredFiles={filteredFiles}
                 filteredFolders={filteredFolders}

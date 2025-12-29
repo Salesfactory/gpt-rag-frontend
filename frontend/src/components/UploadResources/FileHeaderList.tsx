@@ -2,17 +2,27 @@ import { IconButton, SearchBox } from "@fluentui/react";
 import styles from "./UploadResources.module.css";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import CloudStorageIndicator from "./CloudStorageIndicator";
+import type { StorageData } from "./CloudStorageIndicator";
 
-const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUploadDialog: () => void; onRefresh: () => void; isLoading: boolean }> = ({
+const FileListHeader: React.FC<{
+    setSearchQuery: (query: string) => void;
+    openUploadDialog: () => void;
+    onRefresh: () => void;
+    isLoading: boolean;
+    getStorageUsage?: () => Promise<StorageData | undefined>;
+    isStorageLimitExceeded: boolean;
+}> = ({
     setSearchQuery,
     openUploadDialog,
     onRefresh,
-    isLoading
+    isLoading,
+    getStorageUsage,
+    isStorageLimitExceeded
 }) => {
     return (
         <div className={styles.headerContainer}>
             {/* Cloud Storage */}
-            <CloudStorageIndicator isLoading={isLoading} />
+            <CloudStorageIndicator isLoading={isLoading} getStorageUsage={getStorageUsage} />
 
             {/* Search + Actions */}
             <div className={styles.file_list_header}>
@@ -77,11 +87,14 @@ const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUp
                     </IconButton>
                 </div>
             </div>
-            <IconButton title="Upload New Files" ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
+            <IconButton disabled={isStorageLimitExceeded} title={isStorageLimitExceeded ? "Storage limit exceeded" : "Upload New Files"} ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
                 <span className={styles.addIcon}>
                     <Plus />
                 </span>
-                <span className={styles.buttonText}>Upload File</span>
+                <div className={styles.tooltipWrapper}>
+                    <span className={styles.buttonText}>Upload File</span>
+                    <span className={styles.tooltipText}>{isStorageLimitExceeded ? "Storage limit exceeded" : "Upload New Files"}</span>
+                </div>
             </IconButton>
         </div>
     );

@@ -1,18 +1,17 @@
 // src/features/UploadResources/hooks/useSourceFiles.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getSourceFileFromBlob, deleteSourceFileFromBlob, getBlobSasUrl } from '../api/api';
+import { getSourceFileFromBlob, deleteSourceFileFromBlob, getBlobSasUrl, getStorageUsageByOrganization} from '../api/api';
 import { toast } from 'react-toastify';
 import { BlobItem, FolderItem } from '../types';
-import { useAppContext } from '../providers/AppProviders';
 
-export const useSourceFiles = (organizationId: string, category: string = 'all') => {
-    const { user } = useAppContext();
+export const useSourceFiles = (organizationId: string, category: string = 'all', user?: any) => {
     const [files, setFiles] = useState<BlobItem[]>([]);
     const [folders, setFolders] = useState<FolderItem[]>([]);
     const [currentPath, setCurrentPath] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+    const [isStorageLimitExceeded, setIsStorageLimitExceeded] = useState<boolean>(false);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const fetchFiles = useCallback(async (folderPath: string = currentPath, fileCategory: string = category, order: "newest" | "oldest" = sortOrder) => {
@@ -129,6 +128,17 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         }
     };
 
+    const getStorageUsage = async () => {
+        try {
+            const storageUsage = await getStorageUsageByOrganization(organizationId, user);
+            setIsStorageLimitExceeded(storageUsage.data.isStorageLimitExceeded);
+            return storageUsage.data;
+        } catch (error) {
+            console.error("Error fetching storage usage:", error);
+            toast.error("Failed to load storage usage.");
+        }
+    };
+
     return {
         isLoading,
         files,
@@ -146,5 +156,7 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         deleteFile,
         sortOrder,
         toggleSortOrder,
+        isStorageLimitExceeded,
+        getStorageUsage    
     };
 };
