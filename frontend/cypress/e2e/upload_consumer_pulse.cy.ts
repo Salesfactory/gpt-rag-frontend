@@ -71,7 +71,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
                     status: "active"
                 },
                 subscriptionId: "sub_test123",
-                subscriptionTiers: ["Basic", "Custom", "Premium", "Basic + Financial Assistant", "Custom + Financial Assistant", "Premium + Financial Assistant"]
+                subscriptionTiers: ["Basic", "Custom", "Premium"]
             }
         }).as("getSubscriptionTiers");
 
@@ -622,4 +622,3 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
         });
     });
 });
-

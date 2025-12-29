@@ -82,13 +82,8 @@ export default defineConfig({
             "/api/chat": "http://127.0.0.1:8000",
             "/api/auth/user": "http://127.0.0.1:8000",
             "/api/prices": "http://127.0.0.1:8000",
-            "/api/subscription/<subscriptionId>/financialAssistant": "http://127.0.0.1:8000",
             "^/api/subscriptions/.*?/tiers": {
                 target: "http://127.0.0.1:8000",
-                changeOrigin: true
-            },
-            "^/api/subscription/.*?/financialAssistant": {
-                target: "http://127.0.0.1:8000/",
                 changeOrigin: true
             },
             "/api/reports":"http://localhost:8000/",

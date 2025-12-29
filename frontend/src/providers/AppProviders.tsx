@@ -114,10 +114,6 @@ interface AppContextType {
     isLoading: boolean;
     subscriptionTiers: SubscriptionTier[];
     setSubscriptionTiers: Dispatch<SetStateAction<SubscriptionTier[]>>;
-    isFinancialAssistantActive: boolean;
-    setIsFinancialAssistantActive: Dispatch<SetStateAction<boolean>>;
-    agentType: string;
-    setAgentType: Dispatch<SetStateAction<string>>;
     // New loading states
     isOrganizationLoading: boolean;
     isSubscriptionTiersLoading: boolean;
@@ -166,7 +162,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [organizations, setOrganizations] = useState<OrganizationInfo[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isFinancialAssistantActive, setIsFinancialAssistantActive] = useState(false);
 
     // New state variables for subscription tiers
     const [subscriptionTiers, setSubscriptionTiers] = useState<SubscriptionTier[]>([]);
@@ -178,25 +173,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [isChatHistoryLoading, setIsChatHistoryLoading] = useState<boolean>(false);
     const [showOrganizationSelection, setShowOrganizationSelection] = useState<boolean>(false);
 
-    // Setting variables for the Financial Agent URL
-    const searchParams = useMemo(() => new URLSearchParams(window.location.search), []);
-    const params = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
-
-    const agentParam = params["agent"];
-    const [agentType, setAgentType] = useState<string>(agentParam || "defaultAgent");
     const [isResizingAnalysisPanel, setisResizingAnalysisPanel] = useState<boolean>(false);
     const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
 
     // Session management
     const { isSessionExpiredModalOpen, handleRefreshSession, handleLogout, validateSession } = useSessionManager();
-
-    // Move agentType update into useEffect to prevent state updates on every render
-    useEffect(() => {
-        if (agentParam && agentType !== agentParam) {
-            debugLog(`Updating agentType from "${agentType}" to "${agentParam}"`);
-            setAgentType(agentParam);
-        }
-    }, [agentParam, agentType]);
 
     function setCookie(name: any, value: string | number | boolean, days: number) {
         const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
@@ -342,16 +323,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     debugLog("User not authenticated.");
                 }
 
-                // Handle financial assistant activation based on local storage or agentType
-                const savedState = localStorage.getItem(`financialAssistantActive_${authData.user?.id}`);
-                if (savedState !== null) {
-                    setIsFinancialAssistantActive(JSON.parse(savedState));
-                    debugLog("Financial Assistant activation state loaded from localStorage.");
-                }
-                if (agentType === "financial") {
-                    setIsFinancialAssistantActive(true);
-                    debugLog("Financial Assistant activated based on agentType.");
-                }
             } catch (error) {
                 debugLog("Initialization failed:", error);
                 console.error("Initialization failed:", error);
@@ -363,7 +334,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         };
 
         initializeAuth();
-    }, [agentType]); // Dependency only on agentType
+    }, []);
 
     // Effect to fetch organization details when user.id changes
     useEffect(() => {
@@ -498,10 +469,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isLoading,
             subscriptionTiers, // New state variable
             setSubscriptionTiers, // Setter for subscriptionTiers
-            isFinancialAssistantActive,
-            setIsFinancialAssistantActive,
-            agentType,
-            setAgentType,
             isOrganizationLoading, // New loading state
             isSubscriptionTiersLoading, // New loading state
             isChatHistoryLoading, // New loading state
@@ -532,8 +499,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isAuthenticated,
             isLoading,
             subscriptionTiers,
-            isFinancialAssistantActive,
-            agentType,
             isOrganizationLoading,
             isSubscriptionTiersLoading,
             isChatHistoryLoading,

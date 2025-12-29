@@ -6,10 +6,7 @@ import {
     createCustomerPortalSession,
     getCustomerId,
     changeSubscription,
-    getFinancialAssistant,
     getProductPrices,
-    removeFinancialAssistant,
-    upgradeSubscription,
     getLogs,
     getSubscriptionTierDetails
 } from "../../api";
@@ -20,13 +17,10 @@ import "react-toastify/dist/ReactToastify.css";
 import { Bell, Clock, CreditCard, Eye, Info } from "lucide-react";
 
 const SubscriptionManagement: React.FC = () => {
-    const { user, organization, organizationUsage, subscriptionTiers, setIsFinancialAssistantActive } = useAppContext();
-    const [subscriptionStatus, setSubscriptionStatus] = useState<boolean>(false);
+    const { user, organization, organizationUsage, subscriptionTiers } = useAppContext();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isErrorModal, setIsErrorModal] = useState(false);
-    const [isSubscriptionModal, setIsSubscriptionModal] = useState(false);
-    const [isUnsubscriptionModal, setIsUnsubscriptionModal] = useState(false);
     const [isViewModal, setIsViewModal] = useState(false);
     const [subscriptionName, setSusbscriptionName] = useState("");
     const [prices, setPrices] = useState<any[]>([]);
@@ -46,16 +40,14 @@ const SubscriptionManagement: React.FC = () => {
 
     const FilterMapping = {
         "All actions": null,
-        "Financial Assistant": "Financial Assistant Change",
         "Subscription Tier": "Subscription Tier Change",
         "Subscription Created": "Subscription Created"
     };
 
     const FilterOptions = [
         { key: "1", text: "All Actions" },
-        { key: "2", text: "Financial Assistant" },
-        { key: "3", text: "Subscription Tier" },
-        { key: "4", text: "Subscription Created" }
+        { key: "2", text: "Subscription Tier" },
+        { key: "3", text: "Subscription Created" }
     ];
 
     const formatTimestamp = (timestamp: number) => {
@@ -88,30 +80,10 @@ const SubscriptionManagement: React.FC = () => {
             try {
                 const tierDetails = await getSubscriptionTierDetails(organizationUsage?.policy.tierId || "");
                 setSusbscriptionName(tierDetails.tier_name || "");
-                if (!user?.organizationId) {
-                    throw new Error("Organization ID is required");
-                }
-                const { financial_assistant_active } = await getFinancialAssistant({
-                    user: {
-                        ...user,
-                        organizationId: user.organizationId
-                    },
-                    subscriptionId: organization?.subscriptionId ?? "default-org-id"
-                });
-                setSubscriptionStatus(financial_assistant_active);
             } catch (error: any) {
                 console.log(error);
-                if (error.status === false) {
-                    setSubscriptionStatus(false);
-                    setError("Financial Assistant feature is not present in this subscription.");
-                    setIsErrorModal(true);
-                } else if (error.status === null) {
-                    setError("Bad request: unable to retrieve subscription status.");
-                    setIsErrorModal(true);
-                } else {
-                    setError("An error occurred while fetching subscription status.");
-                    setIsErrorModal(true);
-                }
+                setError("An error occurred while fetching subscription status.");
+                setIsErrorModal(true);
             } finally {
                 setLoading(false);
             }
@@ -134,51 +106,6 @@ const SubscriptionManagement: React.FC = () => {
 
         fetchPrices();
     }, [dataLoad]);
-
-    const handleSubscribe = async () => {
-        try {
-            setLoading(true);
-            const userObj = user ? { id: user.id, name: user.name, organizationId: user.organizationId ?? "default-org-id" } : undefined;
-            await upgradeSubscription({ user: userObj, subscriptionId: organization?.subscriptionId ?? "default-org-id" });
-            setSubscriptionStatus(true);
-            setIsSubscriptionModal(false);
-            //This reloads the page so the financial assistant toggle appears after click
-            window.location.reload();
-        } catch {
-            setError("An error occurred while subscribing to the Financial Assistant feature.");
-            setIsSubscriptionModal(false);
-            setIsErrorModal(true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleUnsubscribe = async () => {
-        try {
-            setLoading(true);
-            const userObj = user ? { id: user.id, name: user.name, organizationId: user.organizationId ?? "default-org-id" } : undefined;
-            await removeFinancialAssistant({ user: userObj, subscriptionId: organization?.subscriptionId ?? "default-org-id" });
-            setSubscriptionStatus(false);
-            setIsUnsubscriptionModal(false);
-            setIsFinancialAssistantActive(false);
-            //This reloads the page so the financial assistant toggle disappears after click
-            window.location.reload();
-        } catch {
-            setError("An error occurred while unsubscribing from the Financial Assistant feature.");
-            setIsUnsubscriptionModal(false);
-            setIsErrorModal(true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleFinancialAssistantToggle = async () => {
-        if (subscriptionStatus == true) {
-            setIsUnsubscriptionModal(true);
-        } else {
-            setIsSubscriptionModal(true);
-        }
-    };
 
     const handleViewSubscription = () => {
         setIsViewModal(true);
@@ -431,14 +358,7 @@ const SubscriptionManagement: React.FC = () => {
                                                                 </td>
                                                             </>
                                                         )}
-                                                        {data.action === "Financial Assistant Change" && (
-                                                            <>
-                                                                <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
-                                                                <td className={styles.tableText2}>FA Add-On Toggled</td>
-                                                                <td className={styles.tableText2}>{data.modified_by_name}</td>
-                                                                <td className={styles.tableStatus}>Status: {data.status_financial_assistant}</td>
-                                                            </>
-                                                        )}
+
                                                         {data.action === "Subscription Created" && (
                                                             <>
                                                                 <td className={styles.tableDate}>{formatTimestamp(data._ts)}</td>
@@ -567,60 +487,7 @@ const SubscriptionManagement: React.FC = () => {
                         </div>
                     </div>
                 )}
-                {isSubscriptionModal && (
-                    <div className={styles.modalOverlay}>
-                        <div className={styles.modalContainer}>
-                            <div className={styles.modalContent}>
-                                <div className={styles.modalHeader}>
-                                    <button className={styles.closeButtonNew} onClick={() => setIsSubscriptionModal(false)} aria-label="Close">
-                                        <IconX />
-                                    </button>
-                                    <span className={styles.modalTitle}>Subscribe to Financial Assistant</span>
-                                </div>
-                                <Label className={styles.modalText}>Are you sure you want to add the Financial Assistant to your subscription?</Label>
-                                <div className={styles.buttonContainerNew}>
-                                    <button onClick={() => setIsSubscriptionModal(false)} className={styles.cancelButton} aria-label="Cancel">
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleSubscribe}
-                                        className={`${styles.confirmButton} ${styles.subscribeButton}`}
-                                        aria-label="Confirm Subscription"
-                                    >
-                                        Confirm Subscription
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {isUnsubscriptionModal && (
-                    <div className={styles.modalOverlay}>
-                        <div className={styles.modalContainer}>
-                            <div className={styles.modalContent}>
-                                <div className={styles.modalHeader}>
-                                    <button className={styles.closeButtonNew} onClick={() => setIsUnsubscriptionModal(false)} aria-label="Close">
-                                        <IconX />
-                                    </button>
-                                    <span className={styles.modalTitle}>Unsubscribe from Financial Assistant</span>
-                                </div>
-                                <Label className={styles.modalText}>Are you sure you want to remove the Financial Assistant from your subscription?</Label>
-                                <div className={styles.buttonContainerNew}>
-                                    <button onClick={() => setIsUnsubscriptionModal(false)} className={styles.cancelButton} aria-label="Cancel">
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleUnsubscribe}
-                                        className={`${styles.confirmButton} ${styles.unsubscribeButton}`}
-                                        aria-label="Unsubscribe"
-                                    >
-                                        <span>Yes, Unsubscribe</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+
                 {isErrorModal && (
                     <div className={styles.modalOverlay}>
                         <div className={`${styles.modalContainer} ${styles.errorModal}`}>
