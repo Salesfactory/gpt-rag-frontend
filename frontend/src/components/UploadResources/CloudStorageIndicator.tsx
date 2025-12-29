@@ -5,11 +5,16 @@ import { getStorageUsageByOrganization } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast } from "react-toastify";
 
-type StorageData = {
+export type StorageData = {
     freeStorage: number;
     percentageUsed: number;
     storageCapacity: number;
     usedStorage: number;
+};
+
+type CloudStorageIndicatorProps = {
+    isLoading: boolean;
+    getStorageUsage?: () => Promise<StorageData | undefined>;
 };
 
 const formatBytes = (bytes: number, locale = "en-US") => {
@@ -24,7 +29,7 @@ const formatBytes = (bytes: number, locale = "en-US") => {
     return `${nf.format(value)} ${units[i]}`;
 };
 
-const CloudStorageIndicator = ({ isLoading }: { isLoading: boolean }) => {
+const CloudStorageIndicator = ({ isLoading, getStorageUsage }: CloudStorageIndicatorProps) => {
     const { user, organization } = useAppContext();
     
     const [storageData, setStorageData] = useState<StorageData | null>(null);
@@ -34,9 +39,11 @@ const CloudStorageIndicator = ({ isLoading }: { isLoading: boolean }) => {
     useEffect(() => {
         const fetchStorageData = async (organization_id: string, user: any) => {
             try {
-                const response = await getStorageUsageByOrganization(organization_id, user)
-                const data = response.data;
-                setStorageData(data);
+                if (getStorageUsage) {
+                    const data = await getStorageUsage();
+                    if (data) setStorageData(data);
+                    return;
+                }
             }
             catch (error) {
                 console.error("Error fetching storage data:", error);

@@ -1,10 +1,10 @@
 // src/features/UploadResources/hooks/useSourceFiles.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getSourceFileFromBlob, deleteSourceFileFromBlob, getBlobSasUrl } from '../api/api';
+import { getSourceFileFromBlob, deleteSourceFileFromBlob, getBlobSasUrl, getStorageUsageByOrganization} from '../api/api';
 import { toast } from 'react-toastify';
 import { BlobItem, FolderItem } from '../types';
 
-export const useSourceFiles = (organizationId: string, category: string = 'all') => {
+export const useSourceFiles = (organizationId: string, category: string = 'all', user?: any) => {
     const [files, setFiles] = useState<BlobItem[]>([]);
     const [folders, setFolders] = useState<FolderItem[]>([]);
     const [currentPath, setCurrentPath] = useState<string>('');
@@ -115,6 +115,16 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         window.open(downloadUrl, "_blank");
     };
 
+    const getStorageUsage = async () => {
+        try {
+            const storageUsage = await getStorageUsageByOrganization(organizationId, user);
+            return storageUsage.data;
+        } catch (error) {
+            console.error("Error fetching storage usage:", error);
+            toast.error("Failed to load storage usage.");
+        }
+    };
+
     return {
         isLoading,
         files,
@@ -132,5 +142,6 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         deleteFile,
         sortOrder,
         toggleSortOrder,
+        getStorageUsage    
     };
 };

@@ -170,7 +170,7 @@ def createOrganization():
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @bp.route("/api/organizations/<organization_id>/storage-usage", methods=["GET"])
-@require_organization_storage_limits()
+@check_organization_upload_limits()
 def getOrganizationStorageCapacity(organization_id, **kwargs):
     try:
         return create_success_response(kwargs["upload_limits"], HTTPStatus.OK)

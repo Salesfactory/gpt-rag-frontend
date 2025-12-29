@@ -2,17 +2,25 @@ import { IconButton, SearchBox } from "@fluentui/react";
 import styles from "./UploadResources.module.css";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import CloudStorageIndicator from "./CloudStorageIndicator";
+import type { StorageData } from "./CloudStorageIndicator";
 
-const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUploadDialog: () => void; onRefresh: () => void; isLoading: boolean }> = ({
+const FileListHeader: React.FC<{
+    setSearchQuery: (query: string) => void;
+    openUploadDialog: () => void;
+    onRefresh: () => void;
+    isLoading: boolean;
+    getStorageUsage?: () => Promise<StorageData | undefined>;
+}> = ({
     setSearchQuery,
     openUploadDialog,
     onRefresh,
-    isLoading
+    isLoading,
+    getStorageUsage
 }) => {
     return (
         <div className={styles.headerContainer}>
             {/* Cloud Storage */}
-            <CloudStorageIndicator isLoading={isLoading} />
+            <CloudStorageIndicator isLoading={isLoading} getStorageUsage={getStorageUsage} />
 
             {/* Search + Actions */}
             <div className={styles.file_list_header}>
