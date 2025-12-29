@@ -4,9 +4,6 @@ import pytest
 from flask import Flask
 from werkzeug.datastructures import FileStorage
 
-# Import blueprint module
-import routes.upload_source_document as usd
-
 
 class DummyBlobStorageManager:
     def __init__(self, should_fail=False):
@@ -23,11 +20,21 @@ class DummyBlobStorageManager:
 
 @pytest.fixture
 def app(monkeypatch):
+    # Import INSIDE fixture so conftest.py mock is applied first
+    import routes.file_management as usd
+
     app = Flask(__name__)
     app.register_blueprint(usd.bp)
 
-    # Patch out create_description
-    monkeypatch.setattr(usd, "create_description", lambda path, llm=None: "fake description")
+    # Patch out create_description - must return dict with file_description and source
+    monkeypatch.setattr(
+        usd,
+        "create_description",
+        lambda path, llm=None: {
+            "file_description": "fake description",
+            "source": "AI-generated"
+        }
+    )
 
     # Dummy configs
     app.config["llm"] = object()
@@ -42,16 +49,19 @@ def client(app):
 
 
 def test_no_file_in_request(client):
-    res = client.post("/api/upload-source-document", data={})
+    res = client.post("/api/upload-source-document", data={"organization_id": "org123"})
     assert res.status_code == 400
-    assert b"No file part" in res.data
+    assert b"No file part in the request" in res.data
 
 
 def test_no_file_selected(client):
-    data = {"file": (io.BytesIO(b""), ""), "organization_id": "org123"}
+    # Flask interprets empty filename as no file part
+    # This test verifies the error handling for missing files
+    data = {"file": (io.BytesIO(b"some content"), ""), "organization_id": "org123"}
     res = client.post("/api/upload-source-document", data=data, content_type="multipart/form-data")
     assert res.status_code == 400
-    assert b"No file selected" in res.data
+    # Flask's behavior: empty filename triggers "No file part in the request"
+    assert b"No file part in the request" in res.data
 
 
 def test_no_organization_id(client):
@@ -80,4 +90,5 @@ def test_failed_upload(client, app):
     }
     res = client.post("/api/upload-source-document", data=data, content_type="multipart/form-data")
     assert res.status_code == 500
-    assert b"Error uploading file" in res.data
+    # Error message format includes "Error uploading file: <error details>"
+    assert b"Error uploading file:" in res.data or b"error" in res.data

@@ -2,10 +2,7 @@ import io
 import os
 import pytest
 from flask import Flask
-from unittest.mock import MagicMock, PropertyMock
-
-# Import blueprint module
-import routes.file_management as fm
+from unittest.mock import MagicMock
 
 
 class DummyBlobStorageManager:
@@ -54,19 +51,11 @@ class DummyBlobServiceClient:
 @pytest.fixture
 def app(monkeypatch):
     """Create Flask app for testing"""
-    app = Flask(__name__)
-    app.register_blueprint(fm.bp)
+    import routes.file_management as fm
 
-    # Mock the auth_required decorator to do nothing
-    def mock_auth_decorator(f):
-        return f
-    
-    monkeypatch.setattr(fm, "auth_required", mock_auth_decorator)
-
-    # Patch out create_description
     monkeypatch.setattr(
-        fm, 
-        "create_description", 
+        fm,
+        "create_description",
         lambda path, llm=None: {
             "file_description": "fake description",
             "source": "test"
@@ -75,6 +64,9 @@ def app(monkeypatch):
 
     # Patch validate_file_signature to always return True
     monkeypatch.setattr(fm, "validate_file_signature", lambda path, mime: True)
+
+    app = Flask(__name__)
+    app.register_blueprint(fm.bp)
 
     # Dummy configs
     app.config["llm"] = object()

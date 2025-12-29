@@ -3,9 +3,6 @@ from __future__ import annotations
 import pytest
 from flask import Flask
 
-# Import the blueprint under test
-from routes.categories import bp as categories_bp
-
 
 # ----- Fakes -----
 class NotFoundError(Exception):
@@ -68,6 +65,9 @@ def app(monkeypatch):
     monkeypatch.setattr(
         routes_mod, "CosmosResourceNotFoundError", NotFoundError, raising=True
     )
+
+    # Import blueprint INSIDE fixture so conftest.py mock is applied first
+    from routes.categories import bp as categories_bp
 
     app = Flask(__name__)
     app.register_blueprint(categories_bp)
