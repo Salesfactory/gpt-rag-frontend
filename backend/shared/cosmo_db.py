@@ -384,6 +384,7 @@ def update_user(user_id, updated_data):
         )
         raise
 
+
 def patch_organization_data(org_id, patch_data):
     """
     Updates or adds 'brandInformation', 'industryInformation', 'Industry_description' 'segmentSynonyms' to the organization.
@@ -401,7 +402,7 @@ def patch_organization_data(org_id, patch_data):
         "brandInformation",
         "industryInformation",
         "segmentSynonyms",
-        "additionalInstructions"
+        "additionalInstructions",
     }
 
     for key in allowed_fields:
@@ -411,6 +412,7 @@ def patch_organization_data(org_id, patch_data):
     container.upsert_item(org)
     logging.info(f"Organization {org_id} updated successfully.")
     return org
+
 
 def get_organization_data(org_id):
     """
@@ -425,7 +427,6 @@ def get_organization_data(org_id):
         raise NotFound(f"Organization not found")
 
     return org
-
 
 
 def update_invitation_role(invited_user_id, organization_id, new_role):
@@ -532,7 +533,7 @@ def get_audit_logs(organization_id):
                 ORDER BY c._ts DESC
             """,
                 parameters=[{"name": "@organization_id", "value": organization_id}],
-                partition_key=organization_id
+                partition_key=organization_id,
             )
         )
 
@@ -975,7 +976,10 @@ def get_brands_by_organization(organization_id):
         parameters = [{"name": "@organization_id", "value": organization_id}]
         items = list(
             container.query_items(
-                query=query, parameters=parameters, partition_key=organization_id, enable_cross_partition_query=True
+                query=query,
+                parameters=parameters,
+                partition_key=organization_id,
+                enable_cross_partition_query=True,
             )
         )
 
@@ -1008,7 +1012,9 @@ def update_brand_by_id(brand_id, brand_name, brand_description, organization_id)
     container = get_cosmos_container("brands")
 
     try:
-        current_brand = container.read_item(item=brand_id, partition_key=organization_id)
+        current_brand = container.read_item(
+            item=brand_id, partition_key=organization_id
+        )
 
     except CosmosResourceNotFoundError:
         logging.warning(f"Brand with id '{brand_id}' not found in Cosmos DB.")
@@ -1130,7 +1136,9 @@ def delete_prod_by_id(product_id, organization_id):
         raise e
 
 
-def update_prod_by_id(product_id, name, category, brand_id, description, organization_id):
+def update_prod_by_id(
+    product_id, name, category, brand_id, description, organization_id
+):
     """
     Updates a product in the Cosmos DB container by its ID.
     Parameters:
@@ -1152,7 +1160,9 @@ def update_prod_by_id(product_id, name, category, brand_id, description, organiz
         raise ValueError("product_id cannot be empty.")
 
     try:
-        current_product = container.read_item(item=product_id, partition_key=organization_id)
+        current_product = container.read_item(
+            item=product_id, partition_key=organization_id
+        )
     except CosmosResourceNotFoundError as e:
         logging.warning(f"Product with id '{product_id}' not found in Cosmos DB.")
         raise NotFound
@@ -1217,7 +1227,10 @@ def get_prods_by_organization(organization_id):
         parameters = [{"name": "@organization_id", "value": organization_id}]
         items = list(
             container.query_items(
-                query=query, partition_key=organization_id, parameters=parameters, enable_cross_partition_query=True
+                query=query,
+                partition_key=organization_id,
+                parameters=parameters,
+                enable_cross_partition_query=True,
             )
         )
 
@@ -1264,9 +1277,7 @@ def create_competitor(name, description, organization_id):
     if description is None:
         description = ""
     if not name or not organization_id:
-        raise ValueError(
-            "Competitor name and organization ID cannot be empty."
-        )
+        raise ValueError("Competitor name and organization ID cannot be empty.")
     try:
         result = container.create_item(
             body={
@@ -1300,7 +1311,7 @@ def delete_competitor_by_id(competitor_id, organization_id):
 
         container.delete_item(item=competitor_id, partition_key=organization_id)
         logging.info(f"Competitor with id {competitor_id} deleted successfully.")
-        
+
         return {"message": f"Competitor with id {competitor_id} deleted successfully."}
 
     except CosmosHttpResponseError as e:
@@ -1355,9 +1366,7 @@ def update_competitor_by_id(competitor_id, name, description, organization_id):
         ) from e
 
     try:
-        current_competitor.update(
-            {"name": name, "description": description}
-        )
+        current_competitor.update({"name": name, "description": description})
 
         current_competitor["id"] = competitor_id
         current_competitor["updatedAt"] = datetime.now(timezone.utc).isoformat()
@@ -1411,7 +1420,9 @@ def delete_brand_by_id(brand_id, organization_id):
         items_to_delete = get_items_to_delete_by_brand(brand_id, organization_id)
 
         if items_to_delete["products"]:
-            logging.info(f"Found {len(items_to_delete['products'])} products for brand {brand_id} to delete.")
+            logging.info(
+                f"Found {len(items_to_delete['products'])} products for brand {brand_id} to delete."
+            )
             products_container = get_cosmos_container("products")
             # Delete products associated with the brand
             for product in items_to_delete["products"]:
@@ -1420,9 +1431,7 @@ def delete_brand_by_id(brand_id, organization_id):
                 )
                 logging.info(f"Product with id {product['id']} deleted successfully.")
         else:
-            logging.info(
-                f"No products associated with brand {brand_id}."
-            )
+            logging.info(f"No products associated with brand {brand_id}.")
 
         # Always delete the brand itself, after handling its products
         container.delete_item(item=brand_id, partition_key=organization_id)
@@ -1439,6 +1448,7 @@ def delete_brand_by_id(brand_id, organization_id):
         logging.error(f"Error deleting brand with id {brand_id}: {e}")
         raise
 
+
 def get_subscription_tier_by_id(tier_id):
     """
     Retrieves a subscription tier by its ID from the subscriptionTiers container.
@@ -1454,15 +1464,24 @@ def get_subscription_tier_by_id(tier_id):
 
     try:
         tier = container.read_item(item=tier_id, partition_key=tier_id)
+<<<<<<< HEAD
+=======
+        logging.info(f"Subscription tier successfully retrieved: {tier_id}")
+>>>>>>> develop
         return tier
 
     except CosmosResourceNotFoundError:
-        logging.warning(f"Subscription tier with id '{tier_id}' not found in Cosmos DB.")
+        logging.warning(
+            f"Subscription tier with id '{tier_id}' not found in Cosmos DB."
+        )
         raise NotFound(f"Subscription tier not found")
 
     except Exception as e:
-        logging.error(f"Unexpected error retrieving subscription tier with id '{tier_id}': {e}")
+        logging.error(
+            f"Unexpected error retrieving subscription tier with id '{tier_id}': {e}"
+        )
         raise
+
 
 def upsert_organization_usage(usage_data):
     """
@@ -1485,6 +1504,7 @@ def upsert_organization_usage(usage_data):
         logging.error(f"Error upserting organization usage: {e}")
         raise
 
+
 def get_organization_usage(organization_id):
     """
     Retrieves organization usage data by organization ID.
@@ -1499,35 +1519,60 @@ def get_organization_usage(organization_id):
         query = "SELECT * FROM c WHERE c.organizationId = @organizationId AND c.type = @type"
         parameters = [
             {"name": "@organizationId", "value": organization_id},
-            {"name": "@type", "value": "wallet"}
+            {"name": "@type", "value": "wallet"},
         ]
 
         items = list(
             container.query_items(
-                partition_key=organization_id,
-                query=query,
-                parameters=parameters
+                partition_key=organization_id, query=query, parameters=parameters
             )
         )
 
         if items:
-            logging.info(f"Organization usage found for organization '{organization_id}'")
+            logging.info(
+                f"Organization usage found for organization '{organization_id}'"
+            )
             return items[0]
         else:
-            logging.info(f"No organization usage found for organization '{organization_id}'")
+            logging.info(
+                f"No organization usage found for organization '{organization_id}'"
+            )
             return None
 
     except Exception as e:
-        logging.error(f"Error retrieving organization usage for organization '{organization_id}': {e}")
+        logging.error(
+            f"Error retrieving organization usage for organization '{organization_id}': {e}"
+        )
         return None
-    
+
+
+def update_organization_usage(organization_id, org_usage):
+    container = get_cosmos_container("organizationsUsage")
+
+    try:
+        container.upsert_item(org_usage)
+        logging.info(
+            f"Organization usage updated successfully for organization '{organization_id}'"
+        )
+    except Exception as e:
+        logging.error(
+            f"Error updating organization usage for organization '{organization_id}': {e}"
+        )
+        raise
+
+
 def get_subscription_tiers():
     """
     Retrieves all subscription tiers from the subscriptionTiers container.
     """
     try:
         container = get_cosmos_container("subscriptionsTiers")
-        tiers = list(container.query_items(query="SELECT * FROM c WHERE c.type = 'tier'", enable_cross_partition_query=True))
+        tiers = list(
+            container.query_items(
+                query="SELECT * FROM c WHERE c.type = 'tier'",
+                enable_cross_partition_query=True,
+            )
+        )
         return tiers
     except CosmosResourceNotFoundError:
         logging.warning(f"No subscription tiers found in Cosmos DB.")
@@ -1536,7 +1581,10 @@ def get_subscription_tiers():
         logging.error(f"Error retrieving subscription tiers: {e}")
         return []
 
-def create_new_subscription_logs(userId, organizationId, userName, organizationName, action):
+
+def create_new_subscription_logs(
+    userId, organizationId, userName, organizationName, action
+):
     """
     Logs events related to a new subscription to the audit container.
 
@@ -1561,11 +1609,22 @@ def create_new_subscription_logs(userId, organizationId, userName, organizationN
         }
 
         container.create_item(body=audit_log_entry)
-        logging.info(f"[handle_new_subscription_logs] Audit log created for organization: {organizationId}")
+        logging.info(
+            f"[handle_new_subscription_logs] Audit log created for organization: {organizationId}"
+        )
     except Exception as e:
+<<<<<<< HEAD
         logging.error(f"[handle_new_subscription_logs] Error creating audit log: {str(e)}")
         raise Exception(f"Failed to create audit log: {e}")
     
+=======
+        logging.error(
+            f"[handle_new_subscription_logs] Error creating audit log: {str(e)}"
+        )
+        raise Exception(f"Failed to create audit log: {e}")
+
+
+>>>>>>> develop
 def update_storage_used(organization_id, storage_used):
     """
     Updates the storage used for a specific organization.
@@ -1580,9 +1639,48 @@ def update_storage_used(organization_id, storage_used):
         if organizations_usage:
             organizations_usage["balance"]["currentUsedStorage"] = storage_used
             container.upsert_item(organizations_usage)
+<<<<<<< HEAD
             logging.info(f"Updated storage used for organization '{organization_id}' to {storage_used}.")
         else:
             logging.warning(f"No usage record found for organization '{organization_id}'. Cannot update storage used.")
     except Exception as e:
         logging.error(f"Error updating storage used for organization '{organization_id}': {e}")
         raise
+=======
+            logging.info(
+                f"Updated storage used for organization '{organization_id}' to {storage_used}."
+            )
+        else:
+            logging.warning(
+                f"No usage record found for organization '{organization_id}'. Cannot update storage used."
+            )
+    except Exception as e:
+        logging.error(
+            f"Error updating storage used for organization '{organization_id}': {e}"
+        )
+        raise
+
+
+def initalize_user_limits(organization_id, user_id, credits_limit):
+    try:
+        user_limits = {
+            "userId": user_id,
+            "totalAllocated": credits_limit,
+            "currentUsed": 0,
+        }
+
+        org_usage = get_organization_usage(organization_id)
+        org_user_limits: List[dict] = org_usage["policy"]["allowedUserIds"]
+        org_user_limits.append(user_limits)
+        org_usage["policy"]["allowedUserIds"] = org_user_limits
+        update_organization_usage(organization_id, org_usage)
+        logging.info(
+            f"User limits initialized for organization '{organization_id}' and user '{user_id}'."
+        )
+        return user_limits
+    except Exception as e:
+        logging.error(
+            f"Error initializing user limits for organization '{organization_id}' and user '{user_id}': {e}"
+        )
+        raise
+>>>>>>> develop

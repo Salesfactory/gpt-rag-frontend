@@ -8,7 +8,8 @@ import {
     changeSubscription,
     getProductPrices,
     getLogs,
-    getSubscriptionTierDetails
+    getSubscriptionTierDetails,
+    createCheckoutSession
 } from "../../api";
 import { IconX } from "@tabler/icons-react";
 import { ChartPerson48Regular } from "@fluentui/react-icons";
@@ -96,7 +97,8 @@ const SubscriptionManagement: React.FC = () => {
         async function fetchPrices() {
             try {
                 const data = await getProductPrices({ user });
-                setPrices(data.prices);
+                const sortedPrices = data.prices.sort((a: any, b: any) => a.unit_amount - b.unit_amount);
+                setPrices(sortedPrices);
             } catch (err) {
                 console.error("Failed to fetch product prices:", err);
                 setError("Unable to fetch product prices. Please try again later.");
@@ -175,7 +177,7 @@ const SubscriptionManagement: React.FC = () => {
         setIsLoading(true);
         try {
             await changeSubscription({
-                subscriptionId: organization?.subscriptionId ?? "",
+                subscriptionId: organizationUsage?.subscriptionId || "",
                 newPlanId: priceId,
                 user,
                 organizationId: organizationId
@@ -191,6 +193,25 @@ const SubscriptionManagement: React.FC = () => {
                 setIsSubscriptionChangeModal(false);
             }, 5000);
             window.location.reload();
+        }
+    };
+
+    const handleFreeSubscriptionChange = async (priceId: string) => {
+        try {
+            const { url } = await createCheckoutSession({
+                userId: user?.id ?? "",
+                userName: user?.name ?? "",
+                priceId: priceId,
+                successUrl: window.location.origin + "#/success-payment",
+                cancelUrl: window.location.origin + "/",
+                organizationName: organization?.name ?? "",
+                organizationId: organizationId,
+                subscriptionTierId: priceId
+            });
+            window.location.href = url;
+        } catch (error) {
+            console.error("Error trying to change the subscription: ", error);
+            toast("Failed to create the customer portal link. Please try again.", { type: "warning" });
         }
     };
 
@@ -473,7 +494,7 @@ const SubscriptionManagement: React.FC = () => {
                                                 Cancel
                                             </button>
                                             <button
-                                                onClick={() => handleChangeSubscription(selectedSubscriptionID)}
+                                                onClick={() => organizationUsage?.policy.tierId === "tier_free" ? handleFreeSubscriptionChange(selectedSubscriptionID) : handleChangeSubscription(selectedSubscriptionID)}
                                                 className={`${styles.confirmButton} ${styles.subscribeButton}`}
                                                 disabled={isLoading}
                                                 aria-label={isLoading ? "Loading..." : "Confirm Subscription"}

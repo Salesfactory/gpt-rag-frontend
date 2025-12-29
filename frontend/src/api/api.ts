@@ -1698,7 +1698,7 @@ export async function getBlobSasUrl(blobName: string, containerName: string = "d
             'Content-Type': 'application/json',
             'X-MS-CLIENT-PRINCIPAL-ID': user?.id,
         },
-        body: JSON.stringify({ blob_name: blobName, container_name: containerName })
+        body: JSON.stringify({ blob_name: blobName, container_name: containerName, client_principal_id: user?.id })
     });
     const data = await response.json();
     if (!response.ok) {

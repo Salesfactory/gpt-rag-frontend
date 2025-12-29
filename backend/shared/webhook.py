@@ -1,5 +1,5 @@
 import logging
-from utils import create_organization_usage, get_organization_usage_by_subscription_id, get_subscription_tier_by_id, update_organization_usage
+from utils import create_organization_usage, get_organization_usage_by_subscription_id, get_subscription_tier_by_id, update_organization_usage, get_organization_usage_by_id
 from shared.cosmo_db import create_new_subscription_logs, get_organization_data
 def handle_checkout_session_completed(event):
     try:
@@ -49,8 +49,8 @@ def handle_subscription_updated(event):
         organization_id = metadata.get("organization_id", "Unknown")
         
         if modification_type == "subscription_tier_change":
-            organizationUsage = get_organization_usage_by_subscription_id(
-                subscriptionId)
+            logging.info(f"Subscription tier change: {subscriptionId}")
+            organizationUsage = get_organization_usage_by_id(organization_id)
             if not organizationUsage:
                 logging.error(
                     f"No organization usage found for subscription: {subscriptionId}")
@@ -77,6 +77,7 @@ def handle_subscription_updated(event):
 
         # The subscription is an automatic renewal
         if modification_type is None:
+            logging.info(f"Subscription is an automatic renewal: {subscriptionId}")
             organizationUsage = get_organization_usage_by_subscription_id(
                 subscriptionId)
             if not organizationUsage:
@@ -92,6 +93,8 @@ def handle_subscription_updated(event):
 
             totalAllocated = tier.get("quotas", {}).get("totalCreditsAllocated", 0)
             organizationUsage["balance"]["currentUsed"] = 0
+            organizationUsage["balance"]["currentPagesUsed"] = 0
+            organizationUsage["balance"]["spreadsheetsUsed"] = 0
             organizationUsage["balance"]["totalAllocated"] += totalAllocated
             
             # Reset usage for each allowed user and distribute credits evenly

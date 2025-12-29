@@ -1473,6 +1473,7 @@ def generate_sas_url_endpoint(*, context):
         
         blob_name = data.get("blob_name")
         container_name = data.get("container_name", "documents")
+        client_principal_id = data.get("client_principal_id")
         
         if not blob_name:
             return jsonify({"error": "blob_name is required"}), 400
@@ -1510,7 +1511,6 @@ def generate_sas_url_endpoint(*, context):
                 
                 file_org_id = path_parts[1]
                 
-                client_principal_id = context.get("client_principal_id")
                 if not client_principal_id:
                     return jsonify({"error": "User not authenticated"}), 401
                 
@@ -1711,8 +1711,7 @@ def download_excel_citation(*, context):
 
 
 @app.route("/preview/spreadsheet", methods=["GET"])
-@auth.login_required
-def preview_spreadsheet(*, context):
+def preview_spreadsheet():
     try:
         file_path = request.args.get("file_path")
         if not file_path:
@@ -2123,25 +2122,31 @@ def change_subscription(*, context, subscription_id):
                 "modified_by_name": request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
                 "modification_type": "subscription_tier_change",
             },
-            proration_behavior="none",  # No proration
-            billing_cycle_anchor="now",  # Change the billing cycle so that it is charged at that moment
-            cancel_at_period_end=False,  # Do not cancel the subscription
+            proration_behavior="none",
+            billing_cycle_anchor="now",
+            cancel_at_period_end=False,
         )
 
         result = {
             "message": "Subscription change successfully",
             "subscription": updated_subscription,
         }
+        
+        logging.info(f"Subscription changed successfully: {new_plan_id} for organization: {organization_id}")
 
         return jsonify(result), 200
 
     except stripe.error.InvalidRequestError as e:
+        logging.error(f"Invalid request: {str(e)}")
         return jsonify({"error": f"Invalid request: {str(e)}"}), 400
     except stripe.error.AuthenticationError:
+        logging.error(f"Authentication with Stripe API failed")
         return jsonify({"error": "Authentication with Stripe API failed"}), 403
     except stripe.error.PermissionError:
+        logging.error(f"Permission error when accessing the Stripe API")
         return jsonify({"error": "Permission error when accessing the Stripe API"}), 403
     except stripe.error.RateLimitError:
+        logging.error(f"Too many requests to Stripe API, please try again later")
         return (
             jsonify(
                 {"error": "Too many requests to Stripe API, please try again later"}
@@ -2149,9 +2154,11 @@ def change_subscription(*, context, subscription_id):
             429,
         )
     except stripe.error.StripeError as e:
+        logging.error(f"Stripe API error: {str(e)}")
         return jsonify({"error": f"Stripe API error: {str(e)}"}), 500
 
     except Exception as e:
+        logging.error(f"Internal server error: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 
