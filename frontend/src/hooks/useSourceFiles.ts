@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSourceFileFromBlob, deleteSourceFileFromBlob, getBlobSasUrl, getStorageUsageByOrganization} from '../api/api';
 import { toast } from 'react-toastify';
 import { BlobItem, FolderItem } from '../types';
-import { useAppContext } from '../providers/AppProviders';
 
 export const useSourceFiles = (organizationId: string, category: string = 'all', user?: any) => {
     const [files, setFiles] = useState<BlobItem[]>([]);
