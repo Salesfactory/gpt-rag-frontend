@@ -1464,10 +1464,7 @@ def get_subscription_tier_by_id(tier_id):
 
     try:
         tier = container.read_item(item=tier_id, partition_key=tier_id)
-<<<<<<< HEAD
-=======
         logging.info(f"Subscription tier successfully retrieved: {tier_id}")
->>>>>>> develop
         return tier
 
     except CosmosResourceNotFoundError:
@@ -1613,18 +1610,12 @@ def create_new_subscription_logs(
             f"[handle_new_subscription_logs] Audit log created for organization: {organizationId}"
         )
     except Exception as e:
-<<<<<<< HEAD
-        logging.error(f"[handle_new_subscription_logs] Error creating audit log: {str(e)}")
-        raise Exception(f"Failed to create audit log: {e}")
-    
-=======
         logging.error(
             f"[handle_new_subscription_logs] Error creating audit log: {str(e)}"
         )
         raise Exception(f"Failed to create audit log: {e}")
 
 
->>>>>>> develop
 def update_storage_used(organization_id, storage_used):
     """
     Updates the storage used for a specific organization.
@@ -1639,14 +1630,6 @@ def update_storage_used(organization_id, storage_used):
         if organizations_usage:
             organizations_usage["balance"]["currentUsedStorage"] = storage_used
             container.upsert_item(organizations_usage)
-<<<<<<< HEAD
-            logging.info(f"Updated storage used for organization '{organization_id}' to {storage_used}.")
-        else:
-            logging.warning(f"No usage record found for organization '{organization_id}'. Cannot update storage used.")
-    except Exception as e:
-        logging.error(f"Error updating storage used for organization '{organization_id}': {e}")
-        raise
-=======
             logging.info(
                 f"Updated storage used for organization '{organization_id}' to {storage_used}."
             )
@@ -1683,4 +1666,3 @@ def initalize_user_limits(organization_id, user_id, credits_limit):
             f"Error initializing user limits for organization '{organization_id}' and user '{user_id}': {e}"
         )
         raise
->>>>>>> develop
