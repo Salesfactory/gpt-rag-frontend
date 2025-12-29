@@ -14,6 +14,7 @@ from shared.cosmo_db import (
     get_user_organizations,
     get_organization_usage,
     get_subscription_tier_by_id,
+    initalize_user_limits,
 )
 
 ORG_FILES_PREFIX = "organization_files"
@@ -235,8 +236,13 @@ def require_user_conversation_limits():
                     (user for user in allowed_users if user["userId"] == user_id), None
                 )
                 if not user_limits:
-                    return create_error_response(
-                        "User is not authorized for this organization", 403
+                    user_limits = initalize_user_limits(
+                        organization_id,
+                        user_id,
+                        (
+                            org_limits["quotas"]["totalCreditsAllocated"]
+                            / org_limits["policy"]["maxSeats"]
+                        ),
                     )
                 if user_limits["currentUsed"] >= user_limits["totalAllocated"]:
                     next_period_start = org_usage["currentPeriodEnds"]
@@ -414,18 +420,18 @@ def require_organization_storage_limits():
                     return create_error_response(
                         "Organization has exceeded its storage capacity", 403
                     )
-                
                 if storage_capacity <= 0:
                     return create_error_response(
                         "Organization has no storage capacity allocated", 403
                     )
-                
                 free_storage_gib = storage_capacity - used_storage_gib
                 percentage_used = (used_storage_gib / storage_capacity) * 100
 
                 kwargs["upload_limits"] = {
                     "storageCapacity": storage_capacity,
-                    "is_allowed_to_upload_files": org_limits["policy"]["allowFileUploads"],
+                    "is_allowed_to_upload_files": org_limits["policy"][
+                        "allowFileUploads"
+                    ],
                     "usedStorage": used_storage_gib,
                     "freeStorage": free_storage_gib,
                     "percentageUsed": percentage_used,
