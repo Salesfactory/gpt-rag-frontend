@@ -10,12 +10,14 @@ const FileListHeader: React.FC<{
     onRefresh: () => void;
     isLoading: boolean;
     getStorageUsage?: () => Promise<StorageData | undefined>;
+    isStorageLimitExceeded: boolean;
 }> = ({
     setSearchQuery,
     openUploadDialog,
     onRefresh,
     isLoading,
-    getStorageUsage
+    getStorageUsage,
+    isStorageLimitExceeded
 }) => {
     return (
         <div className={styles.headerContainer}>
@@ -85,11 +87,14 @@ const FileListHeader: React.FC<{
                     </IconButton>
                 </div>
             </div>
-            <IconButton title="Upload New Files" ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
+            <IconButton disabled={isStorageLimitExceeded} title={isStorageLimitExceeded ? "Storage limit exceeded" : "Upload New Files"} ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
                 <span className={styles.addIcon}>
                     <Plus />
                 </span>
-                <span className={styles.buttonText}>Upload File</span>
+                <div className={styles.tooltipWrapper}>
+                    <span className={styles.buttonText}>Upload File</span>
+                    <span className={styles.tooltipText}>{isStorageLimitExceeded ? "Storage limit exceeded" : "Upload New Files"}</span>
+                </div>
             </IconButton>
         </div>
     );

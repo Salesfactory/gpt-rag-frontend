@@ -29,7 +29,8 @@ const UploadResources: React.FC = () => {
         navigateToRoot,
         sortOrder,
         toggleSortOrder,
-        getStorageUsage
+        getStorageUsage,
+        isStorageLimitExceeded
     } = useSourceFiles(user?.organizationId || "", selectedCategory, user)
     
     // Memoize onUploadComplete to prevent infinite loop
@@ -51,6 +52,7 @@ const UploadResources: React.FC = () => {
                 onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)}
                 isLoading={isLoading}
                 getStorageUsage={getStorageUsage}
+                isStorageLimitExceeded={isStorageLimitExceeded}
             />
             <LazyResourceList
                 filteredFiles={filteredFiles}

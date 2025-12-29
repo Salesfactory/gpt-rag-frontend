@@ -11,6 +11,7 @@ export const useSourceFiles = (organizationId: string, category: string = 'all',
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+    const [isStorageLimitExceeded, setIsStorageLimitExceeded] = useState<boolean>(false);
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const fetchFiles = useCallback(async (folderPath: string = currentPath, fileCategory: string = category, order: "newest" | "oldest" = sortOrder) => {
@@ -118,6 +119,7 @@ export const useSourceFiles = (organizationId: string, category: string = 'all',
     const getStorageUsage = async () => {
         try {
             const storageUsage = await getStorageUsageByOrganization(organizationId, user);
+            setIsStorageLimitExceeded(storageUsage.data.isStorageLimitExceeded);
             return storageUsage.data;
         } catch (error) {
             console.error("Error fetching storage usage:", error);
@@ -142,6 +144,7 @@ export const useSourceFiles = (organizationId: string, category: string = 'all',
         deleteFile,
         sortOrder,
         toggleSortOrder,
+        isStorageLimitExceeded,
         getStorageUsage    
     };
 };

@@ -52,7 +52,7 @@ const CloudStorageIndicator = ({ isLoading, getStorageUsage }: CloudStorageIndic
         }
 
         fetchStorageData(organization?.id || "", user);
-    }, [isLoading, organization?.id, user]);
+    }, [getStorageUsage, isLoading, organization?.id, user]);
 
     const totalBytes = (storageData?.storageCapacity || 0) * BYTES_PER_GB; //GB
     const usedBytes = ((storageData?.usedStorage || 0) * BYTES_PER_GB); // GB -> Bytes

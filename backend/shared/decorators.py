@@ -336,6 +336,7 @@ def check_organization_upload_limits():
                     "is_allowed_to_upload_files": org_limits["policy"][
                         "allowFileUploads"
                     ],
+                    "isStorageLimitExceeded": storage_capacity <= used_storage_gib,
                     "usedStorage": used_storage_gib,
                     "freeStorage": free_storage_gib,
                     "percentageUsed": percentage_used,
@@ -426,6 +427,7 @@ def require_organization_storage_limits():
                 kwargs["upload_limits"] = {
                     "storageCapacity": storage_capacity,
                     "is_allowed_to_upload_files": org_limits["policy"]["allowFileUploads"],
+                    "isStorageLimitExceeded": storage_capacity <= used_storage_gib,
                     "usedStorage": used_storage_gib,
                     "freeStorage": free_storage_gib,
                     "percentageUsed": percentage_used,
