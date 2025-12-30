@@ -18,6 +18,12 @@ def secure_response(response: Response) -> Response:
                   or the original response (for all other cases)
     """
     is_api_request = request.path.startswith("/api/")
+
+    is_invitation_request = "/api/invitations/" in request.path
+
+    if is_invitation_request:
+        return response
+
     content_type = getattr(response, "content_type", None)
     is_login_redirect = content_type == "text/html; charset=utf-8"
 
