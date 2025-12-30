@@ -182,7 +182,7 @@ def test_require_user_limits_user_not_authorized(app, mock_deps):
 
     @require_user_conversation_limits()
     def view(**kwargs):
-        return "success"
+        return kwargs["user_limits"]
 
     with app.test_request_context(headers={"X-MS-CLIENT-PRINCIPAL-ID": "user1"}):
         resp = view()

@@ -2,8 +2,8 @@ import os
 import logging
 from flask import current_app, request, jsonify
 from functools import wraps
+from shared.clients import get_azure_key_vault_secret
 from utils import (
-    get_azure_key_vault_secret,
     get_organization_id_from_request,
     get_organization_id_and_user_id_from_request,
     create_error_response,
