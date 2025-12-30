@@ -2,12 +2,12 @@ import pytest
 import json
 from flask import Flask
 
-# Import your blueprint
-from routes.voice_customer import bp as voice_costumer_bp
-
 
 @pytest.fixture
 def client():
+    # Import INSIDE fixture so conftest.py mock is applied first
+    from routes.voice_customer import bp as voice_costumer_bp
+
     app = Flask(__name__)
     app.register_blueprint(voice_costumer_bp)
     app.testing = True
@@ -79,9 +79,11 @@ def test_create_product_missing_fields(client):
     resp = client.post("/api/voice-customer/products",
                        data=json.dumps(payload),
                        content_type="application/json")
-    assert resp.status_code == 400
+    assert resp.status_code == 422
     data = resp.get_json()
-    assert "Missing required fields" in data["message"]
+    # Pydantic validation errors are returned as a list
+    assert "error" in data
+    assert isinstance(data["error"]["message"], list)
 
 def test_create_product_no_json(client):
     resp = client.post("/api/voice-customer/products")
@@ -126,9 +128,11 @@ def test_update_product_missing_fields(client):
     resp = client.patch("/api/voice-customer/products/prod123",
                         data=json.dumps(payload),
                         content_type="application/json")
-    assert resp.status_code == 400
+    assert resp.status_code == 422
     data = resp.get_json()
-    assert "Missing required fields" in data["message"]
+    # Pydantic validation errors are returned as a list
+    assert "error" in data
+    assert isinstance(data["error"]["message"], list)
 
 def test_update_product_no_json(client):
     resp = client.patch("/api/voice-customer/products/prod123")
@@ -150,7 +154,7 @@ def test_delete_product_missing_org(client):
                          content_type="application/json")
     assert resp.status_code == 400
     data = resp.get_json()
-    assert "Organization ID is required" in data["message"]
+    assert "Organization ID is required" in data["error"]["message"]
 
 def test_delete_product_missing_product_id(client):
     # Direct call without product_id in URL not possible due to route
@@ -223,9 +227,11 @@ def test_create_brand_missing_fields(client):
     resp = client.post("/api/voice-customer/brands",
                        data=json.dumps(payload),
                        content_type="application/json")
-    assert resp.status_code == 400
+    assert resp.status_code == 422
     data = resp.get_json()
-    assert "Missing required fields" in data["message"]
+    # Pydantic validation errors are returned as a list
+    assert "error" in data
+    assert isinstance(data["error"]["message"], list)
 
 def test_create_brand_no_json(client):
     resp = client.post("/api/voice-customer/brands")
@@ -259,9 +265,11 @@ def test_update_brand_missing_fields(client):
     resp = client.patch("/api/voice-customer/brands/brand123",
                         data=json.dumps(payload),
                         content_type="application/json")
-    assert resp.status_code == 400
+    assert resp.status_code == 422
     data = resp.get_json()
-    assert "Missing required fields" in data["message"]
+    # Pydantic validation errors are returned as a list
+    assert "error" in data
+    assert isinstance(data["error"]["message"], list)
 
 def test_update_brand_no_json(client):
     resp = client.patch("/api/voice-customer/brands/brand123")
@@ -283,7 +291,7 @@ def test_delete_brand_missing_org(client):
                          content_type="application/json")
     assert resp.status_code == 400
     data = resp.get_json()
-    assert "Organization ID is required" in data["message"]
+    assert "Organization ID is required" in data["error"]["message"]
 
 def test_delete_brand_missing_id(client):
     # Cannot hit DELETE without brand_id because route requires it.

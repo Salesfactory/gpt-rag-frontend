@@ -4,7 +4,6 @@
 from __future__ import annotations
 import hashlib
 import re
-import uuid
 from typing import Mapping, Optional
 
 
@@ -33,7 +32,7 @@ def weekly_idem_key(
     extra: Optional[Mapping[str, str]] = None,
     digest_size: int = 16,
 ) -> str:
-    parts = [organization_id, canonical_report_name(report_name), week_start_iso, uuid.uuid4()]
+    parts = [organization_id, canonical_report_name(report_name), week_start_iso]
     if extra:
         for k in sorted(extra):
             parts.append(f"{k}={extra[k]}")

@@ -1,6 +1,24 @@
 # tests/conftest.py (continued)
 import sys
+import os
 import pytest
+
+# Set environment variables BEFORE any modules are imported
+os.environ["AZURE_DB_ID"] = "test_db_id"
+os.environ["AZURE_DB_NAME"] = "test_db_name"
+
+# Mock the auth_required decorator at MODULE LEVEL before any test files import route modules
+# This ensures the decorator is mocked BEFORE any blueprints are loaded
+import routes.decorators.auth_decorator as _auth_module
+
+# Save the original decorator
+_original_auth_required = _auth_module.auth_required
+
+# Replace with a no-op decorator
+def _mock_auth_required(f):
+    return f
+
+_auth_module.auth_required = _mock_auth_required
 
 
 class FakeContainer:
