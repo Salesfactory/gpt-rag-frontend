@@ -65,10 +65,11 @@ def fake_azure(monkeypatch):
             self.closed = True
 
     class FakeQueueClient:
-        def __init__(self, account_url, queue_name, credential):
+        def __init__(self, account_url, queue_name, credential, logging_enable=True):
             self.account_url = account_url
             self.queue_name = queue_name
             self.credential = credential
+            self.logging_enable = logging_enable
             self.closed = False
             self.created = False
             self.sent = []

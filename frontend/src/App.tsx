@@ -54,33 +54,19 @@ export default function App() {
             <Route path="/logout" element={<Logout />} />
 
             {/* Protected Routes for Authenticated Users (Regular and Admin) */}
-            <Route
-                element={
-                    <ProtectedRoute
-                        allowedRoles={["user", "admin", "platformAdmin"]}
-                        allowedTiers={allowedTiers}
-                    />
-                }
-            >
+            <Route element={<ProtectedRoute allowedRoles={["user", "admin", "platformAdmin"]} allowedTiers={allowedTiers} />}>
                 <Route element={<Layout />}>
                     <Route path="/" element={<Chat />} />
                     <Route path="/success-payment" element={<SuccessPayment />} />
                     <Route path="/help-center" element={<HelpCenter />} />
-                    <Route path="/vizvault" element={<Gallery />} />
+                    <Route path="/vault" element={<Gallery />} />
                     <Route path="/notification-settings" element={<Notifications />} />
                     <Route path="/access-denied" element={<AccessDenied />} />
                     <Route path="/subscription-error" element={<SubscriptionError />} />
                 </Route>
             </Route>
             {/* Protected Routes for Admin Only */}
-            <Route
-                element={
-                    <ProtectedRoute
-                        allowedRoles={["admin", "platformAdmin"]}
-                        allowedTiers={allowedTiers}
-                    />
-                }
-            >
+            <Route element={<ProtectedRoute allowedRoles={["admin", "platformAdmin"]} allowedTiers={allowedTiers} />}>
                 <Route element={<Layout />}>
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/organization" element={<Organization />} />
@@ -91,14 +77,7 @@ export default function App() {
             </Route>
 
             {/* Protected Routes for Platform Admin Only */}
-            <Route
-                element={
-                    <ProtectedRoute
-                        allowedRoles={["platformAdmin"]}
-                        allowedTiers={allowedTiers}
-                    />
-                }
-            >
+            <Route element={<ProtectedRoute allowedRoles={["platformAdmin"]} allowedTiers={allowedTiers} />}>
                 <Route element={<Layout />}>
                     <Route path="/upload-consumer-pulse" element={<UploadConsumerPulse />} />
                     <Route path="/chat-usage" element={<ChatUsage />} />
@@ -123,14 +102,7 @@ export default function App() {
             </Route>
 
             {/* Protected Routes for Premium Features */}
-            <Route
-                element={
-                    <ProtectedRoute
-                        allowedRoles={["admin", "user", "platformAdmin"]}
-                        allowedTiers={allowedTiers}
-                    />
-                }
-            >
+            <Route element={<ProtectedRoute allowedRoles={["admin", "user", "platformAdmin"]} allowedTiers={allowedTiers} />}>
                 <Route element={<Layout />}>
                     <Route path="/upload-resources" element={<UploadResources />} />
                     <Route path="/request-studies" element={<RequestStudies />} />
@@ -138,25 +110,11 @@ export default function App() {
             </Route>
 
             {/* Protected Routes for Reports */}
-            <Route
-                element={
-                    <ProtectedRoute
-                        allowedRoles={["admin", "platformAdmin"]}
-                        allowedTiers={allowedTiers}
-                    />
-                }
-            >
+            <Route element={<ProtectedRoute allowedRoles={["admin", "platformAdmin"]} allowedTiers={allowedTiers} />}>
                 <Route element={<Layout />}></Route>
             </Route>
 
-            <Route
-                element={
-                    <ProtectedRoute
-                        allowedRoles={["admin", "platformAdmin"]}
-                        allowedTiers={allowedTiers}
-                    />
-                }
-            >
+            <Route element={<ProtectedRoute allowedRoles={["admin", "platformAdmin"]} allowedTiers={allowedTiers} />}>
                 <Route element={<Layout />}></Route>
             </Route>
 

@@ -14,6 +14,8 @@ import StartNewChatButton from "../../components/StartNewChatButton/StartNewChat
 import AttachButton from "../../components/AttachButton/AttachButton";
 import DataAnalystButton from "../../components/DataAnalystButton/DataAnalystButton";
 import { CHAT_ATTACHMENT_ALLOWED_TYPES, CHAT_MAX_ATTACHED_FILES } from "../../constants";
+import { get403ErrorMessages, getPlaceholderText } from "../../utils/errorMessages";
+import { ERROR_CODE_UNAUTHORIZED_ORG, ERROR_CODE_USER_LIMIT_EXCEEDED, ERROR_CODE_ORG_LIMIT_EXCEEDED, BackendErrorResponse } from "../../api/models";
 
 import "react-toastify/dist/ReactToastify.css";
 import FreddaidLogo from "../../img/FreddaidLogo.png";
@@ -82,8 +84,10 @@ const Chat = () => {
     const [spreadsheetDownloadUrl, setSpreadsheetDownloadUrl] = useState<string | undefined>(undefined);
     const [spreadsheetFileName, setSpreadsheetFileName] = useState<string | undefined>(undefined);
     const [activeAnalysisPanelTab, setActiveAnalysisPanelTab] = useState<AnalysisPanelTabs | undefined>(undefined);
-    const [limitExceeded, setLimitExceeded] = useState<boolean>(false);
-    const [nextPeriodStart, setNextPeriodStart] = useState<number | null>(null);
+    const [error403Data, setError403Data] = useState<{
+        errorCode?: string;
+        nextPeriodStart?: number;
+    } | null>(null);
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
 
@@ -182,20 +186,31 @@ const Chat = () => {
             });
 
             if (response.status == 403) {
-                setLimitExceeded(true);
-                const data = await response.json();
-                const nextPeriodStart = (data.error.nextPeriodStart - Date.now()) / 1000;
-                console.log("nextPeriodStart", nextPeriodStart);
-                setNextPeriodStart(Math.ceil(nextPeriodStart / 86400));
-                const language = navigator.language;
-                if (language.startsWith("pt")) {
-                    setPlaceholderText("Desculpe, você excedeu o limite de conversas para este período. Por favor, tente novamente mais tarde.");
+                try {
+                    const data: BackendErrorResponse = await response.json();
+                    const errorCode = data.error?.code;
+
+                    // Calculate days until reset only for user limit errors
+                    let daysUntilReset: number | undefined = undefined;
+                    if (errorCode === ERROR_CODE_USER_LIMIT_EXCEEDED && data.error?.nextPeriodStart) {
+                        const nextPeriodStartSeconds = (data.error.nextPeriodStart - Date.now()) / 1000;
+                        daysUntilReset = Math.max(1, Math.ceil(nextPeriodStartSeconds / 86400)); // Minimum 1 day
+                    }
+
+                    setError403Data({
+                        errorCode,
+                        nextPeriodStart: daysUntilReset
+                    });
+
+                    // Update placeholder text
+                    setPlaceholderText(getPlaceholderText(errorCode));
+                } catch (parseError) {
+                    console.error("Failed to parse 403 error response:", parseError);
+                    // Fallback to generic 403 error
+                    setError403Data({ errorCode: undefined });
+                    setPlaceholderText(getPlaceholderText(undefined));
                 }
-                if (language.startsWith("es")) {
-                    setPlaceholderText("Lo siento, ha excedido el límite de conversaciones para este período. Por favor, inténtelo de nuevo más tarde.");
-                } else {
-                    setPlaceholderText("Sorry, you have exceeded the conversation limit for this period. Please try again later.");
-                }
+                return; // Exit early, don't process stream
             }
 
             if (!response.body) {
@@ -216,7 +231,7 @@ const Chat = () => {
                 }
 
                 if (evt.type === "json") {
-                    setLimitExceeded(false);
+                    setError403Data(null); // Clear any previous 403 errors
                     // ---- Handle different types of JSON messages from backend ----
                     if (isDataAnalystContentMessage(evt.payload)) {
                         // Data analyst content - treat as thinking (goes into collapsible section)
@@ -295,7 +310,7 @@ const Chat = () => {
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
             setAnswers([]);
-            setLimitExceeded(false)
+            setError403Data(null)
             setDataConversation([]);
             setChatIsCleaned(true);
         } else {
@@ -315,7 +330,7 @@ const Chat = () => {
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
             setAnswers([]);
-            setLimitExceeded(false)
+            setError403Data(null)
             setDataConversation([]);
             setChatId("");
             setUserId("");
@@ -867,7 +882,7 @@ const Chat = () => {
                                                         </div>
                                                     );
                                                 })}
-                                            {error && !limitExceeded ? (
+                                            {error && !error403Data ? (
                                                 <>
                                                     <UserChatMessage message={lastQuestionRef.current} />
                                                     <div className={styles.chatMessageGptMinWidth} role="alert" aria-live="assertive">
@@ -881,19 +896,17 @@ const Chat = () => {
                                                     </div>
                                                 </>
                                             ) : null}
-                                            {
-                                                limitExceeded ? (
-                                                    <div className={styles.limitExceeded} role="alert" aria-live="assertive">
-                                                        <div className={styles.errorIcon}>
-                                                            <Warning28Regular color="#E29D6B" />
-                                                        </div>
-                                                        <div>
-                                                            <h1>Monthly Credit Limit Reached</h1>
-                                                            <p>You’ve reached your monthly credit limit. You’ll be able to ask more questions in {nextPeriodStart} days when your billing cycle resets. Until then, feel free to review past insights—we’ll be ready when you are.</p>
-                                                        </div>
+                                            {error403Data ? (
+                                                <div className={styles.limitExceeded} role="alert" aria-live="assertive">
+                                                    <div className={styles.errorIcon}>
+                                                        <Warning28Regular color="#E29D6B" />
                                                     </div>
-                                                ) : null
-                                            }
+                                                    <div>
+                                                        <h1>{get403ErrorMessages(error403Data.errorCode, error403Data.nextPeriodStart).title}</h1>
+                                                        <p>{get403ErrorMessages(error403Data.errorCode, error403Data.nextPeriodStart).message}</p>
+                                                    </div>
+                                                </div>
+                                            ) : null}
                                             {lastQuestionRef.current !== "" && (
                                                 <>
                                                     <UserChatMessage message={lastQuestionRef.current} />
@@ -970,7 +983,7 @@ const Chat = () => {
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
-                                            disabled={isLoading || isUploadingDocs || limitExceeded}
+                                            disabled={isLoading || isUploadingDocs || !!error403Data}
                                             onSend={question => {
                                                 (async () => {
                                                     const blobNames = attachedDocs.map(d => d.blobName);

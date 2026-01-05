@@ -165,3 +165,18 @@ export interface BackendReportJobDoc {
   updated_at?: string | null;
   params?: { target?: string };
 }
+
+// Error codes for 403 responses
+export const ERROR_CODE_UNAUTHORIZED_ORG = "FORBIDDEN_ORGANIZATION_ACCESS";
+export const ERROR_CODE_USER_LIMIT_EXCEEDED = "USER_QUOTA_EXCEEDED";
+export const ERROR_CODE_ORG_LIMIT_EXCEEDED = "ORGANIZATION_QUOTA_EXCEEDED";
+
+// Error response structure from backend
+export interface BackendErrorResponse {
+    error: {
+        message: string;
+        status: number;
+        code?: string;
+        nextPeriodStart?: number; // Only for USER_QUOTA_EXCEEDED
+    };
+}

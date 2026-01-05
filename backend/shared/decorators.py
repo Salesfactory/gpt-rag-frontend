@@ -2,18 +2,22 @@ import os
 import logging
 from flask import current_app, request, jsonify
 from functools import wraps
+from shared.clients import get_azure_key_vault_secret
 from utils import (
-    get_azure_key_vault_secret,
     get_organization_id_from_request,
     get_organization_id_and_user_id_from_request,
     create_error_response,
     create_error_response_with_body,
+    ERROR_CODE_UNAUTHORIZED_ORG,
+    ERROR_CODE_USER_LIMIT_EXCEEDED,
+    ERROR_CODE_ORG_LIMIT_EXCEEDED,
     get_organization_tier_and_subscription,
 )
 from shared.cosmo_db import (
     get_user_organizations,
     get_organization_usage,
     get_subscription_tier_by_id,
+    initalize_user_limits,
 )
 
 ORG_FILES_PREFIX = "organization_files"
@@ -96,7 +100,9 @@ def check_organization_limits():
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
                     return create_error_response(
-                        "Unauthorized access to organization", 403
+                        "Unauthorized access to organization",
+                        403,
+                        ERROR_CODE_UNAUTHORIZED_ORG
                     )
 
                 org_usage = get_organization_usage(organization_id)
@@ -164,7 +170,9 @@ def require_conversation_limits():
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
                     return create_error_response(
-                        "Unauthorized access to organization", 403
+                        "Unauthorized access to organization",
+                        403,
+                        ERROR_CODE_UNAUTHORIZED_ORG
                     )
 
                 org_usage = get_organization_usage(organization_id)
@@ -174,7 +182,9 @@ def require_conversation_limits():
                     > org_limits["quotas"]["totalCreditsAllocated"]
                 ):
                     return create_error_response(
-                        "Organization has exceeded its conversation limits", 403
+                        "Organization has exceeded its conversation limits",
+                        403,
+                        ERROR_CODE_ORG_LIMIT_EXCEEDED
                     )
 
                 return f(*args, **kwargs)
@@ -224,7 +234,9 @@ def require_user_conversation_limits():
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
                     return create_error_response(
-                        "Unauthorized access to organization", 403
+                        "Unauthorized access to organization",
+                        403,
+                        ERROR_CODE_UNAUTHORIZED_ORG
                     )
 
                 org_usage = get_organization_usage(organization_id)
@@ -235,8 +247,13 @@ def require_user_conversation_limits():
                     (user for user in allowed_users if user["userId"] == user_id), None
                 )
                 if not user_limits:
-                    return create_error_response(
-                        "User is not authorized for this organization", 403
+                    user_limits = initalize_user_limits(
+                        organization_id,
+                        user_id,
+                        (
+                            org_limits["quotas"]["totalCreditsAllocated"]
+                            / org_limits["policy"]["maxSeats"]
+                        ),
                     )
                 if user_limits["currentUsed"] >= user_limits["totalAllocated"]:
                     next_period_start = org_usage["currentPeriodEnds"]
@@ -244,13 +261,16 @@ def require_user_conversation_limits():
                         "User has exceeded their conversation limits",
                         403,
                         {"nextPeriodStart": next_period_start},
+                        ERROR_CODE_USER_LIMIT_EXCEEDED
                     )
                 if (
                     org_usage["balance"]["currentUsed"]
                     >= org_limits["quotas"]["totalCreditsAllocated"]
                 ):
                     return create_error_response(
-                        "Organization has exceeded its conversation limits", 403
+                        "Organization has exceeded its conversation limits",
+                        403,
+                        ERROR_CODE_ORG_LIMIT_EXCEEDED
                     )
 
                 kwargs["user_limits"] = {
@@ -414,18 +434,18 @@ def require_organization_storage_limits():
                     return create_error_response(
                         "Organization has exceeded its storage capacity", 403
                     )
-                
                 if storage_capacity <= 0:
                     return create_error_response(
                         "Organization has no storage capacity allocated", 403
                     )
-                
                 free_storage_gib = storage_capacity - used_storage_gib
                 percentage_used = (used_storage_gib / storage_capacity) * 100
 
                 kwargs["upload_limits"] = {
                     "storageCapacity": storage_capacity,
-                    "is_allowed_to_upload_files": org_limits["policy"]["allowFileUploads"],
+                    "is_allowed_to_upload_files": org_limits["policy"][
+                        "allowFileUploads"
+                    ],
                     "usedStorage": used_storage_gib,
                     "freeStorage": free_storage_gib,
                     "percentageUsed": percentage_used,

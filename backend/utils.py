@@ -59,14 +59,27 @@ AZURE_DB_URI = f"https://{AZURE_DB_ID}.documents.azure.com:443/"
 # Response Formatting: Type hint for JSON responses
 JsonResponse = Tuple[Dict[str, Any], int]
 
+# Error codes for 403 responses
+ERROR_CODE_UNAUTHORIZED_ORG = "FORBIDDEN_ORGANIZATION_ACCESS"
+ERROR_CODE_USER_LIMIT_EXCEEDED = "USER_QUOTA_EXCEEDED"
+ERROR_CODE_ORG_LIMIT_EXCEEDED = "ORGANIZATION_QUOTA_EXCEEDED"
+
 
 # Response Formatting: Standardized error response creation
-def create_error_response(message: str, status_code: int) -> JsonResponse:
+def create_error_response(message: str, status_code: int, error_code: Optional[str] = None) -> JsonResponse:
     """
     Create a standardized error response.
     Response Formatting: Ensures consistent error response structure.
+
+    Args:
+        message: Error message
+        status_code: HTTP status code
+        error_code: Optional error code for client-side handling
     """
-    return jsonify({"error": {"message": message, "status": status_code}}), status_code
+    error_body = {"message": message, "status": status_code}
+    if error_code:
+        error_body["code"] = error_code
+    return jsonify({"error": error_body}), status_code
 
 
 # Response Formatting: Standardized success response creation
@@ -79,12 +92,20 @@ def create_success_response(
     """
     return jsonify({"data": data, "status": optionalCode}), optionalCode
 
-def create_error_response_with_body(message: str, status_code: int, body: Dict[str, Any]) -> JsonResponse:
+def create_error_response_with_body(message: str, status_code: int, body: Dict[str, Any], error_code: Optional[str] = None) -> JsonResponse:
     """
     Create a standardized error response with additional body data.
     Response Formatting: Ensures consistent error response structure with extra context.
+
+    Args:
+        message: Error message
+        status_code: HTTP status code
+        body: Additional data to include in error response
+        error_code: Optional error code for client-side handling
     """
     response_body = {"error": {"message": message, "status": status_code, **body}}
+    if error_code:
+        response_body["error"]["code"] = error_code
     return jsonify(response_body), status_code
 
 # Security: Decorator to ensure client principal ID is present

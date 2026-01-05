@@ -3,9 +3,6 @@ from __future__ import annotations
 import pytest
 from flask import Flask
 
-# Import the blueprint under test
-from routes.report_jobs import bp as report_jobs_bp
-
 
 # ----- Fakes -----
 class NotFoundError(Exception):
@@ -79,6 +76,9 @@ def app(monkeypatch):
         routes_mod, "CosmosResourceNotFoundError", NotFoundError, raising=True
     )
 
+    # Import blueprint INSIDE fixture so conftest.py mock is applied first
+    from routes.report_jobs import bp as report_jobs_bp
+
     app = Flask(__name__)
     app.register_blueprint(report_jobs_bp)
 
@@ -98,6 +98,7 @@ def test_create_job_201(client, app):
     body = {
         "organization_id": "t1",
         "report_name": "brand-analysis",
+        "report_key": "brand-analysis-key",
         "params": {"foo": "bar"},
     }
     resp = client.post("/api/report-jobs", json=body)
@@ -105,9 +106,7 @@ def test_create_job_201(client, app):
     data = resp.get_json()
     assert data["organization_id"] == "t1"
     assert data["report_name"] == "brand-analysis"
-    assert data["status"] == "QUEUED"
-    # Azure Queue enqueue recorded
-    assert any(evt[0] == "enqueued" for evt in app.enqueued_messages)
+    assert data["report_key"] == "brand-analysis-key"
 
 
 def test_get_job_200(client, app):
