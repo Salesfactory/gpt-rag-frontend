@@ -123,8 +123,7 @@ ENV/
 env.bak/
 venv.bak/
 backend_env
-.env.dev
-.env.prod
+
 # Spyder project settings
 .spyderproject
 .spyproject
