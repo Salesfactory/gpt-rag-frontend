@@ -28,6 +28,13 @@ import Gallery from "./pages/gallery/Gallery";
 import SubscriptionError from "./pages/SubscriptionError";
 import { SubscriptionTier } from "./api/models";
 
+// Platform Admin Routes
+import { PlatformAdminLayout } from "./pages/platform-admin/PlatformAdminLayout/PlatformAdminLayout";
+import { OrganizationManagement } from "./pages/platform-admin/OrganizationManagement/OrganizationManagement";
+import { DataIngestion } from "./pages/platform-admin/DataIngestion/DataIngestion";
+import { CreditsManagement } from "./pages/platform-admin/CreditsManagement/CreditsManagement";
+import { SubscriptionSettings } from "./pages/platform-admin/SubscriptionSettings/SubscriptionSettings";
+
 const allowedTiers: SubscriptionTier[] = [
     "tier_free",
     "tier_basic",
@@ -95,6 +102,23 @@ export default function App() {
                 <Route element={<Layout />}>
                     <Route path="/upload-consumer-pulse" element={<UploadConsumerPulse />} />
                     <Route path="/chat-usage" element={<ChatUsage />} />
+                </Route>
+            </Route>
+
+            {/* Platform Admin Portal Routes (Separate Layout) */}
+            <Route
+                element={
+                    <ProtectedRoute
+                        allowedRoles={["platformAdmin"]}
+                        allowedTiers={allowedTiers}
+                    />
+                }
+            >
+                <Route path="/platform-admin" element={<PlatformAdminLayout />}>
+                    <Route path="organizations" element={<OrganizationManagement />} />
+                    <Route path="pulse-data" element={<DataIngestion />} />
+                    <Route path="credits" element={<CreditsManagement />} />
+                    <Route path="settings" element={<SubscriptionSettings />} />
                 </Route>
             </Route>
 
