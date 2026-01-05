@@ -9,6 +9,13 @@ import math
 
 logger = getLogger(__name__)
 
+IMAGE_CONTENT_PREFIX = "image/"
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".svg", ".webp", ".tiff"}
+PPTX_EXTENSIONS = {".pptx"}
+PPTX_CONTENT_TYPES = {
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+}
+
 class GalleryRetrievalError(Exception):
     """Custom exception for gallery retrieval errors."""
 
@@ -104,6 +111,26 @@ def _generate_sas_url(blob_name: str, container_name: str = "documents", expiry_
     except Exception as e:
         logger.warning(f"Failed to generate SAS URL for blob {blob_name}: {e}")
         return None
+
+
+def _matches_file_type(blob: Dict[str, Any], desired: Optional[str]) -> bool:
+    if not desired:
+        return True
+
+    content_type = (blob.get("content_type") or "").lower()
+    name = (blob.get("name") or "").lower()
+
+    if desired == "images":
+        if content_type.startswith(IMAGE_CONTENT_PREFIX):
+            return True
+        return any(name.endswith(ext) for ext in IMAGE_EXTENSIONS)
+
+    if desired == "pptx":
+        if content_type in PPTX_CONTENT_TYPES:
+            return True
+        return any(name.endswith(ext) for ext in PPTX_EXTENSIONS)
+
+    return True
 
 def get_blobs_with_custom_filtering_paginated(
     container_name: str,
@@ -239,6 +266,7 @@ def get_gallery_items_by_org(
     organization_id: str,
     uploader_id: Optional[str] = None,
     order: str = "newest",
+    file_type: Optional[str] = None,
     query: Optional[str] = None,
     page: int = 1,
     limit: int = 10,
@@ -249,11 +277,12 @@ def get_gallery_items_by_org(
     
     Simplified approach:
     1. Fetch ALL blobs from Azure Storage
-    2. Apply filtering (uploader_id, query) in memory
+    2. Apply filtering (uploader_id, file_type, query) in memory
     3. Sort all items by date (newest/oldest)
     4. Paginate the sorted results
     
     - Filter by metadata.user_id == uploader_id (case-insensitive).
+    - Filter by requested file_type (images | pptx).
     - Search by query across name, content_type, and serialized metadata.
     - Sort by created_on (fallback: last_modified). order: 'newest' | 'oldest'.
     - Apply pagination with page and limit parameters.
@@ -278,6 +307,9 @@ def get_gallery_items_by_org(
         for blob in all_blobs:
             metadata = blob.get("metadata") or {}
             blob_name = blob.get("name")
+
+            if not _matches_file_type(blob, file_type):
+                continue
             
             # Filter by uploader_id if provided
             if uploader_id:

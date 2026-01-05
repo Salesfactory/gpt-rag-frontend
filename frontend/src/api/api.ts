@@ -1749,6 +1749,7 @@ export async function getGalleryItems(
         uploader_id?: string | null;
         order?: "newest" | "oldest";
         query?: string;
+        file_type?: "images" | "pptx";
         page?: number;
         limit?: number;
         signal?: AbortSignal;
@@ -1766,6 +1767,7 @@ export async function getGalleryItems(
     if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
     if (params.order) qs.set("order", params.order);
     if (params.query) qs.set("query", params.query);
+    if (params.file_type) qs.set("file_type", params.file_type);
     if (params.page) qs.set("page", params.page.toString());
     if (params.limit) qs.set("limit", params.limit.toString());
 
