@@ -16,13 +16,7 @@ interface SidebarProps {
     setIsCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const allowedTiers: SubscriptionTier[] = [
-    "tier_free",
-    "tier_basic",
-    "tier_custom",
-    "tier_premium",
-    "tier_enterprise"
-]
+const allowedTiers: SubscriptionTier[] = ["tier_free", "tier_basic", "tier_custom", "tier_premium", "tier_enterprise"];
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     const [activeItem, setActiveItem] = useState<string | null>(null);
@@ -78,9 +72,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     roles: ["admin", "user", "platformAdmin"]
                 },
                 {
-                    title: "VizVault",
+                    title: "Vault",
                     icon: <ChartBar className={styles.sidebarLinkIcon} />,
-                    to: "/vizvault",
+                    to: "/vault",
                     tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 },
@@ -148,19 +142,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             title: "File Vault",
                             href: "/upload-resources",
                             roles: ["admin", "platformAdmin"],
-                            tiers: allowedTiers,
+                            tiers: allowedTiers
                         },
                         {
                             title: "Consumer Pulse",
                             href: "/upload-consumer-pulse",
                             roles: ["platformAdmin"],
-                            tiers: allowedTiers,
+                            tiers: allowedTiers
                         },
                         {
                             title: "Request Studies",
                             href: "/request-studies",
                             roles: ["admin", "platformAdmin"],
-                            tiers: allowedTiers,
+                            tiers: allowedTiers
                         }
                     ],
                     tiers: allowedTiers,
@@ -174,8 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 {
                     title: "Reports",
                     icon: <FileText className={styles.sidebarLinkIcon} />,
-                    links: [
-                    ],
+                    links: [],
                     tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 }

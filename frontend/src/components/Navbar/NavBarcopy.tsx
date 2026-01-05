@@ -266,7 +266,6 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                             onClick={handleOnClickShowSidebar}
                             className={`nav-link d-flex align-items-center ${styles.sidebartoggler}`}
                             id="headerCollapse"
-
                         >
                             <Menu className={styles.iconLarge} />
                         </button>
@@ -283,7 +282,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {location === "/voice-customer" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Voice of Customer</span>}
                         {location === "/details-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Distribution List</span>}
                         {location === "/upload-resources" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>File Vault</span>}
-                        {location === "/vizvault" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>VizVault</span>}
+                        {location === "/vault" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Vault</span>}
                         {location === "/subscription-management" && (
                             <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Subscription Management</span>
                         )}
@@ -307,7 +306,12 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {/* Share Button - only show when there's an active conversation */}
                         {location === "/" && (chatId || dataConversation.length > 0) && (
                             <li className="nav-item">
-                                <button aria-label="Export Conversation" onClick={handleExportConversation} disabled={isExporting} className={styles.shareButton}>
+                                <button
+                                    aria-label="Export Conversation"
+                                    onClick={handleExportConversation}
+                                    disabled={isExporting}
+                                    className={styles.shareButton}
+                                >
                                     {isExporting ? (
                                         <>
                                             <Spinner size={1} />
