@@ -1,7 +1,7 @@
 from flask import Blueprint, current_app, request
 import os
 import tempfile
-from routes.decorators.auth_decorator import auth_required
+from shared.decorators import only_platform_admin
 from utils import create_success_response, create_error_response
 from http import HTTPStatus
 import logging
@@ -18,7 +18,7 @@ CUSTOMER_PULSE_FOLDER = "customer-pulse"
 
 
 @bp.route("/pulse-data", methods=["POST"])
-@auth_required
+@only_platform_admin()
 def create_pulse_data():
     """
     Upload and store customer pulse data file.
@@ -79,7 +79,7 @@ def create_pulse_data():
 
 
 @bp.route("/pulse-data", methods=["GET"])
-@auth_required
+@only_platform_admin()
 def get_pulse_files():
     """
     Retrieve list of customer pulse data files.
@@ -114,7 +114,8 @@ def get_pulse_files():
             "blob_storage_manager"
         ]
         files = blob_storage_manager.list_blobs_in_container(
-            CUSTOMER_PULSE_CONTAINER_NAME
+            CUSTOMER_PULSE_CONTAINER_NAME,
+            prefix=CUSTOMER_PULSE_FOLDER + "/",
         )
         return create_success_response(files, HTTPStatus.OK)
     except Exception as e:

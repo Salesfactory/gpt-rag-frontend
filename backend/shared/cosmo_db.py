@@ -755,7 +755,8 @@ def get_invitation_role(user_id, organization_id):
     if invitations:
         return invitations[0].get("role")
 
-    raise ValueError("No role found: user is not owner nor has active invitation")
+    if not invitations:
+        return []
 
 
 def create_invitation(invited_user_email, organization_id, role, nickname):
