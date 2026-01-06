@@ -56,8 +56,11 @@ def ingest_global_data():
         logging.error("No file selected")
         return create_error_response("No file selected", HTTPStatus.BAD_REQUEST)
     try:
-        temp_file_path = os.path.join(tempfile.gettempdir(), file.filename)
-        file.save(temp_file_path)
+
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            file.save(temp_file.name)
+            temp_file_path = temp_file.name
+
         blob_storage_manager = current_app.config["blob_storage_manager"]
         blob_storage_manager.upload_to_blob(
             file_path=temp_file_path,
@@ -73,7 +76,7 @@ def ingest_global_data():
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
     finally:
         if temp_file_path:
-            os.remove(temp_file_path)
+            os.unlink(temp_file_path)
 
 
 @bp.route("/global-data", methods=["GET"])
