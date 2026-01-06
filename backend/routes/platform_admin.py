@@ -17,9 +17,9 @@ CUSTOMER_PULSE_CONTAINER_NAME = os.getenv("CUSTOMER_PULSE_CONTAINER_NAME", "surv
 CUSTOMER_PULSE_FOLDER = "customer-pulse"
 
 
-@bp.route("/pulse-data", methods=["POST"])
+@bp.route("/data-ingestion", methods=["POST"])
 @only_platform_admin()
-def create_pulse_data():
+def ingest_global_data():
     """
     Upload and store customer pulse data file.
     
@@ -39,12 +39,12 @@ def create_pulse_data():
         500: If there's an error during file processing or upload
     
     Example:
-        POST /api/platform-admin/pulse-data
+        POST /api/platform-admin/data-ingestion
         Content-Type: multipart/form-data
         
         Response:
         {
-            "message": "Pulse data created successfully"
+            "message": "Global data ingested successfully"
         }
     """
     file = request.files.get("file")
@@ -64,25 +64,25 @@ def create_pulse_data():
             blob_folder=CUSTOMER_PULSE_FOLDER,
             container=CUSTOMER_PULSE_CONTAINER_NAME,
         )
-        logging.info("Pulse data created successfully")
+        logging.info("Global data ingested successfully")
         return create_success_response(
-            "Pulse data created successfully", HTTPStatus.CREATED
+            "Global data ingested successfully", HTTPStatus.CREATED
         )
     except Exception as e:
-        logging.error(f"Error creating pulse data: {str(e)}")
+        logging.error(f"Error ingesting global data: {str(e)}")
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
     finally:
         if temp_file_path:
             os.remove(temp_file_path)
 
 
-@bp.route("/pulse-data", methods=["GET"])
+@bp.route("/global-data", methods=["GET"])
 @only_platform_admin()
-def get_pulse_files():
+def get_global_data():
     """
-    Retrieve list of customer pulse data files.
+    Retrieve list of global data files.
     
-    Endpoint for platform administrators to list all customer pulse data files
+    Endpoint for platform administrators to list all global data files
     stored in blob storage. Returns a list of available files for management
     and reference purposes.
     
@@ -94,7 +94,7 @@ def get_pulse_files():
         500: If there's an error accessing blob storage or listing files
     
     Example:
-        GET /api/platform-admin/pulse-data
+        GET /api/platform-admin/global-data
         
         Response:
         {
@@ -117,8 +117,8 @@ def get_pulse_files():
         )
         return create_success_response(files, HTTPStatus.OK)
     except Exception as e:
-        logger.exception("Error retrieving customer pulse data files")
+        logger.exception("Error retrieving global data files")
         return create_error_response(
-            "Failed to retrieve pulse data files.",
+            "Failed to retrieve global data files.",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
