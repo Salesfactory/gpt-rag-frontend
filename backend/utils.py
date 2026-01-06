@@ -1623,7 +1623,7 @@ def create_organization_usage(organization_id, subscription_id, subscription_tie
             # New organization - initialize with zeros
             logging.info(f"[create_organization_usage] No existing usage. Initializing new wallet for organization: {organization_id}")
             current_seats = 1
-            allowed_user_ids = [{ "userId": client_principal_id, "limit": total_allocated, "used": 0 }]
+            allowed_user_ids = [{ "userId": client_principal_id, "totalAllocated": total_allocated, "currentUsed": 0 }]
             current_used = 0
             current_pages_used = 0
             spreadsheets_used = 0
