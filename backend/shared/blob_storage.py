@@ -154,17 +154,6 @@ class BlobStorageManager:
         if not fileobj:
             raise ValueError("fileobj is required")
 
-        try:
-            blob_sas_token = get_secret("blobSasToken", env_name="BLOB_SAS_TOKEN")
-            if not blob_sas_token:
-                raise ValueError(
-                    "The SAS token for Azure Blob Storage is not set."
-                )
-        except Exception as e:
-            logger.error("Error retrieving the SAS token for Azure Blob Storage.")
-            logger.debug(f"Detailed error: {e}")
-            return {"status": "failed", "error": str(e)}
-
         blob_folder = (blob_folder or "").strip("/")
         blob_path = f"{blob_folder}/{filename}" if blob_folder else filename
 
