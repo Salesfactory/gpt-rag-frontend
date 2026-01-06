@@ -203,9 +203,6 @@ class BlobStorageManager:
 
             return {
                 "status": "success",
-                "blob_path": blob_path,
-                "blob_url": blob_url,
-                "metadata": metadata,
             }
 
         except Exception as e:
