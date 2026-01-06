@@ -850,7 +850,7 @@ export const createOrganization = async ({ userId, organizationName }: any) => {
     return organization;
 };
 
-export const createOrganizationUsage = async ({ userId, organizationId, subscriptionTierId }: any) => {
+export const createOrganizationUsage = async ({ userId, organizationId, subscriptionTierId, currentPeriodEnds }: any) => {
     const response = await fetchWrapper("/api/create-organization-usage", {
         method: "POST",
         headers: {
@@ -859,7 +859,8 @@ export const createOrganizationUsage = async ({ userId, organizationId, subscrip
         },
         body: JSON.stringify({
             organizationId,
-            subscriptionTierId
+            subscriptionTierId,
+            currentPeriodEnds
         })
     });
     if (response.status > 299 || !response.ok) {

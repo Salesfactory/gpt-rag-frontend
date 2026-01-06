@@ -159,7 +159,10 @@ export const OrganizationManagement: React.FC = () => {
                         await createOrganizationUsage({
                             userId: user?.id,
                             organizationId: newOrganization.id,
-                            subscriptionTierId: tierId
+                            subscriptionTierId: tierId,
+                            currentPeriodEnds: formData.expiration_months
+                                ? new Date(new Date().setMonth(new Date().getMonth() + formData.expiration_months)).getTime() / 1000
+                                : undefined
                         });
 
                         setToast({ message: "Organization created successfully", type: MessageBarType.success });
@@ -336,12 +339,7 @@ export const OrganizationManagement: React.FC = () => {
         }
     ];
 
-    const tierOptions: IDropdownOption[] = [
-        { key: "Free", text: "Free" },
-        { key: "Basic", text: "Basic" },
-        { key: "Premium", text: "Premium" },
-        { key: "Custom", text: "Custom" }
-    ];
+    const tierOptions: IDropdownOption[] = [{ key: "Free", text: "Free" }];
 
     const expirationOptions: IDropdownOption[] = [
         { key: 3, text: "3 Months" },

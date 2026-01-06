@@ -123,6 +123,7 @@ def generate_business_description(organization_id, file_name):
 def createOrganizationUsage():
     client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
     subscriptionId = request.json.get("subscriptionId", None)
+    currentPeriodEnds = request.json.get("currentPeriodEnds", None)
     if not client_principal_id:
         return create_error_response({"error": "Missing required parameters, client_principal_id"}, HTTPStatus.BAD_REQUEST)
     try:
@@ -130,7 +131,7 @@ def createOrganizationUsage():
         subscriptionTierId = request.json["subscriptionTierId"]
         if not organizationId or not subscriptionTierId:
             return create_error_response({"error": "Missing required parameters, organizationId or subscriptionTierId"}, HTTPStatus.BAD_REQUEST)
-        organizationUsage = create_organization_usage(organizationId, subscriptionId, subscriptionTierId, client_principal_id)
+        organizationUsage = create_organization_usage(organizationId, subscriptionId, subscriptionTierId, client_principal_id, currentPeriodEnds)
         if not organizationUsage:
             return create_error_response({"error": "Failed to create organization usage"}, HTTPStatus.INTERNAL_SERVER_ERROR)
         return create_success_response(organizationUsage)
