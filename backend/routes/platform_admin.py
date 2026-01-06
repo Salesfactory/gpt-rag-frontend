@@ -119,4 +119,8 @@ def get_pulse_files():
         )
         return create_success_response(files, HTTPStatus.OK)
     except Exception as e:
-        return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
+        logger.exception("Error retrieving customer pulse data files")
+        return create_error_response(
+            "Failed to retrieve pulse data files.",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
