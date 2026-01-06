@@ -13,7 +13,7 @@ bp = Blueprint("platform_admin", __name__, url_prefix="/api/platform-admin")
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-CUSTOMER_PULSE_CONTAINER_NAME = "survey-data"
+CUSTOMER_PULSE_CONTAINER_NAME = os.getenv("CUSTOMER_PULSE_CONTAINER_NAME", "survey-data")
 CUSTOMER_PULSE_FOLDER = "customer-pulse"
 
 
@@ -62,9 +62,7 @@ def create_pulse_data():
         blob_storage_manager.upload_to_blob(
             file_path=temp_file_path,
             blob_folder=CUSTOMER_PULSE_FOLDER,
-            container=os.getenv(
-                "CUSTOMER_PULSE_CONTAINER_NAME", CUSTOMER_PULSE_CONTAINER_NAME
-            ),
+            container=CUSTOMER_PULSE_CONTAINER_NAME,
         )
         logging.info("Pulse data created successfully")
         return create_success_response(
