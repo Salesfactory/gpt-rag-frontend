@@ -196,11 +196,6 @@ class BlobStorageManager:
             except Exception as e:
                 raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
 
-            blob_url = (
-                f"{self.blob_service_client.url}{container_name}/{blob_path}"
-                f"?{blob_sas_token}"
-            )
-
             return {
                 "status": "success",
             }
