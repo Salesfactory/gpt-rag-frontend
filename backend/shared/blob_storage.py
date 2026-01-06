@@ -140,6 +140,79 @@ class BlobStorageManager:
             logger.error(f"Failed to upload file {file_path}: {str(e)}")
             return {"status": "failed", "error": str(e)}
 
+    def upload_fileobj_to_blob(
+        self,
+        fileobj,
+        filename: str,
+        blob_folder: str,
+        metadata: Optional[Dict[str, str]] = None,
+        container: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Upload a file-like object to Azure Blob Storage directly from memory.
+        """
+        if not fileobj:
+            raise ValueError("fileobj is required")
+
+        try:
+            blob_sas_token = get_secret("blobSasToken", env_name="BLOB_SAS_TOKEN")
+            if not blob_sas_token:
+                raise ValueError(
+                    "The SAS token for Azure Blob Storage is not set."
+                )
+        except Exception as e:
+            logger.error("Error retrieving the SAS token for Azure Blob Storage.")
+            logger.debug(f"Detailed error: {e}")
+            return {"status": "failed", "error": str(e)}
+
+        blob_folder = (blob_folder or "").strip("/")
+        blob_path = f"{blob_folder}/{filename}" if blob_folder else filename
+
+        # Determine content type
+        if blob_path.endswith(".pdf"):
+            content_type = "application/pdf"
+        elif blob_path.endswith(".html"):
+            content_type = "text/html"
+        elif blob_path.endswith(".txt"):
+            content_type = "text/plain"
+        elif blob_path.endswith(".csv"):
+            content_type = "text/csv"
+        else:
+            content_type = "application/octet-stream"
+
+        try:
+            container_client, container_name = self._get_container_client(container)
+            
+            fileobj.seek(0)
+            
+            try:
+                container_client.upload_blob(
+                    name=blob_path,
+                    data=fileobj,
+                    overwrite=True,
+                    content_settings=ContentSettings(content_type=content_type),
+                    metadata=metadata,
+                )
+            except Exception as e:
+                raise BlobUploadError(f"Failed to upload {blob_path}: {str(e)}")
+
+            blob_url = (
+                f"{self.blob_service_client.url}{container_name}/{blob_path}"
+                f"?{blob_sas_token}"
+            )
+
+            return {
+                "status": "success",
+                "blob_path": blob_path,
+                "blob_url": blob_url,
+                "metadata": metadata,
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to upload file {filename}: {str(e)}")
+            return {"status": "failed", "error": str(e)}
+        
+    
     def delete_blob(
         self,
         blob_name: str,

@@ -56,27 +56,31 @@ def ingest_global_data():
         logging.error("No file selected")
         return create_error_response("No file selected", HTTPStatus.BAD_REQUEST)
     try:
-
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            file.save(temp_file.name)
-            temp_file_path = temp_file.name
-
         blob_storage_manager = current_app.config["blob_storage_manager"]
-        blob_storage_manager.upload_to_blob(
-            file_path=temp_file_path,
+        
+        # Use the new memory-based upload method
+        result = blob_storage_manager.upload_fileobj_to_blob(
+            fileobj=file.stream, 
+            filename=file.filename,
             blob_folder=CUSTOMER_PULSE_FOLDER,
             container=CUSTOMER_PULSE_CONTAINER_NAME,
         )
-        logging.info("Global data ingested successfully")
-        return create_success_response(
-            "Global data ingested successfully", HTTPStatus.CREATED
-        )
+        
+        if result["status"] == "success":
+            logging.info("Global data ingested successfully")
+            return create_success_response(
+                "Global data ingested successfully", HTTPStatus.CREATED
+            )
+        else:
+            logging.error(f"Upload failed: {result.get('error', 'Unknown error')}")
+            return create_error_response(
+                result.get("error", "Upload failed"), 
+                HTTPStatus.INTERNAL_SERVER_ERROR
+            )
+            
     except Exception as e:
         logging.error(f"Error ingesting global data: {str(e)}")
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
-    finally:
-        if temp_file_path:
-            os.unlink(temp_file_path)
 
 
 @bp.route("/global-data", methods=["GET"])
