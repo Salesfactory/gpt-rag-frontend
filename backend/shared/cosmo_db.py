@@ -877,6 +877,7 @@ def create_organization(user_id, organization_name, storage_capacity):
                 "subscriptionStatus": "inactive",
                 "subscriptionExpirationDate": None,
                 "storageCapacity": storage_capacity,
+                "created_at": datetime.now(timezone.utc).timestamp(),
             }
         )
         if not result:
@@ -1666,3 +1667,35 @@ def initalize_user_limits(organization_id, user_id, credits_limit):
             f"Error initializing user limits for organization '{organization_id}' and user '{user_id}': {e}"
         )
         raise
+
+
+def get_all_organizations():
+    """
+    Retrieves all organizations from the organizations container.
+    """
+    container = get_cosmos_container("organizations")
+    try:
+        items = list(container.query_items(
+            query="SELECT * FROM c",
+            enable_cross_partition_query=True
+        ))
+        return items
+    except Exception as e:
+        logging.error(f"Error retrieving all organizations: {e}")
+        return []
+
+
+def get_all_organization_usages():
+    """
+    Retrieves all organization usages from the organizationsUsage container.
+    """
+    container = get_cosmos_container("organizationsUsage")
+    try:
+        items = list(container.query_items(
+            query="SELECT * FROM c WHERE c.type = 'wallet'",
+            enable_cross_partition_query=True
+        ))
+        return items
+    except Exception as e:
+        logging.error(f"Error retrieving all organization usages: {e}")
+        return []

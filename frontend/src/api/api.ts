@@ -2135,3 +2135,22 @@ export async function uploadSharedDocument(file: File) {
             if you're gonna make a lot of recurrent calls to the API in a short time frame. You should use Fetch instead of FetchWrapper
 */
 
+export async function getPlatformOrganizations(): Promise<any> {
+    try {
+        const response = await fetchWrapper("/api/platform-admin/organizations", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw Error("Failed to fetch platform organizations");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching platform organizations", error);
+        throw error;
+    }
+}
+

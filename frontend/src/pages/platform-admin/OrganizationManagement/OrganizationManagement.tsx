@@ -24,7 +24,7 @@ import {
     useTheme
 } from "@fluentui/react";
 import { organizationService, CreateOrganizationInput, UpdateOrganizationInput } from "../../../services/platform-admin/organizationService.mock";
-import { createOrganization, createOrganizationUsage } from "../../../api/api";
+import { createOrganization, createOrganizationUsage, getPlatformOrganizations, getProductPrices } from "../../../api/api";
 import { useAppContext } from "../../../providers/AppProviders";
 import { OrganizationWithCosts, SubscriptionTier } from "../../../services/platform-admin/mockData";
 import { formatCurrency } from "../../../utils/currencyUtils";
@@ -43,14 +43,19 @@ interface ToastMessage {
     type: MessageBarType;
 }
 
-const getTierColor = (tier: SubscriptionTier): string => {
-    const colors = {
+const getTierColor = (tier: string): string => {
+    const defaultColor = "#8a8886"; // Free or Unknown
+    const colors: Record<string, string> = {
         Free: "#8a8886",
         Basic: "#0078d4",
         Premium: "#8764b8",
-        Custom: "#d83b01"
+        Custom: "#d83b01",
+        // Additional safe defaults
+        Start: "#0078d4",
+        Standard: "#8764b8",
+        Enterprise: "#d83b01"
     };
-    return colors[tier];
+    return colors[tier] || defaultColor;
 };
 
 export const OrganizationManagement: React.FC = () => {
@@ -77,9 +82,24 @@ export const OrganizationManagement: React.FC = () => {
         expiration_months: 12
     });
 
+    const [prices, setPrices] = useState<any[]>([]);
+
     useEffect(() => {
         loadOrganizations();
+        fetchPrices();
     }, []);
+
+    const fetchPrices = async () => {
+        try {
+            // Using user context from hook if needed, or passing empty/mock user as needed
+            const data = await getProductPrices({ user });
+            if (data && data.prices) {
+                setPrices(data.prices);
+            }
+        } catch (error) {
+            console.error("Failed to fetch product prices:", error);
+        }
+    };
 
     useEffect(() => {
         if (toast) {
@@ -91,8 +111,8 @@ export const OrganizationManagement: React.FC = () => {
     const loadOrganizations = async () => {
         try {
             setIsLoading(true);
-            const [orgs, costs] = await Promise.all([organizationService.getAll(), organizationService.getTotalCosts()]);
-            setOrganizations(orgs);
+            const [response, costs] = await Promise.all([getPlatformOrganizations(), organizationService.getTotalCosts()]);
+            setOrganizations(response.data || []);
             setCostSummary(costs);
         } catch (error) {
             setToast({ message: "Failed to load organizations", type: MessageBarType.error });
@@ -217,6 +237,16 @@ export const OrganizationManagement: React.FC = () => {
         }
     };
 
+    const getTierDisplayName = (tier: string) => {
+        if (!tier) return "Free";
+        // If it looks like a stripe price ID (starts with "price_"), verify against loaded prices
+        if (tier.startsWith("price_")) {
+            const plan = prices.find(p => p.id === tier);
+            return plan ? plan.nickname : tier;
+        }
+        return tier;
+    };
+
     const columns: IColumn[] = [
         {
             key: "name",
@@ -225,25 +255,28 @@ export const OrganizationManagement: React.FC = () => {
             minWidth: 200,
             maxWidth: 300,
             isResizable: true,
-            onRender: (item: OrganizationWithCosts) => (
-                <Stack>
-                    <Text variant="medium" styles={{ root: { fontWeight: 600 } }}>
-                        {item.name}
-                    </Text>
-                    <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { marginTop: 4 } }}>
-                        <div className={styles.badge} style={{ backgroundColor: "#e6f3e6" }}>
-                            <Text variant="tiny" styles={{ root: { color: "#107c10" } }}>
-                                {new Date(item.created_at).toLocaleDateString()}
-                            </Text>
-                        </div>
-                        <div className={styles.badge} style={{ backgroundColor: getTierColor(item.subscription_tier) + "20" }}>
-                            <Text variant="tiny" styles={{ root: { color: getTierColor(item.subscription_tier) } }}>
-                                {item.subscription_tier}
-                            </Text>
-                        </div>
+            onRender: (item: OrganizationWithCosts) => {
+                const displayTier = getTierDisplayName(item.subscription_tier);
+                return (
+                    <Stack>
+                        <Text variant="medium" styles={{ root: { fontWeight: 600 } }}>
+                            {item.name}
+                        </Text>
+                        <Stack horizontal tokens={{ childrenGap: 8 }} styles={{ root: { marginTop: 4 } }}>
+                            <div className={styles.badge} style={{ backgroundColor: "#e6f3e6" }}>
+                                <Text variant="tiny" styles={{ root: { color: "#107c10" } }}>
+                                    {new Date(item.created_at).toLocaleDateString()}
+                                </Text>
+                            </div>
+                            <div className={styles.badge} style={{ backgroundColor: getTierColor(displayTier) + "20" }}>
+                                <Text variant="tiny" styles={{ root: { color: getTierColor(displayTier) } }}>
+                                    {displayTier}
+                                </Text>
+                            </div>
+                        </Stack>
                     </Stack>
-                </Stack>
-            )
+                );
+            }
         },
         {
             key: "storage_cost",
