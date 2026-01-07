@@ -61,7 +61,6 @@ def ingest_global_data():
     try:
         blob_storage_manager = current_app.config["blob_storage_manager"]
         
-
         metadata = {
             "upload_date": datetime.now().isoformat(),
         }
