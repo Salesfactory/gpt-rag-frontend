@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { pulseDataService, CreatePulseDataInput } from '../../../services/platform-admin/pulseDataService.mock';
-import { PulseDataWithOrganization } from '../../../services/platform-admin/mockData';
-import { ConfirmDialog } from '../../../components/platform-admin/ConfirmDialog/ConfirmDialog';
+import { CreatePulseDataInput } from '../../../services/platform-admin/pulseDataService.mock';
 import { Upload, Calendar, Plus, X } from 'lucide-react';
 import { uploadGlobalIngestData } from '../../../api';
 import { useAppContext } from '../../../providers/AppProviders';
