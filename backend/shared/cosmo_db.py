@@ -1747,3 +1747,36 @@ def update_organization_metadata(org_id, name, owner_id=None):
     except Exception as e:
         logging.error(f"Error updating organization {org_id}: {e}")
         raise
+
+def delete_organization(organization_id):
+    """
+    Deletes an organization and its associated usage.
+    """
+    logging.info(f"Deleting organization {organization_id}")
+    
+    usage_container = get_cosmos_container("organizationsUsage")
+    try:
+        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
+        items = list(usage_container.query_items(
+            query=query,
+            parameters=[{"name": "@organizationId", "value": organization_id}],
+            partition_key=organization_id
+        ))
+        
+        for item in items:
+            usage_container.delete_item(item=item['id'], partition_key=organization_id)
+            logging.info(f"Deleted usage item {item['id']} for org {organization_id}")
+            
+    except Exception as e:
+        logging.error(f"Error checking/deleting organization usage: {e}")
+    
+    org_container = get_cosmos_container("organizations")
+    try:
+        org_container.delete_item(item=organization_id, partition_key=organization_id)
+        logging.info(f"Organization {organization_id} deleted successfully.")
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Organization {organization_id} to delete not found.")
+    except Exception as e:
+        logging.error(f"Error deleting organization {organization_id}: {e}")
+        raise
+

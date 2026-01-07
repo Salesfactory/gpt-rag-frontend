@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint
 from routes.decorators.auth_decorator import auth_required
-from shared.cosmo_db import get_all_organizations, get_all_organization_usages, update_organization_metadata, get_user_by_email
+from shared.cosmo_db import get_all_organizations, get_all_organization_usages, update_organization_metadata, get_user_by_email, delete_organization
 from utils import create_success_response, create_error_response
 from http import HTTPStatus
 from datetime import datetime
@@ -50,6 +50,16 @@ def update_platform_organization(organization_id):
         logger.error(f"Error updating organization {organization_id}: {e}")
         error_msg = str(e) if str(e) else "Internal Server Error"
         return create_error_response(error_msg, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+@bp.route("/api/platform-admin/organizations/<organization_id>", methods=["DELETE"])
+@auth_required
+def delete_platform_organization(organization_id):
+    try:
+        delete_organization(organization_id)
+        return create_success_response({"message": "Organization deleted successfully"})
+    except Exception as e:
+        logger.error(f"Error deleting organization {organization_id}: {e}")
+        return create_error_response("Internal Server Error", HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @bp.route("/api/platform-admin/organizations", methods=["GET"])
 @auth_required

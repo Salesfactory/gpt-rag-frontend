@@ -915,6 +915,21 @@ export const updatePlatformOrganization = async ({ orgId, name, admin_email }: {
     return await response.json();
 };
 
+export const deletePlatformOrganization = async (orgId: string) => {
+    const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error deleting organization");
+    }
+    
+    return await response.json();
+};
+
 export async function getInvitations({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_username = user ? user.username : "anonymous";

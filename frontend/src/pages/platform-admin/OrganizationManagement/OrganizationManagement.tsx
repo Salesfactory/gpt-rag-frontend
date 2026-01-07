@@ -24,7 +24,14 @@ import {
     useTheme
 } from "@fluentui/react";
 import { organizationService, CreateOrganizationInput, UpdateOrganizationInput } from "../../../services/platform-admin/organizationService.mock";
-import { createOrganization, createOrganizationUsage, getPlatformOrganizations, getProductPrices, updatePlatformOrganization } from "../../../api/api";
+import {
+    createOrganization,
+    createOrganizationUsage,
+    getPlatformOrganizations,
+    getProductPrices,
+    updatePlatformOrganization,
+    deletePlatformOrganization
+} from "../../../api/api";
 import { useAppContext } from "../../../providers/AppProviders";
 import { OrganizationWithCosts, SubscriptionTier } from "../../../services/platform-admin/mockData";
 import { formatCurrency } from "../../../utils/currencyUtils";
@@ -49,11 +56,7 @@ const getTierColor = (tier: string): string => {
         Free: "#8a8886",
         Basic: "#0078d4",
         Premium: "#8764b8",
-        Custom: "#d83b01",
-        // Additional safe defaults
-        Start: "#0078d4",
-        Standard: "#8764b8",
-        Enterprise: "#d83b01"
+        Custom: "#d83b01"
     };
     return colors[tier] || defaultColor;
 };
@@ -218,7 +221,7 @@ export const OrganizationManagement: React.FC = () => {
 
     const handleDelete = async (id: string) => {
         try {
-            await organizationService.delete(id);
+            await deletePlatformOrganization(id);
             setToast({ message: "Organization deleted successfully", type: MessageBarType.success });
             loadOrganizations();
             setDeleteConfirm(null);
@@ -371,8 +374,12 @@ export const OrganizationManagement: React.FC = () => {
                         <IconButton
                             iconProps={{ iconName: "Cancel" }}
                             title="Cancel Subscription"
+                            disabled={true}
                             onClick={() => setCancelConfirm(item.id)}
-                            styles={{ root: { color: theme.palette.orangeLight } }}
+                            styles={{
+                                root: { color: theme.palette.neutralTertiary },
+                                rootDisabled: { backgroundColor: "transparent" }
+                            }}
                         />
                     )}
                     <IconButton
