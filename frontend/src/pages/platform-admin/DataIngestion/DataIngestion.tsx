@@ -13,7 +13,6 @@ export const DataIngestion: React.FC = () => {
 
   const { user } = useAppContext();
 
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
