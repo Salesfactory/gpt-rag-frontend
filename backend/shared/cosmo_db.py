@@ -1782,6 +1782,4 @@ def delete_organization(organization_id):
         logging.warning(f"Organization {organization_id} to delete not found.")
     except Exception as e:
         logging.error(f"Error deleting organization {organization_id}: {e}")
-        raise
-
-        raise
+        raise e

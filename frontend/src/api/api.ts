@@ -884,11 +884,13 @@ export const createOrganizationUsage = async ({ userId, organizationId, subscrip
     return organizationUsage;
 }
 
-export const updatePlatformOrganization = async ({ orgId, name, admin_email }: { orgId: string, name: string, admin_email?: string }) => {
+export const updatePlatformOrganization = async ({ orgId, name, admin_email, user }: { orgId: string, name: string, admin_email?: string, user?: any }) => {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
         method: "PUT",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id
         },
         body: JSON.stringify({
             name,
@@ -915,11 +917,13 @@ export const updatePlatformOrganization = async ({ orgId, name, admin_email }: {
     return await response.json();
 };
 
-export const deletePlatformOrganization = async (orgId: string) => {
+export const deletePlatformOrganization = async ({ orgId, user }: { orgId: string, user?: any }) => {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
         method: "DELETE",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id
         }
     });
 
@@ -2195,12 +2199,14 @@ export async function uploadSharedDocument(file: File) {
             if you're gonna make a lot of recurrent calls to the API in a short time frame. You should use Fetch instead of FetchWrapper
 */
 
-export async function getPlatformOrganizations(): Promise<any> {
+export async function getPlatformOrganizations({ user }: { user?: any } = {}): Promise<any> {
+    const user_id = user ? user.id : "";
     try {
         const response = await fetchWrapper("/api/platform-admin/organizations", {
             method: "GET",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id
             }
         });
 

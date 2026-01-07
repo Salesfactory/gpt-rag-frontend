@@ -115,7 +115,7 @@ export const OrganizationManagement: React.FC = () => {
     const loadOrganizations = async () => {
         try {
             setIsLoading(true);
-            const [response, costs] = await Promise.all([getPlatformOrganizations(), organizationService.getTotalCosts()]);
+            const [response, costs] = await Promise.all([getPlatformOrganizations({ user }), organizationService.getTotalCosts()]);
             setOrganizations(response.data || []);
             setCostSummary(costs);
         } catch (error) {
@@ -160,7 +160,8 @@ export const OrganizationManagement: React.FC = () => {
                 await updatePlatformOrganization({
                     orgId: editingOrg.id,
                     name: formData.name,
-                    admin_email: formData.admin_email
+                    admin_email: formData.admin_email,
+                    user
                 });
 
                 setToast({ message: "Organization updated successfully", type: MessageBarType.success });
@@ -221,7 +222,7 @@ export const OrganizationManagement: React.FC = () => {
 
     const handleDelete = async (id: string) => {
         try {
-            await deletePlatformOrganization(id);
+            await deletePlatformOrganization({ orgId: id, user });
             setToast({ message: "Organization deleted successfully", type: MessageBarType.success });
             loadOrganizations();
             setDeleteConfirm(null);

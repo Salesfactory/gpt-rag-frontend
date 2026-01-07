@@ -1754,6 +1754,40 @@ def get_organization_id_and_user_id_from_request(request):
 
     return organization_id, user_id
 
+def get_organization_id_and_user_id_from_request_safe(request):
+    """
+    Extracts the organization_id and user_id from the request safely.
+    Checks URL parameters first, then JSON body if applicable.
+    Handles cases where Content-Type is application/json but body is empty.
+    
+    Returns:
+        tuple: (organization_id or None, user_id or None)
+    """
+
+    organization_id = None
+    user_id = None
+
+    if request.is_json:
+        data = request.get_json(silent=True)
+        if data:
+            organization_id = data.get("organization_id")
+            user_id = data.get("user_id")
+            if organization_id and user_id:
+                return organization_id, user_id
+        
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    organization_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ORGANIZATION")
+    if organization_id:
+        return organization_id, client_principal_id
+    if client_principal_id:
+        organizations = get_user_organizations(client_principal_id)
+        if organizations:
+            organization_id = organizations[0]["id"]
+            
+    user_id = client_principal_id
+
+    return organization_id, user_id
+
 def get_organization_tier_and_subscription(organization_id):
     """
     Retrieves the subscription tier and usage for the given organization ID.
