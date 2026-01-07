@@ -1699,3 +1699,24 @@ def get_all_organization_usages():
     except Exception as e:
         logging.error(f"Error retrieving all organization usages: {e}")
         return []
+
+
+def get_user_by_email(email):
+    """
+    Retrieves a user document by email.
+    """
+    container = get_cosmos_container("users")
+    query = "SELECT * FROM c WHERE c.data.email = @email"
+    parameters = [{"name": "@email", "value": email.lower()}]
+    try:
+        items = list(container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+        if items:
+            return items[0]
+        return None
+    except Exception as e:
+        logging.error(f"Error retrieving user by email {email}: {e}")
+        return None

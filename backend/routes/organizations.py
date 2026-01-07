@@ -14,7 +14,7 @@ from data_summary.blob_utils import (
 )
 from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
-from shared.cosmo_db import create_organization, get_organization_data
+from shared.cosmo_db import create_organization, get_organization_data, get_user_by_email
 from shared.decorators import check_organization_limits, check_organization_upload_limits, require_organization_storage_limits
 
 from utils import create_success_response, create_error_response, create_organization_usage, get_organization_usage_by_id
@@ -148,12 +148,24 @@ def createOrganization():
         return create_error_response({"error": "Missing required parameters, client_principal_id"}, HTTPStatus.BAD_REQUEST)
     try:
         organizationName = request.json["organizationName"]
+        admin_email = request.json.get("admin_email")
+        
+        target_user_id = client_principal_id
+
+        if admin_email:
+            user = get_user_by_email(admin_email)
+            if not user:
+                return create_error_response(f"User with email {admin_email} not found in the database.", HTTPStatus.BAD_REQUEST)
+            target_user_id = user.get('id')
+            if not target_user_id:
+                return create_error_response(f"User retrieved for {admin_email} has no ID.", HTTPStatus.INTERNAL_SERVER_ERROR)
+
         if not request.json.get("storageCapacity"):
             storage_capacity = default_storage_capacity
         else:
             storage_capacity = request.json["storageCapacity"]
 
-        response = create_organization(client_principal_id, organizationName, storage_capacity)
+        response = create_organization(target_user_id, organizationName, storage_capacity)
         if not response:
             return create_error_response(
                 "Failed to create organization", HTTPStatus.INTERNAL_SERVER_ERROR

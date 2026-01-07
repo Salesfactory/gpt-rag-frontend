@@ -35,7 +35,7 @@ interface OrganizationFormData {
     name: string;
     admin_email: string;
     subscription_tier: SubscriptionTier;
-    expiration_months: number;
+    expiration_period: string;
 }
 
 interface ToastMessage {
@@ -79,7 +79,7 @@ export const OrganizationManagement: React.FC = () => {
         name: "",
         admin_email: "",
         subscription_tier: "Free",
-        expiration_months: 12
+        expiration_period: "30d"
     });
 
     const [prices, setPrices] = useState<any[]>([]);
@@ -129,7 +129,7 @@ export const OrganizationManagement: React.FC = () => {
                 name: org.name,
                 admin_email: org.admin_email || "",
                 subscription_tier: org.subscription_tier,
-                expiration_months: 12
+                expiration_period: "30d"
             });
         } else {
             setEditingOrg(null);
@@ -137,7 +137,7 @@ export const OrganizationManagement: React.FC = () => {
                 name: "",
                 admin_email: "",
                 subscription_tier: "Free",
-                expiration_months: 12
+                expiration_period: "30d"
             });
         }
         setIsModalOpen(true);
@@ -164,7 +164,8 @@ export const OrganizationManagement: React.FC = () => {
                     // Create organization using real API
                     const newOrganization = await createOrganization({
                         userId: user?.id,
-                        organizationName: formData.name
+                        organizationName: formData.name,
+                        admin_email: formData.admin_email
                     });
 
                     if (newOrganization && newOrganization.id) {
@@ -176,13 +177,20 @@ export const OrganizationManagement: React.FC = () => {
                         };
                         const tierId = tierMap[formData.subscription_tier] || "tier_free";
 
+                        let periodEnds = new Date();
+                        if (formData.expiration_period === "30d") {
+                            periodEnds.setDate(periodEnds.getDate() + 30);
+                        } else if (formData.expiration_period === "1y") {
+                            periodEnds.setFullYear(periodEnds.getFullYear() + 1);
+                        } else if (formData.expiration_period === "5y") {
+                            periodEnds.setFullYear(periodEnds.getFullYear() + 5);
+                        }
+
                         await createOrganizationUsage({
                             userId: user?.id,
                             organizationId: newOrganization.id,
                             subscriptionTierId: tierId,
-                            currentPeriodEnds: formData.expiration_months
-                                ? new Date(new Date().setMonth(new Date().getMonth() + formData.expiration_months)).getTime() / 1000
-                                : undefined
+                            currentPeriodEnds: periodEnds.getTime() / 1000
                         });
 
                         setToast({ message: "Organization created successfully", type: MessageBarType.success });
@@ -196,8 +204,8 @@ export const OrganizationManagement: React.FC = () => {
             }
             handleCloseModal();
             loadOrganizations();
-        } catch (error) {
-            setToast({ message: "Failed to save organization", type: MessageBarType.error });
+        } catch (error: any) {
+            setToast({ message: error.message || "Failed to save organization", type: MessageBarType.error });
             console.error(error);
         }
     };
@@ -375,9 +383,9 @@ export const OrganizationManagement: React.FC = () => {
     const tierOptions: IDropdownOption[] = [{ key: "Free", text: "Free" }];
 
     const expirationOptions: IDropdownOption[] = [
-        { key: 3, text: "3 Months" },
-        { key: 6, text: "6 Months" },
-        { key: 12, text: "12 Months (1 Year)" }
+        { key: "30d", text: "30 Days" },
+        { key: "1y", text: "1 Year" },
+        { key: "5y", text: "5 Years" }
     ];
 
     if (isLoading) {
@@ -514,6 +522,7 @@ export const OrganizationManagement: React.FC = () => {
                         required
                         selectedKey={formData.subscription_tier}
                         options={tierOptions}
+                        disabled={true}
                         onChange={(_, option) => setFormData({ ...formData, subscription_tier: option?.key as SubscriptionTier })}
                     />
 
@@ -521,9 +530,9 @@ export const OrganizationManagement: React.FC = () => {
                         <Dropdown
                             label="Expiration Period"
                             required
-                            selectedKey={formData.expiration_months}
+                            selectedKey={formData.expiration_period}
                             options={expirationOptions}
-                            onChange={(_, option) => setFormData({ ...formData, expiration_months: option?.key as number })}
+                            onChange={(_, option) => setFormData({ ...formData, expiration_period: option?.key as string })}
                         />
                     )}
                 </Stack>

@@ -830,7 +830,7 @@ export async function getOrganizationSubscription({ userId, organizationId }: an
     return subscription;
 }
 
-export const createOrganization = async ({ userId, organizationName }: any) => {
+export const createOrganization = async ({ userId, organizationName, admin_email }: any) => {
     const response = await fetch("/api/create-organization", {
         method: "POST",
         headers: {
@@ -838,12 +838,26 @@ export const createOrganization = async ({ userId, organizationName }: any) => {
             "X-MS-CLIENT-PRINCIPAL-ID": userId
         },
         body: JSON.stringify({
-            organizationName
+            organizationName,
+            admin_email
         })
     });
 
     if (response.status > 299 || !response.ok) {
-        throw Error("Error creating organization");
+        let errorMessage = "Error creating organization";
+        try {
+            const errorData = await response.json();
+            if (errorData && errorData.error) {
+                if (typeof errorData.error === "object" && errorData.error.message) {
+                    errorMessage = errorData.error.message;
+                } else {
+                    errorMessage = String(errorData.error);
+                }
+            }
+        } catch (e) {
+            // parsing failed, use default
+        }
+        throw Error(errorMessage);
     }
 
     const organization = await response.json();
