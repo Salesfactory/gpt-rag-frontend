@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { pulseDataService, CreatePulseDataInput } from '../../../services/platform-admin/pulseDataService.mock';
 import { PulseDataWithOrganization } from '../../../services/platform-admin/mockData';
 import { ConfirmDialog } from '../../../components/platform-admin/ConfirmDialog/ConfirmDialog';
+import { Upload, Calendar, Plus, X } from 'lucide-react';
+import { uploadGlobalIngestData } from '../../../api';
+import { useAppContext } from '../../../providers/AppProviders';
 
 interface ToastMessage {
   type: 'success' | 'error';
@@ -9,23 +12,34 @@ interface ToastMessage {
 }
 
 export const DataIngestion: React.FC = () => {
-  const [pulseData, setPulseData] = useState<PulseDataWithOrganization[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const { user } = useAppContext();
+
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [metadataFields, setMetadataFields] = useState<Array<{ key: string; value: string }>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const resetForm = () => {
+    setFormData({
+      filename: '',
+      document_date: new Date().toISOString().split('T')[0],
+      consumer_type: 'Pro',
+      metadata_notes: '',
+      user_email: ''
+    });
+    setMetadataFields([]);
+  };
 
   const [formData, setFormData] = useState<CreatePulseDataInput>({
     filename: '',
     document_date: new Date().toISOString().split('T')[0],
-    consumer_type: 'Consumer',
+    consumer_type: 'Pro',
     metadata_notes: '',
     user_email: ''
   });
-
-  useEffect(() => {
-    loadPulseData();
-  }, []);
 
   useEffect(() => {
     if (toast) {
@@ -34,304 +48,257 @@ export const DataIngestion: React.FC = () => {
     }
   }, [toast]);
 
-  const loadPulseData = async () => {
-    try {
-      setIsLoading(true);
-      const data = await pulseDataService.getAll();
-      setPulseData(data);
-    } catch (error) {
-      setToast({ type: 'error', message: 'Failed to load pulse data' });
-    } finally {
-      setIsLoading(false);
+  const handleIngestion = async () => {
+    if (!formData.filename) {
+      setToast({ type: 'error', message: 'Filename is required' });
+      return;
     }
-  };
 
-  const handleCreate = async () => {
-    if (!formData.filename || !formData.user_email) {
-      setToast({ type: 'error', message: 'Filename and User Email are required' });
+    const hasEmptyMetadata = metadataFields.some(field => !field.key.trim() || !field.value.trim());
+    if (hasEmptyMetadata) {
+      setToast({ type: 'error', message: 'All metadata fields must have both key and value filled out' });
+      return;
+    }
+
+    if (!selectedFile) {
+      setToast({ type: 'error', message: 'File is required' });
       return;
     }
 
     try {
-      await pulseDataService.create(formData);
-      setToast({ type: 'success', message: 'Data ingestion record created successfully' });
-      setIsModalOpen(false);
+      await uploadGlobalIngestData(user, selectedFile, metadataFields);
+      setToast({ type: 'success', message: 'Data ingestion completed successfully' });
       resetForm();
-      loadPulseData();
+      setSelectedFile(null);
     } catch (error) {
-      setToast({ type: 'error', message: 'Failed to create data ingestion record' });
+      setToast({ type: 'error', message: 'Failed to complete data ingestion' });
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteConfirm) return;
+  const handleAddMetadataField = () => {
+    setMetadataFields([...metadataFields, { key: '', value: '' }]);
+  };
 
-    try {
-      await pulseDataService.delete(deleteConfirm);
-      setToast({ type: 'success', message: 'Data ingestion record deleted successfully' });
-      setDeleteConfirm(null);
-      loadPulseData();
-    } catch (error) {
-      setToast({ type: 'error', message: 'Failed to delete data ingestion record' });
+  const handleMetadataFieldChange = (index: number, field: 'key' | 'value', value: string) => {
+    const newFields = [...metadataFields];
+    newFields[index][field] = value;
+    setMetadataFields(newFields);
+  };
+
+  const handleRemoveMetadataField = (index: number) => {
+    const newFields = [...metadataFields];
+    newFields.splice(index, 1);
+    setMetadataFields(newFields);
+  };
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+    setFormData({ ...formData, filename: file.name });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFileSelect(file);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      filename: '',
-      document_date: new Date().toISOString().split('T')[0],
-      consumer_type: 'Consumer',
-      metadata_notes: '',
-      user_email: ''
-    });
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    console.log('File selected:', file);
+    if (file) {
+      handleFileSelect(file);
+    }
   };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getConsumerTypeColor = (type: 'Pro' | 'Consumer') => {
-    return type === 'Pro'
-      ? 'bg-purple-100 text-purple-800'
-      : 'bg-blue-100 text-blue-800';
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading pulse data...</div>
-      </div>
-    );
-  }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${
-          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        } text-white`}>
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          } text-white`}>
           {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Data Ingestion</h1>
-            <p className="text-gray-600 mt-1">Manage pulse data ingestion records</p>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Pulse Data Ingestion</h1>
+        <p className="text-gray-500 mt-1">Ingest data into Freddaid</p>
+      </div>
+
+      {/* Main Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        {/* Card Header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Data Ingestion</h2>
+        </div>
+
+        {/* Card Content */}
+        <div className="p-6">
+          {/* Drag & Drop Zone */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors mb-6 ${isDragging
+                ? 'border-blue-500 bg-blue-50'
+                : selectedFile
+                  ? 'border-green-400 bg-green-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
           >
-            + Add New Record
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-          <div className="text-sm opacity-90">Total Records</div>
-          <div className="text-3xl font-bold mt-1">{pulseData.length}</div>
-        </div>
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-          <div className="text-sm opacity-90">Pro Records</div>
-          <div className="text-3xl font-bold mt-1">
-            {pulseData.filter(d => d.consumer_type === 'Pro').length}
-          </div>
-        </div>
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-white">
-          <div className="text-sm opacity-90">Consumer Records</div>
-          <div className="text-3xl font-bold mt-1">
-            {pulseData.filter(d => d.consumer_type === 'Consumer').length}
-          </div>
-        </div>
-      </div>
-
-      {/* Data Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Filename
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Document Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Organization
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                User Email
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {pulseData.map((data) => (
-              <tr key={data.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {data.filename}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(data.document_date)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getConsumerTypeColor(data.consumer_type)}`}>
-                    {data.consumer_type}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {data.organization_name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {data.user_email}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(data.created_at)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => setDeleteConfirm(data.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {pulseData.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                  No data ingestion records found
-                </td>
-              </tr>
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileInputChange}
+              className="hidden"
+            />
+            <Upload className={`w-10 h-10 mx-auto mb-3 ${selectedFile ? 'text-green-500' : 'text-gray-400'
+              }`} />
+            {selectedFile ? (
+              <>
+                <p className="text-gray-700 font-medium">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500 mt-1">Click or drag to replace</p>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-700">Drag and drop a file here, or click to select</p>
+                <p className="text-sm text-gray-500 mt-1">File will be ingested into Freddaid</p>
+              </>
             )}
-          </tbody>
-        </table>
-      </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Select File
+            </button>
+          </div>
 
-      {/* Create Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Add New Data Ingestion Record</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filename *
-                </label>
-                <input
-                  type="text"
-                  value={formData.filename}
-                  onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., customer_survey_q1.pdf"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Document Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.document_date}
-                  onChange={(e) => setFormData({ ...formData, document_date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Consumer Type
-                </label>
-                <select
-                  value={formData.consumer_type}
-                  onChange={(e) => setFormData({ ...formData, consumer_type: e.target.value as 'Pro' | 'Consumer' })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="Consumer">Consumer</option>
-                  <option value="Pro">Pro</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  User Email *
-                </label>
-                <input
-                  type="email"
-                  value={formData.user_email}
-                  onChange={(e) => setFormData({ ...formData, user_email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="user@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Metadata Notes
-                </label>
-                <textarea
-                  value={formData.metadata_notes}
-                  onChange={(e) => setFormData({ ...formData, metadata_notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                  placeholder="Additional notes..."
-                />
-              </div>
+          {/* Form Fields Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Filename */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Filename <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.filename}
+                onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
+                placeholder="Enter filename"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  resetForm();
-                }}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            {/* Document Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Document Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.document_date}
+                onChange={(e) => setFormData({ ...formData, document_date: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Consumer Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Consumer Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.consumer_type}
+                onChange={(e) => setFormData({ ...formData, consumer_type: e.target.value as 'Pro' | 'Consumer' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Create
-              </button>
+                <option value="Pro">Pro</option>
+                <option value="Consumer">Consumer</option>
+              </select>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={deleteConfirm !== null}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={handleDelete}
-        title="Delete Data Ingestion Record"
-        message="Are you sure you want to delete this data ingestion record? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-      />
+          {/* Metadata Fields */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Metadata Fields
+              </label>
+              <button
+                type="button"
+                onClick={handleAddMetadataField}
+                className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                Add Field
+              </button>
+            </div>
+
+            {metadataFields.length === 0 ? (
+              <p className="text-sm text-gray-500 italic">No metadata fields added. Click "Add Field" to add key-value pairs.</p>
+            ) : (
+              <div className="space-y-2">
+                {metadataFields.map((field, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="Key"
+                      value={field.key}
+                      onChange={(e) => handleMetadataFieldChange(index, 'key', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value"
+                      value={field.value}
+                      onChange={(e) => handleMetadataFieldChange(index, 'value', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMetadataField(index)}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-md transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Action Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={handleIngestion}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              Ingest Data
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
