@@ -74,6 +74,7 @@ export const OrganizationManagement: React.FC = () => {
         totalTokens: 0,
         grandTotal: 0
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState<OrganizationFormData>({
         name: "",
@@ -149,6 +150,7 @@ export const OrganizationManagement: React.FC = () => {
     };
 
     const handleSubmit = async () => {
+        setIsSubmitting(true);
         try {
             if (editingOrg) {
                 const input: UpdateOrganizationInput = {
@@ -159,6 +161,8 @@ export const OrganizationManagement: React.FC = () => {
                 };
                 await organizationService.update(input);
                 setToast({ message: "Organization updated successfully", type: MessageBarType.success });
+                handleCloseModal();
+                loadOrganizations();
             } else {
                 try {
                     // Create organization using real API
@@ -194,6 +198,8 @@ export const OrganizationManagement: React.FC = () => {
                         });
 
                         setToast({ message: "Organization created successfully", type: MessageBarType.success });
+                        handleCloseModal();
+                        loadOrganizations();
                     } else {
                         throw new Error("Failed to create organization");
                     }
@@ -202,11 +208,11 @@ export const OrganizationManagement: React.FC = () => {
                     throw error; // Re-throw to be caught by the outer catch block
                 }
             }
-            handleCloseModal();
-            loadOrganizations();
         } catch (error: any) {
             setToast({ message: error.message || "Failed to save organization", type: MessageBarType.error });
             console.error(error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -538,8 +544,12 @@ export const OrganizationManagement: React.FC = () => {
                 </Stack>
 
                 <DialogFooter>
-                    <DefaultButton onClick={handleCloseModal} text="Cancel" />
-                    <PrimaryButton onClick={handleSubmit} text={editingOrg ? "Update" : "Create"} />
+                    <DefaultButton onClick={handleCloseModal} text="Cancel" disabled={isSubmitting} />
+                    {isSubmitting ? (
+                        <Spinner size={SpinnerSize.medium} label={editingOrg ? "Updating..." : "Creating..."} ariaLive="assertive" labelPosition="right" />
+                    ) : (
+                        <PrimaryButton onClick={handleSubmit} text={editingOrg ? "Update" : "Create"} />
+                    )}
                 </DialogFooter>
             </Dialog>
 
