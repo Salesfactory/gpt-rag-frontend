@@ -117,7 +117,6 @@ export const DataIngestion: React.FC = () => {
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log('File selected:', file);
     if (file) {
       handleFileSelect(file);
     }
