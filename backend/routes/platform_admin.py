@@ -37,6 +37,22 @@ TIER_MAPPING = {
 @auth_required
 @only_platform_admin()
 def get_platform_organizations():
+    """
+    Retrieve all organizations with aggregated usage and billing metadata for
+    platform administrators.
+    This endpoint is secured by the ``auth_required`` decorator and is intended
+    to be used by platform-level administrators to view organization-level
+    information in a single response.
+    Returns:
+        flask.Response: A JSON success response containing a list of
+        organizations, each enriched with usage statistics, tier information,
+        limits, and billing-related fields on success.
+    Error responses:
+        401/403: If authentication or authorization fails (enforced by
+            ``auth_required``).
+        500: If an unexpected error occurs while fetching or aggregating
+            organization data.
+    """
     try:
         orgs = get_all_organizations()
         usages = get_all_organization_usages()
@@ -84,6 +100,38 @@ def get_platform_organizations():
 @auth_required
 @only_platform_admin()
 def update_platform_organization(organization_id):
+    """
+    Update an organization's metadata and optionally assign an admin user.
+    This endpoint updates the organization's name and, if an admin email is
+    provided, associates the organization with that user and sends a
+    notification email to the new admin.
+    Parameters
+    ----------
+    organization_id : str
+        The unique identifier of the organization to update, provided as a
+        path parameter.
+    Request JSON Body
+    -----------------
+    name : str
+        The new name for the organization. This field is required.
+    admin_email : str, optional
+        The email address of the user to set as the organization's owner.
+    Returns
+    -------
+    flask.Response
+        A JSON response created by ``create_success_response`` containing the
+        updated organization metadata on success, or by
+        ``create_error_response`` containing an error message on failure.
+    Error Responses
+    ---------------
+    400 BAD REQUEST
+        Returned if the organization name is missing from the request body
+        or if the provided admin email does not correspond to an existing
+        user.
+    500 INTERNAL SERVER ERROR
+        Returned if an unexpected error occurs while processing the
+        request.
+    """
     try:
         data = request.json
         name = data.get("name")
@@ -93,7 +141,6 @@ def update_platform_organization(organization_id):
             return create_error_response("Organization name is required", HTTPStatus.BAD_REQUEST)
 
         owner_id = None
-        target_user_name = "User"
         
         if admin_email:
             user = get_user_by_email(admin_email)
@@ -116,6 +163,30 @@ def update_platform_organization(organization_id):
 @auth_required
 @only_platform_admin()
 def delete_platform_organization(organization_id):
+    """
+    Delete an organization by its identifier.
+    This endpoint deletes the organization identified by the given
+    ``organization_id``. On success, it returns a JSON response with
+    a confirmation message.
+    Parameters
+    ----------
+    organization_id : str
+        The unique identifier of the organization to delete, provided
+        as a path parameter in the request URL.
+    Returns
+    -------
+    flask.Response
+        A JSON response created by ``create_success_response`` with a
+        confirmation message on success (typically HTTP 200 OK), or a
+        JSON error response created by ``create_error_response`` with
+        HTTP 500 Internal Server Error if an unexpected error occurs.
+    Potential Errors
+    ----------------
+    - 500 Internal Server Error:
+      Returned if an unexpected exception is raised while attempting
+      to delete the organization. The error is logged with the
+      organization identifier for diagnostics.
+    """
     try:
         delete_organization(organization_id)
         return create_success_response({"message": "Organization deleted successfully"})

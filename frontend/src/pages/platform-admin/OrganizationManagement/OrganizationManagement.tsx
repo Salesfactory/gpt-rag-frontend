@@ -23,7 +23,7 @@ import {
     SpinnerSize,
     useTheme
 } from "@fluentui/react";
-import { organizationService, CreateOrganizationInput, UpdateOrganizationInput } from "../../../services/platform-admin/organizationService.mock";
+import { organizationService, UpdateOrganizationInput } from "../../../services/platform-admin/organizationService.mock";
 import {
     createOrganization,
     createOrganizationUsage,

@@ -14,7 +14,7 @@ from data_summary.blob_utils import (
 )
 from data_summary.custom_prompts import BUSINESS_DESCRIPTION
 
-from shared.cosmo_db import create_organization, get_organization_data, get_user_by_email
+from shared.cosmo_db import create_organization, get_user_by_email
 from shared.decorators import check_organization_limits, check_organization_upload_limits, require_organization_storage_limits
 
 from utils import create_success_response, create_error_response, create_organization_usage, get_organization_usage_by_id, EmailService
@@ -47,8 +47,8 @@ def send_admin_notification_email(admin_email, admin_name, organization_name):
     Sends an email to the new organization administrator.
     """
     if not all([EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS]):
-        logger.error("Email configuration missing, cannot send admin notification email.")
-        return
+        logger.critical("Email configuration missing, cannot send admin notification email. Aborting notification.")
+        raise RuntimeError("Email configuration missing, cannot send admin notification email.")
 
     try:
         email_service = EmailService(EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS)
@@ -202,7 +202,6 @@ def createOrganization():
         admin_email = request.json.get("admin_email")
         
         target_user_id = client_principal_id
-        target_user_name = "User" # Default fallback
 
         if admin_email:
             user = get_user_by_email(admin_email)
