@@ -5,6 +5,8 @@ from shared.decorators import only_platform_admin
 from utils import create_success_response, create_error_response
 from http import HTTPStatus
 import logging
+import json
+from datetime import datetime
 from shared.blob_storage import BlobStorageManager
 
 
@@ -48,6 +50,8 @@ def ingest_global_data():
         }
     """
     file = request.files.get("file")
+    form_metadata: list(dict) = request.form.get("metadata", [])
+    form_metadata = json.loads(form_metadata) if form_metadata else []
     if not file:
         return create_error_response(
             "No file part in the request", HTTPStatus.BAD_REQUEST
@@ -58,12 +62,21 @@ def ingest_global_data():
     try:
         blob_storage_manager = current_app.config["blob_storage_manager"]
         
+
+        metadata = {
+            "upload_date": datetime.now().isoformat(),
+        }
+
+        for item in form_metadata:
+            metadata[item["key"]] = item["value"]
+
         # Use the new memory-based upload method
         result = blob_storage_manager.upload_fileobj_to_blob(
             fileobj=file.stream, 
             filename=file.filename,
             blob_folder=CUSTOMER_PULSE_FOLDER,
             container=CUSTOMER_PULSE_CONTAINER_NAME,
+            metadata=metadata
         )
         
         if result["status"] == "success":
