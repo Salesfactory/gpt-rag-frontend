@@ -884,6 +884,37 @@ export const createOrganizationUsage = async ({ userId, organizationId, subscrip
     return organizationUsage;
 }
 
+export const updatePlatformOrganization = async ({ orgId, name, admin_email }: { orgId: string, name: string, admin_email?: string }) => {
+    const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name,
+            admin_email
+        })
+    });
+    
+    if (response.status > 299 || !response.ok) {
+        let errorMessage = "Error updating organization";
+        try {
+            const errorData = await response.json();
+            if (errorData && errorData.error) {
+                if (typeof errorData.error === "object" && errorData.error.message) {
+                    errorMessage = errorData.error.message;
+                } else {
+                    errorMessage = String(errorData.error);
+                }
+            }
+        } catch (e) {
+        }
+        throw Error(errorMessage);
+    }
+    
+    return await response.json();
+};
+
 export async function getInvitations({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
     const user_username = user ? user.username : "anonymous";

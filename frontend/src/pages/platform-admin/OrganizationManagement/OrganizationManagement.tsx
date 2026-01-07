@@ -24,7 +24,7 @@ import {
     useTheme
 } from "@fluentui/react";
 import { organizationService, CreateOrganizationInput, UpdateOrganizationInput } from "../../../services/platform-admin/organizationService.mock";
-import { createOrganization, createOrganizationUsage, getPlatformOrganizations, getProductPrices } from "../../../api/api";
+import { createOrganization, createOrganizationUsage, getPlatformOrganizations, getProductPrices, updatePlatformOrganization } from "../../../api/api";
 import { useAppContext } from "../../../providers/AppProviders";
 import { OrganizationWithCosts, SubscriptionTier } from "../../../services/platform-admin/mockData";
 import { formatCurrency } from "../../../utils/currencyUtils";
@@ -153,13 +153,13 @@ export const OrganizationManagement: React.FC = () => {
         setIsSubmitting(true);
         try {
             if (editingOrg) {
-                const input: UpdateOrganizationInput = {
-                    id: editingOrg.id,
+                // Use real API for updates
+                await updatePlatformOrganization({
+                    orgId: editingOrg.id,
                     name: formData.name,
-                    admin_email: formData.admin_email,
-                    subscription_tier: formData.subscription_tier
-                };
-                await organizationService.update(input);
+                    admin_email: formData.admin_email
+                });
+
                 setToast({ message: "Organization updated successfully", type: MessageBarType.success });
                 handleCloseModal();
                 loadOrganizations();

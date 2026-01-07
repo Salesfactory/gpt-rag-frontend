@@ -1,10 +1,12 @@
 import logging
 from flask import Blueprint
 from routes.decorators.auth_decorator import auth_required
-from shared.cosmo_db import get_all_organizations, get_all_organization_usages
+from shared.cosmo_db import get_all_organizations, get_all_organization_usages, update_organization_metadata, get_user_by_email
 from utils import create_success_response, create_error_response
 from http import HTTPStatus
 from datetime import datetime
+from flask import request
+from routes.organizations import send_admin_notification_email
 
 bp = Blueprint("platform_admin", __name__)
 logger = logging.getLogger(__name__)
@@ -15,6 +17,39 @@ TIER_MAPPING = {
     'tier_premium': 'Premium',
     'tier_custom': 'Custom'
 }
+
+@bp.route("/api/platform-admin/organizations/<organization_id>", methods=["PUT"])
+@auth_required
+def update_platform_organization(organization_id):
+    try:
+        data = request.json
+        name = data.get("name")
+        admin_email = data.get("admin_email")
+
+        if not name:
+            return create_error_response("Organization name is required", HTTPStatus.BAD_REQUEST)
+
+        owner_id = None
+        target_user_name = "User"
+        
+        if admin_email:
+            user = get_user_by_email(admin_email)
+            if not user:
+                return create_error_response(f"User with email {admin_email} not found", HTTPStatus.BAD_REQUEST)
+            owner_id = user.get('id')
+            target_user_name = user.get("data", {}).get("name", "User")
+        
+        updated_org = update_organization_metadata(organization_id, name, owner_id)
+        
+        if admin_email and owner_id:
+            send_admin_notification_email(admin_email, target_user_name, name)
+
+        return create_success_response(updated_org)
+
+    except Exception as e:
+        logger.error(f"Error updating organization {organization_id}: {e}")
+        error_msg = str(e) if str(e) else "Internal Server Error"
+        return create_error_response(error_msg, HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @bp.route("/api/platform-admin/organizations", methods=["GET"])
 @auth_required

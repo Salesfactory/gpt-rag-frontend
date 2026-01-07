@@ -1720,3 +1720,30 @@ def get_user_by_email(email):
     except Exception as e:
         logging.error(f"Error retrieving user by email {email}: {e}")
         return None
+
+
+def update_organization_metadata(org_id, name, owner_id=None):
+    """
+    Updates organization name and optionally the owner.
+    """
+    container = get_cosmos_container("organizations")
+    try:
+        org = container.read_item(item=org_id, partition_key=org_id)
+        
+        org['name'] = name
+        
+        if owner_id and org.get('owner') != owner_id:
+            org['owner'] = owner_id
+            
+            try:
+                user = get_user_container(owner_id)
+                user["data"]["organizationId"] = org_id
+                update_user(owner_id, user)
+            except Exception as ex:
+                logging.error(f"Failed to update user {owner_id} with new organization {org_id}: {ex}")
+
+        updated_org = container.replace_item(item=org_id, body=org)
+        return updated_org
+    except Exception as e:
+        logging.error(f"Error updating organization {org_id}: {e}")
+        raise
