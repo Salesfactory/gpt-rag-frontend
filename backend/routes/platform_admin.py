@@ -51,7 +51,6 @@ def ingest_global_data():
     """
     file = request.files.get("file")
     form_metadata: list(dict) = request.form.get("metadata", [])
-    form_metadata = json.loads(form_metadata) if form_metadata else []
     if not file:
         return create_error_response(
             "No file part in the request", HTTPStatus.BAD_REQUEST
@@ -67,6 +66,7 @@ def ingest_global_data():
             "upload_date": datetime.now().isoformat(),
         }
 
+        form_metadata = json.loads(form_metadata) if form_metadata else []
         for item in form_metadata:
             metadata[item["key"]] = item["value"]
 
