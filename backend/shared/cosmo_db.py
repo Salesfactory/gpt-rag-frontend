@@ -755,7 +755,11 @@ def get_invitation_role(user_id, organization_id):
     if invitations:
         return invitations[0].get("role")
 
-    raise ValueError("No role found: user is not owner nor has active invitation")
+    # No active invitation found for this user and organization
+    raise NotFound(
+        f"No active invitation found for user '{user_id}' "
+        f"in organization '{organization_id}'."
+    )
 
 
 def create_invitation(invited_user_email, organization_id, role, nickname):
@@ -1780,3 +1784,4 @@ def delete_organization(organization_id):
         logging.error(f"Error deleting organization {organization_id}: {e}")
         raise
 
+        raise
