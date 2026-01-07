@@ -8,6 +8,9 @@ from utils import (
     get_organization_id_and_user_id_from_request,
     create_error_response,
     create_error_response_with_body,
+    ERROR_CODE_UNAUTHORIZED_ORG,
+    ERROR_CODE_USER_LIMIT_EXCEEDED,
+    ERROR_CODE_ORG_LIMIT_EXCEEDED,
     get_organization_tier_and_subscription,
 )
 from shared.cosmo_db import (
@@ -15,6 +18,7 @@ from shared.cosmo_db import (
     get_organization_usage,
     get_subscription_tier_by_id,
     initalize_user_limits,
+    get_invitation_role
 )
 
 ORG_FILES_PREFIX = "organization_files"
@@ -97,7 +101,9 @@ def check_organization_limits():
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
                     return create_error_response(
-                        "Unauthorized access to organization", 403
+                        "Unauthorized access to organization",
+                        403,
+                        ERROR_CODE_UNAUTHORIZED_ORG
                     )
 
                 org_usage = get_organization_usage(organization_id)
@@ -165,7 +171,9 @@ def require_conversation_limits():
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
                     return create_error_response(
-                        "Unauthorized access to organization", 403
+                        "Unauthorized access to organization",
+                        403,
+                        ERROR_CODE_UNAUTHORIZED_ORG
                     )
 
                 org_usage = get_organization_usage(organization_id)
@@ -175,7 +183,9 @@ def require_conversation_limits():
                     > org_limits["quotas"]["totalCreditsAllocated"]
                 ):
                     return create_error_response(
-                        "Organization has exceeded its conversation limits", 403
+                        "Organization has exceeded its conversation limits",
+                        403,
+                        ERROR_CODE_ORG_LIMIT_EXCEEDED
                     )
 
                 return f(*args, **kwargs)
@@ -225,7 +235,9 @@ def require_user_conversation_limits():
                         f"User {client_principal_id} attempted to access org {organization_id}"
                     )
                     return create_error_response(
-                        "Unauthorized access to organization", 403
+                        "Unauthorized access to organization",
+                        403,
+                        ERROR_CODE_UNAUTHORIZED_ORG
                     )
 
                 org_usage = get_organization_usage(organization_id)
@@ -250,13 +262,16 @@ def require_user_conversation_limits():
                         "User has exceeded their conversation limits",
                         403,
                         {"nextPeriodStart": next_period_start},
+                        ERROR_CODE_USER_LIMIT_EXCEEDED
                     )
                 if (
                     org_usage["balance"]["currentUsed"]
                     >= org_limits["quotas"]["totalCreditsAllocated"]
                 ):
                     return create_error_response(
-                        "Organization has exceeded its conversation limits", 403
+                        "Organization has exceeded its conversation limits",
+                        403,
+                        ERROR_CODE_ORG_LIMIT_EXCEEDED
                     )
 
                 kwargs["user_limits"] = {
@@ -447,6 +462,34 @@ def require_organization_storage_limits():
                     "An error occurred in require_organization_upload_limits"
                 )
                 return create_error_response("Internal server error", 500)
+
+        return decorated_function
+
+    return decorator
+
+def only_platform_admin():
+    """
+    Decorator for Flask routes that ensures the requester is a platform administrator.
+    """
+
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            organization_id, client_principal_id = get_organization_id_and_user_id_from_request(request)
+
+            if not client_principal_id or not organization_id:
+                return create_error_response("Unauthorized - Missing organization or user information", 401)
+
+            try:
+                invitation_role = get_invitation_role(client_principal_id, organization_id)
+                if invitation_role != "platformAdmin":
+                    return create_error_response("Unauthorized - User is not a platform administrator", 401)
+                return f(*args, **kwargs)
+
+            except Exception as e:
+                logging.exception("An error occurred in only_platform_admin")
+                return create_error_response("Internal server error", 500)
+
 
         return decorated_function
 

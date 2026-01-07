@@ -27,30 +27,29 @@ def mock_deps():
          patch("shared.decorators.get_user_organizations") as mock_get_user_orgs, \
          patch("shared.decorators.get_organization_usage") as mock_get_org_usage, \
          patch("shared.decorators.get_subscription_tier_by_id") as mock_get_tier, \
-         patch("shared.decorators.initalize_user_limits") as mock_init_limits, \
          patch("shared.decorators.create_error_response") as mock_create_error, \
-         patch("shared.decorators.create_error_response_with_body") as mock_create_error_with_body:
+         patch("shared.decorators.create_error_response_with_body") as mock_create_error_with_body, \
+         patch("shared.decorators.initalize_user_limits") as mock_init_user_limits:
 
         # Configure create_error_response to return a simple tuple for easy assertion
-        mock_create_error.side_effect = lambda msg, code: (msg, code)
-        mock_create_error_with_body.side_effect = lambda msg, code, body: ({"error": msg, "body": body}, code)
+        # Now accepts optional error_code parameter
+        mock_create_error.side_effect = lambda msg, code, error_code=None: (msg, code)
 
-        # Configure initalize_user_limits to return a reasonable default
-        mock_init_limits.side_effect = lambda org_id, user_id, limit: {
-            "userId": user_id,
-            "totalAllocated": limit,
-            "currentUsed": 0
-        }
+        # Configure create_error_response_with_body to return dict with error key
+        mock_create_error_with_body.side_effect = lambda msg, code, body, error_code=None: ({"error": msg}, code)
 
+        # Configure initalize_user_limits to return a default user limits structure
+        mock_init_user_limits.return_value = {"userId": "user1", "totalAllocated": 100, "currentUsed": 0}
+        
         yield {
             "get_org_id": mock_get_org_id,
             "get_ids": mock_get_ids,
             "get_user_orgs": mock_get_user_orgs,
             "get_org_usage": mock_get_org_usage,
             "get_tier": mock_get_tier,
-            "init_limits": mock_init_limits,
             "create_error": mock_create_error,
-            "create_error_with_body": mock_create_error_with_body
+            "create_error_with_body": mock_create_error_with_body,
+            "init_user_limits": mock_init_user_limits
         }
 
 # Tests for check_organization_limits
@@ -169,7 +168,7 @@ def test_require_user_limits_missing_params(app, mock_deps):
         assert "Missing required parameters" in resp
 
 def test_require_user_limits_user_not_authorized(app, mock_deps):
-    """Test that a new user not in allowedUserIds gets initialized with limits"""
+    """Test that users not in allowedUserIds are automatically initialized"""
     mock_deps["get_ids"].return_value = ("org1", "user1")
     mock_deps["get_user_orgs"].return_value = [{"id": "org1"}]
     mock_deps["get_org_usage"].return_value = {
@@ -186,10 +185,11 @@ def test_require_user_limits_user_not_authorized(app, mock_deps):
         return kwargs["user_limits"]
 
     with app.test_request_context(headers={"X-MS-CLIENT-PRINCIPAL-ID": "user1"}):
-        user_limits = view()
-        # User should be auto-initialized with their share of org credits
-        assert user_limits["user_limit"] == 100  # 1000 / 10 seats
-        assert user_limits["user_used"] == 0
+        resp = view()
+        # User should be auto-initialized and request succeeds
+        assert resp == "success"
+        # Verify initalize_user_limits was called
+        mock_deps["init_user_limits"].assert_called_once_with("org1", "user1", 100.0)
 
 def test_require_user_limits_user_exceeded(app, mock_deps):
     mock_deps["get_ids"].return_value = ("org1", "user1")
