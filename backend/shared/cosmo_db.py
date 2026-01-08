@@ -1785,6 +1785,25 @@ def delete_organization(organization_id):
         raise e
 
 def create_user_logs(user_id, organization_id, action, metadata=None):
+    """
+    Create an audit log entry for a user action in the ``userLogs`` container.
+
+    This function records a user-related event, such as an action performed by
+    the user within an organization, by writing a log document to Cosmos DB.
+
+    :param user_id: The identifier of the user associated with the log entry.
+    :param organization_id: The identifier of the organization in which the
+        action occurred.
+    :param action: A short string describing the action being logged
+        (for example, ``"login"``, ``"org_created"``, or similar).
+    :param metadata: Optional dictionary containing additional contextual
+        information to attach to the log entry. If provided, it is stored
+        under the ``"metadata"`` field of the log document.
+
+    :raises Exception: Propagates any unexpected errors that occur while
+        creating the log entry. ``CosmosResourceNotFoundError`` is caught
+        and logged as a warning without being re-raised.
+    """
     logs_container = get_cosmos_container("userLogs")
     try:
         log = {
