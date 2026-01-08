@@ -34,7 +34,6 @@ TIER_MAPPING = {
 }
 
 @bp.route("/organizations", methods=["GET"])
-@auth_required
 @only_platform_admin()
 def get_platform_organizations():
     """
@@ -97,7 +96,6 @@ def get_platform_organizations():
         return create_error_response("Internal Server Error", HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @bp.route("/organizations/<organization_id>", methods=["PUT"])
-@auth_required
 @only_platform_admin()
 def update_platform_organization(organization_id):
     """
@@ -160,7 +158,6 @@ def update_platform_organization(organization_id):
         return create_error_response(str(e) or "Internal Server Error", HTTPStatus.INTERNAL_SERVER_ERROR)
 
 @bp.route("/organizations/<organization_id>", methods=["DELETE"])
-@auth_required
 @only_platform_admin()
 def delete_platform_organization(organization_id):
     """
