@@ -1783,3 +1783,25 @@ def delete_organization(organization_id):
     except Exception as e:
         logging.error(f"Error deleting organization {organization_id}: {e}")
         raise e
+
+def create_user_logs(user_id, organization_id, action, metadata=None):
+    logs_container = get_cosmos_container("userLogs")
+    try:
+        log = {
+            "id": str(uuid.uuid4()),
+            "userId": user_id,
+            "organizationId": organization_id,
+            "action": action,
+            "timestamp": int(datetime.now(timezone.utc).timestamp()),
+        }
+
+        if metadata:
+            log["metadata"] = metadata
+
+        logs_container.create_item(body=log)
+
+    except CosmosResourceNotFoundError:
+        logging.warning(f"User {user_id} to log not found.")
+    except Exception as e:
+        logging.error(f"Error creating user log: {e}")
+        raise

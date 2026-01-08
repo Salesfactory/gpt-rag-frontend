@@ -84,6 +84,7 @@ from shared.cosmo_db import (
     patch_organization_data,
     get_audit_logs,
     get_organization_subscription,
+    create_user_logs,
 )
 from shared import clients
 from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_deleted
@@ -712,6 +713,12 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
             f"[auth] Successfully retrieved profile for user {client_principal_id} "
             f"with role {user_profile['role']}"
         )
+
+        try:
+            create_user_logs(client_principal_id, user_profile["organizationId"], "session-start")
+        except Exception as e:
+            logger.error(f"[auth] Error creating user log: {str(e)}")
+
 
         # Construct and return response
         return (
