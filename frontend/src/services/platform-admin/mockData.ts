@@ -69,6 +69,7 @@ const STORAGE_KEYS = {
   PULSE_DATA: 'platform_admin_pulse_data',
   CREDITS: 'platform_admin_credits',
   SUBSCRIPTION_TIERS: 'platform_admin_subscription_tiers',
+  USER_ACTIVITIES: 'platform_admin_user_activities',
 };
 
 // Helper Functions for localStorage persistence

@@ -54,6 +54,12 @@ export const PlatformAdminLayout: React.FC = () => {
           icon: 'Database',
         },
         {
+          key: 'user-activity',
+          name: 'User Activity',
+          url: '/platform-admin/user-activity',
+          icon: 'People',
+        },
+        {
           key: 'credits',
           name: 'Credits',
           url: '/platform-admin/credits',
