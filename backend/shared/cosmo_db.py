@@ -2018,7 +2018,7 @@ def get_user_activity_data(organization_id: str = None, start_date: int = None, 
         user_logs = get_user_logs_by_organization(organization_id, action)
         conversations = get_all_conversations_by_organization(organization_id)
 
-    users: list(dict) = get_all_users()
+    users: list[dict] = get_all_users()
     # 2) Pre-aggregate conversation stats in a single loop
     conv_stats: dict[str, dict] = {}
     for conv in conversations:
