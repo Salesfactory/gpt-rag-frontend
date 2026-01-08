@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { pulseDataService, CreatePulseDataInput } from '../../../services/platform-admin/pulseDataService.mock';
-import { PulseDataWithOrganization } from '../../../services/platform-admin/mockData';
-import { ConfirmDialog } from '../../../components/platform-admin/ConfirmDialog/ConfirmDialog';
+import { CreatePulseDataInput } from '../../../services/platform-admin/pulseDataService.mock';
 import { Upload, Calendar, Plus, X } from 'lucide-react';
 import { uploadGlobalIngestData } from '../../../api';
 import { useAppContext } from '../../../providers/AppProviders';
@@ -15,7 +13,6 @@ export const DataIngestion: React.FC = () => {
 
   const { user } = useAppContext();
 
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -117,7 +114,6 @@ export const DataIngestion: React.FC = () => {
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log('File selected:', file);
     if (file) {
       handleFileSelect(file);
     }
