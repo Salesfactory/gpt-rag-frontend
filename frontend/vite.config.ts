@@ -80,7 +80,6 @@ export default defineConfig({
             "/api/get-users-organizations-role": "http://127.0.0.1:8000",
             "/api/conversations": "http://127.0.0.1:8000",
             "/api/chat": "http://127.0.0.1:8000",
-            "/api/auth/user": "http://127.0.0.1:8000",
             "/api/prices": "http://127.0.0.1:8000",
             "^/api/subscriptions/.*?/tiers": {
                 target: "http://127.0.0.1:8000",
@@ -95,6 +94,8 @@ export default defineConfig({
             "/api/upload-source-document": "http://127.0.0.1:8000/",
             "/api/organization": "http://127.0.0.1:8000",
             "/api/delete-source-document": "http://127.0.0.1:8000/",
+            "/api/auth/user": "http://127.0.0.1:8000",
+
         },
         host: true
     }

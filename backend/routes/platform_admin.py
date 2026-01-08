@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 from datetime import datetime
 from http import HTTPStatus
 
@@ -12,6 +13,7 @@ from shared.cosmo_db import (
     get_user_by_email, 
     delete_organization
 )
+
 from shared.blob_storage import BlobStorageManager
 from shared.decorators import only_platform_admin
 from routes.decorators.auth_decorator import auth_required
@@ -222,16 +224,34 @@ def ingest_global_data():
         }
     """
     file = request.files.get("file")
-    if not file or file.filename == "":
+    form_metadata: list(dict) = request.form.get("metadata", [])
+    if not file:
+        return create_error_response(
+            "No file part in the request", HTTPStatus.BAD_REQUEST
+        )
+    if file.filename == "":
+        logging.error("No file selected")
         return create_error_response("No file selected", HTTPStatus.BAD_REQUEST)
     
     try:
         blob_storage_manager = current_app.config["blob_storage_manager"]
+        
+        metadata = {
+            "upload_date": datetime.now().isoformat(),
+        }
+
+        if form_metadata:
+            form_metadata = json.loads(form_metadata)
+            for item in form_metadata:
+                metadata[item["key"]] = item["value"]
+
+        # Use the new memory-based upload method
         result = blob_storage_manager.upload_fileobj_to_blob(
             fileobj=file.stream, 
             filename=file.filename,
             blob_folder=CUSTOMER_PULSE_FOLDER,
             container=CUSTOMER_PULSE_CONTAINER_NAME,
+            metadata=metadata
         )
         
         if result["status"] == "success":

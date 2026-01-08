@@ -486,7 +486,7 @@ export async function getSourceFileFromBlob(
     return result?.data ?? result;
 }
 
-export async function uploadSourceFileToBlob(file: any, userId: string, organizationId: string, folderPath: string = "") {
+export async function uploadSourceFileToBlob(file: File, userId: string, organizationId: string, folderPath: string = "") {
     const formdata = new FormData();
     formdata.append("file", file);
     formdata.append("organization_id", organizationId);
@@ -2193,6 +2193,32 @@ export async function uploadSharedDocument(file: File) {
         throw error;
     }
 }
+
+export async function uploadGlobalIngestData(user: any, file: File,  metadata: Array<{ key: string; value: string }>) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("metadata", JSON.stringify(metadata));
+    try {
+        const response = await fetchWrapper("/api/platform-admin/data-ingestion", {
+            method: "POST",
+            headers: {
+                "X-MS-CLIENT-PRINCIPAL-ID": user?.id ?? '00000000-0000-0000-0000-000000000000',
+                "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? 'anonymous',
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user?.organizationId ?? '00000000-0000-0000-0000-000000000000'
+            },
+            body: formData
+        })
+        if (!response.ok) {
+            console.log("Error uploading global ingest data:", response.statusText);
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        return response;
+    } catch (error) {
+        console.error("Error uploading global ingest data:", error);
+        throw error;
+    }
+}
+
 /* NOTE: Take Into consideration the difference between Fetch and FetchWrapper when adding new API functions
             FetchWrapper includes automatic session validation and retry logic and error handling.
             Use FetchWrapper for all new API calls if you need automatic session management...
