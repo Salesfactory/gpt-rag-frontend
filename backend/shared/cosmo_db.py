@@ -1801,7 +1801,9 @@ def create_user_logs(user_id, organization_id, action, metadata=None):
         logs_container.create_item(body=log)
 
     except CosmosResourceNotFoundError:
-        logging.warning(f"User {user_id} to log not found.")
+        logging.warning(
+            f"userLogs container not found while creating log for user {user_id}."
+        )
     except Exception as e:
         logging.error(f"Error creating user log: {e}")
         raise
