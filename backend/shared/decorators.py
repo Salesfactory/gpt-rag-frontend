@@ -6,6 +6,7 @@ from shared.clients import get_azure_key_vault_secret
 from utils import (
     get_organization_id_from_request,
     get_organization_id_and_user_id_from_request,
+    get_organization_id_and_user_id_from_request_safe,
     create_error_response,
     create_error_response_with_body,
     ERROR_CODE_UNAUTHORIZED_ORG,
@@ -475,7 +476,7 @@ def only_platform_admin():
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            organization_id, client_principal_id = get_organization_id_and_user_id_from_request(request)
+            organization_id, client_principal_id = get_organization_id_and_user_id_from_request_safe(request)
 
             if not client_principal_id or not organization_id:
                 return create_error_response("Unauthorized - Missing organization or user information", 401)

@@ -881,6 +881,7 @@ def create_organization(user_id, organization_name, storage_capacity):
                 "subscriptionStatus": "inactive",
                 "subscriptionExpirationDate": None,
                 "storageCapacity": storage_capacity,
+                "created_at": datetime.now(timezone.utc).timestamp(),
             }
         )
         if not result:
@@ -1670,3 +1671,115 @@ def initalize_user_limits(organization_id, user_id, credits_limit):
             f"Error initializing user limits for organization '{organization_id}' and user '{user_id}': {e}"
         )
         raise
+
+
+def get_all_organizations():
+    """
+    Retrieves all organizations from the organizations container.
+    """
+    container = get_cosmos_container("organizations")
+    try:
+        items = list(container.query_items(
+            query="SELECT * FROM c",
+            enable_cross_partition_query=True
+        ))
+        return items
+    except Exception as e:
+        logging.error(f"Error retrieving all organizations: {e}")
+        return []
+
+
+def get_all_organization_usages():
+    """
+    Retrieves all organization usages from the organizationsUsage container.
+    """
+    container = get_cosmos_container("organizationsUsage")
+    try:
+        items = list(container.query_items(
+            query="SELECT * FROM c WHERE c.type = 'wallet'",
+            enable_cross_partition_query=True
+        ))
+        return items
+    except Exception as e:
+        logging.error(f"Error retrieving all organization usages: {e}")
+        return []
+
+
+def get_user_by_email(email):
+    """
+    Retrieves a user document by email.
+    """
+    container = get_cosmos_container("users")
+    query = "SELECT * FROM c WHERE c.data.email = @email"
+    parameters = [{"name": "@email", "value": email.lower()}]
+    try:
+        items = list(container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+        if items:
+            return items[0]
+        return None
+    except Exception as e:
+        logging.error(f"Error retrieving user by email {email}: {e}")
+        return None
+
+
+def update_organization_metadata(org_id, name, owner_id=None):
+    """
+    Updates organization name and optionally the owner.
+    """
+    container = get_cosmos_container("organizations")
+    try:
+        org = container.read_item(item=org_id, partition_key=org_id)
+        
+        org['name'] = name
+        
+        if owner_id and org.get('owner') != owner_id:
+            org['owner'] = owner_id
+            
+            try:
+                user = get_user_container(owner_id)
+                user["data"]["organizationId"] = org_id
+                update_user(owner_id, user)
+            except Exception as ex:
+                logging.error(f"Failed to update user {owner_id} with new organization {org_id}: {ex}")
+
+        updated_org = container.replace_item(item=org_id, body=org)
+        return updated_org
+    except Exception as e:
+        logging.error(f"Error updating organization {org_id}: {e}")
+        raise
+
+def delete_organization(organization_id):
+    """
+    Deletes an organization and its associated usage.
+    """
+    logging.info(f"Deleting organization {organization_id}")
+    
+    usage_container = get_cosmos_container("organizationsUsage")
+    try:
+        query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
+        items = list(usage_container.query_items(
+            query=query,
+            parameters=[{"name": "@organizationId", "value": organization_id}],
+            partition_key=organization_id
+        ))
+        
+        for item in items:
+            usage_container.delete_item(item=item['id'], partition_key=organization_id)
+            logging.info(f"Deleted usage item {item['id']} for org {organization_id}")
+            
+    except Exception as e:
+        logging.error(f"Error checking/deleting organization usage: {e}")
+    
+    org_container = get_cosmos_container("organizations")
+    try:
+        org_container.delete_item(item=organization_id, partition_key=organization_id)
+        logging.info(f"Organization {organization_id} deleted successfully.")
+    except CosmosResourceNotFoundError:
+        logging.warning(f"Organization {organization_id} to delete not found.")
+    except Exception as e:
+        logging.error(f"Error deleting organization {organization_id}: {e}")
+        raise e

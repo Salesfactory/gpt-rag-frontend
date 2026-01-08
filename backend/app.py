@@ -99,7 +99,7 @@ from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
 from routes.invitations import bp as invitations
 from routes.users import bp as users
-from routes.platform_admin import bp as platform_admin
+from routes.platform_admin import bp as platform_admin_bp
 
 from _secrets import get_secret
 
@@ -246,7 +246,7 @@ app.register_blueprint(voice_customer)
 app.register_blueprint(categories)
 app.register_blueprint(invitations)
 app.register_blueprint(users)
-app.register_blueprint(platform_admin)
+app.register_blueprint(platform_admin_bp)
 
 
 def handle_auth_error(func):
