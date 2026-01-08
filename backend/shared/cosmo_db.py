@@ -1679,10 +1679,11 @@ def get_all_organizations():
     """
     container = get_cosmos_container("organizations")
     try:
-        items = list(container.query_items(
-            query="SELECT * FROM c",
-            enable_cross_partition_query=True
-        ))
+        items = list(
+            container.query_items(
+                query="SELECT * FROM c", enable_cross_partition_query=True
+            )
+        )
         return items
     except Exception as e:
         logging.error(f"Error retrieving all organizations: {e}")
@@ -1695,10 +1696,12 @@ def get_all_organization_usages():
     """
     container = get_cosmos_container("organizationsUsage")
     try:
-        items = list(container.query_items(
-            query="SELECT * FROM c WHERE c.type = 'wallet'",
-            enable_cross_partition_query=True
-        ))
+        items = list(
+            container.query_items(
+                query="SELECT * FROM c WHERE c.type = 'wallet'",
+                enable_cross_partition_query=True,
+            )
+        )
         return items
     except Exception as e:
         logging.error(f"Error retrieving all organization usages: {e}")
@@ -1713,11 +1716,11 @@ def get_user_by_email(email):
     query = "SELECT * FROM c WHERE c.data.email = @email"
     parameters = [{"name": "@email", "value": email.lower()}]
     try:
-        items = list(container.query_items(
-            query=query,
-            parameters=parameters,
-            enable_cross_partition_query=True
-        ))
+        items = list(
+            container.query_items(
+                query=query, parameters=parameters, enable_cross_partition_query=True
+            )
+        )
         if items:
             return items[0]
         return None
@@ -1733,18 +1736,20 @@ def update_organization_metadata(org_id, name, owner_id=None):
     container = get_cosmos_container("organizations")
     try:
         org = container.read_item(item=org_id, partition_key=org_id)
-        
-        org['name'] = name
-        
-        if owner_id and org.get('owner') != owner_id:
-            org['owner'] = owner_id
-            
+
+        org["name"] = name
+
+        if owner_id and org.get("owner") != owner_id:
+            org["owner"] = owner_id
+
             try:
                 user = get_user_container(owner_id)
                 user["data"]["organizationId"] = org_id
                 update_user(owner_id, user)
             except Exception as ex:
-                logging.error(f"Failed to update user {owner_id} with new organization {org_id}: {ex}")
+                logging.error(
+                    f"Failed to update user {owner_id} with new organization {org_id}: {ex}"
+                )
 
         updated_org = container.replace_item(item=org_id, body=org)
         return updated_org
@@ -1752,28 +1757,31 @@ def update_organization_metadata(org_id, name, owner_id=None):
         logging.error(f"Error updating organization {org_id}: {e}")
         raise
 
+
 def delete_organization(organization_id):
     """
     Deletes an organization and its associated usage.
     """
     logging.info(f"Deleting organization {organization_id}")
-    
+
     usage_container = get_cosmos_container("organizationsUsage")
     try:
         query = "SELECT * FROM c WHERE c.organizationId = @organizationId"
-        items = list(usage_container.query_items(
-            query=query,
-            parameters=[{"name": "@organizationId", "value": organization_id}],
-            partition_key=organization_id
-        ))
-        
+        items = list(
+            usage_container.query_items(
+                query=query,
+                parameters=[{"name": "@organizationId", "value": organization_id}],
+                partition_key=organization_id,
+            )
+        )
+
         for item in items:
-            usage_container.delete_item(item=item['id'], partition_key=organization_id)
+            usage_container.delete_item(item=item["id"], partition_key=organization_id)
             logging.info(f"Deleted usage item {item['id']} for org {organization_id}")
-            
+
     except Exception as e:
         logging.error(f"Error checking/deleting organization usage: {e}")
-    
+
     org_container = get_cosmos_container("organizations")
     try:
         org_container.delete_item(item=organization_id, partition_key=organization_id)
@@ -1783,6 +1791,7 @@ def delete_organization(organization_id):
     except Exception as e:
         logging.error(f"Error deleting organization {organization_id}: {e}")
         raise e
+
 
 def create_user_logs(user_id, organization_id, action, metadata=None):
     """
@@ -1826,3 +1835,232 @@ def create_user_logs(user_id, organization_id, action, metadata=None):
     except Exception as e:
         logging.error(f"Error creating user log: {e}")
         raise
+
+
+def get_user_logs_by_organization_timestamp(organization_id: str, start_timestamp: int, end_timestamp: int, action: str):
+    logs_container = get_cosmos_container("userLogs")
+    try:
+        query = """
+            SELECT * FROM c 
+            WHERE c.organizationId = @orgId 
+            AND c.timestamp >= @start_timestamp 
+            AND c.timestamp <= @end_timestamp
+            AND c.action = @action
+        """
+        parameters = [
+            {"name": "@orgId", "value": organization_id},
+            {"name": "@start_timestamp", "value": int(start_timestamp)},
+            {"name": "@end_timestamp", "value": int(end_timestamp)},
+            {"name": "@action", "value": action}
+        ]
+        result = logs_container.query_items(
+            query=query,
+            parameters=parameters,
+            partition_key=organization_id
+        )
+        return list(result)
+    except Exception as e:
+        logging.error(f"Error getting user logs by organization: {e}")
+        raise
+
+def get_user_logs_by_organization(organization_id: str, action: str):
+    logs_container = get_cosmos_container("userLogs")
+    try:
+        query = """
+            SELECT * FROM c 
+            WHERE c.organizationId = @orgId 
+            AND c.action = @action
+        """
+        parameters = [
+            {"name": "@orgId", "value": organization_id},
+            {"name": "@action", "value": action}
+        ]
+        result = logs_container.query_items(
+            query=query,
+            parameters=parameters,
+            partition_key=organization_id
+        )
+        return list(result)
+    except Exception as e:
+        logging.error(f"Error getting user logs by organization: {e}")
+        raise
+
+
+def get_all_user_logs_by_timestamp(start_timestamp: int, end_timestamp: int, action: str):
+    logs_container= get_cosmos_container("userLogs")
+    try:
+        result = logs_container.query_items(
+            query="SELECT * FROM c WHERE c.timestamp >= @start_timestamp AND c.timestamp <= @end_timestamp AND c.action = @action",
+            parameters=[
+                {"name": "@start_timestamp", "value": int(start_timestamp)},
+                {"name": "@end_timestamp", "value": int(end_timestamp)},
+                {"name": "@action", "value": action}
+            ],
+            enable_cross_partition_query=True
+        )
+        return list(result)
+    except Exception as e:
+        logging.error(f"Error getting all user logs: {e}")
+        raise
+
+def get_all_user_logs(action):
+    logs_container = get_cosmos_container("userLogs")
+    try:
+        result = logs_container.query_items(
+            query="SELECT * FROM c WHERE c.action = @action",
+            parameters=[
+                {"name": "@action", "value": action}
+            ],
+            enable_cross_partition_query=True,
+        )
+        return list(result)
+    except Exception as e:
+        logging.error(f"Error getting all user logs: {e}")
+        raise
+
+def get_all_conversations_by_organization(organization_id, start_timestamp: int = None, end_timestamp: int = None):
+    conversations_container = get_cosmos_container("conversations")
+    try:
+        if start_timestamp and end_timestamp:
+            from datetime import datetime
+            start_date_str = datetime.utcfromtimestamp(start_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+            end_date_str = datetime.utcfromtimestamp(end_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+            query = """
+                SELECT * FROM c 
+                WHERE c.conversation_data.interaction.organization_id = @organization_id
+                AND c.conversation_data.start_date >= @start_date
+                AND c.conversation_data.start_date <= @end_date
+            """
+            parameters = [
+                {"name": "@organization_id", "value": organization_id},
+                {"name": "@start_date", "value": start_date_str},
+                {"name": "@end_date", "value": end_date_str}
+            ]
+        else:
+            query = """
+                SELECT * FROM c 
+                WHERE c.conversation_data.interaction.organization_id = @organization_id
+            """
+            parameters = [
+                {"name": "@organization_id", "value": organization_id}
+            ]
+        conversations = conversations_container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True   
+        )
+        return list(conversations)
+    except Exception as e:
+        logging.error(f"Error getting history conversations by organization: {e}")
+        raise
+
+def get_all_conversations():
+    conversations_container = get_cosmos_container("conversations")
+    try:
+        query = """
+            SELECT * FROM c 
+        """ 
+ 
+        conversations = conversations_container.query_items(
+            query=query,
+            enable_cross_partition_query=True   
+        )
+        return list(conversations)
+    except Exception as e:
+        logging.error(f"Error getting history conversations by organization: {e}")
+        raise
+
+def get_all_users():
+    users_container = get_cosmos_container("users")
+    try:
+        result = users_container.query_items(
+            query="SELECT * FROM c",
+            enable_cross_partition_query=True
+        )
+        return list(result)
+    except Exception as e:
+        logging.error(f"Error getting all users: {e}")
+        raise
+
+def get_user_activity_data(organization_id: str = None, start_date: int = None, end_date: int = None, action: str = "session-start"):
+    """
+    Aggregates user activity data (sessions, conversations, messages) per user.
+    
+    Args:
+        organization_id (str, optional): Filter by organization. Defaults to None.
+        start_date (int, optional): Unix timestamp for start date range. Defaults to None.
+        end_date (int, optional): Unix timestamp for end date range. Defaults to None.
+        action (str, optional): User action type to filter logs. Defaults to "session-start".
+    
+    Returns:
+        list[dict]: List of user activity records with the following fields:
+            - user_id (str): User unique identifier
+            - user_name (str): User's display name from users container
+            - organization_id (str): Organization ID
+            - session_count (int): Number of user sessions (logs)
+            - conversation_count (int): Number of conversations
+            - message_count (int): Total user messages sent
+            - first_login_date (int): Unix timestamp of first session
+    
+    Notes:
+        - Returns one record per user with no duplicates
+        - Filters conversations by start_date if provided (uses conversation_data.start_date)
+        - Fetches user names from users container for accuracy
+        - O(n) complexity with single pass aggregation
+    """
+    # 1) Fetch logs and conversations (filtered by date range if provided)
+    if start_date and end_date:
+        user_logs = get_user_logs_by_organization_timestamp(
+            organization_id, start_date, end_date, action
+        )
+        conversations = get_all_conversations_by_organization(organization_id, start_date, end_date)
+    else:
+        user_logs = get_user_logs_by_organization(organization_id, action)
+        conversations = get_all_conversations_by_organization(organization_id)
+
+    users: list(dict) = get_all_users()
+    # 2) Pre-aggregate conversation stats in a single loop
+    conv_stats: dict[str, dict] = {}
+    for conv in conversations:
+        uid = conv.get("user_id")
+        if not uid:
+            continue
+
+        if uid not in conv_stats:
+            conv_stats[uid] = {
+                "user_name": conv.get("conversation_data", {}).get("interaction", {}).get("user_name", "Unknown User"),
+                "conversation_count": 0,
+                "message_count": 0,
+            }
+
+        conv_stats[uid]["conversation_count"] += 1
+        history = conv.get("conversation_data", {}).get("history", [])
+        conv_stats[uid]["message_count"] += sum(1 for h in history if h.get("role") == "user")
+
+    # 3) Aggregate logs per user (sessions + first_login_date)
+    agg: dict[str, dict] = {}
+    for log in user_logs:
+        uid = log.get("userId")
+        if not uid:
+            continue
+
+        ts = log.get("timestamp")
+        if uid not in agg:
+            user_conv = conv_stats.get(uid, {})
+            user = next((u for u in users if u.get("id") == uid), None)
+            user_name = user["data"]["name"]
+            agg[uid] = {
+                "user_id": uid,
+                "user_name": user_name,
+                "organization_id": log.get("organizationId"),
+                "session_count": 0,
+                "first_login_date": ts,
+                "conversation_count": user_conv.get("conversation_count", 0),
+                "message_count": user_conv.get("message_count", 0),
+            }
+
+        agg[uid]["session_count"] += 1
+        if ts is not None and (agg[uid]["first_login_date"] is None or ts < agg[uid]["first_login_date"]):
+            agg[uid]["first_login_date"] = ts
+
+    return list(agg.values())
