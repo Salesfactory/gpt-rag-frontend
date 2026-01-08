@@ -719,7 +719,6 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         except Exception as e:
             logger.error(f"[auth] Error creating user log: {str(e)}")
 
-
         # Construct and return response
         return (
             jsonify(
