@@ -65,9 +65,10 @@ def ingest_global_data():
             "upload_date": datetime.now().isoformat(),
         }
 
-        form_metadata = json.loads(form_metadata) if form_metadata else []
-        for item in form_metadata:
-            metadata[item["key"]] = item["value"]
+        if form_metadata:
+            form_metadata = json.loads(form_metadata)
+            for item in form_metadata:
+                metadata[item["key"]] = item["value"]
 
         # Use the new memory-based upload method
         result = blob_storage_manager.upload_fileobj_to_blob(
