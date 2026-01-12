@@ -8,7 +8,7 @@ import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
 import { getUserById, exportConversation } from "../../api";
 import { toast } from "react-toastify";
 import { Spinner } from "@fluentui/react";
-import FAActionableLogo from "../../img/FA-actionableLogo.png";
+import SFActionableLogo from "../../img/SF-actionableLogo.png";
 import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
 
 type Role = "user" | "admin" | "platformAdmin";
@@ -271,7 +271,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         </button>
                         {location === "/" && (
                             <div className={`ms-2 d-none d-sm-flex align-items-center ${styles.brandContainer}`}>
-                                <img src={FAActionableLogo} alt="FreddAid Logo" className={styles.brandImage} />
+                                <img src={SFActionableLogo} alt="FreddAid Logo" className={styles.brandImage} />
                                 <span className={styles.greenBar}></span>
                                 <span className={styles.brandText2}>{organization?.name}</span>
                             </div>
