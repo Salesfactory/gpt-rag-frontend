@@ -9,11 +9,12 @@ from pathlib import Path
 from flask import Blueprint, request, current_app
 
 from shared.cosmo_db import (
-    get_all_organizations,
-    get_all_organization_usages,
-    update_organization_metadata,
-    get_user_by_email,
-    delete_organization
+    get_all_organizations, 
+    get_all_organization_usages, 
+    update_organization_metadata, 
+    get_user_by_email, 
+    delete_organization,
+    get_user_activity_data
 )
 
 from shared.blob_storage import BlobStorageManager
@@ -353,3 +354,34 @@ def get_global_data():
     except Exception as e:
         logger.exception("Error retrieving global data files")
         return create_error_response("Failed to retrieve global data files.", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@bp.route("/user-activity-logs", methods=["GET"])
+@only_platform_admin()
+def get_user_activity_logs():
+    """
+    Retrieve aggregated user activity data for platform admin.
+    
+    Query Parameters:
+        organization_id (str, optional): Filter by specific organization
+        start_date (str, optional): Start date as Unix timestamp string
+        end_date (str, optional): End date as Unix timestamp string
+    
+    Returns:
+        JSON: User activity data with sessions, conversations, and messages per user
+        
+    Example:
+        GET /api/platform-admin/user-activity-logs?organization_id=abc123&start_date=1704067200&end_date=1704153600
+    """
+    organization_id = request.args.get("organization_id", None)
+    start_date = request.args.get("start_date", None)
+    end_date = request.args.get("end_date", None)
+    action = "session-start"
+    try:
+        start_timestamp = int(start_date) if start_date else None
+        end_timestamp = int(end_date) if end_date else None
+        user_logs = get_user_activity_data(organization_id, start_timestamp, end_timestamp, action)
+        return create_success_response(user_logs, HTTPStatus.OK)
+    except Exception as e:
+        logger.exception("Error retrieving user activity logs")
+        return create_error_response("Failed to retrieve user activity logs.", HTTPStatus.INTERNAL_SERVER_ERROR)
