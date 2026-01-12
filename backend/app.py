@@ -3297,6 +3297,11 @@ def get_gallery(*, context, organization_id):
         uploader_id = request.args.get("uploader_id")
         order = (request.args.get("order") or "newest").lower()
         search_query = request.args.get("query") or request.args.get("q")
+        file_type = request.args.get("file_type") or request.args.get("type")
+        if file_type:
+            file_type = file_type.lower()
+            if file_type not in {"images", "pptx"}:
+                return create_error_response("Invalid file type filter.", 400)
 
         # Pagination parameters
         page = max(1, int(request.args.get("page", 1)))
@@ -3307,6 +3312,7 @@ def get_gallery(*, context, organization_id):
             uploader_id=uploader_id,
             order=order,
             query=search_query,
+            file_type=file_type,
             page=page,
             limit=limit,
         )

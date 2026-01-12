@@ -1,8 +1,8 @@
 import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
@@ -10,6 +10,14 @@ const statusFilterOptions = [
     { label: "Newest", value: "newest" },
     { label: "Oldest", value: "oldest" }
 ];
+
+const fileTypeFilterOptions = [
+    { label: "All Types", value: "all" },
+    { label: "Images", value: "images" },
+    { label: "PowerPoint", value: "pptx" }
+] as const;
+
+type FileTypeFilter = (typeof fileTypeFilterOptions)[number]["value"];
 
 type GalleryItem = {
     content_type: string;
@@ -43,11 +51,13 @@ const Gallery: React.FC = () => {
     const [sortOrder, setSortOrder] = useState<string>("newest");
 
     const [userFilter, setUserFilter] = useState<string | null>(null);
+    const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
     const [images, setImages] = useState<GalleryItem[]>([]);
     const [fetchedImages, setFetchedImages] = useState<GalleryItem[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [users, setUsers] = useState<User[]>();
     const [showUserFilter, setShowUserFilter] = useState<boolean>(false);
+    const [showTypeFilter, setShowTypeFilter] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
 
     // Pagination state
@@ -89,16 +99,16 @@ const Gallery: React.FC = () => {
     useEffect(() => {
         const fetchAndProcessGalleryItems = async () => {
             if (!orgId) return;
-            
+
             // Abort any previous request
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
-            
+
             // Create new AbortController for this request
             const abortController = new AbortController();
             abortControllerRef.current = abortController;
-            
+
             setIsLoading(true);
             try {
                 const result = await getGalleryItems(orgId, {
@@ -106,6 +116,7 @@ const Gallery: React.FC = () => {
                     uploader_id: userFilter ?? undefined,
                     order: sortOrder as "newest" | "oldest",
                     query: searchQuery.trim() || undefined,
+                    file_type: fileTypeFilter !== "all" ? fileTypeFilter : undefined,
                     page: currentPage,
                     limit: itemsPerPage,
                     signal: abortController.signal
@@ -123,7 +134,7 @@ const Gallery: React.FC = () => {
                 }
             } catch (e) {
                 // Don't log errors for aborted requests
-                if (e instanceof Error && e.name !== 'AbortError') {
+                if (e instanceof Error && e.name !== "AbortError") {
                     console.error("Error fetching gallery items:", e);
                 }
             } finally {
@@ -135,14 +146,14 @@ const Gallery: React.FC = () => {
         };
 
         fetchAndProcessGalleryItems();
-        
+
         // Cleanup function to abort request on unmount
         return () => {
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
         };
-    }, [orgId, userId, userFilter, sortOrder, searchQuery, currentPage, itemsPerPage]);
+    }, [orgId, userId, userFilter, fileTypeFilter, sortOrder, searchQuery, currentPage, itemsPerPage]);
 
     const handleDownload = (item: GalleryItem) => {
         const organizationId = user?.organizationId;
@@ -273,7 +284,15 @@ const Gallery: React.FC = () => {
                 <div className={styles.filtersGroup}>
                     <div className={styles.filter}>
                         <div className={styles.filterContainer}>
-                            <button type="button" className={styles.filterButton} onClick={() => setShowStatusFilter(!showStatusFilter)}>
+                            <button
+                                type="button"
+                                className={styles.filterButton}
+                                onClick={() => {
+                                    setShowStatusFilter(!showStatusFilter);
+                                    setShowUserFilter(false);
+                                    setShowTypeFilter(false);
+                                }}
+                            >
                                 <ArrowUpDown size={16} className={styles.filterIcon} />
                                 {statusFilterOptions.find(opt => opt.value === sortOrder)?.label || "Sort by order"}
                             </button>
@@ -287,7 +306,8 @@ const Gallery: React.FC = () => {
                                                 className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
                                                 onClick={() => {
                                                     setSortOrder(option.value);
-                                                    setCurrentPage(1); // Reset to first page on sort change
+                                                    setShowStatusFilter(false);
+                                                    setCurrentPage(1);
                                                 }}
                                             >
                                                 {option.label}
@@ -300,7 +320,15 @@ const Gallery: React.FC = () => {
                     </div>
                     <div className={styles.filter}>
                         <div className={styles.filterContainer}>
-                            <button type="button" className={styles.filterButton} onClick={() => setShowUserFilter(!showUserFilter)}>
+                            <button
+                                type="button"
+                                className={styles.filterButton}
+                                onClick={() => {
+                                    setShowUserFilter(!showUserFilter);
+                                    setShowStatusFilter(false);
+                                    setShowTypeFilter(false);
+                                }}
+                            >
                                 <Users size={16} className={styles.filterIcon} />
                                 {userFilter ? getUserName(userFilter) ?? userFilter : "All Users"}
                             </button>
@@ -313,7 +341,7 @@ const Gallery: React.FC = () => {
                                             onClick={() => {
                                                 setUserFilter(null);
                                                 setShowUserFilter(false);
-                                                setCurrentPage(1); // Reset to first page on filter change
+                                                setCurrentPage(1);
                                             }}
                                         >
                                             All Users
@@ -326,10 +354,46 @@ const Gallery: React.FC = () => {
                                                 onClick={() => {
                                                     setUserFilter(u.id);
                                                     setShowUserFilter(false);
-                                                    setCurrentPage(1); // Reset to first page on filter change
+                                                    setCurrentPage(1);
                                                 }}
                                             >
                                                 {u.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className={styles.filter}>
+                        <div className={styles.filterContainer}>
+                            <button
+                                type="button"
+                                className={styles.filterButton}
+                                onClick={() => {
+                                    setShowTypeFilter(!showTypeFilter);
+                                    setShowStatusFilter(false);
+                                    setShowUserFilter(false);
+                                }}
+                            >
+                                <Filter size={16} className={styles.filterIcon} />
+                                {fileTypeFilterOptions.find(opt => opt.value === fileTypeFilter)?.label ?? "File Type"}
+                            </button>
+
+                            {showTypeFilter && (
+                                <div className={styles.filterDropdown}>
+                                    <div className={styles.dropdownContent}>
+                                        {fileTypeFilterOptions.map(option => (
+                                            <button
+                                                key={option.value}
+                                                className={`${styles.dropdownItem} ${fileTypeFilter === option.value ? styles.dropdownItemActive : ""}`}
+                                                onClick={() => {
+                                                    setFileTypeFilter(option.value);
+                                                    setShowTypeFilter(false);
+                                                    setCurrentPage(1);
+                                                }}
+                                            >
+                                                {option.label}
                                             </button>
                                         ))}
                                     </div>
