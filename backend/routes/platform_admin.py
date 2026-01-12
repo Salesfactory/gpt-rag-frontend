@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 CUSTOMER_PULSE_CONTAINER_NAME = os.getenv("CUSTOMER_PULSE_CONTAINER_NAME", "survey-data")
 CUSTOMER_PULSE_JSON_CONTAINER_NAME = os.getenv("CUSTOMER_PULSE_JSON_CONTAINER_NAME", "survey-json-intermediate")
-CUSTOMER_PULSE_FOLDER = "customer-pulse"
+CUSTOMER_PULSE_FOLDER = "consumer-pulse"
 
 TIER_MAPPING = {
     'tier_free': 'Free',
