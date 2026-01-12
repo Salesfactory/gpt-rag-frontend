@@ -1887,7 +1887,7 @@ def get_user_logs_by_organization(organization_id: str, action: str):
 
 
 def get_all_user_logs_by_timestamp(start_timestamp: int, end_timestamp: int, action: str):
-    logs_container= get_cosmos_container("userLogs")
+    logs_container = get_cosmos_container("userLogs")
     try:
         result = logs_container.query_items(
             query="SELECT * FROM c WHERE c.timestamp >= @start_timestamp AND c.timestamp <= @end_timestamp AND c.action = @action",
