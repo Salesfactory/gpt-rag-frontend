@@ -30,7 +30,7 @@ import { get403ErrorMessages, getPlaceholderText } from "../../utils/errorMessag
 import { ERROR_CODE_UNAUTHORIZED_ORG, ERROR_CODE_USER_LIMIT_EXCEEDED, ERROR_CODE_ORG_LIMIT_EXCEEDED, BackendErrorResponse } from "../../api/models";
 
 import "react-toastify/dist/ReactToastify.css";
-import FreddaidLogo from "../../img/new_logo_app.png";
+import FreddaidLogo from "../../img/SF-actionableLogo.png";
 
 import React from "react";
 import {
