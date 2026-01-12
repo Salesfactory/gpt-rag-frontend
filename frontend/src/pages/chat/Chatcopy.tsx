@@ -3,7 +3,19 @@ import { Spinner } from "@fluentui/react";
 
 import styles from "./Chatcopy.module.css";
 
-import { Approaches, AskResponse, ChatRequestGpt, ChatTurn, ThoughtProcess, exportConversation, getFileBlob, generateExcelDownloadUrl, uploadUserDocument, deleteUserDocument, listUserDocuments } from "../../api";
+import {
+    Approaches,
+    AskResponse,
+    ChatRequestGpt,
+    ChatTurn,
+    ThoughtProcess,
+    exportConversation,
+    getFileBlob,
+    generateExcelDownloadUrl,
+    uploadUserDocument,
+    deleteUserDocument,
+    listUserDocuments
+} from "../../api";
 import { Answer, AnswerError } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy";
 import { UserChatMessage } from "../../components/UserChatMessage";
@@ -18,10 +30,21 @@ import { get403ErrorMessages, getPlaceholderText } from "../../utils/errorMessag
 import { ERROR_CODE_UNAUTHORIZED_ORG, ERROR_CODE_USER_LIMIT_EXCEEDED, ERROR_CODE_ORG_LIMIT_EXCEEDED, BackendErrorResponse } from "../../api/models";
 
 import "react-toastify/dist/ReactToastify.css";
-import FreddaidLogo from "../../img/FreddaidLogo.png";
+import FreddaidLogo from "../../img/new_logo_app.png";
 
 import React from "react";
-import { parseStreamWithMarkdownValidation, ParsedEvent, isProgressMessage, isThoughtsMessage, isThinkingMessage, isDataAnalystContentMessage, extractProgressState, ProgressMessage, ThinkingMessage, DataAnalystContentMessage } from "./streamParser";
+import {
+    parseStreamWithMarkdownValidation,
+    ParsedEvent,
+    isProgressMessage,
+    isThoughtsMessage,
+    isThinkingMessage,
+    isDataAnalystContentMessage,
+    extractProgressState,
+    ProgressMessage,
+    ThinkingMessage,
+    DataAnalystContentMessage
+} from "./streamParser";
 import { Warning28Regular } from "@fluentui/react-icons";
 import { log } from "console";
 
@@ -103,13 +126,13 @@ const Chat = () => {
 
     // Function to generate UUID with fallback for older browsers
     const generateUUID = (): string => {
-        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
             return crypto.randomUUID();
         }
         // Fallback for older browsers
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            const r = Math.random() * 16 | 0;
-            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c == "x" ? r : (r & 0x3) | 0x8;
             return v.toString(16);
         });
     };
@@ -217,7 +240,6 @@ const Chat = () => {
                 throw new Error("ReadableStream not supported in this browser.");
             }
 
-
             /* ---------- 3 · Consume the stream via our parser with markdown validation ---------- */
             const reader = response.body.getReader();
             let result = "";
@@ -310,14 +332,13 @@ const Chat = () => {
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
             setAnswers([]);
-            setError403Data(null)
+            setError403Data(null);
             setDataConversation([]);
             setChatIsCleaned(true);
         } else {
             return;
         }
     };
-
 
     const handleNewChat = () => {
         setThinkingContent("");
@@ -330,7 +351,7 @@ const Chat = () => {
             setActiveCitation(undefined);
             setActiveAnalysisPanelTab(undefined);
             setAnswers([]);
-            setError403Data(null)
+            setError403Data(null);
             setDataConversation([]);
             setChatId("");
             setUserId("");
@@ -428,7 +449,6 @@ const Chat = () => {
         );
     }, [isLoading, dataConversation]);
 
-
     const extractAfterDomain = (url: string) => {
         const extensions = [".net", ".com"];
 
@@ -514,7 +534,7 @@ const Chat = () => {
             for (const file of files) {
                 const name = file.name.toLowerCase();
                 if (!allowed.some(ext => name.endsWith(ext))) {
-                    const fileExtension = name.split('.').pop() || 'unknown';
+                    const fileExtension = name.split(".").pop() || "unknown";
                     setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF`);
                     return;
                 }
@@ -534,14 +554,14 @@ const Chat = () => {
                         {
                             blobName: result.blob_name,
                             originalFilename: result.original_filename || file.name,
-                            savedFilename: result.saved_filename || file.name,
-                        },
+                            savedFilename: result.saved_filename || file.name
+                        }
                     ]);
                 }
             }
         } catch (err) {
-            console.error('Error uploading user docs:', err);
-            setFileUploadError('Failed to upload one or more documents.');
+            console.error("Error uploading user docs:", err);
+            setFileUploadError("Failed to upload one or more documents.");
         } finally {
             setIsUploadingDocs(false);
         }
@@ -560,10 +580,10 @@ const Chat = () => {
             await deleteUserDocument({
                 blobName: doc.blobName,
                 conversationId: activeConversationId,
-                user,
+                user
             });
         } catch (err) {
-            console.error('Error deleting user doc:', err);
+            console.error("Error deleting user doc:", err);
         } finally {
             setIsUploadingDocs(false);
             setAttachedDocs(prev => prev.filter((_, i) => i !== index));
@@ -580,13 +600,13 @@ const Chat = () => {
             try {
                 const files = await listUserDocuments({
                     conversationId: convId,
-                    user,
+                    user
                 });
                 if (cancelled) return;
                 const mapped = files.map(f => ({
                     blobName: f.blob_name,
                     originalFilename: f.original_filename || f.saved_filename,
-                    savedFilename: f.saved_filename,
+                    savedFilename: f.saved_filename
                 }));
                 setAttachedDocs(mapped);
             } catch (e) {
@@ -814,74 +834,76 @@ const Chat = () => {
                                             </h1>
 
                                             <p style={{ width: "80%", textAlign: "center" }}>
-                                                Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data
-                                                sources to deliver actionable insights.
+                                                Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data sources to
+                                                deliver actionable insights.
                                             </p>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className={styles.chatScrollWrapper} aria-label="Chat messages scroll wrapper" tabIndex={0}>
-                                        <div
-                                            className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}
-                                        >
+                                        <div className={!conversationIsLoading ? styles.chatMessageStream : styles.conversationIsLoading}>
                                             {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                             {dataConversation.length > 0
                                                 ? dataConversation.map((item, index) => {
-                                                    const response = {
-                                                        answer: item.bot?.message || "",
-                                                        conversation_id: chatId,
-                                                        data_points: [""],
-                                                        thoughts: item.bot?.thoughts ?? null
-                                                    } as AskResponse;
-                                                    return (
-                                                        <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
-                                                            <UserChatMessage message={item.user} />
-                                                            <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                                <Answer
-                                                                    key={index}
-                                                                    answer={response}
-                                                                    isGenerating={false}
-                                                                    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                                    loadingCitationPath={loadingCitationPath}
-                                                                    onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                                    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                                    onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                    onFollowupQuestionClicked={question => {
-                                                                        const blobNames = attachedDocs.map(d => d.blobName);
-                                                                        streamResponse(question, chatId !== "" ? chatId : null, blobNames);
-                                                                    }}
-                                                                    showFollowupQuestions={false}
-                                                                    showSources={true}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })
+                                                      const response = {
+                                                          answer: item.bot?.message || "",
+                                                          conversation_id: chatId,
+                                                          data_points: [""],
+                                                          thoughts: item.bot?.thoughts ?? null
+                                                      } as AskResponse;
+                                                      return (
+                                                          <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                              <UserChatMessage message={item.user} />
+                                                              <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
+                                                                  <Answer
+                                                                      key={index}
+                                                                      answer={response}
+                                                                      isGenerating={false}
+                                                                      isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                      loadingCitationPath={loadingCitationPath}
+                                                                      onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                                      onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                                      onSupportingContentClicked={() =>
+                                                                          onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
+                                                                      }
+                                                                      onFollowupQuestionClicked={question => {
+                                                                          const blobNames = attachedDocs.map(d => d.blobName);
+                                                                          streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                      }}
+                                                                      showFollowupQuestions={false}
+                                                                      showSources={true}
+                                                                  />
+                                                              </div>
+                                                          </div>
+                                                      );
+                                                  })
                                                 : answers.map((answer, index) => {
-                                                    return (
-                                                        <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
-                                                            <UserChatMessage message={answer[0]} />
-                                                            <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                                <Answer
-                                                                    key={index}
-                                                                    answer={answer[1]}
-                                                                    isGenerating={false}
-                                                                    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                                    loadingCitationPath={loadingCitationPath}
-                                                                    onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                                    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                                    onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                                                    onFollowupQuestionClicked={question => {
-                                                                        const blobNames = attachedDocs.map(d => d.blobName);
-                                                                        streamResponse(question, chatId !== "" ? chatId : null, blobNames);
-                                                                    }}
-                                                                    showFollowupQuestions={false}
-                                                                    showSources={true}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
+                                                      return (
+                                                          <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                              <UserChatMessage message={answer[0]} />
+                                                              <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
+                                                                  <Answer
+                                                                      key={index}
+                                                                      answer={answer[1]}
+                                                                      isGenerating={false}
+                                                                      isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                      loadingCitationPath={loadingCitationPath}
+                                                                      onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                                      onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                                      onSupportingContentClicked={() =>
+                                                                          onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
+                                                                      }
+                                                                      onFollowupQuestionClicked={question => {
+                                                                          const blobNames = attachedDocs.map(d => d.blobName);
+                                                                          streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                      }}
+                                                                      showFollowupQuestions={false}
+                                                                      showSources={true}
+                                                                  />
+                                                              </div>
+                                                          </div>
+                                                      );
+                                                  })}
                                             {error && !error403Data ? (
                                                 <>
                                                     <UserChatMessage message={lastQuestionRef.current} />
@@ -925,10 +947,10 @@ const Chat = () => {
                                                             thinkingContent={thinkingContent}
                                                             isSelected={activeAnalysisPanelTab !== undefined}
                                                             loadingCitationPath={loadingCitationPath}
-                                                            onCitationClicked={(c, n) => { }}
-                                                            onThoughtProcessClicked={() => { }}
-                                                            onSupportingContentClicked={() => { }}
-                                                            onFollowupQuestionClicked={q => { }}
+                                                            onCitationClicked={(c, n) => {}}
+                                                            onThoughtProcessClicked={() => {}}
+                                                            onSupportingContentClicked={() => {}}
+                                                            onFollowupQuestionClicked={q => {}}
                                                             showFollowupQuestions={false}
                                                             showSources={true}
                                                         />
@@ -942,7 +964,7 @@ const Chat = () => {
                                 <div
                                     className={styles.chatInputContainer}
                                     style={{
-                                        width: activeAnalysisPanelTab ? windowWidth - analysisPanelWidth : "100%",
+                                        width: activeAnalysisPanelTab ? windowWidth - analysisPanelWidth : "100%"
                                     }}
                                 >
                                     {/* File upload error message */}
@@ -1024,7 +1046,7 @@ const Chat = () => {
                                 </div>
                             </div>
                             {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer]) ||
-                                (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
+                            (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
                                 <>
                                     <div className={styles.analysisResizeHandle} onMouseDown={handleResizeMouseDown} style={{ cursor: "col-resize" }} />
 
@@ -1039,12 +1061,16 @@ const Chat = () => {
                                         }}
                                     >
                                         {isResizingAnalysisPanel && (
-                                            <div style={{
-                                                width: "100%", height: "100%", background: "#fff",
-                                                display: "flex",
-                                                justifyContent: "center",
-                                                alignItems: "center"
-                                            }} >
+                                            <div
+                                                style={{
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    background: "#fff",
+                                                    display: "flex",
+                                                    justifyContent: "center",
+                                                    alignItems: "center"
+                                                }}
+                                            >
                                                 <h4>Resizing...</h4>
                                             </div>
                                         )}
