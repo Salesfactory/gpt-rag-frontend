@@ -2248,3 +2248,38 @@ export async function getPlatformOrganizations({ user }: { user?: any } = {}): P
     }
 }
 
+export async function getUserActivityLogs({ user, organizationId, startDate, endDate }: { user?: any, organizationId?: string, startDate?: string, endDate?: string } = {}): Promise<any> {
+    const user_id = user ? user.id : "";
+    
+    const params = new URLSearchParams();
+    if (organizationId) params.append("organization_id", organizationId);
+    
+    if (startDate) {
+        const startTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+        params.append("start_date", startTimestamp.toString());
+    }
+    if (endDate) {
+        const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000);
+        params.append("end_date", endTimestamp.toString());
+    }
+
+    try {
+        const response = await fetchWrapper(`/api/platform-admin/user-activity-logs?${params.toString()}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+            }
+        });
+
+        if (!response.ok) {
+            throw Error("Failed to fetch user activity logs");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching user activity logs", error);
+        throw error;
+    }
+}
+
+
