@@ -3,6 +3,8 @@ import os
 import json
 from datetime import datetime
 from http import HTTPStatus
+from io import BytesIO
+from pathlib import Path
 
 from flask import Blueprint, request, current_app
 
@@ -11,11 +13,13 @@ from shared.cosmo_db import (
     get_all_organization_usages, 
     update_organization_metadata, 
     get_user_by_email, 
-    delete_organization
+    delete_organization,
+    get_user_activity_data
 )
 
 from shared.blob_storage import BlobStorageManager
 from shared.decorators import only_platform_admin
+from shared.pulse_excel_to_json import serialize_excel, ExcelParserError
 from routes.decorators.auth_decorator import auth_required
 from routes.organizations import send_admin_notification_email
 from utils import create_success_response, create_error_response
@@ -26,7 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 CUSTOMER_PULSE_CONTAINER_NAME = os.getenv("CUSTOMER_PULSE_CONTAINER_NAME", "survey-data")
-CUSTOMER_PULSE_FOLDER = "customer-pulse"
+CUSTOMER_PULSE_JSON_CONTAINER_NAME = os.getenv("CUSTOMER_PULSE_JSON_CONTAINER_NAME", "survey-json-intermediate")
+CUSTOMER_PULSE_FOLDER = "consumer-pulse"
 
 TIER_MAPPING = {
     'tier_free': 'Free',
@@ -198,66 +203,112 @@ def delete_platform_organization(organization_id):
 def ingest_global_data():
     """
     Upload and store customer pulse data file.
-    
+
     Endpoint for platform administrators to upload customer pulse data files.
-    The file is temporarily saved locally and then uploaded to blob storage
-    in the customer-pulse folder.
-    
+    The file is uploaded to blob storage in the customer-pulse folder, then
+    converted from Excel to JSON and uploaded to the intermediate JSON container.
+
     Args:
         file: File uploaded via multipart/form-data with key 'file'
-    
+        metadata: Optional JSON string with metadata key-value pairs
+
     Returns:
         JSON response with success message and HTTP 201 on successful upload,
         or error message with appropriate HTTP status code on failure.
-    
+
     Raises:
-        400: If no file is provided or no file is selected
+        400: If no file is provided, no file is selected, or Excel format is invalid
         500: If there's an error during file processing or upload
-    
+
     Example:
         POST /api/platform-admin/data-ingestion
         Content-Type: multipart/form-data
-        
+
         Response:
         {
-            "message": "Global data ingested successfully"
+            "message": "Global data ingested successfully",
+            "excel_uploaded": true,
+            "json_uploaded": true,
         }
     """
     file = request.files.get("file")
     form_metadata: list(dict) = request.form.get("metadata", [])
+
     if not file:
         return create_error_response(
             "No file part in the request", HTTPStatus.BAD_REQUEST
         )
     if file.filename == "":
-        logging.error("No file selected")
+        logger.error("No file selected")
         return create_error_response("No file selected", HTTPStatus.BAD_REQUEST)
-    
+
     try:
+        file_content = file.stream.read()
+
         blob_storage_manager = current_app.config["blob_storage_manager"]
-        
-        metadata = {
+
+        excel_metadata = {
             "upload_date": datetime.now().isoformat(),
         }
 
         if form_metadata:
             form_metadata = json.loads(form_metadata)
             for item in form_metadata:
-                metadata[item["key"]] = item["value"]
+                excel_metadata[item["key"]] = item["value"]
 
-        # Use the new memory-based upload method
-        result = blob_storage_manager.upload_fileobj_to_blob(
-            fileobj=file.stream, 
+        # 1. Upload original Excel file
+        excel_blob_path = f"{CUSTOMER_PULSE_FOLDER}/{file.filename}"
+        excel_result = blob_storage_manager.upload_fileobj_to_blob(
+            fileobj=BytesIO(file_content),
             filename=file.filename,
             blob_folder=CUSTOMER_PULSE_FOLDER,
             container=CUSTOMER_PULSE_CONTAINER_NAME,
-            metadata=metadata
+            metadata=excel_metadata
         )
-        
-        if result["status"] == "success":
-            return create_success_response("Global data ingested successfully", HTTPStatus.CREATED)
-        return create_error_response(result.get("error", "Upload failed"), HTTPStatus.INTERNAL_SERVER_ERROR)
-            
+
+        if excel_result["status"] != "success":
+            return create_error_response(
+                excel_result.get("error", "Excel upload failed"),
+                HTTPStatus.INTERNAL_SERVER_ERROR
+            )
+
+        # 2. Convert Excel to JSON
+        try:
+            json_data = serialize_excel(BytesIO(file_content))
+        except ExcelParserError as e:
+            logger.error(f"Excel conversion failed: {str(e)}")
+            return create_error_response(
+                f"Excel file format error: {str(e)}",
+                HTTPStatus.BAD_REQUEST
+            )
+
+        # 3. Upload JSON to intermediate container 
+        json_filename = Path(file.filename).with_suffix('.json').name
+        json_bytes = json.dumps(json_data, indent=2, ensure_ascii=False).encode('utf-8')
+
+        json_metadata = {
+            "source_file_directory": excel_blob_path,
+            "source_file_name": file.filename,
+            "processed_at": datetime.now().isoformat()
+        }
+
+        json_result = blob_storage_manager.upload_fileobj_to_blob(
+            fileobj=BytesIO(json_bytes),
+            filename=json_filename,
+            blob_folder=CUSTOMER_PULSE_FOLDER,
+            container=CUSTOMER_PULSE_JSON_CONTAINER_NAME,
+            metadata=json_metadata
+        )
+
+        if json_result["status"] != "success":
+            logger.warning(f"JSON upload failed but Excel uploaded: {json_result.get('error')}")
+
+        return create_success_response({
+            "message": "Global data ingested successfully",
+            "excel_uploaded": True,
+            "json_uploaded": json_result["status"] == "success",
+        }, HTTPStatus.CREATED)
+
     except Exception as e:
         logger.error(f"Error ingesting global data: {str(e)}")
         return create_error_response(str(e), HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -303,3 +354,34 @@ def get_global_data():
     except Exception as e:
         logger.exception("Error retrieving global data files")
         return create_error_response("Failed to retrieve global data files.", HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@bp.route("/user-activity-logs", methods=["GET"])
+@only_platform_admin()
+def get_user_activity_logs():
+    """
+    Retrieve aggregated user activity data for platform admin.
+    
+    Query Parameters:
+        organization_id (str, optional): Filter by specific organization
+        start_date (str, optional): Start date as Unix timestamp string
+        end_date (str, optional): End date as Unix timestamp string
+    
+    Returns:
+        JSON: User activity data with sessions, conversations, and messages per user
+        
+    Example:
+        GET /api/platform-admin/user-activity-logs?organization_id=abc123&start_date=1704067200&end_date=1704153600
+    """
+    organization_id = request.args.get("organization_id", None)
+    start_date = request.args.get("start_date", None)
+    end_date = request.args.get("end_date", None)
+    action = "session-start"
+    try:
+        start_timestamp = int(start_date) if start_date else None
+        end_timestamp = int(end_date) if end_date else None
+        user_logs = get_user_activity_data(organization_id, start_timestamp, end_timestamp, action)
+        return create_success_response(user_logs, HTTPStatus.OK)
+    except Exception as e:
+        logger.exception("Error retrieving user activity logs")
+        return create_error_response("Failed to retrieve user activity logs.", HTTPStatus.INTERNAL_SERVER_ERROR)
