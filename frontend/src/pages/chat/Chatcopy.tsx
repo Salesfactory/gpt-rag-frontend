@@ -47,6 +47,7 @@ import {
 } from "./streamParser";
 import { Warning28Regular } from "@fluentui/react-icons";
 import { log } from "console";
+import { fetchWrapper } from "../../api/fetchWrapper";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -190,7 +191,7 @@ const Chat = () => {
         };
 
         try {
-            const response = await fetch("/stream_chatgpt", {
+            const response = await fetchWrapper("/stream_chatgpt", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
