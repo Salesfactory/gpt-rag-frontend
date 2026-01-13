@@ -2229,12 +2229,15 @@ export async function uploadGlobalIngestData(user: any, file: File,  metadata: A
 
 export async function getPlatformOrganizations({ user }: { user?: any } = {}): Promise<any> {
     const user_id = user ? user.id : "";
+    const organization_id = user ? user.organizationId : "";
+
     try {
         const response = await fetchWrapper("/api/platform-admin/organizations", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
             }
         });
 
@@ -2247,4 +2250,41 @@ export async function getPlatformOrganizations({ user }: { user?: any } = {}): P
         throw error;
     }
 }
+
+export async function getUserActivityLogs({ user, organizationId, startDate, endDate }: { user?: any, organizationId?: string, startDate?: string, endDate?: string } = {}): Promise<any> {
+    const user_id = user ? user.id : "";
+    const user_org_id = user ? user.organizationId : "";
+    
+    const params = new URLSearchParams();
+    if (organizationId) params.append("organization_id", organizationId);
+    
+    if (startDate) {
+        const startTimestamp = Math.floor(new Date(startDate + "T00:00:00Z").getTime() / 1000);
+        params.append("start_date", startTimestamp.toString());
+    }
+    if (endDate) {
+        const endTimestamp = Math.floor(new Date(endDate + "T00:00:00Z").getTime() / 1000);
+        params.append("end_date", endTimestamp.toString());
+    }
+
+    try {
+        const response = await fetchWrapper(`/api/platform-admin/user-activity-logs?${params.toString()}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_org_id
+            }
+        });
+
+        if (!response.ok) {
+            throw Error("Failed to fetch user activity logs");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching user activity logs", error);
+        throw error;
+    }
+}
+
 

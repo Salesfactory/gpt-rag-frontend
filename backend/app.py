@@ -714,11 +714,6 @@ def get_user(*, context: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
             f"with role {user_profile['role']}"
         )
 
-        try:
-            create_user_logs(client_principal_id, user_profile["organizationId"], "session-start")
-        except Exception as e:
-            logger.error(f"[auth] Error creating user log: {str(e)}")
-
         # Construct and return response
         return (
             jsonify(
@@ -1954,6 +1949,12 @@ def getUserOrganizationsRole(*, context):
 
     try:
         role = get_invitation_role(client_principal_id, organization_id)
+
+        try:
+            create_user_logs(client_principal_id, organization_id, "session-start")
+        except Exception as e:
+            logger.error(f"[auth] Error creating user log: {str(e)}")
+
         return jsonify({"role": role}), 200
     except ValueError as e:
         # If the invitation is missing or inactive
