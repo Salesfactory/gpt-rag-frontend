@@ -886,11 +886,13 @@ export const createOrganizationUsage = async ({ userId, organizationId, subscrip
 
 export const updatePlatformOrganization = async ({ orgId, name, admin_email, user }: { orgId: string, name: string, admin_email?: string, user?: any }) => {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_organizationId = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
     const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
-            "X-MS-CLIENT-PRINCIPAL-ID": user_id
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+            "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_organizationId
         },
         body: JSON.stringify({
             name,
@@ -919,11 +921,13 @@ export const updatePlatformOrganization = async ({ orgId, name, admin_email, use
 
 export const deletePlatformOrganization = async ({ orgId, user }: { orgId: string, user?: any }) => {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const user_organizationId = user ? user.organizationId : "00000000-0000-0000-0000-000000000000";
     const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
-            "X-MS-CLIENT-PRINCIPAL-ID": user_id
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+            "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_organizationId
         }
     });
 
