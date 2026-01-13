@@ -2229,12 +2229,15 @@ export async function uploadGlobalIngestData(user: any, file: File,  metadata: A
 
 export async function getPlatformOrganizations({ user }: { user?: any } = {}): Promise<any> {
     const user_id = user ? user.id : "";
+    const organization_id = user ? user.organizationId : "";
+
     try {
         const response = await fetchWrapper("/api/platform-admin/organizations", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
             }
         });
 
@@ -2250,6 +2253,7 @@ export async function getPlatformOrganizations({ user }: { user?: any } = {}): P
 
 export async function getUserActivityLogs({ user, organizationId, startDate, endDate }: { user?: any, organizationId?: string, startDate?: string, endDate?: string } = {}): Promise<any> {
     const user_id = user ? user.id : "";
+    const user_org_id = user ? user.organizationId : "";
     
     const params = new URLSearchParams();
     if (organizationId) params.append("organization_id", organizationId);
@@ -2268,7 +2272,8 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_org_id
             }
         });
 
