@@ -51,6 +51,9 @@ export const UserActivityPage: React.FC = () => {
 
     useEffect(() => {
         if (selectedOrganizationId) {
+            if ((startDate && !endDate) || (!startDate && endDate)) {
+                return;
+            }
             loadUserActivity();
         } else {
             setUserActivities([]);
@@ -72,8 +75,7 @@ export const UserActivityPage: React.FC = () => {
 
         setIsLoading(true);
         try {
-            const filters: any = {};
-            if (selectedOrganizationId) filters.organizationId = selectedOrganizationId;
+            const filters: any = { organizationId: selectedOrganizationId };
             if (startDate) filters.startDate = startDate;
             if (endDate) filters.endDate = endDate;
 
@@ -104,7 +106,10 @@ export const UserActivityPage: React.FC = () => {
         });
     };
 
-    const organizationOptions: IDropdownOption[] = (organizations || []).map(org => ({ key: org.id, text: org.name }));
+    const organizationOptions: IDropdownOption[] = [
+        { key: "", text: "Select an organization", disabled: true },
+        ...(organizations || []).map(org => ({ key: org.id, text: org.name }))
+    ];
 
     const columns: IColumn[] = [
         {

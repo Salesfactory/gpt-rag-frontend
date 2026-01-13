@@ -2259,11 +2259,11 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
     if (organizationId) params.append("organization_id", organizationId);
     
     if (startDate) {
-        const startTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+        const startTimestamp = Math.floor(new Date(startDate + "T00:00:00Z").getTime() / 1000);
         params.append("start_date", startTimestamp.toString());
     }
     if (endDate) {
-        const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000);
+        const endTimestamp = Math.floor(new Date(endDate + "T00:00:00Z").getTime() / 1000);
         params.append("end_date", endTimestamp.toString());
     }
 
