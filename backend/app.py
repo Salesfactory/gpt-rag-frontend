@@ -84,6 +84,7 @@ from shared.cosmo_db import (
     patch_organization_data,
     get_audit_logs,
     get_organization_subscription,
+    create_user_logs,
 )
 from shared import clients
 from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_deleted
@@ -99,7 +100,7 @@ from routes.voice_customer import bp as voice_customer
 from routes.categories import bp as categories
 from routes.invitations import bp as invitations
 from routes.users import bp as users
-from routes.platform_admin import bp as platform_admin
+from routes.platform_admin import bp as platform_admin_bp
 
 from _secrets import get_secret
 
@@ -246,7 +247,7 @@ app.register_blueprint(voice_customer)
 app.register_blueprint(categories)
 app.register_blueprint(invitations)
 app.register_blueprint(users)
-app.register_blueprint(platform_admin)
+app.register_blueprint(platform_admin_bp)
 
 
 def handle_auth_error(func):
@@ -1948,6 +1949,12 @@ def getUserOrganizationsRole(*, context):
 
     try:
         role = get_invitation_role(client_principal_id, organization_id)
+
+        try:
+            create_user_logs(client_principal_id, organization_id, "session-start")
+        except Exception as e:
+            logger.error(f"[auth] Error creating user log: {str(e)}")
+
         return jsonify({"role": role}), 200
     except ValueError as e:
         # If the invitation is missing or inactive
@@ -3291,6 +3298,11 @@ def get_gallery(*, context, organization_id):
         uploader_id = request.args.get("uploader_id")
         order = (request.args.get("order") or "newest").lower()
         search_query = request.args.get("query") or request.args.get("q")
+        file_type = request.args.get("file_type") or request.args.get("type")
+        if file_type:
+            file_type = file_type.lower()
+            if file_type not in {"images", "pptx"}:
+                return create_error_response("Invalid file type filter.", 400)
 
         # Pagination parameters
         page = max(1, int(request.args.get("page", 1)))
@@ -3301,6 +3313,7 @@ def get_gallery(*, context, organization_id):
             uploader_id=uploader_id,
             order=order,
             query=search_query,
+            file_type=file_type,
             page=page,
             limit=limit,
         )

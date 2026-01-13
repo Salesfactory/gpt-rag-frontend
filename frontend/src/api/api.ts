@@ -486,7 +486,7 @@ export async function getSourceFileFromBlob(
     return result?.data ?? result;
 }
 
-export async function uploadSourceFileToBlob(file: any, userId: string, organizationId: string, folderPath: string = "") {
+export async function uploadSourceFileToBlob(file: File, userId: string, organizationId: string, folderPath: string = "") {
     const formdata = new FormData();
     formdata.append("file", file);
     formdata.append("organization_id", organizationId);
@@ -830,7 +830,7 @@ export async function getOrganizationSubscription({ userId, organizationId }: an
     return subscription;
 }
 
-export const createOrganization = async ({ userId, organizationName }: any) => {
+export const createOrganization = async ({ userId, organizationName, admin_email }: any) => {
     const response = await fetch("/api/create-organization", {
         method: "POST",
         headers: {
@@ -838,19 +838,33 @@ export const createOrganization = async ({ userId, organizationName }: any) => {
             "X-MS-CLIENT-PRINCIPAL-ID": userId
         },
         body: JSON.stringify({
-            organizationName
+            organizationName,
+            admin_email
         })
     });
 
     if (response.status > 299 || !response.ok) {
-        throw Error("Error creating organization");
+        let errorMessage = "Error creating organization";
+        try {
+            const errorData = await response.json();
+            if (errorData && errorData.error) {
+                if (typeof errorData.error === "object" && errorData.error.message) {
+                    errorMessage = errorData.error.message;
+                } else {
+                    errorMessage = String(errorData.error);
+                }
+            }
+        } catch (e) {
+            // parsing failed, use default
+        }
+        throw Error(errorMessage);
     }
 
     const organization = await response.json();
     return organization;
 };
 
-export const createOrganizationUsage = async ({ userId, organizationId, subscriptionTierId }: any) => {
+export const createOrganizationUsage = async ({ userId, organizationId, subscriptionTierId, currentPeriodEnds }: any) => {
     const response = await fetchWrapper("/api/create-organization-usage", {
         method: "POST",
         headers: {
@@ -859,7 +873,8 @@ export const createOrganizationUsage = async ({ userId, organizationId, subscrip
         },
         body: JSON.stringify({
             organizationId,
-            subscriptionTierId
+            subscriptionTierId,
+            currentPeriodEnds
         })
     });
     if (response.status > 299 || !response.ok) {
@@ -868,6 +883,56 @@ export const createOrganizationUsage = async ({ userId, organizationId, subscrip
     const organizationUsage = await response.json();
     return organizationUsage;
 }
+
+export const updatePlatformOrganization = async ({ orgId, name, admin_email, user }: { orgId: string, name: string, admin_email?: string, user?: any }) => {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id
+        },
+        body: JSON.stringify({
+            name,
+            admin_email
+        })
+    });
+    
+    if (response.status > 299 || !response.ok) {
+        let errorMessage = "Error updating organization";
+        try {
+            const errorData = await response.json();
+            if (errorData && errorData.error) {
+                if (typeof errorData.error === "object" && errorData.error.message) {
+                    errorMessage = errorData.error.message;
+                } else {
+                    errorMessage = String(errorData.error);
+                }
+            }
+        } catch (e) {
+        }
+        throw Error(errorMessage);
+    }
+    
+    return await response.json();
+};
+
+export const deletePlatformOrganization = async ({ orgId, user }: { orgId: string, user?: any }) => {
+    const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
+    const response = await fetchWrapper(`/api/platform-admin/organizations/${orgId}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": user_id
+        }
+    });
+
+    if (response.status > 299 || !response.ok) {
+        throw Error("Error deleting organization");
+    }
+    
+    return await response.json();
+};
 
 export async function getInvitations({ user }: any): Promise<any> {
     const user_id = user ? user.id : "00000000-0000-0000-0000-000000000000";
@@ -1749,6 +1814,7 @@ export async function getGalleryItems(
         uploader_id?: string | null;
         order?: "newest" | "oldest";
         query?: string;
+        file_type?: "images" | "pptx";
         page?: number;
         limit?: number;
         signal?: AbortSignal;
@@ -1766,6 +1832,7 @@ export async function getGalleryItems(
     if (params.uploader_id) qs.set("uploader_id", params.uploader_id);
     if (params.order) qs.set("order", params.order);
     if (params.query) qs.set("query", params.query);
+    if (params.file_type) qs.set("file_type", params.file_type);
     if (params.page) qs.set("page", params.page.toString());
     if (params.limit) qs.set("limit", params.limit.toString());
 
@@ -2128,9 +2195,96 @@ export async function uploadSharedDocument(file: File) {
         throw error;
     }
 }
+
+export async function uploadGlobalIngestData(user: any, file: File,  metadata: Array<{ key: string; value: string }>) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("metadata", JSON.stringify(metadata));
+    try {
+        const response = await fetchWrapper("/api/platform-admin/data-ingestion", {
+            method: "POST",
+            headers: {
+                "X-MS-CLIENT-PRINCIPAL-ID": user?.id ?? '00000000-0000-0000-0000-000000000000',
+                "X-MS-CLIENT-PRINCIPAL-NAME": user?.name ?? 'anonymous',
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user?.organizationId ?? '00000000-0000-0000-0000-000000000000'
+            },
+            body: formData
+        })
+        if (!response.ok) {
+            console.log("Error uploading global ingest data:", response.statusText);
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+        }
+        return response;
+    } catch (error) {
+        console.error("Error uploading global ingest data:", error);
+        throw error;
+    }
+}
+
 /* NOTE: Take Into consideration the difference between Fetch and FetchWrapper when adding new API functions
             FetchWrapper includes automatic session validation and retry logic and error handling.
             Use FetchWrapper for all new API calls if you need automatic session management...
             if you're gonna make a lot of recurrent calls to the API in a short time frame. You should use Fetch instead of FetchWrapper
 */
+
+export async function getPlatformOrganizations({ user }: { user?: any } = {}): Promise<any> {
+    const user_id = user ? user.id : "";
+    const organization_id = user ? user.organizationId : "";
+
+    try {
+        const response = await fetchWrapper("/api/platform-admin/organizations", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        });
+
+        if (!response.ok) {
+            throw Error("Failed to fetch platform organizations");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching platform organizations", error);
+        throw error;
+    }
+}
+
+export async function getUserActivityLogs({ user, organizationId, startDate, endDate }: { user?: any, organizationId?: string, startDate?: string, endDate?: string } = {}): Promise<any> {
+    const user_id = user ? user.id : "";
+    const user_org_id = user ? user.organizationId : "";
+    
+    const params = new URLSearchParams();
+    if (organizationId) params.append("organization_id", organizationId);
+    
+    if (startDate) {
+        const startTimestamp = Math.floor(new Date(startDate + "T00:00:00Z").getTime() / 1000);
+        params.append("start_date", startTimestamp.toString());
+    }
+    if (endDate) {
+        const endTimestamp = Math.floor(new Date(endDate + "T00:00:00Z").getTime() / 1000);
+        params.append("end_date", endTimestamp.toString());
+    }
+
+    try {
+        const response = await fetchWrapper(`/api/platform-admin/user-activity-logs?${params.toString()}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": user_org_id
+            }
+        });
+
+        if (!response.ok) {
+            throw Error("Failed to fetch user activity logs");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching user activity logs", error);
+        throw error;
+    }
+}
+
 

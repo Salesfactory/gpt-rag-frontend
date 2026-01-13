@@ -8,7 +8,7 @@ import SidebarItem from "./SidebarItemcopy";
 import { useAppContext } from "../../providers/AppProviders";
 import { SidebarSection } from "./SidebarSectionTypescopy";
 import { SidebarItem as SidebarItemType, Role } from "./SidebarItemTypescopy";
-import newSFLogo from "../../img/NewSFLogo.png";
+import newSFLogo from "../../img/logo_white.png";
 import { SubscriptionTier } from "../../api/models";
 
 interface SidebarProps {
