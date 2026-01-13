@@ -287,6 +287,7 @@ def ingest_global_data():
         json_bytes = json.dumps(json_data, indent=2, ensure_ascii=False).encode('utf-8')
 
         json_metadata = {
+            "source_file_container": CUSTOMER_PULSE_CONTAINER_NAME,
             "source_file_directory": excel_blob_path,
             "source_file_name": file.filename,
             "processed_at": datetime.now().isoformat()
