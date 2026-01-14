@@ -3340,8 +3340,7 @@ def get_gallery(*, context, organization_id):
 @app.after_request
 def after_request_hook(response):
     from shared.secure_response import secure_response
-    # return secure_response(response)
-    return response
+    return secure_response(response)
 
 
 # DO NOT ADD MORE ENDPOINTS IN THIS FILE
