@@ -72,6 +72,7 @@ from utils import (
     search_urls,
     set_settings,
     validate_url,
+    get_organization_usage_by_id,
 )
 
 import stripe.error
@@ -85,6 +86,10 @@ from shared.cosmo_db import (
     get_audit_logs,
     get_organization_subscription,
     create_user_logs,
+    create_new_subscription_logs,
+    get_organization_data,
+    upsert_organization_usage,
+    get_subscription_tier_by_id,
 )
 from shared import clients
 from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_deleted
@@ -2135,6 +2140,53 @@ def change_subscription(*, context, subscription_id):
             billing_cycle_anchor="now",
             cancel_at_period_end=False,
         )
+
+        try:
+            organizationUsage = get_organization_usage_by_id(organization_id)
+            if not organizationUsage:
+                logging.error(f"No organization usage found for subscription: {subscription_id}")
+            else:
+                tier = get_subscription_tier_by_id(new_plan_id)
+                if not tier:
+                    logging.error(f"No subscription tier found for plan: {new_plan_id}")
+                else:
+                    expirationDate = updated_subscription.get("current_period_end")
+                    
+                    organizationUsage["subscriptionId"] = subscription_id
+                    organizationUsage["currentPeriodEnds"] = expirationDate
+                    organizationUsage["policy"]["tierId"] = new_plan_id
+                    
+                    totalAllocated = tier.get("quotas", {}).get("totalCreditsAllocated", 0)
+                    organizationUsage["balance"]["totalAllocated"] = totalAllocated
+                    
+                    organizationUsage["balance"]["currentUsed"] = 0
+                    organizationUsage["balance"]["currentPagesUsed"] = 0
+                    organizationUsage["balance"]["currentSpreadsheetsUsed"] = 0
+                    organizationUsage["balance"]["currentUsedStorage"] = 0
+
+                    allowedUsers = organizationUsage.get("policy", {}).get("allowedUserIds", [])
+                    numUsers = len(allowedUsers)
+                    perUserLimit = totalAllocated / numUsers if numUsers > 0 else 0
+                    
+                    for user in allowedUsers:
+                        user["limit"] = perUserLimit
+                        user["used"] = 0
+                    
+                    upsert_organization_usage(organizationUsage)
+                    
+                    organization = get_organization_data(organization_id)
+                    
+                    create_new_subscription_logs(
+                        userId=request.headers.get("X-MS-CLIENT-PRINCIPAL-ID"),
+                        organizationId=organizationUsage["organizationId"],
+                        userName=request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME"),
+                        organizationName=organization.get("name", "Unknown") if organization else "Unknown",
+                        action="Subscription tier changed",
+                    )
+                    logging.info(f"Organization usage updated locally for organization: {organization_id}")
+
+        except Exception as local_update_error:
+            logging.error(f"Failed to update organization usage locally: {str(local_update_error)}")
 
         result = {
             "message": "Subscription change successfully",
