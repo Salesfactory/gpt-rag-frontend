@@ -40,7 +40,19 @@ const closeButtonStyle = {
     }
 };
 
-export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType, onHideTab, spreadsheetDownloadUrl, spreadsheetFileName, onCitationClicked }: Props) => {
+export const AnalysisPanel = ({
+    answer,
+    activeTab,
+    activeCitation,
+    citationHeight,
+    className,
+    onActiveTabChanged,
+    fileType,
+    onHideTab,
+    spreadsheetDownloadUrl,
+    spreadsheetFileName,
+    onCitationClicked
+}: Props) => {
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
 
@@ -78,9 +90,9 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
         if (!url) return false;
         const lowerUrl = url.toLowerCase();
         // Check if it's a blob storage URL
-        const isBlobStorage = lowerUrl.includes('.blob.core.windows.net');
+        const isBlobStorage = lowerUrl.includes(".blob.core.windows.net");
         // Check if it has document extensions
-        const hasDocExtension = /\.(pdf|docx?|xlsx?|csv|pptx?|txt)($|\?)/i.test(lowerUrl);
+        const hasDocExtension = /\.(pdf|docx?|xlsx?|csv|pptx?|txt|md|markdown)($|\?)/i.test(lowerUrl);
         return isBlobStorage || hasDocExtension;
     };
 
@@ -211,7 +223,16 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                 >
                     {fileType?.toLowerCase() === "spreadsheet-embed" && activeCitation ? (
                         <div style={{ height: citationHeight, display: "flex", flexDirection: "column" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    padding: "8px 12px",
+                                    borderBottom: "1px solid #e5e7eb",
+                                    background: "#f9fafb"
+                                }}
+                            >
                                 <div style={{ fontSize: 14, color: "#111827" }}>{spreadsheetFileName || "Excel Preview"}</div>
                                 <div style={{ display: "flex", gap: 8 }}>
                                     {spreadsheetDownloadUrl && (

@@ -648,8 +648,14 @@ const Chat = () => {
             return;
         }
 
-        // Handle PDF/DOC/DOCX files - load in analysis panel for preview
-        if (citation.endsWith(".pdf") || citation.endsWith(".doc") || citation.endsWith(".docx")) {
+        // Handle PDF/DOC/DOCX/MD files - load in analysis panel for preview
+        if (
+            citation.endsWith(".pdf") ||
+            citation.endsWith(".doc") ||
+            citation.endsWith(".docx") ||
+            citation.endsWith(".md") ||
+            citation.endsWith(".markdown")
+        ) {
             // Extract filepath if necessary
             const modifiedFilename = extractAfterDomain(fileName);
 
@@ -657,7 +663,17 @@ const Chat = () => {
                 setActiveAnalysisPanelTab(undefined);
             } else {
                 setLoadingCitationPath(fileName);
-                const response = await getFileBlobWithState(modifiedFilename, "documents");
+
+                let container = "documents";
+                let blobPath = modifiedFilename;
+
+                const parts = modifiedFilename.split("/");
+                if (parts.length > 1) {
+                    container = parts[0];
+                    blobPath = parts.slice(1).join("/");
+                }
+
+                const response = await getFileBlobWithState(blobPath, container);
                 var file = new Blob([response as BlobPart]);
                 readFile(file);
 
