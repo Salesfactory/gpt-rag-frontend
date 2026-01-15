@@ -31,7 +31,7 @@ if (userLanguage.startsWith("pt")) {
 } else if (userLanguage.startsWith("es")) {
     generating_answer_text = "Generando respuesta";
 } else {
-    generating_answer_text = "Processing Query...";
+    generating_answer_text = "Processing Query";
 }
 
 interface ProgressState {
@@ -339,13 +339,19 @@ export const Answer = ({
     if (answer.answer === "" && !progressState && isGenerating) {
         return (
             <Stack className={styles.answerContainer} verticalAlign="space-between">
-                <AnswerIcon />
-                <Stack.Item grow>
-                    <p className={styles.answerText}>
-                        {generating_answer_text}
-                        <span className={styles.loadingdots} />
-                    </p>
-                </Stack.Item>
+                <div className={styles.loadingState}>
+                    <div className={styles.loadingIconWrapper}>
+                        <AnswerIcon />
+                    </div>
+                    <div className={styles.loadingTextWrapper}>
+                        <span className={styles.loadingText}>{generating_answer_text}</span>
+                        <div className={styles.loadingDots}>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
             </Stack>
         );
     }
