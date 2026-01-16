@@ -5,6 +5,7 @@ const DocxViewer = lazy(() => import("./DocxViewer"));
 const IMGViewer = lazy(() => import("./IMGViewer"));
 const PptxViewer = lazy(() => import("./PPTXViewer"));
 const HTMLViewer = lazy(() => import("./HTMLViewer"));
+const MarkdownViewer = lazy(() => import("./MarkdownViewer"));
 import { useAppContext } from "../../providers/AppProviders";
 
 interface FileViewerProps {
@@ -30,6 +31,9 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileType, page, blobName 
         case "txt":
         case "cvs":
             return <TextViewer file={file as Blob} />;
+        case "md":
+        case "markdown":
+            return <MarkdownViewer file={file as Blob} />;
         case "pptx":
         case "ppt":
             return <PptxViewer file={file as Blob} blobName={blobName} />;

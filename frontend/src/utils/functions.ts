@@ -46,6 +46,9 @@ export function getFileType(citation: string): string {
         case "html":
         case "htm":
             return "html";
+        case "md":
+        case "markdown":
+            return "markdown";
         default:
             return "unknown";
     }

@@ -1374,7 +1374,7 @@ def getBlob(*, context):
     blob_name = unquote(request.json["blob_name"])
     container = request.json["container"]
     # White list of containers
-    white_list_containers = ["documents", "fa-documents"]
+    white_list_containers = ["documents", "survey-markdown"]
     if container not in white_list_containers:
         return jsonify({"error": "Invalid container"}), 400
 
