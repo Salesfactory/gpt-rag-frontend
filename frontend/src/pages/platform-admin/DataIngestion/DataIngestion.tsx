@@ -132,7 +132,7 @@ export const DataIngestion: React.FC = () => {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Pulse Data Ingestion</h1>
-        <p className="text-gray-500 mt-1">Ingest data into Freddaid</p>
+        <p className="text-gray-500 mt-1">Ingest data into Pro-active</p>
       </div>
 
       {/* Main Card */}
@@ -173,7 +173,7 @@ export const DataIngestion: React.FC = () => {
             ) : (
               <>
                 <p className="text-gray-700">Drag and drop a file here, or click to select</p>
-                <p className="text-sm text-gray-500 mt-1">File will be ingested into Freddaid</p>
+                <p className="text-sm text-gray-500 mt-1">File will be ingested into Pro-active</p>
               </>
             )}
             <button
