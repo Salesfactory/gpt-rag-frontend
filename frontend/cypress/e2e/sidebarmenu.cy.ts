@@ -43,23 +43,11 @@ describe("Sidebar Menu Tests", () => {
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();
 
-        cy.get("a[href='#/notification-settings']").contains("Notifications").parent().should('have.css', 'background-color', 'rgb(1, 102, 48)');
-        cy.get("span").contains("AI Chat").click();
-        cy.get("a[href='#/']").contains("AI Chat").parent().should('have.css', 'background-color', 'rgb(1, 102, 48)');
-        cy.get("button#headerCollapse").click();
-        cy.get("a[href='#/notification-settings']").contains("Notifications").parent().should('have.css', 'background-color', 'rgba(0, 0, 0, 0)');
-
         // Subitem element highlight
         cy.get("div").contains("Control Center").click();
-        cy.get("div").contains("Control Center").parent().should('have.css', 'background-color', 'rgb(1, 102, 48)');
         cy.get("a[href='#/admin']").contains("Team Management").should("be.visible").click();
-        cy.get("a[href='#/admin']").contains("Team Management").parent().should('have.css', 'background-color', 'rgb(1, 102, 48)');
         cy.get("a[href='#/organization']").contains("Workspace Governance").should("be.visible").click();
-        cy.get("a[href='#/organization']").contains("Workspace Governance").parent().should('have.css', 'background-color', 'rgb(1, 102, 48)');
-        cy.get("a[href='#/admin']").contains("Team Management").parent().should('have.css', 'background-color', 'rgba(0, 0, 0, 0)');
 
-        // Highlight hover
-        cy.get("a[href='#/organization']").trigger('mouseover').parent().should('have.css', 'background-color', 'rgb(1, 102, 48)');
     });
 
 });

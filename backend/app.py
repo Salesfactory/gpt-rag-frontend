@@ -1374,7 +1374,7 @@ def getBlob(*, context):
     blob_name = unquote(request.json["blob_name"])
     container = request.json["container"]
     # White list of containers
-    white_list_containers = ["documents", "fa-documents"]
+    white_list_containers = ["documents", "survey-markdown"]
     if container not in white_list_containers:
         return jsonify({"error": "Invalid container"}), 400
 
@@ -3340,8 +3340,7 @@ def get_gallery(*, context, organization_id):
 @app.after_request
 def after_request_hook(response):
     from shared.secure_response import secure_response
-    # return secure_response(response)
-    return response
+    return secure_response(response)
 
 
 # DO NOT ADD MORE ENDPOINTS IN THIS FILE

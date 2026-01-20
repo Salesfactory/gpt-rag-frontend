@@ -18,6 +18,7 @@ def secure_response(response: Response) -> Response:
                   or the original response (for all other cases)
     """
     is_api_request = request.path.startswith("/api/")
+    is_stream_request = request.path.startswith("/stream_chatgpt")
 
     is_invitation_request = "/api/invitations/" in request.path
 
@@ -27,7 +28,7 @@ def secure_response(response: Response) -> Response:
     content_type = getattr(response, "content_type", None)
     is_login_redirect = content_type == "text/html; charset=utf-8"
 
-    if is_api_request and is_login_redirect:
+    if (is_api_request or is_stream_request) and is_login_redirect:
         return make_response(jsonify({"error": "Unauthorized"}), 401)
 
     return response

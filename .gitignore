@@ -163,3 +163,16 @@ pyproject.toml
 poetry.lock
 
 cypress.env.json
+
+# azure artifacts
+__azurite_db_blob__.json
+__azurite_db_blob_extent__.json
+__blobstorage__/
+.python_packages
+.vscode
+.azure
+note.md
+__azurite_db_queue__.json
+__azurite_db_table__.json
+__azurite_db_queue_extent__.json
+AzuriteConfig

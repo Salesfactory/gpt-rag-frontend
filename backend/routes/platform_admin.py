@@ -247,9 +247,7 @@ def ingest_global_data():
 
         blob_storage_manager = current_app.config["blob_storage_manager"]
 
-        excel_metadata = {
-            "upload_date": datetime.now().isoformat(),
-        }
+        excel_metadata = {}
 
         if form_metadata:
             form_metadata = json.loads(form_metadata)
@@ -290,7 +288,8 @@ def ingest_global_data():
             "source_file_container": CUSTOMER_PULSE_CONTAINER_NAME,
             "source_file_directory": excel_blob_path,
             "source_file_name": file.filename,
-            "processed_at": datetime.now().isoformat()
+            "processed_at": datetime.now().isoformat(),
+            **excel_metadata
         }
 
         json_result = blob_storage_manager.upload_fileobj_to_blob(
