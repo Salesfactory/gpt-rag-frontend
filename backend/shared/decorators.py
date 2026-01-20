@@ -362,7 +362,7 @@ def check_organization_upload_limits():
                     "freeStorage": free_storage_gib,
                     "percentageUsed": percentage_used,
                     "pagesUsed": org_usage["balance"]["currentPagesUsed"],
-                    "spreadsheetsUsed": org_usage["balance"]["spreadsheetsUsed"],
+                    "spreadsheetsUsed": org_usage["balance"]["currentSpreadsheetsUsed"],
                     "spreadsheetLimit": org_limits["quotas"]["totalSpreadsheets"],
                     "pagesLimit": org_limits["quotas"]["totalPagesAllocated"],
                 }
@@ -452,7 +452,7 @@ def require_organization_storage_limits():
                     "freeStorage": free_storage_gib,
                     "percentageUsed": percentage_used,
                     "pagesUsed": org_usage["balance"]["currentPagesUsed"],
-                    "spreadsheetsUsed": org_usage["balance"]["spreadsheetsUsed"],
+                    "spreadsheetsUsed": org_usage["balance"]["currentSpreadsheetsUsed"],
                     "spreadsheetLimit": org_limits["quotas"]["totalSpreadsheets"],
                     "pagesLimit": org_limits["quotas"]["totalPagesAllocated"],
                 }
