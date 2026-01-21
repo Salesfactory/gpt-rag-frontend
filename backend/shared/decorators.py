@@ -10,7 +10,7 @@ from utils import (
     create_error_response,
     create_error_response_with_body,
     ERROR_CODE_UNAUTHORIZED_ORG,
-    ERROR_CODE_USER_LIMIT_EXCEEDED,
+    # ERROR_CODE_USER_LIMIT_EXCEEDED,
     ERROR_CODE_ORG_LIMIT_EXCEEDED,
     get_organization_tier_and_subscription,
 )
@@ -18,7 +18,7 @@ from shared.cosmo_db import (
     get_user_organizations,
     get_organization_usage,
     get_subscription_tier_by_id,
-    initalize_user_limits,
+    # initalize_user_limits,
     get_invitation_role
 )
 
