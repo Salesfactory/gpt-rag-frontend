@@ -1,0 +1,22 @@
+name: Pytest Unit Testing
+on:
+  pull_request:
+    branches:
+            - develop
+jobs:
+  pytest-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Set up Python Environment 
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install Dependencies
+        run: pip install -r ./backend/requirements-dev.txt
+      - name: Run Pytest Tests
+        run: pytest ./backend/tests
