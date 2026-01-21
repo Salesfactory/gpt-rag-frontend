@@ -2,7 +2,7 @@ name: Pytest Unit Testing
 on:
   pull_request:
     branches:
-            - develop
+      - develop
 jobs:
   pytest-test:
     runs-on: ubuntu-latest
