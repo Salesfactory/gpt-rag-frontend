@@ -19,4 +19,5 @@ jobs:
       - name: Install Dependencies
         run: pip install -r ./backend/requirements-dev.txt
       - name: Run Pytest Tests
-        run: pytest ./backend/tests
+        working-directory: ./backend
+        run: pytest -v ./tests
