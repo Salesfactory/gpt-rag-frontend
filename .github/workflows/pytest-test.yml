@@ -39,4 +39,4 @@ jobs:
       
       - name: Skip Test
         if: ${{ steps.changes.outputs.run_tests == 'false' }}
-        run: echo "Skipping tests"
+        run: echo "No changes detected in backend directory, skipping tests"
