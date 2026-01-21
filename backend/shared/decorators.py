@@ -270,9 +270,10 @@ def require_user_conversation_limits():
                     org_usage["balance"]["currentUsed"]
                     >= org_limits["quotas"]["totalCreditsAllocated"]
                 ):
-                    return create_error_response(
+                    return create_error_response_with_body(
                         "Organization has exceeded its conversation limits",
                         403,
+                        {"nextPeriodStart": org_usage["currentPeriodEnds"]},
                         ERROR_CODE_ORG_LIMIT_EXCEEDED
                     )
 
