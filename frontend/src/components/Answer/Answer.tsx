@@ -61,7 +61,7 @@ function truncateString(str: string, maxLength: number): string {
     }
     const startLength = Math.ceil((maxLength - 3) / 2);
     const endLength = Math.floor((maxLength - 3) / 2);
-    const filename = decodeURIComponent(str.split('/').pop() || str);
+    const filename = decodeURIComponent(str.split("/").pop() || str);
     return filename?.substring(0, startLength) + "..." + filename?.substring(filename.length - endLength) || str;
 }
 
@@ -97,12 +97,12 @@ export const Answer = ({
 
         const handleCitationClick = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            const citationLink = target.closest('.supContainer');
+            const citationLink = target.closest(".supContainer");
 
             if (citationLink) {
                 e.preventDefault();
-                const url = citationLink.getAttribute('data-citation-url');
-                const path = citationLink.getAttribute('data-citation-path');
+                const url = citationLink.getAttribute("data-citation-url");
+                const path = citationLink.getAttribute("data-citation-path");
 
                 if (url && path) {
                     onCitationClicked(url, path);
@@ -111,14 +111,14 @@ export const Answer = ({
         };
 
         const handleCitationKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ' ') {
+            if (e.key === "Enter" || e.key === " ") {
                 const target = e.target as HTMLElement;
-                const citationLink = target.closest('.supContainer');
+                const citationLink = target.closest(".supContainer");
 
                 if (citationLink) {
                     e.preventDefault();
-                    const url = citationLink.getAttribute('data-citation-url');
-                    const path = citationLink.getAttribute('data-citation-path');
+                    const url = citationLink.getAttribute("data-citation-url");
+                    const path = citationLink.getAttribute("data-citation-path");
 
                     if (url && path) {
                         onCitationClicked(url, path);
@@ -127,11 +127,11 @@ export const Answer = ({
             }
         };
 
-        container.addEventListener('click', handleCitationClick);
-        container.addEventListener('keydown', handleCitationKeyDown);
+        container.addEventListener("click", handleCitationClick);
+        container.addEventListener("keydown", handleCitationKeyDown);
         return () => {
-            container.removeEventListener('click', handleCitationClick);
-            container.removeEventListener('keydown', handleCitationKeyDown);
+            container.removeEventListener("click", handleCitationClick);
+            container.removeEventListener("keydown", handleCitationKeyDown);
         };
     }, [onCitationClicked]);
 
@@ -242,15 +242,13 @@ export const Answer = ({
 
             // Temporarily replace abbreviations with placeholders
             const placeholders: string[] = [];
-            let processed = text.replace(abbreviations, (match) => {
+            let processed = text.replace(abbreviations, match => {
                 placeholders.push(match);
                 return `__ABBR_${placeholders.length - 1}__`;
             });
 
             // Now split on sentence boundaries
-            const sentences = processed
-                .split(/(?<=[.!?])\s+(?=[A-Z])/)
-                .filter(s => s.trim().length > 0);
+            const sentences = processed.split(/(?<=[.!?])\s+(?=[A-Z])/).filter(s => s.trim().length > 0);
 
             // Restore abbreviations
             return sentences.map(sentence => {
@@ -272,7 +270,7 @@ export const Answer = ({
                     // Split into sentences using improved function
                     const sentences = splitIntoSentences(thought);
                     const groups: string[] = [];
-                    let currentGroup = '';
+                    let currentGroup = "";
 
                     for (let i = 0; i < sentences.length; i++) {
                         const sentence = sentences[i].trim();
@@ -281,7 +279,7 @@ export const Answer = ({
                         } else if (currentGroup.length + sentence.length < 400) {
                             // Add to current group if not too long
                             // Check if previous sentence already has ending punctuation
-                            const separator = /[.!?]$/.test(currentGroup) ? ' ' : '. ';
+                            const separator = /[.!?]$/.test(currentGroup) ? " " : ". ";
                             currentGroup += separator + sentence;
                         } else {
                             // Start new group
@@ -302,10 +300,10 @@ export const Answer = ({
 
                 if (thought.length < MIN_THOUGHT_LENGTH && merged.length > 0) {
                     // Merge with previous thought
-                    merged[merged.length - 1] += ' ' + thought;
+                    merged[merged.length - 1] += " " + thought;
                 } else if (thought.length < MIN_THOUGHT_LENGTH && i < thoughts.length - 1) {
                     // Merge with next thought
-                    thoughts[i + 1] = thought + ' ' + thoughts[i + 1];
+                    thoughts[i + 1] = thought + " " + thoughts[i + 1];
                 } else {
                     merged.push(thought);
                 }
@@ -318,8 +316,8 @@ export const Answer = ({
     }, [thinkingContent]);
 
     const thinkingMarkdownComponents: Partial<Components> = {
-        p: (props) => <p style={{ margin: 0, display: 'inline' }} {...props} />,
-        code: (props) => <code style={{ background: '#f3f4f6', padding: '2px 4px', borderRadius: '4px', fontSize: '0.9em' }} {...props} />
+        p: props => <p style={{ margin: 0, display: "inline" }} {...props} />,
+        code: props => <code style={{ background: "#f3f4f6", padding: "2px 4px", borderRadius: "4px", fontSize: "0.9em" }} {...props} />
     };
 
     const handleFeedbackClick = async () => {
@@ -391,30 +389,18 @@ export const Answer = ({
             {thoughtNodes.length > 0 && (
                 <Stack.Item>
                     <details className={styles.thinkingContainer} open={isGenerating}>
-                        <summary className={styles.thinkingSummary}>
-                            Freddaid's Thinking Process
-                        </summary>
+                        <summary className={styles.thinkingSummary}>Pro-Active Thinking Process</summary>
                         <div className={styles.thoughtStream}>
                             {thoughtNodes.map((thought, index) => (
-                                <div
-                                    key={index}
-                                    className={styles.thoughtNode}
-                                    style={{ animationDelay: `${index * 0.1}s` }}
-                                >
+                                <div key={index} className={styles.thoughtNode} style={{ animationDelay: `${index * 0.1}s` }}>
                                     <div className={styles.thoughtConnector}>
                                         <div className={styles.thoughtDot} />
-                                        {index < thoughtNodes.length - 1 && (
-                                            <div className={styles.thoughtLine} />
-                                        )}
+                                        {index < thoughtNodes.length - 1 && <div className={styles.thoughtLine} />}
                                     </div>
                                     <div className={styles.thoughtCard}>
                                         <div className={styles.thoughtText}>
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                rehypePlugins={[rehypeRaw]}
-                                                components={thinkingMarkdownComponents}
-                                            >
-                                                {thought.endsWith('.') ? thought : thought + '.'}
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={thinkingMarkdownComponents}>
+                                                {thought.endsWith(".") ? thought : thought + "."}
                                             </ReactMarkdown>
                                         </div>
                                     </div>
@@ -455,7 +441,7 @@ export const Answer = ({
                                         }}
                                         tabIndex={0}
                                         className={styles.citation}
-                                        title={path.split('/').filter(Boolean).pop() || path}
+                                        title={path.split("/").filter(Boolean).pop() || path}
                                         onClick={() => {
                                             if (!isLoadingThis) onCitationClicked(fullUrl, path);
                                         }}
@@ -488,27 +474,22 @@ export const Answer = ({
             <Stack.Item>
                 <div className={styles.feedbackButtonRow}>
                     <TooltipHost content="Leave Feedback">
-                        <button
-                            className={styles.feedbackButton}
-                            onClick={handleFeedbackClick}
-                            aria-label="Leave Feedback"
-                            title="Leave Feedback"
-                        >
+                        <button className={styles.feedbackButton} onClick={handleFeedbackClick} aria-label="Leave Feedback" title="Leave Feedback">
                             <IconButton
                                 aria-hidden="true"
                                 iconProps={{ iconName: "Feedback" }}
                                 styles={{
                                     root: {
-                                        background: 'transparent',
-                                        border: 'none',
-                                        minWidth: 'auto',
-                                        width: 'auto',
-                                        height: 'auto',
+                                        background: "transparent",
+                                        border: "none",
+                                        minWidth: "auto",
+                                        width: "auto",
+                                        height: "auto",
                                         padding: 0
                                     },
                                     icon: {
-                                        color: 'inherit',
-                                        fontSize: '16px'
+                                        color: "inherit",
+                                        fontSize: "16px"
                                     }
                                 }}
                             />
