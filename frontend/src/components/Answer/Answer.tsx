@@ -389,7 +389,7 @@ export const Answer = ({
             {thoughtNodes.length > 0 && (
                 <Stack.Item>
                     <details className={styles.thinkingContainer} open={isGenerating}>
-                        <summary className={styles.thinkingSummary}>Pro-Active Thinking Process</summary>
+                        <summary className={styles.thinkingSummary}>Pro-Active's Thinking Process</summary>
                         <div className={styles.thoughtStream}>
                             {thoughtNodes.map((thought, index) => (
                                 <div key={index} className={styles.thoughtNode} style={{ animationDelay: `${index * 0.1}s` }}>
