@@ -316,7 +316,7 @@ export async function getChatHistory(userId: string): Promise<ConversationHistor
 let storageAccountCache: string | null = null;
 
 export function getCitationFilePath(citation: string): string {
-    if (citation.startsWith("http")) {
+    if (citation.startsWith("http://") || citation.startsWith("https://")) {
         return citation;
     }
 
