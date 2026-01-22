@@ -10,7 +10,7 @@ from utils import (
     create_error_response,
     create_error_response_with_body,
     ERROR_CODE_UNAUTHORIZED_ORG,
-    ERROR_CODE_USER_LIMIT_EXCEEDED,
+    # ERROR_CODE_USER_LIMIT_EXCEEDED,
     ERROR_CODE_ORG_LIMIT_EXCEEDED,
     get_organization_tier_and_subscription,
 )
@@ -18,7 +18,7 @@ from shared.cosmo_db import (
     get_user_organizations,
     get_organization_usage,
     get_subscription_tier_by_id,
-    initalize_user_limits,
+    # initalize_user_limits,
     get_invitation_role
 )
 
@@ -248,30 +248,32 @@ def require_user_conversation_limits():
                 user_limits = next(
                     (user for user in allowed_users if user["userId"] == user_id), None
                 )
-                if not user_limits:
-                    user_limits = initalize_user_limits(
-                        organization_id,
-                        user_id,
-                        (
-                            org_limits["quotas"]["totalCreditsAllocated"]
-                            / org_limits["policy"]["maxSeats"]
-                        ),
-                    )
-                if user_limits["currentUsed"] >= user_limits["totalAllocated"]:
-                    next_period_start = org_usage["currentPeriodEnds"]
-                    return create_error_response_with_body(
-                        "User has exceeded their conversation limits",
-                        403,
-                        {"nextPeriodStart": next_period_start},
-                        ERROR_CODE_USER_LIMIT_EXCEEDED
-                    )
+                # NOTE: The SalesFactory Org now does not need limits per user so its not necessary at the moment (21/01/2026)
+                # if not user_limits:
+                #     user_limits = initalize_user_limits(
+                #         organization_id,
+                #         user_id,
+                #         (
+                #             org_limits["quotas"]["totalCreditsAllocated"]
+                #             / org_limits["policy"]["maxSeats"]
+                #         ),
+                #     )
+                # if user_limits["currentUsed"] >= user_limits["totalAllocated"]:
+                #     next_period_start = org_usage["currentPeriodEnds"]
+                #     return create_error_response_with_body(
+                #         "User has exceeded their conversation limits",
+                #         403,
+                #         {"nextPeriodStart": next_period_start},
+                #         ERROR_CODE_USER_LIMIT_EXCEEDED
+                #     )
                 if (
                     org_usage["balance"]["currentUsed"]
                     >= org_limits["quotas"]["totalCreditsAllocated"]
                 ):
-                    return create_error_response(
+                    return create_error_response_with_body(
                         "Organization has exceeded its conversation limits",
                         403,
+                        {"nextPeriodStart": org_usage["currentPeriodEnds"]},
                         ERROR_CODE_ORG_LIMIT_EXCEEDED
                     )
 
