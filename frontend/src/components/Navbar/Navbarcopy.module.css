@@ -113,25 +113,24 @@
 }
 
 .profileCircle {
-    width: 32px;
-    height: 32px;
-    background-color: #dcfce7;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #166534;
+    color: #000;
     font-weight: 500;
     position: relative;
     border: 2px solid;
 }
 
 .adminBorder {
-    border-color: #15803d;
+    border-color: #A0CB06;
 }
 
 .platformAdminBorder {
-    border-color: #15803d;
+    border-color: #A0CB06;
 }
 
 .userBorder {

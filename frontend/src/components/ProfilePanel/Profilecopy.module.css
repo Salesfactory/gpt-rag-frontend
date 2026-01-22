@@ -72,25 +72,29 @@
 
 .icon2{
     margin-right: 12px;
+    align-self: center;
 }
 
 .logoutSeparator {
     border-top: 1px solid #e5e7eb;
+    margin-right: 5px;
+    margin-left: 5px;
 }
 
 .logoutButton {
-    display: block;
+    display: flex;
     padding: 12px 16px;
     text-align: left;
-    color: #3b82f6;
+    color: #A0CB06;
     font-weight: 600;
     text-decoration: none;
     transition: background-color 0.2s;
+
 }
 
 .logoutButton:hover{
     background-color: #e0f2fe;
-    color: #2563eb;
+    color: #8eb134;
 }
 
 .textMenu{
