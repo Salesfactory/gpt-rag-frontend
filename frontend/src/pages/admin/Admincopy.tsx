@@ -758,7 +758,8 @@ const Admin = () => {
                                             position: "relative",
                                             selectors: {
                                                 "::after": {
-                                                    borderRadius: "0.5rem"
+                                                    borderRadius: "0.5rem",
+                                                    borderColor: "#A0CB06"
                                                 }
                                             }
                                         },
