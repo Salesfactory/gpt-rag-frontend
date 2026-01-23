@@ -1,7 +1,7 @@
 /* Icon Styles */
 .iconLarge {
     font-size: 1.9em;
-    color: #333333ab;
+    color: #666666;
 }
 
 .brandText {
@@ -277,4 +277,8 @@
     .shareButton {
         padding: 8px;
     }
+}
+
+.historyButton:hover {
+    background-color: #cce293 !important;
 }

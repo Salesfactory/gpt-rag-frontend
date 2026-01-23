@@ -38,7 +38,7 @@
     align-items: center;
     padding: 16px 20px;
     border-bottom: 1px solid #e0e0e0;
-    background-color: #16a34a;
+    background-color: #A0CB06;
 }
 
 .title {
@@ -146,13 +146,13 @@
 
 .conversationItem:hover {
     transform: translateX(4px);
-    border-left-color: #10b981;
-    background-color: #f0fdf4;
+    border-left-color: #A0CB06;
+    background-color: rgba(160, 203, 6, 0.1);
 }
 
 .conversationItem.selected {
-    background-color: #f0fdf4;
-    border-left-color: #10b981;
+    background-color: rgba(160, 203, 6, 0.1);
+    border-left-color: #A0CB06;
 }
 
 .conversationButton {

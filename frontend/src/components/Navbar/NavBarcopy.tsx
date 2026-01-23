@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./Navbarcopy.module.css";
-import { Menu, Settings, History, ChevronDown, Upload, Copy, ExternalLink } from "lucide-react";
+import { Menu, Settings, Clock, ChevronDown, Upload, Copy, ExternalLink } from "lucide-react";
 import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profilecopy";
@@ -332,9 +332,9 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                     <button
                                         onClick={handleShowChatHistory}
                                         aria-label="Chat History Button"
-                                        className="btn btn-white btn-sm d-flex align-items-center gap-1"
+                                        className={`btn btn-white btn-sm d-flex align-items-center gap-1 ${styles.historyButton}`}
                                     >
-                                        <History className={styles.iconLarge} />
+                                        <Clock className={styles.iconLarge} />
                                     </button>
                                     <span className={styles.tooltipText}>Chat History</span>
                                 </div>
@@ -373,8 +373,8 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                                 (user?.role as Role) === "platformAdmin"
                                                     ? styles.platformAdminBorder
                                                     : user?.role === "admin"
-                                                    ? styles.adminBorder
-                                                    : styles.userBorder
+                                                      ? styles.adminBorder
+                                                      : styles.userBorder
                                             }`}
                                         >
                                             {userInitials}
@@ -387,8 +387,8 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                                         {(user?.role as Role) === "platformAdmin"
                                                             ? "Platform Administrator"
                                                             : (user?.role as Role) === "admin"
-                                                            ? "Administrator"
-                                                            : "User"}
+                                                              ? "Administrator"
+                                                              : "User"}
                                                     </div>
                                                 </div>
                                                 {/* Tooltip Arrow */}
