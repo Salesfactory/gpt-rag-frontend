@@ -33,9 +33,9 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
                 }
             });
             toast("User data updated successfully. The window will restart in 2 seconds.", { type: "success" });
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
         } catch (error) {
             console.error("Error updating user data", error);
             toast("Failed to update user data", { type: "error" });
@@ -98,7 +98,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose }) 
 
                     {/* Reset Password Button */}
                     <div className={styles.field2}>
-                        <button className={styles.saveButton} onClick={handleChangePassword} disabled={isSaving} aria-label="Change Password">
+                        <button className={styles.saveButton2} onClick={handleChangePassword} disabled={isSaving} aria-label="Change Password">
                             Change Password
                         </button>
                     </div>
