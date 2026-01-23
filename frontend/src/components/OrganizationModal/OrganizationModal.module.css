@@ -57,7 +57,7 @@
 .header {
     padding: 1.5rem;
     border-bottom: 1px solid #e5e7eb;
-    background-color: #16a34a;
+    background-color: #A0CB06;
     border-radius: 0.5rem 0.5rem 0 0;
 }
 
@@ -117,7 +117,7 @@
 
 
 .orgCard {
-    padding: 0.75rem;
+    padding: 1rem;
     border-radius: 0.5rem;
     border: 1px solid #e5e7eb;
     cursor: pointer;
@@ -150,9 +150,9 @@
 }
 
 .orgIcon {
-    width: 2rem;
-    height: 2rem;
-    background-color: #f3f4f6;
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: #BFBFBF;
     border-radius: 0.5rem;
     display: flex;
     align-items: center;
@@ -161,7 +161,7 @@
 }
 
 .icon {
-    color: #6b7280;
+    color: #656565;
 }
 
 .orgTitle {
@@ -186,14 +186,15 @@
 }
 
 .roleBadge {
-    padding: 0.25rem 0.5rem;
+    padding: 0.15rem 0.5rem;
     border-radius: 9999px;
     font-weight: 500;
 }
 
 .roleAdmin {
-    background-color: #dbeafe;
-    color: #2563eb;
+    border-color: #A0CB06;
+    border-width: 1px;
+    color: #A0CB06;
 }
 
 .roleUser {
@@ -202,7 +203,8 @@
 }
 
 .rolePlatformAdmin {
-    background-color: #d9ff98;
+    border-color: 656565;
+    border-width: 1px;
     color: #1b4332;
 }
 
@@ -210,7 +212,7 @@
 .check {
     width: 1.25rem;
     height: 1.25rem;
-    background-color: #10b981;
+    background-color: #A0CB06;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -220,16 +222,18 @@
 
 /* Footer */
 .footer {
+    margin-left: 5px;
+    margin-right: 5px;
     padding: 1.5rem;
     border-top: 1px solid #e5e7eb;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
 }
 
 .closeModalBtn {
-    padding: 0.5rem 1rem;
+    padding: 0.7rem 2rem;
     border: none;
-    background-color: #16a34a;
+    background-color: #A0CB06;
     color: white;
     border-radius: 0.375rem;
     font-size: 0.875rem;
@@ -239,7 +243,7 @@
 }
 
 .closeModalBtn:hover {
-    background-color: #15803d;
+    background-color: #A0CB06;
 }
 
 /* Loading State */
