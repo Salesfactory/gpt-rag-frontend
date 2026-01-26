@@ -37,17 +37,24 @@
     font-weight: 500;
     cursor: pointer;
     gap: 8px;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
     width: 190px;
     height: 44px;
 }
 
 .filterButton:hover {
-    background: #f3f4f6;
+    background: #A0CB06;
+    border-color: #A0CB06;
+    color: white;
+}
+
+.filterButton:hover .filterIcon {
+  color: white;
 }
 
 .filterIcon {
-    color: #1f2937;
+  color: #1f2937;
+  transition: color 0.2s;
 }
 
 .filterDropdown {
@@ -92,7 +99,7 @@
 }
 
 .dropdownItem:hover {
-    background-color: #f3f4f6;
+    background-color: #A0CB06;
 }
 
 .dropdownItemActive {
@@ -115,7 +122,7 @@
 }
 
 .header {
-  background: #008431;
+  background: #A0CB06;
   padding: 1rem 1.5rem;
 }
 
@@ -304,11 +311,11 @@
   display: inline-flex;
   align-items: center;
   padding: 0.20rem 0.6rem;
-  border-radius: 9999px;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  background: #d1fae5; /* green-100 */
-  color: #065f46; /* green-800 */
+  background: #A0CB09;
+  color: #ffffff;
   width: fit-content;
 
 }
@@ -361,8 +368,9 @@
 }
 
 .paginationButton:hover:not(.paginationButtonDisabled) {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: #A0CB06;
+  border-color: #A0CB06;
+  color: #ffffff;
 }
 
 .paginationButtonDisabled {
@@ -372,9 +380,9 @@
 }
 
 .paginationButtonActive {
-  background: #008431;
-  color: white;
-  border-color: #008431;
+  background: #A0CB06;
+  color: #ffffff;
+  border-color: #A0CB06;
 }
 
 .paginationInfo {

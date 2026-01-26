@@ -256,7 +256,8 @@ const Gallery: React.FC = () => {
                             position: "relative",
                             selectors: {
                                 ":focus-within": {
-                                    outline: "none"
+                                    outline: "none",
+                                    borderColor: "#A0CB06"
                                 },
                                 "::after": {
                                     border: "none !important",
@@ -330,7 +331,7 @@ const Gallery: React.FC = () => {
                                 }}
                             >
                                 <Users size={16} className={styles.filterIcon} />
-                                {userFilter ? getUserName(userFilter) ?? userFilter : "All Users"}
+                                {userFilter ? (getUserName(userFilter) ?? userFilter) : "All Users"}
                             </button>
 
                             {showUserFilter && (
