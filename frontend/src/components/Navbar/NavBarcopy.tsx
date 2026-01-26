@@ -348,7 +348,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                     <button
                                         aria-label="Chat Settings"
                                         onClick={handleShowSettings}
-                                        className="btn btn-white btn-sm d-flex align-items-center gap-1"
+                                        className={`btn btn-white btn-sm d-flex align-items-center gap-1 ${styles.historyButton}`}
                                         data-testid="settings-button"
                                     >
                                         <Settings className={styles.iconLarge} />

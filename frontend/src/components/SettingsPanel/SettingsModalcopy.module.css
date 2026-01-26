@@ -57,7 +57,7 @@
 
 .saveButton {
     width: 8rem;
-    background-color: #16a34a;
+    background-color: #A0CB06;
     margin: 0;
     color: white;
     padding-top: 0.75rem;
@@ -69,12 +69,13 @@
     align-items: center;
     justify-content: center;
     font-weight: 600;
+    border: none;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     transition: all 0.2s ease;
 }
 
 .saveButton:hover {
-    background-color: #15803d;
+    background-color: #8eb134;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
 }
 
@@ -91,7 +92,7 @@
     position: sticky;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid #e9e9e9;
-    background-color: #16a34a;
+    background-color: #a2c93c;
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
     top: 0;
@@ -148,10 +149,10 @@
   --mix: 3%;
 
   --c-gray: #e5e7eb;
-  --c-white: #ffffff;
-  --c-mint: #dcfce7;
-  --c-green: #34d399;
-  --c-green-dark: #16a34a;
+  --c-white: #f3f5f2;
+  --c-mint: #f1f8e1;
+  --c-green: #c5e17a;
+  --c-green-dark: #a2c93d;
   position: relative;
   padding-bottom: 2px;
 
@@ -224,8 +225,8 @@
 
 .sliderCustom :global(.ms-Slider-thumb),
 .sliderCustom :global(.fui-Slider__thumb){
-  background-color: #10b981;
-  border: 1px solid #ffffff;
+  background-color: #ffffff;
+  border: 1px solid #a2c93c;
   box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 0 0 1px #ffffff;
   transition: transform .15s ease, background-color .15s ease;
   z-index: 2;
@@ -234,7 +235,7 @@
   transform: translate(-50%, calc(-50% + var(--thumb-nudge)));
 }
 .sliderCustom :global(.ms-Slider-thumb:hover),
-.sliderCustom :global(.fui-Slider__thumb:hover){ background-color:#059669; }
+.sliderCustom :global(.fui-Slider__thumb:hover){ background-color:#a2c93c; }
 
 .sliderCustom :global(.ms-Slider-container),
 .sliderCustom :global(.fui-Slider__container){
@@ -361,7 +362,6 @@
 }
 
 
-
 .scaleGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -382,9 +382,9 @@
 }
 
 .dotGray { background-color: #9ca3af; }
-.dotGrayLight { background-color: #d1d5db; }
-.dotGreenLight { background-color: #86efac; }
-.dotGreen { background-color: #22c55e; }
+.dotGrayLight { background-color: #f1f8e1; }
+.dotGreenLight { background-color: #c5e17a; }
+.dotGreen { background-color: #a2c93c; }
 
 .scaleTitle {
     font-size: 14px; /* reduced title size */
@@ -427,7 +427,7 @@
   margin: 0 0 8px 0;
   align-self: flex-start;
   padding: 4px;
-  background-color: #f1f5f9;
+  background-color: #ffffff;
   border-radius: 6px;
   position: relative;
 }
@@ -440,7 +440,7 @@
   background-color: #ffffff;
   border-radius: 6px;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  border: 2px solid #6FDCB7;
+  border: 2px solid #a2c93d;
   transition: transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1),
               opacity 200ms ease,
               box-shadow 200ms ease;
@@ -457,7 +457,7 @@
   width: 100%;
   padding: 8px 10px;
   border: none;
-  background-color: #f1f5f9;
+  background-color: #ffffff;
   border-radius: 6px;
   cursor: pointer;
   outline: none;
@@ -482,7 +482,7 @@
 }
 
 .segmentBtnActive .segmentIcon {
-  color: #6FDCB7;
+  color: #a2c93c;
 }
 
 .segmentTitle {
