@@ -90,6 +90,10 @@ const GalleryCard: React.FC<{
                         <button className={styles.actionButton} title="Delete" onClick={() => onDelete(file)}>
                             <Trash2 size={16} className={styles.deleteIcon} />
                         </button>
+                        {/* Preview Button */}
+                        <button className={styles.actionButton} onClick={() => onPreview(file)}>
+                            <Eye size={16} className={styles.previewIcon} />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -110,11 +114,11 @@ const GalleryCard: React.FC<{
                 <p className={styles.fileDate}>
                     Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
                 </p>
-                
+
                 {/* Collapsible Description */}
                 {file.metadata.artifact_desc && (
                     <div className={styles.descriptionContainer}>
-                        <button 
+                        <button
                             className={styles.descriptionToggle}
                             onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
                         >
@@ -127,14 +131,6 @@ const GalleryCard: React.FC<{
                             </div>
                         )}
                     </div>
-                )}
-
-                {/* Preview Button */}
-                {file.name.toLowerCase().endsWith('.pptx') && (
-                    <button className={styles.previewButton} title="Preview" onClick={() => onPreview(file)}>
-                        <Eye size={16} />
-                        Preview
-                    </button>
                 )}
             </div>
         </div>
@@ -620,7 +616,15 @@ const Gallery: React.FC = () => {
                         </div>
                         <div className={styles.modalBody}>
                             <Suspense fallback={<div style={{ textAlign: "center", padding: "2rem", color: "#A0CB06" }}>Loading viewer...</div>}>
-                                <PptxViewer file="" blobName={previewFile.name} />
+                                {previewFile.name.endsWith(".pptx") ? <PptxViewer file="" blobName={previewFile.name} /> : <div><img
+                                    src={previewFile.url}
+                                    alt="Chart Preview"
+                                    className={styles.previewImage}
+                                    onError={e => {
+                                        e.currentTarget.style.display = "none";
+                                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                                    }}
+                                /></div>}
                             </Suspense>
                         </div>
                     </div>

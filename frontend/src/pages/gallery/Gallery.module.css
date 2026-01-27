@@ -549,6 +549,10 @@
     object-position: center center;
   }
 
+  .previewImageBox {
+    object-position: center center;
+  }
+
   .cardInfo {
     padding: 1rem;
   }
