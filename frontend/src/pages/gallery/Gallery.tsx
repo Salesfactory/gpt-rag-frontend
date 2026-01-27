@@ -1,8 +1,10 @@
 import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter, PresentationIcon, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter, PresentationIcon, ChevronDown, ChevronUp, Eye, X } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, lazy, Suspense } from "react";
+
+const PptxViewer = lazy(() => import("../../components/DocView/PPTXViewer"));
 import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
@@ -49,10 +51,11 @@ const GalleryCard: React.FC<{
     file: GalleryItem;
     onDownload: (item: GalleryItem) => void;
     onDelete: (item: GalleryItem) => void;
+    onPreview: (item: GalleryItem) => void;
     getUserName: (id: string) => string | undefined;
     createFileName: (name: string) => string;
     formatFileSize: (bytes: number) => string;
-}> = ({ file, onDownload, onDelete, getUserName, createFileName, formatFileSize }) => {
+}> = ({ file, onDownload, onDelete, onPreview, getUserName, createFileName, formatFileSize }) => {
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
 
     return (
@@ -128,7 +131,7 @@ const GalleryCard: React.FC<{
 
                 {/* Preview Button */}
                 {file.name.toLowerCase().endsWith('.pptx') && (
-                    <button className={styles.previewButton} title="Preview (Coming Soon)">
+                    <button className={styles.previewButton} title="Preview" onClick={() => onPreview(file)}>
                         <Eye size={16} />
                         Preview
                     </button>
@@ -153,6 +156,7 @@ const Gallery: React.FC = () => {
     const [showUserFilter, setShowUserFilter] = useState<boolean>(false);
     const [showTypeFilter, setShowTypeFilter] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const [previewFile, setPreviewFile] = useState<GalleryItem | null>(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -539,6 +543,7 @@ const Gallery: React.FC = () => {
                                                     file={file}
                                                     onDownload={handleDownload}
                                                     onDelete={handleDelete}
+                                                    onPreview={setPreviewFile}
                                                     getUserName={getUserName}
                                                     createFileName={createFileName}
                                                     formatFileSize={formatFileSize}
@@ -597,6 +602,29 @@ const Gallery: React.FC = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* PPTX Preview Modal */}
+            {previewFile && (
+                <div className={styles.modalOverlay} onClick={() => setPreviewFile(null)}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 className={styles.modalTitle}>{previewFile.name.split("/").pop()}</h3>
+                            <button
+                                className={styles.modalCloseButton}
+                                onClick={() => setPreviewFile(null)}
+                                title="Close"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <Suspense fallback={<div style={{ textAlign: "center", padding: "2rem", color: "#A0CB06" }}>Loading viewer...</div>}>
+                                <PptxViewer file="" blobName={previewFile.name} />
+                            </Suspense>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
