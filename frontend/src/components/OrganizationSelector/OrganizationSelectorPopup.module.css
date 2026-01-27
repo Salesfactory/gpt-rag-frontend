@@ -27,15 +27,15 @@
 }
 
 .selected {
-    background-color: #00a63e;
+    background-color: #A0CB06;
     color: white;
-    border-color: #00a63e;
+    border-color: #A0CB06;
 }
 
 
 .continueButton {
     padding: 10px 20px;
-    background-color: #00a63e;
+    background-color: #A0CB06;
     color: white;
     font-weight: 500;
     border: none;
@@ -46,7 +46,7 @@
 }
 
 .continueButton:hover {
-    background-color: #008236;
+    background-color: #8cb305;
 }
 
 .continueButton:disabled {
@@ -57,35 +57,95 @@
 .dropdownWrapper {
     width: 100%;
     margin: 1rem 0;
+    position: relative;
+    text-align: left;
 }
 
-.dropdown {
-    
+.customSelectTrigger {
     width: 100%;
     padding: 0.75rem 1rem;
     font-size: 1rem;
-    background-color: #f9f9f9;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color 0.3s, background-color 0.3s;
-    color: #000000;
-}
-
-.dropdown:hover {
-    border-color: #888;
-    background-color: #f0f0f0;
-}
-
-.dropdown:focus {
-    outline: none;
-    border-color: #00c951;
     background-color: #fff;
-    box-shadow: 0 0 0 3px rgba(159, 197, 29, 0.2);
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    color: #1f1f1f;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-.selected {
-    border-color: #00c951;
+.customSelectTrigger:hover,
+.customSelectTrigger:focus-visible {
+    border-color: #A0CB06;
+}
+
+.customSelectTrigger.open {
+    border-color: #A0CB06;
+    box-shadow: 0 0 0 3px rgba(160, 203, 6, 0.25);
+}
+
+.customOptionsList {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background-color: #fff;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 1001;
+    animation: dropdownFade 0.15s ease-out;
+}
+
+.customOption {
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    color: #1f1f1f;
+}
+
+.customOption:hover {
+    background-color: rgba(160, 203, 6, 0.12);
+}
+
+.selectedOption {
+    background-color: #A0CB06 !important;
+    color: #fff !important;
+}
+
+.selectedOption .optionLabel {
+    color: #fff;
+}
+
+.checkIcon {
+    color: #fff;
+}
+
+.optionLabel {
+    flex: 1;
+}
+
+@keyframes dropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 

@@ -28,7 +28,7 @@
 .header {
     padding: 1.5rem;
     border-bottom: 1px solid #e5e7eb;
-    background-color: #16a34a;
+    background-color: #a2c93c;
 }
 
 .headerContent {
@@ -99,7 +99,7 @@
 
 .input:focus {
     outline: none;
-    border-color: #10b981;
+    border-color: #a2c93c;
 }
 
 .inputDisabled {
@@ -144,11 +144,21 @@
     background-color: #f9fafb;
 }
 
+.saveButton2 {
+    padding: 0.5rem 1rem;
+    color: #a2c93c;
+    border: 1px solid #a2c93c;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
 .saveButton {
     padding: 0.5rem 1rem;
-    border: none;
-    background-color: #16a34a;
     color: white;
+    background-color: #A0CB06;
     border-radius: 0.375rem;
     font-size: 0.875rem;
     font-weight: 500;
@@ -157,9 +167,12 @@
 }
 
 
-
 .saveButton:hover {
-    background-color: #15803d;
+    background-color: #8eb134;
+}
+
+.saveButton2:hover {
+    background-color: #f5ffde;
 }
 
 /* Responsive Design */

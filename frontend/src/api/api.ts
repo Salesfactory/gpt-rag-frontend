@@ -316,27 +316,29 @@ export async function getChatHistory(userId: string): Promise<ConversationHistor
 let storageAccountCache: string | null = null;
 
 export function getCitationFilePath(citation: string): string {
+    if (citation.startsWith("http://") || citation.startsWith("https://")) {
+        return citation;
+    }
+
     // Return cached value if available
     if (storageAccountCache) {
         return `https://${storageAccountCache}.blob.core.windows.net/documents/${citation}`;
     }
 
-    var storage_account = "please_check_if_storage_account_is_in_frontend_app_settings";
+    // var storage_account = "please_check_if_storage_account_is_in_frontend_app_settings";
 
     const xhr = new XMLHttpRequest();
     xhr.open("GET", "/api/get-storage-account", false);
     xhr.send();
 
     if (xhr.status > 299) {
-        console.log("Please check if STORAGE_ACCOUNT is in frontend app settings");
-        return storage_account;
+        console.warn("Please check if STORAGE_ACCOUNT is in frontend app settings");
+        return citation;
     } else {
         const parsedResponse = JSON.parse(xhr.responseText);
-        storage_account = parsedResponse["storageaccount"];
-        storageAccountCache = storage_account;
+        storageAccountCache = parsedResponse["storageaccount"];
+        return `https://${storageAccountCache}.blob.core.windows.net/documents/${citation}`;
     }
-
-    return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
 
 export async function getFeedbackUrl(): Promise<string | null> {

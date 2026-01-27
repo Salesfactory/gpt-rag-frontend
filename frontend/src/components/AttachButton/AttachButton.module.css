@@ -17,7 +17,7 @@
 }
 
 .attachButton:hover {
-    color: #047857;
+    color: #A0CB06;
     transform: scale(1.1);
 }
 
@@ -50,7 +50,7 @@
     z-index: 9999;
     opacity: 0;
     transition: opacity 0.3s;
-    border: 1px solid #016630;
+    border: 1px solid #A0CB06;
 }
 
 .tooltipContainer:hover .tooltipText {
@@ -80,7 +80,7 @@
 
 .attachButton:focus-visible,
 .attachButtonDisabled:focus-visible {
-    outline: 2px solid #047857;
+    outline: 2px solid #A0CB06;
     outline-offset: 2px;
 }
 

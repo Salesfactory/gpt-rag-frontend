@@ -103,7 +103,7 @@
 }
 
 .headerRow{
-  background: #008431;
+  background: #a2c93c;
   color: #ffffff;
   font-weight: 600;
   font-size: 16px;
@@ -134,8 +134,8 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: #bfdbfe;
-    color: #1e40af;
+    border: 1px solid #a2c93c;
+    color: #a2c93c;
 }
 
 .roleUser {
@@ -145,8 +145,8 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: #d1fae5;
-    color: #065f46;
+    border: 1px solid #a2c93c;
+    color: #a2c93c;
 }
 
 .rolePlatformAdmin {
@@ -156,8 +156,8 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
-    background-color: #bfdbfe;
-    color: #1e40af;
+    border: 1px solid #3483f0;
+    color: #1665e3;
 }
 
 
@@ -429,7 +429,7 @@
 }
 
 .headerE {
-    background-color: #008431;
+    background-color: #a2c93c;
     color: white;
     display: flex;
     align-items: center;
@@ -577,7 +577,7 @@
 
 .saveButtonE {
     padding: 0.5rem 1rem;
-    background-color: #008431;
+    background-color: #A0CB06;
     color: white;
     border: none;
     border-radius: 6px;
@@ -595,5 +595,5 @@
 }
 
 .saveButtonE:hover {
-    background-color: #15803d;
+    background-color: #8eb134;
 }

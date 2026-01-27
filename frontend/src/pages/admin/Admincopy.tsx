@@ -190,7 +190,7 @@ export const CreateUserForm = ({ isOpen, setIsOpen, users }: { isOpen: boolean; 
                                 <button type="button" onClick={onDismiss} aria-label="Cancel" className={styles.cancelButtonE}>
                                     Cancel
                                 </button>
-                                <button type="submit" className={styles.saveButtonE} aria-label="Send Invitation"  disabled={loading}>
+                                <button type="submit" className={styles.saveButtonE} aria-label="Send Invitation" disabled={loading}>
                                     Send Invitation
                                 </button>
                             </div>
@@ -248,10 +248,15 @@ export const DeleteUserDialog = ({
 
                     {/* Buttons */}
                     <div className={styles.buttonContainerD}>
-                        <button onClick={onDismiss} className={styles.cancelButtonD} disabled={isDeletingUser} aria-label="Cancel" >
+                        <button onClick={onDismiss} className={styles.cancelButtonD} disabled={isDeletingUser} aria-label="Cancel">
                             Cancel
                         </button>
-                        <button onClick={onConfirm} className={styles.deleteButtonD} disabled={isDeletingUser} aria-label={isDeletingUser ? "loading..." : "Delete Button"}>
+                        <button
+                            onClick={onConfirm}
+                            className={styles.deleteButtonD}
+                            disabled={isDeletingUser}
+                            aria-label={isDeletingUser ? "loading..." : "Delete Button"}
+                        >
                             {isDeletingUser ? <Spinner size={SpinnerSize.small} /> : "Yes, Delete"}
                         </button>
                     </div>
@@ -301,7 +306,12 @@ export const DeleteInvitationDialog = ({
                         <button onClick={onDismiss} className={styles.cancelButtonD} aria-label="Cancel">
                             Cancel
                         </button>
-                        <button onClick={handleConfirm} className={styles.deleteButtonD} disabled={isDeletingUser} aria-label={isDeletingUser ? "loading" : "Delete Invitation"}>
+                        <button
+                            onClick={handleConfirm}
+                            className={styles.deleteButtonD}
+                            disabled={isDeletingUser}
+                            aria-label={isDeletingUser ? "loading" : "Delete Invitation"}
+                        >
                             {isDeletingUser ? <Spinner size={SpinnerSize.small} /> : "Delete invitation"}
                         </button>
                     </div>
@@ -449,14 +459,20 @@ export const EditUserDialog = ({
 
                         {/* Change Password Button */}
                         <div className={styles.passwordSectionE}>
-                            <button type="button" className={styles.changePasswordButtonE} onClick={handleResetPassword} disabled={isResettingPassword} aria-label={isResettingPassword ? "Loading" : "Reset Password"}>
+                            <button
+                                type="button"
+                                className={styles.changePasswordButtonE}
+                                onClick={handleResetPassword}
+                                disabled={isResettingPassword}
+                                aria-label={isResettingPassword ? "Loading" : "Reset Password"}
+                            >
                                 {isResettingPassword ? <Spinner size={SpinnerSize.small} /> : "Reset Password"}
                             </button>
                         </div>
 
                         {/* Buttons */}
                         <div className={styles.buttonContainerE}>
-                            <button type="button" onClick={handleCancel} className={styles.cancelButtonE} aria-label="Cancel" >
+                            <button type="button" onClick={handleCancel} className={styles.cancelButtonE} aria-label="Cancel">
                                 Cancel
                             </button>
                             <button
@@ -742,7 +758,8 @@ const Admin = () => {
                                             position: "relative",
                                             selectors: {
                                                 "::after": {
-                                                    borderRadius: "0.5rem"
+                                                    borderRadius: "0.5rem",
+                                                    borderColor: "#A0CB06"
                                                 }
                                             }
                                         },
@@ -853,20 +870,21 @@ const Admin = () => {
                             disabled={loading}
                             styles={{
                                 root: {
-                                    backgroundColor: "#008431",
+                                    backgroundColor: "#a2c93c",
                                     color: "white",
                                     border: "none"
                                 },
                                 rootHovered: {
-                                    backgroundColor: "#006e2c",
-                                    color: "white"
+                                    backgroundColor: "#8eb134",
+                                    color: "white",
+                                    border: "none"
                                 },
                                 rootFocused: {
                                     outline: "none",
-                                    boxShadow: "0 0 0 2px white, 0 0 0 4px #22c55e"
+                                    boxShadow: "0 0 0 2px white, 0 0 0 4px #8eb134"
                                 },
                                 rootPressed: {
-                                    backgroundColor: "#006e2c",
+                                    backgroundColor: "#8eb134",
                                     color: "white"
                                 }
                             }}
@@ -928,124 +946,128 @@ const Admin = () => {
                         />
                     ) : (
                         <div className={styles.tableScroll}>
-                        <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                            <li className={styles.headerRow}>Team Members</li>
-                            {filteredUsers.map((user: any, index) => {
-                                const isNew = user.user_new;
-                                const userName = isNew ? user.nickname : user.data.name;
-                                const userEmail = isNew ? user.data.email : user.data.email;
-                                const userRole = user.role;
-                                const hasCreatedAccount = user.user_account_created;
+                            <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                                <li className={styles.headerRow}>Team Members</li>
+                                {filteredUsers.map((user: any, index) => {
+                                    const isNew = user.user_new;
+                                    const userName = isNew ? user.nickname : user.data.name;
+                                    const userEmail = isNew ? user.data.email : user.data.email;
+                                    const userRole = user.role;
+                                    const hasCreatedAccount = user.user_account_created;
 
-                                // Verify if the invited user has accepted the invitation
-                                let userStatus = "Active";
-                                let statusColor = "#e5e7eb";
-                                let statusTextColor = "#1e2939";
-                                if (isNew) {
-                                    const now = Math.floor(Date.now() / 1000);
-                                    if (user.token_expiry && Number(user.token_expiry) < now) {
-                                        userStatus = "Expired";
-                                        statusColor = "#fee2e2";
-                                        statusTextColor = "#b91c1c";
-                                    } else {
-                                        userStatus = "Invited";
-                                        statusColor = "#fef9c2";
-                                        statusTextColor = "#894b00";
+                                    // Verify if the invited user has accepted the invitation
+                                    let userStatus = "Active";
+                                    let statusBorder = "#1bb884";
+                                    let statusBackgroundColor: string | undefined = undefined;
+                                    let statusTextColor = "#10956c";
+                                    if (isNew) {
+                                        const now = Math.floor(Date.now() / 1000);
+                                        if (user.token_expiry && Number(user.token_expiry) < now) {
+                                            userStatus = "Expired";
+                                            statusBorder = "#f87373";
+                                            statusBackgroundColor = "#fffae5";
+                                            statusTextColor = "#ee4949";
+                                        } else {
+                                            userStatus = "Invited";
+                                            statusBorder = "#fcbf46";
+                                            statusBackgroundColor = undefined;
+                                            statusTextColor = "#d97828";
+                                        }
                                     }
-                                }
 
-                                return (
-                                    <li
-                                        key={user.id || userEmail}
-                                        style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            padding: "1rem 1rem 1rem 1rem",
-                                            borderBottom: "1px solid #e5e7eb",
-                                            backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
-                                        }}
-                                    >
-                                        {/* Info: name, email, role */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <span style={{ fontWeight: 600, color: "#111827", fontSize: "14px" }}>{userName}</span>
-                                                <span className={roleStyles[userRole as "admin" | "user" | "platformAdmin"] || ""}>
-                                                    {userRole === "platformAdmin" ? "Platform Admin" : userRole.charAt(0).toUpperCase() + userRole.slice(1)}
-                                                </span>
-                                                <span
-                                                    style={{
-                                                        fontSize: "0.75rem",
-                                                        background: statusColor,
-                                                        color: statusTextColor,
-                                                        borderRadius: 8,
-                                                        padding: "2px 10px",
-                                                        marginLeft: 4,
-                                                        fontWeight: 600
-                                                    }}
-                                                >
-                                                    {userStatus}
-                                                </span>
-                                                {!hasCreatedAccount && (
+                                    return (
+                                        <li
+                                            key={user.id || userEmail}
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                alignItems: "center",
+                                                padding: "1rem 1rem 1rem 1rem",
+                                                borderBottom: "1px solid #e5e7eb",
+                                                backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
+                                            }}
+                                        >
+                                            {/* Info: name, email, role */}
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                    <span style={{ fontWeight: 600, color: "#000000", fontSize: "14px" }}>{userName}</span>
+                                                    <span className={roleStyles[userRole as "admin" | "user" | "platformAdmin"] || ""}>
+                                                        {userRole === "platformAdmin" ? "Platform Admin" : userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                                    </span>
                                                     <span
                                                         style={{
                                                             fontSize: "0.75rem",
-                                                            background: "#ffffff",
-                                                            color: "#000000",
-                                                            border: "1px solid #000000",
-                                                            borderRadius: 8,
+                                                            color: statusTextColor,
+                                                            border: `1px solid ${statusBorder}`,
+                                                            borderRadius: 9999,
+                                                            background: statusBackgroundColor,
                                                             padding: "2px 10px",
                                                             marginLeft: 4,
                                                             fontWeight: 600
                                                         }}
                                                     >
-                                                        No Account
+                                                        {userStatus}
                                                     </span>
+                                                    {!hasCreatedAccount && (
+                                                        <span
+                                                            style={{
+                                                                fontSize: "0.75rem",
+                                                                background: "#ffffff",
+                                                                color: "#000000",
+                                                                border: "1px solid #000000",
+                                                                borderRadius: 9999,
+                                                                padding: "2px 10px",
+                                                                marginLeft: 4,
+                                                                fontWeight: 600
+                                                            }}
+                                                        >
+                                                            No Account
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span style={{ color: "#656565", fontSize: "14px" }}>{userEmail}</span>
+                                            </div>
+                                            {/* Actions */}
+                                            <div style={{ display: "flex", gap: "8px" }}>
+                                                {!isNew ? (
+                                                    <>
+                                                        <button
+                                                            className={styles.button}
+                                                            title="Edit user"
+                                                            aria-label="Edit user"
+                                                            onClick={() => handleEditClick(user)}
+                                                        >
+                                                            <SquarePen className={styles.bothIcons} />
+                                                        </button>
+                                                        <button
+                                                            className={styles.button}
+                                                            title="Delete user"
+                                                            aria-label="Delete user"
+                                                            onClick={() => handleDeleteClick(user)}
+                                                        >
+                                                            <Trash2 className={styles.bothIcons} />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            className={styles.button}
+                                                            title="Delete invitation"
+                                                            aria-label="Delete invitation"
+                                                            onClick={() => {
+                                                                setSelectedInvitation(user);
+                                                                setShowDeleteInvitationModal(true);
+                                                            }}
+                                                        >
+                                                            <Trash2 className={styles.bothIcons} />
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
-                                            <span style={{ color: "#6B7280", fontSize: "14px" }}>{userEmail}</span>
-                                        </div>
-                                        {/* Actions */}
-                                        <div style={{ display: "flex", gap: "8px" }}>
-                                            {!isNew ? (
-                                                <>
-                                                    <button
-                                                        className={styles.button}
-                                                        title="Edit user"
-                                                        aria-label="Edit user"
-                                                        onClick={() => handleEditClick(user)}
-                                                    >
-                                                        <SquarePen className={styles.bothIcons} />
-                                                    </button>
-                                                    <button
-                                                        className={styles.button}
-                                                        title="Delete user"
-                                                        aria-label="Delete user"
-                                                        onClick={() => handleDeleteClick(user)}
-                                                    >
-                                                        <Trash2 className={styles.bothIcons} />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        className={styles.button}
-                                                        title="Delete invitation"
-                                                        aria-label="Delete invitation"
-                                                        onClick={() => {
-                                                            setSelectedInvitation(user);
-                                                            setShowDeleteInvitationModal(true);
-                                                        }}
-                                                    >
-                                                        <Trash2 className={styles.bothIcons} />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         </div>
                     )}
                 </>

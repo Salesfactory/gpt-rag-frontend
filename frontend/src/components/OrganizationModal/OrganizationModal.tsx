@@ -165,7 +165,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
                                 >
                                     <div className={styles.orgCardContent}>
                                         <div className={styles.orgIcon}>
-                                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" className={styles.icon}>
+                                            <svg width="18" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24" className={styles.icon}>
                                                 <path
                                                     strokeLinecap="round"
                                                     strokeLinejoin="round"

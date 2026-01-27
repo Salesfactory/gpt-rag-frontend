@@ -1,6 +1,6 @@
 import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter, PresentationIcon } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
@@ -25,6 +25,7 @@ type GalleryItem = {
     last_modified: string;
     metadata: {
         user_id?: string;
+        thumbnail?: string;
     };
     name: string;
     size: number;
@@ -256,7 +257,8 @@ const Gallery: React.FC = () => {
                             position: "relative",
                             selectors: {
                                 ":focus-within": {
-                                    outline: "none"
+                                    outline: "none",
+                                    borderColor: "#A0CB06"
                                 },
                                 "::after": {
                                     border: "none !important",
@@ -330,7 +332,7 @@ const Gallery: React.FC = () => {
                                 }}
                             >
                                 <Users size={16} className={styles.filterIcon} />
-                                {userFilter ? getUserName(userFilter) ?? userFilter : "All Users"}
+                                {userFilter ? (getUserName(userFilter) ?? userFilter) : "All Users"}
                             </button>
 
                             {showUserFilter && (
@@ -456,7 +458,9 @@ const Gallery: React.FC = () => {
                                                                     }}
                                                                 />
                                                             ) : null}
-                                                            <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>No Preview Available</div>
+                                                            <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>
+                                                                <PresentationIcon size={32} color="Gray"/>
+                                                            </div>
                                                         </div>
 
                                                         {/* Hover Actions Overlay */}
