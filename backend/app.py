@@ -1482,7 +1482,7 @@ def generate_sas_url_endpoint(*, context):
             return jsonify({"error": "blob_name is required"}), 400
         
         # Whitelist of allowed containers for security
-        allowed_containers = ["documents", "fa-documents"]
+        allowed_containers = ["documents"]
         if container_name not in allowed_containers:
             return jsonify({"error": "Invalid container name"}), 400
         
