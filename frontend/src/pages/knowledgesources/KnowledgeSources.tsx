@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2, Filter, X, Info } from "lucide-react";
+import { Search, Plus, ChevronDown, CheckCircle, XCircle, Clock, RefreshCw, Edit, Trash2, Filter, X, Info, ShieldOff } from "lucide-react";
 import styles from "./KnowledgeSources.module.css";
 import { useAppContext } from "../../providers/AppProviders";
 import { getOrganizationUrls, deleteOrganizationUrl, updateOrganizationUrl, searchOrganizationUrls, scrapeUrls, scrapeUrlsMultipage } from "../../api";
@@ -27,6 +27,10 @@ interface KnowledgeSource {
         userName: string;
         dateAdded: string;
     };
+    isDeleting?: boolean;
+    isDeleted?: boolean;
+    feedbackMessage?: string;
+    feedbackType?: "success" | "error" | "warning" | "deleted";
 }
 
 const KnowledgeSources: React.FC = () => {
@@ -69,6 +73,29 @@ const KnowledgeSources: React.FC = () => {
         }
     }, [organization?.id]);
 
+    const transformKnowledgeSources = (data: any[]) =>
+        data.map((item: any) => ({
+            id: item.id,
+            url: item.url,
+            lastModified: new Date(item.lastModified)
+                .toLocaleString("sv-SE", {
+                    timeZone: "UTC",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                })
+                .replace("T", " "),
+            result: item.result || "Pending",
+            status: item.status || "Processing",
+            error: item.error,
+            contentLength: item.contentLength,
+            title: item.title,
+            blobPath: item.blobPath,
+            addedBy: item.addedBy
+        }));
+
     // Function to load knowledge sources from the backend
     const loadKnowledgeSources = async () => {
         if (!organization?.id) return;
@@ -78,29 +105,10 @@ const KnowledgeSources: React.FC = () => {
             const response = await getOrganizationUrls(organization.id);
 
             // Transform backend data to match frontend interface
-            const transformedData = response.data.map((item: any) => ({
-                id: item.id,
-                url: item.url,
-                lastModified: new Date(item.lastModified)
-                    .toLocaleString("sv-SE", {
-                        timeZone: "UTC",
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    })
-                    .replace("T", " "),
-                result: item.result || "Pending",
-                status: item.status || "Processing",
-                error: item.error,
-                contentLength: item.contentLength,
-                title: item.title,
-                blobPath: item.blobPath,
-                addedBy: item.addedBy
-            }));
+            const transformedData = transformKnowledgeSources(response.data);
 
             setKnowledgeSources(transformedData);
+            return transformedData;
         } catch (error) {
             console.error("Error loading knowledge sources:", error);
             toast.error("Failed to load knowledge sources");
@@ -190,12 +198,14 @@ const KnowledgeSources: React.FC = () => {
     // Add new URL to the knowledge sources list with web scraping
     // This will trigger web scraping and automatically save the results with blob links to Cosmos
     const handleAddUrl = async () => {
-        if (!newUrl.trim()) {
+        const urlToAdd = newUrl.trim();
+
+        if (!urlToAdd) {
             setUrlError("URL is required");
             return;
         }
 
-        if (!validateUrl(newUrl)) {
+        if (!validateUrl(urlToAdd)) {
             setUrlError("Please enter a valid URL");
             return;
         }
@@ -206,29 +216,97 @@ const KnowledgeSources: React.FC = () => {
         }
 
         // Check if URL already exists to prevent duplicates
-        const urlExists = knowledgeSources.some(source => source.url === newUrl);
+        const urlExists = knowledgeSources.some(source => source.url === urlToAdd);
         if (urlExists) {
             setUrlError("This URL is already in your knowledge sources");
             return;
         }
 
+        // Create temporary ID for optimistic UI
+        const tempId = `temp-${Date.now()}`;
+        const errorRemovalDelayMs = 3000;
+
         try {
             setIsAdding(true);
 
-            // Use appropriate endpoint based on advanced mode
-            const scrapingResult = await (isAdvancedMode ? scrapeUrlsMultipage(newUrl, organization.id, user) : scrapeUrls(newUrl, organization.id, user));
+            // Add URL optimistically with pending state
+            const tempSource: KnowledgeSource = {
+                id: tempId,
+                url: urlToAdd,
+                lastModified: new Date().toLocaleString("sv-SE", {
+                    timeZone: "UTC",
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }).replace("T", " "),
+                result: "Pending",
+                status: "Processing",
+                addedBy: {
+                    userId: user?.id || "",
+                    userName: user?.name || "You",
+                    dateAdded: new Date().toISOString()
+                }
+            };
 
-            let urlResult;
+            setKnowledgeSources(prev => [tempSource, ...prev]);
+
+            // Clear form immediately
+            setNewUrl("");
+            setUrlError("");
+
+            // Now start scraping in background
+            const scrapingResult = await (isAdvancedMode ? scrapeUrlsMultipage(urlToAdd, organization.id, user) : scrapeUrls(urlToAdd, organization.id, user));
+
+            // Check for top-level API errors (website blocked, network errors, etc.)
+            if (scrapingResult?.error_type) {
+                const messageMap: Record<string, { message: string; type: "error" | "warning" }> = {
+                    website_blocked: {
+                        message: "This website has restrictions that prevent scraping. Access denied.",
+                        type: "warning"
+                    },
+                    network_error: {
+                        message: "Failed to scrape this page. Connection error. Please try again later.",
+                        type: "error"
+                    },
+                    system_error: {
+                        message: "Failed to scrape this page. The server returned an error. Please try again later.",
+                        type: "error"
+                    }
+                };
+
+                const feedback = messageMap[scrapingResult.error_type] || messageMap.system_error;
+
+                // Update with error message
+                setKnowledgeSources(prev => prev.map(source =>
+                    source.id === tempId
+                        ? {
+                            ...source,
+                            result: "Failed",
+                            status: "Error",
+                            feedbackMessage: feedback.message,
+                            feedbackType: feedback.type
+                        }
+                        : source
+                ));
+
+                // Remove row after 3 seconds for errors
+                setTimeout(() => {
+                    setKnowledgeSources(prev => prev.filter(s => s.id !== tempId));
+                }, errorRemovalDelayMs);
+
+                return;
+            }
+
+            let urlResult: any;
 
             if (isAdvancedMode) {
-                // Parse multipage response
-                urlResult = parseMultipageResponse(scrapingResult, newUrl);
+                urlResult = parseMultipageResponse(scrapingResult, urlToAdd);
             } else {
-                // Parse regular response - results are directly in the response root
                 const results = scrapingResult?.results || [];
-                urlResult = results.find((result: any) => result.url === newUrl);
+                urlResult = results.find((result: any) => result.url === urlToAdd);
 
-                // If we found a result, also check blob storage status
                 if (urlResult && urlResult.status === "success") {
                     const blobStatus = scrapingResult?.blob_storage_result?.status;
                     if (blobStatus !== "success") {
@@ -238,28 +316,73 @@ const KnowledgeSources: React.FC = () => {
             }
 
             if (urlResult?.status === "error") {
-                // Scraping failed, show error and keep form
-                toast.error("⚠️ Scraping is disabled for this site due to its content policy");
-                setUrlError(urlResult.error || "Scraping failed");
-                loadKnowledgeSources(); // still reload the data to show the record on the URL table
+                setKnowledgeSources(prev => prev.map(source =>
+                    source.id === tempId
+                        ? {
+                            ...source,
+                            result: "Failed",
+                            status: "Error",
+                            feedbackMessage: urlResult.error || "Failed to process scraped content",
+                            feedbackType: "error"
+                        }
+                        : source
+                ));
+
+                setTimeout(() => {
+                    setKnowledgeSources(prev => prev.filter(s => s.id !== tempId));
+                }, errorRemovalDelayMs);
                 return;
-            } else if (urlResult?.status === "success") {
-                // Scraping was successful
-                toast.success("URL added and content successfully scraped. Please allow 2–5 minutes for the data to become searchable.");
-            } else {
-                // No specific result found, show generic success
-                toast.success("URL added successfully");
             }
 
-            // Clear form and reload data (only reached if no error occurred)
-            setNewUrl("");
-            setUrlError("");
+            const sourcesResponse = await getOrganizationUrls(organization.id);
+            const transformedData = transformKnowledgeSources(sourcesResponse.data);
+            const addedSource = sourcesResponse.data.find((item: any) => item.url === urlToAdd);
 
-            // Reload the data to get the new entry with scraping results
-            await loadKnowledgeSources();
+            if (!addedSource) {
+                setKnowledgeSources(prev => prev.map(source =>
+                    source.id === tempId
+                        ? {
+                            ...source,
+                            result: "Failed",
+                            status: "Error",
+                            feedbackMessage: "Failed to save this URL. Please try again.",
+                            feedbackType: "error"
+                        }
+                        : source
+                ));
+
+                setTimeout(() => {
+                    setKnowledgeSources(prev => prev.filter(s => s.id !== tempId));
+                }, errorRemovalDelayMs);
+                return;
+            }
+
+            const addedId = addedSource.id;
+
+            // Success
+            setKnowledgeSources(
+                transformedData.map(source =>
+                    source.id === addedId
+                        ? {
+                            ...source,
+                            feedbackMessage: "Content successfully scraped. It may take 2-5 minutes to become searchable.",
+                            feedbackType: "success"
+                        }
+                        : source
+                )
+            );
+
+            // Clear success message after 5 seconds
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(s =>
+                    s.id === addedId ? { ...s, feedbackMessage: undefined } : s
+                ));
+            }, 5000);
         } catch (error) {
             console.error("Error adding and scraping URL:", error);
-            toast.error("Failed to add URL and initiate scraping");
+            // Remove temp entry on error
+            setKnowledgeSources(prev => prev.filter(s => s.id !== tempId));
+            toast.error("Failed to add URL");
         } finally {
             setIsAdding(false);
         }
@@ -268,37 +391,84 @@ const KnowledgeSources: React.FC = () => {
     // Refresh a knowledge source by re-scraping its URL
     const handleRefresh = async (id: string) => {
         if (!organization?.id) {
-            toast.error("No organization selected");
+            setKnowledgeSources(prev => prev.map(source =>
+                source.id === id
+                    ? { ...source, feedbackMessage: "No organization selected", feedbackType: "error" }
+                    : source
+            ));
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+            }, 3000);
             return;
         }
 
-        // Find the knowledge source to get its URL
         const sourceToRefresh = knowledgeSources.find(source => source.id === id);
         if (!sourceToRefresh) {
-            toast.error("Knowledge source not found");
             return;
         }
 
         try {
-            // Update local state to show processing status immediately
-            setKnowledgeSources(knowledgeSources.map(source => (source.id === id ? { ...source, status: "Processing", result: "Pending" } : source)));
+            // Update to show processing status
+            setKnowledgeSources(prev => prev.map(source =>
+                source.id === id
+                    ? { ...source, status: "Processing", result: "Pending", feedbackMessage: undefined }
+                    : source
+            ));
 
-            // Re-scrape the URL using appropriate endpoint based on advanced mode
+            // Re-scrape the URL
             const scrapingResult = await (isAdvancedMode
                 ? scrapeUrlsMultipage(sourceToRefresh.url, organization.id, user)
                 : scrapeUrls(sourceToRefresh.url, organization.id, user));
 
-            let urlResult;
+            // Reload data
+            await loadKnowledgeSources();
+
+            // Check for API errors
+            if (scrapingResult?.error_type) {
+                const messageMap: Record<string, { message: string; type: "error" | "warning" }> = {
+                    website_blocked: {
+                        message: "This website has restrictions that prevent scraping. Access denied.",
+                        type: "warning"
+                    },
+                    network_error: {
+                        message: "Failed to scrape this page. Connection error. Please try again later.",
+                        type: "error"
+                    },
+                    system_error: {
+                        message: "Failed to scrape this page. The server returned an error. Please try again later.",
+                        type: "error"
+                    }
+                };
+
+                const feedback = messageMap[scrapingResult.error_type] || messageMap.system_error;
+
+                setKnowledgeSources(prev => prev.map(source =>
+                    source.id === id
+                        ? {
+                            ...source,
+                            result: feedback.type === "warning" ? "Failed" : "Failed",
+                            status: feedback.type === "warning" ? "Error" : "Error",
+                            feedbackMessage: feedback.message,
+                            feedbackType: feedback.type
+                        }
+                        : source
+                ));
+
+                // Clear message after 5 seconds
+                setTimeout(() => {
+                    setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                }, 5000);
+                return;
+            }
+
+            let urlResult: any;
 
             if (isAdvancedMode) {
-                // Parse multipage response
                 urlResult = parseMultipageResponse(scrapingResult, sourceToRefresh.url);
             } else {
-                // Parse regular response - results are directly in the response root
                 const results = scrapingResult?.results || [];
                 urlResult = results.find((result: any) => result.url === sourceToRefresh.url);
 
-                // If we found a result, also check blob storage status
                 if (urlResult && urlResult.status === "success") {
                     const blobStatus = scrapingResult?.blob_storage_result?.status;
                     if (blobStatus !== "success") {
@@ -308,42 +478,114 @@ const KnowledgeSources: React.FC = () => {
             }
 
             if (urlResult?.status === "error") {
-                // Scraping failed, show error message
-                toast.error("⚠️ Scraping is disabled for this site due to its content policy");
-            } else if (urlResult?.status === "success") {
-                // Scraping was successful
-                toast.success("URL refreshed and content successfully scraped. Please allow 2–5 minutes for the data to become searchable.");
+                setKnowledgeSources(prev => prev.map(source =>
+                    source.id === id
+                        ? {
+                            ...source,
+                            result: "Failed",
+                            status: "Error",
+                            feedbackMessage: urlResult.error || "Failed to process scraped content",
+                            feedbackType: "error"
+                        }
+                        : source
+                ));
+
+                setTimeout(() => {
+                    setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                }, 5000);
             } else {
-                // No specific result found, show generic success
-                toast.success("URL refresh completed");
+                // Success
+                setKnowledgeSources(prev => prev.map(source =>
+                    source.id === id
+                        ? {
+                            ...source,
+                            feedbackMessage: "Content refreshed. It may take 2-5 minutes to become searchable.",
+                            feedbackType: "success"
+                        }
+                        : source
+                ));
+
+                setTimeout(() => {
+                    setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                }, 5000);
             }
-
-            // Reload the data to get the updated scraping results
-            await loadKnowledgeSources();
         } catch (error) {
-            toast.error("Failed to refresh URL");
+            setKnowledgeSources(prev => prev.map(source =>
+                source.id === id
+                    ? {
+                        ...source,
+                        feedbackMessage: "An unexpected error occurred",
+                        feedbackType: "error"
+                    }
+                    : source
+            ));
 
-            // Reload data to restore original state if scraping failed
-            await loadKnowledgeSources();
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+            }, 5000);
         }
     };
 
     // Delete a knowledge source
     const handleDelete = async (id: string) => {
         if (!organization?.id) {
-            toast.error("No organization selected");
+            // Show error inline
+            setKnowledgeSources(knowledgeSources.map(source =>
+                source.id === id
+                    ? { ...source, feedbackMessage: "No organization selected", feedbackType: "error" }
+                    : source
+            ));
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+            }, 3000);
             return;
         }
 
+        // Step 1: Mark as deleting (dims and shrinks)
+        setKnowledgeSources(knowledgeSources.map(source =>
+            source.id === id ? { ...source, isDeleting: true } : source
+        ));
+
         try {
             await deleteOrganizationUrl(id, organization.id);
-            toast.success("URL deleted successfully");
 
-            // Remove from local state immediately
-            setKnowledgeSources(knowledgeSources.filter(source => source.id !== id));
+            // Step 2: After 300ms, mark as deleted and show message
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(source =>
+                    source.id === id
+                        ? {
+                            ...source,
+                            isDeleting: false,
+                            isDeleted: true,
+                            feedbackMessage: "This URL has been removed from your knowledge sources",
+                            feedbackType: "deleted"
+                        }
+                        : source
+                ));
+
+                // Step 3: Remove from list after 3 seconds
+                setTimeout(() => {
+                    setKnowledgeSources(prev => prev.filter(source => source.id !== id));
+                }, 3000);
+            }, 300);
+
         } catch (error) {
             console.error("Error deleting URL:", error);
-            toast.error("Failed to delete URL");
+            // Show error and restore row
+            setKnowledgeSources(prev => prev.map(source =>
+                source.id === id
+                    ? {
+                        ...source,
+                        isDeleting: false,
+                        feedbackMessage: "Failed to delete URL. Please try again.",
+                        feedbackType: "error"
+                    }
+                    : source
+            ));
+            // Clear error after 3s
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+            }, 3000);
         }
     };
 
@@ -403,32 +645,60 @@ const KnowledgeSources: React.FC = () => {
     });
 
     // Get appropriate icon and styling based on result status
-    // This provides visual feedback for different states
-    const getStatusInfo = (result: string) => {
+    const getStatusInfo = (result: string, feedbackType?: string) => {
+        if (feedbackType === "warning") {
+            return {
+                icon: ShieldOff,
+                color: styles.blockedText,
+                bgColor: styles.blockedBg,
+                label: "Blocked"
+            };
+        }
+        if (feedbackType === "deleted") {
+            return {
+                icon: Clock,
+                color: styles.deletedText,
+                bgColor: styles.deletedBg,
+                label: "Deleted"
+            };
+        }
+        if (feedbackType === "error") {
+            return {
+                icon: XCircle,
+                color: styles.errorText,
+                bgColor: styles.errorBg,
+                label: "Error"
+            };
+        }
+
         switch (result) {
             case "Success":
                 return {
                     icon: CheckCircle,
                     color: styles.successText,
-                    bgColor: styles.successBg
+                    bgColor: styles.successBg,
+                    label: "Success"
                 };
             case "Failed":
                 return {
                     icon: XCircle,
                     color: styles.errorText,
-                    bgColor: styles.errorBg
+                    bgColor: styles.errorBg,
+                    label: "Error"
                 };
             case "Pending":
                 return {
                     icon: Clock,
                     color: styles.pendingText,
-                    bgColor: styles.pendingBg
+                    bgColor: styles.pendingBg,
+                    label: "Pending"
                 };
             default:
                 return {
                     icon: Clock,
                     color: styles.defaultText,
-                    bgColor: styles.defaultBg
+                    bgColor: styles.defaultBg,
+                    label: "Pending"
                 };
         }
     };
@@ -487,8 +757,6 @@ const KnowledgeSources: React.FC = () => {
             setIsUpdating(true);
             await updateOrganizationUrl(editingId, organization.id, editingUrl);
 
-            toast.success("URL updated successfully. Previous scraped data has been removed. Please refresh source to scrape the new page.");
-
             // Update local state - reset scraping-related fields since URL changed
             setKnowledgeSources(
                 knowledgeSources.map(source =>
@@ -520,9 +788,43 @@ const KnowledgeSources: React.FC = () => {
 
             // Clear editing state
             handleCancelEdit();
+
+            // Show inline success message
+            setKnowledgeSources(prev => prev.map(source =>
+                source.id === editingId
+                    ? {
+                        ...source,
+                        feedbackMessage: "URL updated. Refresh the source to scrape the new page.",
+                        feedbackType: "success"
+                    }
+                    : source
+            ));
+
+            // Clear after 5 seconds
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(s =>
+                    s.id === editingId ? { ...s, feedbackMessage: undefined } : s
+                ));
+            }, 5000);
         } catch (error) {
             console.error("Error updating URL:", error);
-            toast.error("Failed to update URL");
+            // Show inline error
+            setKnowledgeSources(prev => prev.map(source =>
+                source.id === editingId
+                    ? {
+                        ...source,
+                        feedbackMessage: "Failed to update URL",
+                        feedbackType: "error"
+                    }
+                    : source
+            ));
+
+            // Clear after 5 seconds
+            setTimeout(() => {
+                setKnowledgeSources(prev => prev.map(s =>
+                    s.id === editingId ? { ...s, feedbackMessage: undefined } : s
+                ));
+            }, 5000);
         } finally {
             setIsUpdating(false);
         }
@@ -691,11 +993,16 @@ const KnowledgeSources: React.FC = () => {
                         </div>
                     ) : (
                         filteredSources.map(source => {
-                            const statusInfo = getStatusInfo(source.result);
+                            const statusInfo = getStatusInfo(source.result, source.feedbackType);
                             const StatusIcon = statusInfo.icon;
+                            const isPending = source.status === "Processing" || source.result === "Pending";
+                            const showProcessingMessage = isPending && !source.feedbackMessage;
 
                             return (
-                                <div key={source.id} className={styles.card}>
+                                <div key={source.id}>
+                                <div
+                                    className={`${styles.card} ${source.isDeleting ? styles.cardDeleting : ''} ${source.isDeleted ? styles.cardDeleted : ''}`}
+                                >
                                     <div className={styles.cardContent}>
                                         <div className={styles.cardLeft}>
                                             {editingId === source.id ? (
@@ -729,7 +1036,7 @@ const KnowledgeSources: React.FC = () => {
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <div className={styles.cardUrl} title={source.url}>
+                                                    <div className={`${styles.cardUrl} ${source.isDeleted ? styles.cardUrlDeleted : ''}`} title={source.url}>
                                                         {source.url}
                                                     </div>
                                                     <div className={styles.cardDetails}>
@@ -737,7 +1044,7 @@ const KnowledgeSources: React.FC = () => {
                                                             <div className={`${styles.statusIcon} ${statusInfo.bgColor}`}>
                                                                 <StatusIcon size={14} />
                                                             </div>
-                                                            <span className={`${styles.statusText} ${statusInfo.color}`}>{source.result}</span>
+                                                            <span className={`${styles.statusText} ${statusInfo.color}`}>{statusInfo.label}</span>
                                                         </div>
                                                         <div className={styles.cardDate}>{source.lastModified}</div>
                                                         {source.addedBy && (
@@ -778,6 +1085,34 @@ const KnowledgeSources: React.FC = () => {
                                             </button>
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Processing or Feedback Message */}
+                                {showProcessingMessage && (
+                                    <div className={`${styles.feedbackMessage} ${styles.feedbackProcessing}`}>
+                                        <Clock size={14} className={styles.feedbackIcon} />
+                                        Scraping in progress...
+                                    </div>
+                                )}
+                                {source.feedbackMessage && (
+                                    <div
+                                        className={`${styles.feedbackMessage} ${
+                                            source.feedbackType === "success"
+                                                ? styles.feedbackSuccess
+                                                : source.feedbackType === "warning"
+                                                ? styles.feedbackWarning
+                                                : source.feedbackType === "deleted"
+                                                ? styles.feedbackDeleted
+                                                : styles.feedbackError
+                                        }`}
+                                    >
+                                        {source.feedbackType === "success" && <CheckCircle size={16} className={styles.feedbackIcon} />}
+                                        {source.feedbackType === "warning" && <ShieldOff size={16} className={styles.feedbackIcon} />}
+                                        {source.feedbackType === "error" && <XCircle size={16} className={styles.feedbackIcon} />}
+                                        {source.feedbackType === "deleted" && <CheckCircle size={16} className={styles.feedbackIcon} />}
+                                        {source.feedbackMessage}
+                                    </div>
+                                )}
                                 </div>
                             );
                         })

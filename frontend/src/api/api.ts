@@ -1153,17 +1153,28 @@ export async function scrapeUrls(url: string, organizationId?: string, user?: an
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const result = await response.json();
+
+        if (!response.ok) {
+            return {
+                status: "error",
+                error_type: result.error_type || "system_error",
+                message: result.message || `HTTP error! status: ${response.status}`,
+                url: result.url || url,
+                data: result
+            };
+        }
 
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
         console.error("Error scraping URL:", error);
-        throw error;
+        return {
+            status: "error",
+            error_type: "network_error",
+            message: error instanceof Error ? error.message : "Failed to scrape URL",
+            url: url
+        };
     }
 }
 
@@ -1192,17 +1203,31 @@ export async function scrapeUrlsMultipage(url: string, organizationId?: string, 
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const result = await response.json();
+
+        // Handle structured error responses
+        if (!response.ok) {
+            // Backend now returns structured errors with error_type
+            return {
+                status: "error",
+                error_type: result.error_type || "system_error",
+                message: result.message || `HTTP error! status: ${response.status}`,
+                url: result.url || url,
+                data: result
+            };
+        }
 
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
         console.error("Error scraping URL with multipage:", error);
-        throw error;
+        // Network errors or parsing failures
+        return {
+            status: "error",
+            error_type: "network_error",
+            message: error instanceof Error ? error.message : "Failed to scrape URL with multipage",
+            url: url
+        };
     }
 }
 
