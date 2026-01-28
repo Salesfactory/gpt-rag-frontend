@@ -1949,18 +1949,41 @@ def getUserOrganizationsRole(*, context):
 
     try:
         role = get_invitation_role(client_principal_id, organization_id)
-
-        try:
-            create_user_logs(client_principal_id, organization_id, "session-start")
-        except Exception as e:
-            logger.error(f"[auth] Error creating user log: {str(e)}")
-
         return jsonify({"role": role}), 200
     except ValueError as e:
         # If the invitation is missing or inactive
         return jsonify({"error": str(e)}), 404
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/user-organization-logs", methods=["POST"])
+@auth.login_required
+def log_user_organization_action(*, context):
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return create_error_response(
+            "Missing required parameter: client_principal_id",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    payload = request.get_json(silent=True) or {}
+    organization_id = payload.get("organizationId")
+    action = payload.get("action", "session-start")
+    metadata = payload.get("metadata")
+
+    if not organization_id:
+        return create_error_response(
+            "Missing required parameter: organizationId",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    try:
+        create_user_logs(client_principal_id, organization_id, action, metadata)
+        return jsonify({"status": "logged"}), HTTPStatus.CREATED
+    except Exception as e:
+        logger.error("[auth] Failed to create user log: %s", str(e))
+        return jsonify({"error": "Failed to register user log"}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 

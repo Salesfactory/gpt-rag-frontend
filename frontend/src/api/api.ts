@@ -112,6 +112,31 @@ export async function fetchUserRoleForOrganization(userId: string, organizationI
     }
 }
 
+export async function logOrganizationSession({
+    userId,
+    organizationId,
+    action = "session-start",
+    metadata
+}: {
+    userId: string;
+    organizationId: string;
+    action?: string;
+    metadata?: Record<string, unknown>;
+}): Promise<void> {
+    const response = await fetchWrapper("/api/user-organization-logs", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
+        },
+        body: JSON.stringify({ organizationId, action, metadata })
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to log organization session");
+    }
+}
+
 export async function deleteUser({ user, userId, organizationId }: any): Promise<any> {
     try {
         const response = await fetch(`/api/deleteuser?userId=${userId}&organizationId=${organizationId}`, {

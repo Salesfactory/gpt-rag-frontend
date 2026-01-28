@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { X, Loader2, AlertCircle } from "lucide-react";
 import styles from "./OrganizationModal.module.css";
-import { fetchUserOrganizations, fetchUserRoleForOrganization, getUsers } from "../../api";
+import { fetchUserOrganizations, fetchUserRoleForOrganization, getUsers, logOrganizationSession } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import { toast } from "react-toastify";
 
@@ -97,7 +97,7 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
         fetchData();
     }, [isOpen]);
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         const userId = user?.id;
         if (!selectedOrgId || !userId) return;
 
@@ -111,6 +111,20 @@ const OrganizationModal = ({ isOpen, onClose }: Props) => {
         if (currentOrgId === selectedOrgId) {
             toast.warning("You are already using this organization.", { autoClose: 3000 });
             return;
+        }
+
+        try {
+            await logOrganizationSession({
+                userId,
+                organizationId: selectedOrgId,
+                metadata: {
+                    source: "organization-modal",
+                    previousOrganizationId: currentOrgId
+                }
+            });
+        } catch (logError) {
+            console.error("Failed to log organization switch", logError);
+            toast.warning("Unable to register the organization switch. Continuing anyway.");
         }
 
         setCookie(`selectedOrg_${userId}`, selectedOrgId, 1);

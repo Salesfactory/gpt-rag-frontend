@@ -2,7 +2,17 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
 import { Spinner } from "@fluentui/react";
-import { checkUser, fetchUserOrganizations, fetchUserRoleForOrganization, getOrganizationSubscription, getOrganizationUsage, getSettings, getUserById, getSubscriptionTierDetails } from "../api";
+import {
+    checkUser,
+    fetchUserOrganizations,
+    fetchUserRoleForOrganization,
+    getOrganizationSubscription,
+    getOrganizationUsage,
+    getSettings,
+    getUserById,
+    getSubscriptionTierDetails,
+    logOrganizationSession
+} from "../api";
 import type { OrganizationUsage, ThoughtProcess, SubscriptionTier } from "../api/models";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
@@ -312,6 +322,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                             const userRole = await fetchUserRoleForOrganization(user.id, singleOrgId);
                             setUser({ ...user, organizationId: singleOrgId, role: userRole?.role as Role | undefined });
                             setCookie(`selectedOrg_${user.id}`, singleOrgId || "", 1);
+                            try {
+                                await logOrganizationSession({
+                                    userId: user.id,
+                                    organizationId: singleOrgId,
+                                    metadata: { source: "app-provider:auto-select" }
+                                });
+                                debugLog(`Logged organization session for single org ${singleOrgId}`);
+                            } catch (logError) {
+                                console.error("Failed to log organization session", logError);
+                                debugLog("Failed to log organization session", logError);
+                            }
                         } else {
                             toast.error("No organizations were found for the user.");
                         }
@@ -322,7 +343,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                 } else {
                     debugLog("User not authenticated.");
                 }
-
             } catch (error) {
                 debugLog("Initialization failed:", error);
                 console.error("Initialization failed:", error);
@@ -480,7 +500,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setisResizingAnalysisPanel,
             subscriptionError,
             setSubscriptionError,
-            validateSession, // Session validation function
+            validateSession // Session validation function
         }),
         [
             showHistoryPanel,
@@ -581,11 +601,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return (
         <AppContext.Provider value={contextValue}>
             {children}
-            <SessionExpiredModal
-                isOpen={isSessionExpiredModalOpen}
-                onRefresh={handleRefreshSession}
-                onLogout={handleLogout}
-            />
+            <SessionExpiredModal isOpen={isSessionExpiredModalOpen} onRefresh={handleRefreshSession} onLogout={handleLogout} />
         </AppContext.Provider>
     );
 };
