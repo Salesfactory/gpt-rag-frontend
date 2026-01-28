@@ -162,7 +162,7 @@
     padding-right: 1rem;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
-    background-color: #16a34a;
+    background-color: #A0CB06;
     color: #fff;
     border-radius: 0.5rem;
     cursor: pointer;
@@ -184,7 +184,7 @@
     padding-top: 0.5rem;
     /* py-2 */
     padding-bottom: 0.5rem;
-    background-color: #16a34a;
+    background-color: #A0CB06;
     /* bg-green-600 */
     color: #fff;
     /* text-white */
@@ -222,7 +222,7 @@
 }
 
 .upload_button:hover {
-    background-color: #15803d;
+    background-color: #8eb134;
     color: white;
 }
 
@@ -258,11 +258,11 @@
 }
 
 .refresh_button {
-    color: #16a34a;
+    color: #A0CB06;
 }
 
 .refresh_button:hover {
-    color: #15803d;
+    color: #8eb134;
 }
 
 .file_list_container {
@@ -576,7 +576,7 @@
 .modal_header {
     justify-content: space-between;
     align-items: center;
-    background-color: #00a63e;
+    background-color: #A0CB06;
     padding: 20px 10px 3px 20px;
     border-top-left-radius: 9px;
     border-top-right-radius: 9px;
@@ -798,9 +798,14 @@
     min-width: 120px;
 }
 
+.category_button:hover {
+    border-color: #ccd9ad;
+    background-color: #dfdfdf;
+}
+
 .category_button.selected {
-    border: 2px solid #10b981;
-    background-color: #f0fdf4;
+    border: 2px solid #A0CB06;
+    background-color: #f6faea;
 }
 
 .category_button_icon {
@@ -808,7 +813,7 @@
 }
 
 .category_button.selected .category_button_icon {
-    color: #10b981;
+    color: #a2c93c;
 }
 
 .category_button_text {
@@ -818,7 +823,7 @@
 }
 
 .category_button.selected .category_button_text {
-    color: #10b981;
+    color: #a2c93c;
 }
 
 .all_files_header {
@@ -832,12 +837,15 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: #f6faea;
 }
 
 .folder_title {
     font-size: 18px;
     font-weight: 600;
-    color: #16a34a;
+    color: #A0CB06;
 }
 
 .back_button {
@@ -863,11 +871,16 @@
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    background-color: #16a34a;
+    background-color: #A0CB06;
+    transition: background-color 0.2s;
     color: #ffffff;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
+}
+
+.new_folder_button:hover {
+    background-color: #8eb134;
 }
 
 .new_folder_icon {
@@ -909,7 +922,7 @@
 }
 
 .file_item_row:hover {
-    background-color: #f9fafb;
+    background-color: #dcdcdc;
 }
 
 .file_item_left {
@@ -1030,8 +1043,8 @@
 .new_folder_header_icon {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
-    background-color: #dcfce7;
+    border-radius: 8px;
+    background-color: #f6faea;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1040,7 +1053,7 @@
 .plus_icon {
     font-size: 24px;
     font-weight: 600;
-    color: #16a34a;
+    color: #A0CB06;
 }
 
 .new_folder_modal_title {
@@ -1079,8 +1092,8 @@
 
 .new_folder_input:focus {
     outline: none;
-    border-color: #16a34a;
-    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+    border-color: #A0CB06;
+    box-shadow: 0 0 0 3px rgba(160, 203, 6, 0.1);
 }
 
 .new_folder_input::placeholder {
@@ -1131,16 +1144,16 @@
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    background-color: #16a34a;
+    background-color: #A0CB06;
     color: #ffffff;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s;
 }
 
 .new_folder_create_button:hover {
-    background-color: #15803d;
+    background-color: #8eb134;
 }
 
 .new_folder_create_button:active {
@@ -1155,7 +1168,7 @@
 
 .storageCard {
     width: 100%;
-    background: linear-gradient(90deg, #0ABD56, #009944);
+    background: #A0CB06;
     border-radius: 12px;
     padding: 16px;
     border: 1px solid #e5e7eb;
@@ -1209,7 +1222,7 @@
     top: 0;
     bottom: 0;
     border-radius: 9999px;
-    background: linear-gradient(90deg, #16a34a, #10b981);
+    background: linear-gradient(90deg, #A0CB06, #8eb134);
     width: 0%;
     transition: width 240ms ease;
 }

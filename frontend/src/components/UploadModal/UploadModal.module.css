@@ -42,7 +42,7 @@
 
 .upload_icon {
     font-size: 32px;
-    color: #16a34a;
+    color: #656565;
 }
 
 .selected_files {
@@ -181,7 +181,7 @@
     padding-right: 1rem;
     padding-top: 0.5rem; /* py-2 */
     padding-bottom: 0.5rem;
-    background-color: #16a34a; /* bg-green-600 */
+    background-color: #A0CB06;
     color: #fff; /* text-white */
     border-radius: 0.5rem; /* rounded-lg */
     cursor: pointer;
@@ -191,11 +191,11 @@
 }
 
 .browse_button:hover {
-    background-color: #15803d; /* hover:bg-green-700 */
+    background-color: #8eb134;
 }
 
 .browse_button:focus {
-    box-shadow: 0 0 0 2px #22c55e, /* focus:ring-green-500 */ 0 0 0 4px white; /* focus:ring-offset-2 (offset ring) */
+    box-shadow: 0 0 0 2px #8eb134, 0 0 0 4px white;
 }
 
 .hidden_file_input {
@@ -494,7 +494,7 @@
     border-radius: 0.5rem;
     padding: 3rem;
     text-align: center;
-    background-color: #f9fafb;
+    background-color: #dfdfdf;
     transition: background-color 0.3s, border-color 0.3s;
 }
 .dropzone_active {
@@ -529,7 +529,7 @@
 .modal_header {
     justify-content: space-between;
     align-items: center;
-    background-color: #00a63e;
+    background-color: #A0CB06;
     padding: 20px 10px 3px 20px;
     border-top-left-radius: 9px;
     border-top-right-radius: 9px;
