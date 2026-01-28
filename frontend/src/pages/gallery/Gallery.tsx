@@ -1,8 +1,10 @@
 import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter, PresentationIcon } from "lucide-react";
+import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter, PresentationIcon, ChevronDown, ChevronUp, Eye, X } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, lazy, Suspense } from "react";
+
+const PptxViewer = lazy(() => import("../../components/DocView/PPTXViewer"));
 import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
@@ -25,7 +27,7 @@ type GalleryItem = {
     last_modified: string;
     metadata: {
         user_id?: string;
-        thumbnail?: string;
+        artifact_desc?: string;
     };
     name: string;
     size: number;
@@ -45,6 +47,96 @@ type User = {
     name: string;
 };
 
+const GalleryCard: React.FC<{
+    file: GalleryItem;
+    onDownload: (item: GalleryItem) => void;
+    onDelete: (item: GalleryItem) => void;
+    onPreview: (item: GalleryItem) => void;
+    getUserName: (id: string) => string | undefined;
+    createFileName: (name: string) => string;
+    formatFileSize: (bytes: number) => string;
+}> = ({ file, onDownload, onDelete, onPreview, getUserName, createFileName, formatFileSize }) => {
+    const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+
+    return (
+        <div className={styles.card}>
+            {/* Image Preview */}
+            <div className={styles.preview}>
+                <div className={styles.previewContent}>
+                    {file.url ? (
+                        <img
+                            src={file.url}
+                            alt="Chart Preview"
+                            width={32}
+                            height={32}
+                            className={styles.previewImage}
+                            onError={e => {
+                                e.currentTarget.style.display = "none";
+                                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                            }}
+                        />
+                    ) : null}
+                    <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>
+                        <PresentationIcon size={32} color="Gray" />
+                    </div>
+                </div>
+
+                {/* Hover Actions Overlay */}
+                <div className={styles.overlay}>
+                    <div className={styles.actions}>
+                        <button className={styles.actionButton} title="Download" onClick={() => onDownload(file)}>
+                            <Download size={16} className={styles.downloadIcon} />
+                        </button>
+                        <button className={styles.actionButton} title="Delete" onClick={() => onDelete(file)}>
+                            <Trash2 size={16} className={styles.deleteIcon} />
+                        </button>
+                        {/* Preview Button */}
+                        <button className={styles.actionButton} onClick={() => onPreview(file)}>
+                            <Eye size={16} className={styles.previewIcon} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Chart Info */}
+            <div className={styles.cardInfo}>
+                <div className={styles.cardHeader}>
+                    <h3 className={styles.fileName} title={file.name}>
+                        {createFileName(file.name)}
+                    </h3>
+                    <div className={styles.fileMeta}>
+                        <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
+                    </div>
+                </div>
+                <span className={styles.userTag}>
+                    {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
+                </span>
+                <p className={styles.fileDate}>
+                    Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
+                </p>
+
+                {/* Collapsible Description */}
+                {file.metadata.artifact_desc && (
+                    <div className={styles.descriptionContainer}>
+                        <button
+                            className={styles.descriptionToggle}
+                            onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
+                        >
+                            Description
+                            {isDescriptionOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                        {isDescriptionOpen && (
+                            <div className={styles.descriptionContent}>
+                                {file.metadata.artifact_desc}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const Gallery: React.FC = () => {
     const { user, organization } = useAppContext();
 
@@ -60,6 +152,7 @@ const Gallery: React.FC = () => {
     const [showUserFilter, setShowUserFilter] = useState<boolean>(false);
     const [showTypeFilter, setShowTypeFilter] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const [previewFile, setPreviewFile] = useState<GalleryItem | null>(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -441,59 +534,16 @@ const Gallery: React.FC = () => {
                                     <div className={styles.gridScrollable}>
                                         <div className={styles.grid}>
                                             {images.map(file => (
-                                                <div key={file.name} className={styles.card}>
-                                                    {/* Image Preview */}
-                                                    <div className={styles.preview}>
-                                                        <div className={styles.previewContent}>
-                                                            {file.url ? (
-                                                                <img
-                                                                    src={file.url}
-                                                                    alt="Chart Preview"
-                                                                    width={32}
-                                                                    height={32}
-                                                                    className={styles.previewImage}
-                                                                    onError={e => {
-                                                                        e.currentTarget.style.display = "none";
-                                                                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                                                                    }}
-                                                                />
-                                                            ) : null}
-                                                            <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>
-                                                                <PresentationIcon size={32} color="Gray"/>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Hover Actions Overlay */}
-                                                        <div className={styles.overlay}>
-                                                            <div className={styles.actions}>
-                                                                <button className={styles.actionButton} title="Download" onClick={() => handleDownload(file)}>
-                                                                    <Download size={16} className={styles.downloadIcon} />
-                                                                </button>
-                                                                <button className={styles.actionButton} title="Delete" onClick={() => handleDelete(file)}>
-                                                                    <Trash2 size={16} className={styles.deleteIcon} />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Chart Info */}
-                                                    <div className={styles.cardInfo}>
-                                                        <div className={styles.cardHeader}>
-                                                            <h3 className={styles.fileName} title={file.name}>
-                                                                {createFileName(file.name)}
-                                                            </h3>
-                                                            <div className={styles.fileMeta}>
-                                                                <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
-                                                            </div>
-                                                        </div>
-                                                        <span className={styles.userTag}>
-                                                            {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
-                                                        </span>
-                                                        <p className={styles.fileDate}>
-                                                            Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                                <GalleryCard
+                                                    key={file.name}
+                                                    file={file}
+                                                    onDownload={handleDownload}
+                                                    onDelete={handleDelete}
+                                                    onPreview={setPreviewFile}
+                                                    getUserName={getUserName}
+                                                    createFileName={createFileName}
+                                                    formatFileSize={formatFileSize}
+                                                />
                                             ))}
                                         </div>
                                     </div>
@@ -548,6 +598,37 @@ const Gallery: React.FC = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* PPTX Preview Modal */}
+            {previewFile && (
+                <div className={styles.modalOverlay} onClick={() => setPreviewFile(null)}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 className={styles.modalTitle}>{previewFile.name.split("/").pop()}</h3>
+                            <button
+                                className={styles.modalCloseButton}
+                                onClick={() => setPreviewFile(null)}
+                                title="Close"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <Suspense fallback={<div style={{ textAlign: "center", padding: "2rem", color: "#A0CB06" }}>Loading viewer...</div>}>
+                                {previewFile.name.endsWith(".pptx") ? <PptxViewer file="" blobName={previewFile.name} /> : <div><img
+                                    src={previewFile.url}
+                                    alt="Chart Preview"
+                                    className={styles.previewImage}
+                                    onError={e => {
+                                        e.currentTarget.style.display = "none";
+                                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                                    }}
+                                /></div>}
+                            </Suspense>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
