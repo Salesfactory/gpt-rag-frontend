@@ -2,6 +2,7 @@
 :root{
   --vault-gutter: clamp(80px, 2.5vw, 32px);
   --sidebar-w: 280px;
+  --toastify-color-success: #A0CB06;
 }
 
 @media (max-width: 1199px){
