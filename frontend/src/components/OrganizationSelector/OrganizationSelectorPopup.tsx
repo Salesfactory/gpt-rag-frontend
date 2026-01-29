@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import type { KeyboardEvent } from "react";
 import { toast } from "react-toastify";
 import { Check, ChevronDown } from "lucide-react";
+import { logOrganizationSession } from "../../api";
 
 interface Organization {
     id: string;
@@ -53,14 +54,41 @@ const OrganizationSelectorPopup: React.FC<OrganizationSelectorPopupProps> = ({ o
         document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
     }
 
-    const handleContinue = () => {
-        if (selectedOrgId) {
-            setCookie(`selectedOrg_${userId}`, selectedOrgId || "", 1);
-            sessionStorage.setItem(`selectedOrg_${userId}`, selectedOrgId);
-            onOrganizationSelected(selectedOrgId);
-        } else {
+    const handleContinue = async () => {
+        if (!selectedOrgId) {
             toast.error("Please select an organization.");
+            return;
         }
+
+        const currentCookie = document.cookie
+            .split("; ")
+            .find(row => row.startsWith(`selectedOrg_${userId}=`))
+            ?.split("=")[1];
+
+        const currentOrgId = currentCookie ? decodeURIComponent(currentCookie) : null;
+
+        if (currentOrgId === selectedOrgId) {
+            toast.warning("You are already using this organization.");
+            return;
+        }
+
+        try {
+            await logOrganizationSession({
+                userId,
+                organizationId: selectedOrgId,
+                metadata: {
+                    source: "organization-selector-popup",
+                    previousOrganizationId: currentOrgId
+                }
+            });
+        } catch (logError) {
+            console.error("Failed to log organization selection", logError);
+            toast.warning("Unable to register the organization selection. Continuing anyway.");
+        }
+
+        setCookie(`selectedOrg_${userId}`, selectedOrgId || "", 1);
+        sessionStorage.setItem(`selectedOrg_${userId}`, selectedOrgId);
+        onOrganizationSelected(selectedOrgId);
     };
 
     const toggleDropdown = useCallback(() => {
