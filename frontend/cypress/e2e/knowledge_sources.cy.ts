@@ -229,12 +229,12 @@ describe("Knowledge Sources tests", () => {
         cy.get('input[placeholder="Enter URL"]').clear();
         cy.get('input[placeholder="Enter URL"]').type('https://www.youtube.com')
         cy.get('button').contains("Save").click();
-        cy.get('div').should('contain.text', 'URL updated successfully. Previous scraped data has been removed. Please refresh source to scrape the new page.');
+        cy.get('div').should('contain.text', 'URL updated. Refresh the source to scrape the new page.');
 
         // Delete source
         cy.get('button[title="Delete source"]').first().click();
-        cy.get('span').should('contain.text', '2 results');
-        cy.get('div').should('contain.text', 'URL deleted successfully');
+        cy.get('div').should('contain.text', 'This URL has been removed from your knowledge sources');
+        cy.contains('span', '2 results', { timeout: 7000 }).should('be.visible');
 
     });
 });
