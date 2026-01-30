@@ -2119,7 +2119,7 @@ export async function uploadUserDocument({
     file: File;
     conversationId: string;
     user: any;
-}): Promise<{ blob_url: string; blob_name: string; saved_filename: string; original_filename: string }> {
+}): Promise<{ blob_url: string; blob_name: string; saved_filename: string; original_filename: string; file_id?: string | null }> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('conversation_id', conversationId);
@@ -2185,7 +2185,7 @@ export async function listUserDocuments({
 }: {
     conversationId: string;
     user: any;
-}): Promise<Array<{ blob_name: string; saved_filename: string; original_filename: string; size?: number; uploaded_at?: string }>> {
+}): Promise<Array<{ blob_name: string; saved_filename: string; original_filename: string; file_id?: string | null; size?: number; uploaded_at?: string }>> {
     const params = new URLSearchParams({
         conversation_id: conversationId,
     });
@@ -2342,5 +2342,3 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
         throw error;
     }
 }
-
-

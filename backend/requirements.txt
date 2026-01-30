@@ -8,6 +8,7 @@ flask-compress==1.18
 flask-limiter==3.13
 werkzeug==2.2.2
 requests
+anthropic==0.77.0
 python-dotenv==1.0.0
 azure-keyvault-secrets==4.9.0
 azure-storage-blob==12.19.0
