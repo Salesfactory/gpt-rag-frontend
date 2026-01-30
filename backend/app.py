@@ -841,8 +841,33 @@ def proxy_orc(*, context, **kwargs):
         "user_timezone": user_timezone,
         "is_data_analyst_mode": is_data_analyst_mode,
     }
-    if isinstance(user_document_blob_names, list) and len(user_document_blob_names) > 0:
-        payload_dict["blob_names"] = user_document_blob_names
+    def _normalize_blob_names(raw_blob_names):
+        if not isinstance(raw_blob_names, list):
+            return None
+        normalized = []
+        for item in raw_blob_names:
+            blob_name = None
+            file_id = None
+            include_file_id = False
+            if isinstance(item, str):
+                blob_name = item
+                include_file_id = True
+            elif isinstance(item, dict):
+                blob_name = item.get("blob_name") or item.get("blobName")
+                if "file_id" in item or "fileId" in item:
+                    include_file_id = True
+                file_id = item.get("file_id") if "file_id" in item else item.get("fileId")
+            if not blob_name:
+                continue
+            entry = {"blob_name": blob_name}
+            if include_file_id:
+                entry["file_id"] = file_id
+            normalized.append(entry)
+        return normalized or None
+
+    normalized_blob_names = _normalize_blob_names(user_document_blob_names)
+    if normalized_blob_names:
+        payload_dict["blob_names"] = normalized_blob_names
     payload = json.dumps(payload_dict)
 
     headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}

@@ -21,7 +21,7 @@
 /* File upload error message */
 .fileUploadError {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     gap: 8px;
     padding: 8px 12px;
@@ -37,6 +37,15 @@
 .errorIcon {
     font-weight: bold;
     font-size: 16px;
+    line-height: 1;
+    margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.fileUploadErrorMessage {
+    line-height: 1.4;
 }
 
 /* Attachment display container */
