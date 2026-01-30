@@ -3,18 +3,18 @@
     top: 100%;
     right: 0;
     margin-top: 4px;
-    width: 13rem;
+    width: 14rem;
     background-color: white;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
         0 4px 6px -4px rgba(0, 0, 0, 0.1);
     border: 1px solid #e5e7eb;
     overflow: hidden;
     z-index: 50;
+    padding: 8px;
 
     /* Animation */
     opacity: 0;
-    transform: translateY(-10px);
     transition: opacity 200ms ease, transform 200ms ease;
     pointer-events: none;
 }
@@ -32,23 +32,26 @@
 }
 
 .menuButton {
-    display: block;
-    padding: 12px 16px;
     color: #1f2937;
     text-decoration: none;
-    transition: background-color 0.2s ease, transform 0.2s ease-in-out;
+    transition: background-color 0.2s ease;
     width: 100%;
     text-align: left;
     border: none;
     background: none;
     font-family: inherit;
-    font-size: inherit;
+    font-size: 0.95rem;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin: 0;
 }
 
 .menuButton:hover {
-    background-color: #f3f4f6;
-    transform: translateX(4px);
+    background-color: #A0CB06;
+    color: white;
 }
 
 .menuButton:focus {
@@ -57,7 +60,6 @@
 
 .menuItem:hover {
     background-color: #f3f4f6;
-    transform: translateX(4px);
 }
 
 .menuItemContent {
@@ -65,43 +67,48 @@
     align-items: center;
 }
 
+
 .icon {
-    margin-right: 12px;
-    color: #99a1af;
+    margin-right: 10px;
+    color: #1f2937;
 }
 
-.icon2{
-    margin-right: 12px;
-    align-self: center;
+.menuButton:hover .icon {
+    transition: color 0.2s ease-in-out;
+    color: white;
+}
+
+.icon2 {
+    margin-right: 10px;
+    color: #A0CB06;
 }
 
 .logoutSeparator {
     border-top: 1px solid #e5e7eb;
-    margin-right: 5px;
-    margin-left: 5px;
+    margin: 6px 0;
 }
 
 .logoutButton {
     display: flex;
-    padding: 12px 16px;
+    align-items: center;
+    padding: 10px 12px;
     text-align: left;
     color: #A0CB06;
-    font-weight: 600;
+    font-weight: 500;
     text-decoration: none;
-    transition: background-color 0.2s;
-
+    transition: background-color 0.2s ease;
+    border-radius: 6px;
+    font-size: 0.95rem;
 }
 
-.logoutButton:hover{
-    background-color: #e0f2fe;
-    color: #8eb134;
+.logoutButton:hover {
+    background-color: rgba(160, 203, 6, 0.1);
 }
 
 .textMenu{
     width: 100%;
         text-align: left;
         font-size: 0.95rem;
-        color: #374151;
         display: flex;
         align-items: center;
 }
