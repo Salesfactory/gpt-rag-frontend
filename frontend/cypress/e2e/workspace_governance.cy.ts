@@ -26,7 +26,7 @@ describe("Agent Section Tests", () => {
         cy.get('a[href="#/organization"]').contains("Workspace Governance").should("be.visible");
         cy.get('a[href="#/organization"]').contains("Workspace Governance").click();
         cy.url().should("include", "#/organization");
-        cy.get("button#headerCollapse").click();
+        cy.get("#sidebarCollapse").click();
 
         //Test for the organization information
         cy.get("span").should("contain.text", "Organization");
