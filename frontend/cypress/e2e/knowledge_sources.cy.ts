@@ -152,12 +152,12 @@ describe("Knowledge Sources tests", () => {
             }
         });
         cy.get("button#headerCollapse").should("be.visible");
-        cy.get("button#headerCollapse").click();
+        cy.get("button#headerCollapse").click({ force: true });
         cy.get('span').contains("Control Center").click();
         cy.get('a[href="#/knowledge-sources"]').contains("Knowledge Sources").should("be.visible");
         cy.get('a[href="#/knowledge-sources"]').contains("Knowledge Sources").click();
         cy.url().should("include", "#/knowledge-sources");
-        cy.get("button#headerCollapse").click();
+        cy.get("#sidebarCollapse").click();
     });
     
 
