@@ -117,13 +117,14 @@
   background: white;
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
-  overflow: hidden;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .header {
   background: #A0CB06;
   padding: 1rem 1.5rem;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
 }
 
 .headerContent {
@@ -186,6 +187,7 @@
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); /* increased min width to make cards bigger */
   gap: 2.5rem; /* more breathing room between cards */
   padding-bottom: 8rem;
+  align-items: start;
 }
  
 
@@ -329,7 +331,62 @@
   margin-top: 0.2rem;
   font-size: 0.875rem;
   color: #6b7280;
-  margin-top: auto;
+}
+
+.descriptionContainer {
+  margin-top: 0.5rem;
+}
+
+.descriptionToggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.descriptionToggle:hover {
+  color: #374151;
+}
+
+.descriptionContent {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.4;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+}
+
+.previewButton {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.previewButton:hover {
+  background: #A0CB06;
+  border-color: #A0CB06;
+  color: white;
 }
 
 .placeholder {
@@ -493,6 +550,10 @@
     object-position: center center;
   }
 
+  .previewImageBox {
+    object-position: center center;
+  }
+
   .cardInfo {
     padding: 1rem;
   }
@@ -508,5 +569,91 @@
 
   .hidden {
     display: none !important;
+  }
+}
+
+/* PPTX Preview Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.modalTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 3rem);
+}
+
+.modalCloseButton {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalCloseButton:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.modalBody {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  .modalOverlay {
+    padding: 1rem;
+  }
+
+  .modalContent {
+    max-height: 95vh;
+  }
+
+  .modalHeader {
+    padding: 0.75rem 1rem;
+  }
+
+  .modalTitle {
+    font-size: 1rem;
   }
 }

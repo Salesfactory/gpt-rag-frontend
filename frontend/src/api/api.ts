@@ -112,6 +112,31 @@ export async function fetchUserRoleForOrganization(userId: string, organizationI
     }
 }
 
+export async function logOrganizationSession({
+    userId,
+    organizationId,
+    action = "session-start",
+    metadata
+}: {
+    userId: string;
+    organizationId: string;
+    action?: string;
+    metadata?: Record<string, unknown>;
+}): Promise<void> {
+    const response = await fetchWrapper("/api/user-organization-logs", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
+        },
+        body: JSON.stringify({ organizationId, action, metadata })
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to log organization session");
+    }
+}
+
 export async function deleteUser({ user, userId, organizationId }: any): Promise<any> {
     try {
         const response = await fetch(`/api/deleteuser?userId=${userId}&organizationId=${organizationId}`, {
@@ -1153,17 +1178,28 @@ export async function scrapeUrls(url: string, organizationId?: string, user?: an
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const result = await response.json();
+
+        if (!response.ok) {
+            return {
+                status: "error",
+                error_type: result.error_type || "system_error",
+                message: result.message || `HTTP error! status: ${response.status}`,
+                url: result.url || url,
+                data: result
+            };
+        }
 
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
         console.error("Error scraping URL:", error);
-        throw error;
+        return {
+            status: "error",
+            error_type: "network_error",
+            message: error instanceof Error ? error.message : "Failed to scrape URL",
+            url: url
+        };
     }
 }
 
@@ -1192,17 +1228,31 @@ export async function scrapeUrlsMultipage(url: string, organizationId?: string, 
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const result = await response.json();
+
+        // Handle structured error responses
+        if (!response.ok) {
+            // Backend now returns structured errors with error_type
+            return {
+                status: "error",
+                error_type: result.error_type || "system_error",
+                message: result.message || `HTTP error! status: ${response.status}`,
+                url: result.url || url,
+                data: result
+            };
+        }
 
         // Return the detailed result which should include success/failure info for each URL
         return result;
     } catch (error) {
         console.error("Error scraping URL with multipage:", error);
-        throw error;
+        // Network errors or parsing failures
+        return {
+            status: "error",
+            error_type: "network_error",
+            message: error instanceof Error ? error.message : "Failed to scrape URL with multipage",
+            url: url
+        };
     }
 }
 
@@ -2069,7 +2119,7 @@ export async function uploadUserDocument({
     file: File;
     conversationId: string;
     user: any;
-}): Promise<{ blob_url: string; blob_name: string; saved_filename: string; original_filename: string }> {
+}): Promise<{ blob_url: string; blob_name: string; saved_filename: string; original_filename: string; file_id?: string | null }> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('conversation_id', conversationId);
@@ -2135,7 +2185,7 @@ export async function listUserDocuments({
 }: {
     conversationId: string;
     user: any;
-}): Promise<Array<{ blob_name: string; saved_filename: string; original_filename: string; size?: number; uploaded_at?: string }>> {
+}): Promise<Array<{ blob_name: string; saved_filename: string; original_filename: string; file_id?: string | null; size?: number; uploaded_at?: string }>> {
     const params = new URLSearchParams({
         conversation_id: conversationId,
     });
@@ -2292,5 +2342,3 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
         throw error;
     }
 }
-
-

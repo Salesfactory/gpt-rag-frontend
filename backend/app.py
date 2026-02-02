@@ -841,8 +841,33 @@ def proxy_orc(*, context, **kwargs):
         "user_timezone": user_timezone,
         "is_data_analyst_mode": is_data_analyst_mode,
     }
-    if isinstance(user_document_blob_names, list) and len(user_document_blob_names) > 0:
-        payload_dict["blob_names"] = user_document_blob_names
+    def _normalize_blob_names(raw_blob_names):
+        if not isinstance(raw_blob_names, list):
+            return None
+        normalized = []
+        for item in raw_blob_names:
+            blob_name = None
+            file_id = None
+            include_file_id = False
+            if isinstance(item, str):
+                blob_name = item
+                include_file_id = True
+            elif isinstance(item, dict):
+                blob_name = item.get("blob_name") or item.get("blobName")
+                if "file_id" in item or "fileId" in item:
+                    include_file_id = True
+                file_id = item.get("file_id") if "file_id" in item else item.get("fileId")
+            if not blob_name:
+                continue
+            entry = {"blob_name": blob_name}
+            if include_file_id:
+                entry["file_id"] = file_id
+            normalized.append(entry)
+        return normalized or None
+
+    normalized_blob_names = _normalize_blob_names(user_document_blob_names)
+    if normalized_blob_names:
+        payload_dict["blob_names"] = normalized_blob_names
     payload = json.dumps(payload_dict)
 
     headers = {"Content-Type": "text/event-stream", "x-functions-key": functionKey}
@@ -1482,7 +1507,7 @@ def generate_sas_url_endpoint(*, context):
             return jsonify({"error": "blob_name is required"}), 400
         
         # Whitelist of allowed containers for security
-        allowed_containers = ["documents", "fa-documents"]
+        allowed_containers = ["documents"]
         if container_name not in allowed_containers:
             return jsonify({"error": "Invalid container name"}), 400
         
@@ -1949,18 +1974,41 @@ def getUserOrganizationsRole(*, context):
 
     try:
         role = get_invitation_role(client_principal_id, organization_id)
-
-        try:
-            create_user_logs(client_principal_id, organization_id, "session-start")
-        except Exception as e:
-            logger.error(f"[auth] Error creating user log: {str(e)}")
-
         return jsonify({"role": role}), 200
     except ValueError as e:
         # If the invitation is missing or inactive
         return jsonify({"error": str(e)}), 404
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+@app.route("/api/user-organization-logs", methods=["POST"])
+@auth.login_required
+def log_user_organization_action(*, context):
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+    if not client_principal_id:
+        return create_error_response(
+            "Missing required parameter: client_principal_id",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    payload = request.get_json(silent=True) or {}
+    organization_id = payload.get("organizationId")
+    action = payload.get("action", "session-start")
+    metadata = payload.get("metadata")
+
+    if not organization_id:
+        return create_error_response(
+            "Missing required parameter: organizationId",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    try:
+        create_user_logs(client_principal_id, organization_id, action, metadata)
+        return jsonify({"status": "logged"}), HTTPStatus.CREATED
+    except Exception as e:
+        logger.error("[auth] Failed to create user log: %s", str(e))
+        return jsonify({"error": "Failed to register user log"}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 
@@ -2838,7 +2886,29 @@ def scrape_url(*, context):
         blob_storage_results = []
 
         # Prepare payload for external scraping service
-        payload = {"url": url, "client_principal_id": client_principal_id}
+        payload = {
+            "url": url,
+            "client_principal_id": client_principal_id,
+            "scraping_config": {
+                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "headers": {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "DNT": "1",
+                    "Connection": "keep-alive",
+                    "Upgrade-Insecure-Requests": "1",
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none",
+                    "Sec-Fetch-User": "?1",
+                    "Cache-Control": "max-age=0"
+                },
+                "timeout": 30,
+                "retry_attempts": 3,
+                "retry_delay": 5
+            }
+        }
         orch_function_key = current_app.config["ORCH_FUNCTION_KEY"]
         if not orch_function_key:
             return create_error_response(
@@ -2859,13 +2929,58 @@ def scrape_url(*, context):
 
             # Check if request was successful
             if not response.ok:
+                try:
+                    error_data = response.json()
+                    # Check if it's a 422 wrapping a 403 error from target website
+                    if response.status_code == 422:
+                        error_msg = str(error_data.get("blob_storage_result", {}).get("error", ""))
+                        if "403" in error_msg or "Forbidden" in error_msg:
+                            logger.warning(
+                                f"Website blocking detected (wrapped 403) for {url}"
+                            )
+                            return jsonify({
+                                "status": "error",
+                                "error_type": "website_blocked",
+                                "message": "This website is actively blocking automated access",
+                                "url": url
+                            }), 422
+                except Exception:
+                    pass  # If parsing fails, continue with generic handling
+
+                # Direct 403 from orchestrator service
+                if response.status_code == 403:
+                    logger.warning(
+                        f"Access denied (403) for {url} - website may be blocking scrapers"
+                    )
+                    return jsonify({
+                        "status": "error",
+                        "error_type": "website_blocked",
+                        "message": "This website is using bot protection and cannot be scraped automatically",
+                        "url": url
+                    }), 403
+
+                # Network/service errors
+                if response.status_code >= 500:
+                    logger.error(
+                        f"Scraping service error for {url}: {response.status_code} - {response.text}"
+                    )
+                    return jsonify({
+                        "status": "error",
+                        "error_type": "system_error",
+                        "message": "Scraping service encountered an internal error",
+                        "url": url
+                    }), response.status_code
+
+                # Other client errors
                 logger.error(
                     f"Scraping service returned error for {url}: {response.status_code} - {response.text}"
                 )
-                return create_error_response(
-                    f"Scraping service error: {response.status_code}",
-                    response.status_code,
-                )
+                return jsonify({
+                    "status": "error",
+                    "error_type": "system_error",
+                    "message": f"Scraping failed with status {response.status_code}",
+                    "url": url
+                }), response.status_code
 
             # Parse response from scraping service
             try:
@@ -2953,10 +3068,20 @@ def scrape_url(*, context):
 
         except requests.Timeout:
             logger.error(f"Timeout while scraping {url}")
-            return create_error_response("Scraping service timeout", 504)
+            return jsonify({
+                "status": "error",
+                "error_type": "network_error",
+                "message": "Request timed out while trying to scrape the URL",
+                "url": url
+            }), 504
         except requests.RequestException as e:
             logger.error(f"Request error while scraping {url}: {str(e)}")
-            return create_error_response("Failed to connect to scraping service", 502)
+            return jsonify({
+                "status": "error",
+                "error_type": "network_error",
+                "message": "Failed to connect to scraping service",
+                "url": url
+            }), 502
 
     except Exception as e:
         logger.error(f"Unexpected error in scrape_url: {str(e)}")
@@ -2993,7 +3118,29 @@ def multipage_scrape(*, context):
                 "Multipage scraping service endpoint is not set", 500
             )
 
-        payload = {"url": url, "client_principal_id": client_principal_id}
+        payload = {
+            "url": url,
+            "client_principal_id": client_principal_id,
+            "scraping_config": {
+                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "headers": {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "DNT": "1",
+                    "Connection": "keep-alive",
+                    "Upgrade-Insecure-Requests": "1",
+                    "Sec-Fetch-Dest": "document",
+                    "Sec-Fetch-Mode": "navigate",
+                    "Sec-Fetch-Site": "none",
+                    "Sec-Fetch-User": "?1",
+                    "Cache-Control": "max-age=0"
+                },
+                "timeout": 30,
+                "retry_attempts": 3,
+                "retry_delay": 5
+            }
+        }
 
         # Include organization_id
         organization_id = data.get("organization_id")
@@ -3019,13 +3166,59 @@ def multipage_scrape(*, context):
 
             # Check if request was successful
             if not response.ok:
+                # Parse error response to check for bot detection (403)
+                try:
+                    error_data = response.json()
+                    # Check if it's a 422 wrapping a 403 error from target website
+                    if response.status_code == 422:
+                        error_msg = str(error_data.get("blob_storage_result", {}).get("error", ""))
+                        if "403" in error_msg or "Forbidden" in error_msg:
+                            logger.warning(
+                                f"Website blocking detected (multipage, wrapped 403) for {url}"
+                            )
+                            return jsonify({
+                                "status": "error",
+                                "error_type": "website_blocked",
+                                "message": "This website is actively blocking automated access",
+                                "url": url
+                            }), 422
+                except Exception:
+                    pass
+
+                # Direct 403 from orchestrator service
+                if response.status_code == 403:
+                    logger.warning(
+                        f"Access denied (403, multipage) for {url} - website may be blocking scrapers"
+                    )
+                    return jsonify({
+                        "status": "error",
+                        "error_type": "website_blocked",
+                        "message": "This website is using bot protection and cannot be scraped automatically",
+                        "url": url
+                    }), 403
+
+                # Network/service errors
+                if response.status_code >= 500:
+                    logger.error(
+                        f"Multipage scraping service error for {url}: {response.status_code} - {response.text}"
+                    )
+                    return jsonify({
+                        "status": "error",
+                        "error_type": "system_error",
+                        "message": "Multipage scraping service encountered an internal error",
+                        "url": url
+                    }), response.status_code
+
+                # Other client errors
                 logger.error(
                     f"Multipage scraping service returned error: {response.status_code} - {response.text}"
                 )
-                return create_error_response(
-                    f"Multipage scraping service error: {response.status_code}",
-                    response.status_code,
-                )
+                return jsonify({
+                    "status": "error",
+                    "error_type": "system_error",
+                    "message": f"Multipage scraping failed with status {response.status_code}",
+                    "url": url
+                }), response.status_code
 
             # Parse and return the response from the orchestrator
             try:
@@ -3127,15 +3320,23 @@ def multipage_scrape(*, context):
                 )
 
         except requests.Timeout:
-            logger.error("Timeout while calling multipage scraping service")
-            return create_error_response("Multipage scraping service timeout", 504)
+            logger.error(f"Timeout while calling multipage scraping service for {url}")
+            return jsonify({
+                "status": "error",
+                "error_type": "network_error",
+                "message": "Request timed out while trying to scrape the URL",
+                "url": url
+            }), 504
         except requests.RequestException as e:
             logger.error(
-                f"Request error while calling multipage scraping service: {str(e)}"
+                f"Request error while calling multipage scraping service for {url}: {str(e)}"
             )
-            return create_error_response(
-                "Failed to connect to multipage scraping service", 502
-            )
+            return jsonify({
+                "status": "error",
+                "error_type": "network_error",
+                "message": "Failed to connect to multipage scraping service",
+                "url": url
+            }), 502
 
     except Exception as e:
         logger.error(f"Unexpected error in multipage_scrape: {str(e)}")

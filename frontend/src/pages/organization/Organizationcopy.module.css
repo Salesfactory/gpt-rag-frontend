@@ -20,7 +20,7 @@
 }
 
 .title {
-    background-color: #008431;
+    background-color: #A0CB06;
     color: white;
     font-size: 1.25rem;
     font-weight: bold;
@@ -134,7 +134,7 @@
 }
 
 .saveButton:hover {
-    background-color: #006e2c;
+    background-color: #8eb134;
 }
 
 .saveButton:focus {
@@ -146,7 +146,7 @@
 .saveButton {
     margin-top: 10px;
     padding: 10px 20px;
-    background-color: #008431;
+    background-color: #A0CB06;
     color: white;
     border: none;
     border-radius: 6px;

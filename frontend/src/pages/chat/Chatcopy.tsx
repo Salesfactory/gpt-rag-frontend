@@ -72,7 +72,7 @@ const Chat = () => {
     const [excludeCategory, setExcludeCategory] = useState<string>("");
     const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
     const ATTACH_ACCEPT = CHAT_ATTACHMENT_ALLOWED_TYPES.join(",");
-    const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string }[]>([]);
+    const [attachedDocs, setAttachedDocs] = useState<{ blobName: string; originalFilename: string; savedFilename: string; fileId?: string | null }[]>([]);
     const [fileUploadError, setFileUploadError] = useState<string>("");
     const [isDataAnalystMode, setIsDataAnalystMode] = useState<boolean>(false);
 
@@ -103,6 +103,25 @@ const Chat = () => {
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
     const [isUploadingDocs, setIsUploadingDocs] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
+    const fileUploadErrorTimerRef = useRef<number | null>(null);
+
+    const getUploadCategory = (filename: string): "pdf" | "spreadsheet" | "unknown" => {
+        const lower = filename.toLowerCase();
+        if (lower.endsWith(".pdf")) return "pdf";
+        if (lower.endsWith(".csv") || lower.endsWith(".xls") || lower.endsWith(".xlsx")) return "spreadsheet";
+        return "unknown";
+    };
+
+    const setTimedFileUploadError = (message: string, timeoutMs: number = 5000) => {
+        setFileUploadError(message);
+        if (fileUploadErrorTimerRef.current !== null) {
+            window.clearTimeout(fileUploadErrorTimerRef.current);
+        }
+        fileUploadErrorTimerRef.current = window.setTimeout(() => {
+            setFileUploadError(prev => (prev === message ? "" : prev));
+            fileUploadErrorTimerRef.current = null;
+        }, timeoutMs);
+    };
 
     const [activeCitation, setActiveCitation] = useState<string>();
     const [spreadsheetDownloadUrl, setSpreadsheetDownloadUrl] = useState<string | undefined>(undefined);
@@ -150,7 +169,11 @@ const Chat = () => {
         return conversationId;
     };
 
-    const streamResponse = async (question: string, chatId: string | null, userDocumentBlobNames?: string[]) => {
+    const streamResponse = async (
+        question: string,
+        chatId: string | null,
+        userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>
+    ) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         restartChat.current = false;
@@ -516,6 +539,11 @@ const Chat = () => {
         // Clear any previous error
         setFileUploadError("");
 
+        if (isDataAnalystMode) {
+            setFileUploadError("Disable Data Analyst mode before attaching documents.");
+            return;
+        }
+
         // AC3: Max 3 documents validation
         if (attachedDocs.length + files.length > CHAT_MAX_ATTACHED_FILES) {
             setFileUploadError(`Too many files. You can attach up to 3 documents maximum.`);
@@ -532,11 +560,33 @@ const Chat = () => {
                 return;
             }
 
+            const selectionCategories = new Set(
+                files.map(file => getUploadCategory(file.name))
+            );
+            selectionCategories.delete("unknown");
+            if (selectionCategories.size > 1) {
+                setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
+                return;
+            }
+
+            if (attachedDocs.length > 0 && selectionCategories.size === 1) {
+                const sampleName =
+                    attachedDocs[0].originalFilename ||
+                    attachedDocs[0].savedFilename ||
+                    attachedDocs[0].blobName;
+                const existingCategory = getUploadCategory(sampleName);
+                const [selectionCategory] = Array.from(selectionCategories);
+                if (existingCategory !== "unknown" && selectionCategory !== existingCategory) {
+                    setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
+                    return;
+                }
+            }
+
             for (const file of files) {
                 const name = file.name.toLowerCase();
                 if (!allowed.some(ext => name.endsWith(ext))) {
                     const fileExtension = name.split(".").pop() || "unknown";
-                    setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF`);
+                    setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF, CSV, XLS, XLSX`);
                     return;
                 }
                 if (file.size > maxSizeInBytes) {
@@ -555,14 +605,19 @@ const Chat = () => {
                         {
                             blobName: result.blob_name,
                             originalFilename: result.original_filename || file.name,
-                            savedFilename: result.saved_filename || file.name
+                            savedFilename: result.saved_filename || file.name,
+                            fileId: result.file_id
                         }
                     ]);
                 }
             }
         } catch (err) {
             console.error("Error uploading user docs:", err);
-            setFileUploadError("Failed to upload one or more documents.");
+            if (err instanceof Error && err.message) {
+                setFileUploadError(err.message);
+            } else {
+                setFileUploadError("Failed to upload one or more documents.");
+            }
         } finally {
             setIsUploadingDocs(false);
         }
@@ -607,7 +662,8 @@ const Chat = () => {
                 const mapped = files.map(f => ({
                     blobName: f.blob_name,
                     originalFilename: f.original_filename || f.saved_filename,
-                    savedFilename: f.saved_filename
+                    savedFilename: f.saved_filename,
+                    fileId: f.file_id
                 }));
                 setAttachedDocs(mapped);
             } catch (e) {
@@ -618,6 +674,14 @@ const Chat = () => {
             cancelled = true;
         };
     }, [user?.organizationId, chatId, conversationId]);
+
+    useEffect(() => {
+        return () => {
+            if (fileUploadErrorTimerRef.current !== null) {
+                window.clearTimeout(fileUploadErrorTimerRef.current);
+            }
+        };
+    }, []);
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
         if (isSpreadsheet(citation)) {
@@ -884,7 +948,10 @@ const Chat = () => {
                                                                           onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
                                                                       }
                                                                       onFollowupQuestionClicked={question => {
-                                                                          const blobNames = attachedDocs.map(d => d.blobName);
+                                                                          const blobNames = attachedDocs.map(d => ({
+                                                                              blob_name: d.blobName,
+                                                                              file_id: d.fileId ?? null
+                                                                          }));
                                                                           streamResponse(question, chatId !== "" ? chatId : null, blobNames);
                                                                       }}
                                                                       showFollowupQuestions={false}
@@ -911,7 +978,10 @@ const Chat = () => {
                                                                           onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
                                                                       }
                                                                       onFollowupQuestionClicked={question => {
-                                                                          const blobNames = attachedDocs.map(d => d.blobName);
+                                                                          const blobNames = attachedDocs.map(d => ({
+                                                                              blob_name: d.blobName,
+                                                                              file_id: d.fileId ?? null
+                                                                          }));
                                                                           streamResponse(question, chatId !== "" ? chatId : null, blobNames);
                                                                       }}
                                                                       showFollowupQuestions={false}
@@ -928,7 +998,10 @@ const Chat = () => {
                                                         <AnswerError
                                                             error={error_message_text + error.toString()}
                                                             onRetry={() => {
-                                                                const blobNames = attachedDocs.map(d => d.blobName);
+                                                                const blobNames = attachedDocs.map(d => ({
+                                                                    blob_name: d.blobName,
+                                                                    file_id: d.fileId ?? null
+                                                                }));
                                                                 streamResponse(lastQuestionRef.current, chatId !== "" ? chatId : null, blobNames);
                                                             }}
                                                         />
@@ -1025,7 +1098,10 @@ const Chat = () => {
                                             disabled={isLoading || isUploadingDocs || !!error403Data}
                                             onSend={question => {
                                                 (async () => {
-                                                    const blobNames = attachedDocs.map(d => d.blobName);
+                                                    const blobNames = attachedDocs.map(d => ({
+                                                        blob_name: d.blobName,
+                                                        file_id: d.fileId ?? null
+                                                    }));
                                                     await streamResponse(question, chatId !== "" ? chatId : null, blobNames);
                                                     setFileUploadError("");
                                                 })();
@@ -1033,7 +1109,7 @@ const Chat = () => {
                                             extraButtonNewChat={<StartNewChatButton isEnabled={isButtonEnabled} onClick={handleNewChat} />}
                                             extraButtonDataAnalyst={
                                                 <DataAnalystButton
-                                                    isEnabled={!isLoading && !isUploadingDocs}
+                                                    isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length === 0}
                                                     isActive={isDataAnalystMode}
                                                     ariaLabel="Data analyst mode"
                                                     onChange={setIsDataAnalystMode}
@@ -1041,7 +1117,7 @@ const Chat = () => {
                                             }
                                             extraButtonAttach={
                                                 <AttachButton
-                                                    isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES}
+                                                    isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES && !isDataAnalystMode}
                                                     isUploading={isUploadingDocs}
                                                     onFilesSelected={handleAttachFiles}
                                                     accept={ATTACH_ACCEPT}
@@ -1057,7 +1133,7 @@ const Chat = () => {
                                     {fileUploadError && (
                                         <div className={styles.fileUploadError} role="alert" aria-live="assertive">
                                             <span className={styles.errorIcon}>✕</span>
-                                            <span>{fileUploadError}</span>
+                                            <span className={styles.fileUploadErrorMessage}>{fileUploadError}</span>
                                         </div>
                                     )}
                                 </div>

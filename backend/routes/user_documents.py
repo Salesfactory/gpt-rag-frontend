@@ -3,13 +3,21 @@ from flask import Blueprint, current_app, request
 import tempfile
 import logging
 import re
-import secrets
 import uuid
 import time
+from typing import Any, Optional
 from utils import create_success_response, create_error_response
 from routes.decorators.auth_decorator import auth_required
+from shared.anthropic_files import AnthropicFilesClient, AnthropicFilesError, AnthropicFilesRequestError
 BLOB_CONTAINER_NAME = "user-documents"
-ALLOWED_FILE_EXTENSIONS = [".pdf"]
+ALLOWED_FILE_EXTENSIONS = [".pdf", ".csv", ".xls", ".xlsx"]
+ANTHROPIC_FILE_EXTENSIONS = {".csv", ".xls", ".xlsx"}
+ANTHROPIC_MIME_TYPES = {
+    ".csv": "text/csv",
+    ".xls": "application/vnd.ms-excel",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
+ANTHROPIC_FILE_ID_METADATA_KEY = "file_id"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB 
 
 bp = Blueprint("user_documents", __name__, url_prefix="/api")
@@ -50,6 +58,24 @@ def validate_file(file):
             return False, f"File too large. Maximum size is {MAX_FILE_SIZE // (1024*1024)}MB"
 
     return True, "Valid file"
+
+
+def _upload_to_anthropic(file_path: str, filename: str, mime_type: str):
+    with AnthropicFilesClient() as client:
+        return client.upload_file(file_path, filename=filename, mime_type=mime_type)
+
+
+def _delete_from_anthropic(file_id: str):
+    with AnthropicFilesClient() as client:
+        return client.delete_file(file_id)
+
+
+def _extract_file_id(result: Any) -> Optional[str]:
+    if result is None:
+        return None
+    if isinstance(result, dict):
+        return result.get("id") or result.get("file_id")
+    return getattr(result, "id", None)
 
 
 @bp.route("/upload-user-document", methods=["POST"])
@@ -112,6 +138,7 @@ def upload_user_document():
 
         safe_filename = os.path.basename(file.filename) 
         base_name, ext = os.path.splitext(safe_filename)
+        ext_lower = ext.lower()
         timestamp_ms = int(time.time() * 1000)
         timestamped_filename = f"{base_name}_{timestamp_ms}{ext}"
 
@@ -128,6 +155,28 @@ def upload_user_document():
             "conversation_id": conversation_id,
             "original_filename": safe_filename,
         }
+
+        file_id = None
+        if ext_lower in ANTHROPIC_FILE_EXTENSIONS:
+            mime_type = ANTHROPIC_MIME_TYPES.get(ext_lower, "application/octet-stream")
+            try:
+                anthropic_result = _upload_to_anthropic(
+                    file_path=temp_file_path,
+                    filename=timestamped_filename,
+                    mime_type=mime_type,
+                )
+                file_id = _extract_file_id(anthropic_result)
+                if not file_id:
+                    logger.error("Anthropic upload succeeded but returned no file_id.")
+                    return create_error_response("Anthropic upload failed: missing file_id", 502)
+                logger.info("Uploaded file to Anthropic: file_id=%s filename=%s", file_id, timestamped_filename)
+                metadata[ANTHROPIC_FILE_ID_METADATA_KEY] = file_id
+            except AnthropicFilesError as exc:
+                logger.exception("Anthropic upload failed: %s", exc)
+                return create_error_response("Anthropic upload failed. Please try again.", 502)
+            except Exception as exc:
+                logger.exception("Unexpected error uploading to Anthropic: %s", exc)
+                return create_error_response("Anthropic upload failed. Please try again.", 502)
 
         # Initialize blob storage manager and upload file
         blob_storage_manager = current_app.config["blob_storage_manager"]
@@ -149,10 +198,16 @@ def upload_user_document():
                 "blob_name": blob_path,
                 "saved_filename": os.path.basename(blob_path),
                 "original_filename": safe_filename,
+                "file_id": file_id,
             }, 200)
         else:
             error_msg = f"Error uploading file: {result.get('error', 'Unknown error')}"
             logger.error(error_msg)
+            if file_id:
+                try:
+                    _delete_from_anthropic(file_id)
+                except Exception as exc:
+                    logger.exception("Failed to delete Anthropic file after blob upload failure: %s", exc)
             return create_error_response(error_msg, 500)
 
     except Exception as e:
@@ -220,10 +275,12 @@ def list_user_documents():
             saved_filename = blob["name"].split("/")[-1]
             metadata = blob.get("metadata") or {}
             original_filename = metadata.get("original_filename") or saved_filename
+            file_id = metadata.get(ANTHROPIC_FILE_ID_METADATA_KEY)
             files.append({
                 "blob_name": blob["name"],
                 "saved_filename": saved_filename,
                 "original_filename": original_filename,
+                "file_id": file_id,
                 "size": blob.get("size"),
                 "uploaded_at": blob.get("last_modified") or blob.get("created_on")
             })
@@ -288,8 +345,8 @@ def delete_user_document():
 
         prefix = f"{safe_org_id}/{safe_user_id}/{safe_conversation_id}/"
         if blob_name:
-            if not re.match(r'^[A-Za-z0-9/_\-.]+$', blob_name):
-                logger.error("Invalid characters in blob_name")
+            if ".." in blob_name or "\\" in blob_name:
+                logger.error("Invalid path segments in blob_name")
                 return create_error_response("Invalid characters in blob_name", 400)
             if not blob_name.startswith(prefix):
                 logger.error("blob_name does not match provided identifiers")
@@ -305,6 +362,32 @@ def delete_user_document():
         logger.info(f"Deleting file '{safe_filename}' for user '{safe_user_id}' in organization '{safe_org_id}' conversation '{safe_conversation_id}'")
 
         blob_storage_manager = current_app.config["blob_storage_manager"]
+        file_id = None
+        try:
+            container_client = blob_storage_manager.blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
+            blob_client = container_client.get_blob_client(blob_path)
+            if blob_client.exists():
+                properties = blob_client.get_blob_properties()
+                metadata = properties.metadata or {}
+                file_id = metadata.get(ANTHROPIC_FILE_ID_METADATA_KEY)
+        except Exception as exc:
+            logger.warning("Failed to retrieve blob metadata for %s: %s", blob_path, exc)
+
+        if file_id:
+            try:
+                _delete_from_anthropic(file_id)
+            except AnthropicFilesRequestError as exc:
+                if exc.status_code == 404:
+                    logger.info("Anthropic file %s already deleted.", file_id)
+                else:
+                    logger.exception("Failed to delete Anthropic file %s: %s", file_id, exc)
+                    return create_error_response("Failed to delete file from Anthropic.", 502)
+            except AnthropicFilesError as exc:
+                logger.exception("Failed to delete Anthropic file %s: %s", file_id, exc)
+                return create_error_response("Failed to delete file from Anthropic.", 502)
+            except Exception as exc:
+                logger.exception("Unexpected error deleting Anthropic file %s: %s", file_id, exc)
+                return create_error_response("Failed to delete file from Anthropic.", 502)
 
         result = blob_storage_manager.delete_blob(
             blob_name=blob_path,
