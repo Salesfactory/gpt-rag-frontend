@@ -2,16 +2,20 @@
 =            Sidebar Styles          =
 ====================================*/
 .submenuItem:hover {
-
   background-color: #A0CB06;
   transition: ease-in-out 0.3s;
+}
+
+.submenuItem:hover .submenuLink {
+  color: #ffffff;
+  padding-left: 45px;
 }
 
  .submenuItem.sidebarLinkActive:hover {
   background-color: #A0CB06;
  }
 
-.sidebarLink:hover, .submenuLink:hover {
+.sidebarLink:hover{
   color: #ffffff;
 }
 
@@ -22,8 +26,10 @@
   text-decoration: none;
   color: #0a0b0a;
   font-size: 0.875rem;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
   padding-left: 35px;
-  transition: background-color 0.3s ease;
+  transition: padding-left 0.3s ease, color 0.3s ease;
 }
 /* Nav Styles */
 .nav {
@@ -121,9 +127,9 @@
           font-size: 17px;
           color: #0a0b0a;
           text-decoration: none;
-          padding: 0.8rem 0.8rem 0.8rem 13px;
+          padding: 0.75rem 0.8rem 0.75rem 13px;
           background-color: transparent;
-          transition: background-color 0.3s ease, padding-left 0.3s ease;
+          transition: background-color 0.3s ease, gap 0.3s ease;
           width: 100%;
           position: relative;
           overflow: hidden;
@@ -143,16 +149,14 @@
         /* Hover effect */
         .sidebarLink:hover {
           background-color: #A0CB06;
-          padding-left: 22px;
+          gap: 17px;
+          transition: background-color 0.2s ease, gap 0.2s ease;
         }
-    
-        .sidebarLink:hover::before {
-          background-color: white;   }
 
 
   .sidebarLinkIcon {
     font-size: 1.5rem;
-    color: #0a0b0a;
+    color: black;
     opacity: 0.8;
   }
 
@@ -183,7 +187,6 @@
 
   .sidebarLinkActive:hover{
     background-color: #A0CB06;
-    color: white;
     /* box-shadow: 0px 17px 20px -8px rgba(77, 91, 236, 0.23); */
   }
 
@@ -193,15 +196,13 @@
   
   /* Nav Small Cap */
   .navSmallCap {
-    font-size: 12px;
+    font-size: 0.75rem;
+    line-height: 1rem;
     font-weight: 600;
-    padding: 10px 0;
-    padding-left: 15px;
-    line-height: 26px;
-    letter-spacing: 1.5px;
-    color: #0a0b0a;
-    transition: color 0.3s ease;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem 1rem 0.5rem 1rem;
+    color: #71717a;
     user-select: none;
   }
 
@@ -212,15 +213,9 @@
   /* Submenu Styles */
   .submenu {
     position: relative;
-    max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease, padding 0.3s ease;
     margin: 0;
-    background-color: #BFBFBF;
-  }
-  
-  .submenuActive {
-    max-height: 200px; /* Adjust as needed */
   }
   
   .submenuArrow {
@@ -234,7 +229,6 @@
   }
   
   .submenuItem {
-    padding: 4px 8px;
     margin: 0;
   }
   
@@ -254,12 +248,12 @@
     background-color: #000;
     padding-bottom: 1rem;
     padding-left: 2rem;
-    padding-top: 2.2rem;
+    padding-top: 2rem;
   }
   
   .brandLogoImg {
     width: auto;
-    height: 2.35rem;
+    height: 2rem;
     transform: translate(-8px, -8px);
   }
   

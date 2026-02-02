@@ -52,7 +52,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
                     </div>
                     <ul
                         className={`${styles.submenu} ${styles.navUl} ${isActive ? styles.submenuActive : ""}`}
-                        style={{ maxHeight: isActive ? `${links.length * 40}px` : "0" }}
+                        style={{ maxHeight: isActive ? `${links.length * 60}px` : "0" }}
                     >
                         {links.map((linkItem, index) => (
                             <li key={index} className={`${styles.submenuItem} ${activeSubItem === linkItem.href ? styles.sidebarLinkActive : ""}`}>
