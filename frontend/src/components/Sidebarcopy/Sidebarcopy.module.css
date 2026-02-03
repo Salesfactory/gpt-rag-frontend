@@ -2,16 +2,20 @@
 =            Sidebar Styles          =
 ====================================*/
 .submenuItem:hover {
-
   background-color: #A0CB06;
   transition: ease-in-out 0.3s;
 }
 
+.submenuItem:hover .submenuLink {
+  color: #ffffff;
+  padding-left: 45px;
+}
+
  .submenuItem.sidebarLinkActive:hover {
-  background-color: #A6A6A6;
+  background-color: #A0CB06;
  }
 
-.sidebarLink:hover, .submenuLink:hover {
+.sidebarLink:hover{
   color: #ffffff;
 }
 
@@ -22,8 +26,10 @@
   text-decoration: none;
   color: #0a0b0a;
   font-size: 0.875rem;
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
   padding-left: 35px;
-  transition: background-color 0.3s ease;
+  transition: padding-left 0.3s ease, color 0.3s ease;
 }
 /* Nav Styles */
 .nav {
@@ -62,7 +68,7 @@
   
 
   .navLinkActive {
-    background-color: #A6A6A6;
+    background-color: #A0CB06;
     border-left: 6px solid #0a0b0a;
     font-weight: 700;
     padding: 10px 25px;
@@ -117,12 +123,13 @@
           display: flex;
           align-items: center;
           gap: 10px;
+          font-weight: 500;
           font-size: 17px;
           color: #0a0b0a;
           text-decoration: none;
-          padding: 9px 9px 9px 13px;
+          padding: 0.75rem 0.8rem 0.75rem 13px;
           background-color: transparent;
-          transition: background-color 0.3s ease, padding-left 0.3s ease;
+          transition: background-color 0.3s ease, gap 0.3s ease;
           width: 100%;
           position: relative;
           overflow: hidden;
@@ -142,40 +149,44 @@
         /* Hover effect */
         .sidebarLink:hover {
           background-color: #A0CB06;
-          padding-left: 22px;
+          gap: 17px;
+          transition: background-color 0.2s ease, gap 0.2s ease;
         }
-    
-        .sidebarLink:hover::before {
-          background-color: white;   }
 
 
   .sidebarLinkIcon {
     font-size: 1.5rem;
-    color: #0a0b0a;
+    color: black;
     opacity: 0.8;
   }
 
   .sidebarLinkActiveIcon {
     font-size: 1.5rem;
-    color: #0a0b0a;
+    color: white;
     opacity: 1;
   }
   
-  :global(.sidebarLink:hover) {
+  .sidebarLink:hover {
     color: #ffffff;
+  }
+
+  .sidebarLink:hover .sidebarLinkIcon {
+    color: #ffffff;
+    opacity: 1;
   }
 
   /* CHANGE COLOR PREMIUM TIERS BUTTON*/
   .sidebarLinkActive{
-    background-color: #A6A6A6;
+    background-color: #A0CB06;
+    color: white;
     /* box-shadow: 0px 17px 20px -8px rgba(77, 91, 236, 0.23); */
     cursor: pointer;
+    font-weight: 700;
     user-select: none;
   }
 
   .sidebarLinkActive:hover{
-    background-color: #A6A6A6;
-    color: #0a0b0a;
+    background-color: #A0CB06;
     /* box-shadow: 0px 17px 20px -8px rgba(77, 91, 236, 0.23); */
   }
 
@@ -185,15 +196,13 @@
   
   /* Nav Small Cap */
   .navSmallCap {
-    font-size: 12px;
+    font-size: 0.75rem;
+    line-height: 1rem;
     font-weight: 600;
-    padding: 7px 0;
-    padding-left: 15px;
-    line-height: 26px;
-    letter-spacing: 1.5px;
-    color: #0a0b0a;
-    transition: color 0.3s ease;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem 1rem 0.5rem 1rem;
+    color: #71717a;
     user-select: none;
   }
 
@@ -204,15 +213,9 @@
   /* Submenu Styles */
   .submenu {
     position: relative;
-    max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease, padding 0.3s ease;
     margin: 0;
-    background-color: #BFBFBF;
-  }
-  
-  .submenuActive {
-    max-height: 200px; /* Adjust as needed */
   }
   
   .submenuArrow {
@@ -226,14 +229,13 @@
   }
   
   .submenuItem {
-    padding: 4px 8px;
     margin: 0;
   }
   
   /* Left Sidebar */
   .leftSidebar {
-    width: 280px;
-    background: linear-gradient(to bottom, #E3e4e4 1%,#E3e4e4 45%);
+    width: 320px;
+    background: linear-gradient(to bottom, #e2e4e4 1%,#e2e4e4 45%);
     transition: 0.2s ease-in;
     height: 100vh;
     z-index: 30;
@@ -244,13 +246,14 @@
   /* Brand Logo */
   .brandLogo {
     background-color: #000;
-    min-height: 72px;
-    padding: 1.5em 50px 1.5em;
-
+    padding-bottom: 1rem;
+    padding-left: 2rem;
+    padding-top: 2rem;
   }
   
   .brandLogoImg {
-    max-width: 11em;
+    width: auto;
+    height: 2rem;
     transform: translate(-8px, -8px);
   }
   
@@ -304,7 +307,7 @@
   }
 
   .leftSidebar {
-    left: -280px;
+    left: -320px;
   }
 
   .showSidebar  {
@@ -316,7 +319,7 @@
   /* Responsive Adjustments */
   @media (max-width: 1199px) {
     .leftSidebar {
-      left: -270px;
+      left: -320px;
     }
   
     .showSidebar  {

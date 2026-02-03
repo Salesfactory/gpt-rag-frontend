@@ -1,6 +1,6 @@
 // Sidebar.tsx
 import React, { useCallback, useMemo, useState } from "react";
-import { BadgeCheck, Bell, MessageSquare, SlidersHorizontal, Headphones, Star, FileText, ChartBar } from "lucide-react";
+import { FileTextIcon, Bell, MessageSquare, SlidersHorizontal, Headphones, Star, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { IconX, IconDots } from "@tabler/icons-react";
 import styles from "./Sidebarcopy.module.css";
@@ -66,21 +66,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             items: [
                 {
                     title: "AI Chat",
-                    icon: <MessageSquare className={styles.sidebarLinkIcon} />,
+                    icon: <MessageSquare size={20} className={styles.sidebarLinkIcon} />,
                     to: "/",
                     tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 },
                 {
                     title: "Vault",
-                    icon: <ChartBar className={styles.sidebarLinkIcon} />,
+                    icon: <FileTextIcon size={20} className={styles.sidebarLinkIcon} />,
                     to: "/vault",
                     tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
                 },
                 {
                     title: "Notifications",
-                    icon: <Bell className={styles.sidebarLinkIcon} />,
+                    icon: <Bell size={20} className={styles.sidebarLinkIcon} />,
                     to: "/notification-settings",
                     tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
@@ -94,7 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             items: [
                 {
                     title: "Control Center",
-                    icon: <SlidersHorizontal className={styles.sidebarLinkIcon} />,
+                    icon: <SlidersHorizontal size={20} className={styles.sidebarLinkIcon} />,
                     links: [
                         {
                             title: "Team Management",
@@ -136,7 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             items: [
                 {
                     title: "Premium Features",
-                    icon: <Star className={styles.sidebarLinkIcon} />,
+                    icon: <Star size={20} className={styles.sidebarLinkIcon} />,
                     links: [
                         {
                             title: "File Vault",
@@ -167,7 +167,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             items: [
                 {
                     title: "Reports",
-                    icon: <FileText className={styles.sidebarLinkIcon} />,
+                    icon: <FileText size={20} className={styles.sidebarLinkIcon} />,
                     links: [],
                     tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]
@@ -182,7 +182,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
             items: [
                 {
                     title: "Help Center",
-                    icon: <Headphones className={styles.sidebarLinkIcon} />,
+                    icon: <Headphones size={20} className={styles.sidebarLinkIcon} />,
                     to: "/help-center",
                     tiers: allowedTiers,
                     roles: ["admin", "user", "platformAdmin"]

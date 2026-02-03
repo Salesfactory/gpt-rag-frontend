@@ -13,7 +13,7 @@ describe("Voice Customer Test Suite", () => {
         cy.get("span").contains("Control Center").click();
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").should("be.visible");
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").click();
-        cy.get("button#headerCollapse").click();
+        cy.get("#sidebarCollapse").click();
     });
 
     it("should display the voice customer page", () => {
@@ -267,7 +267,7 @@ describe("Voice Customer Test Suite", () => {
         cy.get('span').contains("Control Center").click();
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").should("be.visible");
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").click();
-        cy.get("button#headerCollapse").click();
+        cy.get("#sidebarCollapse").click();
         cy.contains("Report Generation Status").should("be.visible");
 
         cy.wait('@fetchReportJobs');
@@ -296,7 +296,7 @@ describe("Voice Customer Test Suite", () => {
         cy.get('span').contains("Control Center").click();
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").should("be.visible");
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").click();
-        cy.get("button#headerCollapse").click();
+        cy.get("#sidebarCollapse").click();
         cy.contains("Report Generation Status").should("be.visible");
 
         cy.wait('@fetchReportJobsError');
@@ -320,7 +320,7 @@ describe("Voice Customer Test Suite", () => {
         cy.get('span').contains("Control Center").click();
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").should("be.visible");
         cy.get('a[href="#/voice-customer"]').contains("Voice of Customer").click();
-        cy.get("button#headerCollapse").click();
+        cy.get("#sidebarCollapse").click();
         cy.contains("Report Generation Status").should("be.visible");
 
         cy.get('[data-testid="reports-loading"]').should('be.visible');
