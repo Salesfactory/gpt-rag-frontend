@@ -169,11 +169,7 @@ const Chat = () => {
         return conversationId;
     };
 
-    const streamResponse = async (
-        question: string,
-        chatId: string | null,
-        userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>
-    ) => {
+    const streamResponse = async (question: string, chatId: string | null, userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         restartChat.current = false;
@@ -560,9 +556,7 @@ const Chat = () => {
                 return;
             }
 
-            const selectionCategories = new Set(
-                files.map(file => getUploadCategory(file.name))
-            );
+            const selectionCategories = new Set(files.map(file => getUploadCategory(file.name)));
             selectionCategories.delete("unknown");
             if (selectionCategories.size > 1) {
                 setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
@@ -570,10 +564,7 @@ const Chat = () => {
             }
 
             if (attachedDocs.length > 0 && selectionCategories.size === 1) {
-                const sampleName =
-                    attachedDocs[0].originalFilename ||
-                    attachedDocs[0].savedFilename ||
-                    attachedDocs[0].blobName;
+                const sampleName = attachedDocs[0].originalFilename || attachedDocs[0].savedFilename || attachedDocs[0].blobName;
                 const existingCategory = getUploadCategory(sampleName);
                 const [selectionCategory] = Array.from(selectionCategories);
                 if (existingCategory !== "unknown" && selectionCategory !== existingCategory) {
@@ -723,6 +714,11 @@ const Chat = () => {
             // Extract filepath if necessary
             const modifiedFilename = extractAfterDomain(fileName);
 
+            if (modifiedFilename.startsWith("http://") || modifiedFilename.startsWith("https://")) {
+                window.open(citation, "_blank");
+                return;
+            }
+
             if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
                 setActiveAnalysisPanelTab(undefined);
             } else {
@@ -764,8 +760,8 @@ const Chat = () => {
     const answerFromHistory = dataConversation.map(data => data.bot?.message);
     const thoughtsFromHistory = dataConversation.map(data => data.bot?.thoughts);
 
-    const latestAnswerFromHistory = answerFromHistory.length > 0 ? answerFromHistory[answerFromHistory.length - 1] ?? "" : "";
-    const latestThoughtFromHistory = thoughtsFromHistory.length > 0 ? thoughtsFromHistory[thoughtsFromHistory.length - 1] ?? null : null;
+    const latestAnswerFromHistory = answerFromHistory.length > 0 ? (answerFromHistory[answerFromHistory.length - 1] ?? "") : "";
+    const latestThoughtFromHistory = thoughtsFromHistory.length > 0 ? (thoughtsFromHistory[thoughtsFromHistory.length - 1] ?? null) : null;
 
     const responseForPreviewPanel = {
         answer: latestAnswerFromHistory,
@@ -1117,7 +1113,9 @@ const Chat = () => {
                                             }
                                             extraButtonAttach={
                                                 <AttachButton
-                                                    isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES && !isDataAnalystMode}
+                                                    isEnabled={
+                                                        !isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES && !isDataAnalystMode
+                                                    }
                                                     isUploading={isUploadingDocs}
                                                     onFilesSelected={handleAttachFiles}
                                                     accept={ATTACH_ACCEPT}
