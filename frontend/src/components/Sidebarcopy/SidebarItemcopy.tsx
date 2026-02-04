@@ -28,6 +28,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
         if (setActiveSubItem) {
             setActiveSubItem(href);
         }
+        onClick();
     };
 
     return (
