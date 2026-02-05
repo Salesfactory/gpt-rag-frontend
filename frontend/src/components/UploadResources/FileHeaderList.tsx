@@ -80,18 +80,25 @@ const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUp
                 </div>
             </div>
             <div className={styles.tooltipWrapper}>
-            <IconButton title="Upload New Files" ariaLabel="Upload New Files" disabled={isPageLimitExceeded || isSpreadsheetLimitExceeded} className={styles.upload_button } onClick={openUploadDialog}>
+              <IconButton
+                title="Upload New Files"
+                ariaLabel="Upload New Files"
+                disabled={isPageLimitExceeded || isSpreadsheetLimitExceeded}
+                className={styles.upload_button}
+                onClick={openUploadDialog}
+              >
                 <span className={styles.addIcon}>
-                    <Plus />
+                  <Plus />
                 </span>
                 <span className={styles.buttonText}>Upload File</span>
-            </IconButton>
-            {(isPageLimitExceeded || isSpreadsheetLimitExceeded) && (
-            <span className={styles.tooltipText}>
-                {isPageLimitExceeded ? "Page limit exceeded" : ""}
-                {isSpreadsheetLimitExceeded ? "Spreadsheet limit exceeded" : ""}
-            </span>
-            )}
+              </IconButton>
+              {(isPageLimitExceeded || isSpreadsheetLimitExceeded) && (
+                <span className={styles.tooltipText}>
+                  {isPageLimitExceeded && 'Page limit exceeded'}
+                  {isPageLimitExceeded && isSpreadsheetLimitExceeded && <br />}
+                  {isSpreadsheetLimitExceeded && 'Spreadsheet limit exceeded'}
+                </span>
+              )}
             </div>
         </div>
     );
