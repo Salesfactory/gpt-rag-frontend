@@ -47,10 +47,18 @@ const UploadResources: React.FC = () => {
 
     useEffect(() => {
         const getStorage = async () => {
-            const response = await getStorageUsageByOrganization(orgId, user); 
-            setStorageUsage(response.data);
+            try {
+                const response = await getStorageUsageByOrganization(orgId, user);
+                setStorageUsage(response.data);
+            } catch (error) {
+                console.error("Failed to fetch storage usage for organization", error);
+                setStorageUsage(null);
+            }
+        };
+
+        if (orgId && user) {
+            getStorage();
         }
-        getStorage();
     }, [orgId, user]);
     
     const isPageLimitExceeded = storageUsage?.pagesUsed >= storageUsage?.pagesLimit;
