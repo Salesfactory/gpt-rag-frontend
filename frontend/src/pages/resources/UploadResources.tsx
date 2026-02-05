@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import styles from "./UploadResourcescopy.module.css";
 
 import FileListHeader from "../../components/UploadResources/FileHeaderList";
@@ -7,12 +7,15 @@ import { useSourceFiles } from "../../hooks/useSourceFiles";
 import { useAppContext } from "../../providers/AppProviders";
 import { useFileUpload } from "../../hooks/useFileUpload";
 import UploadDialogModal from "../../components/UploadResources/UploadDialogModal";
+import { getStorageUsageByOrganization } from "../../api";
+
 
 const UploadResources: React.FC = () => {
     const { user } = useAppContext();
     const orgId = user?.organizationId || "";
 
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [storageUsage, setStorageUsage] = useState<any>(null);
     
     const { 
         isLoading, 
@@ -42,9 +45,22 @@ const UploadResources: React.FC = () => {
         setSelectedCategory(category);
     };
 
+    useEffect(() => {
+        const getStorage = async () => {
+            const response = await getStorageUsageByOrganization(orgId, user); 
+            setStorageUsage(response.data);
+        }
+        getStorage();
+    }, [orgId, user]);
+    
+    const isPageLimitExceeded = storageUsage?.pagesUsed >= storageUsage?.pagesLimit;
+    const isSpreadsheetLimitExceeded = storageUsage?.spreadsheetsUsed >= storageUsage?.spreadsheetLimit;
+
+    console.log(isPageLimitExceeded, isSpreadsheetLimitExceeded);
+
     return (
         <div className={styles.page_container}>
-            <FileListHeader setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} isLoading={isLoading} />
+            <FileListHeader isPageLimitExceeded={isPageLimitExceeded} isSpreadsheetLimitExceeded={isSpreadsheetLimitExceeded} setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} isLoading={isLoading} />
             <LazyResourceList
                 filteredFiles={filteredFiles}
                 filteredFolders={filteredFolders}

@@ -3,11 +3,13 @@ import styles from "./UploadResources.module.css";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import CloudStorageIndicator from "./CloudStorageIndicator";
 
-const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUploadDialog: () => void; onRefresh: () => void; isLoading: boolean }> = ({
+const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUploadDialog: () => void; onRefresh: () => void; isLoading: boolean; isPageLimitExceeded: boolean; isSpreadsheetLimitExceeded: boolean }> = ({
     setSearchQuery,
     openUploadDialog,
     onRefresh,
-    isLoading
+    isLoading,
+    isPageLimitExceeded,
+    isSpreadsheetLimitExceeded
 }) => {
     return (
         <div className={styles.headerContainer}>
@@ -77,12 +79,20 @@ const FileListHeader: React.FC<{ setSearchQuery: (query: string) => void; openUp
                     </IconButton>
                 </div>
             </div>
-            <IconButton title="Upload New Files" ariaLabel="Upload New Files" className={styles.upload_button} onClick={openUploadDialog}>
+            <div className={styles.tooltipWrapper}>
+            <IconButton title="Upload New Files" ariaLabel="Upload New Files" disabled={isPageLimitExceeded || isSpreadsheetLimitExceeded} className={styles.upload_button } onClick={openUploadDialog}>
                 <span className={styles.addIcon}>
                     <Plus />
                 </span>
                 <span className={styles.buttonText}>Upload File</span>
             </IconButton>
+            {(isPageLimitExceeded || isSpreadsheetLimitExceeded) && (
+            <span className={styles.tooltipText}>
+                {isPageLimitExceeded ? "Page limit exceeded" : ""}
+                {isSpreadsheetLimitExceeded ? "Spreadsheet limit exceeded" : ""}
+            </span>
+            )}
+            </div>
         </div>
     );
 };
