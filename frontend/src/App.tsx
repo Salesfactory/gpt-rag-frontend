@@ -35,6 +35,7 @@ import { DataIngestion } from "./pages/platform-admin/DataIngestion/DataIngestio
 import { CreditsManagement } from "./pages/platform-admin/CreditsManagement/CreditsManagement";
 import { SubscriptionSettings } from "./pages/platform-admin/SubscriptionSettings/SubscriptionSettings";
 import { UserActivityPage } from "./pages/platform-admin/UserActivity/UserActivity";
+import { Notifications as PlatformNotifications } from "./pages/platform-admin/Notifications/Notifications";
 
 const allowedTiers: SubscriptionTier[] = [
     "tier_free",
@@ -98,6 +99,7 @@ export default function App() {
                     <Route path="organizations" element={<OrganizationManagement />} />
                     <Route path="pulse-data" element={<DataIngestion />} />
                     <Route path="user-activity" element={<UserActivityPage />} />
+                    <Route path="notifications" element={<PlatformNotifications />} />
                     <Route path="credits" element={<CreditsManagement />} />
                     <Route path="settings" element={<SubscriptionSettings />} />
                 </Route>

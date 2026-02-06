@@ -60,6 +60,12 @@ export const PlatformAdminLayout: React.FC = () => {
           icon: 'People',
         },
         {
+          key: 'notifications',
+          name: 'Notifications',
+          url: '/platform-admin/notifications',
+          icon: 'Ringer',
+        },
+        {
           key: 'credits',
           name: 'Credits',
           url: '/platform-admin/credits',
