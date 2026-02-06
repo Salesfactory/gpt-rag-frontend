@@ -188,8 +188,8 @@
 }
 
 .chatMessageStream {
-    width: 92%;
-    max-width: 92%;
+    width: 95%;
+    max-width: 900px;
     padding-top: 0;
     display: flex;
     flex-direction: column;
@@ -199,15 +199,18 @@
     padding-bottom: 0;
 }
 
+@media (min-width: 768px) {
+    .chatMessageStream {
+        width: 80%;
+    }
+}
+
 
 .chatMessageGpt {
-    margin-left: auto;
-    margin-right: auto;
     margin-bottom: 20px;
-    width: 92%;
-    max-width: 92%;
+    width: 100%;
     display: flex;
-    min-width: 300px;
+    min-width: 0;
 }
 
 .chatMessageGptMinWidth {

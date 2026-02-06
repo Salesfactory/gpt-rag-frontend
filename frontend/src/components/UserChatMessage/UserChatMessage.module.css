@@ -2,19 +2,19 @@
     display: flex;
     justify-content: flex-end;
     margin-bottom: 1.25em;
-    max-width: 80%;
+    max-width: 85%;
     margin-left: auto;
+    margin-right: 0;
 }
 
 .message {
     padding: 1.25em;
     font-size: 1rem;
     background: rgb(237, 241, 226);
-    border-radius: 0.5em;
-    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-    --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / .05);
-    --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
-    outline: transparent solid 0.0625em;
+    border-radius: 0.75em;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: none;
+    outline: none;
     font-family: Arial, Helvetica, sans-serif;
 }
 
