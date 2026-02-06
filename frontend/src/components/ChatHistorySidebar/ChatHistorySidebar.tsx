@@ -347,7 +347,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                     width,
                     minWidth,
                     maxWidth,
-                    transition: isResizing ? "none" : "width 0.1s",
+                    transition: isResizing ? "none" : "right 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease, width 0.1s",
                     background: "#fff"
                 }}
             >

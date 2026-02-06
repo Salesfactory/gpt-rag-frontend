@@ -10,6 +10,22 @@
     z-index: 1000;
     background-color: rgba(0, 0, 0, 0.3);
     padding: 20px;
+    animation: settingsOverlayFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .overlay {
+        animation: none;
+        opacity: 1;
+    }
+}
+@keyframes settingsOverlayFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .item {
@@ -417,7 +433,19 @@
    display: flex;
    flex-direction: column;
    box-sizing: border-box;
+   animation: settingsPanelEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
  }
+
+@keyframes settingsPanelEntrance {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
 
 .segmentedGroup {
   display: grid;

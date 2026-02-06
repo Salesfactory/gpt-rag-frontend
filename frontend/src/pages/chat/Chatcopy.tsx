@@ -448,12 +448,12 @@ const Chat = () => {
         }
         const language = navigator.language;
         if (language.startsWith("pt")) {
-            setPlaceholderText("Escreva aqui sua pergunta");
+            setPlaceholderText("Pergunte algo sobre seus dados de marketing");
         }
         if (language.startsWith("es")) {
-            setPlaceholderText("Escribe tu pregunta aqui");
+            setPlaceholderText("Pregunta algo sobre tus datos de marketing");
         } else {
-            setPlaceholderText("Write your question here");
+            setPlaceholderText("Ask anything about your marketing data");
         }
 
         // fill answers with data from dataConversation
@@ -907,10 +907,10 @@ const Chat = () => {
                                         {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                         <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                             <h1>
-                                                <img height="100px" src={FreddaidLogo} alt="FreddAid 4.1"></img>
+                                                <img style={{height: "48px", margin: "0rem 0rem 1rem 0rem"}} src={FreddaidLogo} alt="FreddAid 4.1"></img>
                                             </h1>
 
-                                            <p style={{ width: "80%", textAlign: "center" }}>
+                                            <p style={{ width: "100%", textAlign: "center", fontSize: ".875rem" }}>
                                                 Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data sources to
                                                 deliver actionable insights.
                                             </p>
