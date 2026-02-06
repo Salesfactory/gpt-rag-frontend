@@ -2130,13 +2130,13 @@ def update_notification(notification_id, updates):
     if "title" in updates:
         item["title"] = updates["title"]
     if "message" in updates:
+        item["message"] = updates["message"]
+
+    if "enabled" in updates:
         new_enabled = updates["enabled"]
         if new_enabled and not item.get("enabled"):
             _disable_other_active_notifications(container, exclude_id=notification_id)
         item["enabled"] = new_enabled
-        
-    if "enabled" in updates:
-        item["enabled"] = updates["enabled"]
         
     item["updatedAt"] = datetime.now(timezone.utc).isoformat()
     

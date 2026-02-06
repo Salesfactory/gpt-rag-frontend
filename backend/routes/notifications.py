@@ -45,6 +45,8 @@ def create_notification_endpoint():
         new_item = db_create_notification(title, message, enabled)
         return create_success_response(new_item, 201)
 
+    except ValueError as e:
+        return create_error_response(str(e), 400)
     except Exception as e:
         logger.error(f"Error creating notification: {e}")
         return create_error_response("Failed to create notification", 500)
