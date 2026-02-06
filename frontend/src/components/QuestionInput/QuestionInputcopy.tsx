@@ -51,7 +51,7 @@ export const QuestionInput = ({
                 {extraButtonDataAnalyst}
                 {extraButtonAttach}
             </div>
-            <span className={styles.verticalSeparator}></span>
+            <span className={styles.verticalSeparator} aria-hidden="true"></span>
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
