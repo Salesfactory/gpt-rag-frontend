@@ -6,6 +6,7 @@
     width: 100%;
     padding: 8px;
     position: relative;
+    background-color: rgba(248, 248, 247, 1);
 }
 
 .attachmentContainer {
@@ -16,6 +17,7 @@
 }
 
 .questionInputTextArea {
+    background-color: transparent;
     width: 100%;
     line-height: 40px;
     resize: none;
@@ -32,6 +34,21 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 2px;
+    margin-right: 1rem;
+}
+
+.questionInputButtonsContainer button {
+    transform: scale(0.70);
+}
+
+.verticalSeparator {
+    width: 1px;
+    align-self: stretch;
+    height: -150px;
+    background-color: #d1d5db;
+    flex-shrink: 0;
+    margin-right: 1rem;
 }
 
 .questionInputSendButton {

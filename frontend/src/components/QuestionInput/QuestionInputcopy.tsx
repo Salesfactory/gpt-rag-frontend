@@ -51,6 +51,7 @@ export const QuestionInput = ({
                 {extraButtonDataAnalyst}
                 {extraButtonAttach}
             </div>
+            <span className={styles.verticalSeparator}></span>
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
@@ -61,6 +62,14 @@ export const QuestionInput = ({
                 onChange={onQuestionChange}
                 onKeyDown={onEnterPress}
                 autoAdjustHeight
+                styles={{
+
+                    // TextField styles - transparent since parent container owns the background
+                    root: { backgroundColor: "transparent" },
+                    wrapper: { backgroundColor: "transparent" },
+                    fieldGroup: { backgroundColor: "transparent" },
+                    field: { backgroundColor: "transparent", paddingLeft: 6 }
+                }}
             />
             <div className={styles.leftButtons}>
                 <div

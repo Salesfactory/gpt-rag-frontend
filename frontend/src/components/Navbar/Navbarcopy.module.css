@@ -1,6 +1,7 @@
 /* Icon Styles */
 .iconLarge {
-    font-size: 1.9em;
+    width: 18px;
+    height: 18px;
     color: #666666;
 }
 
@@ -8,12 +9,11 @@
     font-size: 1.4rem;
     font-weight: 500;
     white-space: normal;
-    max-width: 60vw;
     display: block;
 }
 
  .brandImage {
-     height: 50px;     
+     height: 35px;     
      width: auto;
      object-fit: contain;
      white-space: nowrap; 
@@ -80,18 +80,18 @@
     border-bottom: 4px solid #1f2937;
 }
 .brandText2 {
-    font-size: 1rem;
-    color: #4a5565;
+    font-size: 0.8rem;
+    color: #000000;
     font-weight: 500;
     vertical-align: 2px;
 }
 
-.greenBar {
-    width: 4px;
-    height: 1.8rem;
-    background-color: #A0CB06;
+.grayBar {
+    width: 1px;
+    height: 24px;
+    background-color: #d1d5db;
     display: inline-block;
-    margin: 0 8px 0 16px;
+    margin: 0 8px 0 10px;
     border-radius: 2px;
     vertical-align: middle;
 }
@@ -99,22 +99,23 @@
 .profileCard {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 4px 4px 4px 4px;
+    gap: 0.3rem;
+    padding: 2px 2px 2px 2px;
     border-radius: 8px;
 }
 
 .profileCard:hover {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
     background-color: #f3f4f6;
     transition: background-color 0.2s ease-in-out;
 }
 
 .profileCircle {
-    width: 42px;
-    height: 42px;
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -152,7 +153,6 @@
 
 /* Sidebartoggler */
 .sidebartoggler {
-    /* Define styles if needed */
 }
 
 /* Message Body */
@@ -239,13 +239,13 @@
 .shareButton {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    gap: 6px;
+    padding: 6px 10px;
     background-color: transparent;
     color: #374151;
     border: none;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -263,7 +263,7 @@
 }
 
 .shareButton span {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
 }
 
