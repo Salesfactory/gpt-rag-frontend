@@ -13,6 +13,12 @@
     animation: settingsOverlayFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .overlay {
+        animation: none;
+        opacity: 1;
+    }
+}
 @keyframes settingsOverlayFadeIn {
     from {
         opacity: 0;
