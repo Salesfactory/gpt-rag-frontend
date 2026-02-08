@@ -51,6 +51,7 @@ export const QuestionInput = ({
                 {extraButtonDataAnalyst}
                 {extraButtonAttach}
             </div>
+            <span className={styles.verticalSeparator} aria-hidden="true"></span>
             <TextField
                 className={styles.questionInputTextArea}
                 placeholder={placeholder}
@@ -61,6 +62,14 @@ export const QuestionInput = ({
                 onChange={onQuestionChange}
                 onKeyDown={onEnterPress}
                 autoAdjustHeight
+                styles={{
+
+                    // TextField styles - transparent since parent container owns the background
+                    root: { backgroundColor: "transparent" },
+                    wrapper: { backgroundColor: "transparent" },
+                    fieldGroup: { backgroundColor: "transparent" },
+                    field: { backgroundColor: "transparent", paddingLeft: 6, fontSize: "1rem", maxHeight: 150, lineHeight: "1.3", overflowY: "auto" }
+                }}
             />
             <div className={styles.leftButtons}>
                 <div
@@ -75,7 +84,7 @@ export const QuestionInput = ({
                     }}
                     tabIndex={0}
                 >
-                    <Send />
+                    <Send size={16} />
                 </div>
             </div>
         </Stack>

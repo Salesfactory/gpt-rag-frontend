@@ -27,7 +27,7 @@ describe("Agent Section Tests", () => {
         cy.url().should("include", "#/");
 
         // Optionally, verify the presence of an element on the AI Chat page
-        cy.get('textarea[placeholder="Write your question here"]').should("be.visible");
+        cy.get('textarea[placeholder="Ask anything about your marketing data"]').should("be.visible");
     });
 
     it('Should verify the visibility and functionality of the "Notifications" link', () => {

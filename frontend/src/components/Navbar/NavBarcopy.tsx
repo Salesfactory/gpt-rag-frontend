@@ -257,22 +257,22 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     return (
         <>
-            <nav className={`navbar navbar-expand-lg navbar-light ${location == "/" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
+            <nav className={`navbar navbar-expand-lg h-14 navbar-light ${location == "/" ? styles.headerNavbar : styles.headerNavbarAlt} `}>
                 {/* Sidebar Toggle (For smaller screens) */}
-                <ul className="navbar-nav mr-4">
+                <ul className="navbar-nav mr-2">
                     <li className="nav-item d-flex align-items-center">
                         <button
                             aria-label="Show Menu"
                             onClick={handleOnClickShowSidebar}
-                            className={`nav-link d-flex align-items-center ${styles.sidebartoggler}`}
+                            className={`nav-link d-flex align-items-center  ${styles.sidebartoggler}`}
                             id="headerCollapse"
                         >
-                            <Menu className={styles.iconLarge} />
+                            <Menu width={20} height={20} className={styles.iconLarge} />
                         </button>
                         {location === "/" && (
-                            <div className={`ms-2 d-none d-sm-flex align-items-center ${styles.brandContainer}`}>
+                            <div className={`ms-1 d-none d-sm-flex align-items-center ${styles.brandContainer}`}>
                                 <img src={SFActionableLogo} alt="FreddAid Logo" className={styles.brandImage} />
-                                <span className={styles.greenBar}></span>
+                                <span className={styles.grayBar}></span>
                                 <span className={styles.brandText2}>{organization?.name}</span>
                             </div>
                         )}
@@ -291,7 +291,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                     </li>
                 </ul>
                 <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
-                    <ul className="navbar-nav flex-row align-items-center gap-3">
+                    <ul className="navbar-nav flex-row align-items-center gap-2">
                         {/* Feedback Panel Button */}
                         {/* {location === "/" && (
                             <li className="nav-item">
@@ -396,7 +396,7 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <ChevronDown size={16} className={`${styles.chevron} ${isDropdownOpen ? styles.rotate : ""}`} />
+                                    <ChevronDown size={14} className={`${styles.chevron} ${isDropdownOpen ? styles.rotate : ""}`} />
                                 </div>
                             </button>
                             <ProfilePanel show={isDropdownOpen} />
