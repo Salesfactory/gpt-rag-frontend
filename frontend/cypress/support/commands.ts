@@ -10,7 +10,7 @@ Cypress.Commands.add("goHome", () => {
 });
 
 Cypress.Commands.add("focusChatInput", () => {
-    cy.get("textarea[placeholder*='Write your question']");
+    cy.get("textarea[placeholder*='Ask anything about your marketing data']");
 });
 
 Cypress.Commands.add("openChat", () => {
@@ -26,9 +26,9 @@ Cypress.Commands.add("openChat", () => {
 });
 
 Cypress.Commands.add("askChat", (message: string) => {
-    cy.get("textarea[placeholder*='Write your question']").type(message);
+    cy.get("textarea[placeholder*='Ask anything about your marketing data']").type(message);
     cy.get("[aria-label='Ask a question button']").click();
-    cy.get("textarea[placeholder*='Write your question']"); // any element to keep chain
+    cy.get("textarea[placeholder*='Ask anything about your marketing data']"); // any element to keep chain
 });
 
 /**

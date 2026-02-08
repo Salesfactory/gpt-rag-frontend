@@ -114,6 +114,17 @@ describe("Onboarding Tests", () => {
             }
         }).as('getPrices');
         
+        // Mock subscription tier details endpoint (called when tierId is "in_progress")
+        cy.intercept('GET', '/api/subscriptions-tiers/*', {
+            statusCode: 200,
+            body: {
+                id: "in_progress",
+                name: "In Progress",
+                features: [],
+                limits: {}
+            }
+        }).as('getSubscriptionTierDetails');
+
         // Visit the page AFTER all mocks are set up
         cy.visit("/");
         cy.url().should("include", "#/onboarding");
