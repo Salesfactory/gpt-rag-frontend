@@ -52,6 +52,15 @@ export interface CreditConfiguration {
   updated_at: string;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SubscriptionTierSettings {
   id: string;
   tier: 'basic' | 'custom' | 'premium';
@@ -70,6 +79,7 @@ const STORAGE_KEYS = {
   CREDITS: 'platform_admin_credits',
   SUBSCRIPTION_TIERS: 'platform_admin_subscription_tiers',
   USER_ACTIVITIES: 'platform_admin_user_activities',
+  NOTIFICATIONS: 'platform_admin_notifications',
 };
 
 // Helper Functions for localStorage persistence
@@ -243,6 +253,33 @@ export const initialSubscriptionTiers: SubscriptionTierSettings[] = [
     max_users: 50,
     updated_at: new Date().toISOString(),
   }
+];
+
+export const initialNotifications: Notification[] = [
+  {
+    id: '1',
+    title: 'System Maintenance',
+    message: 'We will be performing scheduled maintenance on Sunday, March 15th from 2:00 AM to 6:00 AM EST. During this time, the system may be temporarily unavailable.',
+    is_enabled: true,
+    created_at: new Date('2024-01-15T10:00:00Z').toISOString(),
+    updated_at: new Date('2024-01-15T10:00:00Z').toISOString(),
+  },
+  {
+    id: '2',
+    title: 'New Feature Release',
+    message: 'We are excited to announce the release of our new analytics dashboard. Check it out in the main menu!',
+    is_enabled: false,
+    created_at: new Date('2024-01-10T14:30:00Z').toISOString(),
+    updated_at: new Date('2024-01-10T14:30:00Z').toISOString(),
+  },
+  {
+    id: '3',
+    title: 'Holiday Schedule',
+    message: 'Please note that our support team will have limited availability during the holiday season. We appreciate your patience.',
+    is_enabled: false,
+    created_at: new Date('2024-01-05T09:15:00Z').toISOString(),
+    updated_at: new Date('2024-01-05T09:15:00Z').toISOString(),
+  },
 ];
 
 // Utility function to generate unique IDs
