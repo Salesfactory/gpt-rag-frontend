@@ -318,7 +318,8 @@
 }
 
 .chatDisclaimer {
-    margin-top: 5px;
+    margin-top: 0.4rem;
+    margin-bottom: 0.4rem;
     font-size: 0.8em;
     text-align: center;
 }

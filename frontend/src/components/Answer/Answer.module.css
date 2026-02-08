@@ -1,10 +1,16 @@
 .answerContainer {
-    padding: 1.25em;
-    background: #ffffff;
-    border-radius: 0.75em;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: none;
-    outline: none;
+    padding-bottom: 1.25rem;
+    padding-top: 1.25rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    background: #f8f8f7;
+    border-radius: 1rem;
+    border-width: 1px;
+    border-color: #eae8e8;
+
+    --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / .05);
+    --tw-shadow-colored: 0 1px 2px 0 var();
+    box-shadow: 0 0 #0000, #dddcdc, var(--tw-shadow);
     word-break: break-word;
     overflow-wrap: anywhere;
 }

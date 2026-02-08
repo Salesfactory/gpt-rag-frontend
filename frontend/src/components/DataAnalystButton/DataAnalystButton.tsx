@@ -26,7 +26,7 @@ const DataAnalystButton = ({ isEnabled, isActive, ariaLabel = "Data analyst mode
                 title="Data analyst mode"
                 data-testid="data-analyst-button"
             >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path
                         d="M3 3v18h18"
                         stroke="currentColor"

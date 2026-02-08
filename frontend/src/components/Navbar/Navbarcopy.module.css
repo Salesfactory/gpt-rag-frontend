@@ -5,6 +5,7 @@
     color: #666666;
 }
 
+
 .brandText {
     font-size: 1.4rem;
     font-weight: 500;
@@ -91,7 +92,7 @@
     height: 24px;
     background-color: #d1d5db;
     display: inline-block;
-    margin: 0 8px 0 10px;
+    margin: 0 1rem 0 1rem;
     border-radius: 2px;
     vertical-align: middle;
 }
@@ -153,6 +154,18 @@
 
 /* Sidebartoggler */
 .sidebartoggler {
+    padding: 6px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebartoggler:hover {
+    background-color: #A0CB06;
+    color: white;
+}
+
+.sidebartoggler:hover .iconLarge {
+    color: white;
 }
 
 /* Message Body */
@@ -278,6 +291,17 @@
     }
 }
 
+.historyButton {
+    padding: 6px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 .historyButton:hover {
-    background-color: #cce293 !important;
+    background-color: #A0CB06 !important;
+    color: white;
+}
+
+.historyButton:hover .iconLarge {
+    color: white;
 }

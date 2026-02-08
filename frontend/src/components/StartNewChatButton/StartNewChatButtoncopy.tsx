@@ -1,4 +1,4 @@
-import { CirclePlus } from "lucide-react";
+import { PlusIcon} from "lucide-react";
 import styles from "./StartNewChatButtoncopy.module.css";
 
 const StartNewChatButton = ({ isEnabled, onClick }: { isEnabled: boolean; onClick: () => void }) => {
@@ -11,7 +11,7 @@ const StartNewChatButton = ({ isEnabled, onClick }: { isEnabled: boolean; onClic
                 type="button"
                 disabled={!isEnabled}
             >
-                <CirclePlus />
+                <PlusIcon size={16} />
             </button>
             <span className={styles.tooltipText}>Start a new chat</span>
         </div>

@@ -68,7 +68,7 @@ export const QuestionInput = ({
                     root: { backgroundColor: "transparent" },
                     wrapper: { backgroundColor: "transparent" },
                     fieldGroup: { backgroundColor: "transparent" },
-                    field: { backgroundColor: "transparent", paddingLeft: 6 }
+                    field: { backgroundColor: "transparent", paddingLeft: 6, fontSize: "1rem", maxHeight: 150, lineHeight: "1.3", overflowY: "auto" }
                 }}
             />
             <div className={styles.leftButtons}>
@@ -84,7 +84,7 @@ export const QuestionInput = ({
                     }}
                     tabIndex={0}
                 >
-                    <Send />
+                    <Send size={16} />
                 </div>
             </div>
         </Stack>

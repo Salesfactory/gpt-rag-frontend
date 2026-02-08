@@ -1,5 +1,6 @@
-import { IconMessagePlus } from "@tabler/icons-react";
+
 import styles from "./StartNewChatButton.module.css";
+import { PlusIcon } from "lucide-react";
 
 const StartNewChatButton = ({ isEnabled, onClick }: { isEnabled: boolean; onClick: () => void }) => {
     return (
@@ -11,7 +12,7 @@ const StartNewChatButton = ({ isEnabled, onClick }: { isEnabled: boolean; onClic
                 type="button"
                 disabled={!isEnabled}
             >
-                <IconMessagePlus />
+                <PlusIcon />
             </button>
             <span className={styles.tooltipText}>Start a new chat</span>
         </div>
