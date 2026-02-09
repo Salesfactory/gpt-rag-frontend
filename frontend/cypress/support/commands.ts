@@ -10,14 +10,14 @@ Cypress.Commands.add("goHome", () => {
 });
 
 Cypress.Commands.add("focusChatInput", () => {
-    cy.get("textarea[placeholder*='Ask anything about your marketing data']");
+    cy.get("textarea[placeholder*='Ask anything about your marketing data...']");
 });
 
 Cypress.Commands.add("openChat", () => {
     setupTestUserAndOrg();
     cy.visit("/", {
         onBeforeLoad: (window) => {
-            
+
         }
     });
     cy.get("#headerCollapse").click();
@@ -26,9 +26,9 @@ Cypress.Commands.add("openChat", () => {
 });
 
 Cypress.Commands.add("askChat", (message: string) => {
-    cy.get("textarea[placeholder*='Ask anything about your marketing data']").type(message);
+    cy.get("textarea[placeholder*='Ask anything about your marketing data...']").type(message);
     cy.get("[aria-label='Ask a question button']").click();
-    cy.get("textarea[placeholder*='Ask anything about your marketing data']"); // any element to keep chain
+    cy.get("textarea[placeholder*='Ask anything about your marketing data...']"); // any element to keep chain
 });
 
 /**
@@ -50,4 +50,4 @@ declare global {
         }
     }
 }
-export {};
+export { };
