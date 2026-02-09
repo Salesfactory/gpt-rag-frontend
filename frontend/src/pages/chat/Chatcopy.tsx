@@ -690,6 +690,9 @@ const Chat = () => {
             const modifiedFilename = extractAfterDomain(fileName);
 
             if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+                citationRequestRef.current += 1;
+                setActiveCitation(undefined);
+                setLoadingCitationPath(null);
                 setActiveAnalysisPanelTab(undefined);
             } else {
                 setLoadingCitationPath(fileName);
@@ -756,7 +759,6 @@ const Chat = () => {
                         }
                     };
                 }
-                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
                 setLoadingCitationPath(null);
             }
 
