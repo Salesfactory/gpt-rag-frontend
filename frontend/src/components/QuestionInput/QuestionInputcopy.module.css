@@ -46,9 +46,10 @@
 .verticalSeparator {
     width: 1px;
     align-self: stretch;
-    min-height: 60px;
     background-color: #d1d5db;
     flex-shrink: 0;
+    margin-top: -18px;
+    margin-bottom: -13px;
     margin-right: 1rem;
 }
 
