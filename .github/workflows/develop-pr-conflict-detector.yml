@@ -1,19 +1,17 @@
 name: Detect PR Conflicts After Develop Merge
 
 on:
-  pull_request:
-    types: [closed]
+  push:
+    branches:
+      - develop
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
   issues: write
 
 jobs:
   detect-conflicts:
-    if: >
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.base.ref == 'develop'
     runs-on: ubuntu-latest
 
     steps:
