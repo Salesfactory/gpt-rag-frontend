@@ -51,11 +51,17 @@
 
 /* Attachment display container */
 .attachmentDisplay {
-    width: 92%;
-    max-width: 92%;
+    width: 95%;
+    max-width: 900px;
     margin-bottom: 8px;
     display: flex;
     justify-content: flex-start;
+}
+
+@media (min-width: 768px) {
+    .attachmentDisplay {
+        width: 80%;
+    }
 }
 
 .attachmentChip {
@@ -64,9 +70,9 @@
     gap: 8px;
     padding: 6px 12px;
     border-radius: 16px;
-    background: #ecfdf5;
-    border: 1px solid #d1fae5;
-    color: #065f46;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    color: #333333;
     font-size: 13px;
     line-height: 1.2;
     width: max-content;
@@ -84,8 +90,8 @@
 .removeChipBtn {
     background: transparent;
     border: none;
-    color: #065f46;
-    font-size: 16px;
+    color: #666666;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
     padding: 2px;
@@ -99,8 +105,8 @@
 }
 
 .removeChipBtn:hover {
-    background: #d1fae5;
-    color: #047857;
+    background: #e0e0e0;
+    color: #333333;
 }
 
 .chatRoot {
