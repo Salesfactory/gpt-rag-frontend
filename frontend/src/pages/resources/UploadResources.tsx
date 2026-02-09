@@ -62,13 +62,12 @@ const UploadResources: React.FC = () => {
     }, [orgId, user]);
     
     const isPageLimitExceeded = storageUsage?.pagesUsed >= storageUsage?.pagesLimit;
-    const isSpreadsheetLimitExceeded = storageUsage?.spreadsheetsUsed >= storageUsage?.spreadsheetLimit;
 
-    console.log(isPageLimitExceeded, isSpreadsheetLimitExceeded);
+    console.log(isPageLimitExceeded);
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader isPageLimitExceeded={isPageLimitExceeded} isSpreadsheetLimitExceeded={isSpreadsheetLimitExceeded} setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} isLoading={isLoading} />
+            <FileListHeader isPageLimitExceeded={isPageLimitExceeded} setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} isLoading={isLoading} />
             <LazyResourceList
                 filteredFiles={filteredFiles}
                 filteredFolders={filteredFolders}
