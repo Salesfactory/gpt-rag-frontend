@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import { PrimaryButton, Spinner, Dialog, DialogContent, Label, Dropdown, DefaultButton, MessageBar, ResponsiveMode, SpinnerSize } from "@fluentui/react";
 import { toast } from "react-toastify";
 import { TextField, ITextFieldStyles } from "@fluentui/react/lib/TextField";
-import { CirclePlus, Search, SquarePen, Trash2, Filter, X } from "lucide-react";
+import { Plus, Search, SquarePen, Trash2, Filter, X } from "lucide-react";
 
 import { useAppContext } from "../../providers/AppProviders";
 import DOMPurify from "dompurify";
@@ -505,6 +505,7 @@ const roleFilterOptions = [
 
 const Admin = () => {
     const { user, organization } = useAppContext();
+    const tableScrollRef = useRef<HTMLDivElement | null>(null);
     const [search, setSearch] = useState("");
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [roleFilter, setRoleFilter] = useState("all");
@@ -658,6 +659,19 @@ const Admin = () => {
     const handleEditClick = (user: any) => {
         setSelectedUser(user);
         setIsEditing(true);
+    };
+
+    const handleTableWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+        const node = tableScrollRef.current;
+        if (!node) return;
+
+        const atTop = node.scrollTop <= 0 && event.deltaY < 0;
+        const atBottom = node.scrollTop + node.clientHeight >= node.scrollHeight && event.deltaY > 0;
+        if (!atTop && !atBottom) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        node.scrollTop += event.deltaY;
     };
 
     const handleInputName = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -846,16 +860,10 @@ const Admin = () => {
                                         {roleFilterOptions.map(option => (
                                             <div
                                                 key={option.value}
-                                                className={styles.dropdownItem}
+                                                className={`${styles.dropdownItem} ${roleFilter === option.value ? styles.dropdownItemSelected : ""}`}
                                                 onClick={() => {
                                                     setRoleFilter(option.value);
                                                     setShowRoleDropdown(false);
-                                                }}
-                                                style={{
-                                                    padding: "8px 16px",
-                                                    cursor: "pointer",
-                                                    fontWeight: roleFilter === option.value ? "bold" : "normal",
-                                                    background: roleFilter === option.value ? "#f3f4f6" : "white"
                                                 }}
                                             >
                                                 {option.label}
@@ -870,7 +878,7 @@ const Admin = () => {
                             disabled={loading}
                             styles={{
                                 root: {
-                                    backgroundColor: "#a2c93c",
+                                    backgroundColor: "#A0CB06",
                                     color: "white",
                                     border: "none"
                                 },
@@ -892,8 +900,8 @@ const Admin = () => {
                                 setIsOpen(true);
                             }}
                         >
-                            <CirclePlus className={styles.addIcon} />
-                            <span className={styles.buttonText}>Create User</span>
+                            <Plus className={styles.addIcon} />
+                            <span className={styles.buttonText}>Invite Team Member</span>
                         </PrimaryButton>
                     </div>
 
@@ -945,7 +953,7 @@ const Admin = () => {
                             }}
                         />
                     ) : (
-                        <div className={styles.tableScroll}>
+                        <div className={styles.tableScroll} ref={tableScrollRef} onWheel={handleTableWheel}>
                             <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
                                 <li className={styles.headerRow}>Team Members</li>
                                 {filteredUsers.map((user: any, index) => {
@@ -978,13 +986,14 @@ const Admin = () => {
                                     return (
                                         <li
                                             key={user.id || userEmail}
+                                            className={styles.userRow}
                                             style={{
                                                 display: "flex",
                                                 justifyContent: "space-between",
                                                 alignItems: "center",
                                                 padding: "1rem 1rem 1rem 1rem",
                                                 borderBottom: "1px solid #e5e7eb",
-                                                backgroundColor: index % 2 === 0 ? "#f8f8f8" : "white"
+                                                backgroundColor: index % 2 === 0 ? "#f8f8f7" : "#f6f6f7"
                                             }}
                                         >
                                             {/* Info: name, email, role */}
