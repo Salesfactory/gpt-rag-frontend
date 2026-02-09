@@ -55,6 +55,10 @@ export const Notifications: React.FC = () => {
 
     useEffect(() => {
         if (!user?.id) {
+            setNotifications([]);
+            setViewNotification(null);
+            setIsModalOpen(false);
+            setDeleteConfirm({ isOpen: false, notificationId: null });
             setIsLoading(false);
             return;
         }
@@ -75,15 +79,18 @@ export const Notifications: React.FC = () => {
         }
         setIsLoading(true);
         try {
-            const response = await getNotifications({ user });
-            const rawItems = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
-            const normalized: NotificationItem[] = rawItems.map((item: any) => ({
-                id: item.id,
-                title: item.title,
-                message: item.message,
-                created_at: item.created_at || item.createdAt,
-                enabled: item.enabled ?? item.is_enabled ?? false
-            }));
+            const { data } = (await getNotifications({ user })) as {
+                data: Array<NotificationItem & { createdAt?: string; is_enabled?: boolean }>;
+            };
+            const normalized = data.map(
+                (item): NotificationItem => ({
+                    id: item.id,
+                    title: item.title,
+                    message: item.message,
+                    created_at: item.created_at || item.createdAt || new Date().toISOString(),
+                    enabled: item.enabled ?? item.is_enabled ?? false
+                })
+            );
             setNotifications(normalized);
         } catch {
             setToast({ type: "error", message: "Failed to load notifications" });
@@ -146,7 +153,7 @@ export const Notifications: React.FC = () => {
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString("en-US", {
+        return new Date(dateString).toLocaleString("en-US", {
             year: "numeric",
             month: "short",
             day: "numeric",
