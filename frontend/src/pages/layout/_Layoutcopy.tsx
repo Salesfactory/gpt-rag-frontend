@@ -19,7 +19,7 @@ const Layout: React.FC = () => {
             {/* Main Wrapper */}
             <div className={`${styles.bodyWrapper} ${styles.bodyWrapperFull} ${isCollapsed ? styles.collapsed : styles.expanded}`}>
                 {/* Header Start */}
-                <header className={`${styles.appHeader} border-bottom py-0.5 bg-white shadow-lg`}>
+                <header className={`${styles.appHeader} border-bottom py-0.5 bg-white`}>
                     <Navbar setIsCollapsed={setIsCollapsed} isCollapsed={isCollapsed} />
                 </header>
                 {/* Header End */}
