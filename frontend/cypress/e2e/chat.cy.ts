@@ -6,7 +6,7 @@ describe("Main Page (Chat) Test Suite", () => {
 
         cy.visit("/", {
             onBeforeLoad: (window) => {
-                
+
             }
         });
         cy.get("button#headerCollapse").should("be.visible");
@@ -23,7 +23,7 @@ describe("Main Page (Chat) Test Suite", () => {
         // Assert the current URL to ensure navigation works
         cy.url().should("include", "#/");
 
-        cy.get('textarea[placeholder="Ask anything about your marketing data"]').should("be.visible");
+        cy.get('textarea[placeholder="Ask anything about your marketing data..."]').should("be.visible");
 
         cy.contains(
             "Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data sources to deliver actionable insights."
@@ -33,13 +33,13 @@ describe("Main Page (Chat) Test Suite", () => {
 
     it("Should verify the visibility and functionality of the Chat Input", () => {
         // Verify the chat input is visible
-        cy.get('textarea[placeholder="Ask anything about your marketing data"]').should("be.visible");
+        cy.get('textarea[placeholder="Ask anything about your marketing data..."]').should("be.visible");
 
         // Type a message into the chat input
-        cy.get('textarea[placeholder="Ask anything about your marketing data"]').type("Hello, how can I improve my home?");
+        cy.get('textarea[placeholder="Ask anything about your marketing data..."]').type("Hello, how can I improve my home?");
 
         // Scroll to ensure the input area is in view
-        cy.get('textarea[placeholder="Ask anything about your marketing data"]').scrollIntoView();
+        cy.get('textarea[placeholder="Ask anything about your marketing data..."]').scrollIntoView();
 
         // Wait a moment for any animations
         cy.wait(300);
@@ -113,7 +113,7 @@ describe("Main Page (Chat) Test Suite", () => {
         cy.get("button[aria-label='Select conversation 2d3afddf-8b77-4b53-a415-dcfff81bdb4d']").click();
 
         cy.wait("@getChatConversation");
-        
+
         cy.contains("what is the customer pulse segment?").should("be.visible");
 
         cy.contains("What Is the Customer Pulse…").should("be.visible");
