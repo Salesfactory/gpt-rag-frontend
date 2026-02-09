@@ -2345,12 +2345,14 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
 
 export async function getNotifications({ user }: { user: any }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
         const response = await fetch("/api/notifications", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
             }
         });
         if (!response.ok) {
@@ -2365,12 +2367,14 @@ export async function getNotifications({ user }: { user: any }): Promise<any> {
 
 export async function createNotification({ user, title, message, enabled }: { user: any, title: string, message: string, enabled: boolean }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
         const response = await fetch("/api/notifications", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
             },
             body: JSON.stringify({ title, message, enabled })
         });
@@ -2387,12 +2391,14 @@ export async function createNotification({ user, title, message, enabled }: { us
 
 export async function updateNotification({ user, notificationId, updates }: { user: any, notificationId: string, updates: any }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
         const response = await fetch(`/api/notifications/${notificationId}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
             },
             body: JSON.stringify(updates)
         });
@@ -2409,12 +2415,14 @@ export async function updateNotification({ user, notificationId, updates }: { us
 
 export async function deleteNotification({ user, notificationId }: { user: any, notificationId: string }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
         const response = await fetch(`/api/notifications/${notificationId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
-                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
             }
         });
         if (!response.ok) {
