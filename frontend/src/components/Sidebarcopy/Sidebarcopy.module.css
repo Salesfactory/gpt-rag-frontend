@@ -259,7 +259,7 @@
   .leftSidebar {
     width: 320px;
     background: linear-gradient(to bottom, #e2e4e4 1%,#e2e4e4 45%);
-    transition: 0.2s ease-in;
+    transition: left 0.3s ease-in-out, box-shadow 0.3s ease-in-out, z-index 0s 0.3s;
     height: 100vh;
     z-index: 30;
     position: fixed;
@@ -337,6 +337,7 @@
     z-index: 60;
     left: 0;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: left 0.3s ease-in-out, box-shadow 0.3s ease-in-out, z-index 0s 0s;
   }
 
   
@@ -349,6 +350,14 @@
     height: 100%;
     z-index: 55;
     background-color: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .sidebarOverlayVisible {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* Responsive Adjustments */
@@ -361,6 +370,7 @@
       z-index: 60;
       left: 0;
       box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+      transition: left 0.3s ease-in-out, box-shadow 0.3s ease-in-out, z-index 0s 0s;
     }
     
   }

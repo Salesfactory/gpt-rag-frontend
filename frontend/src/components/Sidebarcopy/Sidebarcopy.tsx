@@ -232,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
 
     return (
         <>
-        {!isCollapsed && <div className={styles.sidebarOverlay} onClick={handleOnClickCloseSideBar} />}
+        <div className={`${styles.sidebarOverlay} ${!isCollapsed ? styles.sidebarOverlayVisible : ""}`} onClick={handleOnClickCloseSideBar} />
         <aside className={`${!isCollapsed ? styles.showSidebar : ""} ${styles.leftSidebar}`}>
             {/* Sidebar scroll */}
             <div>
