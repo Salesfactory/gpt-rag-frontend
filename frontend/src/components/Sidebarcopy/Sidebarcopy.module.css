@@ -315,6 +315,7 @@
   }
 
   .showSidebar  {
+    z-index: 60;
     left: 0;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
   }
@@ -327,6 +328,7 @@
     }
   
     .showSidebar  {
+      z-index: 60;
       left: 0;
       box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }

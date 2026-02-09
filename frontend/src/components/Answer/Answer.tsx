@@ -138,10 +138,11 @@ export const Answer = ({
     const { settings } = useAppContext();
     const fontFamily = settings.font_family?.trim() || "Arial";
     const fontSize = settings.font_size || 16;
-    const baseTextStyle = useMemo(() => ({ fontFamily, fontSize: `${fontSize}px` }), [fontFamily, fontSize]);
+    const baseTextStyle = useMemo(() => ({ fontFamily, fontSize: `${fontSize}px`, lineHeight: 1.625 }), [fontFamily, fontSize]);
     const headingStyle = {
         ...baseTextStyle,
         fontWeight: "bold",
+        lineHeight: 1.625,
         marginTop: "20px",
         marginBottom: "16px"
     };
@@ -173,7 +174,8 @@ export const Answer = ({
                         textDecoration: "none",
                         overflowWrap: "break-word",
                         wordBreak: "break-word",
-                        maxWidth: "100%"
+                        maxWidth: "100%",
+                        lineHeight: 1.625
                     }}
                 >
                     {props.children}
@@ -202,7 +204,8 @@ export const Answer = ({
                         textAlign: "left",
                         overflowWrap: "break-word",
                         wordBreak: "break-word",
-                        maxWidth: "100%"
+                        maxWidth: "100%",
+                        lineHeight: 1.625
                     }}
                 >
                     {props.children}
@@ -470,33 +473,6 @@ export const Answer = ({
                     </Stack>
                 </Stack.Item>
             )}
-
-            <Stack.Item>
-                <div className={styles.feedbackButtonRow}>
-                    <TooltipHost content="Leave Feedback">
-                        <button className={styles.feedbackButton} onClick={handleFeedbackClick} aria-label="Leave Feedback" title="Leave Feedback">
-                            <IconButton
-                                aria-hidden="true"
-                                iconProps={{ iconName: "Feedback" }}
-                                styles={{
-                                    root: {
-                                        background: "transparent",
-                                        border: "none",
-                                        minWidth: "auto",
-                                        width: "auto",
-                                        height: "auto",
-                                        padding: 0
-                                    },
-                                    icon: {
-                                        color: "inherit",
-                                        fontSize: "16px"
-                                    }
-                                }}
-                            />
-                        </button>
-                    </TooltipHost>
-                </div>
-            </Stack.Item>
         </Stack>
     );
 };

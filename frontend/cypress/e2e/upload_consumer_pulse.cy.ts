@@ -133,7 +133,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             });
             
             // Wait for initial page load
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            cy.get("textarea[placeholder='Ask anything about your marketing data']", { timeout: 10000 }).should("be.visible");
             
             // Open the sidebar by clicking the headerCollapse button
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -169,7 +169,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             });
             
             // Wait for initial page load
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            cy.get("textarea[placeholder='Ask anything about your marketing data']", { timeout: 10000 }).should("be.visible");
             
             // Open the sidebar by clicking the headerCollapse button
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -200,7 +200,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             });
             
             // Wait for initial page load
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
+            cy.get("textarea[placeholder='Ask anything about your marketing data']", { timeout: 10000 }).should("be.visible");
             
             // Open the sidebar by clicking the headerCollapse button
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -248,7 +248,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             });
             
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
+            cy.get("textarea[placeholder='Ask anything about your marketing data']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -286,7 +286,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             });
             
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
+            cy.get("textarea[placeholder='Ask anything about your marketing data']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -516,7 +516,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             });
             
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
+            cy.get("textarea[placeholder='Ask anything about your marketing data']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
@@ -588,7 +588,7 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             });
             
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
+            cy.get("textarea[placeholder='Ask anything about your marketing data']", { timeout: 15000 }).should("be.visible");
             
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
