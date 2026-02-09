@@ -33,6 +33,14 @@
     background-color: #f9fafb;
 
   }
+
+  .scrollableY {
+    overflow-y: auto;
+  }
+  
+  .hiddenOverflow {
+    overflow: hidden;
+  }
   
   
   /* Responsive Layout Adjustments */

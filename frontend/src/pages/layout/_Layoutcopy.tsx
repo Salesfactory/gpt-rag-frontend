@@ -25,7 +25,7 @@ const Layout: React.FC = () => {
                 {/* Header End */}
 
                 {/* Main Content */}
-                <div className={styles.bodyWrapperInner}>
+                <div className={`${styles.bodyWrapperInner} ${pathname === "/" ? styles.hiddenOverflow : styles.scrollableY}`}>
                     {/* Content goes here */}
                     <Outlet />
                 </div>
