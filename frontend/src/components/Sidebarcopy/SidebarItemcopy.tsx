@@ -36,7 +36,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
             {links ? (
                 <>
                     <div
-                        className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
+                        className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkExpanded : ""}`}
                         role="button"
                         tabIndex={0}
                         aria-expanded={isActive}
@@ -44,7 +44,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
                         id="submenubutton"
                     >
                         {React.cloneElement(icon, {
-                            className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon
+                            className: styles.sidebarLinkIcon
                         })}
                         <span className={isActive ? styles.textActive : ""}>{title}</span>
                         <span className={`${styles.submenuArrow} ${isActive ? styles.submenuArrowActive : ""}`}>
