@@ -98,6 +98,7 @@ const Chat = () => {
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
+    const citationRequestRef = useRef<number>(0);
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
@@ -689,6 +690,9 @@ const Chat = () => {
             const modifiedFilename = extractAfterDomain(fileName);
 
             if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+                citationRequestRef.current += 1;
+                setActiveCitation(undefined);
+                setLoadingCitationPath(null);
                 setActiveAnalysisPanelTab(undefined);
             } else {
                 setLoadingCitationPath(fileName);
@@ -722,7 +726,12 @@ const Chat = () => {
             if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
                 setActiveAnalysisPanelTab(undefined);
             } else {
+                citationRequestRef.current += 1;
+                const currentRequestId = citationRequestRef.current;
+
                 setLoadingCitationPath(fileName);
+                setActiveCitation(undefined);
+                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
 
                 let container = "documents";
                 let blobPath = modifiedFilename;
@@ -734,18 +743,22 @@ const Chat = () => {
                 }
 
                 const response = await getFileBlobWithState(blobPath, container);
-                var file = new Blob([response as BlobPart]);
-                readFile(file);
+                if (currentRequestId !== citationRequestRef.current) {
+                    return;
+                }
+                const file = new Blob([response as BlobPart]);
+                readFile(file, currentRequestId);
 
-                function readFile(input: Blob) {
+                function readFile(input: Blob, requestId: number) {
                     const fr = new FileReader();
                     fr.readAsDataURL(input);
                     fr.onload = function (event) {
                         const res: any = event.target ? event.target.result : undefined;
-                        setActiveCitation(res);
+                        if (requestId === citationRequestRef.current) {
+                            setActiveCitation(res);
+                        }
                     };
                 }
-                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
                 setLoadingCitationPath(null);
             }
 
@@ -907,7 +920,7 @@ const Chat = () => {
                                         {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                         <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                             <h1>
-                                                <img style={{height: "48px", margin: "0rem 0rem 1rem 0rem"}} src={FreddaidLogo} alt="FreddAid 4.1"></img>
+                                                <img style={{ height: "48px", margin: "0rem 0rem 1rem 0rem" }} src={FreddaidLogo} alt="FreddAid 4.1"></img>
                                             </h1>
 
                                             <p style={{ width: "100%", textAlign: "center", fontSize: ".875rem" }}>
