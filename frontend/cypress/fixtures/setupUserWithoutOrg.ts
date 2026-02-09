@@ -133,6 +133,8 @@ export function setupTestUserWithoutOrg() {
             }
             }).as('getProductPrices');
 
+    
+
     // Intercept the organization usage API - return 404 since user has no organization yet
     cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
         statusCode: 404,
@@ -140,4 +142,23 @@ export function setupTestUserWithoutOrg() {
             error: "Organization not found"
         }
     }).as("getOrganizationUsageNotFound");
+
+    // Intercept subscription tier details (called after org creation with tierId from usage)
+    cy.intercept("GET", "/api/subscriptions-tiers/*", {
+        statusCode: 200,
+        body: {
+            id: "price_dummy",
+            tier_id: "in_progress",
+            tier_name: "In Progress",
+            cost: 0,
+            quotas: {
+                totalCreditsAllocated: 1000,
+                totalStorageAllocated: 1000
+            },
+            policy: {
+                allowOverdraft: false,
+                maxSeats: 5
+            }
+        }
+    }).as("getSubscriptionTierDetails");
 }

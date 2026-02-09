@@ -16,6 +16,11 @@ export function setupTestUserAndOrg() {
         }
     }).as("getUser");
 
+    cy.intercept("GET", "/api/auth/session/status", {
+            statusCode: 200,
+            body: { valid: true },
+        }).as("checkSessionStatus")
+
     cy.intercept("GET", "/api/get-organization-subscription*", {
         statusCode: 200,
         body: {
