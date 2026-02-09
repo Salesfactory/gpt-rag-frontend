@@ -2064,3 +2064,88 @@ def get_user_activity_data(organization_id: str = None, start_date: int = None, 
             agg[uid]["first_login_date"] = ts
 
     return list(agg.values())
+
+
+# Notifications
+def get_all_notifications():
+    """
+    Fetch all notifications from the 'notifications' container.
+    """
+    container = get_cosmos_container("notifications")
+    query = "SELECT * FROM c"
+    items = list(container.query_items(query=query, enable_cross_partition_query=True))
+    items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
+    return items
+
+def _disable_other_active_notifications(container, exclude_id=None):
+    """
+    Internal helper to disable all active notifications except the excluded one.
+    """
+    query = "SELECT * FROM c WHERE c.enabled = true"
+    items = list(container.query_items(query=query, enable_cross_partition_query=True))
+    
+    for item in items:
+        if exclude_id and item.get("id") == exclude_id:
+            continue
+            
+        item["enabled"] = False
+        item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+        container.upsert_item(item)
+
+def create_notification(title, message, enabled=False):
+    """
+    Create a new notification. If enabled is True, others are disabled.
+    """
+    if not title or not message:
+        raise ValueError("Title and Message are required.")
+        
+    container = get_cosmos_container("notifications")
+    
+    if enabled:
+        _disable_other_active_notifications(container)
+
+    new_notification = {
+        "id": str(uuid.uuid4()),
+        "title": title,
+        "message": message,
+        "enabled": enabled,
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "updatedAt": datetime.now(timezone.utc).isoformat()
+    }
+    
+    container.create_item(new_notification)
+    return new_notification
+
+def update_notification(notification_id, updates):
+    """
+    Update a notification.
+    updates: dict containing fields to update (title, message, enabled)
+    """
+    container = get_cosmos_container("notifications")
+    try:
+        item = container.read_item(item=notification_id, partition_key=notification_id)
+    except CosmosResourceNotFoundError:
+        raise CosmosResourceNotFoundError(f"Notification {notification_id} not found")
+
+    if "title" in updates:
+        item["title"] = updates["title"]
+    if "message" in updates:
+        item["message"] = updates["message"]
+
+    if "enabled" in updates:
+        new_enabled = updates["enabled"]
+        if new_enabled and not item.get("enabled"):
+            _disable_other_active_notifications(container, exclude_id=notification_id)
+        item["enabled"] = new_enabled
+        
+    item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+    
+    container.upsert_item(item)
+    return item
+
+def delete_notification(notification_id):
+    """
+    Delete a notification by ID.
+    """
+    container = get_cosmos_container("notifications")
+    container.delete_item(item=notification_id, partition_key=notification_id)

@@ -2342,3 +2342,88 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
         throw error;
     }
 }
+
+export async function getNotifications({ user }: { user: any }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/notifications", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+            }
+        });
+        if (!response.ok) {
+            throw Error("Failed to fetch notifications");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching notifications", error);
+        throw error;
+    }
+}
+
+export async function createNotification({ user, title, message, enabled }: { user: any, title: string, message: string, enabled: boolean }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/notifications", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+            },
+            body: JSON.stringify({ title, message, enabled })
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw Error(errorData.message || "Failed to create notification");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error creating notification", error);
+        throw error;
+    }
+}
+
+export async function updateNotification({ user, notificationId, updates }: { user: any, notificationId: string, updates: any }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/${notificationId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+            },
+            body: JSON.stringify(updates)
+        });
+        if (!response.ok) {
+             const errorData = await response.json().catch(() => ({}));
+             throw Error(errorData.message || "Failed to update notification");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error updating notification", error);
+        throw error;
+    }
+}
+
+export async function deleteNotification({ user, notificationId }: { user: any, notificationId: string }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/${notificationId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id
+            }
+        });
+        if (!response.ok) {
+             const errorData = await response.json().catch(() => ({}));
+             throw Error(errorData.message || "Failed to delete notification");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error deleting notification", error);
+        throw error;
+    }
+}
