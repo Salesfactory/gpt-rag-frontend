@@ -1,0 +1,142 @@
+name: Detect PR Conflicts After Develop Merge
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  detect-conflicts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Detect conflicted PRs, label, comment and notify Slack
+        uses: actions/github-script@v7
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          script: |
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const label = "has-conflicts"
+            const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL
+
+            const ensureLabelExists = async (name) => {
+              try {
+                await github.rest.issues.getLabel({
+                  owner,
+                  repo,
+                  name
+                })
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name,
+                    color: "d73a4a",
+                    description: "PR currently has unresolved merge conflicts"
+                  })
+                } else {
+                  throw error
+                }
+              }
+            }
+
+            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+            const fetchPRWithStableMergeable = async (pull_number, retries = 5, delayMs = 2000) => {
+              let lastPR
+
+              for (let attempt = 0; attempt <= retries; attempt++) {
+                const { data } = await github.rest.pulls.get({
+                  owner,
+                  repo,
+                  pull_number
+                })
+
+                lastPR = data
+
+                if (data.mergeable !== null) {
+                  return data
+                }
+
+                if (attempt < retries) {
+                  console.log(`mergeable is null for PR #${pull_number}, retrying (${attempt + 1}/${retries})...`)
+                  await wait(delayMs)
+                }
+              }
+
+              return lastPR
+            }
+
+            await ensureLabelExists(label)
+
+            const prs = await github.paginate(
+              github.rest.pulls.list,
+              {
+                owner,
+                repo,
+                state: "open",
+                base: "develop"
+              }
+            )
+
+            let newlyConflictedPRs = []
+
+            for (const pr of prs) {
+              const fullPR = await fetchPRWithStableMergeable(pr.number)
+
+              if (fullPR.mergeable === false) {
+                const hasConflictLabel = (fullPR.labels || []).some(l => l.name === label)
+
+                if (!hasConflictLabel) {
+                  newlyConflictedPRs.push(fullPR)
+
+                  await github.rest.issues.addLabels({
+                    owner,
+                    repo,
+                    issue_number: fullPR.number,
+                    labels: [label]
+                  })
+
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: fullPR.number,
+                    body: [
+                      "🚨 **Merge conflicts detected**",
+                      "",
+                      `Hi @${fullPR.user.login} 👋  `,
+                      "This PR now has merge conflicts after recent changes were merged into `develop`.",
+                      "",
+                      "Please rebase or merge `develop` into your branch to resolve them.",
+                      "",
+                      "Once resolved, the **has-conflicts** label will be removed automatically ✅"
+                    ].join("\n")
+                  })
+                }
+              }
+            }
+
+            // Slack notification (only if at least one PR is conflicted)
+            if (newlyConflictedPRs.length > 0 && slackWebhookUrl) {
+              let text = "🚨 *PRs with merge conflicts after a merge to `develop`*\n\n"
+
+              for (const pr of newlyConflictedPRs) {
+                text += `• <${pr.html_url}|#${pr.number}> – ${pr.title} (author: ${pr.user.login})\n`
+              }
+
+              await fetch(slackWebhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text })
+              })
+            } else if (newlyConflictedPRs.length > 0) {
+              console.log("Skipping Slack notification because SLACK_WEBHOOK_URL is not available.")
+            }

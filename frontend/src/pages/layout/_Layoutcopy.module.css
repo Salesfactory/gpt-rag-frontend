@@ -5,7 +5,9 @@
 
 .bodyWrapper {
     position: relative;
-    height: 88vh;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     transition: margin-left 0.2s ease-in-out;
     background-color: #f9fafb;
   }
@@ -28,10 +30,16 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    height: 100%;
-
     background-color: #f9fafb;
 
+  }
+
+  .scrollableY {
+    overflow-y: auto;
+  }
+  
+  .hiddenOverflow {
+    overflow: hidden;
   }
   
   

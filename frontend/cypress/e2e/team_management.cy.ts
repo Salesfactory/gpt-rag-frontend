@@ -65,7 +65,6 @@ describe("Agent Section Tests", () => {
         cy.url().should("include", "#/admin");
         cy.wait('@getUsers');
 
-        cy.get("#sidebarCollapse").click();
 
         cy.get('button').contains("Create User").should("be.visible");
         cy.get('button').contains("All Roles").should("be.visible");

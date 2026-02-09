@@ -1,0 +1,80 @@
+name: Clear PR Conflict Label When Resolved
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  cleanup-conflict-label:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Remove conflict label when PR is mergeable again
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const label = "has-conflicts"
+
+            if (pr.base.ref !== "develop") return
+
+            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+            const fetchPRWithStableMergeable = async (retries = 5, delayMs = 2000) => {
+              let lastPR
+
+              for (let attempt = 0; attempt <= retries; attempt++) {
+                const { data } = await github.rest.pulls.get({
+                  owner,
+                  repo,
+                  pull_number: pr.number
+                })
+
+                lastPR = data
+
+                if (data.mergeable !== null) {
+                  return data
+                }
+
+                if (attempt < retries) {
+                  console.log(`mergeable is null for PR #${pr.number}, retrying (${attempt + 1}/${retries})...`)
+                  await wait(delayMs)
+                }
+              }
+
+              return lastPR
+            }
+
+            const fullPR = await fetchPRWithStableMergeable()
+
+            if (fullPR.mergeable === true) {
+              const labels = fullPR.labels.map(l => l.name)
+
+              if (labels.includes(label)) {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: pr.number,
+                  name: label
+                })
+
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: pr.number,
+                  body: [
+                    '**Conflicts resolved**',
+                    '',
+                    `Thanks @${fullPR.user.login}!`,
+                    'This PR is now mergeable with `develop`. The conflict label has been removed.'
+                  ].join('\n')
+                })
+              }
+            }
