@@ -157,7 +157,6 @@ describe("Knowledge Sources tests", () => {
         cy.get('a[href="#/knowledge-sources"]').contains("Knowledge Sources").should("be.visible");
         cy.get('a[href="#/knowledge-sources"]').contains("Knowledge Sources").click();
         cy.url().should("include", "#/knowledge-sources");
-        cy.get("#sidebarCollapse").click();
     });
     
 
