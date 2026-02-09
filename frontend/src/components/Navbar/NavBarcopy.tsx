@@ -306,24 +306,27 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         {/* Share Button - only show when there's an active conversation */}
                         {location === "/" && (chatId || dataConversation.length > 0) && (
                             <li className="nav-item">
-                                <button
-                                    aria-label="Export Conversation"
-                                    onClick={handleExportConversation}
-                                    disabled={isExporting}
-                                    className={styles.shareButton}
-                                >
-                                    {isExporting ? (
-                                        <>
-                                            <Spinner size={1} />
-                                            <span>Sharing...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload size={16} />
-                                            <span>Share</span>
-                                        </>
-                                    )}
-                                </button>
+                                <div className={styles.tooltipWrapper}>
+                                    <button
+                                        aria-label="Export Conversation"
+                                        onClick={handleExportConversation}
+                                        disabled={isExporting}
+                                        className={styles.shareButton}
+                                    >
+                                        {isExporting ? (
+                                            <>
+                                                <Spinner size={1} />
+                                                <span>Sharing...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload size={16} />
+                                                <span>Share</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <span className={styles.tooltipText}>Share conversation</span>
+                                </div>
                             </li>
                         )}
                         {location === "/" && (

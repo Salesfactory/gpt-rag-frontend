@@ -32,6 +32,9 @@ from shared.cosmo_db import (
     get_user_organizations
 )
 
+from dotenv import load_dotenv
+load_dotenv()
+
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
 
