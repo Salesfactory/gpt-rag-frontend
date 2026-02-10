@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import styles from "./ChatHistorySidebar.module.css";
-import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation, exportConversation } from "../../api";
+import { getChatHistory, getChatFromHistoryPannelById, deleteChatConversation, exportConversation, renameConversation } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Trash2, Check, X, ChevronDown, ChevronUp, Upload, ExternalLink, Copy } from "lucide-react";
+import { Trash2, Check, X, ChevronDown, ChevronUp, Upload, ExternalLink, Copy, Pencil } from "lucide-react";
 
 interface ChatHistorySidebarProps {
     onClose: () => void;
@@ -27,8 +27,11 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
     const [conversationsIds, setConversationsIds] = useState<String[]>([]);
     const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set([0, 1, 2, 3]));
     const [exportingConversations, setExportingConversations] = useState<Set<string>>(new Set());
+    const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+    const [editTitle, setEditTitle] = useState("");
 
     const sidebarRef = useRef<HTMLDivElement>(null);
+    const renameInputRef = useRef<HTMLInputElement>(null);
 
     const {
         dataHistory,
@@ -267,6 +270,42 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
         }
     };
 
+    const startRenaming = (conversationId: string, currentTitle: string, currentContent: string) => {
+        setEditingConversationId(conversationId);
+        setEditTitle(currentTitle || currentContent);
+        setTimeout(() => renameInputRef.current?.select(), 0);
+    };
+
+    const cancelRenaming = () => {
+        setEditingConversationId(null);
+        setEditTitle("");
+    };
+
+    const confirmRenaming = async (conversationId: string, currentTitle: string, currentContent: string) => {
+        const trimmed = editTitle.trim();
+        const currentDisplay = currentTitle || currentContent;
+
+        if (!trimmed || trimmed === currentDisplay) {
+            cancelRenaming();
+            return;
+        }
+
+        if (!user?.id) {
+            cancelRenaming();
+            return;
+        }
+
+        try {
+            const result = await renameConversation(conversationId, user.id, trimmed);
+            setDataHistory(prev => prev.map(c => c.id === conversationId ? { ...c, title: result.title } : c));
+        } catch (error) {
+            console.error("Error renaming conversation:", error);
+            toast("Failed to rename conversation", { type: "error" });
+        } finally {
+            cancelRenaming();
+        }
+    };
+
     const handleRefreshHistoial = async () => {
         if (refreshFetchHistory) {
             await fetchData();
@@ -403,22 +442,49 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                                         onMouseEnter={() => handleMouseEnter(`${monthIndex}-${index}`)}
                                                         onMouseLeave={handleMouseLeave}
                                                     >
-                                                        <button
-                                                            aria-label={`Select conversation ${conversation.id}`}
-                                                            className={styles.conversationButton}
-                                                            onClick={() => (isConfirmationDelete(conversation.id) ? null : fetchConversation(conversation.id))}
-                                                        >
-                                                            {isConfirmationDelete(conversation.id)
-                                                                ? "Do you want to delete this conversation?"
-                                                                : conversation.content}
-                                                        </button>
+                                                        {editingConversationId === conversation.id ? (
+                                                            <input
+                                                                ref={renameInputRef}
+                                                                className={styles.renameInput}
+                                                                value={editTitle}
+                                                                onChange={e => setEditTitle(e.target.value)}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === "Enter") confirmRenaming(conversation.id, conversation.title || "", conversation.content);
+                                                                    if (e.key === "Escape") cancelRenaming();
+                                                                }}
+                                                                maxLength={60}
+                                                                autoFocus
+                                                            />
+                                                        ) : (
+                                                            <button
+                                                                aria-label={`Select conversation ${conversation.id}`}
+                                                                className={styles.conversationButton}
+                                                                onClick={() => (isConfirmationDelete(conversation.id) ? null : fetchConversation(conversation.id))}
+                                                            >
+                                                                {isConfirmationDelete(conversation.id)
+                                                                    ? "Do you want to delete this conversation?"
+                                                                    : conversation.title || conversation.content}
+                                                            </button>
+                                                        )}
 
                                                         {(hoveredItemIndex === `${monthIndex}-${index}` ||
                                                             chatSelected === conversation.id ||
                                                             chatId === conversation.id ||
-                                                            isConfirmationDelete(conversation.id)) && (
+                                                            isConfirmationDelete(conversation.id) ||
+                                                            editingConversationId === conversation.id) && (
                                                             <div className={styles.actionButtons}>
-                                                                {isConfirmationDelete(conversation.id) ? (
+                                                                {editingConversationId === conversation.id ? (
+                                                                    <>
+                                                                        <Check
+                                                                            className={`${styles.actionButton} ${styles.confirmButton}`}
+                                                                            onClick={() => confirmRenaming(conversation.id, conversation.title || "", conversation.content)}
+                                                                        />
+                                                                        <X
+                                                                            className={`${styles.actionButton} ${styles.cancelButton}`}
+                                                                            onClick={cancelRenaming}
+                                                                        />
+                                                                    </>
+                                                                ) : isConfirmationDelete(conversation.id) ? (
                                                                     <>
                                                                         <X
                                                                             className={`${styles.actionButton} ${styles.cancelButton}`}
@@ -435,6 +501,10 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                                                     </>
                                                                 ) : (
                                                                     <>
+                                                                        <Pencil
+                                                                            className={styles.actionButton}
+                                                                            onClick={() => startRenaming(conversation.id, conversation.title || "", conversation.content)}
+                                                                        />
                                                                         {exportingConversations.has(conversation.id) ? (
                                                                             <Spinner className={styles.actionSpinner} size={1} />
                                                                         ) : (
