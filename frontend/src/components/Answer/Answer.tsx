@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Stack, IconButton, TooltipHost } from "@fluentui/react";
+import { Stack, IconButton } from "@fluentui/react";
 import DOMPurify from "dompurify";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -11,8 +11,16 @@ import { AskResponse, getFilePath, getFeedbackUrl } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { URLPreviewComponent } from "../URLPreviewComponent";
 import { AnswerIcon } from "./AnswerIcon";
+import {
+    getCitationAriaLabel,
+    getCitationDisplayName,
+    getCitationKind,
+    getFaviconUrl,
+    getFileTypeIconKey,
+    getFileTypeIconLabel,
+    toCitationLinkTarget
+} from "../../utils/citationUtils";
 
-import { animated, useSpring } from "@react-spring/web";
 import { useAppContext } from "../../providers/AppProviders";
 
 const userLanguage = navigator.language;
@@ -55,21 +63,44 @@ interface Props {
     showSources?: boolean;
 }
 
-function truncateString(str: string, maxLength: number): string {
-    if (str.length <= maxLength) {
-        return str;
-    }
-    const startLength = Math.ceil((maxLength - 3) / 2);
-    const endLength = Math.floor((maxLength - 3) / 2);
-    const filename = decodeURIComponent(str.split("/").pop() || str);
-    return filename?.substring(0, startLength) + "..." + filename?.substring(filename.length - endLength) || str;
-}
-
 const MarkdownHeading: React.FC<{ level: keyof JSX.IntrinsicElements; style: React.CSSProperties; children: React.ReactNode }> = ({
     level: Tag,
     style,
     children
 }) => <Tag style={style}>{children}</Tag>;
+
+interface SourceChipIconProps {
+    citation: string;
+}
+
+const SourceChipIcon: React.FC<SourceChipIconProps> = ({ citation }) => {
+    const [faviconFailed, setFaviconFailed] = useState(false);
+    const kind = getCitationKind(citation);
+    const faviconUrl = kind === "web" && !faviconFailed ? getFaviconUrl(citation) : null;
+    const iconKey = getFileTypeIconKey(citation);
+    const iconLabel = getFileTypeIconLabel(iconKey);
+
+    if (faviconUrl) {
+        return (
+            <img
+                src={faviconUrl}
+                alt=""
+                width={16}
+                height={16}
+                className={styles.sourceChipIcon}
+                loading="lazy"
+                aria-hidden="true"
+                onError={() => setFaviconFailed(true)}
+            />
+        );
+    }
+
+    return (
+        <span className={`${styles.sourceChipIcon} ${styles.fileTypeIcon}`} data-icon={iconKey} aria-hidden="true">
+            {iconLabel}
+        </span>
+    );
+};
 
 export const Answer = ({
     answer,
@@ -84,11 +115,6 @@ export const Answer = ({
     showFollowupQuestions,
     showSources
 }: Props) => {
-    const animatedStyles = useSpring({
-        from: { opacity: 0 },
-        to: { opacity: 1 }
-    });
-
     const markdownContainerRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -154,7 +180,28 @@ export const Answer = ({
             h4: (props: any) => <MarkdownHeading level="h4" style={headingStyle} {...props} />,
             h5: (props: any) => <MarkdownHeading level="h5" style={headingStyle} {...props} />,
             h6: (props: any) => <MarkdownHeading level="h6" style={headingStyle} {...props} />,
-            img: (props: any) => <URLPreviewComponent url={props.src} alt={props.alt} isGenerating={isGenerating} />,
+            img: (props: any) => {
+                const src = typeof props.src === "string" ? props.src : "";
+                const className = typeof props.className === "string" ? props.className : "";
+                const isInlineCitationIcon = className.includes("citationInlineIcon") || /google\.com\/s2\/favicons/i.test(src);
+
+                if (isInlineCitationIcon) {
+                    return (
+                        <img
+                            src={src}
+                            alt={props.alt || ""}
+                            className={className}
+                            width={props.width}
+                            height={props.height}
+                            loading={props.loading || "lazy"}
+                            aria-hidden={props["aria-hidden"]}
+                            style={props.style}
+                        />
+                    );
+                }
+
+                return <URLPreviewComponent url={src} alt={props.alt} isGenerating={isGenerating} />;
+            },
             p: (props: any) => (
                 <p style={{ ...baseTextStyle, marginBottom: "8px", overflowWrap: "break-word", wordBreak: "break-word", maxWidth: "100%" }}>{props.children}</p>
             ),
@@ -230,7 +277,7 @@ export const Answer = ({
         }),
         [baseTextStyle, headingStyle]
     );
-    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
+    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer.answer, onCitationClicked, showSources]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
     const thoughtNodes = useMemo(() => {
@@ -424,37 +471,38 @@ export const Answer = ({
 
             {!!parsedAnswer.citations.length && showSources && (
                 <Stack.Item>
-                    <Stack id="Sources" horizontal wrap tokens={{ childrenGap: 5 }} data-cy="sources-section">
+                    <Stack id="Sources" horizontal wrap tokens={{ childrenGap: 8 }} className={styles.sourcesRow} data-cy="sources-section">
                         <span className={styles.citationLearnMore}>{citation_label_text}:</span>
                         {parsedAnswer.citations.map((url, i) => {
                             const path = getFilePath(url);
-                            const fullUrl =
-                                !url.startsWith("https://") && !url.endsWith(".pdf") && !url.endsWith(".docx") && !url.endsWith(".doc")
-                                    ? "https://" + url
-                                    : url;
+                            const fullUrl = toCitationLinkTarget(url);
                             const isLoadingThis = loadingCitationPath === path;
+                            const displayName = getCitationDisplayName(url);
+                            const sourceText = displayName || path;
+                            const ariaLabel = getCitationAriaLabel(i + 1, url);
                             return (
-                                <React.Fragment key={i}>
-                                    <div className={styles.citationContainer}>{`[${i + 1}]`}</div>
-                                    <a
-                                        onKeyDown={event => {
-                                            if (event.key === "Enter") {
-                                                onCitationClicked(fullUrl, path);
-                                            }
-                                        }}
-                                        tabIndex={0}
-                                        className={styles.citation}
-                                        title={path.split("/").filter(Boolean).pop() || path}
-                                        onClick={() => {
-                                            if (!isLoadingThis) onCitationClicked(fullUrl, path);
-                                        }}
-                                        aria-busy={isLoadingThis ? "true" : undefined}
-                                        aria-disabled={isLoadingThis ? "true" : undefined}
-                                        data-loading={isLoadingThis ? "true" : undefined}
-                                    >
-                                        {truncateString(path, 15)}
-                                    </a>
-                                </React.Fragment>
+                                <a
+                                    key={i}
+                                    onKeyDown={event => {
+                                        if (event.key === "Enter") {
+                                            onCitationClicked(fullUrl, path);
+                                        }
+                                    }}
+                                    tabIndex={0}
+                                    className={styles.sourceChip}
+                                    title={sourceText || path.split("/").filter(Boolean).pop() || path}
+                                    onClick={() => {
+                                        if (!isLoadingThis) onCitationClicked(fullUrl, path);
+                                    }}
+                                    aria-label={ariaLabel}
+                                    aria-busy={isLoadingThis ? "true" : undefined}
+                                    aria-disabled={isLoadingThis ? "true" : undefined}
+                                    data-loading={isLoadingThis ? "true" : undefined}
+                                >
+                                    <span className={styles.sourceChipIndex}>{`[${i + 1}]`}</span>
+                                    <SourceChipIcon citation={url} />
+                                    <span className={styles.sourceChipLabel}>{sourceText || path}</span>
+                                </a>
                             );
                         })}
                     </Stack>

@@ -21,6 +21,7 @@ import { QuestionInput } from "../../components/QuestionInput/QuestionInputcopy"
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
 import { getFileType } from "../../utils/functions";
+import { getCitationKind } from "../../utils/citationUtils";
 import { useAppContext } from "../../providers/AppProviders";
 import StartNewChatButton from "../../components/StartNewChatButton/StartNewChatButtoncopy";
 import AttachButton from "../../components/AttachButton/AttachButton";
@@ -676,6 +677,11 @@ const Chat = () => {
     }, []);
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
+        const citationKind = getCitationKind(citation);
+        if (citationKind === "web") {
+            return window.open(citation, "_blank");
+        }
+
         if (isSpreadsheet(citation)) {
             try {
                 await previewSpreadsheet(citation, fileName, index);

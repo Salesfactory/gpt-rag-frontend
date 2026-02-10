@@ -122,29 +122,110 @@ h2 {
     line-height: 1.5em;
 }
 
-.citation {
-    font-weight: 500;
-    line-height: 1.5em;
-    text-align: center;
-    border-radius: 0.25em;
-    padding: 0em 0.5em;
-    background: #d1dbfa;
+.sourcesRow {
+    align-items: center;
+}
+
+.sourceChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 1.75rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid #dbe2ef;
+    background: #f8faff;
     color: #123bb6;
     text-decoration: none;
     cursor: pointer;
+    line-height: 1.2;
+    max-width: 100%;
 }
 
-.citation:hover {
-    text-decoration: underline;
+.sourceChip:hover {
+    background: #eef3ff;
+    border-color: #c7d5ff;
+}
+
+.sourceChip:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+}
+
+.sourceChipIndex {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #123bb6;
+}
+
+.sourceChipIcon {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    object-fit: cover;
+    flex: 0 0 auto;
+}
+
+.sourceChipLabel {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #1f2937;
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fileTypeIcon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    width: auto;
+    padding: 0 0.2rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    line-height: 1;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: #374151;
+}
+
+.fileTypeIcon[data-icon="pdf"] {
+    color: #b91c1c;
+}
+
+.fileTypeIcon[data-icon="word"] {
+    color: #1d4ed8;
+}
+
+.fileTypeIcon[data-icon="excel"] {
+    color: #166534;
+}
+
+.fileTypeIcon[data-icon="powerpoint"] {
+    color: #c2410c;
+}
+
+.fileTypeIcon[data-icon="markdown"] {
+    color: #1f2937;
+}
+
+.fileTypeIcon[data-icon="link"] {
+    color: #0e7490;
 }
 
 /* Loading state for citation links */
-.citation[data-loading="true"] {
+.sourceChip[data-loading="true"] {
     pointer-events: none;
     opacity: 0.9;
 }
 
-.citation[data-loading="true"]::after {
+.sourceChip[data-loading="true"]::after {
     content: "";
     display: inline-block;
     width: 12px;
@@ -164,7 +245,7 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .citation[data-loading="true"]::after {
+    .sourceChip[data-loading="true"]::after {
         animation: none;
         border-right-color: currentColor;
     }
@@ -193,13 +274,23 @@ h2 {
     cursor: pointer;
 }
 
-.supContainer {
+:global(.supContainer) {
     text-decoration: none;
     cursor: pointer;
 }
 
-.supContainer:hover {
+:global(.supContainer:hover) {
     text-decoration: underline;
+}
+
+:global(.citationInlineBadge) {
+    display: inline-flex;
+    align-items: center;
+}
+
+:global(.citationInlineNumber) {
+    font-weight: 600;
+    color: #123bb6;
 }
 
 sup {
@@ -228,9 +319,13 @@ sup {
 
 @media (max-width: 900px) {
 
-    .citation,
+    .sourceChip,
     .citationLearnMore {
         font-size: 1rem;
+    }
+
+    .sourceChipLabel {
+        max-width: 8rem;
     }
 }
 

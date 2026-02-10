@@ -14,6 +14,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { getCitationFilePath } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
+import {
+    getCitationAriaLabel,
+    getCitationKind,
+    getFaviconUrl,
+    toCitationLinkTarget
+} from "../../utils/citationUtils";
 
 /* ------------------------------------------------------------------
  * Regex constants (compiled once)
@@ -60,15 +66,70 @@ function replaceMarkdownLinks(text: string): string {
  * ---------------------------------------------------------------- */
 const fixWrongNumbers = (t: string) => t.replace(RX_WRONG_NUMBERS, (_: string, n: string) => `[${n}]`);
 
+const inlineBadgeStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    marginInline: "2px",
+    verticalAlign: "super"
+};
+
+const inlineIconStyle: React.CSSProperties = {
+    width: "16px",
+    height: "16px",
+    borderRadius: "999px",
+    border: "1px solid #d1d5db",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#fff",
+    objectFit: "cover"
+};
+
+const inlineNumberStyle: React.CSSProperties = {
+    fontSize: "11px",
+    fontWeight: 600,
+    color: "#123bb6"
+};
+
 /* ------------------------------------------------------------------
  * Factory to build a <sup> node as string for a citation index
  * ---------------------------------------------------------------- */
-function supNode(index: number, title: string, onClick: (title: string, path: string) => void, path: string) {
+function supNode(index: number, citationUrl: string, citationLabel: string, path: string) {
+    const kind = getCitationKind(citationLabel);
+    const faviconUrl = kind === "web" ? getFaviconUrl(citationLabel) : null;
+    const ariaLabel = getCitationAriaLabel(index, citationLabel);
+
     // A small JSX fragment rendered to string; React is required by TSX
     // eslint-disable-next-line react/react-in-jsx-scope
     return renderToStaticMarkup(
-        <a key={`citation-${index}`} className="supContainer" title={title} data-citation-url={title} data-citation-path={path} tabIndex={0}>
-            <sup>{index}</sup>
+        <a
+            key={`citation-${index}`}
+            className="supContainer"
+            title={citationLabel}
+            data-citation-url={citationUrl}
+            data-citation-path={path}
+            data-citation-index={index}
+            aria-label={ariaLabel}
+            tabIndex={0}
+        >
+            <span className="citationInlineBadge" style={inlineBadgeStyle}>
+                {!!faviconUrl && (
+                    <img
+                        src={faviconUrl}
+                        alt=""
+                        width={16}
+                        height={16}
+                        loading="lazy"
+                        className="citationInlineIcon"
+                        style={inlineIconStyle}
+                        aria-hidden="true"
+                    />
+                )}
+                <span className="citationInlineNumber" style={inlineNumberStyle}>
+                    [{index}]
+                </span>
+            </span>
         </a>
     );
 }
@@ -101,9 +162,14 @@ export function parseAnswerToHtml(
     const html = text.replace(RX_CITATION_BLOCK, (_: string, _num: string, citeUrl: string) => {
         // Deduplicate by citation URL / filename
         const idx = citations.includes(citeUrl) ? citations.indexOf(citeUrl) : (citations.push(citeUrl), citations.length - 1);
+        const kind = getCitationKind(citeUrl);
+        const citationClickUrl = kind === "web" ? toCitationLinkTarget(citeUrl) : citeUrl;
 
-        if (!citationPath[citeUrl]) citationPath[citeUrl] = getCitationFilePath(citeUrl);
-        return supNode(idx + 1, citeUrl, onCitationClicked, citationPath[citeUrl]);
+        if (!citationPath[citeUrl]) {
+            citationPath[citeUrl] = kind === "web" ? citationClickUrl : getCitationFilePath(citeUrl);
+        }
+
+        return supNode(idx + 1, citationClickUrl, citeUrl, citationPath[citeUrl]);
     });
 
     return {
