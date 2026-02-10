@@ -154,7 +154,6 @@ describe("Subscription Page tests", () => {
         cy.get('a[href="#/subscription-management"]').contains("Subscription Plans").click();
 
         cy.url().should("include", "#/subscription-management");
-        cy.get("button#headerCollapse").click();
 
         // Verify subscription
         cy.get('span').should('contain.text', 'Subscription Management');

@@ -1579,3 +1579,36 @@
     font-size: 11px;
   }
 }
+
+.tooltipWrapper {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+  align-self: flex-start; 
+}
+
+.tooltipText {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+
+    position: absolute;
+    z-index: 1;
+    top: 125%;
+
+    left: 35%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tooltipWrapper:hover .tooltipText {
+    visibility: visible;
+    opacity: 1;
+}

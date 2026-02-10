@@ -16,6 +16,11 @@ export function setupTestUserAndOrg() {
         }
     }).as("getUser");
 
+    cy.intercept("GET", "/api/auth/session/status", {
+            statusCode: 200,
+            body: { valid: true },
+        }).as("checkSessionStatus")
+
     cy.intercept("GET", "/api/get-organization-subscription*", {
         statusCode: 200,
         body: {
@@ -53,6 +58,20 @@ export function setupTestUserAndOrg() {
         statusCode: 200,
         body: { role: "admin" }
     });
+
+    cy.intercept("GET", "/api/auth/session/status", {
+        statusCode: 200,
+        body: {
+            session: {
+                status: "active"
+            }
+        }
+    }).as("getSessionStatus");
+
+    cy.intercept("POST", "/api/user-organization-logs", {
+        statusCode: 204,
+        body: {}
+    }).as("createOrgLog");
 
     cy.intercept("GET", "/api/subscriptions/sub_1QeeHXEpF6ccgZLwfCmANnOP/tiers", {
         statusCode: 200,
@@ -221,6 +240,11 @@ export function setupTestUserAndOrg() {
             status: 200
         }
     });
+
+    cy.intercept("GET", /\/api\/report-jobs.*/, {
+        statusCode: 200,
+        body: []
+    }).as("getReportJobs");
 
     cy.intercept("GET", "/api/organizations/*/get-organization-usage", {
         statusCode: 200,

@@ -28,6 +28,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
         if (setActiveSubItem) {
             setActiveSubItem(href);
         }
+        onClick();
     };
 
     return (
@@ -35,7 +36,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
             {links ? (
                 <>
                     <div
-                        className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkActive : ""}`}
+                        className={`${styles.sidebarLink} ${styles.navLink} ${isActive ? styles.sidebarLinkExpanded : ""}`}
                         role="button"
                         tabIndex={0}
                         aria-expanded={isActive}
@@ -43,7 +44,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
                         id="submenubutton"
                     >
                         {React.cloneElement(icon, {
-                            className: isActive ? styles.sidebarLinkActiveIcon : styles.sidebarLinkIcon
+                            className: styles.sidebarLinkIcon
                         })}
                         <span className={isActive ? styles.textActive : ""}>{title}</span>
                         <span className={`${styles.submenuArrow} ${isActive ? styles.submenuArrowActive : ""}`}>
@@ -52,7 +53,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon, to, links, onCli
                     </div>
                     <ul
                         className={`${styles.submenu} ${styles.navUl} ${isActive ? styles.submenuActive : ""}`}
-                        style={{ maxHeight: isActive ? `${links.length * 40}px` : "0" }}
+                        style={{ maxHeight: isActive ? `${links.length * 60}px` : "0" }}
                     >
                         {links.map((linkItem, index) => (
                             <li key={index} className={`${styles.submenuItem} ${activeSubItem === linkItem.href ? styles.sidebarLinkActive : ""}`}>

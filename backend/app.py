@@ -67,6 +67,7 @@ from utils import (
     get_conversations,
     get_conversation,
     delete_conversation,
+    rename_conversation,
     get_organization_urls,
     add_or_update_organization_url,
     search_urls,
@@ -101,6 +102,7 @@ from routes.categories import bp as categories
 from routes.invitations import bp as invitations
 from routes.users import bp as users
 from routes.platform_admin import bp as platform_admin_bp
+from routes.notifications import bp as notifications_bp
 
 from _secrets import get_secret
 
@@ -248,6 +250,7 @@ app.register_blueprint(categories)
 app.register_blueprint(invitations)
 app.register_blueprint(users)
 app.register_blueprint(platform_admin_bp)
+app.register_blueprint(notifications_bp)
 
 
 def handle_auth_error(func):
@@ -1011,6 +1014,28 @@ def deleteChatConversation(*, context, chat_id):
             return jsonify({"error": "Missing conversation ID"}), 400
     except Exception as e:
         logging.exception("[webbackend] exception in /delete-chat-conversation")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat-conversations/<chat_id>/title", methods=["PATCH"])
+@auth.login_required
+def renameChatConversation(*, context, chat_id):
+    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+    try:
+        if not chat_id:
+            return jsonify({"error": "Missing conversation ID"}), 400
+
+        data = request.get_json()
+        title = data.get("title", "").strip() if data else ""
+
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+
+        saved_title = rename_conversation(chat_id, client_principal_id, title)
+        return jsonify({"message": "Conversation renamed successfully", "title": saved_title}), 200
+    except Exception as e:
+        logging.exception("[webbackend] exception in /rename-chat-conversation")
         return jsonify({"error": str(e)}), 500
 
 

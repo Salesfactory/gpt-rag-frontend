@@ -98,6 +98,7 @@ const Chat = () => {
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
+    const citationRequestRef = useRef<number>(0);
     const [fileType, setFileType] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
@@ -169,11 +170,7 @@ const Chat = () => {
         return conversationId;
     };
 
-    const streamResponse = async (
-        question: string,
-        chatId: string | null,
-        userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>
-    ) => {
+    const streamResponse = async (question: string, chatId: string | null, userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         restartChat.current = false;
@@ -452,12 +449,12 @@ const Chat = () => {
         }
         const language = navigator.language;
         if (language.startsWith("pt")) {
-            setPlaceholderText("Escreva aqui sua pergunta");
+            setPlaceholderText("Pergunte algo sobre seus dados de marketing");
         }
         if (language.startsWith("es")) {
-            setPlaceholderText("Escribe tu pregunta aqui");
+            setPlaceholderText("Pregunta algo sobre tus datos de marketing");
         } else {
-            setPlaceholderText("Write your question here");
+            setPlaceholderText("Ask anything about your marketing data...");
         }
 
         // fill answers with data from dataConversation
@@ -560,9 +557,7 @@ const Chat = () => {
                 return;
             }
 
-            const selectionCategories = new Set(
-                files.map(file => getUploadCategory(file.name))
-            );
+            const selectionCategories = new Set(files.map(file => getUploadCategory(file.name)));
             selectionCategories.delete("unknown");
             if (selectionCategories.size > 1) {
                 setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
@@ -570,10 +565,7 @@ const Chat = () => {
             }
 
             if (attachedDocs.length > 0 && selectionCategories.size === 1) {
-                const sampleName =
-                    attachedDocs[0].originalFilename ||
-                    attachedDocs[0].savedFilename ||
-                    attachedDocs[0].blobName;
+                const sampleName = attachedDocs[0].originalFilename || attachedDocs[0].savedFilename || attachedDocs[0].blobName;
                 const existingCategory = getUploadCategory(sampleName);
                 const [selectionCategory] = Array.from(selectionCategories);
                 if (existingCategory !== "unknown" && selectionCategory !== existingCategory) {
@@ -698,6 +690,9 @@ const Chat = () => {
             const modifiedFilename = extractAfterDomain(fileName);
 
             if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+                citationRequestRef.current += 1;
+                setActiveCitation(undefined);
+                setLoadingCitationPath(null);
                 setActiveAnalysisPanelTab(undefined);
             } else {
                 setLoadingCitationPath(fileName);
@@ -723,10 +718,20 @@ const Chat = () => {
             // Extract filepath if necessary
             const modifiedFilename = extractAfterDomain(fileName);
 
+            if (modifiedFilename.startsWith("http://") || modifiedFilename.startsWith("https://")) {
+                window.open(citation, "_blank");
+                return;
+            }
+
             if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
                 setActiveAnalysisPanelTab(undefined);
             } else {
+                citationRequestRef.current += 1;
+                const currentRequestId = citationRequestRef.current;
+
                 setLoadingCitationPath(fileName);
+                setActiveCitation(undefined);
+                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
 
                 let container = "documents";
                 let blobPath = modifiedFilename;
@@ -738,18 +743,22 @@ const Chat = () => {
                 }
 
                 const response = await getFileBlobWithState(blobPath, container);
-                var file = new Blob([response as BlobPart]);
-                readFile(file);
+                if (currentRequestId !== citationRequestRef.current) {
+                    return;
+                }
+                const file = new Blob([response as BlobPart]);
+                readFile(file, currentRequestId);
 
-                function readFile(input: Blob) {
+                function readFile(input: Blob, requestId: number) {
                     const fr = new FileReader();
                     fr.readAsDataURL(input);
                     fr.onload = function (event) {
                         const res: any = event.target ? event.target.result : undefined;
-                        setActiveCitation(res);
+                        if (requestId === citationRequestRef.current) {
+                            setActiveCitation(res);
+                        }
                     };
                 }
-                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
                 setLoadingCitationPath(null);
             }
 
@@ -764,8 +773,8 @@ const Chat = () => {
     const answerFromHistory = dataConversation.map(data => data.bot?.message);
     const thoughtsFromHistory = dataConversation.map(data => data.bot?.thoughts);
 
-    const latestAnswerFromHistory = answerFromHistory.length > 0 ? answerFromHistory[answerFromHistory.length - 1] ?? "" : "";
-    const latestThoughtFromHistory = thoughtsFromHistory.length > 0 ? thoughtsFromHistory[thoughtsFromHistory.length - 1] ?? null : null;
+    const latestAnswerFromHistory = answerFromHistory.length > 0 ? (answerFromHistory[answerFromHistory.length - 1] ?? "") : "";
+    const latestThoughtFromHistory = thoughtsFromHistory.length > 0 ? (thoughtsFromHistory[thoughtsFromHistory.length - 1] ?? null) : null;
 
     const responseForPreviewPanel = {
         answer: latestAnswerFromHistory,
@@ -911,10 +920,10 @@ const Chat = () => {
                                         {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                         <div className={conversationIsLoading ? styles.noneDisplay : styles.flexDescription}>
                                             <h1>
-                                                <img height="100px" src={FreddaidLogo} alt="FreddAid 4.1"></img>
+                                                <img style={{ height: "48px", margin: "0rem 0rem 1rem 0rem" }} src={FreddaidLogo} alt="FreddAid 4.1"></img>
                                             </h1>
 
-                                            <p style={{ width: "80%", textAlign: "center" }}>
+                                            <p style={{ width: "100%", textAlign: "center", fontSize: ".875rem" }}>
                                                 Your AI-driven Marketing expert who boosts marketing performance by synthesizing multiple data sources to
                                                 deliver actionable insights.
                                             </p>
@@ -926,71 +935,71 @@ const Chat = () => {
                                             {conversationIsLoading && <Spinner size={3} className={styles.spinnerStyles} />}
                                             {dataConversation.length > 0
                                                 ? dataConversation.map((item, index) => {
-                                                      const response = {
-                                                          answer: item.bot?.message || "",
-                                                          conversation_id: chatId,
-                                                          data_points: [""],
-                                                          thoughts: item.bot?.thoughts ?? null
-                                                      } as AskResponse;
-                                                      return (
-                                                          <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
-                                                              <UserChatMessage message={item.user} />
-                                                              <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                                  <Answer
-                                                                      key={index}
-                                                                      answer={response}
-                                                                      isGenerating={false}
-                                                                      isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                                      loadingCitationPath={loadingCitationPath}
-                                                                      onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                                      onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                                      onSupportingContentClicked={() =>
-                                                                          onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
-                                                                      }
-                                                                      onFollowupQuestionClicked={question => {
-                                                                          const blobNames = attachedDocs.map(d => ({
-                                                                              blob_name: d.blobName,
-                                                                              file_id: d.fileId ?? null
-                                                                          }));
-                                                                          streamResponse(question, chatId !== "" ? chatId : null, blobNames);
-                                                                      }}
-                                                                      showFollowupQuestions={false}
-                                                                      showSources={true}
-                                                                  />
-                                                              </div>
-                                                          </div>
-                                                      );
-                                                  })
+                                                    const response = {
+                                                        answer: item.bot?.message || "",
+                                                        conversation_id: chatId,
+                                                        data_points: [""],
+                                                        thoughts: item.bot?.thoughts ?? null
+                                                    } as AskResponse;
+                                                    return (
+                                                        <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                            <UserChatMessage message={item.user} />
+                                                            <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
+                                                                <Answer
+                                                                    key={index}
+                                                                    answer={response}
+                                                                    isGenerating={false}
+                                                                    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                    loadingCitationPath={loadingCitationPath}
+                                                                    onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                                    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                                    onSupportingContentClicked={() =>
+                                                                        onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
+                                                                    }
+                                                                    onFollowupQuestionClicked={question => {
+                                                                        const blobNames = attachedDocs.map(d => ({
+                                                                            blob_name: d.blobName,
+                                                                            file_id: d.fileId ?? null
+                                                                        }));
+                                                                        streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                    }}
+                                                                    showFollowupQuestions={false}
+                                                                    showSources={true}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
                                                 : answers.map((answer, index) => {
-                                                      return (
-                                                          <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
-                                                              <UserChatMessage message={answer[0]} />
-                                                              <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                                  <Answer
-                                                                      key={index}
-                                                                      answer={answer[1]}
-                                                                      isGenerating={false}
-                                                                      isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                                      loadingCitationPath={loadingCitationPath}
-                                                                      onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                                      onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                                      onSupportingContentClicked={() =>
-                                                                          onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
-                                                                      }
-                                                                      onFollowupQuestionClicked={question => {
-                                                                          const blobNames = attachedDocs.map(d => ({
-                                                                              blob_name: d.blobName,
-                                                                              file_id: d.fileId ?? null
-                                                                          }));
-                                                                          streamResponse(question, chatId !== "" ? chatId : null, blobNames);
-                                                                      }}
-                                                                      showFollowupQuestions={false}
-                                                                      showSources={true}
-                                                                  />
-                                                              </div>
-                                                          </div>
-                                                      );
-                                                  })}
+                                                    return (
+                                                        <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
+                                                            <UserChatMessage message={answer[0]} />
+                                                            <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
+                                                                <Answer
+                                                                    key={index}
+                                                                    answer={answer[1]}
+                                                                    isGenerating={false}
+                                                                    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                    loadingCitationPath={loadingCitationPath}
+                                                                    onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                                    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                                    onSupportingContentClicked={() =>
+                                                                        onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
+                                                                    }
+                                                                    onFollowupQuestionClicked={question => {
+                                                                        const blobNames = attachedDocs.map(d => ({
+                                                                            blob_name: d.blobName,
+                                                                            file_id: d.fileId ?? null
+                                                                        }));
+                                                                        streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                    }}
+                                                                    showFollowupQuestions={false}
+                                                                    showSources={true}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             {error && !error403Data ? (
                                                 <>
                                                     <UserChatMessage message={lastQuestionRef.current} />
@@ -1037,10 +1046,10 @@ const Chat = () => {
                                                             thinkingContent={thinkingContent}
                                                             isSelected={activeAnalysisPanelTab !== undefined}
                                                             loadingCitationPath={loadingCitationPath}
-                                                            onCitationClicked={(c, n) => {}}
-                                                            onThoughtProcessClicked={() => {}}
-                                                            onSupportingContentClicked={() => {}}
-                                                            onFollowupQuestionClicked={q => {}}
+                                                            onCitationClicked={(c, n) => { }}
+                                                            onThoughtProcessClicked={() => { }}
+                                                            onSupportingContentClicked={() => { }}
+                                                            onFollowupQuestionClicked={q => { }}
                                                             showFollowupQuestions={false}
                                                             showSources={true}
                                                         />
@@ -1117,7 +1126,9 @@ const Chat = () => {
                                             }
                                             extraButtonAttach={
                                                 <AttachButton
-                                                    isEnabled={!isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES && !isDataAnalystMode}
+                                                    isEnabled={
+                                                        !isLoading && !isUploadingDocs && attachedDocs.length < CHAT_MAX_ATTACHED_FILES && !isDataAnalystMode
+                                                    }
                                                     isUploading={isUploadingDocs}
                                                     onFilesSelected={handleAttachFiles}
                                                     accept={ATTACH_ACCEPT}
@@ -1139,7 +1150,7 @@ const Chat = () => {
                                 </div>
                             </div>
                             {(answers.length > 0 && activeAnalysisPanelTab && answers[selectedAnswer]) ||
-                            (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
+                                (dataConversation.length > 0 && fileType !== "" && activeAnalysisPanelTab) ? (
                                 <>
                                     <div className={styles.analysisResizeHandle} onMouseDown={handleResizeMouseDown} style={{ cursor: "col-resize" }} />
 

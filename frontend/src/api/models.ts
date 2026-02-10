@@ -17,6 +17,7 @@ export type ConversationHistoryItem = {
     id: string;
     start_date: string;
     content: string;
+    title?: string;
     type: string;
     organization_id: string;
 };

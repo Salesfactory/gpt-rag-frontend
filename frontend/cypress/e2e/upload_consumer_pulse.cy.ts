@@ -124,35 +124,35 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
     describe("Access Control Tests", () => {
         it("Should allow platformAdmin to see Consumer Pulse in sidebar and access the page", () => {
             setupCommonInterceptsForRole("platformAdmin");
-            
+
             // Visit root first to initialize AppContext
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for initial page load
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
-            
+            cy.get("textarea[placeholder='Ask anything about your marketing data...']", { timeout: 10000 }).should("be.visible");
+
             // Open the sidebar by clicking the headerCollapse button
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
-            
+
             // Wait for sidebar to open
             cy.wait(500);
-            
+
             // Click on "Premium Features" to expand the submenu
             cy.contains("Premium Features").should("be.visible").click();
-            
+
             // Wait for submenu to expand
             cy.wait(300);
-            
+
             // Verify that "Consumer Pulse" option is visible for platformAdmin
             cy.contains("Consumer Pulse").should("be.visible");
-            
+
             // Click on "Consumer Pulse" to navigate to the page
             cy.contains("Consumer Pulse").click();
-            
+
             // Verify the page loads and main elements are visible
             cy.contains("Upload Consumer Pulse Data", { timeout: 10000 }).should("be.visible");
             cy.contains("Upload files that will be distributed across all organizations").should("be.visible");
@@ -160,23 +160,23 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
 
         it("Should NOT show Consumer Pulse option to admin users", () => {
             setupCommonInterceptsForRole("admin");
-            
+
             // Visit root first to initialize AppContext
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for initial page load
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
-            
+            cy.get("textarea[placeholder='Ask anything about your marketing data...']", { timeout: 10000 }).should("be.visible");
+
             // Open the sidebar by clicking the headerCollapse button
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
-            
+
             // Wait for sidebar to open
             cy.wait(500);
-            
+
             // Try to find "Premium Features" and click if it exists
             cy.get("body").then($body => {
                 if ($body.text().includes("Premium Features")) {
@@ -184,30 +184,30 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
                     cy.wait(300);
                 }
             });
-            
+
             // Verify that "Consumer Pulse" option is NOT visible for admin
             cy.contains("Consumer Pulse").should("not.exist");
         });
 
         it("Should NOT show Consumer Pulse option to regular users", () => {
             setupCommonInterceptsForRole("user");
-            
+
             // Visit root first to initialize AppContext
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for initial page load
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 10000 }).should("be.visible");
-            
+            cy.get("textarea[placeholder='Ask anything about your marketing data...']", { timeout: 10000 }).should("be.visible");
+
             // Open the sidebar by clicking the headerCollapse button
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
-            
+
             // Wait for sidebar to open
             cy.wait(500);
-            
+
             // Try to find "Premium Features" and click if it exists
             cy.get("body").then($body => {
                 if ($body.text().includes("Premium Features")) {
@@ -215,24 +215,24 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
                     cy.wait(300);
                 }
             });
-            
+
             // Verify that "Consumer Pulse" option is NOT visible for regular user
             cy.contains("Consumer Pulse").should("not.exist");
         });
 
         it("Should prevent direct URL access for non-platformAdmin users", () => {
             setupCommonInterceptsForRole("admin");
-            
+
             // Try to navigate directly to the upload consumer pulse page via URL
             cy.visit("/#/upload-consumer-pulse", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for auth check
             cy.wait("@getUser");
-            
+
             // Should be redirected or show access denied
             cy.contains("Upload Consumer Pulse Data").should("not.exist");
         });
@@ -243,13 +243,13 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
-            
+            cy.get("textarea[placeholder='Ask anything about your marketing data...']", { timeout: 15000 }).should("be.visible");
+
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
             cy.wait(500);
@@ -281,13 +281,13 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
-            
+            cy.get("textarea[placeholder='Ask anything about your marketing data...']", { timeout: 15000 }).should("be.visible");
+
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
             cy.wait(500);
@@ -511,13 +511,13 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
-            
+            cy.get("textarea[placeholder='Ask anything about your marketing data...']", { timeout: 15000 }).should("be.visible");
+
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
             cy.wait(500);
@@ -583,13 +583,13 @@ describe("Upload Consumer Pulse Data Test Suite", () => {
             setupCommonInterceptsForRole("platformAdmin");
             cy.visit("/", {
                 onBeforeLoad: (window) => {
-                    
+
                 }
             });
-            
+
             // Wait for initial page load with more time
-            cy.get("textarea[placeholder='Write your question here']", { timeout: 15000 }).should("be.visible");
-            
+            cy.get("textarea[placeholder='Ask anything about your marketing data...']", { timeout: 15000 }).should("be.visible");
+
             // Navigate through sidebar
             cy.get("#headerCollapse", { timeout: 10000 }).should("be.visible").click();
             cy.wait(500);

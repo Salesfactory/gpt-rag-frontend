@@ -32,6 +32,9 @@ from shared.cosmo_db import (
     get_user_organizations
 )
 
+from dotenv import load_dotenv
+load_dotenv()
+
 AZURE_DB_ID = os.environ.get("AZURE_DB_ID")
 AZURE_DB_NAME = os.environ.get("AZURE_DB_NAME")
 
@@ -335,6 +338,27 @@ def get_conversation(conversation_id, user_id):
         return {}
 
 
+def rename_conversation(conversation_id, user_id, title):
+    if not conversation_id:
+        raise ValueError("conversation_id is required")
+    if not user_id:
+        raise ValueError("user_id is required")
+    if not title or not isinstance(title, str) or not title.strip():
+        raise ValueError("title must be a non-empty string")
+
+    title = title.strip()[:60]
+
+    container = get_cosmos_container("conversations")
+    container.patch_item(
+        item=conversation_id,
+        partition_key=user_id,
+        patch_operations=[
+            {"op": "add", "path": "/conversation_data/title", "value": title}
+        ]
+    )
+    return title
+
+
 def delete_conversation(conversation_id, user_id):
     try:
         if not conversation_id:
@@ -373,11 +397,12 @@ def get_conversations(user_id):
 
         # Fetch all conversations for the user
         query = """
-            SELECT c.id, c.conversation_data.start_date, 
-                   c.conversation_data.history[0].content AS first_message, 
+            SELECT c.id, c.conversation_data.start_date,
+                   c.conversation_data.history[0].content AS first_message,
                    c.conversation_data.type,
-                   c.conversation_data.interaction.organization_id
-            FROM c 
+                   c.conversation_data.interaction.organization_id,
+                   c.conversation_data.title
+            FROM c
             WHERE c.conversation_data.interaction.user_id = @user_id
         """
         parameters = [dict(name="@user_id", value=user_id)]
@@ -412,8 +437,9 @@ def get_conversations(user_id):
                 "id": con["id"],
                 "start_date": con.get("start_date", default_date),
                 "content": con.get("first_message", "No content"),
+                "title": con.get("title", ""),
                 "type": con.get("type", "default"),
-                "organization_id": con.get("organization_id", ""),  # always include, empty string if missing
+                "organization_id": con.get("organization_id", ""),
             })
 
         return formatted_conversations

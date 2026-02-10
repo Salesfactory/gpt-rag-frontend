@@ -322,6 +322,21 @@ export async function deleteChatConversation(chatId: string, userId: string): Pr
     }
 }
 
+export async function renameConversation(chatId: string, userId: string, title: string): Promise<{ title: string }> {
+    const response = await fetchWrapper(`/api/chat-conversations/${chatId}/title`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
+        },
+        body: JSON.stringify({ title })
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to rename conversation. Status: ${response.status}`);
+    }
+    return response.json();
+}
+
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
     const response = await fetch("/api/chat-history", {
         method: "GET",
@@ -2339,6 +2354,99 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
         return await response.json();
     } catch (error) {
         console.error("Error fetching user activity logs", error);
+        throw error;
+    }
+}
+
+export async function getNotifications({ user }: { user: any }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/notifications", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        });
+        if (!response.ok) {
+            throw Error("Failed to fetch notifications");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching notifications", error);
+        throw error;
+    }
+}
+
+export async function createNotification({ user, title, message, enabled }: { user: any, title: string, message: string, enabled: boolean }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/notifications", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            },
+            body: JSON.stringify({ title, message, enabled })
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw Error(errorData.message || "Failed to create notification");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error creating notification", error);
+        throw error;
+    }
+}
+
+export async function updateNotification({ user, notificationId, updates }: { user: any, notificationId: string, updates: any }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/${notificationId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            },
+            body: JSON.stringify(updates)
+        });
+        if (!response.ok) {
+             const errorData = await response.json().catch(() => ({}));
+             throw Error(errorData.message || "Failed to update notification");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error updating notification", error);
+        throw error;
+    }
+}
+
+export async function deleteNotification({ user, notificationId }: { user: any, notificationId: string }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/${notificationId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        });
+        if (!response.ok) {
+             const errorData = await response.json().catch(() => ({}));
+             throw Error(errorData.message || "Failed to delete notification");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error deleting notification", error);
         throw error;
     }
 }

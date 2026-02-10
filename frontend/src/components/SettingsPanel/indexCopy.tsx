@@ -31,7 +31,7 @@ const ConfirmationDialog = ({
       }}
       modalProps={{
         isBlocking: true,
-        styles: { main: { maxWidth: 450 } }
+        styles: { main: { maxWidth: 450, borderRadius: "8px" } }
       }}
     >
       {loading ? (
@@ -53,15 +53,15 @@ const ConfirmationDialog = ({
               gap: "10px"
             }}
           >
-            <DefaultButton onClick={onDismiss} text="Cancel" />
+            <DefaultButton onClick={onDismiss} text="Cancel" styles={{ root: { borderRadius: "8px" } }} />
             <PrimaryButton
               onClick={onConfirm}
               data-testid="confirm-save"
               text="Save"
               styles={{
-                root: { backgroundColor: "#16a34a", borderColor: "#16a34a" },
-                rootHovered: { backgroundColor: "#15803d", borderColor: "#15803d" },
-                rootPressed: { backgroundColor: "#15803d", borderColor: "#15803d" }
+                root: { backgroundColor: "#A0CB06", borderColor: "#A0CB06", borderRadius: "8px" },
+                rootHovered: { backgroundColor: "#8eb134", borderColor: "#8eb134" },
+                rootPressed: { backgroundColor: "#8eb134", borderColor: "#8eb134" }
               }}
             />
           </div>

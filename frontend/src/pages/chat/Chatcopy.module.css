@@ -2,7 +2,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: white;
+    background-color: #F5F5F4;
     /* margin: 0px 10px 0px 0px; */
 }
 
@@ -11,6 +11,7 @@
     flex-direction: row-reverse;
     flex: 1;
     overflow: hidden;
+    background-color: #F5F5F4;
 }
 
 .chatInputDragOver {
@@ -50,11 +51,17 @@
 
 /* Attachment display container */
 .attachmentDisplay {
-    width: 92%;
-    max-width: 92%;
+    width: 95%;
+    max-width: 900px;
     margin-bottom: 8px;
     display: flex;
     justify-content: flex-start;
+}
+
+@media (min-width: 768px) {
+    .attachmentDisplay {
+        width: 80%;
+    }
 }
 
 .attachmentChip {
@@ -63,9 +70,9 @@
     gap: 8px;
     padding: 6px 12px;
     border-radius: 16px;
-    background: #ecfdf5;
-    border: 1px solid #d1fae5;
-    color: #065f46;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    color: #333333;
     font-size: 13px;
     line-height: 1.2;
     width: max-content;
@@ -83,8 +90,8 @@
 .removeChipBtn {
     background: transparent;
     border: none;
-    color: #065f46;
-    font-size: 16px;
+    color: #666666;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
     padding: 2px;
@@ -98,8 +105,8 @@
 }
 
 .removeChipBtn:hover {
-    background: #d1fae5;
-    color: #047857;
+    background: #e0e0e0;
+    color: #333333;
 }
 
 .chatRoot {
@@ -114,7 +121,7 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
-    background-color: #f9fafb;
+    background-color: #F5F5F4;
 }
 
 .chatEmptyState {
@@ -138,10 +145,9 @@
 }
 
 .flexDescription {
-    background-color: #ffffff;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: #F8F8F7;
+    padding: 2rem 2rem 1.5rem 2rem;
+    border-radius: 1rem;
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -150,7 +156,13 @@
     max-width: 600px;
     position: static;
     margin-bottom: 125px;
+    color: #656570;
+
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+    --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / .05);
+    --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
 }
+
 
 .conversationIsLoading {
     flex-grow: 1;
@@ -182,8 +194,8 @@
 }
 
 .chatMessageStream {
-    width: 92%;
-    max-width: 92%;
+    width: 95%;
+    max-width: 900px;
     padding-top: 0;
     display: flex;
     flex-direction: column;
@@ -193,15 +205,18 @@
     padding-bottom: 0;
 }
 
+@media (min-width: 768px) {
+    .chatMessageStream {
+        width: 80%;
+    }
+}
+
 
 .chatMessageGpt {
-    margin-left: auto;
-    margin-right: auto;
     margin-bottom: 20px;
-    width: 92%;
-    max-width: 92%;
+    width: 100%;
     display: flex;
-    min-width: 300px;
+    min-width: 0;
 }
 
 .chatMessageGptMinWidth {
@@ -219,20 +234,24 @@
     padding: 10px 5px 5px 10px;
     display: flex;
     align-items: start;
-    border-radius: 6px;
-    width: 92%;
-    max-width: 92%;
-    background-color: rgba(255, 255, 255, 1);
+    border-radius: 0.75rem;
+    width: 95%;
+    background-color: rgba(248, 248, 247, 1);
     border: 1px solid rgba(229, 231, 235, 1);
     box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     transition: height 0.2s ease;
     margin: 0 auto;
 }
 
+@media (min-width: 768px) {
+    .chatInput {
+        width: 80%;
+        max-width: 900px;
+    }
+}
+
 .chatInputContainer {
     padding-top: 10px;
-    background-color: #fff;
-    border-top: 1px solid #ddd;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -305,7 +324,8 @@
 }
 
 .chatDisclaimer {
-    margin-top: 5px;
+    margin-top: 0.4rem;
+    margin-bottom: 0.4rem;
     font-size: 0.8em;
     text-align: center;
 }

@@ -95,7 +95,6 @@ export default defineConfig({
             "/api/organization": "http://127.0.0.1:8000",
             "/api/delete-source-document": "http://127.0.0.1:8000/",
             "/api/auth/user": "http://127.0.0.1:8000",
-
         },
         host: true
     }

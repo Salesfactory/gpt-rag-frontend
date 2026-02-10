@@ -13,7 +13,7 @@ import {
     getSubscriptionTierDetails,
     logOrganizationSession
 } from "../api";
-import type { OrganizationUsage, ThoughtProcess, SubscriptionTier } from "../api/models";
+import type { OrganizationUsage, ThoughtProcess, SubscriptionTier, ConversationHistoryItem, ChatTurn } from "../api/models";
 import { toast } from "react-toastify";
 import OrganizationSelectorPopup from "../components/OrganizationSelector/OrganizationSelectorPopup";
 import { useSessionManager } from "../hooks/useSessionManager";
@@ -67,25 +67,6 @@ interface OrganizationInfo {
     additionalInstructions?: string;
     segmentSynonyms?: string;
     industryInformation?: string;
-}
-
-// ConversationHistoryItem and ChatTurn remain unchanged
-export interface ConversationHistoryItem {
-    id: string;
-    start_date: string;
-    content: string;
-    type: string;
-    organization_id: string;
-    // Add other properties as needed
-}
-
-export interface ChatTurn {
-    user: string;
-    bot?: {
-        message: string;
-        thoughts: ThoughtProcess;
-    } | null;
-    // Add other properties as needed
 }
 
 // Define the shape of the context
