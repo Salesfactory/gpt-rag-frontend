@@ -231,6 +231,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
     }, [sidebarSections, hasAccess]);
 
     return (
+        <>
+        <div className={`${styles.sidebarOverlay} ${!isCollapsed ? styles.sidebarOverlayVisible : ""}`} onClick={handleOnClickCloseSideBar} />
         <aside className={`${!isCollapsed ? styles.showSidebar : ""} ${styles.leftSidebar}`}>
             {/* Sidebar scroll */}
             <div>
@@ -295,6 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
                 </nav>
             </div>
         </aside>
+        </>
     );
 };
 

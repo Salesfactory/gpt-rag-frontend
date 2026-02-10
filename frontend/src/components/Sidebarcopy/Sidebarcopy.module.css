@@ -194,6 +194,25 @@
     /* box-shadow: 0px 17px 20px -8px rgba(77, 91, 236, 0.23); */
   }
 
+  /* Expanded parent (has open submenu) - no green bg */
+  .sidebarLinkExpanded {
+    background-color: transparent;
+    cursor: pointer;
+    font-weight: 700;
+    user-select: none;
+  }
+
+  .sidebarLink.sidebarLinkExpanded:hover {
+    background-color: transparent;
+    color: #0a0b0a;
+    gap: 10px;
+  }
+
+  .sidebarLink.sidebarLinkExpanded:hover .sidebarLinkIcon {
+    color: black;
+    opacity: 0.8;
+  }
+
   .textActive {
     font-weight: 700;
   }
@@ -240,7 +259,7 @@
   .leftSidebar {
     width: 320px;
     background: linear-gradient(to bottom, #e2e4e4 1%,#e2e4e4 45%);
-    transition: 0.2s ease-in;
+    transition: left 0.3s ease-in-out, box-shadow 0.3s ease-in-out, z-index 0s 0.3s;
     height: 100vh;
     z-index: 30;
     position: fixed;
@@ -318,9 +337,29 @@
     z-index: 60;
     left: 0;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: left 0.3s ease-in-out, box-shadow 0.3s ease-in-out, z-index 0s 0s;
   }
 
   
+  /* Sidebar Overlay */
+  .sidebarOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 55;
+    background-color: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .sidebarOverlayVisible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   /* Responsive Adjustments */
   @media (max-width: 1199px) {
     .leftSidebar {
@@ -331,6 +370,7 @@
       z-index: 60;
       left: 0;
       box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+      transition: left 0.3s ease-in-out, box-shadow 0.3s ease-in-out, z-index 0s 0s;
     }
     
   }

@@ -11,9 +11,12 @@ describe("Main Page (Chat) Test Suite", () => {
         });
         cy.get("button#headerCollapse").should("be.visible");
         cy.get("button#headerCollapse").click();
+        cy.get("button#sidebarCollapse").should("be.visible").click();
     });
 
     it("Should verify the visibilty and functionality of the Main Page Chat", () => {
+        cy.get("button#headerCollapse").click();
+
         // Verify the AI Chat link is visible
         cy.get('a[href="#/"]').contains("AI Chat").should("be.visible");
 
