@@ -346,7 +346,7 @@ def rename_conversation(conversation_id, user_id, title):
     if not title or not isinstance(title, str) or not title.strip():
         raise ValueError("title must be a non-empty string")
 
-    title = title.strip()[:200]
+    title = title.strip()[:60]
 
     container = get_cosmos_container("conversations")
     container.patch_item(

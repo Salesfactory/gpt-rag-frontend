@@ -452,7 +452,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                                                     if (e.key === "Enter") confirmRenaming(conversation.id, conversation.title || "", conversation.content);
                                                                     if (e.key === "Escape") cancelRenaming();
                                                                 }}
-                                                                maxLength={200}
+                                                                maxLength={60}
                                                                 autoFocus
                                                             />
                                                         ) : (
