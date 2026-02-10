@@ -322,6 +322,21 @@ export async function deleteChatConversation(chatId: string, userId: string): Pr
     }
 }
 
+export async function renameConversation(chatId: string, userId: string, title: string): Promise<{ title: string }> {
+    const response = await fetchWrapper(`/api/chat-conversations/${chatId}/title`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            "X-MS-CLIENT-PRINCIPAL-ID": userId
+        },
+        body: JSON.stringify({ title })
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to rename conversation. Status: ${response.status}`);
+    }
+    return response.json();
+}
+
 export async function getChatHistory(userId: string): Promise<ConversationHistoryItem[]> {
     const response = await fetch("/api/chat-history", {
         method: "GET",

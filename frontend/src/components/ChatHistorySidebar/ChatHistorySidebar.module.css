@@ -193,6 +193,23 @@
     font-size: 1rem;
 }
 
+.renameInput {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #A0CB06;
+    border-radius: 4px;
+    font-size: 1rem;
+    color: #333;
+    background: #fff;
+    outline: none;
+    min-width: 0;
+}
+
+.renameInput:focus {
+    border-color: #8ab005;
+    box-shadow: 0 0 0 2px rgba(160, 203, 6, 0.2);
+}
+
 .actionButtons {
     display: flex;
     gap: 8px;
