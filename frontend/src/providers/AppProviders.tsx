@@ -1,6 +1,6 @@
 // AppProvider.tsx
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, Dispatch, SetStateAction, useRef } from "react";
 import { Spinner } from "@fluentui/react";
 import {
     checkUser,
@@ -11,7 +11,9 @@ import {
     getSettings,
     getUserById,
     getSubscriptionTierDetails,
-    logOrganizationSession
+    logOrganizationSession,
+    getUserNotifications,
+    acknowledgeNotification
 } from "../api";
 import type { OrganizationUsage, ThoughtProcess, SubscriptionTier } from "../api/models";
 import { toast } from "react-toastify";
@@ -19,6 +21,7 @@ import OrganizationSelectorPopup from "../components/OrganizationSelector/Organi
 import { useSessionManager } from "../hooks/useSessionManager";
 import { SessionExpiredModal } from "../components/SessionExpiredModal/SessionExpiredModal";
 import { fetchWrapper } from "../api/fetchWrapper";
+import { LoginNotificationModal, NotificationItem } from "../components/LoginNotificationModal/LoginNotificationModal";
 
 // Define the debug mode based on the environment
 const isDebugMode = process.env.NODE_ENV === "development";
@@ -185,6 +188,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const [isResizingAnalysisPanel, setisResizingAnalysisPanel] = useState<boolean>(false);
     const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+    const [loginNotification, setLoginNotification] = useState<NotificationItem | null>(null);
+    const [showLoginNotification, setShowLoginNotification] = useState<boolean>(false);
+    const hasCheckedLoginNotification = useRef<boolean>(false);
 
     // Session management
     const { isSessionExpiredModalOpen, handleRefreshSession, handleLogout, validateSession } = useSessionManager();
@@ -262,6 +268,67 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             debugLog("Keyboard event listener removed.");
         };
     }, [handleKeyDown]);
+
+    const isWithinWindow = (item: NotificationItem, now: Date) => {
+        const startRaw = item.start_at || item.startAt;
+        const endRaw = item.end_at || item.endAt;
+        const startDate = startRaw ? new Date(startRaw) : null;
+        const endDate = endRaw ? new Date(endRaw) : null;
+        if (startDate && Number.isNaN(startDate.getTime())) return false;
+        if (endDate && Number.isNaN(endDate.getTime())) return false;
+        if (startDate && startDate > now) return false;
+        if (endDate && endDate < now) return false;
+        return true;
+    };
+
+    const fetchLatestLoginNotification = useCallback(async () => {
+        if (!user?.id) return;
+        try {
+            const response = await getUserNotifications({ user });
+            const items = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
+            const now = new Date();
+            const active = items
+                .filter((item: NotificationItem) => (item.enabled ?? item.is_enabled) === true)
+                .filter((item: NotificationItem) => isWithinWindow(item, now))
+                .filter((item: NotificationItem) => {
+                    const ackList = item.acknowledgedBy ?? item.acknowledged_by ?? [];
+                    return !ackList.includes(user.id);
+                })
+                .sort((a: NotificationItem, b: NotificationItem) => {
+                    const aDate = new Date(a.created_at || a.createdAt || 0).getTime();
+                    const bDate = new Date(b.created_at || b.createdAt || 0).getTime();
+                    return bDate - aDate;
+                });
+
+            if (active.length > 0) {
+                setLoginNotification(active[0]);
+                setShowLoginNotification(true);
+            }
+        } catch (error) {
+            console.error("Failed to load login notification", error);
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (!isAuthenticated || !user?.id) {
+            return;
+        }
+        if (hasCheckedLoginNotification.current) {
+            return;
+        }
+        hasCheckedLoginNotification.current = true;
+        fetchLatestLoginNotification();
+    }, [fetchLatestLoginNotification, isAuthenticated, user?.id]);
+
+    const acknowledgeLoginNotification = () => {
+        if (user?.id && loginNotification?.id) {
+            acknowledgeNotification({ user, notificationId: loginNotification.id }).catch(error => {
+                console.error("Failed to acknowledge notification", error);
+            });
+        }
+        setShowLoginNotification(false);
+        setLoginNotification(null);
+    };
 
     // Effect to fetch user authentication on component mount
     useEffect(() => {
@@ -601,6 +668,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return (
         <AppContext.Provider value={contextValue}>
             {children}
+            <LoginNotificationModal
+                notification={loginNotification}
+                isOpen={showLoginNotification && !!loginNotification}
+                onAcknowledge={acknowledgeLoginNotification}
+            />
             <SessionExpiredModal isOpen={isSessionExpiredModalOpen} onRefresh={handleRefreshSession} onLogout={handleLogout} />
         </AppContext.Provider>
     );

@@ -2365,6 +2365,28 @@ export async function getNotifications({ user }: { user: any }): Promise<any> {
     }
 }
 
+export async function getUserNotifications({ user }: { user: any }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch("/api/notifications/user", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        });
+        if (!response.ok) {
+            throw Error("Failed to fetch user notifications");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching user notifications", error);
+        throw error;
+    }
+}
+
 export async function createNotification({ user, title, message, enabled }: { user: any, title: string, message: string, enabled: boolean }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
     const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
@@ -2432,6 +2454,29 @@ export async function deleteNotification({ user, notificationId }: { user: any, 
         return await response.json();
     } catch (error) {
         console.error("Error deleting notification", error);
+        throw error;
+    }
+}
+
+export async function acknowledgeNotification({ user, notificationId }: { user: any; notificationId: string }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/${notificationId}/acknowledge`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw Error(errorData.message || "Failed to acknowledge notification");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error acknowledging notification", error);
         throw error;
     }
 }
