@@ -226,14 +226,6 @@
     color: #a62e01;
 }
 
-.exportButton {
-    color: #0078d4;
-}
-
-.exportButton:hover {
-    color: #106ebe;
-}
-
 .actionSpinner {
     padding: 4px;
 }

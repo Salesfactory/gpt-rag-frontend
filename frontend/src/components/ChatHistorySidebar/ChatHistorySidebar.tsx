@@ -5,7 +5,7 @@ import { useAppContext } from "../../providers/AppProviders";
 import { Spinner } from "@fluentui/react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { Trash2, Check, X, ChevronDown, ChevronUp, Upload, ExternalLink, Copy } from "lucide-react";
+import { Trash2, Check, X, ChevronDown, ChevronUp, Upload, ExternalLink, Copy, Pencil } from "lucide-react";
 
 interface ChatHistorySidebarProps {
     onClose: () => void;
@@ -435,6 +435,9 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                                                                     </>
                                                                 ) : (
                                                                     <>
+                                                                        <Pencil
+                                                                            className={styles.actionButton}
+                                                                        />
                                                                         {exportingConversations.has(conversation.id) ? (
                                                                             <Spinner className={styles.actionSpinner} size={1} />
                                                                         ) : (
