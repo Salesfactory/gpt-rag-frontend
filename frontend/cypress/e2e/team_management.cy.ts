@@ -66,7 +66,7 @@ describe("Agent Section Tests", () => {
         cy.wait('@getUsers');
 
 
-        cy.get('button').contains("Create User").should("be.visible");
+        cy.get('button').contains("Invite Team Member").should("be.visible");
         cy.get('button').contains("All Roles").should("be.visible");
 
         //Table content check
@@ -78,8 +78,8 @@ describe("Agent Section Tests", () => {
         cy.get('span').should('contain.text', 'Adamska');
         cy.get('span').should('contain.text', 'No Account');
 
-        //Test for the Create User Modal
-        cy.get('button').contains("Create User").click();
+        //Test for the Invite Team Member Modal
+        cy.get('button').contains("Invite Team Member").click();
         cy.get('button').contains("Send Invitation").should("be.visible");
         cy.get('button').contains("Cancel").should("be.visible");
         cy.get('button').contains("Send Invitation").click();
