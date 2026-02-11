@@ -17,7 +17,7 @@ describe("File Vault Test Suite", () => {
 
     it("Should verify the visibilty and functionality of the Main Page Chat", () => {
         cy.get("span").contains("File Vault").should("be.visible");
-        cy.get("#SearchBox10").should("be.visible");
+        cy.get('input.ms-SearchBox-field').should("be.visible");
         cy.get("span").contains("Upload File").should("be.visible");
     });
 

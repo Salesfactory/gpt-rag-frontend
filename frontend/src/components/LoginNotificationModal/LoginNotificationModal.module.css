@@ -1,0 +1,77 @@
+.dialogContent {
+  padding: 28px 24px 16px;
+  border-radius: 16px;
+  background: #e2e4e4;
+}
+
+.modal :global(.ms-Dialog-main) {
+  width: 450px;
+  max-width: 450px;
+  min-width: 450px;
+  border-radius: 16px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  padding: 0 8px 4px;
+  color: #323130;
+}
+
+.bellWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(160, 203, 6, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 6px;
+}
+
+.BellandText{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.headerText {
+  font-size: 1.25rem;
+  color:#09090b;
+  line-height: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-align: center;
+}
+
+.title {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  letter-spacing: -0.025em;
+  font-weight: 500;
+  color: #1b1a19;
+}
+
+.message {
+  white-space: pre-wrap;
+  color: #71717a;
+  font-size: 1rem;
+  line-height: 1.625;
+}
+
+.timestamp {
+  color: #71717ab3;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  align-self: flex-end;
+  justify-content: right;
+  align-items: flex-start;
+  text-align: right;
+}
