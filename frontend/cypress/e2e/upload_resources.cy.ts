@@ -18,7 +18,7 @@ describe("File Vault Test Suite", () => {
     it("Should verify the visibilty and functionality of the Main Page Chat", () => {
         cy.get("span").contains("File Vault").should("be.visible");
         cy.get('input.ms-SearchBox-field').should("be.visible");
-        cy.get("span").contains("Upload File").should("be.visible");
+        cy.get("span").contains("Upload Files").should("be.visible");
     });
 
     it("Should verify the functionality of the Upload File Button (500 Error Case)", () => {
@@ -28,7 +28,7 @@ describe("File Vault Test Suite", () => {
         });
 
         cy.get("span").contains("File Vault").should("be.visible");
-        cy.get("span").contains("Upload File").should("be.visible").click();
+        cy.get("span").contains("Upload Files").should("be.visible").click();
 
         cy.get("button").contains("Browse Files").should("be.visible");
         cy.get("input[aria-label='Dropzone']").selectFile("./cypress/files/Electric_Vehicle_Population_Data copy.xlsx", {force: true, action: "drag-drop"});
@@ -52,7 +52,7 @@ describe("File Vault Test Suite", () => {
         });
 
         cy.get("span").contains("File Vault").should("be.visible");
-        cy.get("span").contains("Upload File").should("be.visible").click();
+        cy.get("span").contains("Upload Files").should("be.visible").click();
 
         cy.get("button").contains("Browse Files").should("be.visible");
         cy.get("input[aria-label='Dropzone']").selectFile("./cypress/files/Electric_Vehicle_Population_Data copy.xlsx", {force: true, action: "drag-drop"});
