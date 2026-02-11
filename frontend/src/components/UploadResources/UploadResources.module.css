@@ -3,7 +3,7 @@
     flex-direction: column;
     width: 100%;
     padding: 50px 50px 50px 50px;
-    background-color: #f9fafb;
+    background-color: #fafaf9;
 }
 
 .content_container {
@@ -127,11 +127,29 @@
 }
 
 .file_list_header {
-    height: 40px;
+    min-height: 40px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
     margin-top: 20px;
+    gap: 0;
+}
+
+.searchUploadRowOnly {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    gap: 0;
+}
+
+.searchUploadGroup {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .file_list_actions {
@@ -143,7 +161,9 @@
 }
 
 .responsiveSearch {
-    width: 40%;
+    width: 450px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .upload2_button {
@@ -171,7 +191,7 @@
     font-size: 1rem;
     font-weight: 500;
     gap: 0.5rem;
-    min-width: 155px;
+    min-width: 142px;
     height: 40px;
 }
 
@@ -222,7 +242,7 @@
 }
 
 .upload_button:hover {
-    background-color: #8eb134;
+    background-color: #A0CB06E6;
     color: white;
 }
 
@@ -233,8 +253,8 @@
 }
 
 .buttonText {
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 0.875rem;
+    font-weight: 500;
 }
 
 
@@ -258,11 +278,16 @@
 }
 
 .refresh_button {
-    color: #A0CB06;
+    color: #71717a;
+    transition-property: all;
+    transition-duration: 300ms;
+    transition-timing-function: ease-in-out;
 }
 
 .refresh_button:hover {
-    color: #8eb134;
+    color: #71717a;
+    border-radius: 8px;
+    background-color: #e7e7e4;
 }
 
 .file_list_container {
@@ -1168,10 +1193,10 @@
 
 .storageCard {
     width: 100%;
-    background: #A0CB06;
+    background: #f8f8f7;
     border-radius: 12px;
     padding: 16px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e2df;
 }
 
 .storageTopRow,
@@ -1182,24 +1207,37 @@
 }
 
 .storageTitle {
-    font-weight: 700;
-    color: white;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: #09090b;
 }
 
 .storageSub {
-    color: white;
+    color: #71717a;
     font-size: 0.875rem;
+    line-height: 1.25rem;
     margin-top: 2px;
 }
 
 .storageRight {
-    color: white;
-    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #71717a;
+    text-align: right;
+    align-items: flex-end;
+    align-content: flex-end;
+    align-self: flex-end;
+    margin-right: 6px;
 }
 
 .storagePct {
-    font-size: 1.25rem;
-    margin-right: 6px;
+    font-weight: 600;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    color: #09090b;
 }
 
 .storageBarWrapper {
@@ -1207,13 +1245,13 @@
 }
 
 .storageBar {
-    height: 14px;
+    height: 0.75rem;
     width: 100%;
-    background: #e5f6ec;
+    background-color: #e7e7e4;
     border-radius: 9999px;
     position: relative;
     overflow: hidden;
-    border: 1px solid #d1fae5;
+    border: 1px solid #e7e7e4;
 }
 
 .storageBarFill {
@@ -1222,7 +1260,7 @@
     top: 0;
     bottom: 0;
     border-radius: 9999px;
-    background: linear-gradient(90deg, #A0CB06, #8eb134);
+    background: #A0CB06;
     width: 0%;
     transition: width 240ms ease;
 }
@@ -1244,7 +1282,7 @@
 }
 
 .storageBottomRow span {
-    color: white;
+    color: #71717a;
     font-size: 0.875rem;
 }
 
