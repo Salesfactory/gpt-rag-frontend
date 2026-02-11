@@ -42,7 +42,7 @@ describe("parseAnswerToHtml()", () => {
 
         expect(citations).toHaveLength(0);
         expect(answerHtml).toContain(imgMd); // image preserved verbatim
-        expect(answerHtml).not.toMatch(/<sup>/); // no citation markup
+        expect(answerHtml).not.toMatch(/data-citation-index=/); // no citation markup
         expect(stripTags(answerHtml)).not.toContain("[[1]]");
         expect(answerHtml).not.toMatch(/Citations:/i); // Citations block removed
         expect(answerHtml).not.toMatch(/Other.pdf/); // Citations block links removed
@@ -53,8 +53,10 @@ describe("parseAnswerToHtml()", () => {
         const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
 
         expect(citations).toEqual(["A.pdf", "B.pdf"]);
-        expect(answerHtml).toMatch(/<sup>1<\/sup>/);
-        expect(answerHtml).toMatch(/<sup>2<\/sup>/);
+        expect(answerHtml).toMatch(/data-citation-index="1"/);
+        expect(answerHtml).toMatch(/data-citation-index="2"/);
+        expect(answerHtml).toMatch(/\[1\]/);
+        expect(answerHtml).toMatch(/\[2\]/);
         expect(answerHtml).not.toMatch(/Citations:/i);
         expect(answerHtml).not.toMatch(/\[\[1\]\]/); // no raw citation
         expect(answerHtml).not.toMatch(/A.pdf\s*$/); // no trailing citation block
@@ -69,7 +71,7 @@ describe("parseAnswerToHtml()", () => {
         expect(answerHtml).not.toMatch(/A.pdf\s*$/);
     });
 
-    it("converts citations to <sup> when showSources = true & not resizing", () => {
+    it("converts citations to inline citation badges when showSources = true & not resizing", () => {
         mockIsResizing = false;
         const md = `Intro [[1]](A.pdf), again [[2]](B.pdf)`;
         const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
@@ -77,10 +79,24 @@ describe("parseAnswerToHtml()", () => {
         expect(citations).toEqual(["A.pdf", "B.pdf"]);
         expect(answerHtml).toMatch(/data-citation-url="A.pdf"/);
         expect(answerHtml).toMatch(/data-citation-path="\/docs\/A.pdf"/);
-        expect(answerHtml).toMatch(/<sup>1<\/sup>/);
+        expect(answerHtml).toMatch(/data-citation-index="1"/);
+        expect(answerHtml).toMatch(/\[1\]/);
         expect(answerHtml).toMatch(/data-citation-url="B.pdf"/);
         expect(answerHtml).toMatch(/data-citation-path="\/docs\/B.pdf"/);
-        expect(answerHtml).toMatch(/<sup>2<\/sup>/);
+        expect(answerHtml).toMatch(/data-citation-index="2"/);
+        expect(answerHtml).toMatch(/\[2\]/);
+        expect(answerHtml).not.toMatch(/citationInlineIcon/);
+    });
+
+    it("renders public document URLs as web citations with favicon metadata", () => {
+        mockIsResizing = false;
+        const md = `Public doc [[1]](https://example.com/report.pdf)`;
+        const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
+
+        expect(citations).toEqual(["https://example.com/report.pdf"]);
+        expect(answerHtml).toMatch(/data-citation-url="https:\/\/example\.com\/report\.pdf"/);
+        expect(answerHtml).toMatch(/data-citation-path="https:\/\/example\.com\/report\.pdf"/);
+        expect(answerHtml).toMatch(/citationInlineIcon/);
     });
 
     it("behaves like citation-stripping mode when analysis panel is resizing", () => {
@@ -88,7 +104,7 @@ describe("parseAnswerToHtml()", () => {
         const md = `Doc [[1]](A.pdf)`;
         const { answerHtml } = parseAnswerToHtml(md, true, noopClick);
 
-        expect(answerHtml).not.toMatch(/<sup>/);
+        expect(answerHtml).not.toMatch(/data-citation-index=/);
         expect(answerHtml).not.toContain("[[1]]");
     });
 
@@ -98,7 +114,7 @@ describe("parseAnswerToHtml()", () => {
         const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
 
         expect(citations).toEqual(["Same.pdf"]); // deduped
-        expect(answerHtml.match(/<sup>1<\/sup>/g)).toHaveLength(2);
+        expect(answerHtml.match(/data-citation-index="1"/g)).toHaveLength(2);
     });
 
     it('handles citations with parentheses in filename', () => {
@@ -107,8 +123,8 @@ describe("parseAnswerToHtml()", () => {
         const { answerHtml, citations } = parseAnswerToHtml(md, true, noopClick);
 
         expect(citations).toEqual(['megustalaarepa(1).xlsx', 'file(2).pdf']);
-        expect(answerHtml).toMatch(/<sup>1<\/sup>/);
-        expect(answerHtml).toMatch(/<sup>2<\/sup>/);
+        expect(answerHtml).toMatch(/data-citation-index="1"/);
+        expect(answerHtml).toMatch(/data-citation-index="2"/);
         expect(answerHtml).not.toContain('[[1]]');
         expect(answerHtml).not.toContain('[[2]]');
     });
