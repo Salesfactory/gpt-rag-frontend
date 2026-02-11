@@ -814,26 +814,31 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 16px 24px;
+    width: 100px;
+    height: 99px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background-color: #ffffff;
     cursor: pointer;
     transition: all 0.2s;
-    min-width: 120px;
 }
 
 .category_button:hover {
     border-color: #ccd9ad;
-    background-color: #dfdfdf;
+    background-color: #f0f0ee;
 }
 
 .category_button.selected {
     border: 2px solid #A0CB06;
-    background-color: #f6faea;
+    background-color: #f1f5e1;
 }
 
 .category_button_icon {
+    margin-bottom: 0.5rem;
     color: #6b7280;
 }
 
@@ -842,9 +847,10 @@
 }
 
 .category_button_text {
-    font-size: 14px;
+    font-size: 0.75rem;
     font-weight: 500;
-    color: #374151;
+    line-height: 1rem;
+    color: #09090b;
 }
 
 .category_button.selected .category_button_text {
@@ -863,8 +869,9 @@
     align-items: center;
     gap: 8px;
     padding: 8px;
+    height: 40px;
     border-radius: 8px;
-    background-color: #f6faea;
+    background-color: #f1f5e1;
 }
 
 .folder_title {
@@ -890,22 +897,23 @@
 }
 
 .new_folder_button {
-    display: flex;
+display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    background-color: #A0CB06;
-    transition: background-color 0.2s;
-    color: #ffffff;
-    cursor: pointer;
-    font-size: 14px;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.5rem;
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
+    font-size: 0.875rem;
     font-weight: 500;
+    border-radius: 0.375rem;
+    background-color: #A0CB06;
+    color: white;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .new_folder_button:hover {
-    background-color: #8eb134;
+    background-color: #A0CB06E6;
 }
 
 .new_folder_icon {
@@ -921,8 +929,15 @@
     border-radius: 8px;
     background-color: #ffffff;
     cursor: pointer;
-    font-size: 14px;
-    color: #6b7280;
+    font-weight: 500;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #09090b;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.recent_button:hover {
+    background-color: #e7e7e4;
 }
 
 .file_list_wrapper {
@@ -1504,6 +1519,7 @@
     grid-template-columns: auto 1fr;
     column-gap: 8px;
     row-gap: 8px;
+    height: 40px;
     align-items: center;
   }
 
