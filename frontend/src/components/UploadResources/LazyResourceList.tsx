@@ -3,7 +3,7 @@ import { IconButton } from "@fluentui/react/lib/Button";
 import { Text } from "@fluentui/react/lib/Text";
 import { Spinner } from "@fluentui/react/lib/Spinner";
 import styles from "./UploadResources.module.css";
-import { Download, Trash2, FileText, Table, Presentation, Folder, Edit2, Clock, ArrowUpDown, FolderUp, Check, X, ArrowUp, ArrowDown } from "lucide-react";
+import { Download, Trash2, File, FileText, Table, Presentation, Folder, Edit2, Clock, ArrowUpDown, FolderUp, Check, X, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDate, formatFileSize } from "../../utils/fileUtils";
 import { BlobItem, FolderItem } from "../../types";
 import NewFolderDialogModal from "./NewFolderDialogModal";
@@ -110,10 +110,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     };
 
     const categories = [
-        { key: "all", label: "All", icon: <FileText size={20} /> },
-        { key: "documents", label: "Documents", icon: <FileText size={20} /> },
-        { key: "spreadsheets", label: "Spreadsheets", icon: <Table size={20} /> },
-        { key: "presentations", label: "Presentations", icon: <Presentation size={20} /> }
+        { key: "all", label: "All", icon: <File size={22} /> },
+        { key: "documents", label: "Documents", icon: <FileText size={22} /> },
+        { key: "spreadsheets", label: "Spreadsheets", icon: <Table size={22} /> },
+        { key: "presentations", label: "Presentations", icon: <Presentation size={22} /> }
     ];
 
     // Get the current folder name from path
