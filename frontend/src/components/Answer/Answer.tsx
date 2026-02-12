@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Stack, IconButton } from "@fluentui/react";
+import { Stack, IconButton, TooltipHost } from "@fluentui/react";
 import DOMPurify from "dompurify";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -521,6 +521,33 @@ export const Answer = ({
                     </Stack>
                 </Stack.Item>
             )}
+
+            <Stack.Item>
+                <div className={styles.feedbackButtonRow}>
+                    <TooltipHost content="Leave Feedback">
+                        <button className={styles.feedbackButton} onClick={handleFeedbackClick} aria-label="Leave Feedback" title="Leave Feedback">
+                            <IconButton
+                                aria-hidden="true"
+                                iconProps={{ iconName: "Feedback" }}
+                                styles={{
+                                    root: {
+                                        background: "transparent",
+                                        border: "none",
+                                        minWidth: "auto",
+                                        width: "auto",
+                                        height: "auto",
+                                        padding: 0
+                                    },
+                                    icon: {
+                                        color: "inherit",
+                                        fontSize: "16px"
+                                    }
+                                }}
+                            />
+                        </button>
+                    </TooltipHost>
+                </div>
+            </Stack.Item>
         </Stack>
     );
 };
