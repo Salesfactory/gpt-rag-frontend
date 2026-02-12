@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./Notifications.module.css"
 import { Bell, Trash2 } from "lucide-react";
-import { getUserNotifications } from "../../api";
+import { acknowledgeNotification, getUserNotifications } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
 
@@ -39,7 +39,7 @@ useEffect(() => {
     setNotifications(response.data);
    } 
    getNotifications();
-}, []);
+}, [acknowledgeNotification]);
 
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -48,6 +48,15 @@ const formatDate = (dateString: string) => {
         day: 'numeric',
     });
 };
+
+const handleNotificationClick = async (notificationId: string) => {
+       try {
+        // 
+        await acknowledgeNotification({ user: user, notificationId: notificationId });   
+       } catch (error) {
+           console.log(error);
+       }
+}
 
     return (
         <div className={styles.page_container}>
@@ -65,7 +74,9 @@ const formatDate = (dateString: string) => {
                         }
 
                         return (
-                        <li
+                        <li onClick={() => {
+                            handleNotificationClick(item.id);
+                        }}
                             key={item.id}
                             className={classNames.join(" ")}
                         >
