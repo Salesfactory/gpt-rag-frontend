@@ -1,8 +1,21 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./Notifications.module.css"
-import { Bell, Trash } from "lucide-react";
+import { Bell, Trash2 } from "lucide-react";
+import { getUserNotifications } from "../../api";
+import { useAppContext } from "../../providers/AppProviders";
+
+
+type Notification = {
+    id: string;
+    title: string;
+    message: string;
+    createdAt: string;
+    isUnread: boolean;
+}
 
 const Notifications: React.FC = () => {
+    const { user } = useAppContext();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const tableScrollRef = useRef<HTMLDivElement>(null);
     const handleTableWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -19,35 +32,14 @@ const Notifications: React.FC = () => {
 
   
 };
-const items: any = [
-    {
-    "id": "54e4f872-c8ae-44e9-bcd3-debf800df5bb",
-    "title": "Test123",
-    "message": "test",
-    "enabled": false,
-    "createdAt": "2026-02-09T23:42:31.315592+00:00",
-    "updatedAt": "2026-02-11T18:14:20.855399+00:00",
-    "_rid": "efxAANtfv5oCAAAAAAAAAA==",
-    "_self": "dbs/efxAAA==/colls/efxAANtfv5o=/docs/efxAANtfv5oCAAAAAAAAAA==/",
-    "_etag": "\"01018f84-0000-0100-0000-698cc6fc0000\"",
-    "_attachments": "attachments/",
-    "acknowledgedBy": [],
-    "_ts": 1770833660
-},     {
-    "id": "54e4f872-c8ae-44e9-bcd3-debf800dd5bb",
-    "title": "Test123",
-    "message": "test",
-    "enabled": false,
-    "createdAt": "2026-02-09T23:42:31.315592+00:00",
-    "updatedAt": "2026-02-11T18:14:20.855399+00:00",
-    "_rid": "efxAANtfv5oCAAAAAAAAAA==",
-    "_self": "dbs/efxAAA==/colls/efxAANtfv5o=/docs/efxAANtfv5oCAAAAAAAAAA==/",
-    "_etag": "\"01018f84-0000-0100-0000-698cc6fc0000\"",
-    "_attachments": "attachments/",
-    "acknowledgedBy": [],
-    "_ts": 1770833660
-}
-];
+
+useEffect(() => {
+   const getNotifications = async () => {
+    const response: any = await getUserNotifications({ user: user });
+    setNotifications(response.data);
+   } 
+   getNotifications();
+}, []);
 
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -60,36 +52,48 @@ const formatDate = (dateString: string) => {
     return (
         <div className={styles.page_container}>
             <div className={styles.tableScroll} ref={tableScrollRef} onWheel={handleTableWheel}>
-                <ul className={styles.tableContainer} style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                <ul className={styles.tableContainer}>
                     <li className={styles.headerRow}>
                         <Bell size={20} />
-                        Notifications (3 Unread)
+                        Notifications {notifications.length > 0 ? `(${notifications.filter((item) => !item.isUnread).length} unread)` : ""}
                     </li>
-                    {items.map((item: any, index: number) => (
+                    { notifications.length > 0 ? notifications.map((item) => {
+                        const classNames = [styles.notificationRow];
+
+                        if (item.isUnread) {
+                            classNames.push(styles.notificationRowUnread);
+                        }
+
+                        return (
                         <li
                             key={item.id}
-                            className={styles.notificationRow}
-                            style={{ backgroundColor: index % 2 === 0 ? "#f8f8f7" : "#f6f6f7" }}
+                            className={classNames.join(" ")}
                         >
-                            <div className={styles.notificationRowDiv}>
-                                <div className={styles.notificationInfo}>
-                                    <div className={styles.notificationTitle}>
-                                        <span className={styles.greenCircle}></span>
-                                        <p className={styles.title}>{item.title}</p>
-                                    </div>
-                                    <p>{item.message}</p>
-                                </div>
+                            <div className={styles.indicator}>
+                                {item.isUnread ? <span className={styles.greenCircle} /> : null}
                             </div>
-                            <div>
-                                    {formatDate(item.createdAt)}
-                                <div className={styles.notificationActions}>
-                                    <button>
-                                        <Trash size={20} />
-                                    </button>
+                            <div className={styles.notificationContent}>
+                                <div className={styles.notificationHeadline}>
+                                    <h3 className={styles.notificationTitle}>{item.title}</h3>
+                                    <span className={styles.date}>{formatDate(item.createdAt)}</span>
                                 </div>
+                                <p className={styles.message}>{item.message}</p>
+                            </div>
+                            <div className={styles.notificationActions}>
+                                <button className={styles.iconButton} aria-label={`Delete notification ${item.title}`}>
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
                         </li>
-                    ))}
+                    )}) : (
+                        <li className={styles.noNotificationsRow}>
+                            <div className={styles.noNotificationsContent}>
+                                <Bell size={50} color="#B6B6BA" />
+                                <p className={styles.noNotificationsTitle}>No Notifications</p>
+                                <p className={styles.noNotificationsDescription}>Youre all caught up! Check back later.</p>
+                            </div>
+                        </li>
+                    )}
                 </ul>
             </div>
         </div>
