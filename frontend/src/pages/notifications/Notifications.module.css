@@ -1,8 +1,231 @@
 .page_container {
+    width: 100%;
+    min-width: 320px;
+    padding: 2rem 1.5rem;
+    display: flex;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.tableScroll {
+    width: min(75%, 92vw);
+    max-width: 1250px;
+    border: 1px solid #e4e7ec;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    box-shadow: 0 18px 55px rgba(16, 24, 40, 0.08);
+    overflow: hidden;
+}
+
+.tableContainer {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.headerRow{
+    background: #A0CB06;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    letter-spacing: -0.01em;
+}
+
+.notificationRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    background-color: rgb(248, 248, 247);
+    cursor: pointer;
+    transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.noNotificationsRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    background-color: rgb(251, 251, 250);
+    transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.noNotificationsContent {
+    padding: 4rem;
     display: flex;
     flex-direction: column;
-    width: 100%;
-    padding: 100px 100px 100px 150px;
-    background-color: #f9fafb;
-    min-height: 100vh;
+    align-items: center;
+}
+
+.noNotificationsTitle {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #717179;
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.noNotificationsDescription {
+    font-size: 0.85rem;
+    color: #B6B6BA;
+}
+
+.notificationRow:last-child {
+    border-bottom: none;
+}
+
+.notificationRow:hover {
+    background-color: rgb(241, 241, 239);
+}
+
+.notificationRowMuted {
+    background-color: #f8fafc;
+}
+
+.notificationRowHighlight {
+    background-color: rgba(160, 203, 6, 0.08);
+}
+
+.notificationRowUnread {
+    background-color: rgb(245, 249, 235);
+}
+
+.notificationRowUnread:hover {
+    background-color: rgba(160, 203, 6, 0.2);
+}
+
+.indicator {
+    width: 1rem;
+    padding-top: 0.35rem;
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.greenCircle {
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: #A0CB06;
+    border-radius: 999px;
+    box-shadow: 0 0 10px rgba(160, 203, 6, 0.55);
+}
+
+.notificationContent {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.notificationHeadline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.notificationTitle {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1f2933;
+}
+
+.message {
+    margin: 0;
+    color: #4b5563;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.date {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #7a8194;
+    white-space: nowrap;
+}
+
+.notificationActions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.iconButton {
+    border: none;
+    padding: 0.35rem;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: #9ca3af;
+    display: inline-flex;
+    transition: color 160ms ease, background-color 160ms ease;
+    cursor: pointer;
+}
+
+.iconButton:hover {
+    color: #d92d20;
+    background-color: rgba(217, 45, 32, 0.12);
+}
+
+@media (max-width: 900px) {
+    .page_container {
+        padding: 1.5rem 1rem;
+    }
+
+    .tableScroll {
+        width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .tableScroll {
+        border-radius: 0.75rem;
+        width: 100%;
+    }
+
+    .notificationRow {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: nowrap;
+    }
+
+    .notificationHeadline {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .notificationTitle,
+    .message {
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .message {
+        display: block;
+    }
+
+    .notificationActions {
+        align-self: center;
+        width: auto;
+        justify-content: flex-end;
+        margin-top: 0;
+    }
 }
