@@ -525,32 +525,14 @@ export const Answer = ({
             <Stack.Item>
                 <div className={styles.feedbackButtonRow} data-cy="feedback-button-row">
                     <TooltipHost content="Leave Feedback">
-                        <button
+                        <IconButton
                             className={styles.feedbackButton}
                             onClick={handleFeedbackClick}
-                            aria-label="Leave Feedback"
+                            iconProps={{ iconName: "Feedback" }}
+                            ariaLabel="Leave Feedback"
                             title="Leave Feedback"
                             data-cy="feedback-button"
-                        >
-                            <IconButton
-                                aria-hidden="true"
-                                iconProps={{ iconName: "Feedback" }}
-                                styles={{
-                                    root: {
-                                        background: "transparent",
-                                        border: "none",
-                                        minWidth: "auto",
-                                        width: "auto",
-                                        height: "auto",
-                                        padding: 0
-                                    },
-                                    icon: {
-                                        color: "inherit",
-                                        fontSize: "16px"
-                                    }
-                                }}
-                            />
-                        </button>
+                        />
                     </TooltipHost>
                 </div>
             </Stack.Item>
