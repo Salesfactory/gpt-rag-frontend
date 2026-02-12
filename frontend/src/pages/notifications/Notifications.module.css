@@ -1,8 +1,86 @@
 .page_container {
     display: flex;
     flex-direction: column;
+    padding-top: 2rem;
+    margin: 0 auto;
+    width: 65%;
+}
+
+/* Contenedor con scroll vertical */
+.tableScroll {
+    max-height: clamp(320px, 75vh, 720px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #d9d9d9;
+    border-radius: 0.5rem;
+    background: #fff;
+}
+
+/* Contenedor horizontal para responsive */
+.tableContainer {
+    overflow-x: auto;
+    overflow-y: visible;
     width: 100%;
-    padding: 100px 100px 100px 150px;
-    background-color: #f9fafb;
-    min-height: 100vh;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.headerRow{
+    background: #A0CB06;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 16px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 10px;
+}
+
+.notificationRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1rem 1rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 600;
+    color: #000000;
+    font-size: 14px;
+    background-color: #e5e7eb;
+}
+
+@media (max-width: 430px) {
+    .tableContainer li {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        padding: 12px 8px !important;
+        font-size: 14px !important;
+        gap: 8px;
+    }
+}
+
+.notificationRowDiv {
+    display: flex;
+}
+
+.notificationTitle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.title {
+    font-weight: 600;
+    font-size: 16px;
+    text-align: center;
+    justify-content: center;
+}
+
+.greenCircle {
+    width: 8px;
+    height: 8px;
+    background-color: #A0CB06;
+    border-radius: 50%;
 }
