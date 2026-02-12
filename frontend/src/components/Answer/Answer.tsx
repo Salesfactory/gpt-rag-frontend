@@ -523,9 +523,15 @@ export const Answer = ({
             )}
 
             <Stack.Item>
-                <div className={styles.feedbackButtonRow}>
+                <div className={styles.feedbackButtonRow} data-cy="feedback-button-row">
                     <TooltipHost content="Leave Feedback">
-                        <button className={styles.feedbackButton} onClick={handleFeedbackClick} aria-label="Leave Feedback" title="Leave Feedback">
+                        <button
+                            className={styles.feedbackButton}
+                            onClick={handleFeedbackClick}
+                            aria-label="Leave Feedback"
+                            title="Leave Feedback"
+                            data-cy="feedback-button"
+                        >
                             <IconButton
                                 aria-hidden="true"
                                 iconProps={{ iconName: "Feedback" }}
