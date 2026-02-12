@@ -27,6 +27,12 @@ import {
 const RX_MARKDOWN_LINK = /(?<!!)\[([^\]]+)\]\(([^)]+)\)/g; // skip image markdown
 const RX_WRONG_NUMBERS = /\[\^(\d+)\^\]/g; // ↳ [^1^] ➜ [1]
 const RX_CITATION_BLOCK = /\[\[([^\]]+)\]\]\(((?:[^\(\)]|\([^\(\)]*\))+)\)/g; // [[1]](url) allows simple balanced parentheses
+const RX_FENCED_CODE_BLOCK = /```[\s\S]*?```/g;
+const RX_INLINE_CODE = /`[^`\n]*`/g;
+const RX_MARKDOWN_LINK_OR_IMAGE = /!?\[[^\]]*]\((?:[^()\\]|\\.|\\([^()]*\\))*\)/g;
+const RX_BARE_URL = /https?:\/\/[^\s<>"`]+/g;
+const RX_PROTECTED_SEGMENT_TOKEN = /@@PROTECTED_SEGMENT_(\d+)@@/g;
+const RX_ATTACHED_HASH = /([^\s#])(#+)/g;
 
 /* ------------------------------------------------------------------
  * Types
@@ -65,6 +71,43 @@ function replaceMarkdownLinks(text: string): string {
  * Pure helper: fix [^1^] → [1]
  * ---------------------------------------------------------------- */
 const fixWrongNumbers = (t: string) => t.replace(RX_WRONG_NUMBERS, (_: string, n: string) => `[${n}]`);
+
+function protectPattern(input: string, pattern: RegExp, protectedSegments: string[]): string {
+    pattern.lastIndex = 0;
+    return input.replace(pattern, (match: string) => {
+        const token = `@@PROTECTED_SEGMENT_${protectedSegments.length}@@`;
+        protectedSegments.push(match);
+        return token;
+    });
+}
+
+function maskProtectedSegments(input: string): { masked: string; protectedSegments: string[] } {
+    const protectedSegments: string[] = [];
+    let masked = input;
+
+    masked = protectPattern(masked, RX_FENCED_CODE_BLOCK, protectedSegments);
+    masked = protectPattern(masked, RX_INLINE_CODE, protectedSegments);
+    masked = protectPattern(masked, RX_MARKDOWN_LINK_OR_IMAGE, protectedSegments);
+    masked = protectPattern(masked, RX_BARE_URL, protectedSegments);
+
+    return { masked, protectedSegments };
+}
+
+function unmaskProtectedSegments(input: string, protectedSegments: string[]): string {
+    return input.replace(RX_PROTECTED_SEGMENT_TOKEN, (_: string, index: string) => {
+        return protectedSegments[Number(index)] ?? "";
+    });
+}
+
+function normalizeAttachedHashMarkers(input: string): string {
+    if (!input.includes("#")) {
+        return input;
+    }
+
+    const { masked, protectedSegments } = maskProtectedSegments(input);
+    const normalized = masked.replace(RX_ATTACHED_HASH, "$1\n$2");
+    return unmaskProtectedSegments(normalized, protectedSegments);
+}
 
 const inlineBadgeStyle: React.CSSProperties = {
     display: "inline-flex",
@@ -145,7 +188,7 @@ export function parseAnswerToHtml(
     const { isResizingAnalysisPanel } = useAppContext();
 
     /* 1. Pre‑clean non‑citation transformations */
-    let text = fixWrongNumbers(replaceMarkdownLinks(raw));
+    let text = fixWrongNumbers(replaceMarkdownLinks(normalizeAttachedHashMarkers(raw)));
     // Collect citations & mapping only if needed
     if (!showSources || isResizingAnalysisPanel) {
         return {

@@ -128,6 +128,60 @@ describe("parseAnswerToHtml()", () => {
         expect(answerHtml).not.toContain('[[1]]');
         expect(answerHtml).not.toContain('[[2]]');
     });
+
+    it("inserts a newline before attached hash markers when showSources = false", () => {
+        mockIsResizing = false;
+        const md = "I'll show examples to illustrate the framework together.#### Here's How Great Creative Briefs Come to Life";
+        const { answerHtml } = parseAnswerToHtml(md, false, noopClick);
+
+        expect(answerHtml).toContain("together.\n#### Here's How Great Creative Briefs Come to Life");
+    });
+
+    it("inserts a newline before attached hash markers when showSources = true", () => {
+        mockIsResizing = false;
+        const md = "I'll show examples to illustrate the framework together.#### Here's How Great Creative Briefs Come to Life";
+        const { answerHtml } = parseAnswerToHtml(md, true, noopClick);
+
+        expect(answerHtml).toContain("together.\n#### Here's How Great Creative Briefs Come to Life");
+    });
+
+    it("does not split hash markers inside protected URL/code/link/image regions", () => {
+        mockIsResizing = false;
+        const md = [
+            "URL https://example.com/page#section",
+            "Inline `C# and #tag` stays.",
+            "```ts",
+            'const lang = "C#";',
+            "# inside code fence",
+            "```",
+            "[Docs](https://example.com/page#anchor)",
+            "![Alt](https://example.com/image#frag.png)",
+            "Sentence.#### Heading"
+        ].join("\n\n");
+        const { answerHtml } = parseAnswerToHtml(md, false, noopClick);
+
+        expect(answerHtml).toContain("https://example.com/page#section");
+        expect(answerHtml).not.toContain("https://example.com/page\n#section");
+        expect(answerHtml).toContain("`C# and #tag`");
+        expect(answerHtml).not.toContain("`C\n# and #tag`");
+        expect(answerHtml).toContain('const lang = "C#";');
+        expect(answerHtml).not.toContain('const lang = "C\n#";');
+        expect(answerHtml).toContain("[https://example.com/page#anchor]");
+        expect(answerHtml).not.toContain("[https://example.com/page\n#anchor]");
+        expect(answerHtml).toContain("![Alt](https://example.com/image#frag.png)");
+        expect(answerHtml).not.toContain("![Alt](https://example.com/image\n#frag.png)");
+        expect(answerHtml).toContain("Sentence.\n#### Heading");
+    });
+
+    it("keeps hash normalization idempotent when parsing repeatedly", () => {
+        mockIsResizing = false;
+        const md = "Sentence.\n#### Heading";
+        const firstPass = parseAnswerToHtml(md, false, noopClick).answerHtml;
+        const secondPass = parseAnswerToHtml(firstPass, false, noopClick).answerHtml;
+
+        expect(firstPass).toBe(md);
+        expect(secondPass).toBe(md);
+    });
 });
 
 describe("removeCitationsBlock()", () => {
