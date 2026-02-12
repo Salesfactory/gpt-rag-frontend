@@ -1,0 +1,42 @@
+name: Pytest Unit Testing
+on:
+  pull_request:
+    branches:
+            - develop
+jobs:
+  pytest-test:
+    runs-on: ubuntu-latest
+    outputs:
+      run_tests: ${{ steps.changes.outputs.run_tests }}
+    steps:
+  
+      # 1. Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: Check Changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            run_tests: 
+              - 'backend/**'
+      
+      - name: Run Test
+        if: ${{ steps.changes.outputs.run_tests == 'true' }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install Dependencies
+        if: ${{ steps.changes.outputs.run_tests == 'true' }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ./backend/requirements-dev.txt
+      - name: Run Pytest Tests
+        if: ${{ steps.changes.outputs.run_tests == 'true' }}
+        run: pytest ./backend/tests
+      
+      - name: Skip Test
+        if: ${{ steps.changes.outputs.run_tests == 'false' }}
+        run: echo "No changes detected in backend directory, skipping tests"
