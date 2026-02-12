@@ -341,30 +341,26 @@
 }
 
 .file_user_pill {
-    border-radius: 99999px;
+    border-radius: 9999px;
     line-height: 1rem;
+    font-weight: 500;
     font-size: 0.75rem;
     display: inline-flex;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    background-color: #dbeafe;
-    color: #1e40af;
+    padding: 0.125rem 0.5rem;
+    background-color: #0da2e733;
+    color: #0da2e7;
 }
 
 .file_size_pill {
     margin-left: 0.5rem;
-    border-radius: 99999px;
+    border-radius: 9999px;
     line-height: 1rem;
     font-size: 0.75rem;
+    font-weight: 500;
     display: inline-flex;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    background-color: #f3f4f6;
-    color: #374151;
+    padding: 0.125rem 0.5rem;
+    background-color: #e7e7e4;
+    color: #71717a;
 }
 
 .file_icon {
@@ -943,7 +939,10 @@ display: inline-flex;
 .file_list_wrapper {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .file_item_row {
@@ -951,18 +950,31 @@ display: inline-flex;
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border: 0;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 0;
     background-color: #ffffff;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.file_item_row:not(.drop_zone):nth-child(odd) {
+    background-color: #f8f8f7;
+}
+
+.file_item_row:not(.drop_zone):nth-child(even) {
+    background-color: #f2f2f0;
+}
+
+.file_item_row:last-child {
+    border-bottom: 0;
 }
 
 .file_item_row.clickable {
     cursor: pointer;
 }
 
-.file_item_row:hover {
-    background-color: #dcdcdc;
+.file_item_row:not(.drop_zone):hover {
+    background-color: #f3f5ea;
 }
 
 .file_item_left {
@@ -997,16 +1009,19 @@ display: inline-flex;
 
 .file_name_text {
     margin-bottom: 0.2rem;
-    font-size: 15px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     font-weight: 500;
+    white-space: nowrap;
     color: #111827;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .file_metadata {
-    font-size: 13px;
-    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #71717a;
 }
 
 .file_badges_container {
@@ -1665,4 +1680,38 @@ display: inline-flex;
 .tooltipWrapper:hover .tooltipText {
     visibility: visible;
     opacity: 1;
+}
+
+.icon_button_edit {
+    transition: all 0.3s ease;
+}
+
+.icon_button_edit svg {
+    transition: all 0.3s ease;
+}
+
+.icon_button_edit:hover {
+    background-color: transparent !important;
+}
+
+.icon_button_edit:hover svg {
+    color: #A0CB06 !important;
+    stroke: #A0CB06 !important;
+}
+
+.icon_button_delete {
+    transition: all 0.3s ease;
+}
+
+.icon_button_delete svg {
+    transition: all 0.3s ease;
+}
+
+.icon_button_delete:hover {
+    background-color: transparent !important;
+}
+
+.icon_button_delete:hover svg {
+    color: #dc2626 !important;
+    stroke: #dc2626 !important;
 }

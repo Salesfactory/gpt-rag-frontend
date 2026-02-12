@@ -472,7 +472,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                                     }}
                                                     disabled={isRenaming}
                                                 >
-                                                    <Check size={16} />
+                                                    <Check size={18} />
                                                 </IconButton>
                                                 <IconButton
                                                     title="Cancel"
@@ -483,7 +483,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                                     }}
                                                     disabled={isRenaming}
                                                 >
-                                                    <X size={16} />
+                                                    <X size={18} />
                                                 </IconButton>
                                             </div>
                                         </div>
@@ -505,6 +505,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                         e.stopPropagation();
                                         startEditFolder(folder);
                                     }}
+                                    className={styles.icon_button_edit}
                                     styles={{
                                         root: {
                                             minWidth: "32px",
@@ -513,12 +514,13 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                         }
                                     }}
                                 >
-                                    <Edit2 size={16} color="#6b7280" />
+                                    <Edit2 size={18} color="#6b7280" />
                                 </IconButton>
                                 <IconButton
                                     title="Delete"
                                     ariaLabel="Delete"
                                     onClick={e => handleDeleteFolderClick(e, folder)}
+                                    className={styles.icon_button_delete}
                                     styles={{
                                         root: {
                                             minWidth: "32px",
@@ -527,7 +529,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                         }
                                     }}
                                 >
-                                    <Trash2 size={16} color="#6b7280" />
+                                    <Trash2 size={18} color="#6b7280" />
                                 </IconButton>
                             </div>
                         </div>
@@ -586,14 +588,12 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                             </div>
                                         ) : (
                                             <>
-                                                <Text className={styles.file_name_text}>{getDisplayName(file.name)}</Text>
-                                                <div>
-                                                    <Text className={styles.file_description}>
-                                                        <span className={styles.file_user_pill}>
-                                                            {file.name.slice(file.name.lastIndexOf(".") + 1).toLocaleUpperCase()}
-                                                        </span>
-                                                        <span className={styles.file_size_pill}>{formatFileSize(file.size)}</span>
-                                                    </Text>
+                                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                    <Text className={styles.file_name_text}>{getDisplayName(file.name)}</Text>
+                                                    <span className={styles.file_user_pill}>
+                                                        {file.name.slice(file.name.lastIndexOf(".") + 1).toLocaleUpperCase()}
+                                                    </span>
+                                                    <span className={styles.file_size_pill}>{formatFileSize(file.size)}</span>
                                                 </div>
                                                 <Text className={styles.file_metadata}>
                                                     {file.created_on.slice(0, file.created_on.lastIndexOf("T")).replaceAll("-", "/")}
@@ -622,14 +622,16 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                             e.stopPropagation();
                                             startEditFile(file);
                                         }}
+                                        className={styles.icon_button_edit}
                                         styles={{ root: { minWidth: "32px", width: "32px", height: "32px" } }}
                                     >
-                                        <Edit2 size={16} color="#6b7280" />
+                                        <Edit2 size={18} color="#6b7280" />
                                     </IconButton>
                                     <IconButton
                                         title="Download"
                                         ariaLabel="Download"
                                         onClick={() => handleDownload(file)}
+                                        className={styles.icon_button_edit}
                                         styles={{
                                             root: {
                                                 minWidth: "32px",
@@ -638,12 +640,13 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                             }
                                         }}
                                     >
-                                        <Download size={16} color="#6b7280" />
+                                        <Download size={18} color="#6b7280" />
                                     </IconButton>
                                     <IconButton
                                         title="Delete"
                                         ariaLabel="Delete"
                                         onClick={() => deleteFile(file)}
+                                        className={styles.icon_button_delete}
                                         styles={{
                                             root: {
                                                 minWidth: "32px",
@@ -652,7 +655,7 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                                             }
                                         }}
                                     >
-                                        <Trash2 size={16} color="#6b7280" />
+                                        <Trash2 size={18} color="#6b7280" />
                                     </IconButton>
                                 </div>
                             </div>
