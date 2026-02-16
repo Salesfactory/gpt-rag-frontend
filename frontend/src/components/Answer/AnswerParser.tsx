@@ -14,6 +14,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { getCitationFilePath } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
+import {
+    getCitationAriaLabel,
+    getCitationKind,
+    getFaviconUrl,
+    toCitationLinkTarget
+} from "../../utils/citationUtils";
 
 /* ------------------------------------------------------------------
  * Regex constants (compiled once)
@@ -21,6 +27,12 @@ import { useAppContext } from "../../providers/AppProviders";
 const RX_MARKDOWN_LINK = /(?<!!)\[([^\]]+)\]\(([^)]+)\)/g; // skip image markdown
 const RX_WRONG_NUMBERS = /\[\^(\d+)\^\]/g; // ↳ [^1^] ➜ [1]
 const RX_CITATION_BLOCK = /\[\[([^\]]+)\]\]\(((?:[^\(\)]|\([^\(\)]*\))+)\)/g; // [[1]](url) allows simple balanced parentheses
+const RX_FENCED_CODE_BLOCK = /```[\s\S]*?```/g;
+const RX_INLINE_CODE = /`[^`\n]*`/g;
+const RX_MARKDOWN_LINK_OR_IMAGE = /!?\[[^\]]*]\((?:[^()\\]|\\.|\\([^()]*\\))*\)/g;
+const RX_BARE_URL = /https?:\/\/[^\s<>"`]+/g;
+const RX_PROTECTED_SEGMENT_TOKEN = /@@PROTECTED_SEGMENT_(\d+)@@/g;
+const RX_ATTACHED_HASH = /([^\s#])(#+)/g;
 
 /* ------------------------------------------------------------------
  * Types
@@ -60,15 +72,107 @@ function replaceMarkdownLinks(text: string): string {
  * ---------------------------------------------------------------- */
 const fixWrongNumbers = (t: string) => t.replace(RX_WRONG_NUMBERS, (_: string, n: string) => `[${n}]`);
 
+function protectPattern(input: string, pattern: RegExp, protectedSegments: string[]): string {
+    pattern.lastIndex = 0;
+    return input.replace(pattern, (match: string) => {
+        const token = `@@PROTECTED_SEGMENT_${protectedSegments.length}@@`;
+        protectedSegments.push(match);
+        return token;
+    });
+}
+
+function maskProtectedSegments(input: string): { masked: string; protectedSegments: string[] } {
+    const protectedSegments: string[] = [];
+    let masked = input;
+
+    masked = protectPattern(masked, RX_FENCED_CODE_BLOCK, protectedSegments);
+    masked = protectPattern(masked, RX_INLINE_CODE, protectedSegments);
+    masked = protectPattern(masked, RX_MARKDOWN_LINK_OR_IMAGE, protectedSegments);
+    masked = protectPattern(masked, RX_BARE_URL, protectedSegments);
+
+    return { masked, protectedSegments };
+}
+
+function unmaskProtectedSegments(input: string, protectedSegments: string[]): string {
+    return input.replace(RX_PROTECTED_SEGMENT_TOKEN, (_: string, index: string) => {
+        return protectedSegments[Number(index)] ?? "";
+    });
+}
+
+function normalizeAttachedHashMarkers(input: string): string {
+    if (!input.includes("#")) {
+        return input;
+    }
+
+    const { masked, protectedSegments } = maskProtectedSegments(input);
+    const normalized = masked.replace(RX_ATTACHED_HASH, "$1\n$2");
+    return unmaskProtectedSegments(normalized, protectedSegments);
+}
+
+const inlineBadgeStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    marginInline: "2px",
+    verticalAlign: "super"
+};
+
+const inlineIconStyle: React.CSSProperties = {
+    width: "16px",
+    height: "16px",
+    borderRadius: "999px",
+    border: "1px solid #d1d5db",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#fff",
+    objectFit: "cover"
+};
+
+const inlineNumberStyle: React.CSSProperties = {
+    fontSize: "11px",
+    fontWeight: 600,
+    color: "#123bb6"
+};
+
 /* ------------------------------------------------------------------
  * Factory to build a <sup> node as string for a citation index
  * ---------------------------------------------------------------- */
-function supNode(index: number, title: string, onClick: (title: string, path: string) => void, path: string) {
+function supNode(index: number, citationUrl: string, citationLabel: string, path: string) {
+    const kind = getCitationKind(citationLabel);
+    const faviconUrl = kind === "web" ? getFaviconUrl(citationLabel) : null;
+    const ariaLabel = getCitationAriaLabel(index, citationLabel);
+
     // A small JSX fragment rendered to string; React is required by TSX
     // eslint-disable-next-line react/react-in-jsx-scope
     return renderToStaticMarkup(
-        <a key={`citation-${index}`} className="supContainer" title={title} data-citation-url={title} data-citation-path={path} tabIndex={0}>
-            <sup>{index}</sup>
+        <a
+            key={`citation-${index}`}
+            className="supContainer"
+            title={citationLabel}
+            data-citation-url={citationUrl}
+            data-citation-path={path}
+            data-citation-index={index}
+            aria-label={ariaLabel}
+            tabIndex={0}
+        >
+            <span className="citationInlineBadge" style={inlineBadgeStyle}>
+                {!!faviconUrl && (
+                    <img
+                        src={faviconUrl}
+                        alt=""
+                        width={16}
+                        height={16}
+                        loading="lazy"
+                        className="citationInlineIcon"
+                        style={inlineIconStyle}
+                        aria-hidden="true"
+                    />
+                )}
+                <span className="citationInlineNumber" style={inlineNumberStyle}>
+                    [{index}]
+                </span>
+            </span>
         </a>
     );
 }
@@ -84,7 +188,7 @@ export function parseAnswerToHtml(
     const { isResizingAnalysisPanel } = useAppContext();
 
     /* 1. Pre‑clean non‑citation transformations */
-    let text = fixWrongNumbers(replaceMarkdownLinks(raw));
+    let text = fixWrongNumbers(replaceMarkdownLinks(normalizeAttachedHashMarkers(raw)));
     // Collect citations & mapping only if needed
     if (!showSources || isResizingAnalysisPanel) {
         return {
@@ -101,9 +205,14 @@ export function parseAnswerToHtml(
     const html = text.replace(RX_CITATION_BLOCK, (_: string, _num: string, citeUrl: string) => {
         // Deduplicate by citation URL / filename
         const idx = citations.includes(citeUrl) ? citations.indexOf(citeUrl) : (citations.push(citeUrl), citations.length - 1);
+        const kind = getCitationKind(citeUrl);
+        const citationClickUrl = kind === "web" ? toCitationLinkTarget(citeUrl) : citeUrl;
 
-        if (!citationPath[citeUrl]) citationPath[citeUrl] = getCitationFilePath(citeUrl);
-        return supNode(idx + 1, citeUrl, onCitationClicked, citationPath[citeUrl]);
+        if (!citationPath[citeUrl]) {
+            citationPath[citeUrl] = kind === "web" ? citationClickUrl : getCitationFilePath(citeUrl);
+        }
+
+        return supNode(idx + 1, citationClickUrl, citeUrl, citationPath[citeUrl]);
     });
 
     return {

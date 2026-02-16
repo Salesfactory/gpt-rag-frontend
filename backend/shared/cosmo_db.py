@@ -622,35 +622,39 @@ def get_user_organizations(user_id):
     invitations_container = get_cosmos_container("invitations")
 
     try:
-        # Search for active invitations for the user
-        query = "SELECT * FROM c WHERE c.invited_user_id = @user_id AND c.active = true"
-        parameters = [{"name": "@user_id", "value": user_id}]
-        invitations = list(
-            invitations_container.query_items(
-                query=query, parameters=parameters, enable_cross_partition_query=True
-            )
+        invited_org_ids = set()
+        invitations_iterable = invitations_container.query_items(
+            query=(
+                "SELECT c.organization_id FROM c "
+                "WHERE c.invited_user_id = @user_id AND c.active = true"
+            ),
+            parameters=[{"name": "@user_id", "value": user_id}],
+            enable_cross_partition_query=True,
+            max_item_count=100,
         )
+        for page in invitations_iterable.by_page():
+            for inv in page:
+                org_id = inv.get("organization_id")
+                if org_id:
+                    invited_org_ids.add(org_id)
 
-        invited_org_ids = set(
-            inv["organization_id"] for inv in invitations if "organization_id" in inv
+        owned_organizations = []
+        owner_iterable = organizations_container.query_items(
+            query=(
+                "SELECT c.id, c.name, c.owner, c.sessionId, "
+                "c.subscriptionExpirationDate, c.subscriptionId, c.subscriptionStatus "
+                "FROM c WHERE c.owner = @user_id"
+            ),
+            parameters=[{"name": "@user_id", "value": user_id}],
+            enable_cross_partition_query=True,
+            max_item_count=100,
         )
+        for page in owner_iterable.by_page():
+            owned_organizations.extend(page)
 
-        # Search for organizations where the user is the owner
-        owner_query = "SELECT * FROM c WHERE c.owner = @user_id"
-        owner_parameters = [{"name": "@user_id", "value": user_id}]
-        owned_organizations = list(
-            organizations_container.query_items(
-                query=owner_query,
-                parameters=owner_parameters,
-                enable_cross_partition_query=True,
-            )
-        )
-
-        # Save IDs of organizations already included
         returned_org_ids = set()
-
-        # Recover organizations by invitations
         organizations = []
+
         for org_id in invited_org_ids:
             if org_id in returned_org_ids:
                 continue
@@ -676,17 +680,18 @@ def get_user_organizations(user_id):
             except Exception as e:
                 logging.error(f"Error retrieving organization with ID '{org_id}': {e}")
 
-        # Add organizations where the user is owner
         for org in owned_organizations:
             org_id = org.get("id", "")
             if org_id in returned_org_ids:
-                continue  # Avoid duplicates
+                continue
             simplified_org = {
                 "id": org.get("id", ""),
                 "name": org.get("name", ""),
                 "owner": org.get("owner", ""),
                 "sessionId": org.get("sessionId", ""),
-                "subscriptionExpirationDate": org.get("subscriptionExpirationDate", ""),
+                "subscriptionExpirationDate": org.get(
+                    "subscriptionExpirationDate", ""
+                ),
                 "subscriptionId": org.get("subscriptionId", ""),
                 "subscriptionStatus": org.get("subscriptionStatus", []),
             }
@@ -2077,6 +2082,17 @@ def get_all_notifications():
     items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
     return items
 
+
+def get_active_notifications():
+    """
+    Fetch enabled notifications ordered by newest first.
+    """
+    container = get_cosmos_container("notifications")
+    query = "SELECT * FROM c WHERE c.enabled = true"
+    items = list(container.query_items(query=query, enable_cross_partition_query=True))
+    items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
+    return items
+
 def _disable_other_active_notifications(container, exclude_id=None):
     """
     Internal helper to disable all active notifications except the excluded one.
@@ -2109,6 +2125,7 @@ def create_notification(title, message, enabled=False):
         "title": title,
         "message": message,
         "enabled": enabled,
+        "acknowledgedBy": [],
         "createdAt": datetime.now(timezone.utc).isoformat(),
         "updatedAt": datetime.now(timezone.utc).isoformat()
     }
@@ -2141,6 +2158,26 @@ def update_notification(notification_id, updates):
     item["updatedAt"] = datetime.now(timezone.utc).isoformat()
     
     container.upsert_item(item)
+    return item
+
+
+def acknowledge_notification(notification_id: str, user_id: str):
+    """
+    Mark a notification as acknowledged by a user.
+    """
+    container = get_cosmos_container("notifications")
+    try:
+        item = container.read_item(item=notification_id, partition_key=notification_id)
+    except CosmosResourceNotFoundError:
+        raise CosmosResourceNotFoundError(f"Notification {notification_id} not found")
+
+    ack_list = item.get("acknowledgedBy", [])
+    if user_id not in ack_list:
+        ack_list.append(user_id)
+        item["acknowledgedBy"] = ack_list
+        item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+        container.upsert_item(item)
+
     return item
 
 def delete_notification(notification_id):

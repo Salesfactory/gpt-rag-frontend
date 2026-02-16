@@ -120,5 +120,12 @@ describe("Main Page (Chat) Test Suite", () => {
         cy.contains("what is the customer pulse segment?").should("be.visible");
 
         cy.contains("What Is the Customer Pulse…").should("be.visible");
+
+        cy.get('[data-cy="feedback-button-row"]').should("have.length.at.least", 1);
+        cy.get('[data-cy="feedback-button"]').should("have.length.at.least", 1).first().should("have.attr", "aria-label", "Leave Feedback");
+
+        cy.get('[data-cy="feedback-button"]').first().trigger("mouseover");
+        cy.get('[data-cy="feedback-button"]').first().focus();
+        cy.get('[data-cy="feedback-button"]').first().should("be.visible");
     });
 });

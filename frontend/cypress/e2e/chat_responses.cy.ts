@@ -81,7 +81,7 @@ Cuéntame tus objetivos o retos actuales y te proporcionaré recomendaciones acc
                 cy.contains("¡Hola! Bienvenido").should("be.visible");
                 cy.get("h4").contains("¡Hola! Bienvenido").should("be.visible");
                 cy.get("li").should("have.length", 4);
-                cy.get("sup").should("not.exist");
+                cy.get(".supContainer").should("not.exist");
                 cy.contains("[[").should("not.exist");
             });
 
@@ -106,15 +106,19 @@ Our key achievements include:
         cy.dataCy("chat-msg").within(() => {
             cy.contains("SalesFactory was founded").should("be.visible");
             cy.get("li").should("have.length", 3);
-            cy.get("sup").should("have.length.at.least", 6).first().should("contain", "1");
+            // Citations are now rendered as .supContainer with .citationInlineNumber spans
+            cy.get(".supContainer").should("have.length.at.least", 6);
+            cy.get(".citationInlineNumber").first().should("contain", "[1]");
         });
 
         cy.dataCy("sources-section")
             .should("be.visible")
             .within(() => {
-                cy.contains("Compan...ry.pdf");
-                cy.contains("Annual...rt.pdf");
-                cy.contains("Market...is.pdf");
+                // Source chips are rendered as <a> tags
+                cy.get("a").should("have.length", 3);
+                cy.contains("Company History.pdf");
+                cy.contains("Annual Report.pdf");
+                cy.contains("Market Analysis.pdf");
             });
 
         cy.dataCy("chat-msg").find(".supContainer").first().click(); // click citation link
@@ -138,7 +142,7 @@ No citations, no special blocks, just plain content with some **bold text** and 
             cy.contains("simple text response").should("be.visible");
             cy.get("strong").contains("bold text");
             cy.get("em").contains("italic text");
-            cy.get("sup").should("not.exist");
+            cy.get(".supContainer").should("not.exist");
         });
 
         cy.dataCy("sources-section").should("not.exist");

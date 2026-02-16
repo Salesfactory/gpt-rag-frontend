@@ -2,14 +2,18 @@ import logging
 from flask import Blueprint, request
 from azure.cosmos.exceptions import CosmosResourceNotFoundError
 
+from datetime import datetime
+
 from shared.cosmo_db import (
     get_all_notifications,
+    get_active_notifications,
     create_notification as db_create_notification,
     update_notification as db_update_notification,
-    delete_notification as db_delete_notification
+    delete_notification as db_delete_notification,
+    acknowledge_notification as db_acknowledge_notification
 )
 from shared.decorators import only_platform_admin
-from utils import create_success_response, create_error_response
+from utils import create_success_response, create_error_response, require_client_principal
 
 bp = Blueprint("notifications", __name__, url_prefix="/api/notifications")
 logger = logging.getLogger(__name__)
@@ -25,6 +29,49 @@ def get_notifications():
         return create_success_response(notifications)
     except Exception as e:
         logger.error(f"Error fetching notifications: {e}")
+        return create_error_response("Failed to fetch notifications", 500)
+
+
+@bp.route("/user", methods=["GET"])
+@require_client_principal
+def get_user_notifications():
+    """
+    Get active notifications for the current user (non-admin view).
+    Filters: enabled, within start/end window if present, and not acknowledged by the user.
+    """
+    try:
+        user_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not user_id:
+            return create_error_response("Missing user id", 401)
+
+        items = get_active_notifications()
+        now = datetime.utcnow()
+
+        def within_window(item):
+            start_raw = item.get("startAt") or item.get("start_at")
+            end_raw = item.get("endAt") or item.get("end_at")
+            if start_raw:
+                try:
+                    if datetime.fromisoformat(start_raw.replace("Z", "+00:00")) > now:
+                        return False
+                except Exception:
+                    return False
+            if end_raw:
+                try:
+                    if datetime.fromisoformat(end_raw.replace("Z", "+00:00")) < now:
+                        return False
+                except Exception:
+                    return False
+            return True
+
+        def not_acknowledged(item):
+            ack_list = item.get("acknowledgedBy") or item.get("acknowledged_by") or []
+            return user_id not in ack_list
+
+        filtered = [item for item in items if within_window(item) and not_acknowledged(item)]
+        return create_success_response(filtered)
+    except Exception as e:
+        logger.error(f"Error fetching user notifications: {e}")
         return create_error_response("Failed to fetch notifications", 500)
 
 @bp.route("", methods=["POST"])
@@ -85,3 +132,22 @@ def delete_notification_endpoint(notification_id):
     except Exception as e:
         logger.error(f"Error deleting notification: {e}")
         return create_error_response("Failed to delete notification", 500)
+
+
+@bp.route("/<notification_id>/acknowledge", methods=["POST"])
+@require_client_principal
+def acknowledge_notification_endpoint(notification_id):
+    """
+    Mark a notification as acknowledged for the current user.
+    """
+    try:
+        user_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not user_id:
+            return create_error_response("Missing user id", 401)
+        item = db_acknowledge_notification(notification_id, user_id)
+        return create_success_response(item)
+    except CosmosResourceNotFoundError:
+        return create_error_response("Notification not found", 404)
+    except Exception as e:
+        logger.error(f"Error acknowledging notification: {e}")
+        return create_error_response("Failed to acknowledge notification", 500)
