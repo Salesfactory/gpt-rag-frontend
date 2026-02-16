@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./Notifications.module.css"
 import { Bell, Trash2 } from "lucide-react";
-import { acknowledgeNotification, getUserNotifications } from "../../api";
+import { acknowledgeNotification, getGlobalNotifications, getUserNotifications } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
 
@@ -10,7 +10,7 @@ type Notification = {
     title: string;
     message: string;
     createdAt: string;
-    isUnread: boolean;
+    acknowledgedBy: string[];
 }
 
 const Notifications: React.FC = () => {
@@ -33,13 +33,15 @@ const Notifications: React.FC = () => {
   
 };
 
-useEffect(() => {
-   const getNotifications = async () => {
-    const response: any = await getUserNotifications({ user: user });
-    setNotifications(response.data);
+ const getNotifications = async () => {
+    const response: any = await getGlobalNotifications(user);
+    const notifications = response.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    setNotifications(notifications);
    } 
+
+useEffect(() => {
    getNotifications();
-}, [acknowledgeNotification]);
+}, []);
 
 const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -49,10 +51,20 @@ const formatDate = (dateString: string) => {
     });
 };
 
+const acknowledgedByUser = (notification: Notification) => {
+    return notification.acknowledgedBy.includes(user?.id || "");
+}
+
 const handleNotificationClick = async (notificationId: string) => {
        try {
-        // 
-        await acknowledgeNotification({ user: user, notificationId: notificationId });   
+        const notification = notifications.find((notification) => notification.id === notificationId);
+        if (!notification) return;
+        if (!user) return;
+        if (!notification.acknowledgedBy.includes(user.id)) {
+            notification.acknowledgedBy.push(user.id);
+            await acknowledgeNotification({ user: user, notificationId: notificationId });
+            getNotifications();
+        }
        } catch (error) {
            console.log(error);
        }
@@ -64,12 +76,12 @@ const handleNotificationClick = async (notificationId: string) => {
                 <ul className={styles.tableContainer}>
                     <li className={styles.headerRow}>
                         <Bell size={20} />
-                        Notifications {notifications.length > 0 ? `(${notifications.filter((item) => !item.isUnread).length} unread)` : ""}
+                        Notifications {notifications.filter((item) => !item.acknowledgedBy.includes(user?.id || "")).length > 0 ? `(${notifications.filter((item) => !item.acknowledgedBy.includes(user?.id || "")).length} unread)` : ""}
                     </li>
                     { notifications.length > 0 ? notifications.map((item) => {
                         const classNames = [styles.notificationRow];
 
-                        if (item.isUnread) {
+                        if (!acknowledgedByUser(item)) {
                             classNames.push(styles.notificationRowUnread);
                         }
 
@@ -81,19 +93,19 @@ const handleNotificationClick = async (notificationId: string) => {
                             className={classNames.join(" ")}
                         >
                             <div className={styles.indicator}>
-                                {item.isUnread ? <span className={styles.greenCircle} /> : null}
+                                {acknowledgedByUser(item) ? null : <span className={styles.greenCircle} />}
                             </div>
                             <div className={styles.notificationContent}>
                                 <div className={styles.notificationHeadline}>
-                                    <h3 className={styles.notificationTitle}>{item.title}</h3>
+                                    <h3 className={acknowledgedByUser(item) ? styles.notificationTitle : styles.notificationTitleUnread}>{item.title}</h3>
                                     <span className={styles.date}>{formatDate(item.createdAt)}</span>
                                 </div>
                                 <p className={styles.message}>{item.message}</p>
                             </div>
                             <div className={styles.notificationActions}>
-                                <button className={styles.iconButton} aria-label={`Delete notification ${item.title}`}>
+                                {/* <button className={styles.iconButton} aria-label={`Delete notification ${item.title}`}>
                                     <Trash2 size={16} />
-                                </button>
+                                </button> */}
                             </div>
                         </li>
                     )}) : (

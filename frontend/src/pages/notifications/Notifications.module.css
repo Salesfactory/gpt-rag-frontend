@@ -135,6 +135,13 @@
 .notificationTitle {
     margin: 0;
     font-size: 0.9rem;
+    font-weight: 400;
+    color: rgb(66, 66, 67);
+}
+
+.notificationTitleUnread {
+    margin: 0;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #1f2933;
 }

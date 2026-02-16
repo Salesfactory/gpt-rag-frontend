@@ -21,7 +21,7 @@ import {
     useTheme
 } from "@fluentui/react";
 import { useAppContext } from "../../../providers/AppProviders";
-import { getNotifications, createNotification, updateNotification, deleteNotification } from "../../../api/api";
+import { getNotificationsTemplate, enableNotification, createNotificationTemplate, disableNotification, deleteNotificationTemplate } from "../../../api/api";
 import { ConfirmDialog } from "../../../components/platform-admin/ConfirmDialog/ConfirmDialog";
 import styles from "./Notifications.module.css";
 
@@ -79,7 +79,7 @@ export const Notifications: React.FC = () => {
         }
         setIsLoading(true);
         try {
-            const { data } = (await getNotifications({ user })) as {
+            const { data } = (await getNotificationsTemplate({ user })) as {
                 data: Array<NotificationItem & { createdAt?: string; is_enabled?: boolean }>;
             };
             const normalized = data.map(
@@ -107,7 +107,11 @@ export const Notifications: React.FC = () => {
         const current = notifications.find(n => n.id === id);
         if (!current) return;
         try {
-            await updateNotification({ user, notificationId: id, updates: { enabled: !current.enabled } });
+            if (current.enabled) {
+                await disableNotification({ user, notificationTemplateId: id });
+            } else {
+                await enableNotification({ user, notificationTemplateId: id });
+            }
             await loadNotifications();
             setToast({ type: "success", message: "Notification status updated" });
         } catch {
@@ -123,7 +127,7 @@ export const Notifications: React.FC = () => {
         }
         setIsSubmitting(true);
         try {
-            await createNotification({ user, title: formData.title, message: formData.message, enabled: formData.enabled });
+            await createNotificationTemplate({ user, title: formData.title, message: formData.message, enabled: formData.enabled });
             setToast({ type: "success", message: "Notification created successfully" });
             setIsModalOpen(false);
             setFormData({ title: "", message: "", enabled: false });
@@ -142,7 +146,7 @@ export const Notifications: React.FC = () => {
             return;
         }
         try {
-            await deleteNotification({ user, notificationId: deleteConfirm.notificationId });
+            await deleteNotificationTemplate({ user, notificationTemplateId: deleteConfirm.notificationId });
             setToast({ type: "success", message: "Notification deleted successfully" });
             await loadNotifications();
         } catch {

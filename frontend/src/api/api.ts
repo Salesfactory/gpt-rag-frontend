@@ -2358,11 +2358,11 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
     }
 }
 
-export async function getNotifications({ user }: { user: any }): Promise<any> {
+export async function getNotificationsTemplate({ user }: { user: any }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
     const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
-        const response = await fetch("/api/notifications", {
+        const response = await fetch("/api/notifications/template", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -2402,11 +2402,11 @@ export async function getUserNotifications({ user }: { user: any }): Promise<any
     }
 }
 
-export async function createNotification({ user, title, message, enabled }: { user: any, title: string, message: string, enabled: boolean }): Promise<any> {
+export async function createNotificationTemplate({ user, title, message, enabled }: { user: any, title: string, message: string, enabled: boolean }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
     const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
-        const response = await fetch("/api/notifications", {
+        const response = await fetch("/api/notifications/template", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -2426,11 +2426,51 @@ export async function createNotification({ user, title, message, enabled }: { us
     }
 }
 
-export async function updateNotification({ user, notificationId, updates }: { user: any, notificationId: string, updates: any }): Promise<any> {
+export async function enableNotification({ user, notificationTemplateId }: { user: any, notificationTemplateId: string }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
     const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
-        const response = await fetch(`/api/notifications/${notificationId}`, {
+        const response = await fetch(`/api/notifications/template/${notificationTemplateId}/enable`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        })
+    }
+    catch (error) {
+        console.error("Error enabling notification", error);
+        throw error;
+    }
+
+}
+
+export async function disableNotification({ user, notificationTemplateId }: { user: any, notificationTemplateId: string }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/template/${notificationTemplateId}/disable`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        })
+    }
+    catch (error) {
+        console.error("Error enabling notification", error);
+        throw error;
+    }
+
+}
+
+export async function updateNotificationTemplate({ user, notificationTemplateId, updates }: { user: any, notificationTemplateId: string, updates: any }): Promise<any> {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/template/${notificationTemplateId}`, {
             method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
@@ -2444,17 +2484,17 @@ export async function updateNotification({ user, notificationId, updates }: { us
              throw Error(errorData.message || "Failed to update notification");
         }
         return await response.json();
-    } catch (error) {
-        console.error("Error updating notification", error);
-        throw error;
-    }
+        } catch (error) {
+            console.error("Error updating notification", error);
+            throw error;
+        }
 }
 
-export async function deleteNotification({ user, notificationId }: { user: any, notificationId: string }): Promise<any> {
+export async function deleteNotificationTemplate({ user, notificationTemplateId }: { user: any, notificationTemplateId: string }): Promise<any> {
     const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
     const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
     try {
-        const response = await fetch(`/api/notifications/${notificationId}`, {
+        const response = await fetch(`/api/notifications/template/${notificationTemplateId}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
@@ -2492,6 +2532,29 @@ export async function acknowledgeNotification({ user, notificationId }: { user: 
         return await response.json();
     } catch (error) {
         console.error("Error acknowledging notification", error);
+        throw error;
+    }
+}
+
+export async function getGlobalNotifications(user:any) {
+    const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/user/history`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw Error(errorData.message || "Failed to get global notifications");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error getting global notifications", error);
         throw error;
     }
 }
