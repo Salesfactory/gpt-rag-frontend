@@ -7,10 +7,14 @@ from datetime import datetime
 from shared.cosmo_db import (
     get_all_notifications,
     get_active_notifications,
-    create_notification as db_create_notification,
+    get_all_global_notifications,
+    create_notification_from_template as db_create_notification_from_template,
+    create_notification_template as db_create_notification,
     update_notification as db_update_notification,
     delete_notification as db_delete_notification,
-    acknowledge_notification as db_acknowledge_notification
+    acknowledge_notification as db_acknowledge_notification,
+    disable_notification_from_template as db_disable_notification_from_template,
+    get_all_notification_templates
 )
 from shared.decorators import only_platform_admin
 from utils import create_success_response, create_error_response, require_client_principal
@@ -31,6 +35,25 @@ def get_notifications():
         logger.error(f"Error fetching notifications: {e}")
         return create_error_response("Failed to fetch notifications", 500)
 
+# USERS NOTIFICATIONS
+
+@bp.route("/user/history", methods=["GET"])
+@require_client_principal
+def get_global_notifications():
+    """
+    Get all global Notifications 
+
+    This Endpoint shows all the notifications that are not specific to a user. (TODO: Make this endpoint user specific)
+
+    NOTE: There we should add the logic to show the welcoming new users notifications. 
+
+    """
+    try:
+        notifications = get_all_global_notifications()
+        return create_success_response(notifications)
+    except Exception as e:
+        logger.error(f"Error fetching global notifications: {e}")
+        return create_error_response("Failed to fetch global notifications", 500)
 
 @bp.route("/user", methods=["GET"])
 @require_client_principal
@@ -74,11 +97,27 @@ def get_user_notifications():
         logger.error(f"Error fetching user notifications: {e}")
         return create_error_response("Failed to fetch notifications", 500)
 
-@bp.route("", methods=["POST"])
+
+# Template Notification Endpoints
+
+@bp.route("/template", methods=["GET"])
+@only_platform_admin()
+def get_notification_templates():
+    """
+    Get all notification templates.
+    """
+    try:
+        notifications = get_all_notification_templates()
+        return create_success_response(notifications)
+    except Exception as e:
+        logger.error(f"Error fetching notifications: {e}")
+        return create_error_response("Failed to fetch notifications", 500)
+
+@bp.route("/template", methods=["POST"])
 @only_platform_admin()
 def create_notification_endpoint():
     """
-    Create a new notification.
+    Create a new notification template.
     """
     try:
         data = request.get_json()
@@ -98,7 +137,30 @@ def create_notification_endpoint():
         logger.error(f"Error creating notification: {e}")
         return create_error_response("Failed to create notification", 500)
 
-@bp.route("/<notification_id>", methods=["PATCH"])
+
+@bp.route("/template/<notification_template_id>/enable", methods=["POST"])
+@only_platform_admin()
+def create_notification_from_template(notification_template_id):
+    try:
+        new_item = db_create_notification_from_template(notification_template_id)
+        return create_success_response(new_item, 201)
+    except Exception as e:
+        logging.error(f"Error creating notification from template: {e}")
+        return create_error_response("Failed to create notification from template", 500)
+
+
+@bp.route("/template/<notification_template_id>/disable", methods=["POST"])
+@only_platform_admin()
+def disable_notification_from_template(notification_template_id):
+    try:
+        db_disable_notification_from_template(notification_template_id)
+        return create_success_response({"message": "Notification disabled successfully"})
+    except Exception as e:
+        logger.error(f"Error disabling notification from template: {e}")
+        return create_error_response("Failed to disable notification from template", 500)
+
+
+@bp.route("/template/<notification_id>", methods=["PATCH"])
 @only_platform_admin()
 def update_notification_endpoint(notification_id):
     """
@@ -118,7 +180,8 @@ def update_notification_endpoint(notification_id):
         logger.error(f"Error updating notification: {e}")
         return create_error_response("Failed to update notification", 500)
 
-@bp.route("/<notification_id>", methods=["DELETE"])
+
+@bp.route("/template/<notification_id>", methods=["DELETE"])
 @only_platform_admin()
 def delete_notification_endpoint(notification_id):
     """

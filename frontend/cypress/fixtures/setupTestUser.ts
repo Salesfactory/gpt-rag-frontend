@@ -130,6 +130,36 @@ export function setupTestUserAndOrg() {
         ]
     }).as("getChatHistory");
 
+    cy.intercept("GET", "/api/notifications/user/history", {
+        statusCode: 200,
+        body: {
+            status: "success",
+            data: [
+                {
+                    id: "9e95bc5d-0ad2-4d9c-a9fc-53ca8e88f001",
+                    type: "global_notification",
+                    title: "Welcome to Sales Factory",
+                    message: "Your workspace is ready.",
+                    enabled: true,
+                    acknowledgedBy: [],
+                    createdAt: "2026-02-01T10:00:00Z",
+                    updatedAt: "2026-02-01T10:00:00Z"
+                }
+            ]
+        }
+    }).as("getGlobalNotifications");
+
+    cy.intercept("POST", "/api/notifications/*/acknowledge", {
+        statusCode: 200,
+        body: {
+            status: "success",
+            data: {
+                id: "9e95bc5d-0ad2-4d9c-a9fc-53ca8e88f001",
+                acknowledgedBy: ["f048ece8-4730-40ca-b6e1-8db764717459"]
+            }
+        }
+    }).as("acknowledgeGlobalNotification");
+
     cy.intercept("GET", "/api/settings*", {
         statusCode: 200,
         body: { font_family: "Arial", font_size: "16", model: "gpt-4.1", temperature: 0 }
