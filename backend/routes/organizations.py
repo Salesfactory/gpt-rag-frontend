@@ -69,12 +69,12 @@ def send_admin_notification_email(admin_email, admin_name, organization_name):
         <body>
         <div class="container">
             <h2>Hello {admin_name},</h2>
-            <p>You have been designated as the Administrator for the new organization: <strong>{organization_name}</strong> on FreddAid.</p>
+            <p>You have been designated as the Administrator for the new organization: <strong>{organization_name}</strong> on Pro-Active.</p>
             <p>You now have full access to manage this organization, invite members, and configure settings.</p>
             
             <p>If you did not expect this, please contact support.</p>
             
-            <p class="footer">Best regards,<br>The FreddAid Team</p>
+            <p class="footer">Best regards,<br>The Pro-Active Team</p>
         </div>
         </body>
         </html>
