@@ -142,14 +142,14 @@ def reset_user_password(user_id):
         user_name = user["data"].get("name", "User")
 
         # Email details
-        subject = "Your FreddAid password has been changed"
+        subject = "Your Pro-Active password has been changed"
         html_content = f"""
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Password Changed - FreddAid</title>
+            <title>Password Changed - Pro-Active</title>
             <style>
                 body {{
                     margin: 0;
@@ -318,7 +318,7 @@ def reset_user_password(user_id):
                     <div class="greeting">Hello {user_name},</div>
                     <div class="main-title">Your password has been changed</div>
                     <div class="description">
-                        This is a confirmation that the password for your FreddAid account has been successfully changed.
+                        This is a confirmation that the password for your Pro-Active account has been successfully changed.
                     </div>
                     <div class="password-label">Your new password is:</div>
                     <div class="password-box">
@@ -336,14 +336,14 @@ def reset_user_password(user_id):
                         </div>
                         <a href="{INVITATION_LINK}"
                             style="display: inline-block; background-color: #10B981; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background-color 0.2s;">
-                            Login to FreddAid
+                            Login to Pro-Active
                         </a>
                     </div>
                 </div>
                 <!-- Footer -->
                 <div class="footer">
                     <div class="footer-text">
-                        This email was sent from Sales Factory's app FreddAid
+                        This email was sent from Sales Factory's app Pro-Active
                     </div>
                     <div class="footer-text">
                         Need help? <a href="#" class="footer-link">Contact Support</a>

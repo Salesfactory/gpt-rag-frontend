@@ -82,7 +82,7 @@ def sendEmail():
         <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to FreddAid - Your Marketing Powerhouse</title>
+        <title>Welcome to Pro-Active - Your Marketing Powerhouse</title>
         <style>
             body {
             font-family: Arial, sans-serif;
@@ -135,14 +135,14 @@ def sendEmail():
         <body>
         <div class="container">
             <h1>Dear [Recipient's Name],</h1>
-            <h2>Congratulations and Welcome to FreddAid!</h2>
-            <p>You now have exclusive access to <strong>[Recipient's Organization]'s FreddAid</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
+            <h2>Congratulations and Welcome to Pro-Active!</h2>
+            <p>You now have exclusive access to <strong>[Recipient's Organization]'s Pro-Active</strong>, your new marketing powerhouse. It's time to unlock smarter strategies, deeper insights, and a faster path to success.</p>
             <h2>Ready to Get Started?</h2>
-            <p>Click the link below and follow the easy steps to create your FreddAid account:</p>
-            <a href="[link to activate account]" class="cta-button">Activate Your FreddAid Account Now</a>
-            <p>Unlock FreddAid's full potential and start enjoying unparalleled insights, real-time data, and a high-speed advantage in all your marketing efforts.</p>
+            <p>Click the link below and follow the easy steps to create your Pro-Active account:</p>
+            <a href="[link to activate account]" class="cta-button">Activate Your Pro-Active Account Now</a>
+            <p>Unlock Pro-Active's full potential and start enjoying unparalleled insights, real-time data, and a high-speed advantage in all your marketing efforts.</p>
             <p>If you need any assistance, our support team is here to help you every step of the way.</p>
-            <p>Welcome to the future of marketing. Welcome to FreddAid.</p>
+            <p>Welcome to the future of marketing. Welcome to Pro-Active.</p>
             <p class="footer">Best regards,<br>Juan Hernandez<br>Chief Technology Officer<br>Sales Factory AI<br>juan.hernandez@salesfactory.com</p>
         </div>
         </body>
