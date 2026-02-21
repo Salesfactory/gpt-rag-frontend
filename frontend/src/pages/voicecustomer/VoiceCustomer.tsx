@@ -89,7 +89,7 @@ export function Card({
                         <PlusCircle size={16} />
                     </button>
                 </div>
-                <div className={styles.cardBody}>{children}</div>
+                <div className={styles.cardBodyFlush}>{children}</div>
             </div>
         </CardContext.Provider>
     );
@@ -217,11 +217,10 @@ export function Brands({ onBrandsChange, onDataRefresh }: { onBrandsChange: (has
                 <p className={styles.emptyStateText}>No brands added yet</p>
             ) : (
                 <div className={styles.itemsList}>
-                    {brands.map(brand => (
-                        <div key={brand.id} className={styles.listItem}>
+                    {brands.map((brand, index) => (
+                        <div key={brand.id} className={index % 2 === 0 ? styles.listItemGray : styles.listItem}>
                             <div className={styles.itemContent}>
                                 <h4 className={styles.itemName}>{brand.name}</h4>
-                                {brand.description && <p className={styles.itemDescription}>{brand.description}</p>}
                             </div>
                             <div className={styles.itemActions}>
                                 <button onClick={() => handleEdit(brand)} className={styles.iconButton} aria-label="Edit">
@@ -475,18 +474,17 @@ export function Products({ refreshKey }: { refreshKey: number }) {
                 <p className={styles.emptyStateText}>No products added yet</p>
             ) : (
                 <div className={styles.itemsList}>
-                    {products.map(product => {
+                    {products.map((product, index) => {
                         const brandId = product.brand_id ? String(product.brand_id) : undefined;
                         const brandName = brandId ? brandNameById.get(brandId) : undefined;
                         return (
-                            <div key={product.id} className={styles.listItem}>
+                            <div key={product.id} className={index % 2 == 0 ? styles.listItemGray : styles.listItem}>
                                 <div className={styles.itemContent}>
                                     <div className={styles.itemHeader}>
                                         <h4 className={styles.itemName}>{product.name}</h4>
                                         <span className={styles.itemCategory}>{product.category}</span>
                                         {brandName && <span className={styles.itemBrand}>{brandName}</span>}
                                     </div>
-                                    {product.description && <p className={styles.itemDescription}>{product.description}</p>}
                                 </div>
                                 <div className={styles.itemActions}>
                                     <button onClick={() => handleEdit(product)} className={styles.iconButton} aria-label="Edit">
@@ -791,15 +789,15 @@ export function Competitors() {
                 <p className={styles.emptyStateText}>No competitors added yet</p>
             ) : (
                 <div className={styles.itemsList}>
-                    {competitors.map(c => {
+                    {competitors.map((c, index) => {
                         return (
-                            <div key={c.id} className={styles.listItem}>
+
+                            <div key={c.id} className={index % 2 === 0 ? styles.listItemGray : styles.listItem}>
                                 <div className={styles.itemContent}>
                                     <div className={styles.itemHeader}>
                                         <h4 className={styles.itemName}>{c.name}</h4>
                                         <span className={styles.itemIndustry}>{c.industry}</span>
                                     </div>
-                                    {c.description && <p className={styles.itemDescription}>{c.description}</p>}
                                 </div>
                                 <div className={styles.itemActions}>
                                     <button onClick={() => handleEdit(c)} className={styles.iconButton} aria-label="Edit">
@@ -1125,9 +1123,6 @@ function ReportJobs() {
                         <thead>
                             <tr>
                                 <th className={styles.tableTh}>Type</th>
-                                <th className={styles.tableTh}>Status</th>
-                                <th className={styles.tableTh}>Progress</th>
-                                <th className={styles.tableTh}>Start Date</th>
                                 <th className={styles.tableTh}>End Date</th>
                             </tr>
                         </thead>
@@ -1140,17 +1135,13 @@ function ReportJobs() {
                                 const endDate = terminal ? doc?.updated_at ?? null : null;
                                 return (
                                     <tr key={String(doc?.id)} className={styles.tableRow}>
-                                        <td className={styles.tableCell}>
+                                        <td className={styles.tableCellStatus}>
+                                            {statusIcon(c)}
                                             <span className={styles.jobType}>{statusType(doc?.report_key) ?? doc?.report_name ?? "Report"}</span>
-                                        </td>
-                                        <td className={styles.tableCell}>
                                             <div className={styles.statusCell}>
-                                                {statusIcon(c)}
                                                 <span className={`${styles.statusBadge} ${statusClass(c)}`}>{statusLabel(c)}</span>
                                             </div>
                                         </td>
-                                        <td className={styles.tableCell}>{typeof progress === "number" ? `${Math.round(progress)}%` : "-"}</td>
-                                        <td className={styles.tableCell}>{doc?.created_at ? doc.created_at.slice(0, 10) : "-"}</td>
                                         <td className={styles.tableCell}>{endDate ? endDate.slice(0, 10) : "-"}</td>
                                     </tr>
                                 );

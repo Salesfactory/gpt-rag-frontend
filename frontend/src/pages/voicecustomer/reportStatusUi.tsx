@@ -32,7 +32,7 @@ export function statusType(string: string | undefined): string {
 }
 
 export function statusIcon(c: Canonical) {
-  if (c === "SUCCEEDED") return <CheckCircle size={16} style={{ color: "#16a34a" }} />;
+  if (c === "SUCCEEDED") return <CheckCircle size={16} style={{ color: "#A0CB06" }} />;
   if (c === "RUNNING")   return <Clock size={16} style={{ color: "#2563eb" }} />;
   if (c === "FAILED")    return <AlertCircle size={16} style={{ color: "#dc2626" }} />;
   return <Clock size={16} style={{ color: "#6b7280" }} />;
