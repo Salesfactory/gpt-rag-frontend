@@ -14,7 +14,8 @@ from shared.cosmo_db import (
     delete_notification as db_delete_notification,
     acknowledge_notification as db_acknowledge_notification,
     disable_notification_from_template as db_disable_notification_from_template,
-    get_all_notification_templates
+    get_all_notification_templates,
+    hide_notification as db_hide_notification
 )
 from shared.decorators import only_platform_admin
 from utils import create_success_response, create_error_response, require_client_principal
@@ -49,7 +50,10 @@ def get_global_notifications():
 
     """
     try:
-        notifications = get_all_global_notifications()
+        user_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not user_id:
+            return create_error_response("Missing user id", 401)
+        notifications = get_all_global_notifications(user_id)
         return create_success_response(notifications)
     except Exception as e:
         logger.error(f"Error fetching global notifications: {e}")
@@ -214,3 +218,22 @@ def acknowledge_notification_endpoint(notification_id):
     except Exception as e:
         logger.error(f"Error acknowledging notification: {e}")
         return create_error_response("Failed to acknowledge notification", 500)
+
+
+@bp.route("/<notification_id>/hide", methods=["POST"])
+@require_client_principal
+def hide_notification_endpoint(notification_id):
+    """
+    Hides a notification for the current user. 
+    """
+    try:
+        user_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not user_id:
+            return create_error_response("Missing user id", 401)
+        item = db_hide_notification(notification_id, user_id)
+        return create_success_response(item)
+    except CosmosResourceNotFoundError:
+        return create_error_response("Notification not found", 404)
+    except Exception as e:
+        logger.error(f"Error hiding notification: {e}")
+        return create_error_response("Failed to hide notification", 500)

@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./Notifications.module.css"
 import { Bell, Trash2 } from "lucide-react";
-import { acknowledgeNotification, getGlobalNotifications, getUserNotifications } from "../../api";
+import { acknowledgeNotification, getGlobalNotifications, getUserNotifications, hideNotification } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
 
@@ -9,9 +9,22 @@ type Notification = {
     id: string;
     title: string;
     message: string;
-    createdAt: string;
+    createdAt?: string;
+    created_at?: string;
+    updatedAt?: string;
+    updated_at?: string;
     acknowledgedBy: string[];
 }
+
+const resolveTimestamp = (notification: Notification): string => {
+    return (
+        notification.createdAt ||
+        notification.created_at ||
+        notification.updatedAt ||
+        notification.updated_at ||
+        new Date().toISOString()
+    );
+};
 
 const Notifications: React.FC = () => {
     const { user } = useAppContext();
@@ -33,18 +46,27 @@ const Notifications: React.FC = () => {
   
 };
 
- const getNotifications = async () => {
-    const response: any = await getGlobalNotifications(user);
-    const notifications = response.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    setNotifications(notifications);
-   } 
+ const getNotifications = useCallback(async () => {
+    if (!user?.id) {
+        setNotifications([]);
+        return;
+    }
 
-useEffect(() => {
-   getNotifications();
-}, []);
+    try {
+        const response: any = await getGlobalNotifications(user);
+        const notifications = response.data.sort(
+            (a: Notification, b: Notification) =>
+                new Date(resolveTimestamp(b)).getTime() - new Date(resolveTimestamp(a)).getTime()
+        );
+        setNotifications(notifications);
+    } catch (error) {
+        console.error("Failed to load notifications", error);
+    }
+   }, [user]) 
 
-const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+
+const formatDate = (notification: Notification) => {
+    const date = new Date(resolveTimestamp(notification));
     return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -63,12 +85,29 @@ const handleNotificationClick = async (notificationId: string) => {
         if (!notification.acknowledgedBy.includes(user.id)) {
             notification.acknowledgedBy.push(user.id);
             await acknowledgeNotification({ user: user, notificationId: notificationId });
-            getNotifications();
+            await getNotifications();
         }
        } catch (error) {
            console.log(error);
        }
 }
+
+const handleDeleteNotification = async (notificationId: string) => {
+    try {
+        const response = await hideNotification({user,notificationId})
+        if (response) {
+            setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId));
+            await getNotifications()
+        }
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+useEffect(() => {
+   getNotifications();
+}, [getNotifications]);
+
 
     return (
         <div className={styles.page_container}>
@@ -98,14 +137,16 @@ const handleNotificationClick = async (notificationId: string) => {
                             <div className={styles.notificationContent}>
                                 <div className={styles.notificationHeadline}>
                                     <h3 className={acknowledgedByUser(item) ? styles.notificationTitle : styles.notificationTitleUnread}>{item.title}</h3>
-                                    <span className={styles.date}>{formatDate(item.createdAt)}</span>
+                                    <span className={styles.date}>{formatDate(item)}</span>
                                 </div>
                                 <p className={styles.message}>{item.message}</p>
                             </div>
                             <div className={styles.notificationActions}>
-                                {/* <button className={styles.iconButton} aria-label={`Delete notification ${item.title}`}>
+                                <button className={styles.iconButton} aria-label={`Delete notification ${item.title}`} onClick={() => {
+                                    handleDeleteNotification(item.id)
+                                }}>
                                     <Trash2 size={16} />
-                                </button> */}
+                                </button>
                             </div>
                         </li>
                     )}) : (

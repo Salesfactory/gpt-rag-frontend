@@ -2195,6 +2195,7 @@ def create_notification_from_template(template_id):
             "message": template.get("message"),
             "enabled": True,
             "acknowledgedBy": [],
+            "hiddenBy"
             "createdAt": datetime.now(timezone.utc).isoformat(),
             "updatedAt": datetime.now(timezone.utc).isoformat(),
         }
@@ -2304,7 +2305,7 @@ def delete_notification(notification_id):
     container.delete_item(item=notification_id, partition_key=notification_id)
 
 
-def get_all_global_notifications():
+def get_all_global_notifications(user_id: str = None):
     """
     Get All Global Notifications
     """
@@ -2312,7 +2313,27 @@ def get_all_global_notifications():
         container = get_cosmos_container("notifications")
         query = "SELECT * FROM c WHERE c.type = 'global_notification'"
         items = list(container.query_items(query=query, enable_cross_partition_query=True))
+        if user_id:
+            items = [item for item in items if user_id not in item.get("hiddenBy", [])]
         return items
     except Exception as e:
         logging.error(f"Error fetching global notifications: {e}")
         raise
+
+def hide_notification(notification_id: str, user_id: str):
+    """Hide a notification for a user by adding them to the *hiddenBy* list."""
+    try:
+        container = get_cosmos_container("notifications")
+        item = container.read_item(item=notification_id, partition_key=notification_id)
+
+        hidden_by = item.get("hiddenBy", [])
+        if user_id not in hidden_by:
+            hidden_by.append(user_id)
+            item["hiddenBy"] = hidden_by
+            item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+            container.upsert_item(item)
+
+        return item
+    except CosmosResourceNotFoundError:
+        raise CosmosResourceNotFoundError(f"Notification {notification_id} not found")
+    

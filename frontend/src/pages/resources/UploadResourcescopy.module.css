@@ -12,13 +12,10 @@
 .page_container {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  padding-block: 24px;
-  padding-left: calc(var(--vault-gutter));
-  padding-right: calc(var(--vault-gutter) + 10px);
+  padding-top: 3rem;
+  width: 65%;
+  margin: auto;
   background-color: #f9fafb;
-  min-height: 100dvh;
-  box-sizing: border-box;
 }
 
 :global(#root):has(.page_container) {
