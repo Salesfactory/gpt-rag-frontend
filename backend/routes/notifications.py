@@ -15,7 +15,8 @@ from shared.cosmo_db import (
     acknowledge_notification as db_acknowledge_notification,
     disable_notification_from_template as db_disable_notification_from_template,
     get_all_notification_templates,
-    hide_notification as db_hide_notification
+    hide_notification as db_hide_notification,
+    mark_all_notifications as db_mark_all_notifications,
 )
 from shared.decorators import only_platform_admin
 from utils import create_success_response, create_error_response, require_client_principal
@@ -237,3 +238,16 @@ def hide_notification_endpoint(notification_id):
     except Exception as e:
         logger.error(f"Error hiding notification: {e}")
         return create_error_response("Failed to hide notification", 500)
+
+@bp.route("/user/mark-all", methods=["POST"])
+@require_client_principal
+def mark_all_notifications_endpoint():
+    try:
+        user_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+        if not user_id:
+            return create_error_response("Missing user id", 401)
+        items = db_mark_all_notifications(user_id)
+        return create_success_response(items)
+    except Exception as e:
+        logger.error(f"Error marking all notifications: {e}")
+        return create_error_response("Failed to mark all notifications", 500)

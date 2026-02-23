@@ -46,6 +46,14 @@ const Notifications: React.FC = () => {
   
 };
 
+useEffect(() => {
+    const handleMarkAllRead = () => {
+        getNotifications();
+    };
+    window.addEventListener("notifications:markAllRead", handleMarkAllRead);
+    return () => window.removeEventListener("notifications:markAllRead", handleMarkAllRead);
+}, [user]);
+
  const getNotifications = useCallback(async () => {
     if (!user?.id) {
         setNotifications([]);

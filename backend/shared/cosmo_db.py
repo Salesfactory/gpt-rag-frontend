@@ -2337,3 +2337,18 @@ def hide_notification(notification_id: str, user_id: str):
     except CosmosResourceNotFoundError:
         raise CosmosResourceNotFoundError(f"Notification {notification_id} not found")
     
+def mark_all_notifications(user_id: str):
+    """Mark all notifications for a user by adding them to the *acknowledge by* list."""
+    try:
+        container = get_cosmos_container("notifications")
+        query = "SELECT * FROM c WHERE c.type = 'global_notification'"
+        items = container.query_items(query=query, enable_cross_partition_query=True)
+        for item in items:
+            if user_id not in item["acknowledgedBy"]:
+                item["acknowledgedBy"].append(user_id)
+                item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+                container.upsert_item(item)
+        return True
+    except Exception as e:
+        logging.error(f"Error marking all notifications: {e}")
+        raise

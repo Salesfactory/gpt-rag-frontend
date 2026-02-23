@@ -2581,3 +2581,26 @@ export async function hideNotification({user, notificationId}: {user:any, notifi
         throw error;
     }
 }
+
+export async function markAllNotificationsAsRead(user:any) {
+        const user_id = user?.id || "00000000-0000-0000-0000-000000000000";
+    const organization_id = user?.organizationId ?? "00000000-0000-0000-0000-000000000000";
+    try {
+        const response = await fetch(`/api/notifications/user/mark-all`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-MS-CLIENT-PRINCIPAL-ID": user_id,
+                "X-MS-CLIENT-PRINCIPAL-ORGANIZATION": organization_id
+            }
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw Error(errorData.message || "Failed to mark all notifications as read");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error marking all notifications as read", error);
+        throw error;
+    }
+}
