@@ -5,11 +5,12 @@ import { useAppContext } from "../../providers/AppProviders";
 import { useLocation } from "react-router-dom";
 import { ProfilePanel } from "../ProfilePanel/Profilecopy";
 import ChatHistorySidebar from "../ChatHistorySidebar/ChatHistorySidebar";
-import { getUserById, exportConversation } from "../../api";
+import { getUserById, exportConversation, markAllNotificationsAsRead } from "../../api";
 import { toast } from "react-toastify";
 import { Spinner } from "@fluentui/react";
 import SFActionableLogo from "../../img/SF-actionableLogo.png";
 import { SettingsPanel } from "../../components/SettingsPanel/indexCopy";
+import { CheckmarkFilled } from "@fluentui/react-icons";
 
 type Role = "user" | "admin" | "platformAdmin";
 
@@ -105,6 +106,17 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
         }
     };
 
+    const handleMarkAllNotificationsRead = async () => {
+    try {
+        await markAllNotificationsAsRead(user);
+        window.dispatchEvent(new CustomEvent("notifications:markAllRead"));
+        toast("All notifications marked as read", { type: "success" });
+    } catch (error) {
+        console.error("Error marking all notifications as read", error);
+        toast("Failed to mark all notifications as read", { type: "error" });
+    }
+    }
+
     const handleExportConversation = async () => {
         const currentConversationId = chatId;
 
@@ -122,6 +134,8 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
             toast("User information is incomplete.", { type: "warning" });
             return;
         }
+
+
 
         setIsExporting(true);
 
@@ -288,8 +302,16 @@ const Navbar: React.FC<NavbarProps> = ({ isCollapsed, setIsCollapsed }) => {
                         )}
                         {location === "/view-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Dashboard</span>}
                         {location === "/view-manage-reports" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Report Management</span>}
+                        {location === "/notification-settings" && <span className={`ms-2 d-none d-sm-inline ${styles.brandText}`}>Notifications</span>}
                     </li>
+
                 </ul>
+                 {location === "/notification-settings" && (
+                            <button aria-label="Mark all Read" className="btn ml-10 btn-white btn-sm d-flex align-items-center gap-1 rounded border" onClick={handleMarkAllNotificationsRead}>
+                                <CheckmarkFilled className={styles.iconLarge}  />
+                                <span>Mark all Read</span>
+                            </button>
+                        )}
                 <div className={`navbar-collapse d-flex px-0 ${styles.iconContainer}`} id="navbarNav">
                     <ul className="navbar-nav flex-row align-items-center gap-2">
                         {/* Feedback Panel Button */}
