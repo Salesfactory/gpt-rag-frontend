@@ -29,7 +29,7 @@
 .tag {
     display: inline-flex;
     align-items: center;
-    background-color: #f3f4f6;
+    background-color: rgb(227, 227, 224);
     color: #1f2937;
     padding: 8px;
     border-radius: 8px;
@@ -43,7 +43,7 @@
     align-items: center;
     justify-content: center;
     margin-left: 6px;
-    background: #f3f4f6;
+    background: rgb(227, 227, 224);
     color: #6b717f;
     border: none;
     width: 16px;
