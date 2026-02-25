@@ -10,12 +10,13 @@ from utils import create_success_response, create_error_response
 from routes.decorators.auth_decorator import auth_required
 from shared.anthropic_files import AnthropicFilesClient, AnthropicFilesError, AnthropicFilesRequestError
 BLOB_CONTAINER_NAME = "user-documents"
-ALLOWED_FILE_EXTENSIONS = [".pdf", ".csv", ".xls", ".xlsx"]
-ANTHROPIC_FILE_EXTENSIONS = {".csv", ".xls", ".xlsx"}
+ALLOWED_FILE_EXTENSIONS = [".pdf", ".csv", ".xls", ".xlsx", ".docx"]
+ANTHROPIC_FILE_EXTENSIONS = {".csv", ".xls", ".xlsx", ".docx"}
 ANTHROPIC_MIME_TYPES = {
     ".csv": "text/csv",
     ".xls": "application/vnd.ms-excel",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
 ANTHROPIC_FILE_ID_METADATA_KEY = "file_id"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB 

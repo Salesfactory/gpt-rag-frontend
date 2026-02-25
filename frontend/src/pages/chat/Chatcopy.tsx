@@ -579,7 +579,7 @@ const Chat = () => {
                 const name = file.name.toLowerCase();
                 if (!allowed.some(ext => name.endsWith(ext))) {
                     const fileExtension = name.split(".").pop() || "unknown";
-                    setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF, CSV, XLS, XLSX`);
+                    setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF, CSV, XLS, XLSX, DOCX`);
                     return;
                 }
                 if (file.size > maxSizeInBytes) {
