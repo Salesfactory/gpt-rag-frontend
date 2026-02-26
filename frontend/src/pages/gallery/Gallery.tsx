@@ -1,11 +1,29 @@
 import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter, PresentationIcon, ChevronDown, ChevronUp, Eye, X } from "lucide-react";
+import {
+    ArrowUpDown,
+    Download,
+    Search,
+    Trash2,
+    Upload,
+    Users,
+    ChevronLeft,
+    ChevronRight,
+    Filter,
+    PresentationIcon,
+    FileText,
+    Table,
+    ChevronDown,
+    ChevronUp,
+    Eye,
+    X,
+    Pencil
+} from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef, useMemo, lazy, Suspense } from "react";
 
 const PptxViewer = lazy(() => import("../../components/DocView/PPTXViewer"));
-import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
+import { deleteSourceFileFromBlob, getGalleryItems, getGoogleEditableFileRedirectUrl, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 
 const statusFilterOptions = [
@@ -52,11 +70,22 @@ const GalleryCard: React.FC<{
     onDownload: (item: GalleryItem) => void;
     onDelete: (item: GalleryItem) => void;
     onPreview: (item: GalleryItem) => void;
+    onEdit: (item: GalleryItem) => void;
     getUserName: (id: string) => string | undefined;
     createFileName: (name: string) => string;
     formatFileSize: (bytes: number) => string;
-}> = ({ file, onDownload, onDelete, onPreview, getUserName, createFileName, formatFileSize }) => {
+}> = ({ file, onDownload, onDelete, onPreview, onEdit, getUserName, createFileName, formatFileSize }) => {
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+    const fileNameLower = file.name.toLowerCase();
+    const isGoogleEditableFile = fileNameLower.endsWith(".pptx") || fileNameLower.endsWith(".docx") || fileNameLower.endsWith(".xlsx");
+    const googleEditorLabel = fileNameLower.endsWith(".pptx") ? "Google Slides" : fileNameLower.endsWith(".xlsx") ? "Google Sheets" : "Google Docs";
+
+    const renderPlaceholderIcon = () => {
+        if (fileNameLower.endsWith(".pptx")) return <PresentationIcon size={32} color="Gray" />;
+        if (fileNameLower.endsWith(".xlsx")) return <Table size={32} color="Gray" />;
+        if (fileNameLower.endsWith(".docx")) return <FileText size={32} color="Gray" />;
+        return <PresentationIcon size={32} color="Gray" />;
+    };
 
     return (
         <div className={styles.card}>
@@ -76,9 +105,7 @@ const GalleryCard: React.FC<{
                             }}
                         />
                     ) : null}
-                    <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>
-                        <PresentationIcon size={32} color="Gray" />
-                    </div>
+                    <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>{renderPlaceholderIcon()}</div>
                 </div>
 
                 {/* Hover Actions Overlay */}
@@ -94,6 +121,11 @@ const GalleryCard: React.FC<{
                         <button className={styles.actionButton} onClick={() => onPreview(file)}>
                             <Eye size={16} className={styles.previewIcon} />
                         </button>
+                        {isGoogleEditableFile && (
+                            <button className={styles.actionButton} title={`Edit in ${googleEditorLabel}`} onClick={() => onEdit(file)}>
+                                <Pencil size={16} className={styles.editIcon} />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -108,28 +140,17 @@ const GalleryCard: React.FC<{
                         <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
                     </div>
                 </div>
-                <span className={styles.userTag}>
-                    {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
-                </span>
-                <p className={styles.fileDate}>
-                    Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
-                </p>
+                <span className={styles.userTag}>{file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}</span>
+                <p className={styles.fileDate}>Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}</p>
 
                 {/* Collapsible Description */}
                 {file.metadata.artifact_desc && (
                     <div className={styles.descriptionContainer}>
-                        <button
-                            className={styles.descriptionToggle}
-                            onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
-                        >
+                        <button className={styles.descriptionToggle} onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}>
                             Description
                             {isDescriptionOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </button>
-                        {isDescriptionOpen && (
-                            <div className={styles.descriptionContent}>
-                                {file.metadata.artifact_desc}
-                            </div>
-                        )}
+                        {isDescriptionOpen && <div className={styles.descriptionContent}>{file.metadata.artifact_desc}</div>}
                     </div>
                 )}
             </div>
@@ -153,6 +174,7 @@ const Gallery: React.FC = () => {
     const [showTypeFilter, setShowTypeFilter] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [previewFile, setPreviewFile] = useState<GalleryItem | null>(null);
+    const [editFile, setEditFile] = useState<GalleryItem | null>(null);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -270,6 +292,23 @@ const Gallery: React.FC = () => {
         }
     };
 
+    const handleConfirmGoogleEdit = async () => {
+        if (!editFile) return;
+
+        try {
+            const redirectUrl = await getGoogleEditableFileRedirectUrl({
+                user,
+                blobName: editFile.name
+            });
+
+            setEditFile(null);
+            window.location.href = redirectUrl;
+        } catch (error) {
+            console.error("Error preparing Google edit redirect:", error);
+            toast.error(`Could not open in Google Workspace: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    };
+
     const formatFileSize = (bytes: number): string => {
         if (bytes < 1024) return bytes + " B";
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
@@ -301,6 +340,18 @@ const Gallery: React.FC = () => {
 
     const getUserName = (id: string) => {
         return users?.find(user => user.id === id)?.name;
+    };
+
+    const getGoogleEditorLabel = (fileName: string): "Google Docs" | "Google Slides" | "Google Sheets" => {
+        const normalizedName = fileName.toLowerCase();
+        if (normalizedName.endsWith(".pptx")) return "Google Slides";
+        if (normalizedName.endsWith(".xlsx")) return "Google Sheets";
+        return "Google Docs";
+    };
+
+    const shouldUseDocumentViewer = (fileName: string) => {
+        const normalizedName = fileName.toLowerCase();
+        return normalizedName.endsWith(".pptx") || normalizedName.endsWith(".docx") || normalizedName.endsWith(".xlsx");
     };
 
     const userOptions = useMemo((): User[] => {
@@ -540,6 +591,7 @@ const Gallery: React.FC = () => {
                                                     onDownload={handleDownload}
                                                     onDelete={handleDelete}
                                                     onPreview={setPreviewFile}
+                                                    onEdit={setEditFile}
                                                     getUserName={getUserName}
                                                     createFileName={createFileName}
                                                     formatFileSize={formatFileSize}
@@ -606,26 +658,52 @@ const Gallery: React.FC = () => {
                     <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{previewFile.name.split("/").pop()}</h3>
-                            <button
-                                className={styles.modalCloseButton}
-                                onClick={() => setPreviewFile(null)}
-                                title="Close"
-                            >
+                            <button className={styles.modalCloseButton} onClick={() => setPreviewFile(null)} title="Close">
                                 <X size={20} />
                             </button>
                         </div>
                         <div className={styles.modalBody}>
                             <Suspense fallback={<div style={{ textAlign: "center", padding: "2rem", color: "#A0CB06" }}>Loading viewer...</div>}>
-                                {previewFile.name.endsWith(".pptx") ? <PptxViewer file="" blobName={previewFile.name} /> : <div><img
-                                    src={previewFile.url}
-                                    alt="Chart Preview"
-                                    className={styles.previewImage}
-                                    onError={e => {
-                                        e.currentTarget.style.display = "none";
-                                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                                    }}
-                                /></div>}
+                                {shouldUseDocumentViewer(previewFile.name) ? (
+                                    <PptxViewer file="" blobName={previewFile.name} />
+                                ) : (
+                                    <div>
+                                        <img
+                                            src={previewFile.url}
+                                            alt="Chart Preview"
+                                            className={styles.previewImage}
+                                            onError={e => {
+                                                e.currentTarget.style.display = "none";
+                                                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                                            }}
+                                        />
+                                    </div>
+                                )}
                             </Suspense>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {editFile && (
+                <div className={styles.modalOverlay} onClick={() => setEditFile(null)}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 className={styles.modalTitle}>Edit in {getGoogleEditorLabel(editFile.name)}</h3>
+                            <button className={styles.modalCloseButton} onClick={() => setEditFile(null)} title="Close">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.confirmModalBody}>
+                            You will be redirected to {getGoogleEditorLabel(editFile.name)} with a copy of this document so you can edit it.
+                        </div>
+                        <div className={styles.confirmModalActions}>
+                            <button className={styles.confirmButtonSecondary} onClick={() => setEditFile(null)}>
+                                Cancel
+                            </button>
+                            <button className={styles.confirmButtonPrimary} onClick={handleConfirmGoogleEdit}>
+                                Continue
+                            </button>
                         </div>
                     </div>
                 </div>

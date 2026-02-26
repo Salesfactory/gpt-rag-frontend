@@ -8,6 +8,14 @@ interface PptxViewerProps {
     blobName?: string; // Optional blob name for SAS URL generation
 }
 
+const getSupportedFileType = (value: string): "pptx" | "docx" | "xlsx" | null => {
+    const normalizedValue = value.toLowerCase();
+    if (normalizedValue.endsWith(".pptx")) return "pptx";
+    if (normalizedValue.endsWith(".docx")) return "docx";
+    if (normalizedValue.endsWith(".xlsx")) return "xlsx";
+    return null;
+};
+
 const PptxViewer: React.FC<PptxViewerProps> = ({ file, blobName }) => {
     const { user } = useAppContext();
     const [fileUrl, setFileUrl] = useState<string>("");
@@ -56,25 +64,25 @@ const PptxViewer: React.FC<PptxViewerProps> = ({ file, blobName }) => {
         };
     }, [file, blobName]);
 
-    const docs = fileUrl
-        ? [
-              {
-                  uri: fileUrl,
-                  fileType: "pptx"
-              }
-          ]
-        : [];
+    const sourceName = blobName || (typeof file === "string" ? file : "");
+    const detectedFileType = getSupportedFileType(sourceName);
+
+    const docs =
+        fileUrl && detectedFileType
+            ? [
+                  {
+                      uri: fileUrl,
+                      fileType: detectedFileType
+                  }
+              ]
+            : [];
 
     return (
         <div style={{ height: "750px", width: "100%", overflow: "auto" }}>
             {error ? (
-                <div style={{ textAlign: "center", padding: "2rem", color: "red" }}>
-                    Error: {error}
-                </div>
+                <div style={{ textAlign: "center", padding: "2rem", color: "red" }}>Error: {error}</div>
             ) : isLoading ? (
-                <div style={{ textAlign: "center", padding: "2rem", color: "rgb(21, 146, 68)" }}>
-                    Loading PowerPoint presentation...
-                </div>
+                <div style={{ textAlign: "center", padding: "2rem", color: "rgb(21, 146, 68)" }}>Loading document preview...</div>
             ) : docs.length > 0 ? (
                 <DocViewer
                     documents={docs}
@@ -89,9 +97,7 @@ const PptxViewer: React.FC<PptxViewerProps> = ({ file, blobName }) => {
                     style={{ height: "100%", width: "100%" }}
                 />
             ) : (
-                <div style={{ textAlign: "center", padding: "2rem", color: "rgb(21, 146, 68)" }}>
-                    No presentation to display
-                </div>
+                <div style={{ textAlign: "center", padding: "2rem", color: "rgb(21, 146, 68)" }}>No document to display</div>
             )}
         </div>
     );
