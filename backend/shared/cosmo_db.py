@@ -689,9 +689,7 @@ def get_user_organizations(user_id):
                 "name": org.get("name", ""),
                 "owner": org.get("owner", ""),
                 "sessionId": org.get("sessionId", ""),
-                "subscriptionExpirationDate": org.get(
-                    "subscriptionExpirationDate", ""
-                ),
+                "subscriptionExpirationDate": org.get("subscriptionExpirationDate", ""),
                 "subscriptionId": org.get("subscriptionId", ""),
                 "subscriptionStatus": org.get("subscriptionStatus", []),
             }
@@ -1842,7 +1840,9 @@ def create_user_logs(user_id, organization_id, action, metadata=None):
         raise
 
 
-def get_user_logs_by_organization_timestamp(organization_id: str, start_timestamp: int, end_timestamp: int, action: str):
+def get_user_logs_by_organization_timestamp(
+    organization_id: str, start_timestamp: int, end_timestamp: int, action: str
+):
     logs_container = get_cosmos_container("userLogs")
     try:
         query = """
@@ -1856,17 +1856,16 @@ def get_user_logs_by_organization_timestamp(organization_id: str, start_timestam
             {"name": "@orgId", "value": organization_id},
             {"name": "@start_timestamp", "value": int(start_timestamp)},
             {"name": "@end_timestamp", "value": int(end_timestamp)},
-            {"name": "@action", "value": action}
+            {"name": "@action", "value": action},
         ]
         result = logs_container.query_items(
-            query=query,
-            parameters=parameters,
-            partition_key=organization_id
+            query=query, parameters=parameters, partition_key=organization_id
         )
         return list(result)
     except Exception as e:
         logging.error(f"Error getting user logs by organization: {e}")
         raise
+
 
 def get_user_logs_by_organization(organization_id: str, action: str):
     logs_container = get_cosmos_container("userLogs")
@@ -1878,12 +1877,10 @@ def get_user_logs_by_organization(organization_id: str, action: str):
         """
         parameters = [
             {"name": "@orgId", "value": organization_id},
-            {"name": "@action", "value": action}
+            {"name": "@action", "value": action},
         ]
         result = logs_container.query_items(
-            query=query,
-            parameters=parameters,
-            partition_key=organization_id
+            query=query, parameters=parameters, partition_key=organization_id
         )
         return list(result)
     except Exception as e:
@@ -1891,7 +1888,9 @@ def get_user_logs_by_organization(organization_id: str, action: str):
         raise
 
 
-def get_all_user_logs_by_timestamp(start_timestamp: int, end_timestamp: int, action: str):
+def get_all_user_logs_by_timestamp(
+    start_timestamp: int, end_timestamp: int, action: str
+):
     logs_container = get_cosmos_container("userLogs")
     try:
         result = logs_container.query_items(
@@ -1899,22 +1898,7 @@ def get_all_user_logs_by_timestamp(start_timestamp: int, end_timestamp: int, act
             parameters=[
                 {"name": "@start_timestamp", "value": int(start_timestamp)},
                 {"name": "@end_timestamp", "value": int(end_timestamp)},
-                {"name": "@action", "value": action}
-            ],
-            enable_cross_partition_query=True
-        )
-        return list(result)
-    except Exception as e:
-        logging.error(f"Error getting all user logs: {e}")
-        raise
-
-def get_all_user_logs(action):
-    logs_container = get_cosmos_container("userLogs")
-    try:
-        result = logs_container.query_items(
-            query="SELECT * FROM c WHERE c.action = @action",
-            parameters=[
-                {"name": "@action", "value": action}
+                {"name": "@action", "value": action},
             ],
             enable_cross_partition_query=True,
         )
@@ -1923,13 +1907,35 @@ def get_all_user_logs(action):
         logging.error(f"Error getting all user logs: {e}")
         raise
 
-def get_all_conversations_by_organization(organization_id, start_timestamp: int = None, end_timestamp: int = None):
+
+def get_all_user_logs(action):
+    logs_container = get_cosmos_container("userLogs")
+    try:
+        result = logs_container.query_items(
+            query="SELECT * FROM c WHERE c.action = @action",
+            parameters=[{"name": "@action", "value": action}],
+            enable_cross_partition_query=True,
+        )
+        return list(result)
+    except Exception as e:
+        logging.error(f"Error getting all user logs: {e}")
+        raise
+
+
+def get_all_conversations_by_organization(
+    organization_id, start_timestamp: int = None, end_timestamp: int = None
+):
     conversations_container = get_cosmos_container("conversations")
     try:
         if start_timestamp and end_timestamp:
             from datetime import datetime
-            start_date_str = datetime.utcfromtimestamp(start_timestamp).strftime("%Y-%m-%d %H:%M:%S")
-            end_date_str = datetime.utcfromtimestamp(end_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+
+            start_date_str = datetime.utcfromtimestamp(start_timestamp).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            end_date_str = datetime.utcfromtimestamp(end_timestamp).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
             query = """
                 SELECT * FROM c 
                 WHERE c.conversation_data.interaction.organization_id = @organization_id
@@ -1939,64 +1945,66 @@ def get_all_conversations_by_organization(organization_id, start_timestamp: int 
             parameters = [
                 {"name": "@organization_id", "value": organization_id},
                 {"name": "@start_date", "value": start_date_str},
-                {"name": "@end_date", "value": end_date_str}
+                {"name": "@end_date", "value": end_date_str},
             ]
         else:
             query = """
                 SELECT * FROM c 
                 WHERE c.conversation_data.interaction.organization_id = @organization_id
             """
-            parameters = [
-                {"name": "@organization_id", "value": organization_id}
-            ]
+            parameters = [{"name": "@organization_id", "value": organization_id}]
         conversations = conversations_container.query_items(
-            query=query,
-            parameters=parameters,
-            enable_cross_partition_query=True   
+            query=query, parameters=parameters, enable_cross_partition_query=True
         )
         return list(conversations)
     except Exception as e:
         logging.error(f"Error getting history conversations by organization: {e}")
         raise
+
 
 def get_all_conversations():
     conversations_container = get_cosmos_container("conversations")
     try:
         query = """
             SELECT * FROM c 
-        """ 
- 
+        """
+
         conversations = conversations_container.query_items(
-            query=query,
-            enable_cross_partition_query=True   
+            query=query, enable_cross_partition_query=True
         )
         return list(conversations)
     except Exception as e:
         logging.error(f"Error getting history conversations by organization: {e}")
         raise
 
+
 def get_all_users():
     users_container = get_cosmos_container("users")
     try:
         result = users_container.query_items(
-            query="SELECT * FROM c",
-            enable_cross_partition_query=True
+            query="SELECT * FROM c", enable_cross_partition_query=True
         )
         return list(result)
     except Exception as e:
         logging.error(f"Error getting all users: {e}")
         raise
 
-def get_user_activity_data(organization_id: str = None, start_date: int = None, end_date: int = None, action: str = "session-start"):
+
+def get_user_activity_data(
+    organization_id: str = None,
+    start_date: int = None,
+    end_date: int = None,
+    action: str = "session-start",
+):
     """
     Aggregates user activity data (sessions, conversations, messages) per user.
-    
+
     Args:
         organization_id (str, optional): Filter by organization. Defaults to None.
         start_date (int, optional): Unix timestamp for start date range. Defaults to None.
         end_date (int, optional): Unix timestamp for end date range. Defaults to None.
         action (str, optional): User action type to filter logs. Defaults to "session-start".
-    
+
     Returns:
         list[dict]: List of user activity records with the following fields:
             - user_id (str): User unique identifier
@@ -2006,7 +2014,7 @@ def get_user_activity_data(organization_id: str = None, start_date: int = None, 
             - conversation_count (int): Number of conversations
             - message_count (int): Total user messages sent
             - first_login_date (int): Unix timestamp of first session
-    
+
     Notes:
         - Returns one record per user with no duplicates
         - Filters conversations by start_date if provided (uses conversation_data.start_date)
@@ -2018,7 +2026,9 @@ def get_user_activity_data(organization_id: str = None, start_date: int = None, 
         user_logs = get_user_logs_by_organization_timestamp(
             organization_id, start_date, end_date, action
         )
-        conversations = get_all_conversations_by_organization(organization_id, start_date, end_date)
+        conversations = get_all_conversations_by_organization(
+            organization_id, start_date, end_date
+        )
     else:
         user_logs = get_user_logs_by_organization(organization_id, action)
         conversations = get_all_conversations_by_organization(organization_id)
@@ -2033,14 +2043,18 @@ def get_user_activity_data(organization_id: str = None, start_date: int = None, 
 
         if uid not in conv_stats:
             conv_stats[uid] = {
-                "user_name": conv.get("conversation_data", {}).get("interaction", {}).get("user_name", "Unknown User"),
+                "user_name": conv.get("conversation_data", {})
+                .get("interaction", {})
+                .get("user_name", "Unknown User"),
                 "conversation_count": 0,
                 "message_count": 0,
             }
 
         conv_stats[uid]["conversation_count"] += 1
         history = conv.get("conversation_data", {}).get("history", [])
-        conv_stats[uid]["message_count"] += sum(1 for h in history if h.get("role") == "user")
+        conv_stats[uid]["message_count"] += sum(
+            1 for h in history if h.get("role") == "user"
+        )
 
     # 3) Aggregate logs per user (sessions + first_login_date)
     agg: dict[str, dict] = {}
@@ -2065,7 +2079,9 @@ def get_user_activity_data(organization_id: str = None, start_date: int = None, 
             }
 
         agg[uid]["session_count"] += 1
-        if ts is not None and (agg[uid]["first_login_date"] is None or ts < agg[uid]["first_login_date"]):
+        if ts is not None and (
+            agg[uid]["first_login_date"] is None or ts < agg[uid]["first_login_date"]
+        ):
             agg[uid]["first_login_date"] = ts
 
     return list(agg.values())
@@ -2083,15 +2099,27 @@ def get_all_notifications():
     return items
 
 
+def get_all_notification_templates():
+    """
+    Fetch all notification templates from the 'notifications' container.
+    """
+    container = get_cosmos_container("notifications")
+    query = "SELECT * FROM c WHERE c.type = 'template'"
+    items = list(container.query_items(query=query, enable_cross_partition_query=True))
+    items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
+    return items
+
+
 def get_active_notifications():
     """
     Fetch enabled notifications ordered by newest first.
     """
     container = get_cosmos_container("notifications")
-    query = "SELECT * FROM c WHERE c.enabled = true"
+    query = "SELECT * FROM c WHERE c.type = 'global_notification' AND c.enabled = true"
     items = list(container.query_items(query=query, enable_cross_partition_query=True))
     items.sort(key=lambda x: x.get("createdAt", ""), reverse=True)
     return items
+
 
 def _disable_other_active_notifications(container, exclude_id=None):
     """
@@ -2099,39 +2127,127 @@ def _disable_other_active_notifications(container, exclude_id=None):
     """
     query = "SELECT * FROM c WHERE c.enabled = true"
     items = list(container.query_items(query=query, enable_cross_partition_query=True))
-    
+
     for item in items:
         if exclude_id and item.get("id") == exclude_id:
             continue
-            
+
         item["enabled"] = False
         item["updatedAt"] = datetime.now(timezone.utc).isoformat()
         container.upsert_item(item)
 
-def create_notification(title, message, enabled=False):
+
+def create_notification_template(title, message, enabled):
     """
-    Create a new notification. If enabled is True, others are disabled.
+    Create a new notification template. If enabled is True, others are disabled.
     """
     if not title or not message:
         raise ValueError("Title and Message are required.")
-        
-    container = get_cosmos_container("notifications")
-    
-    if enabled:
-        _disable_other_active_notifications(container)
 
-    new_notification = {
-        "id": str(uuid.uuid4()),
-        "title": title,
-        "message": message,
-        "enabled": enabled,
-        "acknowledgedBy": [],
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-        "updatedAt": datetime.now(timezone.utc).isoformat()
-    }
-    
-    container.create_item(new_notification)
-    return new_notification
+    try:
+        container = get_cosmos_container("notifications")
+
+        new_notification = {
+            "id": str(uuid.uuid4()),
+            "type": "template",
+            "title": title,
+            "message": message,
+            "enabled": enabled,
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
+        }
+        try:
+            result = container.create_item(new_notification)
+        except Exception as e:
+            logging.error(f"Error creating notification template: {e}")
+            raise
+
+        if enabled == True:
+            _disable_other_active_notifications(container, result.get("id"))
+            create_notification_from_template(result.get("id"))
+
+        return result
+    except Exception as e:
+        logging.error(f"Error creating notification template: {e}")
+        raise
+
+
+def create_notification_from_template(template_id):
+    """
+    When a Notification Template is enabled, a new Notification is created from it.
+    """
+    if not template_id:
+        raise ValueError("Template ID is required.")
+
+    try:
+        container = get_cosmos_container("notifications")
+        template = container.read_item(item=template_id, partition_key=template_id)
+    except Exception as e:
+        logging.error(f"Error reading notification template: {e}")
+        raise
+
+    try:
+        new_notification = {
+            "id": str(uuid.uuid4()),
+            "template_id": template_id,
+            "type": "global_notification",
+            "title": template.get("title"),
+            "message": template.get("message"),
+            "enabled": True,
+            "acknowledgedBy": [],
+            "hiddenBy"
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
+        }
+        
+        _disable_other_active_notifications(container, exclude_id=template_id)
+        template["enabled"] = True
+        template["updatedAt"] = datetime.now(timezone.utc).isoformat()
+        container.upsert_item(template)
+
+        created_notification = container.create_item(new_notification)
+        return created_notification
+
+    except Exception as e:
+        logging.error(f"Error creating notification from template: {e}")
+        if new_notification.get("id"):
+            container.delete_item(item=new_notification.get("id"), partition_key=new_notification.get("id"))
+        raise
+
+
+def disable_notification_from_template(notification_template_id):
+    """
+    Disable all notifications created from a template.
+    """
+    try:
+        container = get_cosmos_container("notifications")
+
+        # Disable the template
+        template = container.read_item(
+            item=notification_template_id, partition_key=notification_template_id
+        )
+        template["enabled"] = False
+        template["updatedAt"] = datetime.now(timezone.utc).isoformat()
+        container.upsert_item(template)
+
+        # Disable all notifications created from the template
+        query = "SELECT * FROM c WHERE c.template_id = @template_id"
+        parameters = [{"name": "@template_id", "value": notification_template_id}]
+        items = list(
+            container.query_items(
+                query=query, enable_cross_partition_query=True, parameters=parameters
+            )
+        )
+        for item in items:
+            item["enabled"] = False
+            item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+            container.upsert_item(item)
+
+        return template
+    except Exception as e:
+        logging.error(f"Error disabling notification from template: {e}")
+        raise e
+
 
 def update_notification(notification_id, updates):
     """
@@ -2154,9 +2270,9 @@ def update_notification(notification_id, updates):
         if new_enabled and not item.get("enabled"):
             _disable_other_active_notifications(container, exclude_id=notification_id)
         item["enabled"] = new_enabled
-        
+
     item["updatedAt"] = datetime.now(timezone.utc).isoformat()
-    
+
     container.upsert_item(item)
     return item
 
@@ -2180,9 +2296,59 @@ def acknowledge_notification(notification_id: str, user_id: str):
 
     return item
 
+
 def delete_notification(notification_id):
     """
     Delete a notification by ID.
     """
     container = get_cosmos_container("notifications")
     container.delete_item(item=notification_id, partition_key=notification_id)
+
+
+def get_all_global_notifications(user_id: str = None):
+    """
+    Get All Global Notifications
+    """
+    try:
+        container = get_cosmos_container("notifications")
+        query = "SELECT * FROM c WHERE c.type = 'global_notification'"
+        items = list(container.query_items(query=query, enable_cross_partition_query=True))
+        if user_id:
+            items = [item for item in items if user_id not in item.get("hiddenBy", [])]
+        return items
+    except Exception as e:
+        logging.error(f"Error fetching global notifications: {e}")
+        raise
+
+def hide_notification(notification_id: str, user_id: str):
+    """Hide a notification for a user by adding them to the *hiddenBy* list."""
+    try:
+        container = get_cosmos_container("notifications")
+        item = container.read_item(item=notification_id, partition_key=notification_id)
+
+        hidden_by = item.get("hiddenBy", [])
+        if user_id not in hidden_by:
+            hidden_by.append(user_id)
+            item["hiddenBy"] = hidden_by
+            item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+            container.upsert_item(item)
+
+        return item
+    except CosmosResourceNotFoundError:
+        raise CosmosResourceNotFoundError(f"Notification {notification_id} not found")
+    
+def mark_all_notifications(user_id: str):
+    """Mark all notifications for a user by adding them to the *acknowledge by* list."""
+    try:
+        container = get_cosmos_container("notifications")
+        query = "SELECT * FROM c WHERE c.type = 'global_notification'"
+        items = container.query_items(query=query, enable_cross_partition_query=True)
+        for item in items:
+            if user_id not in item["acknowledgedBy"]:
+                item["acknowledgedBy"].append(user_id)
+                item["updatedAt"] = datetime.now(timezone.utc).isoformat()
+                container.upsert_item(item)
+        return True
+    except Exception as e:
+        logging.error(f"Error marking all notifications: {e}")
+        raise

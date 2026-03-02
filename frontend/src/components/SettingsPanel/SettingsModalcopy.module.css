@@ -354,20 +354,23 @@
 
 
 .tooltipBoxLarge {
-    position: fixed;
-    padding: 10px 12px;
-    width: min(300px, 92vw);
-    max-width: 340px;
-    background-color: #ffffff;
-    color: #111827; /* gray-900 */
-    border-radius: 12px; /* slightly smaller radius */
-    border: 1px solid #e5e7eb; /* gray-200 */
-    box-shadow: 0 16px 36px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
-    pointer-events: none;
-    z-index: 10000;
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(calc(-50% + 20px));
+  padding: 10px 12px;
+  width: min(300px, 92vw);
+  max-width: 340px;
+  background-color: #ffffff;
+  color: #111827; /* gray-900 */
+  border-radius: 12px; /* slightly smaller radius */
+  border: 1px solid #e5e7eb; /* gray-200 */
+  box-shadow: 0 16px 36px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+  pointer-events: none;
+  z-index: 10000;
 }
 
 .tooltipOpen .tooltipBoxLarge,
@@ -375,6 +378,7 @@
 .tooltipWrapper:focus-within .tooltipBoxLarge {
     opacity: 1;
     visibility: visible;
+  pointer-events: auto;
 }
 
 

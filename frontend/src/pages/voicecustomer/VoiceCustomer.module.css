@@ -1,6 +1,7 @@
 .mainContainer {
-    width: 100%;
-    padding: 3.125rem 3.125rem 3.125rem 4.125rem;
+    max-width: 80rem;
+    padding-top: 2rem;
+    margin: auto;
 }
 
 @media (max-width: 768px) {
@@ -28,7 +29,7 @@
 .tag {
     display: inline-flex;
     align-items: center;
-    background-color: #f3f4f6;
+    background-color: rgb(227, 227, 224);
     color: #1f2937;
     padding: 8px;
     border-radius: 8px;
@@ -42,7 +43,7 @@
     align-items: center;
     justify-content: center;
     margin-left: 6px;
-    background: #f3f4f6;
+    background: rgb(227, 227, 224);
     color: #6b717f;
     border: none;
     width: 16px;
@@ -76,25 +77,24 @@
 
 .card {
     background-color: #fff;
-    border-radius: 0.5rem;
+    border-radius: 1rem;
     border: 1px solid #e5e7eb;
-    box-shadow: none;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
 }
 
 .cardHeader {
-    background-color: #008431;
-    padding: 0.75rem 1.5rem;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
+    background-color: #A0CB06;
+    padding: 0.85rem 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     color: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #d9f2a5;
 }
 
 .cardFormulaeHeader {
-    background-color: #008431;
+    background-color: #A0CB06;
     color: #ffffff;
     padding: 1.2rem 1.5rem;
     border-top-left-radius: 0.5rem;
@@ -120,8 +120,8 @@
 .headerAddButton {
     width: 2rem;
     height: 2rem;
-    background-color: #15803d;
-    border: 1px solid #16a34a;
+    background-color: #A0CB06;
+    border: 1px solid #A0CB06;
     color: #fff;
     border-radius: 8px;
     display: flex;
@@ -143,6 +143,12 @@
 
 .cardBody {
     padding: 1.5rem;
+    background-color: rgba(247, 247, 246);
+}
+
+.cardBodyFlush {
+    padding: 0;
+    background-color: #fff;
 }
 
 .emptyStateText {
@@ -154,18 +160,29 @@
 .itemsList {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
 }
 
-
-.listItem {
+.listItem,
+.listItemGray {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.8rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    padding: 1rem 1.5rem;
+    gap: 1rem;
+    border-bottom: 1px solid #eceff3;
+}
+
+.listItem {
+    background-color: #f9fafb;
+}
+
+.listItemGray {
+    background-color: #f4f6f8;
+}
+
+.itemsList > .listItem:last-child,
+.itemsList > .listItemGray:last-child {
+    border-bottom: none;
 }
 
 .itemContent {
@@ -175,6 +192,7 @@
 .itemName {
     font-size: 1rem;
     font-weight: 500;
+    margin-bottom: 0;
     color: #111827;
 }
 
@@ -191,11 +209,9 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
-    background-color: #dbfeea;
-    color: #01490b;
-    margin-left: 0.5rem;
-    margin-bottom: 0.5rem;
-    margin-top: 0.05rem;
+    background-color: rgb(227,227,224);
+    color: #374151;
+    margin-left: 0.5rem ;
 }
 
 .itemCategory {
@@ -205,11 +221,9 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
-    background-color: #dbeafe;
-    color: #1e40af;
+    background-color: rgb(227,227,224);
+    color: #374151;
     margin-left: 0.5rem;
-    margin-bottom: 0.5rem;
-    margin-top: 0.05rem;
 }
 
 .itemIndustry {
@@ -219,11 +233,9 @@
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
-    background-color: #f3e8ff;
-    color: #5b21b6;
+    background-color: rgb(227,227,224);
+    color: #374151;
     margin-left: 0.5rem;
-    margin-bottom: 0.5rem;
-    margin-top: 0.05rem;
 }
 
 
@@ -252,21 +264,20 @@
 
 .reportSection {
     background-color: #fff;
-    border-radius: 0.5rem;
+    border-radius: 1rem;
     border: 1px solid #e5e7eb;
-    box-shadow: none;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
 }
 
 .reportHeader {
-    background-color: #008431;
+    background-color: #A0CB06;
     color: #ffffff;
     padding: 1.2rem 1.5rem;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #d9f2a5;
 }
 
 .reportTitle {
@@ -314,7 +325,7 @@
 
 .searchInput:focus {
     outline: none;
-    box-shadow: 0 0 0 2px #22c55e;
+    box-shadow: 0 0 0 2px #A0CB06;
 }
 
 .searchIcon {
@@ -449,6 +460,16 @@
     color: #374151;
 }
 
+.tableCellStatus {
+    padding: 1rem 1.5rem;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .statusCell {
     display: flex;
     align-items: center;
@@ -465,13 +486,13 @@
 }
 
 .Completed {
-    background-color: #dcfce7;
-    color: #166534;
+    background-color: rgb(237, 242, 225);
+    color: rgb(152, 200, 50);
 }
 
 .InProgress {
-    background-color: #dbeafe;
-    color: #1e40af;
+    background-color: #A0CB06;
+    color: #fff;
 }
 
 .Pending {
@@ -517,7 +538,7 @@
 }
 
 .modalHeader {
-    background-color: #16a34a;
+    background-color: #A0CB06;
     padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
@@ -574,7 +595,7 @@
 .formInput:focus,
 .formTextarea:focus {
     outline: none;
-    box-shadow: 0 0 0 2px #22c55e;
+    box-shadow: 0 0 0 2px #A0CB06;
 }
 
 .errorMessage {
@@ -616,12 +637,13 @@
 }
 
 .buttonConfirm {
-    background-color: #16a34a;
+    background-color: #A0CB06;
     color: #fff;
 }
 
 .buttonConfirm:hover {
-    background-color: #15803d;
+    background-color: #A0CB06;
+    opacity: 0.8;
 }
 
 .buttonConfirm:disabled {
@@ -712,7 +734,7 @@
 }
 
 .industryHeader {
-  background-color: #008431;
+  background-color: #A0CB06;
   color: #ffffff;
   padding: 1rem 1.5rem;
   border-top-left-radius: 0.5rem;
@@ -766,7 +788,7 @@
 }
 
 .saveButton {
-  background-color: #008431;
+  background-color: #A0CB06;
   color: #ffffff;
   border: none;
   padding: 10px 16px;
@@ -783,7 +805,7 @@
 }
 
 .saveButton:hover:not(:disabled) {
-  background-color: #006e2c;
+  opacity: 0.8;
 }
 
 .saveButton:disabled {

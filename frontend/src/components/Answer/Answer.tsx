@@ -165,13 +165,16 @@ export const Answer = ({
     const fontFamily = settings.font_family?.trim() || "Arial";
     const fontSize = settings.font_size || 16;
     const baseTextStyle = useMemo(() => ({ fontFamily, fontSize: `${fontSize}px`, lineHeight: 1.625 }), [fontFamily, fontSize]);
-    const headingStyle = {
-        ...baseTextStyle,
-        fontWeight: "bold",
-        lineHeight: 1.625,
-        marginTop: "20px",
-        marginBottom: "16px"
-    };
+    const headingStyle = useMemo(
+        () => ({
+            ...baseTextStyle,
+            fontWeight: "bold" as const,
+            lineHeight: 1.625,
+            marginTop: "20px",
+            marginBottom: "16px"
+        }),
+        [baseTextStyle]
+    );
     const components = useMemo(
         () => ({
             h1: (props: any) => <MarkdownHeading level="h1" style={headingStyle} {...props} />,
@@ -275,7 +278,7 @@ export const Answer = ({
                 </td>
             )
         }),
-        [baseTextStyle, headingStyle]
+        [baseTextStyle, headingStyle, isGenerating]
     );
     const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer.answer, onCitationClicked, showSources]);
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);

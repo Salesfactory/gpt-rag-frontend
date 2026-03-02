@@ -240,7 +240,7 @@ describe("Voice Customer Test Suite", () => {
                     id: "job-3",
                     organization_id: "org-123",
                     report_name: "Brand Analysis",
-                    type: "competitor_analysis",
+                    report_key: "competitor_analysis",
                     status: "QUEUED",
                     progress: 65,
                     created_at: "2025-08-25T18:20:31Z",
@@ -271,14 +271,29 @@ describe("Voice Customer Test Suite", () => {
         cy.wait('@fetchReportJobs');
 
         cy.contains("Brand Analysis").should("exist");
+        cy.contains("Product Analysis").should("exist");
+        cy.contains("Competitor Analysis").should("exist");
+
         cy.contains("Completed").should("exist");
         cy.contains("Pending").should("exist");
         cy.contains("In Progress").should("exist");
         cy.contains("Failed").should("exist");
 
-        cy.contains("2025-08-25").should("exist");
-        cy.contains("2025-08-26").should("exist");
-        cy.contains("2025-08-27").should("exist");
+        cy.contains("tr", "Completed").within(() => {
+            cy.contains("2025-08-26").should("exist");
+        });
+
+        cy.contains("tr", "Failed").within(() => {
+            cy.contains("2025-08-27").should("exist");
+        });
+
+        cy.contains("tr", "In Progress").within(() => {
+            cy.get("td").eq(1).should("contain", "-");
+        });
+
+        cy.contains("tr", "Pending").within(() => {
+            cy.get("td").eq(1).should("contain", "-");
+        });
     });
     
     it("Should display the error message when the fetch statuses failed", () => {
