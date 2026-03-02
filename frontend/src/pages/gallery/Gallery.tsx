@@ -65,6 +65,27 @@ type User = {
     name: string;
 };
 
+type OfficeExtension = ".pptx" | ".docx" | ".xlsx";
+
+const getOfficeExtension = (fileName: string): OfficeExtension | null => {
+    const normalizedName = fileName.toLowerCase();
+    if (normalizedName.endsWith(".pptx")) return ".pptx";
+    if (normalizedName.endsWith(".docx")) return ".docx";
+    if (normalizedName.endsWith(".xlsx")) return ".xlsx";
+    return null;
+};
+
+const getGoogleEditorLabel = (fileName: string): "Google Docs" | "Google Slides" | "Google Sheets" => {
+    const extension = getOfficeExtension(fileName);
+    if (extension === ".pptx") return "Google Slides";
+    if (extension === ".xlsx") return "Google Sheets";
+    return "Google Docs";
+};
+
+const shouldUseDocumentViewer = (fileName: string) => {
+    return getOfficeExtension(fileName) !== null;
+};
+
 const GalleryCard: React.FC<{
     file: GalleryItem;
     onDownload: (item: GalleryItem) => void;
@@ -76,14 +97,14 @@ const GalleryCard: React.FC<{
     formatFileSize: (bytes: number) => string;
 }> = ({ file, onDownload, onDelete, onPreview, onEdit, getUserName, createFileName, formatFileSize }) => {
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
-    const fileNameLower = file.name.toLowerCase();
-    const isGoogleEditableFile = fileNameLower.endsWith(".pptx") || fileNameLower.endsWith(".docx") || fileNameLower.endsWith(".xlsx");
-    const googleEditorLabel = fileNameLower.endsWith(".pptx") ? "Google Slides" : fileNameLower.endsWith(".xlsx") ? "Google Sheets" : "Google Docs";
+    const officeExtension = getOfficeExtension(file.name);
+    const isGoogleEditableFile = officeExtension !== null;
+    const googleEditorLabel = getGoogleEditorLabel(file.name);
 
     const renderPlaceholderIcon = () => {
-        if (fileNameLower.endsWith(".pptx")) return <PresentationIcon size={32} color="Gray" />;
-        if (fileNameLower.endsWith(".xlsx")) return <Table size={32} color="Gray" />;
-        if (fileNameLower.endsWith(".docx")) return <FileText size={32} color="Gray" />;
+        if (officeExtension === ".pptx") return <PresentationIcon size={32} color="Gray" />;
+        if (officeExtension === ".xlsx") return <Table size={32} color="Gray" />;
+        if (officeExtension === ".docx") return <FileText size={32} color="Gray" />;
         return <PresentationIcon size={32} color="Gray" />;
     };
 
@@ -340,18 +361,6 @@ const Gallery: React.FC = () => {
 
     const getUserName = (id: string) => {
         return users?.find(user => user.id === id)?.name;
-    };
-
-    const getGoogleEditorLabel = (fileName: string): "Google Docs" | "Google Slides" | "Google Sheets" => {
-        const normalizedName = fileName.toLowerCase();
-        if (normalizedName.endsWith(".pptx")) return "Google Slides";
-        if (normalizedName.endsWith(".xlsx")) return "Google Sheets";
-        return "Google Docs";
-    };
-
-    const shouldUseDocumentViewer = (fileName: string) => {
-        const normalizedName = fileName.toLowerCase();
-        return normalizedName.endsWith(".pptx") || normalizedName.endsWith(".docx") || normalizedName.endsWith(".xlsx");
     };
 
     const userOptions = useMemo((): User[] => {
@@ -695,7 +704,8 @@ const Gallery: React.FC = () => {
                             </button>
                         </div>
                         <div className={styles.confirmModalBody}>
-                            You will be redirected to {getGoogleEditorLabel(editFile.name)} with a copy of this document so you can edit it.
+                            A copy of this document will be created in your Google Drive and opened in {getGoogleEditorLabel(editFile.name)}. Changes made there
+                            will not affect the original file in this Vault.
                         </div>
                         <div className={styles.confirmModalActions}>
                             <button className={styles.confirmButtonSecondary} onClick={() => setEditFile(null)}>

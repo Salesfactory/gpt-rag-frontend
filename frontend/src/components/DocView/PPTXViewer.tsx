@@ -16,6 +16,13 @@ const getSupportedFileType = (value: string): "pptx" | "docx" | "xlsx" | null =>
     return null;
 };
 
+const getLoadingMessage = (fileType: "pptx" | "docx" | "xlsx" | null): string => {
+    if (fileType === "pptx") return "Loading PowerPoint presentation...";
+    if (fileType === "docx") return "Loading Word document...";
+    if (fileType === "xlsx") return "Loading Excel spreadsheet...";
+    return "Loading document preview...";
+};
+
 const PptxViewer: React.FC<PptxViewerProps> = ({ file, blobName }) => {
     const { user } = useAppContext();
     const [fileUrl, setFileUrl] = useState<string>("");
@@ -82,7 +89,7 @@ const PptxViewer: React.FC<PptxViewerProps> = ({ file, blobName }) => {
             {error ? (
                 <div style={{ textAlign: "center", padding: "2rem", color: "red" }}>Error: {error}</div>
             ) : isLoading ? (
-                <div style={{ textAlign: "center", padding: "2rem", color: "rgb(21, 146, 68)" }}>Loading document preview...</div>
+                <div style={{ textAlign: "center", padding: "2rem", color: "rgb(21, 146, 68)" }}>{getLoadingMessage(detectedFileType)}</div>
             ) : docs.length > 0 ? (
                 <DocViewer
                     documents={docs}

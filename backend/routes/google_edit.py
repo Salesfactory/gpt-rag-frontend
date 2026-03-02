@@ -52,6 +52,12 @@ GOOGLE_SCOPES = [
 ]
 
 
+class GoogleDriveCopyError(Exception):
+    def __init__(self, message: str, status_code: int = 500):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def _configure_oauth_transport_for_request() -> None:
     host = (request.host or "").split(":")[0].lower()
     is_local_host = host in {"127.0.0.1", "localhost"}
@@ -135,10 +141,24 @@ def _load_credentials() -> Credentials | None:
     if not credentials_data:
         return None
 
-    credentials = Credentials(**credentials_data)
+    try:
+        credentials = Credentials(**credentials_data)
+    except Exception:
+        logger.warning("Stored Google OAuth credentials are invalid. Clearing session credentials.")
+        session.pop("google_oauth_credentials", None)
+        session.modified = True
+        return None
+
     if credentials.expired and credentials.refresh_token:
-        credentials.refresh(GoogleAuthRequest())
-        _save_credentials(credentials)
+        try:
+            credentials.refresh(GoogleAuthRequest())
+            _save_credentials(credentials)
+        except Exception as refresh_error:
+            logger.warning("Google OAuth token refresh failed. Clearing session credentials. Error: %s", refresh_error)
+            session.pop("google_oauth_credentials", None)
+            session.modified = True
+            return None
+
     return credentials
 
 
@@ -153,7 +173,11 @@ def _is_valid_blob_name(blob_name: str) -> bool:
 
 
 def _get_file_extension(blob_name: str) -> str:
-    return f".{blob_name.split('.')[-1].lower()}" if "." in blob_name else ""
+    _, extension = os.path.splitext(blob_name)
+    extension = extension.lower()
+    if extension == ".":
+        return ""
+    return extension
 
 
 def _get_editable_file_config(blob_name: str) -> dict:
@@ -201,14 +225,50 @@ def _create_editable_google_copy(blob_name: str, credentials: Credentials) -> st
     media = MediaIoBaseUpload(io.BytesIO(blob_bytes), mimetype=file_config["source_mime"], resumable=False)
     drive_service = build("drive", "v3", credentials=credentials, cache_discovery=False)
 
-    created_file = drive_service.files().create(
-        body={
-            "name": f"{base_name} (Editable copy)",
-            "mimeType": file_config["target_mime"],
-        },
-        media_body=media,
-        fields="id,webViewLink",
-    ).execute()
+    try:
+        created_file = drive_service.files().create(
+            body={
+                "name": f"{base_name} (Editable copy)",
+                "mimeType": file_config["target_mime"],
+            },
+            media_body=media,
+            fields="id,webViewLink",
+        ).execute()
+    except HttpError as http_error:
+        status_code = getattr(http_error.resp, "status", 500)
+        error_message = str(http_error)
+
+        if status_code == 403:
+            lowered_error_message = error_message.lower()
+            if "quota" in lowered_error_message or "storagequota" in lowered_error_message:
+                raise GoogleDriveCopyError(
+                    "Google Drive storage quota exceeded. Please free up space in Google Drive and try again.",
+                    403,
+                ) from http_error
+            raise GoogleDriveCopyError(
+                "Google Drive denied access to create an editable copy. Please verify Drive permissions and try again.",
+                403,
+            ) from http_error
+        if status_code == 404:
+            raise GoogleDriveCopyError(
+                "Google Drive resource not found while creating the editable copy. Please try again.",
+                404,
+            ) from http_error
+        if status_code == 413:
+            raise GoogleDriveCopyError(
+                "File is too large for Google Drive conversion. Please use a smaller file.",
+                413,
+            ) from http_error
+        if status_code == 429:
+            raise GoogleDriveCopyError(
+                "Google Drive rate limit exceeded. Please wait a moment and try again.",
+                429,
+            ) from http_error
+
+        raise GoogleDriveCopyError(
+            "Google Drive API error while creating editable copy.",
+            status_code if isinstance(status_code, int) else 500,
+        ) from http_error
 
     web_view_link = created_file.get("webViewLink")
     file_id = created_file.get("id")
@@ -261,6 +321,9 @@ def get_google_file_redirect_url():
     except ValueError as value_error:
         logger.error("Google edit validation error: %s", value_error)
         return create_error_response(str(value_error), 400)
+    except GoogleDriveCopyError as drive_error:
+        logger.error("Google Drive copy error: %s", drive_error)
+        return create_error_response(str(drive_error), drive_error.status_code)
     except Exception:
         logger.exception("Failed to prepare Google redirect URL for blob %s", blob_name)
         return create_error_response("Failed to prepare Google redirection URL.", 500)
@@ -295,7 +358,7 @@ def google_oauth_callback():
     except Exception as oauth_error:
         logger.exception("Google OAuth token exchange failed")
         return create_error_response(
-            f"Google token exchange failed: {oauth_error}",
+            "Google authentication failed. Please try connecting your account again.",
             500,
         )
 
@@ -309,12 +372,9 @@ def google_oauth_callback():
         except ValueError as value_error:
             logger.error("Google edit validation error in callback: %s", value_error)
             return create_error_response(str(value_error), 400)
-        except HttpError as http_error:
-            logger.exception("Google Drive API error while creating editable copy")
-            return create_error_response(
-                f"Google Drive API error while creating editable copy: {http_error}",
-                500,
-            )
+        except GoogleDriveCopyError as drive_error:
+            logger.error("Google Drive copy error in callback: %s", drive_error)
+            return create_error_response(str(drive_error), drive_error.status_code)
         except Exception as copy_error:
             logger.exception("Unexpected error while creating editable Google copy")
             return create_error_response(
@@ -343,6 +403,9 @@ def open_file_in_google():
     except ValueError as value_error:
         logger.error("Google edit validation error: %s", value_error)
         return create_error_response(str(value_error), 400)
+    except GoogleDriveCopyError as drive_error:
+        logger.error("Google Drive copy error: %s", drive_error)
+        return create_error_response(str(drive_error), drive_error.status_code)
     except Exception:
         logger.exception("Failed to create editable Google copy for blob %s", blob_name)
         return create_error_response("Failed to create an editable Google copy.", 500)
