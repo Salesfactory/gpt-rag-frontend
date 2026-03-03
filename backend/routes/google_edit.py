@@ -81,6 +81,19 @@ def _authorization_response_url() -> str:
     return callback_url
 
 
+def _normalized_request_host_url() -> str:
+    host_url = request.host_url or ""
+    forwarded_proto = (request.headers.get("X-Forwarded-Proto") or "").split(",")[0].strip().lower()
+
+    if forwarded_proto == "https" and host_url.startswith("http://"):
+        return host_url.replace("http://", "https://", 1)
+
+    if request.is_secure and host_url.startswith("http://"):
+        return host_url.replace("http://", "https://", 1)
+
+    return host_url
+
+
 def _redirect_uri(request_host_url: str | None = None) -> str:
     configured_uri = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
     if configured_uri:
@@ -137,10 +150,11 @@ def _state_serializer() -> URLSafeTimedSerializer:
     return URLSafeTimedSerializer(secret_key=secret_key, salt="google-oauth-state")
 
 
-def _encode_oauth_state(blob_name: str | None = None) -> str:
+def _encode_oauth_state(blob_name: str | None = None, redirect_uri: str | None = None) -> str:
     payload = {
         "nonce": secrets.token_urlsafe(16),
         "blob_name": blob_name,
+        "redirect_uri": redirect_uri,
     }
     return _state_serializer().dumps(payload)
 
@@ -204,8 +218,14 @@ def _get_editable_file_config(blob_name: str) -> dict:
 
 def _build_google_authorization_url(blob_name: str | None = None) -> str:
     _configure_oauth_transport_for_request()
-    state = _encode_oauth_state(blob_name=blob_name)
-    flow = _create_flow(state=state, request_host_url=request.host_url)
+    normalized_host_url = _normalized_request_host_url()
+    redirect_uri = _redirect_uri(request_host_url=normalized_host_url)
+    state = _encode_oauth_state(blob_name=blob_name, redirect_uri=redirect_uri)
+    flow = _create_flow(
+        state=state,
+        request_host_url=normalized_host_url,
+        redirect_uri=redirect_uri,
+    )
 
     authorization_url, _ = flow.authorization_url(
         access_type="offline",
@@ -362,16 +382,18 @@ def google_oauth_callback():
 
     try:
         authorization_response_url = _authorization_response_url()
+        redirect_uri = state_payload.get("redirect_uri") or _redirect_uri(request_host_url=_normalized_request_host_url())
         logger.info(
-            "Google OAuth callback transport details: request.url=%s, normalized=%s, x-forwarded-proto=%s",
+            "Google OAuth callback transport details: request.url=%s, normalized=%s, redirect_uri=%s, x-forwarded-proto=%s",
             request.url,
             authorization_response_url,
+            redirect_uri,
             request.headers.get("X-Forwarded-Proto"),
         )
         flow = _create_flow(
             state=incoming_state,
-            request_host_url=request.host_url,
-            redirect_uri=request.base_url,
+            request_host_url=_normalized_request_host_url(),
+            redirect_uri=redirect_uri,
         )
         flow.fetch_token(authorization_response=authorization_response_url)
         _save_credentials(flow.credentials)
