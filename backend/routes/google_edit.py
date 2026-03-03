@@ -68,6 +68,19 @@ def _configure_oauth_transport_for_request() -> None:
         os.environ.pop("OAUTHLIB_INSECURE_TRANSPORT", None)
 
 
+def _authorization_response_url() -> str:
+    callback_url = request.url or ""
+    forwarded_proto = (request.headers.get("X-Forwarded-Proto") or "").split(",")[0].strip().lower()
+
+    if forwarded_proto == "https" and callback_url.startswith("http://"):
+        return callback_url.replace("http://", "https://", 1)
+
+    if request.is_secure and callback_url.startswith("http://"):
+        return callback_url.replace("http://", "https://", 1)
+
+    return callback_url
+
+
 def _redirect_uri(request_host_url: str | None = None) -> str:
     configured_uri = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
     if configured_uri:
@@ -348,12 +361,19 @@ def google_oauth_callback():
         return create_error_response("Invalid Google OAuth state.", 400)
 
     try:
+        authorization_response_url = _authorization_response_url()
+        logger.info(
+            "Google OAuth callback transport details: request.url=%s, normalized=%s, x-forwarded-proto=%s",
+            request.url,
+            authorization_response_url,
+            request.headers.get("X-Forwarded-Proto"),
+        )
         flow = _create_flow(
             state=incoming_state,
             request_host_url=request.host_url,
             redirect_uri=request.base_url,
         )
-        flow.fetch_token(authorization_response=request.url)
+        flow.fetch_token(authorization_response=authorization_response_url)
         _save_credentials(flow.credentials)
     except Exception as oauth_error:
         logger.exception("Google OAuth token exchange failed")
