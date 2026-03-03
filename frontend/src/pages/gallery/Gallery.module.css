@@ -281,6 +281,10 @@
 .deleteIcon {
   color: #dc2626; /* red-600 */
 }
+
+.editIcon {
+  color: #1f2937;
+}
 .cardInfo {
   padding: 1.5rem; /* a bit more padding for larger cards */
   display: flex;
@@ -638,6 +642,40 @@
   flex: 1;
   overflow: auto;
   padding: 0;
+}
+
+.confirmModalBody {
+  padding: 1.5rem;
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.confirmModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.confirmButtonPrimary,
+.confirmButtonSecondary {
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmButtonPrimary {
+  background: #A0CB06;
+  color: #ffffff;
+  border-color: #A0CB06;
+}
+
+.confirmButtonSecondary {
+  background: #ffffff;
+  color: #374151;
 }
 
 @media (max-width: 768px) {

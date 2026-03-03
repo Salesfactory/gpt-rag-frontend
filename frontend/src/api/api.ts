@@ -1949,6 +1949,39 @@ export async function getGalleryItems(
     };
 }
 
+export async function getGoogleEditableFileRedirectUrl({
+    user,
+    blobName,
+}: {
+    user: any;
+    blobName: string;
+}): Promise<string> {
+    const response = await fetchWrapper('/api/v1/google/edit-file-url', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-MS-CLIENT-PRINCIPAL-ID': user?.id ?? '00000000-0000-0000-0000-000000000000',
+            'X-MS-CLIENT-PRINCIPAL-NAME': user?.name ?? 'anonymous',
+        },
+        body: JSON.stringify({
+            blob_name: blobName,
+        }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.error || errorData?.message || `Failed to prepare Google edit redirect (${response.status})`);
+    }
+
+    const data = await response.json().catch(() => ({}));
+    const payload = data?.data ?? data;
+    if (!payload?.redirect_url) {
+        throw new Error('Invalid server response: missing redirect_url');
+    }
+
+    return payload.redirect_url;
+}
+
 export async function fetchReportJobs({
     organization_id,
     user,
