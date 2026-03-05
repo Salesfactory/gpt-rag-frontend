@@ -31,6 +31,7 @@ import { useBrands } from "./useBrands";
 import type { BackendReportJobDoc } from "../../api/models";
 import { toCanonical } from "../../utils/reportStatus";
 import { statusIcon, statusClass, statusLabel, statusType } from "./reportStatusUi";
+import DeleteConfirmModal from "../../components/DeleteConfirmModal/DeleteConfirmModal";
 
 // Card Context Pattern
 type CardCtx = {
@@ -180,6 +181,8 @@ export function Brands({ onBrandsChange, onDataRefresh }: { onBrandsChange: (has
     const { user, organization } = useAppContext();
     const { setOpen, setCount } = useCard();
     const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+    const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null);
+    const [isDeletingBrand, setIsDeletingBrand] = useState(false);
 
     const { brands, isLoading, error, refresh, remove } = useBrands({ organizationId: organization?.id, user });
 
@@ -193,17 +196,24 @@ export function Brands({ onBrandsChange, onDataRefresh }: { onBrandsChange: (has
         setOpen(true);
     };
 
-    const handleDelete = async (brand: Brand) => {
-        if (!organization) return;
-        if (window.confirm(`Are you sure you want to delete ${brand.name}?`)) {
-            try {
-                await remove(brand);
-                toast.success("Brand deleted successfully");
-                onDataRefresh(); // Trigger product refresh
-            } catch (e) {
-                console.error("Error deleting brand:", e);
-                toast.error("Failed to delete brand. Please try again.");
-            }
+    const handleDelete = (brand: Brand) => {
+        setBrandToDelete(brand);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!organization || !brandToDelete) return;
+
+        try {
+            setIsDeletingBrand(true);
+            await remove(brandToDelete);
+            toast.success("Brand deleted successfully");
+            setBrandToDelete(null);
+            onDataRefresh();
+        } catch (e) {
+            console.error("Error deleting brand:", e);
+            toast.error("Failed to delete brand. Please try again.");
+        } finally {
+            setIsDeletingBrand(false);
         }
     };
 
@@ -242,6 +252,19 @@ export function Brands({ onBrandsChange, onDataRefresh }: { onBrandsChange: (has
                     refresh(); // Refreshes brands in this component
                     onDataRefresh(); // Triggers refresh in other components
                 }}
+            />
+
+            <DeleteConfirmModal
+                isOpen={Boolean(brandToDelete)}
+                itemType="Brand"
+                itemName={brandToDelete?.name || ""}
+                onCancel={() => {
+                    if (!isDeletingBrand) {
+                        setBrandToDelete(null);
+                    }
+                }}
+                onConfirm={handleConfirmDelete}
+                isDeleting={isDeletingBrand}
             />
         </>
     );
@@ -349,7 +372,7 @@ export function ModalBrand({ editingBrand, onSuccess }: { editingBrand: Brand | 
                         {error && <p className={styles.errorMessage}>{error}</p>}
                     </div>
                     <div className={styles.modalActions}>
-                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`} aria-label="Cancel" >
+                        <button onClick={handleClose} className={`${styles.button} ${styles.buttonCancel}`} aria-label="Cancel">
                             Cancel
                         </button>
                         <button
@@ -377,6 +400,8 @@ export function Products({ refreshKey }: { refreshKey: number }) {
     const [isLoading, setIsLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [categories, setCategories] = useState<Category[]>([]);
+    const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+    const [isDeletingProduct, setIsDeletingProduct] = useState(false);
 
     // ⬇️ Pull brands via the custom hook
     const { brands, isLoading: isLoadingBrands, error: brandsError, refresh: refreshBrands } = useBrands({ organizationId: organization?.id, user });
@@ -417,29 +442,35 @@ export function Products({ refreshKey }: { refreshKey: number }) {
         setOpen(true);
     };
 
-    const handleDelete = async (product: Product) => {
-        if (!organization) return;
-        if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
-            try {
-                setIsLoading(true);
-                await deleteProduct({
-                    product_id: String(product.id),
-                    user,
-                    organization_id: organization.id
-                });
-                const updatedProducts = await getProductsByOrganization({
-                    organization_id: organization.id,
-                    user
-                });
-                setProducts(updatedProducts);
-                setCount(updatedProducts.length);
-                toast.success("Product deleted successfully");
-            } catch (error) {
-                console.error("Error deleting product:", error);
-                toast.error("Failed to delete product. Please try again.");
-            } finally {
-                setIsLoading(false);
-            }
+    const handleDelete = (product: Product) => {
+        setProductToDelete(product);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!organization || !productToDelete) return;
+
+        try {
+            setIsDeletingProduct(true);
+            setIsLoading(true);
+            await deleteProduct({
+                product_id: String(productToDelete.id),
+                user,
+                organization_id: organization.id
+            });
+            const updatedProducts = await getProductsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setProducts(updatedProducts);
+            setCount(updatedProducts.length);
+            setProductToDelete(null);
+            toast.success("Product deleted successfully");
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            toast.error("Failed to delete product. Please try again.");
+        } finally {
+            setIsDeletingProduct(false);
+            setIsLoading(false);
         }
     };
 
@@ -509,6 +540,19 @@ export function Products({ refreshKey }: { refreshKey: number }) {
                     setEditingProduct(null);
                     refreshProducts();
                 }}
+            />
+
+            <DeleteConfirmModal
+                isOpen={Boolean(productToDelete)}
+                itemType="Product"
+                itemName={productToDelete?.name || ""}
+                onCancel={() => {
+                    if (!isDeletingProduct) {
+                        setProductToDelete(null);
+                    }
+                }}
+                onConfirm={handleConfirmDelete}
+                isDeleting={isDeletingProduct}
             />
         </>
     );
@@ -708,6 +752,8 @@ export function Competitors() {
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
     const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
     const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null);
+    const [competitorToDelete, setCompetitorToDelete] = useState<Competitor | null>(null);
+    const [isDeletingCompetitor, setIsDeletingCompetitor] = useState(false);
 
     useEffect(() => {
         const fetchCompetitors = async () => {
@@ -737,32 +783,37 @@ export function Competitors() {
         setOpen(true);
     };
 
-    const handleDelete = async (competitor: Competitor) => {
-        if (!organization) return;
+    const handleDelete = (competitor: Competitor) => {
+        setCompetitorToDelete(competitor);
+    };
 
-        if (window.confirm(`Are you sure you want to delete ${competitor.name}?`)) {
-            try {
-                setIsLoadingCompetitors(true);
-                await deleteCompetitor({
-                    competitor_id: String(competitor.id),
-                    user,
-                    organization_id: organization.id
-                });
+    const handleConfirmDelete = async () => {
+        if (!organization || !competitorToDelete) return;
 
-                const updatedCompetitors = await getCompetitorsByOrganization({
-                    organization_id: organization.id,
-                    user
-                });
-                setCompetitors(updatedCompetitors);
-                setCount(updatedCompetitors.length);
+        try {
+            setIsDeletingCompetitor(true);
+            setIsLoadingCompetitors(true);
+            await deleteCompetitor({
+                competitor_id: String(competitorToDelete.id),
+                user,
+                organization_id: organization.id
+            });
 
-                toast.success("Competitor deleted successfully");
-            } catch (error) {
-                console.error("Error deleting competitor:", error);
-                toast.error("Failed to delete competitor. Please try again.");
-            } finally {
-                setIsLoadingCompetitors(false);
-            }
+            const updatedCompetitors = await getCompetitorsByOrganization({
+                organization_id: organization.id,
+                user
+            });
+            setCompetitors(updatedCompetitors);
+            setCount(updatedCompetitors.length);
+            setCompetitorToDelete(null);
+
+            toast.success("Competitor deleted successfully");
+        } catch (error) {
+            console.error("Error deleting competitor:", error);
+            toast.error("Failed to delete competitor. Please try again.");
+        } finally {
+            setIsDeletingCompetitor(false);
+            setIsLoadingCompetitors(false);
         }
     };
 
@@ -791,7 +842,6 @@ export function Competitors() {
                 <div className={styles.itemsList}>
                     {competitors.map((c, index) => {
                         return (
-
                             <div key={c.id} className={index % 2 === 0 ? styles.listItemGray : styles.listItem}>
                                 <div className={styles.itemContent}>
                                     <div className={styles.itemHeader}>
@@ -813,6 +863,19 @@ export function Competitors() {
                 </div>
             )}
             <ModalCompetitor editingCompetitor={editingCompetitor} onSuccess={handleSuccess} />
+
+            <DeleteConfirmModal
+                isOpen={Boolean(competitorToDelete)}
+                itemType="Competitor"
+                itemName={competitorToDelete?.name || ""}
+                onCancel={() => {
+                    if (!isDeletingCompetitor) {
+                        setCompetitorToDelete(null);
+                    }
+                }}
+                onConfirm={handleConfirmDelete}
+                isDeleting={isDeletingCompetitor}
+            />
         </>
     );
 }
@@ -1132,7 +1195,7 @@ function ReportJobs() {
                                 const c = toCanonical(doc?.status);
                                 const terminal = c === "SUCCEEDED" || c === "FAILED";
                                 const progress = typeof doc?.progress === "number" ? doc.progress : c === "SUCCEEDED" ? 100 : undefined;
-                                const endDate = terminal ? doc?.updated_at ?? null : null;
+                                const endDate = terminal ? (doc?.updated_at ?? null) : null;
                                 return (
                                     <tr key={String(doc?.id)} className={styles.tableRow}>
                                         <td className={styles.tableCellStatus}>
