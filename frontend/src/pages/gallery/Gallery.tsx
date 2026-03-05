@@ -25,6 +25,7 @@ import { useEffect, useState, useRef, useMemo, lazy, Suspense } from "react";
 const PptxViewer = lazy(() => import("../../components/DocView/PPTXViewer"));
 import { deleteSourceFileFromBlob, getGalleryItems, getGoogleEditableFileRedirectUrl, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
+import DeleteConfirmModal from "../../components/DeleteConfirmModal/DeleteConfirmModal";
 
 const statusFilterOptions = [
     { label: "Newest", value: "newest" },
@@ -196,6 +197,8 @@ const Gallery: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [previewFile, setPreviewFile] = useState<GalleryItem | null>(null);
     const [editFile, setEditFile] = useState<GalleryItem | null>(null);
+    const [fileToDelete, setFileToDelete] = useState<GalleryItem | null>(null);
+    const [isDeletingFile, setIsDeletingFile] = useState<boolean>(false);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -300,16 +303,24 @@ const Gallery: React.FC = () => {
         window.open(downloadUrl, "_blank");
     };
 
-    const handleDelete = async (item: GalleryItem) => {
-        if (window.confirm(`Are you sure you want to delete ${item.name.split("/").pop()}? (The file will be deleted permanently in 1 day)`)) {
-            try {
-                await deleteSourceFileFromBlob(item.name);
-                toast.success(`File ${item.name.split("/").pop()} deleted successfully`);
-                setImages(currentImages => currentImages.filter(img => img.name !== item.name));
-            } catch (error) {
-                console.error("Error deleting file:", error);
-                toast.error(`Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`);
-            }
+    const handleDelete = (item: GalleryItem) => {
+        setFileToDelete(item);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!fileToDelete) return;
+
+        setIsDeletingFile(true);
+        try {
+            await deleteSourceFileFromBlob(fileToDelete.name);
+            toast.success(`File ${fileToDelete.name.split("/").pop()} deleted successfully`);
+            setImages(currentImages => currentImages.filter(img => img.name !== fileToDelete.name));
+            setFileToDelete(null);
+        } catch (error) {
+            console.error("Error deleting file:", error);
+            toast.error(`Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`);
+        } finally {
+            setIsDeletingFile(false);
         }
     };
 
@@ -718,6 +729,20 @@ const Gallery: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            <DeleteConfirmModal
+                isOpen={Boolean(fileToDelete)}
+                itemType="File"
+                itemName={fileToDelete?.name.split("/").pop() || ""}
+                onCancel={() => {
+                    if (!isDeletingFile) {
+                        setFileToDelete(null);
+                    }
+                }}
+                onConfirm={handleConfirmDelete}
+                warningMessage="The file will be permanently deleted in 1 day."
+                isDeleting={isDeletingFile}
+            />
         </div>
     );
 };

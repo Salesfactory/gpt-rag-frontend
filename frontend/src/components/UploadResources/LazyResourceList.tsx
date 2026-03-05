@@ -10,6 +10,7 @@ import NewFolderDialogModal from "./NewFolderDialogModal";
 import { createFolder, moveFile, deleteFolder, renameFile, renameFolder } from "../../api/api";
 import { TextField } from "@fluentui/react/lib/TextField";
 import DeleteFolderModal from "./DeleteFolderModal";
+import DeleteConfirmModal from "../DeleteConfirmModal/DeleteConfirmModal";
 
 interface ResourceListProps {
     filteredFiles: BlobItem[];
@@ -17,6 +18,10 @@ interface ResourceListProps {
     currentPath: string;
     isLoading: boolean;
     deleteFile: (item: BlobItem) => void;
+    fileToDelete: BlobItem | null;
+    isDeletingFile: boolean;
+    cancelDeleteFile: () => void;
+    confirmDeleteFile: () => void;
     handleDownload: (item: BlobItem) => void;
     navigateToFolder: (folderPath: string) => void;
     navigateBack: () => void;
@@ -35,6 +40,10 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
     currentPath,
     isLoading,
     deleteFile,
+    fileToDelete,
+    isDeletingFile,
+    cancelDeleteFile,
+    confirmDeleteFile,
     handleDownload,
     navigateToFolder,
     navigateBack,
@@ -688,6 +697,16 @@ const LazyResourceList: React.FC<ResourceListProps> = ({
                     isDeleting={isDeletingFolder}
                 />
             )}
+
+            <DeleteConfirmModal
+                isOpen={Boolean(fileToDelete)}
+                itemType="File"
+                itemName={fileToDelete ? getDisplayName(fileToDelete.name) : ""}
+                onCancel={cancelDeleteFile}
+                onConfirm={confirmDeleteFile}
+                warningMessage="The file will be permanently deleted in 1 day."
+                isDeleting={isDeletingFile}
+            />
         </div>
     );
 };

@@ -9,6 +9,8 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
     const { user } = useAppContext();
     const [files, setFiles] = useState<BlobItem[]>([]);
     const [folders, setFolders] = useState<FolderItem[]>([]);
+    const [fileToDelete, setFileToDelete] = useState<BlobItem | null>(null);
+    const [isDeletingFile, setIsDeletingFile] = useState<boolean>(false);
     const [currentPath, setCurrentPath] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -87,17 +89,31 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         fetchFiles('', category, sortOrder);
     }, [fetchFiles, category, sortOrder]);
 
-    const deleteFile = async (item: BlobItem) => {
-        if (window.confirm(`Are you sure you want to delete ${item.name.split('/').pop()}? (The file will be deleted permanently in 1 day)`)) {
-            try {
-                await deleteSourceFileFromBlob(item.name);
-                toast.success(`${item.name.split('/').pop()} marked for deletion.`);
-                fetchFiles(currentPath, category, sortOrder); 
-            } catch (error) {
-                toast.error("Failed to delete file.");
-            }
+    const deleteFile = useCallback((item: BlobItem) => {
+        setFileToDelete(item);
+    }, []);
+
+    const cancelDeleteFile = useCallback(() => {
+        if (!isDeletingFile) {
+            setFileToDelete(null);
         }
-    };
+    }, [isDeletingFile]);
+
+    const confirmDeleteFile = useCallback(async () => {
+        if (!fileToDelete) return;
+
+        setIsDeletingFile(true);
+        try {
+            await deleteSourceFileFromBlob(fileToDelete.name);
+            toast.success(`${fileToDelete.name.split('/').pop()} marked for deletion.`);
+            setFileToDelete(null);
+            fetchFiles(currentPath, category, sortOrder);
+        } catch (error) {
+            toast.error("Failed to delete file.");
+        } finally {
+            setIsDeletingFile(false);
+        }
+    }, [fileToDelete, fetchFiles, currentPath, category, sortOrder]);
 
     const toggleSortOrder = useCallback(() => {
         setSortOrder((prevOrder) => (prevOrder === "newest" ? "oldest" : "newest"));
@@ -144,6 +160,10 @@ export const useSourceFiles = (organizationId: string, category: string = 'all')
         navigateToRoot,
         handleDownload,
         deleteFile,
+        fileToDelete,
+        isDeletingFile,
+        cancelDeleteFile,
+        confirmDeleteFile,
         sortOrder,
         toggleSortOrder,
     };
