@@ -76,8 +76,6 @@ const UploadResources: React.FC = () => {
 
     const isPageLimitExceeded = storageUsage?.pagesUsed >= storageUsage?.pagesLimit;
 
-    console.log(isPageLimitExceeded);
-
     return (
         <div className={styles.page_container}>
             <FileListHeader
