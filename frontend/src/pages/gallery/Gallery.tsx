@@ -465,19 +465,23 @@ const Gallery: React.FC = () => {
                             </button>
 
                             {showStatusFilter && (
-                                <div className={styles.filterDropdown}>
-                                    <div className={styles.dropdownContent}>
+                                <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown}`}>
+                                    <div className={styles.fileTypeDropdownList} role="listbox" aria-label="Sort order options">
                                         {statusFilterOptions.map(option => (
                                             <button
                                                 key={option.value}
-                                                className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
+                                                type="button"
+                                                role="option"
+                                                aria-selected={sortOrder === option.value}
+                                                className={`${styles.fileTypeOption} ${sortOrder === option.value ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setSortOrder(option.value);
                                                     setShowStatusFilter(false);
                                                     setCurrentPage(1);
                                                 }}
                                             >
-                                                {option.label}
+                                                {sortOrder === option.value && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                                <span className={styles.fileTypeOptionLabel}>{option.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -501,30 +505,38 @@ const Gallery: React.FC = () => {
                             </button>
 
                             {showUserFilter && (
-                                <div className={styles.filterDropdown}>
-                                    <div className={styles.dropdownContent}>
+                                <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown} ${styles.userDropdown}`}>
+                                    <div className={styles.fileTypeDropdownList} role="listbox" aria-label="User options">
                                         <button
-                                            className={`${styles.dropdownItem} ${!userFilter ? styles.dropdownItemActive : ""}`}
+                                            type="button"
+                                            role="option"
+                                            aria-selected={!userFilter}
+                                            className={`${styles.fileTypeOption} ${!userFilter ? styles.fileTypeOptionActive : ""}`}
                                             onClick={() => {
                                                 setUserFilter(null);
                                                 setShowUserFilter(false);
                                                 setCurrentPage(1);
                                             }}
                                         >
-                                            All Users
+                                            {!userFilter && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                            <span className={styles.fileTypeOptionLabel}>All Users</span>
                                         </button>
 
                                         {userOptions.map(u => (
                                             <button
                                                 key={u.id}
-                                                className={`${styles.dropdownItem} ${userFilter === u.id ? styles.dropdownItemActive : ""}`}
+                                                type="button"
+                                                role="option"
+                                                aria-selected={userFilter === u.id}
+                                                className={`${styles.fileTypeOption} ${userFilter === u.id ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setUserFilter(u.id);
                                                     setShowUserFilter(false);
                                                     setCurrentPage(1);
                                                 }}
                                             >
-                                                {u.name}
+                                                {userFilter === u.id && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                                <span className={styles.fileTypeOptionLabel}>{u.name}</span>
                                             </button>
                                         ))}
                                     </div>

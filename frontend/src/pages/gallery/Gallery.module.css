@@ -120,6 +120,10 @@
   animation: fileTypeDropdownFade 0.15s ease-out;
 }
 
+.userDropdown {
+  width: 260px;
+}
+
 .fileTypeDropdownList {
   display: flex;
   flex-direction: column;
@@ -193,7 +197,10 @@
 
 .header {
   background: #A0CB06;
-  padding: 1rem 1.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
   border-top-left-radius: 0.5rem;
   border-top-right-radius: 0.5rem;
 }
@@ -205,13 +212,16 @@
 }
 
 .headerTitle {
-  font-size: 1.2rem;
+  font-size: 0.925rem;
+  line-height: 1.25rem;
   font-weight: 500;
   color: #ffffff;
+  margin: 0;
 }
 
 .headerCount {
-  font-size: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   font-weight: 500;
   color: #ffffff;
 }
@@ -245,8 +255,12 @@
 
 /* Content Grid */
 .content {
-  padding: 1.5rem;
+  padding-top: 1.2rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  padding-bottom: 0.3rem;
 }
+
 .gridScrollable {
   max-height: 72vh; /* slightly larger so bigger cards have room */
   overflow-y: auto;
@@ -255,10 +269,11 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); /* increased min width to make cards bigger */
+  grid-template-columns: repeat(auto-fill, minmax(240px, 282px));
   gap: 2.5rem; /* more breathing room between cards */
   padding-bottom: 8rem;
   align-items: start;
+  justify-content: center;
 }
  
 
@@ -271,6 +286,9 @@
   transition: box-shadow 0.2s, transform 0.12s;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 282px;
+  max-height: 328px;
 }
 
 .card:hover {
@@ -280,7 +298,7 @@
 
 .preview {
   /* use a taller preview to emphasize chart visuals */
-  height: 240px;
+  height: 180px;
   width: 100%;
   background: linear-gradient(to bottom right, #f3f4f6, #e5e7eb);
   display: flex;
@@ -557,12 +575,13 @@
   }
 
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 282px));
     gap: 1.75rem;
+    justify-content: center;
   }
 
   .preview {
-    height: 200px;
+    height: 170px;
   }
 
   .cardInfo {
@@ -617,9 +636,10 @@
   }
 
   .grid {
-    grid-template-columns: 1fr; /* single column on small screens */
+    grid-template-columns: minmax(220px, 282px);
     gap: 1rem;
     padding-bottom: 6rem;
+    justify-content: center;
   }
 
   .gridScrollable {
@@ -627,7 +647,7 @@
   }
 
   .preview {
-    height: 160px;
+    height: 150px;
   }
 
   .previewImage {
