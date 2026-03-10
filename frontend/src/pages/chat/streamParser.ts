@@ -378,6 +378,27 @@ export function isDataAnalystContentMessage(payload: any): payload is DataAnalys
 }
 
 /**
+ * Tool selection required message — emitted when HITL is enabled and multiple tools are available
+ */
+export interface ToolSelectionRequiredMessage {
+    type: "tool_selection_required";
+    available_tools: string[];
+    llm_recommendation: string;
+    conversation_id: string;
+    message: string;
+    progress: number;
+    timestamp: number;
+}
+
+export function isToolSelectionRequired(payload: any): payload is ToolSelectionRequiredMessage {
+    return (
+        payload?.type === "tool_selection_required" &&
+        Array.isArray(payload.available_tools) &&
+        typeof payload.llm_recommendation === "string"
+    );
+}
+
+/**
  * Extract progress state from a progress message for the Answer component
  */
 export function extractProgressState(progressMessage: ProgressMessage): {

@@ -1,4 +1,4 @@
-import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category, OrganizationUsage, Policy, SubscriptionTier } from "./models";
+import { GetSettingsProps, PostSettingsProps, ConversationHistoryItem, ChatTurn, ThoughtProcess, UserInfo, BackendReportStatus, BackendReportJobDoc, Category, OrganizationUsage, Policy, SubscriptionTier, PendingHitlInfo } from "./models";
 import { SourceDocumentsResponse } from '../types';
 import { fetchWrapper } from './fetchWrapper';
 
@@ -263,7 +263,7 @@ export async function postSettings({ user, temperature, model, font_family, font
     }
 }
 
-export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<ChatTurn[]> {
+export async function getChatFromHistoryPannelById(chatId: string, userId: string): Promise<{ turns: ChatTurn[], pendingHitl: PendingHitlInfo | null }> {
     const response = await fetch(`/api/chat-conversation/${chatId}`, {
         method: "GET",
         headers: {
@@ -301,7 +301,7 @@ export async function getChatFromHistoryPannelById(chatId: string, userId: strin
         conversationItems.push({ user: currentUserMessage, bot: { message: currentBotMessage, thoughts: currentBotThoughts } });
     }
 
-    return conversationItems;
+    return { turns: conversationItems, pendingHitl: responseData.pending_hitl ?? null };
 }
 
 export async function deleteChatConversation(chatId: string, userId: string): Promise<void> {
