@@ -323,6 +323,12 @@
   object-fit: cover; /* cover ensures it fills while preserving aspect */
   display: block;
   border-radius: 0; /* container has the rounded corners */
+  transition: transform 0.2s ease;
+  transform-origin: center center;
+}
+
+.card:hover .previewImage {
+  transform: scale(1.03);
 }
 
 /* Overlay Actions */
