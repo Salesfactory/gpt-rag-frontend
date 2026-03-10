@@ -17,7 +17,8 @@ import {
     ChevronUp,
     Eye,
     X,
-    Pencil
+    Pencil,
+    Check
 } from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef, useMemo, lazy, Suspense } from "react";
@@ -133,19 +134,19 @@ const GalleryCard: React.FC<{
                 {/* Hover Actions Overlay */}
                 <div className={styles.overlay}>
                     <div className={styles.actions}>
-                        <button className={styles.actionButton} title="Download" onClick={() => onDownload(file)}>
-                            <Download size={16} className={styles.downloadIcon} />
-                        </button>
-                        <button className={styles.actionButton} title="Delete" onClick={() => onDelete(file)}>
-                            <Trash2 size={16} className={styles.deleteIcon} />
-                        </button>
                         {/* Preview Button */}
                         <button className={styles.actionButton} onClick={() => onPreview(file)}>
-                            <Eye size={16} className={styles.previewIcon} />
+                            <Eye size={20} className={styles.previewIcon} />
+                        </button>
+                        <button className={styles.actionButton} title="Download" onClick={() => onDownload(file)}>
+                            <Download size={20} className={styles.downloadIcon} />
+                        </button>
+                        <button className={styles.actionButton} title="Delete" onClick={() => onDelete(file)}>
+                            <Trash2 size={20} className={styles.deleteIcon} />
                         </button>
                         {isGoogleEditableFile && (
                             <button className={styles.actionButton} title={`Edit in ${googleEditorLabel}`} onClick={() => onEdit(file)}>
-                                <Pencil size={16} className={styles.editIcon} />
+                                <Pencil size={20} className={styles.editIcon} />
                             </button>
                         )}
                     </div>
@@ -422,7 +423,7 @@ const Gallery: React.FC = () => {
                             selectors: {
                                 ":focus-within": {
                                     outline: "none",
-                                    borderColor: "#A0CB06"
+                                    border: "2px solid #A0CB06"
                                 },
                                 "::after": {
                                     border: "none !important",
@@ -547,19 +548,23 @@ const Gallery: React.FC = () => {
                             </button>
 
                             {showTypeFilter && (
-                                <div className={styles.filterDropdown}>
-                                    <div className={styles.dropdownContent}>
+                                <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown}`}>
+                                    <div className={styles.fileTypeDropdownList} role="listbox" aria-label="File type options">
                                         {fileTypeFilterOptions.map(option => (
                                             <button
                                                 key={option.value}
-                                                className={`${styles.dropdownItem} ${fileTypeFilter === option.value ? styles.dropdownItemActive : ""}`}
+                                                type="button"
+                                                role="option"
+                                                aria-selected={fileTypeFilter === option.value}
+                                                className={`${styles.fileTypeOption} ${fileTypeFilter === option.value ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setFileTypeFilter(option.value);
                                                     setShowTypeFilter(false);
                                                     setCurrentPage(1);
                                                 }}
                                             >
-                                                {option.label}
+                                                {fileTypeFilter === option.value && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                                <span className={styles.fileTypeOptionLabel}>{option.label}</span>
                                             </button>
                                         ))}
                                     </div>
