@@ -79,10 +79,10 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
 
     const [detailLevel, setDetailLevel] = useState<DetailLevel>("balanced");
 
-    const modelOptions: IDropdownOption[] = [{ key: "Claude-4.5-Sonnet", text: "Claude-4.5-Sonnet" }];
+    const modelOptions: IDropdownOption[] = [{ key: "Claude-4.6-Sonnet", text: "Claude-4.6-Sonnet" }];
 
     const modelTemperatureSettings: Record<string, { default: number; min: number; max: number; step: number }> = {
-        "Claude-4.5-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
+        "Claude-4.6-Sonnet": { default: 0, min: 0, max: 1, step: 0.1 }
     };
 
     const fontSizeOptions: IDropdownOption[] = [
@@ -129,9 +129,9 @@ export const SettingsPanel: React.FC<ChatSettingsProps> = ({ onClose }) => {
                     user: { id: user.id, name: user.name }
                 });
 
-                const model = data.model || "Claude-4.5-Sonnet";
-                // If the saved model doesn't exist in our settings, default to Claude-4.5-Sonnet
-                const validModel = modelTemperatureSettings[model] ? model : "Claude-4.5-Sonnet";
+                const model = data.model || "Claude-4.6-Sonnet";
+                // If the saved model doesn't exist in our settings, default to Claude-4.6-Sonnet
+                const validModel = modelTemperatureSettings[model] ? model : "Claude-4.6-Sonnet";
                 setSelectedModel(validModel);
 
                 const modelConfig = modelTemperatureSettings[validModel];
