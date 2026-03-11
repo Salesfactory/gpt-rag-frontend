@@ -135,7 +135,7 @@ const GalleryCard: React.FC<{
                 <div className={styles.overlay}>
                     <div className={styles.actions}>
                         {/* Preview Button */}
-                        <button className={styles.actionButton} onClick={() => onPreview(file)}>
+                        <button className={styles.actionButton} title="Preview" aria-label="Preview" onClick={() => onPreview(file)}>
                             <Eye size={20} className={styles.previewIcon} />
                         </button>
                         <button className={styles.actionButton} title="Download" onClick={() => onDownload(file)}>
@@ -466,13 +466,12 @@ const Gallery: React.FC = () => {
 
                             {showStatusFilter && (
                                 <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown}`}>
-                                    <div className={styles.fileTypeDropdownList} role="listbox" aria-label="Sort order options">
+                                    <div className={styles.fileTypeDropdownList} aria-label="Sort order options">
                                         {statusFilterOptions.map(option => (
                                             <button
                                                 key={option.value}
                                                 type="button"
-                                                role="option"
-                                                aria-selected={sortOrder === option.value}
+                                                aria-pressed={sortOrder === option.value}
                                                 className={`${styles.fileTypeOption} ${sortOrder === option.value ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setSortOrder(option.value);
@@ -506,11 +505,10 @@ const Gallery: React.FC = () => {
 
                             {showUserFilter && (
                                 <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown} ${styles.userDropdown}`}>
-                                    <div className={styles.fileTypeDropdownList} role="listbox" aria-label="User options">
+                                    <div className={styles.fileTypeDropdownList} aria-label="User options">
                                         <button
                                             type="button"
-                                            role="option"
-                                            aria-selected={!userFilter}
+                                            aria-pressed={!userFilter}
                                             className={`${styles.fileTypeOption} ${!userFilter ? styles.fileTypeOptionActive : ""}`}
                                             onClick={() => {
                                                 setUserFilter(null);
@@ -526,8 +524,7 @@ const Gallery: React.FC = () => {
                                             <button
                                                 key={u.id}
                                                 type="button"
-                                                role="option"
-                                                aria-selected={userFilter === u.id}
+                                                aria-pressed={userFilter === u.id}
                                                 className={`${styles.fileTypeOption} ${userFilter === u.id ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setUserFilter(u.id);
@@ -561,13 +558,12 @@ const Gallery: React.FC = () => {
 
                             {showTypeFilter && (
                                 <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown}`}>
-                                    <div className={styles.fileTypeDropdownList} role="listbox" aria-label="File type options">
+                                    <div className={styles.fileTypeDropdownList} aria-label="File type options">
                                         {fileTypeFilterOptions.map(option => (
                                             <button
                                                 key={option.value}
                                                 type="button"
-                                                role="option"
-                                                aria-selected={fileTypeFilter === option.value}
+                                                aria-pressed={fileTypeFilter === option.value}
                                                 className={`${styles.fileTypeOption} ${fileTypeFilter === option.value ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setFileTypeFilter(option.value);
