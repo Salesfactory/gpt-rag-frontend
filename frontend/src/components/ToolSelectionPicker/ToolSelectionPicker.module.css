@@ -1,0 +1,64 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    margin: 8px 0;
+}
+
+.prompt {
+    margin: 0;
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+}
+
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.toolButton {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.toolButton:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.recommended {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.recommended:hover {
+    background: #dbeafe;
+}
+
+.badge {
+    font-size: 10px;
+    font-weight: 600;
+    background: #3b82f6;
+    color: #ffffff;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
