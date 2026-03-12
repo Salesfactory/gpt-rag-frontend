@@ -1,0 +1,137 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.header {
+    padding: 24px 24px 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.headerContent {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.headerIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.content {
+    padding: 24px;
+}
+
+.message {
+    font-size: 14px;
+    color: #374151;
+    margin: 0 0 16px 0;
+}
+
+.nameContainer {
+    padding: 12px 16px;
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    word-break: break-word;
+}
+
+.warning {
+    font-size: 13px;
+    color: #dc2626;
+    margin: 0;
+}
+
+.footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.cancelButton {
+    padding: 10px 20px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancelButton:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.deleteButton {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: #dc2626;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.deleteButton:hover {
+    background-color: #b91c1c;
+}
+
+.deleteButton:active {
+    transform: scale(0.98);
+}
+
+.cancelButton:disabled,
+.deleteButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cancelButton,
+    .deleteButton {
+        transition: none;
+    }
+
+    .deleteButton:active {
+        transform: none;
+    }
+}

@@ -9,21 +9,24 @@ import { useFileUpload } from "../../hooks/useFileUpload";
 import UploadDialogModal from "../../components/UploadResources/UploadDialogModal";
 import { getStorageUsageByOrganization } from "../../api";
 
-
 const UploadResources: React.FC = () => {
     const { user } = useAppContext();
     const orgId = user?.organizationId || "";
 
-    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [storageUsage, setStorageUsage] = useState<any>(null);
-    
-    const { 
-        isLoading, 
+
+    const {
+        isLoading,
         files,
         filteredFiles,
         filteredFolders,
         currentPath,
         deleteFile,
+        fileToDelete,
+        isDeletingFile,
+        cancelDeleteFile,
+        confirmDeleteFile,
         setSearchQuery,
         fetchFiles,
         handleDownload,
@@ -32,14 +35,24 @@ const UploadResources: React.FC = () => {
         navigateToRoot,
         sortOrder,
         toggleSortOrder
-    } = useSourceFiles(user?.organizationId || "", selectedCategory)
-    
+    } = useSourceFiles(user?.organizationId || "", selectedCategory);
+
     // Memoize onUploadComplete to prevent infinite loop
     const handleUploadComplete = useCallback(() => {
         fetchFiles(currentPath, selectedCategory, sortOrder);
     }, [fetchFiles, currentPath, selectedCategory, sortOrder]);
-    
-    const { uploadDialogOpen, openUploadDialog, closeUploadDialog, dispatch, state, handleDuplicateRename, handleDuplicateReplace, handleDuplicateSkip, showRenameModal } = useFileUpload(user?.id || "", user?.organizationId || "", handleUploadComplete, files, currentPath);
+
+    const {
+        uploadDialogOpen,
+        openUploadDialog,
+        closeUploadDialog,
+        dispatch,
+        state,
+        handleDuplicateRename,
+        handleDuplicateReplace,
+        handleDuplicateSkip,
+        showRenameModal
+    } = useFileUpload(user?.id || "", user?.organizationId || "", handleUploadComplete, files, currentPath);
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
@@ -60,20 +73,28 @@ const UploadResources: React.FC = () => {
             getStorage();
         }
     }, [orgId, user]);
-    
-    const isPageLimitExceeded = storageUsage?.pagesUsed >= storageUsage?.pagesLimit;
 
-    console.log(isPageLimitExceeded);
+    const isPageLimitExceeded = storageUsage?.pagesUsed >= storageUsage?.pagesLimit;
 
     return (
         <div className={styles.page_container}>
-            <FileListHeader isPageLimitExceeded={isPageLimitExceeded} setSearchQuery={setSearchQuery} openUploadDialog={openUploadDialog} onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)} isLoading={isLoading} />
+            <FileListHeader
+                isPageLimitExceeded={isPageLimitExceeded}
+                setSearchQuery={setSearchQuery}
+                openUploadDialog={openUploadDialog}
+                onRefresh={() => fetchFiles(currentPath, selectedCategory, sortOrder)}
+                isLoading={isLoading}
+            />
             <LazyResourceList
                 filteredFiles={filteredFiles}
                 filteredFolders={filteredFolders}
                 currentPath={currentPath}
                 isLoading={isLoading}
                 deleteFile={deleteFile}
+                fileToDelete={fileToDelete}
+                isDeletingFile={isDeletingFile}
+                cancelDeleteFile={cancelDeleteFile}
+                confirmDeleteFile={confirmDeleteFile}
                 handleDownload={handleDownload}
                 navigateToFolder={navigateToFolder}
                 navigateBack={navigateBack}

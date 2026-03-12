@@ -1,12 +1,32 @@
 import { toast } from "react-toastify";
 import styles from "./Gallery.module.css";
-import { ArrowUpDown, Download, Search, Trash2, Upload, Users, ChevronLeft, ChevronRight, Filter, PresentationIcon, ChevronDown, ChevronUp, Eye, X } from "lucide-react";
+import {
+    ArrowUpDown,
+    Download,
+    Search,
+    Trash2,
+    Upload,
+    Users,
+    ChevronLeft,
+    ChevronRight,
+    Filter,
+    PresentationIcon,
+    FileText,
+    Table,
+    ChevronDown,
+    ChevronUp,
+    Eye,
+    X,
+    Pencil,
+    Check
+} from "lucide-react";
 import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef, useMemo, lazy, Suspense } from "react";
 
 const PptxViewer = lazy(() => import("../../components/DocView/PPTXViewer"));
-import { deleteSourceFileFromBlob, getGalleryItems, getUsers } from "../../api";
+import { deleteSourceFileFromBlob, getGalleryItems, getGoogleEditableFileRedirectUrl, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
+import DeleteConfirmModal from "../../components/DeleteConfirmModal/DeleteConfirmModal";
 
 const statusFilterOptions = [
     { label: "Newest", value: "newest" },
@@ -47,16 +67,48 @@ type User = {
     name: string;
 };
 
+type OfficeExtension = ".pptx" | ".docx" | ".xlsx";
+
+const getOfficeExtension = (fileName: string): OfficeExtension | null => {
+    const normalizedName = fileName.toLowerCase();
+    if (normalizedName.endsWith(".pptx")) return ".pptx";
+    if (normalizedName.endsWith(".docx")) return ".docx";
+    if (normalizedName.endsWith(".xlsx")) return ".xlsx";
+    return null;
+};
+
+const getGoogleEditorLabel = (fileName: string): "Google Docs" | "Google Slides" | "Google Sheets" => {
+    const extension = getOfficeExtension(fileName);
+    if (extension === ".pptx") return "Google Slides";
+    if (extension === ".xlsx") return "Google Sheets";
+    return "Google Docs";
+};
+
+const shouldUseDocumentViewer = (fileName: string) => {
+    return getOfficeExtension(fileName) !== null;
+};
+
 const GalleryCard: React.FC<{
     file: GalleryItem;
     onDownload: (item: GalleryItem) => void;
     onDelete: (item: GalleryItem) => void;
     onPreview: (item: GalleryItem) => void;
+    onEdit: (item: GalleryItem) => void;
     getUserName: (id: string) => string | undefined;
     createFileName: (name: string) => string;
     formatFileSize: (bytes: number) => string;
-}> = ({ file, onDownload, onDelete, onPreview, getUserName, createFileName, formatFileSize }) => {
+}> = ({ file, onDownload, onDelete, onPreview, onEdit, getUserName, createFileName, formatFileSize }) => {
     const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+    const officeExtension = getOfficeExtension(file.name);
+    const isGoogleEditableFile = officeExtension !== null;
+    const googleEditorLabel = getGoogleEditorLabel(file.name);
+
+    const renderPlaceholderIcon = () => {
+        if (officeExtension === ".pptx") return <PresentationIcon size={32} color="Gray" />;
+        if (officeExtension === ".xlsx") return <Table size={32} color="Gray" />;
+        if (officeExtension === ".docx") return <FileText size={32} color="Gray" />;
+        return <PresentationIcon size={32} color="Gray" />;
+    };
 
     return (
         <div className={styles.card}>
@@ -76,24 +128,27 @@ const GalleryCard: React.FC<{
                             }}
                         />
                     ) : null}
-                    <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>
-                        <PresentationIcon size={32} color="Gray" />
-                    </div>
+                    <div className={`${styles.placeholder} ${file.url ? "hidden" : ""}`}>{renderPlaceholderIcon()}</div>
                 </div>
 
                 {/* Hover Actions Overlay */}
                 <div className={styles.overlay}>
                     <div className={styles.actions}>
+                        {/* Preview Button */}
+                        <button className={styles.actionButton} title="Preview" aria-label="Preview" onClick={() => onPreview(file)}>
+                            <Eye size={20} className={styles.previewIcon} />
+                        </button>
                         <button className={styles.actionButton} title="Download" onClick={() => onDownload(file)}>
-                            <Download size={16} className={styles.downloadIcon} />
+                            <Download size={20} className={styles.downloadIcon} />
                         </button>
                         <button className={styles.actionButton} title="Delete" onClick={() => onDelete(file)}>
-                            <Trash2 size={16} className={styles.deleteIcon} />
+                            <Trash2 size={20} className={styles.deleteIcon} />
                         </button>
-                        {/* Preview Button */}
-                        <button className={styles.actionButton} onClick={() => onPreview(file)}>
-                            <Eye size={16} className={styles.previewIcon} />
-                        </button>
+                        {isGoogleEditableFile && (
+                            <button className={styles.actionButton} title={`Edit in ${googleEditorLabel}`} onClick={() => onEdit(file)}>
+                                <Pencil size={20} className={styles.editIcon} />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -108,28 +163,17 @@ const GalleryCard: React.FC<{
                         <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
                     </div>
                 </div>
-                <span className={styles.userTag}>
-                    {file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}
-                </span>
-                <p className={styles.fileDate}>
-                    Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}
-                </p>
+                <span className={styles.userTag}>{file.metadata.user_id ? getUserName(file.metadata.user_id) : "Unknown User"}</span>
+                <p className={styles.fileDate}>Created {file.created_on ? new Date(file.created_on).toLocaleDateString() : "-"}</p>
 
                 {/* Collapsible Description */}
                 {file.metadata.artifact_desc && (
                     <div className={styles.descriptionContainer}>
-                        <button
-                            className={styles.descriptionToggle}
-                            onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
-                        >
+                        <button className={styles.descriptionToggle} onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}>
                             Description
                             {isDescriptionOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                         </button>
-                        {isDescriptionOpen && (
-                            <div className={styles.descriptionContent}>
-                                {file.metadata.artifact_desc}
-                            </div>
-                        )}
+                        {isDescriptionOpen && <div className={styles.descriptionContent}>{file.metadata.artifact_desc}</div>}
                     </div>
                 )}
             </div>
@@ -153,6 +197,9 @@ const Gallery: React.FC = () => {
     const [showTypeFilter, setShowTypeFilter] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [previewFile, setPreviewFile] = useState<GalleryItem | null>(null);
+    const [editFile, setEditFile] = useState<GalleryItem | null>(null);
+    const [fileToDelete, setFileToDelete] = useState<GalleryItem | null>(null);
+    const [isDeletingFile, setIsDeletingFile] = useState<boolean>(false);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState<number>(1);
@@ -257,16 +304,41 @@ const Gallery: React.FC = () => {
         window.open(downloadUrl, "_blank");
     };
 
-    const handleDelete = async (item: GalleryItem) => {
-        if (window.confirm(`Are you sure you want to delete ${item.name.split("/").pop()}? (The file will be deleted permanently in 1 day)`)) {
-            try {
-                await deleteSourceFileFromBlob(item.name);
-                toast.success(`File ${item.name.split("/").pop()} deleted successfully`);
-                setImages(currentImages => currentImages.filter(img => img.name !== item.name));
-            } catch (error) {
-                console.error("Error deleting file:", error);
-                toast.error(`Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`);
-            }
+    const handleDelete = (item: GalleryItem) => {
+        setFileToDelete(item);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!fileToDelete) return;
+
+        setIsDeletingFile(true);
+        try {
+            await deleteSourceFileFromBlob(fileToDelete.name);
+            toast.success(`File ${fileToDelete.name.split("/").pop()} deleted successfully`);
+            setImages(currentImages => currentImages.filter(img => img.name !== fileToDelete.name));
+            setFileToDelete(null);
+        } catch (error) {
+            console.error("Error deleting file:", error);
+            toast.error(`Error deleting file: ${error instanceof Error ? error.message : "Unknown error"}`);
+        } finally {
+            setIsDeletingFile(false);
+        }
+    };
+
+    const handleConfirmGoogleEdit = async () => {
+        if (!editFile) return;
+
+        try {
+            const redirectUrl = await getGoogleEditableFileRedirectUrl({
+                user,
+                blobName: editFile.name
+            });
+
+            setEditFile(null);
+            window.location.href = redirectUrl;
+        } catch (error) {
+            console.error("Error preparing Google edit redirect:", error);
+            toast.error(`Could not open in Google Workspace: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     };
 
@@ -351,7 +423,7 @@ const Gallery: React.FC = () => {
                             selectors: {
                                 ":focus-within": {
                                     outline: "none",
-                                    borderColor: "#A0CB06"
+                                    border: "2px solid #A0CB06"
                                 },
                                 "::after": {
                                     border: "none !important",
@@ -393,19 +465,22 @@ const Gallery: React.FC = () => {
                             </button>
 
                             {showStatusFilter && (
-                                <div className={styles.filterDropdown}>
-                                    <div className={styles.dropdownContent}>
+                                <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown}`}>
+                                    <div className={styles.fileTypeDropdownList} aria-label="Sort order options">
                                         {statusFilterOptions.map(option => (
                                             <button
                                                 key={option.value}
-                                                className={`${styles.dropdownItem} ${sortOrder === option.value ? styles.dropdownItemActive : ""}`}
+                                                type="button"
+                                                aria-pressed={sortOrder === option.value}
+                                                className={`${styles.fileTypeOption} ${sortOrder === option.value ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setSortOrder(option.value);
                                                     setShowStatusFilter(false);
                                                     setCurrentPage(1);
                                                 }}
                                             >
-                                                {option.label}
+                                                {sortOrder === option.value && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                                <span className={styles.fileTypeOptionLabel}>{option.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -429,30 +504,36 @@ const Gallery: React.FC = () => {
                             </button>
 
                             {showUserFilter && (
-                                <div className={styles.filterDropdown}>
-                                    <div className={styles.dropdownContent}>
+                                <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown} ${styles.userDropdown}`}>
+                                    <div className={styles.fileTypeDropdownList} aria-label="User options">
                                         <button
-                                            className={`${styles.dropdownItem} ${!userFilter ? styles.dropdownItemActive : ""}`}
+                                            type="button"
+                                            aria-pressed={!userFilter}
+                                            className={`${styles.fileTypeOption} ${!userFilter ? styles.fileTypeOptionActive : ""}`}
                                             onClick={() => {
                                                 setUserFilter(null);
                                                 setShowUserFilter(false);
                                                 setCurrentPage(1);
                                             }}
                                         >
-                                            All Users
+                                            {!userFilter && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                            <span className={styles.fileTypeOptionLabel}>All Users</span>
                                         </button>
 
                                         {userOptions.map(u => (
                                             <button
                                                 key={u.id}
-                                                className={`${styles.dropdownItem} ${userFilter === u.id ? styles.dropdownItemActive : ""}`}
+                                                type="button"
+                                                aria-pressed={userFilter === u.id}
+                                                className={`${styles.fileTypeOption} ${userFilter === u.id ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setUserFilter(u.id);
                                                     setShowUserFilter(false);
                                                     setCurrentPage(1);
                                                 }}
                                             >
-                                                {u.name}
+                                                {userFilter === u.id && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                                <span className={styles.fileTypeOptionLabel}>{u.name}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -476,19 +557,22 @@ const Gallery: React.FC = () => {
                             </button>
 
                             {showTypeFilter && (
-                                <div className={styles.filterDropdown}>
-                                    <div className={styles.dropdownContent}>
+                                <div className={`${styles.filterDropdown} ${styles.fileTypeDropdown}`}>
+                                    <div className={styles.fileTypeDropdownList} aria-label="File type options">
                                         {fileTypeFilterOptions.map(option => (
                                             <button
                                                 key={option.value}
-                                                className={`${styles.dropdownItem} ${fileTypeFilter === option.value ? styles.dropdownItemActive : ""}`}
+                                                type="button"
+                                                aria-pressed={fileTypeFilter === option.value}
+                                                className={`${styles.fileTypeOption} ${fileTypeFilter === option.value ? styles.fileTypeOptionActive : ""}`}
                                                 onClick={() => {
                                                     setFileTypeFilter(option.value);
                                                     setShowTypeFilter(false);
                                                     setCurrentPage(1);
                                                 }}
                                             >
-                                                {option.label}
+                                                {fileTypeFilter === option.value && <Check size={14} className={styles.fileTypeCheckIcon} />}
+                                                <span className={styles.fileTypeOptionLabel}>{option.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -540,6 +624,7 @@ const Gallery: React.FC = () => {
                                                     onDownload={handleDownload}
                                                     onDelete={handleDelete}
                                                     onPreview={setPreviewFile}
+                                                    onEdit={setEditFile}
                                                     getUserName={getUserName}
                                                     createFileName={createFileName}
                                                     formatFileSize={formatFileSize}
@@ -606,30 +691,71 @@ const Gallery: React.FC = () => {
                     <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <h3 className={styles.modalTitle}>{previewFile.name.split("/").pop()}</h3>
-                            <button
-                                className={styles.modalCloseButton}
-                                onClick={() => setPreviewFile(null)}
-                                title="Close"
-                            >
+                            <button className={styles.modalCloseButton} onClick={() => setPreviewFile(null)} title="Close">
                                 <X size={20} />
                             </button>
                         </div>
                         <div className={styles.modalBody}>
                             <Suspense fallback={<div style={{ textAlign: "center", padding: "2rem", color: "#A0CB06" }}>Loading viewer...</div>}>
-                                {previewFile.name.endsWith(".pptx") ? <PptxViewer file="" blobName={previewFile.name} /> : <div><img
-                                    src={previewFile.url}
-                                    alt="Chart Preview"
-                                    className={styles.previewImage}
-                                    onError={e => {
-                                        e.currentTarget.style.display = "none";
-                                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                                    }}
-                                /></div>}
+                                {shouldUseDocumentViewer(previewFile.name) ? (
+                                    <PptxViewer file="" blobName={previewFile.name} />
+                                ) : (
+                                    <div>
+                                        <img
+                                            src={previewFile.url}
+                                            alt="Chart Preview"
+                                            className={styles.previewImage}
+                                            onError={e => {
+                                                e.currentTarget.style.display = "none";
+                                                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                                            }}
+                                        />
+                                    </div>
+                                )}
                             </Suspense>
                         </div>
                     </div>
                 </div>
             )}
+
+            {editFile && (
+                <div className={styles.modalOverlay} onClick={() => setEditFile(null)}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 className={styles.modalTitle}>Edit in {getGoogleEditorLabel(editFile.name)}</h3>
+                            <button className={styles.modalCloseButton} onClick={() => setEditFile(null)} title="Close">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.confirmModalBody}>
+                            A copy of this document will be created in your Google Drive and opened in {getGoogleEditorLabel(editFile.name)}. Changes made there
+                            will not affect the original file in this Vault.
+                        </div>
+                        <div className={styles.confirmModalActions}>
+                            <button className={styles.confirmButtonSecondary} onClick={() => setEditFile(null)}>
+                                Cancel
+                            </button>
+                            <button className={styles.confirmButtonPrimary} onClick={handleConfirmGoogleEdit}>
+                                Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <DeleteConfirmModal
+                isOpen={Boolean(fileToDelete)}
+                itemType="File"
+                itemName={fileToDelete?.name.split("/").pop() || ""}
+                onCancel={() => {
+                    if (!isDeletingFile) {
+                        setFileToDelete(null);
+                    }
+                }}
+                onConfirm={handleConfirmDelete}
+                warningMessage="The file will be permanently deleted in 1 day."
+                isDeleting={isDeletingFile}
+            />
         </div>
     );
 };

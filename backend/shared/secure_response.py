@@ -21,8 +21,9 @@ def secure_response(response: Response) -> Response:
     is_stream_request = request.path.startswith("/stream_chatgpt")
 
     is_invitation_request = "/api/invitations/" in request.path
+    is_google_oauth_request = request.path.startswith("/api/v1/google/")
 
-    if is_invitation_request:
+    if is_invitation_request or is_google_oauth_request:
         return response
 
     content_type = getattr(response, "content_type", None)

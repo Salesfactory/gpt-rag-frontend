@@ -29,27 +29,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e5e7eb;
+    border: 2px solid #e2e2df;
     background: #fff;
-    border-radius: 8px;
-    padding: 10px 24px;
-    font-size: 16px;
+    border-radius: 0.75rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     font-weight: 500;
     cursor: pointer;
-    gap: 8px;
+    gap: 0.5rem;
     transition: background 0.2s, color 0.2s;
-    width: 190px;
-    height: 44px;
+    min-width: 160px;
+    width: auto;
+    height: 2.5rem;
 }
 
 .filterButton:hover {
-    background: #A0CB06;
-    border-color: #A0CB06;
-    color: white;
+  background-color: #e7e7e4;
+  border-color: #c4d975;
 }
 
 .filterButton:hover .filterIcon {
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 .filterIcon {
@@ -107,6 +111,77 @@
     font-weight: bold;
 }
 
+.fileTypeDropdown {
+  width: 210px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
+  animation: fileTypeDropdownFade 0.15s ease-out;
+}
+
+.userDropdown {
+  width: 260px;
+}
+
+.fileTypeDropdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.fileTypeOption {
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 10px 14px;
+  color: #1f1f1f;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  text-align: left;
+}
+
+.fileTypeOption:not(.fileTypeOptionActive):hover {
+  background-color: rgba(160, 203, 6, 0.12);
+}
+
+.fileTypeOptionActive {
+  background-color: #A0CB06;
+  color: #ffffff;
+}
+
+.fileTypeOptionActive:hover,
+.fileTypeOptionActive:focus-visible {
+  background-color: #A0CB06;
+  color: #ffffff;
+}
+
+.fileTypeOptionLabel {
+  flex: 1;
+}
+
+.fileTypeCheckIcon {
+  color: #ffffff;
+}
+
+@keyframes fileTypeDropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .filter {
     display: flex;
     align-items: center;
@@ -122,7 +197,10 @@
 
 .header {
   background: #A0CB06;
-  padding: 1rem 1.5rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
   border-top-left-radius: 0.5rem;
   border-top-right-radius: 0.5rem;
 }
@@ -134,13 +212,16 @@
 }
 
 .headerTitle {
-  font-size: 1.2rem;
+  font-size: 0.925rem;
+  line-height: 1.25rem;
   font-weight: 500;
   color: #ffffff;
+  margin: 0;
 }
 
 .headerCount {
-  font-size: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   font-weight: 500;
   color: #ffffff;
 }
@@ -174,8 +255,12 @@
 
 /* Content Grid */
 .content {
-  padding: 1.5rem;
+  padding-top: 1.2rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  padding-bottom: 0.3rem;
 }
+
 .gridScrollable {
   max-height: 72vh; /* slightly larger so bigger cards have room */
   overflow-y: auto;
@@ -184,10 +269,11 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); /* increased min width to make cards bigger */
+  grid-template-columns: repeat(auto-fill, minmax(240px, 282px));
   gap: 2.5rem; /* more breathing room between cards */
   padding-bottom: 8rem;
   align-items: start;
+  justify-content: center;
 }
  
 
@@ -200,6 +286,9 @@
   transition: box-shadow 0.2s, transform 0.12s;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 282px;
+  max-height: 328px;
 }
 
 .card:hover {
@@ -209,7 +298,7 @@
 
 .preview {
   /* use a taller preview to emphasize chart visuals */
-  height: 240px;
+  height: 180px;
   width: 100%;
   background: linear-gradient(to bottom right, #f3f4f6, #e5e7eb);
   display: flex;
@@ -234,6 +323,12 @@
   object-fit: cover; /* cover ensures it fills while preserving aspect */
   display: block;
   border-radius: 0; /* container has the rounded corners */
+  transition: transform 0.2s ease;
+  transform-origin: center center;
+}
+
+.card:hover .previewImage {
+  transform: scale(1.03);
 }
 
 /* Overlay Actions */
@@ -249,37 +344,50 @@
 }
 
 .card:hover .overlay {
-  background: rgba(0,0,0,0.36);
+  background: rgba(248, 248, 247, 0.4);
   opacity: 1;
 }
 
 .actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
 }
 
 .actionButton {
-  padding-left: 0.5rem;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
-  padding-right: 0.5rem;
-  background: rgba(255,255,255,0.8);
-  border-radius: 6rem;
-  transition: all 0.16s;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: #71717a;
+  border: none;
+  border-radius: 0.5rem;
+  transition: all 150ms;
   align-items: center;
+  justify-content: center;
+  display: inline-flex;
+  line-height: 0;
+  cursor: pointer;
 }
 
 .actionButton:hover {
-  background: white;
-  transform: scale(1.06);
+  opacity: 0.8;
 }
 
 .downloadIcon {
-  color: #374151; /* gray-700 */
+  color: #fafaf9;
 }
 
 .deleteIcon {
-  color: #dc2626; /* red-600 */
+  color: #fafaf9;
+}
+
+.previewIcon {
+  color: #fafaf9;
+}
+
+.editIcon {
+  color: #fafaf9;
 }
 .cardInfo {
   padding: 1.5rem; /* a bit more padding for larger cards */
@@ -473,12 +581,13 @@
   }
 
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 282px));
     gap: 1.75rem;
+    justify-content: center;
   }
 
   .preview {
-    height: 200px;
+    height: 170px;
   }
 
   .cardInfo {
@@ -533,9 +642,10 @@
   }
 
   .grid {
-    grid-template-columns: 1fr; /* single column on small screens */
+    grid-template-columns: minmax(220px, 282px);
     gap: 1rem;
     padding-bottom: 6rem;
+    justify-content: center;
   }
 
   .gridScrollable {
@@ -543,7 +653,7 @@
   }
 
   .preview {
-    height: 160px;
+    height: 150px;
   }
 
   .previewImage {
@@ -638,6 +748,40 @@
   flex: 1;
   overflow: auto;
   padding: 0;
+}
+
+.confirmModalBody {
+  padding: 1.5rem;
+  color: #374151;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.confirmModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.confirmButtonPrimary,
+.confirmButtonSecondary {
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmButtonPrimary {
+  background: #A0CB06;
+  color: #ffffff;
+  border-color: #A0CB06;
+}
+
+.confirmButtonSecondary {
+  background: #ffffff;
+  color: #374151;
 }
 
 @media (max-width: 768px) {
