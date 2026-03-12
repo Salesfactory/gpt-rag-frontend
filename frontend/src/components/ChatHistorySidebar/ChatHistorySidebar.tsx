@@ -47,8 +47,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
         setRefreshFetchHistory,
         chatSelected,
         setChatSelected,
-        setShowHistoryPanel,
-        setPendingToolSelection,
+        setShowHistoryPanel
     } = useAppContext();
 
     useEffect(() => {
@@ -129,20 +128,10 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
             handleClose();
 
             try {
-                const { turns, pendingHitl } = await getChatFromHistoryPannelById(chatConversationId, user.id);
+                const data = await getChatFromHistoryPannelById(chatConversationId, user.id);
 
-                setPendingToolSelection(null);
-                if (turns.length > 0) {
-                    setDataConversation(turns);
-                    if (pendingHitl) {
-                        setPendingToolSelection({
-                            availableTools: pendingHitl.available_tools,
-                            llmRecommendation: pendingHitl.llm_preferred_tool,
-                            conversationId: chatConversationId,
-                            question: pendingHitl.question,
-                            blobNames: pendingHitl.user_uploaded_blobs?.items,
-                        });
-                    }
+                if (data.length > 0) {
+                    setDataConversation(data);
                 } else {
                     setDataConversation([]);
                     setErrorMessage("No conversation data found.");

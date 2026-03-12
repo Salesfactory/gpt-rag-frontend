@@ -807,7 +807,6 @@ def proxy_orc(*, context, **kwargs):
     user_timezone = data.get("user_timezone")
     user_document_blob_names = data.get("user_document_blob_names")
     is_data_analyst_mode = data.get("is_data_analyst_mode", False)
-    hitl_resume = data.get("hitl_resume")
 
     if not question:
         return jsonify({"error": "Missing required parameters"}), 400
@@ -847,8 +846,6 @@ def proxy_orc(*, context, **kwargs):
         "user_timezone": user_timezone,
         "is_data_analyst_mode": is_data_analyst_mode,
     }
-    if hitl_resume:
-        payload_dict["hitl_resume"] = hitl_resume
     def _normalize_blob_names(raw_blob_names):
         if not isinstance(raw_blob_names, list):
             return None
