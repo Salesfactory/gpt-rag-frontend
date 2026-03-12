@@ -331,7 +331,6 @@ def get_conversation(conversation_id, user_id):
                 if "type" in conversation["conversation_data"]
                 else "default"
             ),
-            "pending_hitl": conversation.get("pending_hitl"),
         }
         return formatted_conversation
     except Exception:
