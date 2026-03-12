@@ -1,0 +1,171 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 1.25rem;
+    padding-top: 1.25rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    background: #f8f8f7;
+    border-radius: 1rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #eae8e8;
+    box-shadow: 0 0 #0000, #dddcdc, 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    margin: 8px 0 10px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.headerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.idea {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid #d1d5db;
+    color: #7e7e7e;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.title {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.35;
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.prompt {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.35;
+    color: #1f2937;
+    font-weight: 400;
+}
+
+.buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toolButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #111827;
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.recommendationBadge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #A0CB06;
+    background: #edf6d0;
+    border: 1px solid #d4e6a0;
+    border-radius: 999px;
+    padding: 0.15rem 0.5rem;
+}
+
+.toolButton:hover {
+    border-color: #A0CB06;
+}
+
+.recommended {
+    border-color: rgba(160, 203, 6, 1);
+}
+
+.selected {
+    border-color: rgba(160, 203, 6, 1);
+    box-shadow: 0 0 0 1px rgba(160, 203, 6, 0.45) inset;
+}
+
+.customInputRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.customInput {
+    flex: 1;
+    border: 2px solid rgba(160, 203, 6, 1);
+    border-radius: 0.875rem;
+    min-height: 3.3rem;
+    padding: 12px 16px;
+    font-size: 16px;
+    line-height: 1.2;
+    color: #101828;
+    outline: none;
+    background: #ffffff;
+}
+
+.customInput::placeholder {
+    color: #667085;
+    opacity: 1;
+}
+
+.customInput:focus {
+    box-shadow: 0 0 0 3px rgba(160, 203, 6, 0.2);
+}
+
+.sendButton {
+    min-width: 3rem;
+    min-height: 3rem;
+    border-radius: 0.75rem;
+    border: 0;
+    background: #c8dc7b;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sendButton:hover {
+    background: #b9d168;
+}
+
+.helper {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 900px) {
+    .title,
+    .prompt,
+    .toolButton,
+    .customInput {
+        font-size: 16px;
+    }
+
+    .toolButton,
+    .customInput,
+    .sendButton {
+        min-height: 50px;
+    }
+}

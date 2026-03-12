@@ -129,6 +129,20 @@ interface AppContextType {
     subscriptionError: string | null;
     setSubscriptionError: Dispatch<SetStateAction<string | null>>;
     validateSession: () => Promise<boolean>; // Session validation function
+    pendingToolSelection: {
+        availableTools: string[];
+        llmRecommendation: string;
+        conversationId: string;
+        question: string;
+        blobNames?: Array<{ blob_name: string; file_id?: string | null }>;
+    } | null;
+    setPendingToolSelection: Dispatch<SetStateAction<{
+        availableTools: string[];
+        llmRecommendation: string;
+        conversationId: string;
+        question: string;
+        blobNames?: Array<{ blob_name: string; file_id?: string | null }>;
+    } | null>>;
 }
 
 // Create the context with a default value
@@ -146,6 +160,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [userName, setUserName] = useState<string>("anonymous");
     const [dataHistory, setDataHistory] = useState<ConversationHistoryItem[]>([]);
     const [dataConversation, setDataConversation] = useState<ChatTurn[]>([]);
+    const [pendingToolSelection, setPendingToolSelection] = useState<{
+        availableTools: string[];
+        llmRecommendation: string;
+        conversationId: string;
+        question: string;
+        blobNames?: Array<{ blob_name: string; file_id?: string | null }>;
+    } | null>(null);
     const [chatSelected, setChatSelected] = useState<string>("");
     const [chatId, setChatId] = useState<string>("");
     const [conversationIsLoading, setConversationIsLoading] = useState<boolean>(false);
@@ -529,6 +550,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setChatId,
             dataConversation,
             setDataConversation,
+            pendingToolSelection,
+            setPendingToolSelection,
             conversationIsLoading,
             setConversationIsLoading,
             newChatDeleted,
@@ -562,6 +585,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             chatSelected,
             chatId,
             dataConversation,
+            pendingToolSelection,
             conversationIsLoading,
             newChatDeleted,
             isAuthenticated,
