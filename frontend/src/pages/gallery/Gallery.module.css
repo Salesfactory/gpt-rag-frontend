@@ -269,11 +269,11 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 282px));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 2.5rem; /* more breathing room between cards */
   padding-bottom: 8rem;
   align-items: start;
-  justify-content: center;
+  justify-content: stretch;
 }
  
 
@@ -287,8 +287,13 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 282px;
-  max-height: 328px;
+  max-width: none;
+}
+
+@media (max-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .card:hover {
@@ -401,12 +406,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
 }
 .fileName {
-  font-size: 1.1rem; /* slightly larger title */
+  font-size: 0.875rem; /* slightly larger title */
   font-weight: 600;
+  line-height: 1.25rem;
   color: #111827; /* gray-900 */
   margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -415,6 +424,7 @@
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .userTag {
@@ -433,6 +443,7 @@
 .fileSize {
   font-size: 0.75rem;
   color: #6b7280;
+  white-space: nowrap;
 }
 
 .fileDate {
@@ -581,9 +592,9 @@
   }
 
   .grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 282px));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1.75rem;
-    justify-content: center;
+    justify-content: stretch;
   }
 
   .preview {
@@ -609,7 +620,7 @@
 
   .filterDropdown {
     position: absolute;
-    right: -40px;
+    right: 0;
     top: calc(100% + 8px);
     width: 160px;
     border-radius: 8px;
@@ -630,22 +641,34 @@
     width: 100%;
   }
 
+  .filtersGroup {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .filter {
-    justify-content: flex-end;
+    justify-content: stretch;
+  }
+
+  .filterContainer {
+    width: 100%;
   }
 
   .filterButton {
-    width: 120px;
+    width: 100%;
+    min-width: 0;
     padding: 8px 12px;
     height: 40px;
     font-size: 14px;
   }
 
   .grid {
-    grid-template-columns: minmax(220px, 282px);
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     padding-bottom: 6rem;
-    justify-content: center;
+    justify-content: stretch;
   }
 
   .gridScrollable {

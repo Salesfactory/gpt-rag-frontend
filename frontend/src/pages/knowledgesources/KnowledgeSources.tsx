@@ -4,6 +4,7 @@ import styles from "./KnowledgeSources.module.css";
 import { useAppContext } from "../../providers/AppProviders";
 import { getOrganizationUrls, deleteOrganizationUrl, updateOrganizationUrl, searchOrganizationUrls, scrapeUrls, scrapeUrlsMultipage } from "../../api";
 import { toast, ToastContainer } from "react-toastify";
+import DeleteConfirmModal from "../../components/DeleteConfirmModal/DeleteConfirmModal";
 
 const statusFilterOptions = [
     { label: "All Status", value: "all" },
@@ -65,6 +66,10 @@ const KnowledgeSources: React.FC = () => {
 
     // State for advanced mode hint visibility
     const [showAdvancedHint, setShowAdvancedHint] = useState(false);
+
+    // State for delete confirmation modal
+    const [sourceToDelete, setSourceToDelete] = useState<KnowledgeSource | null>(null);
+    const [isDeletingSource, setIsDeletingSource] = useState(false);
 
     // Load data on component mount and when organization changes
     useEffect(() => {
@@ -233,14 +238,16 @@ const KnowledgeSources: React.FC = () => {
             const tempSource: KnowledgeSource = {
                 id: tempId,
                 url: urlToAdd,
-                lastModified: new Date().toLocaleString("sv-SE", {
-                    timeZone: "UTC",
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit"
-                }).replace("T", " "),
+                lastModified: new Date()
+                    .toLocaleString("sv-SE", {
+                        timeZone: "UTC",
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    })
+                    .replace("T", " "),
                 result: "Pending",
                 status: "Processing",
                 addedBy: {
@@ -279,17 +286,19 @@ const KnowledgeSources: React.FC = () => {
                 const feedback = messageMap[scrapingResult.error_type] || messageMap.system_error;
 
                 // Update with error message
-                setKnowledgeSources(prev => prev.map(source =>
-                    source.id === tempId
-                        ? {
-                            ...source,
-                            result: "Failed",
-                            status: "Error",
-                            feedbackMessage: feedback.message,
-                            feedbackType: feedback.type
-                        }
-                        : source
-                ));
+                setKnowledgeSources(prev =>
+                    prev.map(source =>
+                        source.id === tempId
+                            ? {
+                                  ...source,
+                                  result: "Failed",
+                                  status: "Error",
+                                  feedbackMessage: feedback.message,
+                                  feedbackType: feedback.type
+                              }
+                            : source
+                    )
+                );
 
                 // Remove row after 3 seconds for errors
                 setTimeout(() => {
@@ -316,17 +325,19 @@ const KnowledgeSources: React.FC = () => {
             }
 
             if (urlResult?.status === "error") {
-                setKnowledgeSources(prev => prev.map(source =>
-                    source.id === tempId
-                        ? {
-                            ...source,
-                            result: "Failed",
-                            status: "Error",
-                            feedbackMessage: urlResult.error || "Failed to process scraped content",
-                            feedbackType: "error"
-                        }
-                        : source
-                ));
+                setKnowledgeSources(prev =>
+                    prev.map(source =>
+                        source.id === tempId
+                            ? {
+                                  ...source,
+                                  result: "Failed",
+                                  status: "Error",
+                                  feedbackMessage: urlResult.error || "Failed to process scraped content",
+                                  feedbackType: "error"
+                              }
+                            : source
+                    )
+                );
 
                 setTimeout(() => {
                     setKnowledgeSources(prev => prev.filter(s => s.id !== tempId));
@@ -339,17 +350,19 @@ const KnowledgeSources: React.FC = () => {
             const addedSource = sourcesResponse.data.find((item: any) => item.url === urlToAdd);
 
             if (!addedSource) {
-                setKnowledgeSources(prev => prev.map(source =>
-                    source.id === tempId
-                        ? {
-                            ...source,
-                            result: "Failed",
-                            status: "Error",
-                            feedbackMessage: "Failed to save this URL. Please try again.",
-                            feedbackType: "error"
-                        }
-                        : source
-                ));
+                setKnowledgeSources(prev =>
+                    prev.map(source =>
+                        source.id === tempId
+                            ? {
+                                  ...source,
+                                  result: "Failed",
+                                  status: "Error",
+                                  feedbackMessage: "Failed to save this URL. Please try again.",
+                                  feedbackType: "error"
+                              }
+                            : source
+                    )
+                );
 
                 setTimeout(() => {
                     setKnowledgeSources(prev => prev.filter(s => s.id !== tempId));
@@ -364,19 +377,17 @@ const KnowledgeSources: React.FC = () => {
                 transformedData.map(source =>
                     source.id === addedId
                         ? {
-                            ...source,
-                            feedbackMessage: "Content successfully scraped. It may take 2-5 minutes to become searchable.",
-                            feedbackType: "success"
-                        }
+                              ...source,
+                              feedbackMessage: "Content successfully scraped. It may take 2-5 minutes to become searchable.",
+                              feedbackType: "success"
+                          }
                         : source
                 )
             );
 
             // Clear success message after 5 seconds
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(s =>
-                    s.id === addedId ? { ...s, feedbackMessage: undefined } : s
-                ));
+                setKnowledgeSources(prev => prev.map(s => (s.id === addedId ? { ...s, feedbackMessage: undefined } : s)));
             }, 5000);
         } catch (error) {
             console.error("Error adding and scraping URL:", error);
@@ -391,13 +402,11 @@ const KnowledgeSources: React.FC = () => {
     // Refresh a knowledge source by re-scraping its URL
     const handleRefresh = async (id: string) => {
         if (!organization?.id) {
-            setKnowledgeSources(prev => prev.map(source =>
-                source.id === id
-                    ? { ...source, feedbackMessage: "No organization selected", feedbackType: "error" }
-                    : source
-            ));
+            setKnowledgeSources(prev =>
+                prev.map(source => (source.id === id ? { ...source, feedbackMessage: "No organization selected", feedbackType: "error" } : source))
+            );
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                setKnowledgeSources(prev => prev.map(s => (s.id === id ? { ...s, feedbackMessage: undefined } : s)));
             }, 3000);
             return;
         }
@@ -409,11 +418,9 @@ const KnowledgeSources: React.FC = () => {
 
         try {
             // Update to show processing status
-            setKnowledgeSources(prev => prev.map(source =>
-                source.id === id
-                    ? { ...source, status: "Processing", result: "Pending", feedbackMessage: undefined }
-                    : source
-            ));
+            setKnowledgeSources(prev =>
+                prev.map(source => (source.id === id ? { ...source, status: "Processing", result: "Pending", feedbackMessage: undefined } : source))
+            );
 
             // Re-scrape the URL
             const scrapingResult = await (isAdvancedMode
@@ -442,21 +449,23 @@ const KnowledgeSources: React.FC = () => {
 
                 const feedback = messageMap[scrapingResult.error_type] || messageMap.system_error;
 
-                setKnowledgeSources(prev => prev.map(source =>
-                    source.id === id
-                        ? {
-                            ...source,
-                            result: feedback.type === "warning" ? "Failed" : "Failed",
-                            status: feedback.type === "warning" ? "Error" : "Error",
-                            feedbackMessage: feedback.message,
-                            feedbackType: feedback.type
-                        }
-                        : source
-                ));
+                setKnowledgeSources(prev =>
+                    prev.map(source =>
+                        source.id === id
+                            ? {
+                                  ...source,
+                                  result: feedback.type === "warning" ? "Failed" : "Failed",
+                                  status: feedback.type === "warning" ? "Error" : "Error",
+                                  feedbackMessage: feedback.message,
+                                  feedbackType: feedback.type
+                              }
+                            : source
+                    )
+                );
 
                 // Clear message after 5 seconds
                 setTimeout(() => {
-                    setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                    setKnowledgeSources(prev => prev.map(s => (s.id === id ? { ...s, feedbackMessage: undefined } : s)));
                 }, 5000);
                 return;
             }
@@ -478,114 +487,135 @@ const KnowledgeSources: React.FC = () => {
             }
 
             if (urlResult?.status === "error") {
-                setKnowledgeSources(prev => prev.map(source =>
-                    source.id === id
-                        ? {
-                            ...source,
-                            result: "Failed",
-                            status: "Error",
-                            feedbackMessage: urlResult.error || "Failed to process scraped content",
-                            feedbackType: "error"
-                        }
-                        : source
-                ));
+                setKnowledgeSources(prev =>
+                    prev.map(source =>
+                        source.id === id
+                            ? {
+                                  ...source,
+                                  result: "Failed",
+                                  status: "Error",
+                                  feedbackMessage: urlResult.error || "Failed to process scraped content",
+                                  feedbackType: "error"
+                              }
+                            : source
+                    )
+                );
 
                 setTimeout(() => {
-                    setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                    setKnowledgeSources(prev => prev.map(s => (s.id === id ? { ...s, feedbackMessage: undefined } : s)));
                 }, 5000);
             } else {
                 // Success
-                setKnowledgeSources(prev => prev.map(source =>
-                    source.id === id
-                        ? {
-                            ...source,
-                            feedbackMessage: "Content refreshed. It may take 2-5 minutes to become searchable.",
-                            feedbackType: "success"
-                        }
-                        : source
-                ));
+                setKnowledgeSources(prev =>
+                    prev.map(source =>
+                        source.id === id
+                            ? {
+                                  ...source,
+                                  feedbackMessage: "Content refreshed. It may take 2-5 minutes to become searchable.",
+                                  feedbackType: "success"
+                              }
+                            : source
+                    )
+                );
 
                 setTimeout(() => {
-                    setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                    setKnowledgeSources(prev => prev.map(s => (s.id === id ? { ...s, feedbackMessage: undefined } : s)));
                 }, 5000);
             }
         } catch (error) {
-            setKnowledgeSources(prev => prev.map(source =>
-                source.id === id
-                    ? {
-                        ...source,
-                        feedbackMessage: "An unexpected error occurred",
-                        feedbackType: "error"
-                    }
-                    : source
-            ));
+            setKnowledgeSources(prev =>
+                prev.map(source =>
+                    source.id === id
+                        ? {
+                              ...source,
+                              feedbackMessage: "An unexpected error occurred",
+                              feedbackType: "error"
+                          }
+                        : source
+                )
+            );
 
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                setKnowledgeSources(prev => prev.map(s => (s.id === id ? { ...s, feedbackMessage: undefined } : s)));
             }, 5000);
         }
     };
 
-    // Delete a knowledge source
-    const handleDelete = async (id: string) => {
+    // Open delete confirmation modal
+    const handleDelete = (source: KnowledgeSource) => {
+        setSourceToDelete(source);
+    };
+
+    // Delete a knowledge source after confirmation
+    const handleConfirmDelete = async () => {
+        if (!sourceToDelete) return;
+
+        const id = sourceToDelete.id;
+
         if (!organization?.id) {
             // Show error inline
-            setKnowledgeSources(knowledgeSources.map(source =>
-                source.id === id
-                    ? { ...source, feedbackMessage: "No organization selected", feedbackType: "error" }
-                    : source
-            ));
+            setKnowledgeSources(
+                knowledgeSources.map(source => (source.id === id ? { ...source, feedbackMessage: "No organization selected", feedbackType: "error" } : source))
+            );
+            setSourceToDelete(null);
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                setKnowledgeSources(prev => prev.map(s => (s.id === id ? { ...s, feedbackMessage: undefined } : s)));
             }, 3000);
             return;
         }
 
+        setIsDeletingSource(true);
+
         // Step 1: Mark as deleting (dims and shrinks)
-        setKnowledgeSources(knowledgeSources.map(source =>
-            source.id === id ? { ...source, isDeleting: true } : source
-        ));
+        setKnowledgeSources(knowledgeSources.map(source => (source.id === id ? { ...source, isDeleting: true } : source)));
 
         try {
             await deleteOrganizationUrl(id, organization.id);
+            setSourceToDelete(null);
 
             // Step 2: After 300ms, mark as deleted and show message
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(source =>
-                    source.id === id
-                        ? {
-                            ...source,
-                            isDeleting: false,
-                            isDeleted: true,
-                            feedbackMessage: "This URL has been removed from your knowledge sources",
-                            feedbackType: "deleted"
-                        }
-                        : source
-                ));
+                setKnowledgeSources(prev =>
+                    prev.map(source =>
+                        source.id === id
+                            ? {
+                                  ...source,
+                                  isDeleting: false,
+                                  isDeleted: true,
+                                  feedbackMessage: "This URL has been removed from your knowledge sources",
+                                  feedbackType: "deleted"
+                              }
+                            : source
+                    )
+                );
 
                 // Step 3: Remove from list after 3 seconds
                 setTimeout(() => {
                     setKnowledgeSources(prev => prev.filter(source => source.id !== id));
                 }, 3000);
             }, 300);
-
         } catch (error) {
             console.error("Error deleting URL:", error);
+            setSourceToDelete(null);
             // Show error and restore row
-            setKnowledgeSources(prev => prev.map(source =>
-                source.id === id
-                    ? {
-                        ...source,
-                        isDeleting: false,
-                        feedbackMessage: "Failed to delete URL. Please try again.",
-                        feedbackType: "error"
-                    }
-                    : source
-            ));
+            setKnowledgeSources(prev =>
+                prev.map(source =>
+                    source.id === id
+                        ? {
+                              ...source,
+                              isDeleting: false,
+                              feedbackMessage: "Failed to delete URL. Please try again.",
+                              feedbackType: "error"
+                          }
+                        : source
+                )
+            );
             // Clear error after 3s
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(s => s.id === id ? { ...s, feedbackMessage: undefined } : s));
+                setKnowledgeSources(prev => prev.map(s => (s.id === id ? { ...s, feedbackMessage: undefined } : s)));
             }, 3000);
+        } finally {
+            setIsDeletingSource(false);
         }
     };
 
@@ -790,40 +820,40 @@ const KnowledgeSources: React.FC = () => {
             handleCancelEdit();
 
             // Show inline success message
-            setKnowledgeSources(prev => prev.map(source =>
-                source.id === editingId
-                    ? {
-                        ...source,
-                        feedbackMessage: "URL updated. Refresh the source to scrape the new page.",
-                        feedbackType: "success"
-                    }
-                    : source
-            ));
+            setKnowledgeSources(prev =>
+                prev.map(source =>
+                    source.id === editingId
+                        ? {
+                              ...source,
+                              feedbackMessage: "URL updated. Refresh the source to scrape the new page.",
+                              feedbackType: "success"
+                          }
+                        : source
+                )
+            );
 
             // Clear after 5 seconds
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(s =>
-                    s.id === editingId ? { ...s, feedbackMessage: undefined } : s
-                ));
+                setKnowledgeSources(prev => prev.map(s => (s.id === editingId ? { ...s, feedbackMessage: undefined } : s)));
             }, 5000);
         } catch (error) {
             console.error("Error updating URL:", error);
             // Show inline error
-            setKnowledgeSources(prev => prev.map(source =>
-                source.id === editingId
-                    ? {
-                        ...source,
-                        feedbackMessage: "Failed to update URL",
-                        feedbackType: "error"
-                    }
-                    : source
-            ));
+            setKnowledgeSources(prev =>
+                prev.map(source =>
+                    source.id === editingId
+                        ? {
+                              ...source,
+                              feedbackMessage: "Failed to update URL",
+                              feedbackType: "error"
+                          }
+                        : source
+                )
+            );
 
             // Clear after 5 seconds
             setTimeout(() => {
-                setKnowledgeSources(prev => prev.map(s =>
-                    s.id === editingId ? { ...s, feedbackMessage: undefined } : s
-                ));
+                setKnowledgeSources(prev => prev.map(s => (s.id === editingId ? { ...s, feedbackMessage: undefined } : s)));
             }, 5000);
         } finally {
             setIsUpdating(false);
@@ -910,7 +940,12 @@ const KnowledgeSources: React.FC = () => {
                     </div>
                 </div>
 
-                <button onClick={handleAddUrl} disabled={!newUrl.trim() || !!urlError || isAdding} className={styles.addButton} aria-label={isAdding ? "Adding" : "Add URL"}>
+                <button
+                    onClick={handleAddUrl}
+                    disabled={!newUrl.trim() || !!urlError || isAdding}
+                    className={styles.addButton}
+                    aria-label={isAdding ? "Adding" : "Add URL"}
+                >
                     <Plus size={18} />
                     <span>{isAdding ? "Adding..." : "Add URL"}</span>
                 </button>
@@ -931,7 +966,13 @@ const KnowledgeSources: React.FC = () => {
                         className={styles.searchInput}
                     />
                     {searchQuery && (
-                        <button type="button" className={styles.clearSearchButton} onClick={() => updateSearchQuery("")} title="Clear search" aria-label="Clear Search" >
+                        <button
+                            type="button"
+                            className={styles.clearSearchButton}
+                            onClick={() => updateSearchQuery("")}
+                            title="Clear search"
+                            aria-label="Clear Search"
+                        >
                             <X size={16} />
                         </button>
                     )}
@@ -1000,125 +1041,147 @@ const KnowledgeSources: React.FC = () => {
 
                             return (
                                 <div key={source.id}>
-                                <div
-                                    className={`${styles.card} ${source.isDeleting ? styles.cardDeleting : ''} ${source.isDeleted ? styles.cardDeleted : ''}`}
-                                >
-                                    <div className={styles.cardContent}>
-                                        <div className={styles.cardLeft}>
-                                            {editingId === source.id ? (
-                                                <div className={styles.editForm}>
-                                                    <div className={styles.editInputWrapper}>
-                                                        <input
-                                                            type="url"
-                                                            value={editingUrl}
-                                                            onChange={handleEditingUrlChange}
-                                                            className={`${styles.editInput} ${editingError ? styles.inputError : ""}`}
-                                                            placeholder="Enter URL"
-                                                            disabled={isUpdating}
-                                                            autoFocus
-                                                        />
-                                                        {editingError && <p className={styles.errorText}>{editingError}</p>}
-                                                    </div>
-                                                    <div className={styles.editActions}>
-                                                        <button
-                                                            onClick={handleSaveEdit}
-                                                            disabled={!editingUrl.trim() || !!editingError || isUpdating}
-                                                            className={styles.saveButton}
-                                                            title="Save URL changes. Previous scraped data will be removed."
-                                                            aria-label={isUpdating ? "loading..." : "save"}
-                                                        >
-                                                            {isUpdating ? "Saving..." : "Save"}
-                                                        </button>
-                                                        <button onClick={handleCancelEdit} disabled={isUpdating} className={styles.cancelButton} aria-label="Cancel">
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <div className={`${styles.cardUrl} ${source.isDeleted ? styles.cardUrlDeleted : ''}`} title={source.url}>
-                                                        {source.url}
-                                                    </div>
-                                                    <div className={styles.cardDetails}>
-                                                        <div className={styles.cardStatus}>
-                                                            <div className={`${styles.statusIcon} ${statusInfo.bgColor}`}>
-                                                                <StatusIcon size={14} />
-                                                            </div>
-                                                            <span className={`${styles.statusText} ${statusInfo.color}`}>{statusInfo.label}</span>
-                                                        </div>
-                                                        <div className={styles.cardDate}>{source.lastModified}</div>
-                                                        {source.addedBy && (
-                                                            <div className={styles.cardAddedBy}>Added by: {source.addedBy.userName || "Unknown User"}</div>
-                                                        )}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        <div className={styles.cardActions}>
-                                            <button
-                                                onClick={() => handleRefresh(source.id)}
-                                                className={styles.actionButton}
-                                                title="Refresh source"
-                                                disabled={editingId === source.id}
-                                                aria-label="Refresh"
-                                            >
-                                                <RefreshCw size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleStartEdit(source)}
-                                                className={styles.actionButton}
-                                                title="Edit source"
-                                                disabled={editingId !== null}
-                                                aria-label="Edit Source"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(source.id)}
-                                                className={`${styles.actionButton} ${styles.deleteButton}`}
-                                                title="Delete source"
-                                                disabled={editingId === source.id}
-                                                aria-label="Delete source"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Processing or Feedback Message */}
-                                {showProcessingMessage && (
-                                    <div className={`${styles.feedbackMessage} ${styles.feedbackProcessing}`}>
-                                        <Clock size={14} className={styles.feedbackIcon} />
-                                        Scraping in progress...
-                                    </div>
-                                )}
-                                {source.feedbackMessage && (
                                     <div
-                                        className={`${styles.feedbackMessage} ${
-                                            source.feedbackType === "success"
-                                                ? styles.feedbackSuccess
-                                                : source.feedbackType === "warning"
-                                                ? styles.feedbackWarning
-                                                : source.feedbackType === "deleted"
-                                                ? styles.feedbackDeleted
-                                                : styles.feedbackError
-                                        }`}
+                                        className={`${styles.card} ${source.isDeleting ? styles.cardDeleting : ""} ${source.isDeleted ? styles.cardDeleted : ""}`}
                                     >
-                                        {source.feedbackType === "success" && <CheckCircle size={16} className={styles.feedbackIcon} />}
-                                        {source.feedbackType === "warning" && <ShieldOff size={16} className={styles.feedbackIcon} />}
-                                        {source.feedbackType === "error" && <XCircle size={16} className={styles.feedbackIcon} />}
-                                        {source.feedbackType === "deleted" && <CheckCircle size={16} className={styles.feedbackIcon} />}
-                                        {source.feedbackMessage}
+                                        <div className={styles.cardContent}>
+                                            <div className={styles.cardLeft}>
+                                                {editingId === source.id ? (
+                                                    <div className={styles.editForm}>
+                                                        <div className={styles.editInputWrapper}>
+                                                            <input
+                                                                type="url"
+                                                                value={editingUrl}
+                                                                onChange={handleEditingUrlChange}
+                                                                className={`${styles.editInput} ${editingError ? styles.inputError : ""}`}
+                                                                placeholder="Enter URL"
+                                                                disabled={isUpdating}
+                                                                autoFocus
+                                                            />
+                                                            {editingError && <p className={styles.errorText}>{editingError}</p>}
+                                                        </div>
+                                                        <div className={styles.editActions}>
+                                                            <button
+                                                                onClick={handleSaveEdit}
+                                                                disabled={!editingUrl.trim() || !!editingError || isUpdating}
+                                                                className={styles.saveButton}
+                                                                title="Save URL changes. Previous scraped data will be removed."
+                                                                aria-label={isUpdating ? "loading..." : "save"}
+                                                            >
+                                                                {isUpdating ? "Saving..." : "Save"}
+                                                            </button>
+                                                            <button
+                                                                onClick={handleCancelEdit}
+                                                                disabled={isUpdating}
+                                                                className={styles.cancelButton}
+                                                                aria-label="Cancel"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div
+                                                            className={`${styles.cardUrl} ${source.isDeleted ? styles.cardUrlDeleted : ""}`}
+                                                            title={source.url}
+                                                        >
+                                                            {source.url}
+                                                        </div>
+                                                        <div className={styles.cardDetails}>
+                                                            <div className={styles.cardStatus}>
+                                                                <div className={`${styles.statusIcon} ${statusInfo.bgColor}`}>
+                                                                    <StatusIcon size={14} />
+                                                                </div>
+                                                                <span className={`${styles.statusText} ${statusInfo.color}`}>{statusInfo.label}</span>
+                                                            </div>
+                                                            <div className={styles.cardDate}>{source.lastModified}</div>
+                                                            {source.addedBy && (
+                                                                <div className={styles.cardAddedBy}>Added by: {source.addedBy.userName || "Unknown User"}</div>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <div className={styles.cardActions}>
+                                                <button
+                                                    onClick={() => handleRefresh(source.id)}
+                                                    className={styles.actionButton}
+                                                    title="Refresh source"
+                                                    disabled={editingId === source.id}
+                                                    aria-label="Refresh"
+                                                >
+                                                    <RefreshCw size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleStartEdit(source)}
+                                                    className={styles.actionButton}
+                                                    title="Edit source"
+                                                    disabled={editingId !== null}
+                                                    aria-label="Edit Source"
+                                                >
+                                                    <Edit size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(source)}
+                                                    className={`${styles.actionButton} ${styles.deleteButton}`}
+                                                    title="Delete source"
+                                                    disabled={editingId === source.id}
+                                                    aria-label="Delete source"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
+
+                                    {/* Processing or Feedback Message */}
+                                    {showProcessingMessage && (
+                                        <div className={`${styles.feedbackMessage} ${styles.feedbackProcessing}`}>
+                                            <Clock size={14} className={styles.feedbackIcon} />
+                                            Scraping in progress...
+                                        </div>
+                                    )}
+                                    {source.feedbackMessage && (
+                                        <div
+                                            className={`${styles.feedbackMessage} ${
+                                                source.feedbackType === "success"
+                                                    ? styles.feedbackSuccess
+                                                    : source.feedbackType === "warning"
+                                                      ? styles.feedbackWarning
+                                                      : source.feedbackType === "deleted"
+                                                        ? styles.feedbackDeleted
+                                                        : styles.feedbackError
+                                            }`}
+                                        >
+                                            {source.feedbackType === "success" && <CheckCircle size={16} className={styles.feedbackIcon} />}
+                                            {source.feedbackType === "warning" && <ShieldOff size={16} className={styles.feedbackIcon} />}
+                                            {source.feedbackType === "error" && <XCircle size={16} className={styles.feedbackIcon} />}
+                                            {source.feedbackType === "deleted" && <CheckCircle size={16} className={styles.feedbackIcon} />}
+                                            {source.feedbackMessage}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })
                     )}
                 </div>
             </div>
+
+            <DeleteConfirmModal
+                isOpen={Boolean(sourceToDelete)}
+                itemType="URL"
+                itemName={sourceToDelete?.url || ""}
+                onCancel={() => {
+                    if (!isDeletingSource) {
+                        setSourceToDelete(null);
+                    }
+                }}
+                onConfirm={handleConfirmDelete}
+                warningMessage="This URL will be removed from your knowledge sources."
+                isDeleting={isDeletingSource}
+            />
         </div>
     );
 };

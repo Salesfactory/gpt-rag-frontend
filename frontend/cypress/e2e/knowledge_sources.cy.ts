@@ -232,6 +232,9 @@ describe("Knowledge Sources tests", () => {
 
         // Delete source
         cy.get('button[title="Delete source"]').first().click();
+        cy.contains('h2', 'Delete URL').should('be.visible');
+        cy.contains('button', 'Delete URL').click();
+        cy.wait('@deleteOrganizationUrl');
         cy.get('div').should('contain.text', 'This URL has been removed from your knowledge sources');
         cy.contains('span', '2 results', { timeout: 7000 }).should('be.visible');
 
