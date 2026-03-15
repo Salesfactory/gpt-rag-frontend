@@ -41,13 +41,14 @@ import {
     isThoughtsMessage,
     isThinkingMessage,
     isDataAnalystContentMessage,
-    isToolSelectionRequired,
+    isToolClarificationRequired,
     extractProgressState,
     ProgressMessage,
     ThinkingMessage,
     DataAnalystContentMessage,
-    ToolSelectionRequiredMessage
+    ToolClarificationRequiredMessage
 } from "./streamParser";
+import { hasMixedUploadCategories, isSupportedUploadCategory, MIXED_TYPE_UPLOAD_ERROR } from "./attachmentUtils";
 import { ToolSelectionPicker } from "../../components/ToolSelectionPicker/ToolSelectionPicker";
 import { Warning28Regular } from "@fluentui/react-icons";
 import { log } from "console";
@@ -113,13 +114,6 @@ const Chat = () => {
     const [error, setError] = useState<unknown>();
     const fileUploadErrorTimerRef = useRef<number | null>(null);
 
-    const getUploadCategory = (filename: string): "pdf" | "spreadsheet" | "unknown" => {
-        const lower = filename.toLowerCase();
-        if (lower.endsWith(".pdf")) return "pdf";
-        if (lower.endsWith(".csv") || lower.endsWith(".xls") || lower.endsWith(".xlsx")) return "spreadsheet";
-        return "unknown";
-    };
-
     const setTimedFileUploadError = (message: string, timeoutMs: number = 5000) => {
         setFileUploadError(message);
         if (fileUploadErrorTimerRef.current !== null) {
@@ -181,7 +175,7 @@ const Chat = () => {
         question: string,
         chatId: string | null,
         userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>,
-        hitlResume?: { tool_name: string }
+        hitlResume?: { tool_name: string; selected_text: string }
     ) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
@@ -305,18 +299,18 @@ const Chat = () => {
                 if (evt.type === "json") {
                     setError403Data(null); // Clear any previous 403 errors
                     // ---- Handle different types of JSON messages from backend ----
-                    if (isToolSelectionRequired(evt.payload)) {
-                        const msg = evt.payload as ToolSelectionRequiredMessage;
+                    if (isToolClarificationRequired(evt.payload)) {
+                        const msg = evt.payload as ToolClarificationRequiredMessage;
                         setPendingToolSelection({
-                            availableTools: msg.available_tools,
-                            llmRecommendation: msg.llm_recommendation,
+                            clarifyingQuestion: msg.question,
+                            options: msg.options,
                             conversationId: msg.conversation_id,
-                            question,
+                            savedQuestion: question,
                             blobNames: userDocumentBlobNames,
                         });
                         hitlTriggered = true;
                         setIsLoading(false);
-                        break; // Phase 1 done — wait for user selection
+                        break; // HITL pause — wait for user to answer
                     } else if (isDataAnalystContentMessage(evt.payload)) {
                         // Data analyst content - treat as thinking (goes into collapsible section)
                         const contentMsg = evt.payload as DataAnalystContentMessage;
@@ -387,15 +381,15 @@ const Chat = () => {
         }
     };
 
-    const handleToolSelection = (toolName: string) => {
+    const handleToolSelection = (toolName: string, selectedText: string) => {
         if (!pendingToolSelection) return;
-        const { question: savedQuestion, conversationId, blobNames } = pendingToolSelection;
+        const { savedQuestion, conversationId, blobNames } = pendingToolSelection;
         setPendingToolSelection(null);
         streamResponse(
             savedQuestion,
             conversationId,
             blobNames,
-            { tool_name: toolName }
+            { tool_name: toolName, selected_text: selectedText }
         );
     };
 
@@ -615,21 +609,17 @@ const Chat = () => {
                 return;
             }
 
-            const selectionCategories = new Set(files.map(file => getUploadCategory(file.name)));
-            selectionCategories.delete("unknown");
-            if (selectionCategories.size > 1) {
-                setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
+            const unsupportedFile = files.find(file => !isSupportedUploadCategory(file.name));
+            if (unsupportedFile) {
+                const fileExtension = unsupportedFile.name.toLowerCase().split(".").pop() || "unknown";
+                setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF, CSV, XLS, XLSX, DOCX`);
                 return;
             }
 
-            if (attachedDocs.length > 0 && selectionCategories.size === 1) {
-                const sampleName = attachedDocs[0].originalFilename || attachedDocs[0].savedFilename || attachedDocs[0].blobName;
-                const existingCategory = getUploadCategory(sampleName);
-                const [selectionCategory] = Array.from(selectionCategories);
-                if (existingCategory !== "unknown" && selectionCategory !== existingCategory) {
-                    setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
-                    return;
-                }
+            const sampleName = attachedDocs[0]?.originalFilename || attachedDocs[0]?.savedFilename || attachedDocs[0]?.blobName;
+            if (hasMixedUploadCategories(files.map(file => file.name), sampleName)) {
+                setTimedFileUploadError(MIXED_TYPE_UPLOAD_ERROR);
+                return;
             }
 
             for (const file of files) {
@@ -1010,8 +1000,8 @@ const Chat = () => {
                                                             <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                                 {index === dataConversation.length - 1 && pendingToolSelection && !item.bot?.message ? (
                                                                     <ToolSelectionPicker
-                                                                        availableTools={pendingToolSelection.availableTools}
-                                                                        recommendation={pendingToolSelection.llmRecommendation}
+                                                                        question={pendingToolSelection.clarifyingQuestion}
+                                                                        options={pendingToolSelection.options}
                                                                         onSelect={handleToolSelection}
                                                                     />
                                                                 ) : (
@@ -1105,8 +1095,8 @@ const Chat = () => {
                                                     <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
                                                         {pendingToolSelection ? (
                                                             <ToolSelectionPicker
-                                                                availableTools={pendingToolSelection.availableTools}
-                                                                recommendation={pendingToolSelection.llmRecommendation}
+                                                                question={pendingToolSelection.clarifyingQuestion}
+                                                                options={pendingToolSelection.options}
                                                                 onSelect={handleToolSelection}
                                                             />
                                                         ) : (

@@ -136,10 +136,10 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                     setDataConversation(turns);
                     if (pendingHitl) {
                         setPendingToolSelection({
-                            availableTools: pendingHitl.available_tools,
-                            llmRecommendation: pendingHitl.llm_preferred_tool,
+                            clarifyingQuestion: pendingHitl.clarification_question,
+                            options: pendingHitl.clarification_options,
                             conversationId: chatConversationId,
-                            question: pendingHitl.question,
+                            savedQuestion: pendingHitl.question,
                             blobNames: pendingHitl.user_uploaded_blobs?.items,
                         });
                     }
