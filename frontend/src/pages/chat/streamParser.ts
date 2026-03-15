@@ -378,23 +378,23 @@ export function isDataAnalystContentMessage(payload: any): payload is DataAnalys
 }
 
 /**
- * Tool selection required message — emitted when HITL is enabled and multiple tools are available
+ * Tool clarification required message — emitted when the LLM needs a clarifying question answered
+ * before it can confidently route to the right tool.
  */
-export interface ToolSelectionRequiredMessage {
-    type: "tool_selection_required";
-    available_tools: string[];
-    llm_recommendation: string;
+export interface ToolClarificationRequiredMessage {
+    type: "tool_clarification_required";
+    question: string;
+    options: Array<{ text: string; tool_name: string }>;
     conversation_id: string;
-    message: string;
     progress: number;
     timestamp: number;
 }
 
-export function isToolSelectionRequired(payload: any): payload is ToolSelectionRequiredMessage {
+export function isToolClarificationRequired(payload: any): payload is ToolClarificationRequiredMessage {
     return (
-        payload?.type === "tool_selection_required" &&
-        Array.isArray(payload.available_tools) &&
-        typeof payload.llm_recommendation === "string"
+        payload?.type === "tool_clarification_required" &&
+        typeof payload.question === "string" &&
+        Array.isArray(payload.options)
     );
 }
 

@@ -26,6 +26,7 @@ export const QuestionInput = ({
     const [question, setQuestion] = useState<string>("");
 
     const sendQuestion = () => {
+        if (_disabled) return;
         onSend(question);
 
         if (clearOnSend) {
@@ -58,6 +59,7 @@ export const QuestionInput = ({
                 multiline
                 resizable={false}
                 borderless
+                disabled={_disabled}
                 value={question}
                 onChange={onQuestionChange}
                 onKeyDown={onEnterPress}
