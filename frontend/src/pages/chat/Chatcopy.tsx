@@ -1173,7 +1173,7 @@ const Chat = () => {
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
-                                            disabled={isLoading || isUploadingDocs || !!error403Data}
+                                            disabled={isLoading || isUploadingDocs || !!error403Data || !!pendingToolSelection}
                                             onSend={question => {
                                                 (async () => {
                                                     const blobNames = attachedDocs.map(d => ({
