@@ -41,11 +41,15 @@ import {
     isThoughtsMessage,
     isThinkingMessage,
     isDataAnalystContentMessage,
+    isToolClarificationRequired,
     extractProgressState,
     ProgressMessage,
     ThinkingMessage,
-    DataAnalystContentMessage
+    DataAnalystContentMessage,
+    ToolClarificationRequiredMessage
 } from "./streamParser";
+import { hasMixedUploadCategories, isSupportedUploadCategory, MIXED_TYPE_UPLOAD_ERROR } from "./attachmentUtils";
+import { ToolSelectionPicker } from "../../components/ToolSelectionPicker/ToolSelectionPicker";
 import { Warning28Regular } from "@fluentui/react-icons";
 import { log } from "console";
 import { fetchWrapper } from "../../api/fetchWrapper";
@@ -77,6 +81,7 @@ const Chat = () => {
     const [fileUploadError, setFileUploadError] = useState<string>("");
     const [isDataAnalystMode, setIsDataAnalystMode] = useState<boolean>(false);
 
+
     const [isDragOver, setIsDragOver] = useState(false);
 
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -94,7 +99,9 @@ const Chat = () => {
         chatIsCleaned,
         user,
         isResizingAnalysisPanel,
-        setisResizingAnalysisPanel
+        setisResizingAnalysisPanel,
+        pendingToolSelection,
+        setPendingToolSelection,
     } = useAppContext();
 
     const lastQuestionRef = useRef<string>("");
@@ -106,13 +113,6 @@ const Chat = () => {
     const [isUploadingDocs, setIsUploadingDocs] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
     const fileUploadErrorTimerRef = useRef<number | null>(null);
-
-    const getUploadCategory = (filename: string): "pdf" | "spreadsheet" | "unknown" => {
-        const lower = filename.toLowerCase();
-        if (lower.endsWith(".pdf")) return "pdf";
-        if (lower.endsWith(".csv") || lower.endsWith(".xls") || lower.endsWith(".xlsx")) return "spreadsheet";
-        return "unknown";
-    };
 
     const setTimedFileUploadError = (message: string, timeoutMs: number = 5000) => {
         setFileUploadError(message);
@@ -171,10 +171,16 @@ const Chat = () => {
         return conversationId;
     };
 
-    const streamResponse = async (question: string, chatId: string | null, userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>) => {
+    const streamResponse = async (
+        question: string,
+        chatId: string | null,
+        userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>,
+        hitlResume?: { tool_name: string; selected_text: string }
+    ) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
         restartChat.current = false;
+        setPendingToolSelection(null);
         if (error) {
             setError(undefined);
         }
@@ -187,9 +193,23 @@ const Chat = () => {
 
         const agent = "consumer";
 
+        // When resuming from HITL, the last dataConversation entry is the pending user turn
+        // (saved at HITL pause time). Strip it to avoid sending a duplicate to the backend.
+        if (hitlResume && dataConversation.length > 0 && !dataConversation[dataConversation.length - 1]?.bot?.message) {
+            setDataConversation(prev => {
+                const last = prev[prev.length - 1];
+                if (last && !last.bot?.message) return prev.slice(0, -1);
+                return prev;
+            });
+        }
+
+        const baseConversation = (hitlResume && dataConversation.length > 0 && !dataConversation[dataConversation.length - 1]?.bot?.message)
+            ? dataConversation.slice(0, -1)
+            : dataConversation;
+
         let history: ChatTurn[] = [];
-        if (dataConversation.length > 0) {
-            history.push(...dataConversation);
+        if (baseConversation.length > 0) {
+            history.push(...baseConversation);
         } else {
             history.push(...answers.map(a => ({ user: a[0], bot: { message: a[1]?.answer, thoughts: a[1]?.thoughts ?? null } })));
         }
@@ -226,7 +246,8 @@ const Chat = () => {
                     agent: request.agent,
                     user_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                     user_document_blob_names: Array.isArray(userDocumentBlobNames) && userDocumentBlobNames.length > 0 ? userDocumentBlobNames : undefined,
-                    is_data_analyst_mode: isDataAnalystMode
+                    is_data_analyst_mode: isDataAnalystMode,
+                    ...(hitlResume ? { hitl_resume: hitlResume } : {})
                 })
             });
 
@@ -266,6 +287,7 @@ const Chat = () => {
             const reader = response.body.getReader();
             let result = "";
             let ctrlMsg: { conversation_id?: string; thoughts?: ThoughtProcess } = {};
+            let hitlTriggered = false;
 
             for await (const evt of parseStreamWithMarkdownValidation(reader)) {
                 /* allow user to abort mid-stream */
@@ -277,7 +299,19 @@ const Chat = () => {
                 if (evt.type === "json") {
                     setError403Data(null); // Clear any previous 403 errors
                     // ---- Handle different types of JSON messages from backend ----
-                    if (isDataAnalystContentMessage(evt.payload)) {
+                    if (isToolClarificationRequired(evt.payload)) {
+                        const msg = evt.payload as ToolClarificationRequiredMessage;
+                        setPendingToolSelection({
+                            clarifyingQuestion: msg.question,
+                            options: msg.options,
+                            conversationId: msg.conversation_id,
+                            savedQuestion: question,
+                            blobNames: userDocumentBlobNames,
+                        });
+                        hitlTriggered = true;
+                        setIsLoading(false);
+                        break; // HITL pause — wait for user to answer
+                    } else if (isDataAnalystContentMessage(evt.payload)) {
                         // Data analyst content - treat as thinking (goes into collapsible section)
                         const contentMsg = evt.payload as DataAnalystContentMessage;
                         setThinkingContent(prev => prev + contentMsg.content);
@@ -314,6 +348,9 @@ const Chat = () => {
                 }
             }
 
+            /* HITL Phase 1 ended — skip post-stream tidy-up, picker will handle the rest */
+            if (hitlTriggered) return;
+
             /* ---------- 4 · Post-stream tidy-up (citation cleanup etc.) ---------- */
             const blobRegex = /(Source:\s?\/?)?(source:)?(https:\/\/)?([^/]+\.blob\.core\.windows\.net)?(\/?documents\/?)?/g;
             // Function to clean citations
@@ -344,9 +381,22 @@ const Chat = () => {
         }
     };
 
+    const handleToolSelection = (toolName: string, selectedText: string) => {
+        if (!pendingToolSelection) return;
+        const { savedQuestion, conversationId, blobNames } = pendingToolSelection;
+        setPendingToolSelection(null);
+        streamResponse(
+            savedQuestion,
+            conversationId,
+            blobNames,
+            { tool_name: toolName, selected_text: selectedText }
+        );
+    };
+
     const clearChat = () => {
         setThinkingContent("");
         setIsDataAnalystMode(false);
+        setPendingToolSelection(null);
 
         if (lastQuestionRef.current || dataConversation.length > 0 || !chatIsCleaned) {
             lastQuestionRef.current = "";
@@ -365,6 +415,7 @@ const Chat = () => {
     const handleNewChat = () => {
         setThinkingContent("");
         setIsDataAnalystMode(false);
+        setPendingToolSelection(null);
 
         if (lastQuestionRef.current || dataConversation.length > 0 || chatIsCleaned) {
             restartChat.current = true;
@@ -558,21 +609,17 @@ const Chat = () => {
                 return;
             }
 
-            const selectionCategories = new Set(files.map(file => getUploadCategory(file.name)));
-            selectionCategories.delete("unknown");
-            if (selectionCategories.size > 1) {
-                setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
+            const unsupportedFile = files.find(file => !isSupportedUploadCategory(file.name));
+            if (unsupportedFile) {
+                const fileExtension = unsupportedFile.name.toLowerCase().split(".").pop() || "unknown";
+                setFileUploadError(`Unsupported type .${fileExtension}. Supported types: PDF, CSV, XLS, XLSX, DOCX`);
                 return;
             }
 
-            if (attachedDocs.length > 0 && selectionCategories.size === 1) {
-                const sampleName = attachedDocs[0].originalFilename || attachedDocs[0].savedFilename || attachedDocs[0].blobName;
-                const existingCategory = getUploadCategory(sampleName);
-                const [selectionCategory] = Array.from(selectionCategories);
-                if (existingCategory !== "unknown" && selectionCategory !== existingCategory) {
-                    setTimedFileUploadError("Mixed type documents are not allowed. Upload all PDFs or all spreadsheet types (CSV, XLS, XLSX).");
-                    return;
-                }
+            const sampleName = attachedDocs[0]?.originalFilename || attachedDocs[0]?.savedFilename || attachedDocs[0]?.blobName;
+            if (hasMixedUploadCategories(files.map(file => file.name), sampleName)) {
+                setTimedFileUploadError(MIXED_TYPE_UPLOAD_ERROR);
+                return;
             }
 
             for (const file of files) {
@@ -951,27 +998,35 @@ const Chat = () => {
                                                         <div key={index} className={conversationIsLoading ? styles.noneDisplay : ""}>
                                                             <UserChatMessage message={item.user} />
                                                             <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                                <Answer
-                                                                    key={index}
-                                                                    answer={response}
-                                                                    isGenerating={false}
-                                                                    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                                                    loadingCitationPath={loadingCitationPath}
-                                                                    onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                                                    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                                                    onSupportingContentClicked={() =>
-                                                                        onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
-                                                                    }
-                                                                    onFollowupQuestionClicked={question => {
-                                                                        const blobNames = attachedDocs.map(d => ({
-                                                                            blob_name: d.blobName,
-                                                                            file_id: d.fileId ?? null
-                                                                        }));
-                                                                        streamResponse(question, chatId !== "" ? chatId : null, blobNames);
-                                                                    }}
-                                                                    showFollowupQuestions={false}
-                                                                    showSources={true}
-                                                                />
+                                                                {index === dataConversation.length - 1 && pendingToolSelection && !item.bot?.message ? (
+                                                                    <ToolSelectionPicker
+                                                                        question={pendingToolSelection.clarifyingQuestion}
+                                                                        options={pendingToolSelection.options}
+                                                                        onSelect={handleToolSelection}
+                                                                    />
+                                                                ) : (
+                                                                    <Answer
+                                                                        key={index}
+                                                                        answer={response}
+                                                                        isGenerating={false}
+                                                                        isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                                        loadingCitationPath={loadingCitationPath}
+                                                                        onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                                        onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+                                                                        onSupportingContentClicked={() =>
+                                                                            onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)
+                                                                        }
+                                                                        onFollowupQuestionClicked={question => {
+                                                                            const blobNames = attachedDocs.map(d => ({
+                                                                                blob_name: d.blobName,
+                                                                                file_id: d.fileId ?? null
+                                                                            }));
+                                                                            streamResponse(question, chatId !== "" ? chatId : null, blobNames);
+                                                                        }}
+                                                                        showFollowupQuestions={false}
+                                                                        showSources={true}
+                                                                    />
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );
@@ -1038,27 +1093,35 @@ const Chat = () => {
                                                 <>
                                                     <UserChatMessage message={lastQuestionRef.current} />
                                                     <div className={styles.chatMessageGpt} role="region" aria-label="Chat message" data-cy="chat-msg">
-                                                        <Answer
-                                                            answer={
-                                                                {
-                                                                    answer: lastAnswer,
-                                                                    conversation_id: chatId,
-                                                                    data_points: [""],
-                                                                    thoughts: null
-                                                                } as AskResponse
-                                                            }
-                                                            isGenerating={isLoading}
-                                                            progressState={progressState}
-                                                            thinkingContent={thinkingContent}
-                                                            isSelected={activeAnalysisPanelTab !== undefined}
-                                                            loadingCitationPath={loadingCitationPath}
-                                                            onCitationClicked={(c, n) => { }}
-                                                            onThoughtProcessClicked={() => { }}
-                                                            onSupportingContentClicked={() => { }}
-                                                            onFollowupQuestionClicked={q => { }}
-                                                            showFollowupQuestions={false}
-                                                            showSources={true}
-                                                        />
+                                                        {pendingToolSelection ? (
+                                                            <ToolSelectionPicker
+                                                                question={pendingToolSelection.clarifyingQuestion}
+                                                                options={pendingToolSelection.options}
+                                                                onSelect={handleToolSelection}
+                                                            />
+                                                        ) : (
+                                                            <Answer
+                                                                answer={
+                                                                    {
+                                                                        answer: lastAnswer,
+                                                                        conversation_id: chatId,
+                                                                        data_points: [""],
+                                                                        thoughts: null
+                                                                    } as AskResponse
+                                                                }
+                                                                isGenerating={isLoading}
+                                                                progressState={progressState}
+                                                                thinkingContent={thinkingContent}
+                                                                isSelected={activeAnalysisPanelTab !== undefined}
+                                                                loadingCitationPath={loadingCitationPath}
+                                                                onCitationClicked={(c, n) => { }}
+                                                                onThoughtProcessClicked={() => { }}
+                                                                onSupportingContentClicked={() => { }}
+                                                                onFollowupQuestionClicked={q => { }}
+                                                                showFollowupQuestions={false}
+                                                                showSources={true}
+                                                            />
+                                                        )}
                                                     </div>
                                                 </>
                                             )}
@@ -1110,7 +1173,7 @@ const Chat = () => {
                                         <QuestionInput
                                             clearOnSend
                                             placeholder={placeholderText}
-                                            disabled={isLoading || isUploadingDocs || !!error403Data}
+                                            disabled={isLoading || isUploadingDocs || !!error403Data || !!pendingToolSelection}
                                             onSend={question => {
                                                 (async () => {
                                                     const blobNames = attachedDocs.map(d => ({

@@ -78,6 +78,14 @@ export type ChatTurn = {
     } | null;
 };
 
+export type PendingHitlInfo = {
+    llm_preferred_tool: string;
+    question: string;
+    clarification_question: string;
+    clarification_options: Array<{ text: string; tool_name: string }>;
+    user_uploaded_blobs?: { kind: string; items: Array<{ blob_name: string; file_id?: string | null }> };
+};
+
 export type ChatRequest = {
     history: ChatTurn[];
     approach: Approaches;

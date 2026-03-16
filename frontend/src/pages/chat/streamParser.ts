@@ -378,6 +378,27 @@ export function isDataAnalystContentMessage(payload: any): payload is DataAnalys
 }
 
 /**
+ * Tool clarification required message — emitted when the LLM needs a clarifying question answered
+ * before it can confidently route to the right tool.
+ */
+export interface ToolClarificationRequiredMessage {
+    type: "tool_clarification_required";
+    question: string;
+    options: Array<{ text: string; tool_name: string }>;
+    conversation_id: string;
+    progress: number;
+    timestamp: number;
+}
+
+export function isToolClarificationRequired(payload: any): payload is ToolClarificationRequiredMessage {
+    return (
+        payload?.type === "tool_clarification_required" &&
+        typeof payload.question === "string" &&
+        Array.isArray(payload.options)
+    );
+}
+
+/**
  * Extract progress state from a progress message for the Answer component
  */
 export function extractProgressState(progressMessage: ProgressMessage): {

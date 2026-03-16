@@ -350,9 +350,21 @@ const Gallery: React.FC = () => {
 
     const createFileName = (name: string) => {
         const parts = name.split("/");
-        const extension = parts[parts.length - 1].split(".").pop();
-        const last_part = parts[parts.length - 1];
-        return last_part.length > 20 ? last_part.slice(0, 16) + "..." + " ." + extension : last_part + "." + extension;
+        const fileName = parts[parts.length - 1] || "";
+        const dotIndex = fileName.lastIndexOf(".");
+        const hasExtension = dotIndex > 0;
+        const baseName = hasExtension ? fileName.slice(0, dotIndex) : fileName;
+        const extension = hasExtension ? fileName.slice(dotIndex) : "";
+        const maxLength = 20;
+        const ellipsis = "...";
+
+        if (fileName.length > maxLength) {
+            // Keep the extension visible and truncate only the base file name.
+            const visibleBaseLength = Math.max(1, maxLength - extension.length - ellipsis.length);
+            return `${baseName.slice(0, visibleBaseLength)}${ellipsis}${extension}`;
+        }
+
+        return fileName;
     };
 
     const searchTimeout = useRef<number | null>(null);
