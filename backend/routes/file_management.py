@@ -6,7 +6,7 @@ from flask import Blueprint, current_app, request
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import HttpResponseError
-from data_summary.summarize import create_description
+from data_summary.summarize import create_excel_file_summary
 from utils import create_success_response, create_error_response
 
 from shared.decorators import require_organization_storage_limits
@@ -15,7 +15,8 @@ from shared.cosmo_db import update_storage_used
 from routes.decorators.auth_decorator import auth_required
 
 # Allowed file extensions for description generation
-DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
+EXCEL_DESCRIPTION_VALID_FILE_EXTENSIONS = [".csv", ".xlsx", ".xls"]
+DOC_DESCRIPTION_FILE_EXTENSIONS = [".pdf", ".docx", ".pptx"]
 
 # Allowed MIME types (strict mapping: extension → mimetype)
 ALLOWED_MIME_TYPES = {
@@ -205,7 +206,7 @@ def upload_source_document(**kwargs):
 
         if ext in DESCRIPTION_VALID_FILE_EXTENSIONS:
             logger.info(f"Gen AI description for file '{file.filename}'")
-            description = create_description(temp_file_path, llm=llm)
+            description = create_excel_file_summary(temp_file_path, llm=llm)
             logger.info(f"Generated Description of file {temp_file_path}: {description}")
             metadata["description"] = description["file_description"]
             metadata["description_source"] = description["source"]
@@ -291,8 +292,19 @@ def upload_shared_document():
         # Prepare metadata (generate description if applicable)
         metadata = {}
         
-        if ext in DESCRIPTION_VALID_FILE_EXTENSIONS:
-            logger.info(f"Generating AI description for shared file '{file.filename}'")
+        if ext in EXCEL_DESCRIPTION_VALID_FILE_EXTENSIONS:
+            logger.info(f"[PandasAI] Generating AI description for shared file '{file.filename}'")
+            try:
+                description = create_description(temp_file_path, llm=llm)
+                logger.info(f"[PandasAI] Generated Description: {description}")
+                metadata["description"] = description["file_description"]
+                metadata["description_source"] = description["source"]
+            except Exception as desc_error:
+                logger.warning(f"[PandasAI] Failed to generate description: {desc_error}")
+                # Continue without description
+
+        if ext in EXCEL_DESCRIPTION_VALID_FILE_EXTENSIONS:
+            logger.info(f"[PandasAI] Generating AI description for shared file '{file.filename}'")
             try:
                 description = create_description(temp_file_path, llm=llm)
                 logger.info(f"Generated Description: {description}")

@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
 from pandasai_openai import AzureOpenAI as PandasAIAzureOpenAI
+from openai import OpenAI
 import pandasai as pai
 
 class LLMClient(ABC):
     @abstractmethod
     def summarize_dataframe(self, df, prompt: str) -> str: ...
+    def summarize_document(self, file, prompt:str) -> str: ...
 
 class PandasAIClient(LLMClient):
     def __init__(self, azure_endpoint: str, api_key: str, api_version: str, deployment_name: str):
@@ -25,3 +27,9 @@ class PandasAIClient(LLMClient):
 
     def summarize_dataframe(self, df, prompt: str) -> str:
         return df.chat(prompt)
+
+
+class OpenAIClient(LLMClient):
+    def __init__(self, api_key: str, model: str):
+        self._llm = OpenAI(api_key=api_key)
+        self._model = model

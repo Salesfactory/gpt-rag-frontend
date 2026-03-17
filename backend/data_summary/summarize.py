@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 import pandas as pd
 import re
-from .llm import LLMClient
+from .llm import LLMClient, OpenAIClient
 from .file_utils import read_preview, read_full_dataframe, to_pandasai_dataframe, reduce_dataframe_for_fallback
 import unicodedata
 
@@ -75,7 +75,7 @@ def sanitize_metadata_value(value: str) -> str:
     return value[:8192]
 
 
-def create_description(
+def create_excel_file_summary(
     path: str, llm: LLMClient, prompt: str = DEFAULT_PROMPT, max_retries: int = 3
 ) -> dict:
     try:
@@ -127,5 +127,14 @@ def create_description(
         return {"file_description": sanitize_metadata_value(manual_description), "source": "manual_summary" }
 
     except Exception as e:
-        logger.exception("Critical error in create_description: %s", e)
+        logger.exception("Critical error in create_excel_file_summary: %s", e)
         return f"Error processing file: {e}"
+
+def create_openAI_file_summary(path: str, client: OpenAIClient, max_retries: int = 3) -> dict:
+    """Create a file summary using OpenAI's GPT-4 model."""
+    try:
+        pass
+        
+    except Exception as e:
+        logger.exception("Error in create_openAI_file_summary: %s", e)
+        return {"file_description": f"Error processing file: {e}", "source": "error"}

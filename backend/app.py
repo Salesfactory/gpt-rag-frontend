@@ -196,10 +196,10 @@ limiter = Limiter(
 
 def setup_llm() -> PandasAIClient:
     cfg = get_azure_openai_config(deployment_name="gpt-4.1")
-    llm = PandasAIClient(
+    excel_summarization_llm = PandasAIClient(
         cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name
     )
-    return llm
+    return excel_summarization_llm
 
 
 auth = Auth(
@@ -217,7 +217,8 @@ auth = Auth(
 def setup_clients():
     print(f"[before_first_request] ", flush=True)
     clients.warm_up()  # idempotent
-    current_app.config["llm"] = setup_llm()  # todo move to a client for panda AI
+    current_app.config["excel_summarization_llm"] = setup_llm()  # todo move to a client for panda AI.
+    current_app.config["openai_summarization_llm"] = "" # Used for PDFs Docx and PPTX files.
     current_app.config["blob_storage_manager"] = (
         BlobStorageManager()
     )  # TODO implement the new BlobStorageManager in the upload_sources.py (this is the only way that there is no pytest import issue) The issue was that when running all tests together, there was a complex import resolution problem where the utils module was not being found properly due to module caching issues and conflicts between test fixtures.
