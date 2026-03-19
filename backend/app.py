@@ -87,6 +87,7 @@ from shared.cosmo_db import (
     get_organization_subscription,
     create_user_logs,
 )
+from shared.conversation_export import export_conversation
 from shared import clients
 from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_deleted
 from shared.blob_storage import BlobStorageManager, BlobUploadError
@@ -1048,20 +1049,15 @@ def renameChatConversation(*, context, chat_id):
 @auth.login_required
 def exportConversation(*, context):
     """
-    Export a conversation by calling the orchestrator endpoint with proper authentication.
+    Export a conversation directly from frontend backend services.
 
     Expected JSON payload:
     {
         "id": "conversation_id",
         "user_id": "user_id",
-        "format": "html" #default is html
+        "format": "html" # default is html
     }
     """
-    client_principal_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
-
-    if not client_principal_id:
-        return jsonify({"error": "Missing client principal ID"}), 400
-
     try:
         data = request.get_json()
         if not data:
@@ -1073,49 +1069,14 @@ def exportConversation(*, context):
 
         if not conversation_id or not user_id:
             return jsonify({"error": "Missing conversation ID or user ID"}), 400
+        if format not in ["html", "json"]:
+            return jsonify({"error": "Invalid export format. Supported formats: html, json"}), 400
 
-        # Get the function key from Azure Key Vault
-        try:
-            keySecretName = "orchestrator-host--functionKey"
-            functionKey = clients.get_azure_key_vault_secret(keySecretName)
-            if not functionKey:
-                raise ValueError(f"Function key {keySecretName} is empty")
-        except Exception as e:
-            logging.exception(
-                "[webbackend] exception getting orchestrator function key"
-            )
-            return (
-                jsonify(
-                    {
-                        "error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"
-                    }
-                ),
-                500,
-            )
+        result = export_conversation(conversation_id, user_id, format)
+        if result.get("success"):
+            return jsonify(result), 200
 
-        # Prepare the payload for the orchestrator
-        payload = json.dumps(
-            {"id": conversation_id, "user_id": user_id, "format": format}
-        )
-
-        # Set up headers with the function key
-        headers = {"Content-Type": "application/json", "x-functions-key": functionKey}
-
-        # Call the orchestrator export endpoint
-        orchestrator_export_url = ORCHESTRATOR_URI + "/api/conversations"
-        response = requests.post(orchestrator_export_url, headers=headers, data=payload)
-
-        logging.info(f"[webbackend] Export response status: {response.status_code}")
-
-        if response.status_code != 200:
-            logging.error(f"[webbackend] Error from orchestrator: {response.text}")
-            return (
-                jsonify({"error": "Error contacting orchestrator for export"}),
-                response.status_code,
-            )
-
-        # Return the response from the orchestrator
-        return response.json(), 200
+        return jsonify({"error": result.get("error", "Conversation export failed")}), 500
 
     except Exception as e:
         logging.exception("[webbackend] exception in /api/conversations/export")
