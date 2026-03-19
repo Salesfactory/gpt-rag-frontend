@@ -6,7 +6,7 @@ from flask import Blueprint, current_app, request
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import HttpResponseError
-from data_summary.summarize import create_excel_file_summary
+from data_summary.summarize import create_excel_file_summary, create_openAI_file_summary
 from utils import create_success_response, create_error_response
 
 from shared.decorators import require_organization_storage_limits
@@ -147,7 +147,8 @@ def delete_from_azure_search(filepath: str) -> dict:
 @auth_required
 @require_organization_storage_limits()
 def upload_source_document(**kwargs):
-    llm = current_app.config["llm"]
+    excel_llm = current_app.config["excel_summarization_llm"]
+    openai_llm = current_app.config["openai_summarization_llm"]
     temp_file_path = None
     try:
         organization_id = request.form.get("organization_id")
@@ -204,9 +205,16 @@ def upload_source_document(**kwargs):
         # Metadata
         metadata = {"organization_id": organization_id}
 
-        if ext in DESCRIPTION_VALID_FILE_EXTENSIONS:
+        if ext in EXCEL_DESCRIPTION_VALID_FILE_EXTENSIONS:
             logger.info(f"Gen AI description for file '{file.filename}'")
-            description = create_excel_file_summary(temp_file_path, llm=llm)
+            description = create_excel_file_summary(temp_file_path, llm=excel_llm)
+            logger.info(f"Generated Description of file {temp_file_path}: {description}")
+            metadata["description"] = description["file_description"]
+            metadata["description_source"] = description["source"]
+
+        elif ext in DOC_DESCRIPTION_FILE_EXTENSIONS:
+            logger.info(f"Gen AI description for file '{file.filename}'")
+            description = create_openAI_file_summary(temp_file_path, client=openai_llm)
             logger.info(f"Generated Description of file {temp_file_path}: {description}")
             metadata["description"] = description["file_description"]
             metadata["description_source"] = description["source"]
