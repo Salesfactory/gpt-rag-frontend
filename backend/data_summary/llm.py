@@ -41,7 +41,7 @@ class OpenAIClient:
         response = self._llm.responses.create(
             model=self._model,
             truncation="auto",
-            max_output_tokens=100,
+            max_output_tokens=500,
             reasoning={"effort": "medium"},
             input=[
                 {
