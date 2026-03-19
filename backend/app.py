@@ -195,9 +195,10 @@ limiter = Limiter(
 
 
 def setup_pandas_llm_instance() -> PandasAIClient:
-    cfg = get_azure_openai_config(deployment_name="gpt-4.1")
+    cfg = get_openai_config(model="gpt-4.1")
     excel_summarization_llm = PandasAIClient(
-        cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name
+        api_key=cfg.api_key,
+        model=cfg.model
     )
     return excel_summarization_llm
 
