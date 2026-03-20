@@ -24,7 +24,7 @@ import { SearchBox, Spinner } from "@fluentui/react";
 import { useEffect, useState, useRef, useMemo, lazy, Suspense } from "react";
 
 const PptxViewer = lazy(() => import("../../components/DocView/PPTXViewer"));
-import { deleteSourceFileFromBlob, getGalleryItems, getGoogleEditableFileRedirectUrl, getUsers } from "../../api";
+import { deleteSourceFileFromBlob, getBlobSasUrl, getGalleryItems, getGoogleEditableFileRedirectUrl, getUsers } from "../../api";
 import { useAppContext } from "../../providers/AppProviders";
 import DeleteConfirmModal from "../../components/DeleteConfirmModal/DeleteConfirmModal";
 
@@ -296,12 +296,19 @@ const Gallery: React.FC = () => {
         };
     }, [orgId, userId, userFilter, fileTypeFilter, sortOrder, searchQuery, currentPage, itemsPerPage]);
 
-    const handleDownload = (item: GalleryItem) => {
-        const organizationId = user?.organizationId;
+    const handleDownload = async (item: GalleryItem) => {
+        if (!user?.id) {
+            toast.error("Your session is not ready. Please refresh and try again.");
+            return;
+        }
 
-        const downloadUrl = `/api/download?organizationId=${organizationId}&blobName=${encodeURIComponent(item.name)}`;
-
-        window.open(downloadUrl, "_blank");
+        try {
+            const sasUrl = await getBlobSasUrl(item.name, "documents", user);
+            window.open(sasUrl, "_blank", "noopener,noreferrer");
+        } catch (error) {
+            console.error("Error generating download URL:", error);
+            toast.error(`Could not download file: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
     };
 
     const handleDelete = (item: GalleryItem) => {
