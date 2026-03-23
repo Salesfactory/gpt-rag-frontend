@@ -2367,7 +2367,7 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
         params.append("start_date", startTimestamp.toString());
     }
     if (endDate) {
-        const endTimestamp = Math.floor(new Date(endDate + "T00:00:00Z").getTime() / 1000);
+        const endTimestamp = Math.floor(new Date(endDate + "T23:59:59Z").getTime() / 1000);
         params.append("end_date", endTimestamp.toString());
     }
 
