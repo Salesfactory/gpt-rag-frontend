@@ -2355,6 +2355,16 @@ export async function getPlatformOrganizations({ user }: { user?: any } = {}): P
     }
 }
 
+function toLocalStartOfDayUnixTimestamp(dateString: string): number {
+    const [year, month, day] = dateString.split("-").map(Number);
+    return Math.floor(new Date(year, month - 1, day, 0, 0, 0).getTime() / 1000);
+}
+
+function toLocalEndOfDayUnixTimestamp(dateString: string): number {
+    const [year, month, day] = dateString.split("-").map(Number);
+    return Math.floor(new Date(year, month - 1, day, 23, 59, 59).getTime() / 1000);
+}
+
 export async function getUserActivityLogs({ user, organizationId, startDate, endDate }: { user?: any, organizationId?: string, startDate?: string, endDate?: string } = {}): Promise<any> {
     const user_id = user ? user.id : "";
     const user_org_id = user ? user.organizationId : "";
@@ -2363,11 +2373,11 @@ export async function getUserActivityLogs({ user, organizationId, startDate, end
     if (organizationId) params.append("organization_id", organizationId);
     
     if (startDate) {
-        const startTimestamp = Math.floor(new Date(startDate + "T00:00:00Z").getTime() / 1000);
+        const startTimestamp = toLocalStartOfDayUnixTimestamp(startDate);
         params.append("start_date", startTimestamp.toString());
     }
     if (endDate) {
-        const endTimestamp = Math.floor(new Date(endDate + "T00:00:00Z").getTime() / 1000);
+        const endTimestamp = toLocalEndOfDayUnixTimestamp(endDate);
         params.append("end_date", endTimestamp.toString());
     }
 
