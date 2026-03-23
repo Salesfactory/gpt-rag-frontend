@@ -136,6 +136,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({ onClose, onDele
                     setDataConversation(turns);
                     if (pendingHitl) {
                         setPendingToolSelection({
+                            hitlType: pendingHitl.hitl_type ?? "tool_selection",
                             clarifyingQuestion: pendingHitl.clarification_question,
                             options: pendingHitl.clarification_options,
                             conversationId: chatConversationId,

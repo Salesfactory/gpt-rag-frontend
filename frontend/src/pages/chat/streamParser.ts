@@ -377,6 +377,13 @@ export function isDataAnalystContentMessage(payload: any): payload is DataAnalys
            typeof payload.content === 'string';
 }
 
+export interface ClarificationOption {
+    text: string;
+    tool_name?: string;
+}
+
+export type HitlType = "tool_selection" | "intention_clarification";
+
 /**
  * Tool clarification required message — emitted when the LLM needs a clarifying question answered
  * before it can confidently route to the right tool.
@@ -384,7 +391,7 @@ export function isDataAnalystContentMessage(payload: any): payload is DataAnalys
 export interface ToolClarificationRequiredMessage {
     type: "tool_clarification_required";
     question: string;
-    options: Array<{ text: string; tool_name: string }>;
+    options: ClarificationOption[];
     conversation_id: string;
     progress: number;
     timestamp: number;
@@ -393,6 +400,23 @@ export interface ToolClarificationRequiredMessage {
 export function isToolClarificationRequired(payload: any): payload is ToolClarificationRequiredMessage {
     return (
         payload?.type === "tool_clarification_required" &&
+        typeof payload.question === "string" &&
+        Array.isArray(payload.options)
+    );
+}
+
+export interface IntentionClarificationRequiredMessage {
+    type: "intention_clarification_required";
+    question: string;
+    options: ClarificationOption[];
+    conversation_id: string;
+    progress: number;
+    timestamp: number;
+}
+
+export function isIntentionClarificationRequired(payload: any): payload is IntentionClarificationRequiredMessage {
+    return (
+        payload?.type === "intention_clarification_required" &&
         typeof payload.question === "string" &&
         Array.isArray(payload.options)
     );

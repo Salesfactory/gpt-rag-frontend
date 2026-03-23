@@ -42,11 +42,14 @@ import {
     isThinkingMessage,
     isDataAnalystContentMessage,
     isToolClarificationRequired,
+    isIntentionClarificationRequired,
     extractProgressState,
     ProgressMessage,
     ThinkingMessage,
     DataAnalystContentMessage,
-    ToolClarificationRequiredMessage
+    ToolClarificationRequiredMessage,
+    IntentionClarificationRequiredMessage,
+    HitlType
 } from "./streamParser";
 import { hasMixedUploadCategories, isSupportedUploadCategory, MIXED_TYPE_UPLOAD_ERROR } from "./attachmentUtils";
 import { ToolSelectionPicker } from "../../components/ToolSelectionPicker/ToolSelectionPicker";
@@ -175,7 +178,7 @@ const Chat = () => {
         question: string,
         chatId: string | null,
         userDocumentBlobNames?: Array<{ blob_name: string; file_id?: string | null }>,
-        hitlResume?: { tool_name: string; selected_text: string }
+        hitlResume?: { hitl_type: HitlType; tool_name?: string; selected_text: string }
     ) => {
         /* ---------- 0 · Common pre-flight state handling ---------- */
         lastQuestionRef.current = question;
@@ -302,6 +305,7 @@ const Chat = () => {
                     if (isToolClarificationRequired(evt.payload)) {
                         const msg = evt.payload as ToolClarificationRequiredMessage;
                         setPendingToolSelection({
+                            hitlType: "tool_selection",
                             clarifyingQuestion: msg.question,
                             options: msg.options,
                             conversationId: msg.conversation_id,
@@ -310,7 +314,20 @@ const Chat = () => {
                         });
                         hitlTriggered = true;
                         setIsLoading(false);
-                        break; // HITL pause — wait for user to answer
+                        break;
+                    } else if (isIntentionClarificationRequired(evt.payload)) {
+                        const msg = evt.payload as IntentionClarificationRequiredMessage;
+                        setPendingToolSelection({
+                            hitlType: "intention_clarification",
+                            clarifyingQuestion: msg.question,
+                            options: msg.options,
+                            conversationId: msg.conversation_id,
+                            savedQuestion: question,
+                            blobNames: userDocumentBlobNames,
+                        });
+                        hitlTriggered = true;
+                        setIsLoading(false);
+                        break;
                     } else if (isDataAnalystContentMessage(evt.payload)) {
                         // Data analyst content - treat as thinking (goes into collapsible section)
                         const contentMsg = evt.payload as DataAnalystContentMessage;
@@ -381,15 +398,19 @@ const Chat = () => {
         }
     };
 
-    const handleToolSelection = (toolName: string, selectedText: string) => {
+    const handleToolSelection = (selectedText: string, toolName?: string) => {
         if (!pendingToolSelection) return;
-        const { savedQuestion, conversationId, blobNames } = pendingToolSelection;
+        const { hitlType, savedQuestion, conversationId, blobNames } = pendingToolSelection;
         setPendingToolSelection(null);
         streamResponse(
             savedQuestion,
             conversationId,
             blobNames,
-            { tool_name: toolName, selected_text: selectedText }
+            {
+                hitl_type: hitlType,
+                selected_text: selectedText,
+                ...(toolName ? { tool_name: toolName } : {}),
+            }
         );
     };
 
@@ -1002,6 +1023,7 @@ const Chat = () => {
                                                                     <ToolSelectionPicker
                                                                         question={pendingToolSelection.clarifyingQuestion}
                                                                         options={pendingToolSelection.options}
+                                                                        hitlType={pendingToolSelection.hitlType}
                                                                         onSelect={handleToolSelection}
                                                                     />
                                                                 ) : (
@@ -1097,6 +1119,7 @@ const Chat = () => {
                                                             <ToolSelectionPicker
                                                                 question={pendingToolSelection.clarifyingQuestion}
                                                                 options={pendingToolSelection.options}
+                                                                hitlType={pendingToolSelection.hitlType}
                                                                 onSelect={handleToolSelection}
                                                             />
                                                         ) : (

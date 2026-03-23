@@ -133,15 +133,15 @@
 }
 
 .sendButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     min-width: 3rem;
     min-height: 3rem;
     border-radius: 0.75rem;
     border: 0;
     background: #c8dc7b;
     color: #ffffff;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1;
     cursor: pointer;
 }
 
