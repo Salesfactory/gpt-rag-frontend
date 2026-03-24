@@ -35,8 +35,9 @@ const statusFilterOptions = [
 
 const fileTypeFilterOptions = [
     { label: "All Types", value: "all" },
-    { label: "Images", value: "images" },
-    { label: "PowerPoint", value: "pptx" }
+    { label: "Images/Charts", value: "images" },
+    { label: "Presentations", value: "pptx" },
+    { label: "Text Documents", value: "text_documents" }
 ] as const;
 
 type FileTypeFilter = (typeof fileTypeFilterOptions)[number]["value"];
