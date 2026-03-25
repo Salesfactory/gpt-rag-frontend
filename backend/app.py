@@ -91,8 +91,8 @@ from shared.conversation_export import export_conversation
 from shared import clients
 from shared.webhook import handle_checkout_session_completed, handle_subscription_updated, handle_subscription_deleted
 from shared.blob_storage import BlobStorageManager, BlobUploadError
-from data_summary.config import get_azure_openai_config
-from data_summary.llm import PandasAIClient
+from data_summary.config import get_azure_openai_config, get_openai_config
+from data_summary.llm import PandasAIClient, OpenAIClient
 
 from routes.report_jobs import bp as jobs_bp
 from routes.organizations import bp as organizations
@@ -195,12 +195,21 @@ limiter = Limiter(
 )
 
 
-def setup_llm() -> PandasAIClient:
-    cfg = get_azure_openai_config(deployment_name="gpt-4.1")
-    llm = PandasAIClient(
-        cfg.endpoint, cfg.api_key, cfg.api_version, cfg.deployment_name
+def setup_pandas_llm_instance() -> PandasAIClient:
+    cfg = get_openai_config(model="gpt-4.1")
+    excel_summarization_llm = PandasAIClient(
+        api_key=cfg.api_key,
+        model=cfg.model
     )
-    return llm
+    return excel_summarization_llm
+
+def setup_openai_llm_instance() -> OpenAIClient:
+    cfg = get_openai_config(model="gpt-5.4-mini")
+    openai_summarization_llm = OpenAIClient(
+        model=cfg.model,
+        api_key=cfg.api_key
+    )
+    return openai_summarization_llm
 
 
 auth = Auth(
@@ -218,7 +227,8 @@ auth = Auth(
 def setup_clients():
     print(f"[before_first_request] ", flush=True)
     clients.warm_up()  # idempotent
-    current_app.config["llm"] = setup_llm()  # todo move to a client for panda AI
+    current_app.config["excel_summarization_llm"] = setup_pandas_llm_instance() 
+    current_app.config["openai_summarization_llm"] = setup_openai_llm_instance()
     current_app.config["blob_storage_manager"] = (
         BlobStorageManager()
     )  # TODO implement the new BlobStorageManager in the upload_sources.py (this is the only way that there is no pytest import issue) The issue was that when running all tests together, there was a complex import resolution problem where the utils module was not being found properly due to module caching issues and conflicts between test fixtures.

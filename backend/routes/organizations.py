@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 import pandas as pd
 from data_summary.file_utils import detect_extension
-from data_summary.summarize import create_description
+from data_summary.summarize import create_excel_file_summary
 from data_summary.blob_utils import (
     download_blob_to_temp,
     update_blob_metadata,
@@ -118,7 +118,7 @@ def generate_business_description(organization_id, file_name):
 
         logger.info(f"Downloaded blob '{blob_name}' to temporary path '{blob_temp_path}'")
 
-        business_description = create_description(
+        business_description = create_excel_file_summary(
             blob_temp_path, llm, BUSINESS_DESCRIPTION
         )
 

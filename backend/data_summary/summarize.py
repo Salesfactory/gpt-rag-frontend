@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 import pandas as pd
 import re
-from .llm import LLMClient
+from .llm import LLMClient, OpenAIClient
 from .file_utils import read_preview, read_full_dataframe, to_pandasai_dataframe, reduce_dataframe_for_fallback
 import unicodedata
 
@@ -15,6 +15,15 @@ Key Dimensions: Main data categories/columns (do not include details of individu
 Time Scope: Date range covered, if applicable
 Output: Plain text description only.
 Purpose: Help a coding agent understand what each file contains without opening it, enabling efficient file selection for analysis tasks."""
+
+DEFAULT_DOC_SUMMARIZATION_PROMPT = """
+Developer: You are a data analyst providing file descriptions for automated file selection.
+Task: Examine the file and provide a brief description (2-3 sentences, no more than 50 words) summarizing the file's main content or data type.
+Time Scope: Include the date range covered only when the file explicitly contains dates or clearly covers a defined period; otherwise do not mention time scope.
+Output: Return plain text only, as exactly one paragraph in this order: (1) file content summary, (2) date range if applicable. Sentences should be separated by periods. Do not use markdown, labels, bullets, or any other formatting.
+Purpose: Help a coding agent understand what each file contains without opening it, enabling efficient file selection for analysis tasks.
+Does not matter the languaje of the content you should only give a response on ENGLISH.
+"""
 
 FALLBACK_PROMPT = """
 Analyze the data and provide a brief explanation of the file in 2 sentences, focusing on optimized computations.
@@ -75,7 +84,7 @@ def sanitize_metadata_value(value: str) -> str:
     return value[:8192]
 
 
-def create_description(
+def create_excel_file_summary(
     path: str, llm: LLMClient, prompt: str = DEFAULT_PROMPT, max_retries: int = 3
 ) -> dict:
     try:
@@ -127,5 +136,17 @@ def create_description(
         return {"file_description": sanitize_metadata_value(manual_description), "source": "manual_summary" }
 
     except Exception as e:
-        logger.exception("Critical error in create_description: %s", e)
+        logger.exception("Critical error in create_excel_file_summary: %s", e)
         return f"Error processing file: {e}"
+
+def create_openAI_file_summary(path: str, client: OpenAIClient, max_retries: int = 3) -> dict:
+    """Create a file summary using OpenAI's GPT-4 model."""
+    try:
+        file_id = client.upload_file(path)
+        response = client.summarize_document(file_id, DEFAULT_DOC_SUMMARIZATION_PROMPT)
+        sanitized_response = sanitize_metadata_value(response)
+        return {"file_description": sanitized_response, "source": "openai_summary"}
+        
+    except Exception as e:
+        logger.exception("Error in create_openAI_file_summary: %s", e)
+        return {"file_description": f"Error processing file: {e}", "source": "error"}
