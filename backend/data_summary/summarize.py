@@ -14,15 +14,18 @@ Content Type: What kind of data this file contains (e.g., sales records, custome
 Key Dimensions: Main data categories/columns (do not include details of individual rows or columns, just summarize the categories) and rough size (number of rows/records)
 Time Scope: Date range covered, if applicable
 Output: Plain text description only.
-Purpose: Help a coding agent understand what each file contains without opening it, enabling efficient file selection for analysis tasks."""
+Purpose: Help a coding agent understand what each file contains without opening it, enabling efficient file selection for analysis tasks.
+Start the summarization with this: "This vault file contains (And then your response)"
+"""
 
 DEFAULT_DOC_SUMMARIZATION_PROMPT = """
-Developer: You are a data analyst providing file descriptions for automated file selection.
+You are a data analyst providing file descriptions for automated file selection.
 Task: Examine the file and provide a brief description (2-3 sentences, no more than 50 words) summarizing the file's main content or data type.
 Time Scope: Include the date range covered only when the file explicitly contains dates or clearly covers a defined period; otherwise do not mention time scope.
 Output: Return plain text only, as exactly one paragraph in this order: (1) file content summary, (2) date range if applicable. Sentences should be separated by periods. Do not use markdown, labels, bullets, or any other formatting.
 Purpose: Help a coding agent understand what each file contains without opening it, enabling efficient file selection for analysis tasks.
 Does not matter the languaje of the content you should only give a response on ENGLISH.
+Start the summarization with this: "This vault file contains (And then your response)"
 """
 
 FALLBACK_PROMPT = """
