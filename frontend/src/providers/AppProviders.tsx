@@ -130,15 +130,17 @@ interface AppContextType {
     setSubscriptionError: Dispatch<SetStateAction<string | null>>;
     validateSession: () => Promise<boolean>; // Session validation function
     pendingToolSelection: {
+        hitlType: "tool_selection" | "intention_clarification";
         clarifyingQuestion: string;
-        options: Array<{ text: string; tool_name: string }>;
+        options: Array<{ text: string; tool_name?: string }>;
         conversationId: string;
         savedQuestion: string;
         blobNames?: Array<{ blob_name: string; file_id?: string | null }>;
     } | null;
     setPendingToolSelection: Dispatch<SetStateAction<{
+        hitlType: "tool_selection" | "intention_clarification";
         clarifyingQuestion: string;
-        options: Array<{ text: string; tool_name: string }>;
+        options: Array<{ text: string; tool_name?: string }>;
         conversationId: string;
         savedQuestion: string;
         blobNames?: Array<{ blob_name: string; file_id?: string | null }>;
@@ -161,8 +163,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [dataHistory, setDataHistory] = useState<ConversationHistoryItem[]>([]);
     const [dataConversation, setDataConversation] = useState<ChatTurn[]>([]);
     const [pendingToolSelection, setPendingToolSelection] = useState<{
+        hitlType: "tool_selection" | "intention_clarification";
         clarifyingQuestion: string;
-        options: Array<{ text: string; tool_name: string }>;
+        options: Array<{ text: string; tool_name?: string }>;
         conversationId: string;
         savedQuestion: string;
         blobNames?: Array<{ blob_name: string; file_id?: string | null }>;
