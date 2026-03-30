@@ -3503,7 +3503,7 @@ def get_gallery(*, context, organization_id):
         file_type = request.args.get("file_type") or request.args.get("type")
         if file_type:
             file_type = file_type.lower()
-            if file_type not in {"images", "pptx"}:
+            if file_type not in {"images", "pptx", "text_documents"}:
                 return create_error_response("Invalid file type filter.", 400)
 
         # Pagination parameters

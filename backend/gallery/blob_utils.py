@@ -15,6 +15,11 @@ PPTX_EXTENSIONS = {".pptx"}
 PPTX_CONTENT_TYPES = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 }
+TEXT_DOCUMENT_EXTENSIONS = {".docx", ".doc"}
+TEXT_DOCUMENT_CONTENT_TYPES = {
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/msword"
+}
 
 class GalleryRetrievalError(Exception):
     """Custom exception for gallery retrieval errors."""
@@ -129,6 +134,11 @@ def _matches_file_type(blob: Dict[str, Any], desired: Optional[str]) -> bool:
         if content_type in PPTX_CONTENT_TYPES:
             return True
         return any(name.endswith(ext) for ext in PPTX_EXTENSIONS)
+
+    if desired == "text_documents":
+        if content_type in TEXT_DOCUMENT_CONTENT_TYPES:
+            return True
+        return any(name.endswith(ext) for ext in TEXT_DOCUMENT_EXTENSIONS)
 
     return True
 
@@ -282,7 +292,7 @@ def get_gallery_items_by_org(
     4. Paginate the sorted results
     
     - Filter by metadata.user_id == uploader_id (case-insensitive).
-    - Filter by requested file_type (images | pptx).
+    - Filter by requested file_type (images | pptx | text_documents).
     - Search by query across name, content_type, and serialized metadata.
     - Sort by created_on (fallback: last_modified). order: 'newest' | 'oldest'.
     - Apply pagination with page and limit parameters.

@@ -1885,7 +1885,7 @@ export async function getGalleryItems(
         uploader_id?: string | null;
         order?: "newest" | "oldest";
         query?: string;
-        file_type?: "images" | "pptx";
+        file_type?: "images" | "pptx" | "text_documents";
         page?: number;
         limit?: number;
         signal?: AbortSignal;
